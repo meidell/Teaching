@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Is it Real or Random?</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --teal:#2DB6A8; --purple:#7E5AE8; --amber:#E8A33C;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:"Calibri","Helvetica Neue",sans-serif;color:#fff;
+  background:radial-gradient(ellipse at top,var(--navy-mid) 0%,var(--navy-deep) 70%);
+  min-height:100vh;line-height:1.5;
+}
+.wrap{max-width:840px;margin:0 auto;padding:34px 20px 80px;}
+
+.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--blue-glow);font-weight:700;}
+h1{font-size:29px;margin:8px 0 6px;color:#fff;letter-spacing:.3px;}
+.scene{color:var(--grey-muted);font-size:15px;max-width:700px;}
+.scene b{color:var(--gold-bright);font-weight:600;}
+
+/* act tracker */
+.acts{display:flex;gap:8px;margin:22px 0 6px;flex-wrap:wrap;}
+.act{flex:1;min-width:150px;background:rgba(30,52,112,.4);border:1px solid rgba(74,144,226,.25);
+     border-radius:12px;padding:11px 13px;transition:.25s;opacity:.5;}
+.act.live{opacity:1;border-color:var(--gold);box-shadow:0 4px 18px rgba(0,0,0,.35);}
+.act.done{opacity:.85;border-color:var(--green-soft);}
+.act .n{font-size:11px;letter-spacing:1px;color:var(--gold-bright);font-weight:700;text-transform:uppercase;}
+.act .t{font-size:13.5px;color:#fff;margin-top:3px;font-weight:600;}
+.act .d{font-size:11.5px;color:var(--grey-muted);margin-top:2px;}
+
+.panel{background:linear-gradient(160deg,rgba(30,52,112,.5),rgba(10,26,58,.5));
+       border:1px solid rgba(74,144,226,.28);border-radius:16px;padding:18px;margin-top:16px;}
+.panel h2{font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey-muted);
+          font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.panel .hint{font-size:12.5px;color:var(--grey-muted);margin-bottom:10px;}
+.panel .hint em{color:var(--gold-bright);font-style:normal;font-weight:600;}
+
+/* scenario picker */
+.scenarios{display:flex;gap:9px;flex-wrap:wrap;}
+.scn{flex:1;min-width:200px;background:rgba(255,255,255,.05);border:1px solid rgba(74,144,226,.3);
+     border-radius:12px;padding:14px;cursor:pointer;transition:.18s;}
+.scn:hover{border-color:var(--gold);background:rgba(240,179,61,.07);transform:translateY(-2px);}
+.scn.active{border-color:var(--gold);background:rgba(240,179,61,.12);box-shadow:0 4px 16px rgba(0,0,0,.35);}
+.scn .icon{font-size:22px;}
+.scn .title{font-size:15px;font-weight:700;color:#fff;margin:6px 0 4px;}
+.scn .claim{font-size:12.5px;color:var(--grey-muted);}
+.scn .obs{font-size:12.5px;color:var(--teal);margin-top:6px;font-weight:600;}
+
+/* the test stage */
+#stage{display:none;}
+#stage.show{display:block;}
+.nullbox{background:rgba(126,90,232,.1);border-left:3px solid var(--purple);border-radius:8px;
+         padding:11px 14px;font-size:13.5px;color:#e6ddf7;margin-bottom:12px;}
+.nullbox b{color:var(--purple);}
+
+#hCanvas{width:100%;display:block;border-radius:10px;background:rgba(10,26,58,.55);}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--grey-muted);margin-top:8px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.swatch{width:12px;height:12px;border-radius:3px;display:inline-block;}
+
+.readout{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:13px;}
+.readout div{color:var(--grey-muted);}
+.readout b{display:block;font-size:17px;color:#fff;}
+.readout .pv b{color:var(--gold-bright);}
+.readout .extreme b{color:var(--red-wrong);}
+
+.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+.btn{background:linear-gradient(180deg,var(--gold),var(--gold-dark));color:#1a1205;border:none;
+     border-radius:30px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;
+     font-family:inherit;transition:.18s;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,0,0,.4);}
+.btn.sec{background:rgba(255,255,255,.08);color:var(--gold-bright);border:1px solid rgba(240,179,61,.45);}
+.btn.sec:hover{background:rgba(240,179,61,.16);}
+.btn.ghost{background:transparent;color:var(--grey-muted);border:1px solid rgba(176,188,214,.3);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.verdict{margin-top:14px;padding:13px 16px;border-radius:10px;font-size:14px;display:none;}
+.verdict.show{display:block;animation:rise .4s;}
+.verdict.real{background:rgba(46,168,74,.13);border-left:3px solid var(--green-correct);color:#dfeede;}
+.verdict.random{background:rgba(232,163,60,.13);border-left:3px solid var(--amber);color:#f5e6cf;}
+.verdict b{color:#fff;}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.insight{background:rgba(46,168,74,.1);border-left:3px solid var(--green-correct);
+         border-radius:8px;padding:11px 14px;margin-top:12px;font-size:13.5px;color:#dfeede;display:none;}
+.insight.show{display:block;animation:rise .4s;}
+.insight b{color:var(--green-correct);}
+
+/* p-value definition reveal */
+.pvdef{background:rgba(30,52,112,.55);border:1px dashed rgba(240,179,61,.5);border-radius:10px;
+       padding:14px 16px;margin-top:14px;font-size:14px;color:#fff;display:none;}
+.pvdef.show{display:block;animation:rise .4s;}
+.pvdef .big{font-size:15px;color:var(--gold-bright);font-weight:700;margin-bottom:6px;}
+.pvdef .warn{font-size:12.5px;color:var(--grey-muted);margin-top:8px;}
+.pvdef .warn s{color:var(--red-wrong);text-decoration:line-through;}
+.pvdef .warn b{color:var(--green-correct);}
+
+/* quiz */
+.quiz{margin-top:16px;display:none;}
+.quiz.show{display:block;}
+.quiz .q{font-size:15px;color:#fff;font-weight:600;margin-bottom:10px;}
+.opt{background:rgba(255,255,255,.05);border:1px solid rgba(74,144,226,.3);border-radius:10px;
+     padding:11px 14px;margin-bottom:8px;cursor:pointer;font-size:14px;transition:.15s;display:flex;gap:10px;}
+.opt:hover{border-color:var(--gold);background:rgba(240,179,61,.08);}
+.opt .L{font-weight:700;color:var(--gold-bright);}
+.opt.correct{border-color:var(--green-correct);background:rgba(46,168,74,.16);}
+.opt.wrong{border-color:var(--red-wrong);background:rgba(200,49,43,.14);}
+.qfb{font-size:13.5px;margin-top:8px;padding:11px 14px;border-radius:8px;display:none;}
+.qfb.show{display:block;}
+.qfb.ok{background:rgba(46,168,74,.12);color:#dfeede;}
+.qfb.no{background:rgba(200,49,43,.12);color:#f3d6d4;}
+
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:34px;opacity:.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Inferential Statistics · Interactive · 9.2</div>
+  <h1>Is it Real or Random?</h1>
+  <p class="scene">
+    You saw in the Sampling Machine that pure chance makes results wobble around.
+    So when something looks impressive — a "lucky" coin, a sales bump, a drug that "worked" —
+    the real question is: <b>could plain luck have produced something this extreme?</b>
+    Pick a case, then let chance answer for you.
+  </p>
+
+  <!-- ACT TRACKER -->
+  <div class="acts">
+    <div class="act live" id="act1">
+      <div class="n">Step 1</div>
+      <div class="t">Pick a case</div>
+      <div class="d">Guess: real signal, or just noise?</div>
+    </div>
+    <div class="act" id="act2">
+      <div class="n">Step 2</div>
+      <div class="t">Let chance run</div>
+      <div class="d">Build the "if it were random" world</div>
+    </div>
+    <div class="act" id="act3">
+      <div class="n">Step 3</div>
+      <div class="t">Read the verdict</div>
+      <div class="d">How often does luck do this?</div>
+    </div>
+  </div>
+
+  <!-- SCENARIO PICKER -->
+  <div class="panel">
+    <h2>Three suspicious cases</h2>
+    <div class="hint">Before running anything — which do you <em>think</em> is a real effect, and which is just luck?</div>
+    <div class="scenarios">
+      <div class="scn active" data-s="coin">
+        <div class="icon">🪙</div>
+        <div class="title">The "lucky" coin</div>
+        <div class="claim">A friend claims their coin is biased toward heads.</div>
+        <div class="obs">They flipped 100 times → 58 heads.</div>
+      </div>
+      <div class="scn" data-s="campaign">
+        <div class="icon">📈</div>
+        <div class="title">The sales campaign</div>
+        <div class="claim">Marketing says a new ad lifted average daily sales.</div>
+        <div class="obs">30 days after → mean up 1.6 units.</div>
+      </div>
+      <div class="scn" data-s="drug">
+        <div class="icon">💊</div>
+        <div class="title">The "miracle" supplement</div>
+        <div class="claim">A vendor says their pill improves a test score.</div>
+        <div class="obs">40 people → mean 4.1 points higher.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE TEST STAGE -->
+  <div id="stage" class="show">
+    <div class="panel">
+      <h2>The "if it were just luck" world</h2>
+      <div class="nullbox" id="nullbox">
+        <b>Start by assuming the boring explanation:</b> the coin is fair (50/50) and 58 heads was just luck.
+        We'll flip a fair coin 100 times, over and over, and see how often luck alone reaches the observed result.
+      </div>
+      <canvas id="hCanvas" height="200"></canvas>
+      <div class="legend">
+        <span><i class="swatch" style="background:#4A90E2"></i> outcomes luck produced</span>
+        <span><i class="swatch" style="background:#C8312B"></i> as extreme as what we observed</span>
+        <span><i class="swatch" style="background:rgba(240,179,61,.6)"></i> observed result</span>
+      </div>
+
+      <div class="readout">
+        <div>Random trials run<b id="rTrials">0</b></div>
+        <div class="extreme">…that hit the observed result or beyond<b id="rExtreme">0</b></div>
+        <div class="pv">Share that did<b id="rPval">—</b></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="run1">Run one random world →</button>
+        <button class="btn sec" id="run500">Run 500</button>
+        <button class="btn sec" id="autoRun">Auto-run 5000</button>
+        <button class="btn ghost" id="resetBtn">Reset</button>
+      </div>
+
+      <div class="verdict" id="verdict"></div>
+
+      <div class="pvdef" id="pvdef">
+        <div class="big">That share you just measured <em>is</em> the p-value.</div>
+        It's the probability of getting a result <b>this extreme or more</b>, <b>if the boring "just luck" explanation were true</b>.
+        Small p → luck rarely does this → the effect looks real. Large p → luck does this all the time → not convincing.
+        <div class="warn">
+          Careful what it is <s>NOT</s>: it's <s>not</s> the probability the claim is true, and <s>not</s> the probability "it was due to chance."
+          It's strictly: <b>how surprising the data is, assuming nothing special is going on.</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="quiz" id="quiz">
+      <div class="panel">
+        <h2>✦ One question</h2>
+        <div class="q">You run a test and get p = 0.03. What does that actually mean?</div>
+        <div class="opt" data-ok="0"><span class="L">A</span><span>There's a 3% chance the claim is true.</span></div>
+        <div class="opt" data-ok="0"><span class="L">B</span><span>There's a 97% chance the effect is real.</span></div>
+        <div class="opt" data-ok="1"><span class="L">C</span><span>If nothing special were going on, a result this extreme would happen only about 3% of the time.</span></div>
+        <div class="qfb" id="qfb"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">Is it Real or Random? · built for teaching · Jan Erik Meidell</div>
+</div>
+
+<script>
+// ============================================================
+// SCENARIOS
+//  Each defines a way to simulate ONE "null world" trial and
+//  return a test statistic, plus the observed value & extremity rule.
+// ============================================================
+const SCEN = {
+  coin: {
+    nullbox:'<b>Start by assuming the boring explanation:</b> the coin is fair (50/50), and 58 heads was just luck. We flip a fair coin 100 times, over and over, and see how often luck alone reaches 58+ heads.',
+    observed:58, unit:'heads',
+    xmin:30, xmax:70,
+    // one trial: 100 fair flips, count heads
+    trial(){ let h=0; for(let i=0;i<100;i++) if(Math.random()<0.5) h++; return h; },
+    extreme(v,obs){ return v>=obs; },           // one-sided: as many heads or more
+    realIfSmall:true
+  },
+  campaign: {
+    nullbox:'<b>Start by assuming the boring explanation:</b> the ad changed nothing, and the +1.6 unit bump was ordinary day-to-day wobble. We simulate 30 "no-effect" days (noise only) and measure how often the mean drifts up by 1.6 or more on luck alone.',
+    observed:1.6, unit:'unit lift',
+    xmin:-3, xmax:3,
+    // 30 days, daily sales noise ~ Normal(0, sd 4); statistic = mean
+    trial(){ let s=0; for(let i=0;i<30;i++) s+=gauss()*4; return s/30; },
+    extreme(v,obs){ return v>=obs; },
+    realIfSmall:true
+  },
+  drug: {
+    nullbox:'<b>Start by assuming the boring explanation:</b> the supplement does nothing, and the +4.1 point gap was random variation between people. We simulate 40 "no-effect" people (noise only) and measure how often the mean improvement reaches +4.1 by luck alone.',
+    observed:4.1, unit:'point gain',
+    xmin:-8, xmax:8,
+    // 40 people, individual change ~ Normal(0, sd 11); statistic = mean
+    trial(){ let s=0; for(let i=0;i<40;i++) s+=gauss()*11; return s/40; },
+    extreme(v,obs){ return v>=obs; },
+    realIfSmall:true
+  }
+};
+
+function gauss(){ let u=Math.random(),v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+// ============================================================
+// STATE
+// ============================================================
+let cur='coin', results=[], autoTimer=null;
+
+// ============================================================
+// CANVAS (fixed height — no growth on redraw)
+// ============================================================
+const CANVAS_H={hCanvas:200};
+function setupCanvas(id){
+  const c=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const w=c.parentElement.clientWidth-36;
+  const h=CANVAS_H[id];
+  c.style.width=w+'px'; c.style.height=h+'px';
+  c.width=w*dpr; c.height=h*dpr;
+  const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {c,ctx,w,h};
+}
+
+function drawHist(){
+  const sc=SCEN[cur];
+  const {ctx,w,h}=setupCanvas('hCanvas');
+  ctx.clearRect(0,0,w,h);
+  const pad=24;
+  const xToPx=x=>pad+(x-sc.xmin)/(sc.xmax-sc.xmin)*(w-2*pad);
+
+  // observed reference line
+  let ox=xToPx(sc.observed);
+  ctx.strokeStyle='rgba(240,179,61,.7)'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(ox,4); ctx.lineTo(ox,h-16); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='var(--gold-bright)'; ctx.fillStyle='#FFD24A';
+  ctx.font='10px Calibri'; ctx.textAlign='center';
+  ctx.fillText('observed '+sc.observed+' '+sc.unit, ox, h-3);
+
+  if(results.length){
+    const bins=50, counts=new Array(bins).fill(0), extremeFlag=new Array(bins).fill(false);
+    const lo=sc.xmin, hi=sc.xmax;
+    results.forEach(v=>{
+      let b=Math.floor((v-lo)/(hi-lo)*bins);
+      if(b<0)b=0; if(b>=bins)b=bins-1;
+      counts[b]++;
+      if(sc.extreme(v,sc.observed)) extremeFlag[b]=true;
+    });
+    const mx=Math.max(...counts,1);
+    for(let i=0;i<bins;i++){
+      if(!counts[i])continue;
+      const bh=counts[i]/mx*(h-34);
+      const x=pad+i/bins*(w-2*pad);
+      const bw=(w-2*pad)/bins-1;
+      // colour: extreme bins red, others blue
+      if(extremeFlag[i]){
+        ctx.fillStyle='#C8312B';
+      }else{
+        const g=ctx.createLinearGradient(0,h-16-bh,0,h-16);
+        g.addColorStop(0,'#6BA8EC'); g.addColorStop(1,'rgba(74,144,226,.45)');
+        ctx.fillStyle=g;
+      }
+      ctx.fillRect(x,h-16-bh,bw,bh);
+    }
+  } else {
+    ctx.fillStyle='rgba(176,188,214,.4)'; ctx.font='13px Calibri'; ctx.textAlign='center';
+    ctx.fillText('Press "Run" to let chance build this distribution', w/2, h/2);
+  }
+}
+
+// ============================================================
+// RUN TRIALS
+// ============================================================
+function runTrials(k){
+  const sc=SCEN[cur];
+  for(let i=0;i<k;i++) results.push(sc.trial());
+  updateReadout(); drawHist();
+}
+
+function updateReadout(){
+  const sc=SCEN[cur];
+  const ext=results.filter(v=>sc.extreme(v,sc.observed)).length;
+  document.getElementById('rTrials').textContent=results.length;
+  document.getElementById('rExtreme').textContent=ext;
+  if(results.length>=30){
+    const p=ext/results.length;
+    document.getElementById('rPval').textContent=p.toFixed(3);
+    showVerdict(p);
+  } else {
+    document.getElementById('rPval').textContent='—';
+  }
+  if(results.length>=1) document.getElementById('act1').classList.add('done');
+  if(results.length>=30){ document.getElementById('act2').classList.add('done'); document.getElementById('act3').classList.add('live'); }
+  if(results.length>=500){
+    document.getElementById('act3').classList.add('done');
+    document.getElementById('pvdef').classList.add('show');
+    document.getElementById('quiz').classList.add('show');
+  }
+}
+
+function showVerdict(p){
+  const v=document.getElementById('verdict');
+  v.classList.add('show');
+  if(p<0.05){
+    v.className='verdict real show';
+    v.innerHTML='<b>Looks real.</b> Pure luck reached the observed result only about '+(p*100).toFixed(1)+'% of the time — rare enough to doubt the "just luck" story. (Below the usual 5% line.)';
+  }else{
+    v.className='verdict random show';
+    v.innerHTML='<b>Probably just noise.</b> Luck alone produced a result this extreme about '+(p*100).toFixed(1)+'% of the time — that happens far too often to be impressed. (Above the usual 5% line.)';
+  }
+}
+
+// ============================================================
+// SCENARIO SWITCH
+// ============================================================
+function selectScenario(s){
+  cur=s; results=[];
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null;document.getElementById('autoRun').textContent='Auto-run 5000';}
+  document.querySelectorAll('.scn').forEach(el=>el.classList.toggle('active',el.dataset.s===s));
+  document.getElementById('nullbox').innerHTML=SCEN[s].nullbox;
+  document.getElementById('verdict').classList.remove('show');
+  document.getElementById('pvdef').classList.remove('show');
+  document.getElementById('quiz').classList.remove('show');
+  ['act2','act3'].forEach(a=>document.getElementById(a).classList.remove('done','live'));
+  document.getElementById('act2').classList.add('live');
+  updateReadout(); drawHist();
+}
+
+// ============================================================
+// WIRING
+// ============================================================
+document.querySelectorAll('.scn').forEach(el=>el.onclick=()=>selectScenario(el.dataset.s));
+document.getElementById('run1').onclick=()=>runTrials(1);
+document.getElementById('run500').onclick=()=>runTrials(500);
+document.getElementById('autoRun').onclick=function(){
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null;this.textContent='Auto-run 5000';return;}
+  this.textContent='Stop';
+  const btn=this, target=results.length+5000;
+  autoTimer=setInterval(()=>{
+    runTrials(120);
+    if(results.length>=target){clearInterval(autoTimer);autoTimer=null;btn.textContent='Auto-run 5000';}
+  },25);
+};
+document.getElementById('resetBtn').onclick=()=>{
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null;document.getElementById('autoRun').textContent='Auto-run 5000';}
+  results=[]; document.getElementById('verdict').classList.remove('show');
+  updateReadout(); drawHist();
+};
+
+// quiz
+document.querySelectorAll('.opt').forEach(o=>{
+  o.onclick=function(){
+    const ok=this.dataset.ok==='1';
+    document.querySelectorAll('.opt').forEach(x=>x.style.pointerEvents='none');
+    this.classList.add(ok?'correct':'wrong');
+    if(!ok) document.querySelector('.opt[data-ok="1"]').classList.add('correct');
+    const fb=document.getElementById('qfb');
+    fb.className='qfb show '+(ok?'ok':'no');
+    fb.innerHTML=ok
+      ? '<b>Exactly.</b> The p-value lives in the "if nothing special were going on" world — it counts how often luck alone reaches a result this extreme. It says nothing directly about the probability the claim is true.'
+      : 'That\'s the classic trap. The p-value is <b>not</b> the probability the claim is true or false — it can only tell you how often pure luck would produce data this extreme. The answer is C.';
+  };
+});
+
+// init
+window.addEventListener('resize', drawHist);
+selectScenario('coin');
+</script>
+</body>
+</html>

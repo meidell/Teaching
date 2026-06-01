@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Sampling Machine</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --teal:#2DB6A8; --purple:#7E5AE8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:"Calibri","Helvetica Neue",sans-serif;color:#fff;
+  background:radial-gradient(ellipse at top,var(--navy-mid) 0%,var(--navy-deep) 70%);
+  min-height:100vh;line-height:1.5;
+}
+.wrap{max-width:840px;margin:0 auto;padding:34px 20px 80px;}
+
+/* header */
+.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--blue-glow);font-weight:700;}
+h1{font-size:29px;margin:8px 0 6px;color:#fff;letter-spacing:.3px;}
+.scene{color:var(--grey-muted);font-size:15px;max-width:680px;}
+.scene b{color:var(--gold-bright);font-weight:600;}
+
+/* act tracker */
+.acts{display:flex;gap:8px;margin:22px 0 6px;flex-wrap:wrap;}
+.act{flex:1;min-width:150px;background:rgba(30,52,112,.4);border:1px solid rgba(74,144,226,.25);
+     border-radius:12px;padding:11px 13px;transition:.25s;opacity:.5;}
+.act.live{opacity:1;border-color:var(--gold);box-shadow:0 4px 18px rgba(0,0,0,.35);}
+.act.done{opacity:.85;border-color:var(--green-soft);}
+.act .n{font-size:11px;letter-spacing:1px;color:var(--gold-bright);font-weight:700;text-transform:uppercase;}
+.act .t{font-size:13.5px;color:#fff;margin-top:3px;font-weight:600;}
+.act .d{font-size:11.5px;color:var(--grey-muted);margin-top:2px;}
+
+/* panels */
+.panel{background:linear-gradient(160deg,rgba(30,52,112,.5),rgba(10,26,58,.5));
+       border:1px solid rgba(74,144,226,.28);border-radius:16px;padding:18px;margin-top:16px;}
+.panel h2{font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey-muted);
+          font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.panel .hint{font-size:12.5px;color:var(--grey-muted);margin-bottom:10px;}
+.panel .hint em{color:var(--gold-bright);font-style:normal;font-weight:600;}
+
+/* population strip */
+#popCanvas,#sampleCanvas,#sdCanvas{width:100%;display:block;border-radius:10px;background:rgba(10,26,58,.55);}
+.popmeta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--grey-muted);margin-top:6px;}
+.popmeta b{color:var(--teal);}
+.revealpop{cursor:pointer;color:var(--blue-glow);font-size:12px;text-decoration:underline;}
+
+/* sample readout */
+.sampleline{display:flex;align-items:baseline;gap:10px;margin-top:8px;font-size:13px;color:var(--grey-muted);}
+.sampleline .mean{font-size:22px;font-weight:700;color:var(--gold-bright);}
+.sampleline .mean.flash{animation:flash .5s;}
+@keyframes flash{0%{color:#fff;transform:scale(1.25);}100%{color:var(--gold-bright);transform:scale(1);}}
+
+/* sd stats */
+.sdstats{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px;}
+.sdstats div{color:var(--grey-muted);}
+.sdstats b{color:#fff;font-size:16px;display:block;}
+.sdstats .se b{color:var(--teal);}
+.sdstats .ctr b{color:var(--gold-bright);}
+
+/* controls */
+.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+.btn{background:linear-gradient(180deg,var(--gold),var(--gold-dark));color:#1a1205;border:none;
+     border-radius:30px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;
+     font-family:inherit;transition:.18s;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,0,0,.4);}
+.btn.sec{background:rgba(255,255,255,.08);color:var(--gold-bright);border:1px solid rgba(240,179,61,.45);}
+.btn.sec:hover{background:rgba(240,179,61,.16);}
+.btn.ghost{background:transparent;color:var(--grey-muted);border:1px solid rgba(176,188,214,.3);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* slider */
+.slider-row{display:flex;align-items:center;gap:14px;margin-top:6px;}
+.slider-row label{font-size:13px;color:var(--grey-muted);white-space:nowrap;}
+.slider-row label b{color:var(--gold-bright);font-size:17px;}
+input[type=range]{flex:1;accent-color:var(--gold);height:5px;}
+.locked{opacity:.4;pointer-events:none;}
+.lockmsg{font-size:11.5px;color:var(--amber,#E8A33C);margin-top:6px;}
+
+/* insight callouts */
+.insight{background:rgba(46,168,74,.1);border-left:3px solid var(--green-correct);
+         border-radius:8px;padding:11px 14px;margin-top:12px;font-size:13.5px;color:#dfeede;display:none;}
+.insight.show{display:block;animation:rise .4s;}
+.insight b{color:var(--green-correct);}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* quiz */
+.quiz{margin-top:18px;display:none;}
+.quiz.show{display:block;}
+.quiz .q{font-size:15px;color:#fff;font-weight:600;margin-bottom:10px;}
+.opt{background:rgba(255,255,255,.05);border:1px solid rgba(74,144,226,.3);border-radius:10px;
+     padding:11px 14px;margin-bottom:8px;cursor:pointer;font-size:14px;transition:.15s;display:flex;gap:10px;}
+.opt:hover{border-color:var(--gold);background:rgba(240,179,61,.08);}
+.opt .L{font-weight:700;color:var(--gold-bright);}
+.opt.correct{border-color:var(--green-correct);background:rgba(46,168,74,.16);}
+.opt.wrong{border-color:var(--red-wrong);background:rgba(200,49,43,.14);}
+.qfb{font-size:13.5px;margin-top:8px;padding:11px 14px;border-radius:8px;display:none;}
+.qfb.show{display:block;}
+.qfb.ok{background:rgba(46,168,74,.12);color:#dfeede;}
+.qfb.no{background:rgba(200,49,43,.12);color:#f3d6d4;}
+
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:34px;opacity:.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Inferential Statistics · Interactive</div>
+  <h1>The Sampling Machine</h1>
+  <p class="scene">
+    A coffee chain wants to know the <b>average spend per customer</b> across all
+    40,000 of its customers. Asking everyone is impossible — so they take a
+    <b>sample</b>. But how much should they trust the average they get from a sample?
+    Let's find out by running the machine ourselves.
+  </p>
+
+  <!-- ACT TRACKER -->
+  <div class="acts">
+    <div class="act live" id="act1">
+      <div class="n">Act 1</div>
+      <div class="t">Draw one sample</div>
+      <div class="d">Watch the average jump around</div>
+    </div>
+    <div class="act" id="act2">
+      <div class="n">Act 2</div>
+      <div class="t">Draw hundreds</div>
+      <div class="d">A shape appears on its own</div>
+    </div>
+    <div class="act" id="act3">
+      <div class="n">Act 3</div>
+      <div class="t">Change the sample size</div>
+      <div class="d">Watch the spread react</div>
+    </div>
+  </div>
+
+  <!-- POPULATION -->
+  <div class="panel">
+    <h2>The customers <span class="revealpop" id="revealPop">show the hidden population ▾</span></h2>
+    <div class="hint">These are all 40,000 customers' spends. Notice it's <em>not</em> a tidy bell — most people spend a little, a few spend a lot.</div>
+    <canvas id="popCanvas" height="90"></canvas>
+    <div class="popmeta">
+      <span>Spend per customer (CHF)</span>
+      <span>True average (we'll pretend we don't know this): <b id="trueMean">—</b></span>
+    </div>
+  </div>
+
+  <!-- ONE SAMPLE -->
+  <div class="panel">
+    <h2>This sample</h2>
+    <div class="hint">Each draw picks <em><span id="nLabel">10</span> random customers</em> and computes their average spend.</div>
+    <canvas id="sampleCanvas" height="70"></canvas>
+    <div class="sampleline">
+      <span>This sample's average:</span>
+      <span class="mean" id="sampleMean">—</span>
+    </div>
+  </div>
+
+  <!-- SAMPLING DISTRIBUTION -->
+  <div class="panel">
+    <h2>Every average we've collected</h2>
+    <div class="hint">Each draw drops <em>one dot</em> here — the average from that sample. This growing pile is the star of the show.</div>
+    <canvas id="sdCanvas" height="170"></canvas>
+    <div class="sdstats">
+      <div class="ctr">Samples drawn<b id="statCount">0</b></div>
+      <div>Average of the averages<b id="statMean">—</b></div>
+      <div class="se">Spread of the averages<b id="statSpread">—</b></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="drawOne">Serve a sample →</button>
+      <button class="btn sec" id="draw100">Draw 100</button>
+      <button class="btn sec" id="autoRun">Auto-run 1000</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="insight" id="insight1">
+      <b>Notice:</b> the average jumps around with every sample. One sample alone could mislead you — the chain shouldn't bet the business on a single draw.
+    </div>
+    <div class="insight" id="insight2">
+      <b>The shape:</b> even though the customers themselves are lopsided, the <em>averages</em> pile up into a symmetric bell — centred right on the true average. That's the <b>Central Limit Theorem</b>, and you just made it happen.
+    </div>
+
+    <!-- ACT 3 slider -->
+    <div id="act3panel" class="locked" style="margin-top:18px;">
+      <h2 style="margin-bottom:8px;">Sample size <span style="color:var(--grey-muted);font-weight:400;text-transform:none;letter-spacing:0;">— how many customers per draw?</span></h2>
+      <div class="slider-row">
+        <label>n = <b id="nVal">10</b></label>
+        <input type="range" id="nSlider" min="5" max="200" value="10" step="5">
+      </div>
+      <div class="lockmsg" id="lockmsg">🔒 Unlocks after Act 2 — draw at least 100 samples first.</div>
+      <div class="insight" id="insight3">
+        <b>The payoff:</b> bigger samples make the bell <em>narrower</em>. The averages cluster tighter around the truth, so a bigger sample is a more trustworthy estimate. That width has a name: the <b>standard error</b>.
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="quiz" id="quiz">
+    <div class="panel">
+      <h2>✦ One question</h2>
+      <div class="q">To get a more reliable estimate of average spend, the coffee chain should:</div>
+      <div class="opt" data-ok="0"><span class="L">A</span><span>Draw one really careful, slow sample</span></div>
+      <div class="opt" data-ok="1"><span class="L">B</span><span>Draw a bigger sample</span></div>
+      <div class="opt" data-ok="0"><span class="L">C</span><span>It doesn't matter — averages are averages</span></div>
+      <div class="qfb" id="qfb"></div>
+    </div>
+  </div>
+
+  <div class="foot">The Sampling Machine · built for teaching · Jan Erik Meidell</div>
+</div>
+
+<script>
+// ---------- hidden right-skewed population (coffee spend in CHF) ----------
+const POP_N = 40000;
+const pop = [];
+function rskew(){ // lognormal-ish, mean ~ 12 CHF
+  let u=Math.random(), v=Math.random();
+  let z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  return Math.max(2, Math.exp(2.15 + 0.45*z)); // CHF
+}
+for(let i=0;i<POP_N;i++) pop.push(rskew());
+const TRUE_MEAN = pop.reduce((a,b)=>a+b,0)/POP_N;
+const POP_MIN=2, POP_MAX=Math.min(45, Math.max(...pop.slice(0,5000)));
+document.getElementById('trueMean').textContent = TRUE_MEAN.toFixed(2)+' CHF';
+
+// ---------- state ----------
+let n=10, means=[], autoTimer=null, popRevealed=false;
+const X_MIN=6, X_MAX=20; // viewing window for the sampling distribution (CHF)
+
+// ---------- canvases ----------
+const CANVAS_H={popCanvas:90, sampleCanvas:70, sdCanvas:170}; // fixed logical heights
+function setupCanvas(id){
+  const c=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const w=c.parentElement.clientWidth-36; // panel padding
+  const h=CANVAS_H[id];
+  c.style.width=w+'px'; c.style.height=h+'px';
+  c.width=w*dpr; c.height=h*dpr;
+  const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {c,ctx,w,h};
+}
+
+function drawPopulation(){
+  const {ctx,w,h}=setupCanvas('popCanvas');
+  ctx.clearRect(0,0,w,h);
+  if(!popRevealed){
+    ctx.fillStyle='rgba(176,188,214,.35)';
+    ctx.font='13px Calibri'; ctx.textAlign='center';
+    ctx.fillText('40,000 customers hidden — click "show" above to reveal', w/2, h/2+4);
+    return;
+  }
+  // histogram of population
+  const bins=60, counts=new Array(bins).fill(0);
+  for(let i=0;i<pop.length;i++){
+    let b=Math.floor((pop[i]-POP_MIN)/(POP_MAX-POP_MIN)*bins);
+    if(b>=0&&b<bins) counts[b]++;
+  }
+  const mx=Math.max(...counts);
+  for(let i=0;i<bins;i++){
+    const bh=counts[i]/mx*(h-10);
+    const x=i/bins*w;
+    ctx.fillStyle='rgba(45,182,168,.55)';
+    ctx.fillRect(x,h-bh,w/bins-1,bh);
+  }
+}
+
+function drawSample(sampleVals, mean){
+  const {ctx,w,h}=setupCanvas('sampleCanvas');
+  ctx.clearRect(0,0,w,h);
+  // axis from POP_MIN..POP_MAX
+  sampleVals.forEach(v=>{
+    let x=(v-POP_MIN)/(POP_MAX-POP_MIN)*w;
+    ctx.fillStyle='rgba(74,144,226,.7)';
+    ctx.beginPath(); ctx.arc(x,h/2,4,0,7); ctx.fill();
+  });
+  if(mean!=null){
+    let mx=(mean-POP_MIN)/(POP_MAX-POP_MIN)*w;
+    ctx.strokeStyle='#FFD24A'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(mx,8); ctx.lineTo(mx,h-8); ctx.stroke();
+  }
+}
+
+function drawSD(){
+  const {ctx,w,h}=setupCanvas('sdCanvas');
+  ctx.clearRect(0,0,w,h);
+  // true mean reference line
+  let tx=(TRUE_MEAN-X_MIN)/(X_MAX-X_MIN)*w;
+  ctx.strokeStyle='rgba(240,179,61,.35)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(tx,0); ctx.lineTo(tx,h); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(240,179,61,.6)'; ctx.font='10px Calibri'; ctx.textAlign='center';
+  ctx.fillText('true avg', tx, 11);
+
+  if(means.length===0) return;
+  const bins=70, counts=new Array(bins).fill(0);
+  means.forEach(m=>{
+    let b=Math.floor((m-X_MIN)/(X_MAX-X_MIN)*bins);
+    if(b>=0&&b<bins) counts[b]++;
+  });
+  const mx=Math.max(...counts,1);
+  for(let i=0;i<bins;i++){
+    if(!counts[i])continue;
+    const bh=counts[i]/mx*(h-22);
+    const x=i/bins*w;
+    const grad=ctx.createLinearGradient(0,h-bh,0,h);
+    grad.addColorStop(0,'#FFD24A'); grad.addColorStop(1,'rgba(240,179,61,.4)');
+    ctx.fillStyle=grad;
+    ctx.fillRect(x,h-bh-2,w/bins-1,bh);
+  }
+}
+
+// ---------- sampling ----------
+function oneSample(){
+  const vals=[];
+  for(let i=0;i<n;i++) vals.push(pop[(Math.random()*POP_N)|0]);
+  const m=vals.reduce((a,b)=>a+b,0)/n;
+  return {vals,m};
+}
+
+function pushSample(render=true){
+  const {vals,m}=oneSample();
+  means.push(m);
+  if(render){
+    drawSample(vals,m);
+    const el=document.getElementById('sampleMean');
+    el.textContent=m.toFixed(2)+' CHF';
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
+  return m;
+}
+
+function updateStats(){
+  document.getElementById('statCount').textContent=means.length;
+  if(means.length){
+    const avg=means.reduce((a,b)=>a+b,0)/means.length;
+    document.getElementById('statMean').textContent=avg.toFixed(2)+' CHF';
+    if(means.length>1){
+      const sd=Math.sqrt(means.reduce((a,b)=>a+(b-avg)**2,0)/(means.length-1));
+      document.getElementById('statSpread').textContent='± '+sd.toFixed(2)+' CHF';
+    }
+  }
+  drawSD();
+  checkProgress();
+}
+
+// ---------- progression / acts ----------
+let act2done=false;
+function checkProgress(){
+  if(means.length>=1){ document.getElementById('insight1').classList.add('show'); }
+  if(means.length>=3){
+    document.getElementById('act1').classList.add('done');
+  }
+  if(means.length>=100){
+    document.getElementById('act2').classList.add('live','done');
+    document.getElementById('insight2').classList.add('show');
+    if(!act2done){
+      act2done=true;
+      document.getElementById('act3panel').classList.remove('locked');
+      document.getElementById('lockmsg').style.display='none';
+      document.getElementById('act3').classList.add('live');
+    }
+  }
+}
+
+// ---------- controls ----------
+document.getElementById('drawOne').onclick=()=>{ pushSample(); updateStats(); };
+document.getElementById('draw100').onclick=()=>{
+  for(let i=0;i<100;i++) pushSample(i===99);
+  updateStats();
+};
+document.getElementById('autoRun').onclick=function(){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; this.textContent='Auto-run 1000'; return; }
+  this.textContent='Stop';
+  let target=means.length+1000, btn=this;
+  autoTimer=setInterval(()=>{
+    for(let i=0;i<40;i++) pushSample(false);
+    pushSample(true); updateStats();
+    if(means.length>=target){ clearInterval(autoTimer); autoTimer=null; btn.textContent='Auto-run 1000'; }
+  },30);
+};
+document.getElementById('resetBtn').onclick=()=>{
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+  means=[]; document.getElementById('sampleMean').textContent='—';
+  document.getElementById('autoRun').textContent='Auto-run 1000';
+  drawSample([],null); updateStats();
+};
+document.getElementById('revealPop').onclick=function(){
+  popRevealed=!popRevealed;
+  this.textContent=popRevealed?'hide the population ▴':'show the hidden population ▾';
+  drawPopulation();
+};
+
+// slider (Act 3)
+const slider=document.getElementById('nSlider');
+slider.oninput=function(){
+  n=+this.value;
+  document.getElementById('nVal').textContent=n;
+  document.getElementById('nLabel').textContent=n;
+  // when sample size changes, restart the pile so the new spread is clean
+  means=[];
+  for(let i=0;i<400;i++) pushSample(false);
+  pushSample(true); updateStats();
+  document.getElementById('insight3').classList.add('show');
+  document.getElementById('act3').classList.add('done');
+  document.getElementById('quiz').classList.add('show');
+};
+
+// quiz
+document.querySelectorAll('.opt').forEach(o=>{
+  o.onclick=function(){
+    const ok=this.dataset.ok==='1';
+    document.querySelectorAll('.opt').forEach(x=>x.style.pointerEvents='none');
+    this.classList.add(ok?'correct':'wrong');
+    if(!ok) document.querySelector('.opt[data-ok="1"]').classList.add('correct');
+    const fb=document.getElementById('qfb');
+    fb.className='qfb show '+(ok?'ok':'no');
+    fb.innerHTML=ok
+      ? '<b>Exactly.</b> A bigger sample shrinks the standard error — the averages cluster tighter around the truth, just like you saw when you slid n upward.'
+      : 'Not quite — you watched it happen: sliding the sample size up made the bell <b>narrower</b>. Size beats care here. The right answer is B.';
+  };
+});
+
+// init
+function init(){ drawPopulation(); drawSample([],null); drawSD(); updateStats(); }
+window.addEventListener('resize', ()=>{ drawPopulation(); drawSD(); });
+init();
+</script>
+</body>
+</html>

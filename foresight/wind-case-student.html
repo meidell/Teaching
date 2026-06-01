@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wind 2040 · Foresight Case Lab</title>
+<style>
+:root {
+  --navy-deep: #0A1A3A;
+  --navy-mid: #152A5E;
+  --navy-light: #1E3470;
+  --blue-bright: #1E5AA8;
+  --blue-glow: #4A90E2;
+  --gold: #F0B33D;
+  --gold-bright: #FFD24A;
+  --gold-dark: #8C6A1F;
+  --white: #FFFFFF;
+  --grey-muted: #B0BCD6;
+  --green-correct: #2EA84A;
+  --green-soft: #1E6E33;
+  --red-wrong: #C8312B;
+  --red-soft: #5E1F1C;
+  --amber: #E8A33C;
+  --purple-defi: #7E5AE8;
+  --teal: #2DB6A8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: 'Calibri', 'Helvetica Neue', sans-serif;
+  background:
+    radial-gradient(900px 500px at 80% -10%, rgba(45,182,168,0.10), transparent 60%),
+    radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 75%);
+  background-attachment: fixed;
+  color: var(--white);
+  min-height: 100%;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10,26,58,0.94);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(240,179,61,0.25);
+  padding: 10px 16px;
+}
+.topbar-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.topbar .course-title { font-size: 10px; letter-spacing: 2px; color: var(--gold); font-weight: bold; white-space: nowrap; }
+.session-chip { font-size: 11px; color: var(--grey-muted); }
+.session-chip b { color: var(--gold-bright); font-family: Georgia, serif; letter-spacing: 1px; }
+.progress-track { flex: 1; height: 6px; background: var(--navy-deep); border-radius: 3px; overflow: hidden; border: 1px solid rgba(176,188,214,0.2); }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
+.progress-pct { font-size: 11px; color: var(--gold-bright); font-weight: bold; font-family: Georgia, serif; min-width: 36px; text-align: right; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 22px 16px 120px; }
+
+/* === Gate === */
+.gate { max-width: 520px; margin: 40px auto; text-align: center; }
+.gate h1 { font-family: Georgia, serif; font-size: 34px; font-style: italic; color: var(--gold); margin-bottom: 6px; }
+.gate .sub { color: var(--grey-muted); letter-spacing: 3px; font-size: 11px; margin-bottom: 28px; }
+.gate-card { background: var(--navy-mid); border: 1px solid var(--blue-bright); border-radius: 14px; padding: 26px; text-align: left; margin-bottom: 16px; }
+.gate-card h3 { font-family: Georgia, serif; color: var(--gold-bright); margin-bottom: 10px; font-size: 17px; }
+.gate label { display: block; font-size: 11px; letter-spacing: 2px; color: var(--gold); margin: 14px 0 6px; }
+.field { width: 100%; background: var(--navy-deep); border: 1px solid var(--blue-bright); color: var(--white);
+  padding: 12px 14px; font-size: 16px; font-family: inherit; border-radius: 8px; outline: none; }
+.field:focus { border-color: var(--gold); }
+.code-input { letter-spacing: 8px; text-align: center; font-size: 26px; text-transform: uppercase; }
+.team-pick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.team-btn { flex: 1; min-width: 90px; background: var(--navy-deep); border: 1px solid var(--blue-bright); color: var(--white);
+  padding: 12px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 14px; transition: all .15s; }
+.team-btn:hover { border-color: var(--gold); }
+.team-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); color: var(--navy-deep); font-weight: bold; border-color: var(--gold); }
+.gate-err { color: var(--red-wrong); font-size: 13px; min-height: 18px; margin-top: 8px; }
+
+/* === Hero / case brief === */
+.hero { text-align: center; margin-bottom: 8px; }
+.hero .eyebrow { font-size: 11px; letter-spacing: 4px; color: var(--gold); font-weight: bold; margin-bottom: 12px; }
+.hero h1 { font-family: Georgia, serif; font-size: 36px; font-style: italic; line-height: 1.12; margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--white), var(--gold-bright)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p { color: var(--grey-muted); font-size: 15px; max-width: 640px; margin: 0 auto 8px; }
+
+.brief { background: var(--navy-mid); border: 1px solid var(--blue-bright); border-radius: 14px; padding: 22px; margin: 18px 0; }
+.brief h3 { font-family: Georgia, serif; color: var(--gold-bright); font-size: 18px; margin-bottom: 8px; }
+.brief p { font-size: 14px; color: #DCE3F2; margin-bottom: 8px; line-height: 1.5; }
+.brief .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; margin: 14px 0; }
+.stat { background: var(--navy-deep); border: 1px solid rgba(240,179,61,0.25); border-radius: 10px; padding: 12px; }
+.stat .n { font-family: Georgia, serif; font-size: 22px; color: var(--gold-bright); }
+.stat .l { font-size: 11px; color: var(--grey-muted); margin-top: 2px; }
+.mission { border-left: 3px solid var(--gold); padding-left: 14px; margin-top: 12px; }
+.mission b { color: var(--gold-bright); }
+
+.phase-divider { display: flex; align-items: center; gap: 14px; font-size: 10px; letter-spacing: 3px; color: var(--gold); font-weight: bold; margin: 28px 0 16px; text-transform: uppercase; }
+.phase-divider::before, .phase-divider::after { content: ""; flex: 1; height: 1px; background: rgba(240,179,61,0.3); }
+
+/* === Block cards === */
+.block { background: var(--navy-mid); border: 1px solid var(--blue-bright); border-radius: 16px; margin-bottom: 18px; overflow: hidden; }
+.block.done { border-color: var(--green-correct); }
+.block-head { display: flex; align-items: center; gap: 14px; padding: 18px 20px; cursor: pointer; }
+.block-head .num { font-family: Georgia, serif; font-size: 26px; color: var(--gold); min-width: 40px; text-align: center; }
+.block.done .block-head .num { color: var(--green-correct); }
+.block-head .info { flex: 1; }
+.block-head .info .name { font-family: Georgia, serif; font-size: 19px; font-weight: bold; }
+.block-head .info .tag { font-size: 12px; color: var(--grey-muted); margin-top: 2px; }
+.block-head .tmr { font-size: 11px; color: var(--amber); letter-spacing: 1px; background: rgba(232,163,60,0.12); padding: 4px 10px; border-radius: 20px; }
+.block-head .chev { color: var(--gold); font-size: 18px; transition: transform .2s; }
+.block.open .chev { transform: rotate(90deg); }
+.block-body { display: none; padding: 0 20px 22px; }
+.block.open .block-body { display: block; animation: fadeIn .3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+
+.step-label { display: inline-block; font-size: 10px; letter-spacing: 2px; font-weight: bold; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; }
+.step-label.learn { background: rgba(30,90,168,0.45); color: var(--blue-glow); }
+.step-label.do { background: rgba(240,179,61,0.2); color: var(--gold-bright); }
+.step-label.bring { background: rgba(45,182,168,0.25); color: var(--teal); }
+.step-card { background: var(--navy-deep); border: 1px solid rgba(176,188,214,0.15); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+.step-card h4 { font-family: Georgia, serif; font-size: 16px; color: var(--gold-bright); margin-bottom: 8px; }
+.step-card p { font-size: 14px; color: #DCE3F2; line-height: 1.55; margin-bottom: 8px; }
+.step-card ul { margin: 6px 0 6px 18px; }
+.step-card li { font-size: 13px; color: #DCE3F2; margin-bottom: 6px; line-height: 1.5; }
+.punch { font-size: 13px; color: var(--gold-bright); font-style: italic; border-left: 2px solid var(--gold); padding-left: 12px; margin-top: 8px; }
+
+/* sandbox shared */
+.sandbox { background: rgba(0,0,0,0.22); border: 1px dashed rgba(240,179,61,0.4); border-radius: 12px; padding: 16px; margin: 12px 0; }
+
+/* STEEPLED grid */
+.steepled-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+@media(max-width:560px){ .steepled-grid { grid-template-columns: repeat(2,1fr);} }
+.steep-tile { background: var(--navy-light); border: 1px solid var(--blue-bright); border-radius: 10px; padding: 10px; cursor: pointer; transition: all .2s; min-height: 64px; }
+.steep-tile:hover { border-color: var(--gold); }
+.steep-tile.open { background: var(--navy-mid); border-color: var(--gold); }
+.steep-tile .letter { font-family: Georgia, serif; font-size: 20px; font-weight: bold; color: var(--gold); }
+.steep-tile .name { font-size: 12px; font-weight: bold; }
+.steep-tile .ex { display: none; font-size: 11px; color: var(--grey-muted); margin-top: 6px; line-height: 1.4; }
+.steep-tile.open .ex { display: block; }
+
+/* signal sorter */
+.sort-prompt { font-size: 13px; color: var(--gold-bright); min-height: 20px; margin-bottom: 8px; }
+.sort-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.sort-chip { background: var(--navy-light); border: 1px solid var(--blue-bright); border-radius: 8px; padding: 8px 10px; font-size: 12px; cursor: pointer; max-width: 100%; }
+.sort-chip.placed { opacity: .3; pointer-events: none; }
+.sort-bins { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+@media(max-width:560px){ .sort-bins { grid-template-columns: 1fr;} }
+.sort-bin { background: var(--navy-deep); border: 1px solid var(--blue-bright); border-radius: 10px; padding: 10px; min-height: 80px; cursor: pointer; }
+.bin-title { font-size: 11px; letter-spacing: 1px; color: var(--gold); font-weight: bold; margin-bottom: 6px; }
+.bin-item { font-size: 11px; padding: 5px 7px; border-radius: 6px; margin-bottom: 5px; }
+.bin-item.correct { background: var(--green-soft); }
+.bin-item.wrong { background: var(--red-soft); }
+
+/* CLA iceberg */
+.iceberg { display: flex; flex-direction: column; gap: 6px; }
+.ice-layer { border-radius: 10px; padding: 12px 14px; cursor: pointer; border: 1px solid transparent; }
+.ice-layer .lr { display: none; font-size: 12px; color: #EAF0FF; margin-top: 6px; line-height: 1.45; }
+.ice-layer.open .lr { display: block; }
+.ice-layer .lt { font-weight: bold; font-size: 13px; }
+.ice-layer.l0 { background: rgba(74,144,226,0.30); }
+.ice-layer.l1 { background: rgba(30,90,168,0.40); }
+.ice-layer.l2 { background: rgba(126,90,232,0.32); }
+.ice-layer.l3 { background: rgba(140,106,31,0.40); }
+
+/* 2x2 matrix */
+.matrix-wrap { position: relative; padding: 26px 0 8px; }
+.axis-label { text-align: center; font-size: 11px; letter-spacing: 1px; color: var(--gold-bright); font-weight: bold; }
+.matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.quad { background: var(--navy-deep); border: 1px solid var(--blue-bright); border-radius: 12px; padding: 14px; cursor: pointer; transition: all .2s; min-height: 110px; }
+.quad:hover { border-color: var(--gold); }
+.quad.open { border-color: var(--gold); background: var(--navy-light); }
+.quad .qn { font-family: Georgia, serif; font-size: 15px; color: var(--gold-bright); font-weight: bold; }
+.quad .qsub { font-size: 11px; color: var(--grey-muted); margin: 3px 0 0; }
+.quad .qbody { display: none; font-size: 12px; color: #EAF0FF; margin-top: 8px; line-height: 1.45; }
+.quad.open .qbody { display: block; }
+.matrix-side { display: flex; align-items: center; }
+.matrix-side .v { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; letter-spacing: 1px; color: var(--gold-bright); font-weight: bold; }
+
+/* backcasting timeline */
+.bc-track { display: flex; gap: 6px; margin: 12px 0; }
+.bc-node { flex: 1; background: var(--navy-deep); border: 1px solid var(--blue-bright); border-radius: 10px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all .2s; }
+.bc-node:hover { border-color: var(--gold); }
+.bc-node.sel { background: var(--navy-light); border-color: var(--gold); }
+.bc-node .yr { font-family: Georgia, serif; font-size: 16px; color: var(--gold-bright); }
+.bc-node .lab { font-size: 10px; color: var(--grey-muted); margin-top: 2px; }
+.bc-info { font-size: 13px; color: #DCE3F2; min-height: 46px; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; line-height: 1.5; }
+
+/* === Futures wheel === */
+.fw-center { text-align:center; margin: 6px 0 10px; }
+.fw-core { display:inline-block; background: var(--gold); color: var(--navy-deep); font-weight:bold; padding:10px 18px; border-radius:24px; font-family:Georgia,serif; font-size:14px; }
+.fw-rings { display:flex; flex-direction:column; gap:8px; }
+.fw-ring { border-radius:10px; padding:10px 12px; }
+.fw-ring.r1 { background: rgba(46,168,74,0.15); border:1px solid var(--green-correct);}
+.fw-ring.r2 { background: rgba(240,179,61,0.13); border:1px solid var(--gold);}
+.fw-ring.r3 { background: rgba(126,90,232,0.16); border:1px solid var(--purple-defi);}
+.fw-ring .rlab { font-size:10px; letter-spacing:1px; font-weight:bold; margin-bottom:6px; }
+.fw-ring.r1 .rlab { color: var(--green-correct);} .fw-ring.r2 .rlab{color:var(--gold);} .fw-ring.r3 .rlab{color:var(--purple-defi);}
+.fw-items { display:flex; flex-wrap:wrap; gap:6px; }
+.fw-item { font-size:12px; background: var(--navy-deep); border:1px solid var(--blue-bright); border-radius:14px; padding:5px 10px; opacity:0; transform: translateY(6px); transition: all .4s; }
+.fw-item.show { opacity:1; transform: translateY(0); }
+
+/* === Capture / bring-back === */
+.capture { background: linear-gradient(135deg, rgba(45,182,168,0.14), rgba(30,90,168,0.10)); border: 1px solid var(--teal); border-radius: 14px; padding: 18px; margin-top: 14px; }
+.capture h4 { color: var(--teal); font-family: Georgia, serif; font-size: 16px; margin-bottom: 4px; }
+.capture .hint { font-size: 12px; color: var(--grey-muted); margin-bottom: 12px; }
+.cap-row { margin-bottom: 10px; }
+.cap-row label { display: block; font-size: 11px; letter-spacing: 1px; color: var(--gold); margin-bottom: 4px; }
+.cap-row textarea { width: 100%; background: var(--navy-deep); border: 1px solid var(--blue-bright); color: var(--white);
+  padding: 10px 12px; font-size: 14px; font-family: inherit; border-radius: 8px; outline: none; resize: vertical; min-height: 48px; }
+.cap-row textarea:focus { border-color: var(--teal); }
+.btn { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); color: var(--navy-deep); border: none;
+  padding: 12px 22px; font-family: inherit; font-size: 14px; font-weight: bold; letter-spacing: 1px; cursor: pointer; border-radius: 8px; transition: all .15s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(240,179,61,0.35); }
+.btn.teal { background: linear-gradient(135deg, var(--teal), #3fd6c6); color: var(--navy-deep); }
+.btn.ghost { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+.cap-status { font-size: 12px; margin-top: 8px; min-height: 18px; }
+.cap-status.ok { color: var(--green-correct); }
+.cap-status.err { color: var(--red-wrong); }
+
+.done-banner { background: var(--green-soft); border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-top: 12px; display: none; }
+.block.done .done-banner { display: block; }
+
+.foot-note { text-align: center; font-size: 12px; color: var(--grey-muted); margin-top: 30px; }
+
+/* === Back-channel (room pulse) === */
+.pulse-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(10,26,58,0.97);
+  backdrop-filter: blur(8px); border-top: 1px solid rgba(240,179,61,0.35); padding: 10px 14px; }
+.pulse-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pulse-label { font-size: 10px; letter-spacing: 1.5px; color: var(--gold); font-weight: bold; white-space: nowrap; }
+.pulse-btns { display: flex; gap: 8px; }
+.pulse-btn { background: var(--navy-deep); border: 1px solid var(--blue-bright); color: var(--white); padding: 8px 14px;
+  border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 13px; transition: all .15s; }
+.pulse-btn:hover { border-color: var(--gold); }
+.pulse-btn.ok.active { background: var(--green-soft); border-color: var(--green-correct); color: #fff; }
+.pulse-btn.stuck.active { background: var(--red-soft); border-color: var(--red-wrong); color: #fff; }
+.conf-wrap { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; }
+.conf-wrap label { font-size: 10px; letter-spacing: 1.5px; color: var(--teal); font-weight: bold; white-space: nowrap; }
+.conf-slider { flex: 1; min-width: 120px; accent-color: var(--teal); cursor: pointer; }
+.conf-val { font-family: Georgia, serif; font-size: 18px; color: var(--teal); min-width: 48px; text-align: right; }
+.pulse-sent { font-size: 11px; color: var(--green-correct); min-width: 70px; }
+.container { padding-bottom: 150px !important; }
+
+/* === Challenge / steal round (student side) === */
+.challenge-call { background: linear-gradient(135deg, rgba(200,49,43,0.18), rgba(240,179,61,0.12));
+  border: 2px solid var(--amber); border-radius: 14px; padding: 18px; margin-top: 14px; display: none; }
+.challenge-call.show { display: block; animation: fadeIn .3s ease; }
+.challenge-call h4 { color: var(--amber); font-family: Georgia, serif; font-size: 17px; margin-bottom: 6px; }
+.challenge-call .target { background: var(--navy-deep); border: 1px dashed var(--amber); border-radius: 10px; padding: 12px; margin: 10px 0; }
+.challenge-call .target .tlab { font-size: 10px; letter-spacing: 1px; color: var(--amber); font-weight: bold; margin-bottom: 4px; }
+.challenge-call .target .tval { font-size: 15px; color: #EAF0FF; line-height: 1.5; white-space: pre-wrap; }
+.challenge-call .own-note { font-size: 12px; color: var(--grey-muted); font-style: italic; }
+.foot-note2 { display: none; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ============ GATE ============ -->
+<div class="container" id="gateScreen">
+  <div class="gate">
+    <h1>Wind 2040 · Foresight Case Lab</h1>
+    <div class="sub">STRATEGIC FORESIGHT &amp; SCENARIO PLANNING · SUMAS</div>
+    <div class="gate-card">
+      <h3>Join your session</h3>
+      <p style="font-size:13px;color:var(--grey-muted)">Your instructor will project a 4-letter session code. Enter it, pick your team, and you'll all share one live board.</p>
+      <label>SESSION CODE</label>
+      <input class="field code-input" id="codeInput" maxlength="4" placeholder="WIND" autocomplete="off">
+      <label>YOUR TEAM</label>
+      <div class="team-pick" id="teamPick">
+        <button class="team-btn" data-team="1">Team 1</button>
+        <button class="team-btn" data-team="2">Team 2</button>
+        <button class="team-btn" data-team="3">Team 3</button>
+        <button class="team-btn" data-team="4">Team 4</button>
+      </div>
+      <label>TEAM NAME (optional)</label>
+      <input class="field" id="nameInput" placeholder="e.g. North Sea Navigators" autocomplete="off">
+      <div class="gate-err" id="gateErr"></div>
+      <button class="btn" id="enterBtn" style="margin-top:14px;width:100%">ENTER THE LAB →</button>
+    </div>
+    <div style="font-size:11px;color:var(--grey-muted)">No login. Your answers are saved on this device and shared to the session board.</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="hidden" id="app">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span class="course-title">WIND 2040 CASE LAB</span>
+      <span class="session-chip">Session <b id="sessTag">—</b> · <b id="teamTag">—</b></span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <div class="eyebrow">AN INTERACTIVE CASE JOURNEY</div>
+      <h1>Will the wind<br>actually blow by 2040?</h1>
+      <p>Europe wants 510&nbsp;GW of wind by 2030 and a power system that is 83% renewable by 2040. The question is no longer whether the technology works — it is whether Europe can <strong>permit, build and connect</strong> it fast enough. You are the foresight team advising two players: <strong>Ørsted</strong> (the pure-play specialist) and <strong>TotalEnergies</strong> (the integrated major).</p>
+    </div>
+
+    <div class="brief">
+      <h3>The case in 60 seconds</h3>
+      <p>Offshore wind is moving from "does it work?" to "can we execute it?" Turbine prices rose ~40% (2021–24), installation-vessel day-rates more than doubled, and permitting in Germany, Poland and the UK regularly exceeds 7–10 years. The bottleneck is shifting from <strong>access to projects</strong> toward <strong>the ability to deliver them</strong>.</p>
+      <div class="stats">
+        <div class="stat"><div class="n">~40 GW</div><div class="l">EU offshore wind installed by 2026</div></div>
+        <div class="stat"><div class="n">510 GW</div><div class="l">REPowerEU wind target for 2030</div></div>
+        <div class="stat"><div class="n">€584 bn</div><div class="l">EU grid investment needed by 2030</div></div>
+        <div class="stat"><div class="n">7–10 yrs</div><div class="l">typical permitting timeline today</div></div>
+      </div>
+      <div class="mission">
+        <p style="margin:0"><b>Your mission today.</b> Work through four foresight tools <i>on this case</i>. Each block ends with a short capture box — your team's headline findings get sent to the shared board on the big screen, where we compare all four teams and build the collective picture together.</p>
+      </div>
+    </div>
+
+    <div class="phase-divider">Analytical phase · What is changing?</div>
+    <div id="blockSTEEP"></div>
+    <div id="blockCLA"></div>
+
+    <div class="phase-divider">Normative phase · What future, and how do we get there?</div>
+    <div id="blockMatrix"></div>
+    <div id="blockBack"></div>
+
+    <div class="phase-divider">Consequences · What ripples out?</div>
+    <div id="blockWheel"></div>
+
+    <div class="foot-note">
+      Built for the Strategic Foresight &amp; Scenario Planning capstone · Case: <i>The European Energy Mix and the Impact of Wind Energy through 2040</i>
+    </div>
+  </div>
+
+  <!-- Back-channel pulse bar -->
+  <div class="pulse-bar" id="pulseBar">
+    <div class="pulse-inner">
+      <span class="pulse-label">HOW'S YOUR TEAM?</span>
+      <div class="pulse-btns">
+        <button class="pulse-btn ok" id="pulseOk" type="button">✅ Good here</button>
+        <button class="pulse-btn stuck" id="pulseStuck" type="button">🤔 We're stuck</button>
+      </div>
+      <div class="conf-wrap">
+        <label for="confSlider">CONFIDENCE</label>
+        <input type="range" min="0" max="100" value="50" step="5" class="conf-slider" id="confSlider">
+        <span class="conf-val" id="confVal">50%</span>
+      </div>
+      <span class="pulse-sent" id="pulseSent"></span>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ============================================================
+// FIREBASE CONFIG  ← PASTE YOUR CONFIG VALUES HERE (see setup notes)
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",
+  authDomain: "teaching-70f1c.firebaseapp.com",
+  databaseURL: "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "teaching-70f1c",
+  storageBucket: "teaching-70f1c.firebasestorage.app",
+  messagingSenderId: "1026356553251",
+  appId: "1:1026356553251:web:d23a4c30af7e6983463396"
+};
+
+let _db = null;
+try { _db = getDatabase(initializeApp(firebaseConfig)); }
+catch(e){ console.error("Firebase init failed", e); }
+
+// expose a tiny shared-storage API on window so the rest of the page (classic script) can use it
+const keyPath = k => k.replace(/[:.#$\[\]]/g, "_");   // sanitise for Firebase paths
+window.__store = {
+  async set(key, value){
+    if(!_db) return null;
+    try { await set(ref(_db, keyPath(key)), value); return true; }
+    catch(e){ console.error("set fail", e); return null; }
+  },
+  async get(key){
+    if(!_db) return null;
+    try { const snap = await get(child(ref(_db), keyPath(key))); return snap.exists() ? snap.val() : null; }
+    catch(e){ console.error("get fail", e); return null; }
+  }
+};
+window.__storeReady = !!_db;
+</script>
+<script>
+// ============================================================
+// SESSION STATE
+// ============================================================
+const STATE = { code:null, team:null, name:null };
+let chosenTeam = null;
+const localKey = () => `windcase_${STATE.code}_t${STATE.team}`;
+
+// shared storage helpers — backed by Firebase (cross-device)
+async function sharedSet(key, value){
+  if(!window.__store) return null;
+  return await window.__store.set(key, value);
+}
+async function sharedGet(key){
+  if(!window.__store) return null;
+  return await window.__store.get(key);
+}
+
+// ---- gate wiring ----
+document.querySelectorAll('#teamPick .team-btn').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('#teamPick .team-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); chosenTeam = b.dataset.team;
+  };
+});
+document.getElementById('codeInput').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+
+document.getElementById('enterBtn').onclick = async ()=>{
+  const err = document.getElementById('gateErr');
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if(code.length < 3){ err.textContent = 'Enter the 4-letter session code from the screen.'; return; }
+  if(!chosenTeam){ err.textContent = 'Pick your team.'; return; }
+  if(!window.__storeReady){ err.textContent = 'Connection not ready — check the Firebase config in this file, then reload.'; return; }
+  STATE.code = code; STATE.team = chosenTeam;
+  STATE.name = document.getElementById('nameInput').value.trim() || `Team ${chosenTeam}`;
+  err.textContent = '';
+  // register team on the shared board so the screen knows it exists
+  await sharedSet(`windcase:${code}:team${chosenTeam}:meta`, { team:chosenTeam, name:STATE.name, joined:Date.now() });
+  document.getElementById('sessTag').textContent = code;
+  document.getElementById('teamTag').textContent = STATE.name;
+  document.getElementById('gateScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  loadLocal();
+  buildBlocks();
+  initPulse();
+  startChallengeWatch();
+};
+
+// ---- local persistence (per device) ----
+let answers = {};            // {blockId: {field: text}}
+let completed = {};          // {blockId: true}
+function loadLocal(){
+  try {
+    const raw = localStorage.getItem(localKey());
+    if(raw){ const p = JSON.parse(raw); answers = p.answers||{}; completed = p.completed||{}; }
+  } catch(e){}
+}
+function saveLocal(){
+  try { localStorage.setItem(localKey(), JSON.stringify({answers, completed})); } catch(e){}
+}
+function updateProgress(){
+  const core = ['steep','cla','matrix','back'];
+  const total = core.length;
+  const done = core.filter(k=>completed[k]).length;
+  const pct = Math.round(done/total*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+}
+
+// ============================================================
+// BLOCK DEFINITIONS
+// ============================================================
+const BLOCKS = [
+  { id:'steep',  mount:'blockSTEEP',  num:1, name:'STEEPLED Scan',          tag:'Read the whole environment, not just the industry', timer:'~25 min', build:buildSTEEP,  wire:wireSTEEP },
+  { id:'cla',    mount:'blockCLA',    num:2, name:'Systems Thinking · CLA',  tag:'Dig beneath the headlines to the deep drivers',    timer:'~25 min', build:buildCLA,    wire:wireCLA },
+  { id:'matrix', mount:'blockMatrix', num:3, name:'Scenario Logic · 2×2',    tag:'Build four credible worlds for 2040',              timer:'~30 min', build:buildMatrix, wire:wireMatrix },
+  { id:'back',   mount:'blockBack',   num:4, name:'Backcasting',             tag:'A roadmap from your chosen 2040 back to today',    timer:'~25 min', build:buildBack,   wire:wireBack },
+  { id:'wheel',  mount:'blockWheel',  num:5, name:'Futures Wheel',            tag:'Map the ripple effects of one big move (optional)', timer:'~20 min', build:buildWheel,  wire:wireWheel },
+];
+
+function blockShell(b, inner){
+  const done = completed[b.id] ? 'done' : '';
+  return `
+  <div class="block ${done}" id="blk_${b.id}">
+    <div class="block-head" data-toggle="${b.id}">
+      <div class="num">${b.num}</div>
+      <div class="info"><div class="name">${b.name}</div><div class="tag">${b.tag}</div></div>
+      <div class="tmr">${b.timer}</div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="block-body">${inner}</div>
+  </div>`;
+}
+
+function captureBox(b, fields){
+  const rows = fields.map(f=>`
+    <div class="cap-row">
+      <label>${f.label}</label>
+      <textarea data-block="${b.id}" data-field="${f.key}" placeholder="${f.ph}"></textarea>
+    </div>`).join('');
+  return `
+  <div class="capture">
+    <h4>📡 Bring it back to the room</h4>
+    <div class="hint">Agree as a team, then send. Your headline points appear on the shared board on the big screen — we compare all four teams together.</div>
+    ${rows}
+    <button class="btn teal" data-send="${b.id}">SEND TO THE BOARD →</button>
+    <div class="cap-status" data-status="${b.id}"></div>
+    <div class="done-banner" data-done="${b.id}">✓ Sent. You can edit and re-send any time — the board always shows your latest.</div>
+  </div>`;
+}
+
+function buildBlocks(){
+  BLOCKS.forEach(b=>{
+    document.getElementById(b.mount).innerHTML = blockShell(b, b.build());
+    b.wire();
+  });
+  // restore textarea values + open state
+  BLOCKS.forEach(b=>{
+    (answers[b.id] ? Object.entries(answers[b.id]) : []).forEach(([k,v])=>{
+      const ta = document.querySelector(`textarea[data-block="${b.id}"][data-field="${k}"]`);
+      if(ta) ta.value = v;
+    });
+  });
+  // first block open by default
+  document.getElementById('blk_steep').classList.add('open');
+
+  // toggles
+  document.querySelectorAll('.block-head').forEach(h=>{
+    h.onclick = ()=> document.getElementById('blk_'+h.dataset.toggle).classList.toggle('open');
+  });
+  // textarea autosave
+  document.querySelectorAll('textarea[data-block]').forEach(ta=>{
+    ta.addEventListener('input', ()=>{
+      const b = ta.dataset.block, f = ta.dataset.field;
+      answers[b] = answers[b] || {}; answers[b][f] = ta.value; saveLocal();
+    });
+  });
+  // send buttons
+  document.querySelectorAll('[data-send]').forEach(btn=>{
+    btn.onclick = ()=> sendBlock(btn.dataset.send);
+  });
+  updateProgress();
+}
+
+async function sendBlock(blockId){
+  const status = document.querySelector(`[data-status="${blockId}"]`);
+  const fields = answers[blockId] || {};
+  const filled = Object.values(fields).filter(v=>v && v.trim()).length;
+  if(filled === 0){ status.className='cap-status err'; status.textContent='Write at least one point before sending.'; return; }
+  status.className='cap-status'; status.textContent='Sending…';
+  const payload = { team:STATE.team, name:STATE.name, block:blockId, fields, ts:Date.now() };
+  const res = await sharedSet(`windcase:${STATE.code}:team${STATE.team}:${blockId}`, payload);
+  if(res){
+    status.className='cap-status ok'; status.textContent='Sent to the board ✓';
+    completed[blockId] = true; saveLocal();
+    document.getElementById('blk_'+blockId).classList.add('done');
+    updateProgress();
+  } else {
+    status.className='cap-status err';
+    status.textContent='Could not reach the board. Tell your instructor your points so they can add them.';
+  }
+}
+
+// ============================================================
+// BLOCK 1 — STEEPLED
+// ============================================================
+function buildSTEEP(){
+  return `
+  <div class="step-card">
+    <span class="step-label learn">WHY THIS TOOL</span>
+    <h4>Most strategic surprises were visible — nobody was scanning for them.</h4>
+    <p>Wind's biggest risks for 2040 don't all live in the energy industry. They live in <strong>geopolitics</strong> (China controls ~90% of rare-earth processing), in <strong>law</strong> (RED III "go-to areas"), in <strong>demographics</strong> (a 2-million green-jobs gap), and in <strong>society</strong> (local opposition). STEEPLED forces you to scan all eight lenses so no force of change is left off the radar.</p>
+  </div>
+  <div class="step-card">
+    <span class="step-label do">DO IT · 1</span>
+    <h4>Tap each lens — what wind-2040 force sits behind it?</h4>
+    <p>Reveal the prompt, then as a team name the single most important driver for European wind under that lens.</p>
+    <div class="sandbox"><div class="steepled-grid" id="steepGrid_${'steep'}"></div>
+      <div style="font-size:12px;color:var(--grey-muted);margin-top:8px" id="steepCount">0 / 8 lenses opened</div>
+    </div>
+    <p class="punch">The two lenses that feel <i>most uncertain AND most impactful</i> are your candidate scenario axes in Block 3. Mark them mentally now.</p>
+  </div>
+  ${captureBox(BLOCKS[0], [
+    {key:'top', label:'YOUR TOP 3 DRIVERS (most impactful × uncertain)', ph:'e.g. Permitting reform speed · Rare-earth supply security · CfD price pressure'},
+    {key:'surprise', label:'ONE FORCE OTHER TEAMS MIGHT MISS', ph:'A lens people overlook for wind — and why it matters'}
+  ])}`;
+}
+function wireSTEEP(){
+  const STEEP=[
+    {l:'S',n:'Social',ex:'Local opposition to turbines & grid lines; public support for energy security after 2022.'},
+    {l:'T',n:'Technological',ex:'14–15 MW turbines now standard; floating wind going commercial; HVDC standardisation gap.'},
+    {l:'E',n:'Economic',ex:'WACC up 15–20% vs 2021; turbine prices +40%; CfD auction margins compressing.'},
+    {l:'E',n:'Environmental',ex:'2040 target: 83% renewable electricity; Dunkelflaute & storage gaps.'},
+    {l:'P',n:'Political',ex:'REPowerEU 510 GW by 2030; rare-earth dependence on China (~90% processing).'},
+    {l:'L',n:'Legal',ex:'RED III "go-to areas"; Emergency Permitting Regulation; maritime spatial planning vs military zones.'},
+    {l:'E',n:'Ethical',ex:'Just transition; community benefit-sharing; biodiversity vs build-out trade-offs.'},
+    {l:'D',n:'Demographic',ex:'~2 M green-jobs gap by 2050; 71% of workforce lacks VRE-integration skills.'},
+  ];
+  const grid = document.getElementById('steepGrid_steep');
+  const opened = new Set();
+  STEEP.forEach((s,i)=>{
+    const t = document.createElement('div'); t.className='steep-tile';
+    t.innerHTML = `<div class="letter">${s.l}</div><div class="name">${s.n}</div><div class="ex">${s.ex}</div>`;
+    t.onclick = ()=>{ t.classList.toggle('open'); if(t.classList.contains('open'))opened.add(i);
+      document.getElementById('steepCount').textContent = `${opened.size} / 8 lenses opened`; };
+    grid.appendChild(t);
+  });
+}
+
+// ============================================================
+// BLOCK 2 — SYSTEMS THINKING / CLA
+// ============================================================
+function buildCLA(){
+  return `
+  <div class="step-card">
+    <span class="step-label learn">WHY THIS TOOL</span>
+    <h4>STEEPLED lists forces. CLA explains why they persist.</h4>
+    <p>Causal Layered Analysis (Sohail Inayatullah) digs through four layers. The headline "projects are delayed" sits on top; underneath are the <strong>systemic causes</strong>, the <strong>worldviews</strong> that justify them, and the deep <strong>metaphors</strong> we live by. Solving a problem only at the top layer ("hire more permitting officers") rarely sticks — the deeper layers regenerate it.</p>
+  </div>
+  <div class="step-card">
+    <span class="step-label do">DO IT · 2</span>
+    <h4>Drill the wind bottleneck down the iceberg</h4>
+    <p>Tap each layer to see how "wind projects keep stalling" reads at different depths. Then in your capture box, propose a lever at the <i>deepest</i> layer you can.</p>
+    <div class="sandbox"><div class="iceberg" id="icebergCLA"></div></div>
+    <p class="punch">A lever pulled at the worldview/metaphor layer ("energy as a system to orchestrate" vs "projects to permit one by one") reshapes everything above it.</p>
+  </div>
+  ${captureBox(BLOCKS[1], [
+    {key:'deep', label:'THE DEEPEST DRIVER YOU FOUND', ph:'e.g. We treat grid + wind as separate projects, not one system → radial legacy connections persist'},
+    {key:'lever', label:'ONE HIGH-LEVERAGE INTERVENTION', ph:'A move that addresses the systemic / worldview layer, not just the symptom'}
+  ])}`;
+}
+function wireCLA(){
+  const LAYERS=[
+    {c:'l0',t:'LITANY · the visible headline', body:'"Offshore wind projects are delayed." Hornsea 4 (2.4 GW) cancelled in 2025; auctions undersubscribed; CAPEX up. What everyone reads in the news.'},
+    {c:'l1',t:'SYSTEM · structures & causes', body:'4–10 year grid-connection queues on legacy radial connections; permitting 7–10 yrs; WTIV vessel shortage; €584 bn grid gap. The machinery producing the litany.'},
+    {c:'l2',t:'WORLDVIEW · how we frame it', body:'Energy seen as a sequence of permits and projects rather than one orchestrated system. National TSOs optimise locally; "market will provide vessels." Beliefs that legitimise the structures.'},
+    {c:'l3',t:'METAPHOR · the deep story', body:'"Build it and connect it" — a pioneering, plant-by-plant frontier mindset, vs a "living grid we cultivate." Change the metaphor and the worldview, systems and litany shift with it.'},
+  ];
+  const ice = document.getElementById('icebergCLA');
+  LAYERS.forEach(L=>{
+    const d = document.createElement('div'); d.className='ice-layer '+L.c;
+    d.innerHTML = `<div class="lt">${L.t}</div><div class="lr">${L.body}</div>`;
+    d.onclick = ()=> d.classList.toggle('open');
+    ice.appendChild(d);
+  });
+}
+
+// ============================================================
+// BLOCK 3 — 2x2 SCENARIO MATRIX
+// ============================================================
+function buildMatrix(){
+  return `
+  <div class="step-card">
+    <span class="step-label learn">WHY THIS TOOL</span>
+    <h4>Pick two axes that are genuinely uncertain, high-impact, and independent.</h4>
+    <p>The case team chose <strong>Policy &amp; Permitting Effectiveness</strong> (weak ↔ strong) against <strong>Supply-Chain Resilience</strong> (constrained ↔ resilient). Crucially they rejected cost/LCOE as an axis — cost is an <i>output</i> of those two, not independent. Good axes are orthogonal: you can hold all the permits and still not build if the vessels aren't there.</p>
+  </div>
+  <div class="step-card">
+    <span class="step-label do">DO IT · 3</span>
+    <h4>Tap each world — then stress-test the strategy</h4>
+    <p>Each quadrant is a coherent 2040. Read it, then decide: what should Ørsted (pure-play) and TotalEnergies (integrated major) <i>do</i> in that world?</p>
+    <div class="sandbox">
+      <div class="axis-label">▲ STRONG / COORDINATED POLICY</div>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <div class="matrix-side"><span class="v">← CONSTRAINED  ·  SUPPLY CHAIN  ·  RESILIENT →</span></div>
+        <div style="flex:1">
+          <div class="matrix" id="matrixGrid"></div>
+        </div>
+      </div>
+      <div class="axis-label">▼ WEAK / FRAGMENTED POLICY</div>
+    </div>
+    <p class="punch">The payoff isn't the four worlds — it's the <b>No-Regret / Contingent / Hedge</b> moves you can name across all of them. That's the strategy stress-test.</p>
+  </div>
+  ${captureBox(BLOCKS[2], [
+    {key:'likely', label:'YOUR MOST-LIKELY WORLD (and why)', ph:'Name the quadrant + one sentence of reasoning'},
+    {key:'noregret', label:'ONE NO-REGRET MOVE', ph:'A move that pays off in ALL four worlds'},
+    {key:'hedge', label:'ONE HEDGE / CONTINGENT MOVE', ph:'A bet that only pays in a specific world — and the trigger to act'}
+  ])}
+  <div class="challenge-call" id="challengeCall">
+    <h4>⚔️ Challenge round — live</h4>
+    <p style="font-size:13px;color:#DCE3F2;margin-bottom:4px">The instructor has put a rival team's move on the screen (anonymous). Your job: <b>attack it or improve it</b> in one sharp line.</p>
+    <div class="target">
+      <div class="tlab" id="chTargetLabel">THE MOVE ON THE BOARD</div>
+      <div class="tval" id="chTargetVal">Waiting for the instructor to launch a target…</div>
+    </div>
+    <div class="cap-row">
+      <label>YOUR ATTACK OR IMPROVEMENT</label>
+      <textarea id="chResponse" placeholder="e.g. That No-Regret move fails in Stalled Transition because… / Stronger version: …"></textarea>
+    </div>
+    <button class="btn teal" id="chSend" type="button">SEND CHALLENGE →</button>
+    <div class="cap-status" id="chStatus"></div>
+    <div class="own-note" id="chOwnNote"></div>
+  </div>`;
+}
+function wireMatrix(){
+  const QUADS=[
+    {n:'Green Acceleration', sub:'Strong policy × resilient supply', body:'Permitting <3 yrs; vessels & ports scale; LCOE falls again. Wind becomes the backbone. Ørsted: maximise pipeline throughput. Total: scale fast, lock long-term PPAs. (~25–30%)'},
+    {n:'Policy-Led Push', sub:'Strong policy × constrained supply', body:'BASE CASE. Approvals accelerate from 2026 but vessels/turbines/ports cannot keep up — more consented projects than buildable. Margins squeezed by CfD competition. Execution capability wins. (~30–35%)'},
+    {n:'Supply-Chain Advantage', sub:'Weak policy × resilient supply', body:'Materials & vessels recover but permitting stalls >5 yrs. Whoever holds permits + grid slots is hugely profitable. Procurement & permitting relationships decide who builds. (~20–25%)'},
+    {n:'Stalled Transition', sub:'Weak policy × constrained supply', body:'WORST CASE. Permitting >7 yrs; rare-earth & vessel shortages bite; cancellations (Hornsea 4, Attentive Energy). Developers retreat from auctions. (~10–15%)'},
+  ];
+  // grid order: top-left, top-right, bottom-left, bottom-right
+  const order = [0,1,2,3]; // GreenAccel(strong+resilient) top-right ideally, but we lay logically
+  const layout = [QUADS[1], QUADS[0], QUADS[3], QUADS[2]];
+  // top row = strong policy: left=constrained(Policy-Led), right=resilient(Green Accel)
+  // bottom row = weak policy: left=constrained(Stalled), right=resilient(Supply-Chain Adv)
+  const grid = document.getElementById('matrixGrid');
+  layout.forEach(q=>{
+    const d = document.createElement('div'); d.className='quad';
+    d.innerHTML = `<div class="qn">${q.n}</div><div class="qsub">${q.sub}</div><div class="qbody">${q.body}</div>`;
+    d.onclick = ()=> d.classList.toggle('open');
+    grid.appendChild(d);
+  });
+}
+
+// ============================================================
+// BLOCK 4 — BACKCASTING
+// ============================================================
+function buildBack(){
+  return `
+  <div class="step-card">
+    <span class="step-label learn">WHY THIS TOOL</span>
+    <h4>Forecasting asks "where are we heading?" Backcasting asks "what must be true?"</h4>
+    <p>Pick a desirable 2040 endpoint — say, <strong>Green Acceleration: wind as the backbone, LCOE falling</strong> — then work <i>backwards</i>. What had to happen by 2035? By 2030? What must start <strong>this year</strong>? Backcasting turns a vision into a dated chain of necessary conditions, exposing the actions that can't wait.</p>
+  </div>
+  <div class="step-card">
+    <span class="step-label do">DO IT · 4</span>
+    <h4>Walk the milestones backwards from 2040</h4>
+    <p>Tap each waypoint. Notice how the closer you get to today, the more the milestones become things <i>you can start now</i>.</p>
+    <div class="sandbox">
+      <div class="bc-track" id="bcTrack"></div>
+      <div class="bc-info" id="bcInfo">Tap 2040 first, then walk backwards to today.</div>
+    </div>
+    <p class="punch">The most valuable output of backcasting is the <b>"start now"</b> list — the moves that must begin in 2026 or the 2040 vision is already out of reach.</p>
+  </div>
+  ${captureBox(BLOCKS[3], [
+    {key:'endpoint', label:'YOUR 2040 ENDPOINT (one line)', ph:'The future you are backcasting from'},
+    {key:'startnow', label:'TWO "START IN 2026" MOVES', ph:'The actions that genuinely cannot wait — for Ørsted or TotalEnergies'},
+    {key:'risk', label:'THE MILESTONE MOST LIKELY TO SLIP', ph:'Where the roadmap breaks first — and your early-warning signal'}
+  ])}`;
+}
+function wireBack(){
+  const NODES=[
+    {yr:'2040', lab:'Endpoint', body:'<b>Vision:</b> Wind is the backbone of EU power; ~83% renewable electricity; LCOE on a falling path; a resilient, largely European supply chain. Everything below must be true to land here.'},
+    {yr:'2035', lab:'System set', body:'<b>Must be true by 2035:</b> integrated meshed offshore grid replacing radial links; HVDC standardised across vendors; 20 MW+ turbines in serial production; vessel fleet expanded 4–6 newbuilds/yr.'},
+    {yr:'2030', lab:'Reform delivered', body:'<b>Must be true by 2030:</b> permitting under ~3 yrs in core markets; €584 bn grid investment underway; rare-earth processing partly diversified off China; ports upgraded for next-gen components.'},
+    {yr:'2028', lab:'Pipeline flowing', body:'<b>Must be true by 2028:</b> Emergency Permitting Regulation cutting timelines 30–40%; first newbuild WTIVs delivered; CfD designs rewarding duration & domestic content, not just lowest price.'},
+    {yr:'2026', lab:'START NOW', body:'<b>Start this year or miss 2040:</b> place vessel newbuild orders (long lead times); sign supply-chain & rare-earth offtake partnerships; lock skilled-labour training pipelines; secure grid-connection slots early. These are the no-wait moves.'},
+  ];
+  const track = document.getElementById('bcTrack');
+  const info = document.getElementById('bcInfo');
+  NODES.forEach(n=>{
+    const d = document.createElement('div'); d.className='bc-node';
+    d.innerHTML = `<div class="yr">${n.yr}</div><div class="lab">${n.lab}</div>`;
+    d.onclick = ()=>{ track.querySelectorAll('.bc-node').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); info.innerHTML = n.body; };
+    track.appendChild(d);
+  });
+}
+
+// ============================================================
+// BLOCK 5 — FUTURES WHEEL (optional)
+// ============================================================
+function buildWheel(){
+  return `
+  <div class="step-card">
+    <span class="step-label learn">WHY THIS TOOL</span>
+    <h4>Linear thinking stops at the first consequence. The ripples are where the strategy lives.</h4>
+    <p>Jerome Glenn's Futures Wheel (1971) takes one change and maps its <strong>first, second and third-order consequences</strong>. Here the central change is the one your 2×2 said was most likely: <strong>"Policy unlocks pipelines faster than the supply chain can build them."</strong> Push it outward and the surprising cross-sector effects appear — exactly the ones a single-industry view misses.</p>
+  </div>
+  <div class="step-card">
+    <span class="step-label do">DO IT · 5</span>
+    <h4>Reveal the rings, then add your own third-order ripple</h4>
+    <p>Tap the button to push consequences outward, one ring at a time. Then, as a team, name a third-order effect not yet on the board — the more cross-sectoral and surprising, the better.</p>
+    <div class="sandbox">
+      <div class="fw-center"><span class="fw-core">Policy outpaces the supply chain</span></div>
+      <div class="fw-rings" id="fwRings"></div>
+      <div style="text-align:center;margin-top:12px"><button class="btn ghost" id="fwNext" type="button">Reveal next ring →</button></div>
+    </div>
+    <p class="punch">Third-order ripples — a new geopolitics of rare earths, a vessel-leasing market, a green-skills migration wave — feed straight back into your scenarios and your no-regret moves.</p>
+  </div>
+  ${captureBox(BLOCKS[4], [
+    {key:'ripple', label:'YOUR BEST THIRD-ORDER RIPPLE', ph:'A surprising, cross-sector consequence not already on the wheel'},
+    {key:'implication', label:'WHAT IT MEANS FOR ØRSTED OR TOTALENERGIES', ph:'One strategic implication that only became visible via the ripple'}
+  ])}`;
+}
+function wireWheel(){
+  const RINGS=[
+    {cls:'r1',lab:'1ST ORDER — DIRECT',items:['Consented projects pile up unbuilt','Installation-vessel day-rates spike','Turbine order queues lengthen']},
+    {cls:'r2',lab:'2ND ORDER — CONSEQUENCES OF CONSEQUENCES',items:['CfD auction margins compress as bidders fight for slots','Developers hoard vessel & port capacity','Weaker players exit; consolidation accelerates']},
+    {cls:'r3',lab:'3RD ORDER — SURPRISING & CROSS-SECTORAL',items:['A vessel-leasing financial market emerges','Rare-earth supply becomes a geopolitical bargaining chip','Green-skills labour migrates to whoever pays most']},
+  ];
+  const wrap = document.getElementById('fwRings');
+  let shown = 0;
+  RINGS.forEach(R=>{
+    const d = document.createElement('div'); d.className='fw-ring '+R.cls;
+    d.innerHTML = `<div class="rlab">${R.lab}</div><div class="fw-items">${R.items.map(it=>`<span class="fw-item">${it}</span>`).join('')}</div>`;
+    wrap.appendChild(d);
+  });
+  const btn = document.getElementById('fwNext');
+  function reveal(){
+    if(shown >= RINGS.length) return;
+    const items = wrap.querySelectorAll('.fw-ring')[shown].querySelectorAll('.fw-item');
+    items.forEach((it,i)=>setTimeout(()=>it.classList.add('show'), i*160));
+    shown++;
+    if(shown >= RINGS.length){ btn.textContent='All rings revealed ✓'; btn.disabled=true; }
+  }
+  btn.onclick = reveal;
+  reveal(); // first ring shown immediately
+}
+
+// ============================================================
+// BACK-CHANNEL — room pulse (stuck/ok + confidence)
+// ============================================================
+let pulseState = { mood:null, confidence:50 };
+async function pushPulse(){
+  await sharedSet(`windcase:${STATE.code}:team${STATE.team}:pulse`, {
+    team:STATE.team, name:STATE.name, mood:pulseState.mood, confidence:pulseState.confidence, ts:Date.now()
+  });
+  const s = document.getElementById('pulseSent');
+  s.textContent = 'sent ✓';
+  setTimeout(()=>{ s.textContent=''; }, 1500);
+}
+function initPulse(){
+  const okBtn = document.getElementById('pulseOk');
+  const stuckBtn = document.getElementById('pulseStuck');
+  const slider = document.getElementById('confSlider');
+  const val = document.getElementById('confVal');
+  okBtn.onclick = ()=>{
+    pulseState.mood = (pulseState.mood==='ok') ? null : 'ok';
+    okBtn.classList.toggle('active', pulseState.mood==='ok');
+    stuckBtn.classList.remove('active');
+    pushPulse();
+  };
+  stuckBtn.onclick = ()=>{
+    pulseState.mood = (pulseState.mood==='stuck') ? null : 'stuck';
+    stuckBtn.classList.toggle('active', pulseState.mood==='stuck');
+    okBtn.classList.remove('active');
+    pushPulse();
+  };
+  let confTimer = null;
+  slider.addEventListener('input', ()=>{
+    pulseState.confidence = +slider.value;
+    val.textContent = slider.value + '%';
+    clearTimeout(confTimer);
+    confTimer = setTimeout(pushPulse, 400);
+  });
+}
+
+// ============================================================
+// CHALLENGE ROUND — watch for instructor launch (2x2 only)
+// ============================================================
+let lastChallengeTs = 0;
+function startChallengeWatch(){
+  pollChallenge();
+  setInterval(pollChallenge, 4000);
+}
+async function pollChallenge(){
+  const ch = await sharedGet(`windcase:${STATE.code}:challenge`);
+  const call = document.getElementById('challengeCall');
+  if(!ch || !ch.active){ if(call) call.classList.remove('show'); return; }
+  // show it; make sure the matrix block is open so they see it
+  if(call && !call.classList.contains('show')){
+    call.classList.add('show');
+    const blk = document.getElementById('blk_matrix');
+    if(blk) blk.classList.add('open');
+  }
+  document.getElementById('chTargetLabel').textContent = ch.label || 'THE MOVE ON THE BOARD';
+  document.getElementById('chTargetVal').textContent = ch.value || '—';
+  // if this team IS the target, tell them to sit this one out
+  const own = document.getElementById('chOwnNote');
+  if(String(ch.targetTeam) === String(STATE.team)){
+    own.textContent = "This is your team's move on the board — sit back and watch the others come for it. 😎";
+    document.getElementById('chResponse').disabled = true;
+    document.getElementById('chSend').disabled = true;
+  } else {
+    own.textContent = '';
+    document.getElementById('chResponse').disabled = false;
+    document.getElementById('chSend').disabled = false;
+  }
+  lastChallengeTs = ch.ts;
+}
+document.addEventListener('click', async (e)=>{
+  if(e.target && e.target.id === 'chSend'){
+    const ta = document.getElementById('chResponse');
+    const status = document.getElementById('chStatus');
+    if(!ta.value.trim()){ status.className='cap-status err'; status.textContent='Write your one-line challenge first.'; return; }
+    status.className='cap-status'; status.textContent='Sending…';
+    const res = await sharedSet(`windcase:${STATE.code}:team${STATE.team}:challengeResp`, {
+      team:STATE.team, name:STATE.name, text:ta.value.trim(), forTs:lastChallengeTs, ts:Date.now()
+    });
+    if(res){ status.className='cap-status ok'; status.textContent='Challenge sent to the board ✓'; }
+    else { status.className='cap-status err'; status.textContent='Could not reach the board — read it out instead.'; }
+  }
+});
+</script>
+</body>
+</html>

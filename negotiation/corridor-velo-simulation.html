@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Corridor Vélo de la rue des Tilleuls — Simulation de négociation</title>
+<style>
+  :root{
+    --navy:#1E2761; --rust:#B85042; --gold:#C99A3A; --forest:#2C5F2D;
+    --ice:#CADCFC; --slate:#5A6477;
+    --paper:#FBFAF7; --ink:#1c1c22; --line:#e3e0d8;
+    --shadow:0 10px 30px -12px rgba(30,39,97,.28);
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:Calibri,"Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.55;
+    background-image:radial-gradient(circle at 12% 8%,rgba(202,220,252,.35),transparent 42%),radial-gradient(circle at 90% 0%,rgba(201,154,58,.12),transparent 38%);}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px 120px}
+
+  /* ---- top bar ---- */
+  header.top{position:sticky;top:0;z-index:50;background:rgba(30,39,97,.97);color:#fff;
+    box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+  .top-inner{max-width:1080px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{font-family:var(--serif);font-weight:bold;font-size:1.02rem;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(201,154,58,.25)}
+  .navbtns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .navbtns button{font-family:var(--sans);font-size:.78rem;border:1px solid rgba(255,255,255,.28);
+    background:transparent;color:#fff;padding:6px 11px;border-radius:999px;cursor:pointer;transition:.18s;white-space:nowrap}
+  .navbtns button:hover{background:rgba(255,255,255,.14)}
+  .navbtns button.active{background:var(--gold);border-color:var(--gold);color:#27210e;font-weight:bold}
+
+  /* ---- hero ---- */
+  .hero{padding:54px 0 30px;text-align:center}
+  .kicker{font-family:var(--sans);text-transform:uppercase;letter-spacing:.28em;font-size:.72rem;
+    color:var(--rust);font-weight:bold;margin-bottom:14px}
+  .hero h1{font-family:var(--serif);color:var(--navy);font-size:2.5rem;line-height:1.12;margin-bottom:6px}
+  .hero h1 .en{display:block;font-size:1.35rem;font-style:italic;color:var(--slate);font-weight:normal;margin-top:8px}
+  .hero p.lede{max-width:680px;margin:18px auto 0;color:var(--slate);font-size:1.02rem}
+  .hero p.lede .en{display:block;font-style:italic;font-size:.94rem;margin-top:4px;opacity:.92}
+  .meta-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:.82rem;
+    color:var(--navy);box-shadow:var(--shadow);font-weight:bold}
+  .chip span{color:var(--slate);font-weight:normal}
+
+  /* ---- sections ---- */
+  section.block{display:none;animation:fade .4s ease}
+  section.block.show{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .sec-head{margin:34px 0 20px;border-left:5px solid var(--gold);padding-left:16px}
+  .sec-head .tag{font-size:.72rem;text-transform:uppercase;letter-spacing:.2em;font-weight:bold}
+  .tag.common{color:var(--forest)} .tag.secret{color:var(--rust)}
+  .sec-head h2{font-family:var(--serif);color:var(--navy);font-size:1.8rem;line-height:1.15;margin-top:5px}
+  .sec-head h2 .en{display:block;font-size:1.05rem;font-style:italic;color:var(--slate);font-weight:normal;margin-top:3px}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin:16px 0;box-shadow:var(--shadow)}
+  .card h3{font-family:var(--serif);color:var(--navy);font-size:1.18rem;margin-bottom:4px}
+  .card h3 .en{display:block;font-size:.9rem;font-style:italic;color:var(--slate);font-weight:normal;margin-top:2px}
+  .card p{margin:10px 0}
+  .card p .en{display:block;font-style:italic;color:var(--slate);font-size:.92rem;margin-top:3px}
+  .card ul{margin:10px 0 10px 4px;list-style:none}
+  .card ul li{padding:7px 0 7px 26px;position:relative;border-bottom:1px dashed var(--line)}
+  .card ul li:last-child{border-bottom:none}
+  .card ul li::before{content:"▍";position:absolute;left:0;color:var(--gold);font-size:.9rem;top:8px}
+  .card ul li .en{display:block;font-style:italic;color:var(--slate);font-size:.9rem;margin-top:2px}
+
+  .stepgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:8px}
+  .step{background:linear-gradient(180deg,#fff, #fbfaf6);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+  .step .num{font-family:var(--serif);font-size:1.5rem;color:var(--gold);font-weight:bold;line-height:1}
+  .step h4{font-family:var(--serif);color:var(--navy);font-size:1.02rem;margin:8px 0 2px}
+  .step h4 .en{display:block;font-style:italic;font-weight:normal;color:var(--slate);font-size:.82rem;margin-top:2px}
+  .step p{font-size:.9rem;margin:6px 0 0}
+  .step p .en{display:block;font-style:italic;color:var(--slate);font-size:.82rem;margin-top:2px}
+
+  .callout{border-left:4px solid var(--rust);background:#fdf4f2;border-radius:0 12px 12px 0;padding:16px 20px;margin:16px 0}
+  .callout.gold{border-color:var(--gold);background:#fdf8ec}
+  .callout.forest{border-color:var(--forest);background:#eef6ee}
+  .callout strong{color:var(--navy);font-family:var(--serif)}
+  .callout .en{display:block;font-style:italic;color:var(--slate);font-size:.9rem;margin-top:4px}
+
+  /* role picker */
+  .rolegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:10px}
+  .rolecard{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .rolecard .band{padding:14px 18px;color:#fff}
+  .rolecard.dev .band{background:linear-gradient(120deg,var(--navy),#33408f)}
+  .rolecard.res .band{background:linear-gradient(120deg,var(--forest),#3d7a3e)}
+  .rolecard .band .side{font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;opacity:.85}
+  .rolecard .band h4{font-family:var(--serif);font-size:1.12rem;margin-top:3px}
+  .rolecard .band h4 .en{display:block;font-style:italic;font-weight:normal;font-size:.84rem;opacity:.9;margin-top:1px}
+  .rolecard .body{padding:16px 18px;flex:1;display:flex;flex-direction:column;gap:12px}
+  .rolecard .teaser{font-size:.9rem;color:var(--slate)}
+  .pinrow{display:flex;gap:8px;align-items:center}
+  .pinrow input{flex:1;font-family:var(--sans);font-size:1rem;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;letter-spacing:.25em;text-align:center;text-transform:uppercase}
+  .pinrow input:focus{outline:none;border-color:var(--gold)}
+  .pinrow button{background:var(--navy);color:#fff;border:none;padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:bold;font-size:.85rem;transition:.18s}
+  .pinrow button:hover{background:#33408f}
+  .lockmsg{font-size:.78rem;color:var(--rust);min-height:1em}
+  .lockmsg.ok{color:var(--forest)}
+  .locktag{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:bold;color:var(--rust);text-transform:uppercase;letter-spacing:.12em}
+  .secretbody{display:none;border-top:1px dashed var(--line);padding-top:14px;margin-top:4px}
+  .secretbody.open{display:block;animation:fade .35s ease}
+  .secretbody h5{font-family:var(--serif);color:var(--navy);font-size:1rem;margin:14px 0 2px}
+  .secretbody h5 .en{display:block;font-style:italic;font-weight:normal;color:var(--slate);font-size:.82rem}
+  .secretbody p{font-size:.9rem;margin:8px 0}
+  .secretbody p .en{display:block;font-style:italic;color:var(--slate);font-size:.82rem;margin-top:2px}
+  .secretbody .priv{background:#fdf4f2;border:1px solid #f3d6d0;border-radius:10px;padding:12px 14px;margin:10px 0;font-size:.88rem}
+  .secretbody .priv b{color:var(--rust)}
+
+  .footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid var(--line);color:var(--slate);font-size:.82rem}
+  .footer .en{font-style:italic}
+
+  .pill{display:inline-block;font-size:.68rem;text-transform:uppercase;letter-spacing:.14em;font-weight:bold;
+    padding:3px 9px;border-radius:999px;vertical-align:middle;margin-left:8px}
+  .pill.common{background:#e7f1e7;color:var(--forest)}
+  .pill.secret{background:#fae7e3;color:var(--rust)}
+
+  @media(max-width:560px){.hero h1{font-size:1.9rem}.top-inner{padding:10px 14px}.wrap{padding:0 14px 90px}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand"><span class="dot"></span> Le Corridor Vélo &mdash; UMEF</div>
+    <nav class="navbtns" id="nav"></nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">Simulation de négociation multipartite &middot; Multiparty role-play</div>
+    <h1>Le Corridor Vélo de la rue des Tilleuls
+      <span class="en">The Linden Street Bike Corridor</span></h1>
+    <p class="lede">Un promoteur de mobilité veut transformer une rue résidentielle tranquille en corridor cyclable. Les riverains sont furieux. Deux équipes, six rôles, une table.
+      <span class="en">A mobility developer wants to turn a quiet residential street into a cycle corridor. The residents are furious. Two teams, six roles, one table.</span></p>
+    <div class="meta-row">
+      <div class="chip">6 <span>rôles / roles</span></div>
+      <div class="chip">2 <span>équipes / teams</span></div>
+      <div class="chip">~3 h <span>jeu + débrief</span></div>
+      <div class="chip">Non chiffré <span>/ non-scoreable</span></div>
+    </div>
+  </div>
+
+  <!-- ====================== HOME ====================== -->
+  <section class="block show" id="home">
+    <div class="sec-head"><div class="tag common">Accueil &middot; Start here</div>
+      <h2>Comment fonctionne ce jeu<span class="en">How this game works</span></h2></div>
+
+    <div class="card">
+      <p>Cette simulation se joue en <strong>quatre temps</strong>. La courbe d'apprentissage se trouve presque entièrement dans le <strong>deuxième temps&nbsp;: la préparation</strong>. Lisez la section «&nbsp;Bien se préparer&nbsp;» avant de commencer.
+        <span class="en">This simulation runs in four phases. The learning curve lives almost entirely in the second phase: preparation. Read the "How to prepare" section before you begin.</span></p>
+      <div class="stepgrid">
+        <div class="step"><div class="num">1</div><h4>Lecture individuelle<span class="en">Individual reading</span></h4><p>~20 min. Chacun·e lit le scénario commun, puis sa fiche confidentielle (déverrouillée par code).<span class="en">Each person reads the common scenario, then their confidential sheet (unlocked by PIN).</span></p></div>
+        <div class="step"><div class="num">2</div><h4>Préparation d'équipe<span class="en">Team preparation</span></h4><p>~50 min. Chaque équipe se réunit à part. <em>C'est ici que tout se joue.</em><span class="en">Each team meets separately. This is where everything is won or lost.</span></p></div>
+        <div class="step"><div class="num">3</div><h4>Négociation<span class="en">Negotiation</span></h4><p>~70 min. Les deux équipes se rencontrent. Le processus est libre.<span class="en">The two teams meet. You design your own process.</span></p></div>
+        <div class="step"><div class="num">4</div><h4>Débrief<span class="en">Debrief</span></h4><p>~50 min. On revient sur la préparation autant que sur la négociation.<span class="en">We reflect on the preparation as much as the negotiation.</span></p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Lecture des sections<span class="en">Reading the sections</span></h3>
+      <p>Les sections marquées <span class="pill common">Commune</span> sont publiques&nbsp;: tout le monde les lit, on peut les projeter. Les sections marquées <span class="pill secret">Secrète</span> sont confidentielles&nbsp;: chaque fiche de rôle est protégée par un code que seul·e son ou sa titulaire reçoit.
+        <span class="en">Sections marked "Common" are public — everyone reads them, they can be projected. Sections marked "Secret" are confidential: each role sheet is protected by a PIN given only to its holder.</span></p>
+      <div class="callout gold"><strong>Règle d'or.</strong> Ne montrez jamais votre fiche confidentielle à l'autre équipe. Vous <em>pouvez</em> choisir de révéler une information pendant la négociation — mais c'est une décision stratégique, pas un réflexe.
+        <span class="en">Golden rule: never show your confidential sheet to the other team. You may choose to reveal information during the negotiation — but that is a strategic decision, not a reflex.</span></div>
+    </div>
+  </section>
+
+  <!-- ====================== SCENARIO ====================== -->
+  <section class="block" id="scenario">
+    <div class="sec-head"><div class="tag common">Section commune 1 &middot; Common</div>
+      <h2>Le scénario<span class="en">The scenario</span></h2></div>
+
+    <div class="card">
+      <p>La rue des Tilleuls est une voie résidentielle calme, bordée d'arbres, en cul-de-sac, dans une ville européenne de taille moyenne. Cent personnes environ y vivent dans de vieilles maisons mitoyennes. À une extrémité&nbsp;: une école primaire. À l'autre&nbsp;: le débouché sur le boulevard Maréchal.
+        <span class="en">Linden Street is a quiet, tree-lined residential dead-end in a mid-sized European city. About a hundred people live there in old terraced houses. At one end: a primary school. At the other: the junction with Boulevard Maréchal.</span></p>
+      <p>Il y a six semaines, <strong>la Société de Mobilité Méridienne (SMM)</strong> a commencé des travaux pour construire un <strong>corridor cyclable protégé</strong> et un petit <strong>pôle de mobilité</strong> (vélos et trottinettes en libre-service, bornes de recharge) au bout de la rue. La SMM détient tous les permis&nbsp;: l'autorisation a été votée lors d'un conseil municipal tardif, légalement mais discrètement, sans que les riverains soient prévenus directement.
+        <span class="en">Six weeks ago, Méridienne Mobility (SMM) began work to build a protected bike corridor and a small mobility hub (shared bikes and scooters, charging docks) at the end of the street. SMM holds every permit: approval was voted at a late council session — legally but quietly — without residents being directly notified.</span></p>
+      <p>Les relations se sont vite dégradées. Les griefs des riverains&nbsp;: le bruit des engins dès l'aube, la poussière, des camions qui roulent trop vite dans une rue sans trottoir, l'absence de barrière de chantier, et la disparition annoncée de la moitié des places de stationnement au profit de la piste. Un mur de fondation s'est fissuré. La semaine dernière, un enfant a évité de justesse un camion.
+        <span class="en">Relations soured fast. Resident grievances: machinery noise at dawn, dust, trucks driving too fast on a street with no pavement, no site fence, and the announced loss of half the parking to the cycle track. A foundation wall has cracked. Last week a child narrowly avoided a truck.</span></p>
+      <p>Jusqu'ici, la SMM a répondu par des lettres-types. Personne du projet n'a parlé directement à un·e habitant·e. Après une réunion houleuse à l'école, les riverains ont élu un comité. Une rencontre est fixée — cet après-midi — entre ce comité et des représentant·e·s de la SMM.
+        <span class="en">So far SMM has answered with form letters. No one from the project has spoken to a resident directly. After a heated school-hall meeting, residents elected a committee. A meeting is set — this afternoon — between that committee and SMM representatives.</span></p>
+      <div class="callout"><strong>À lire ce soir.</strong> Cette section commune est la seule à lire avant le cours. Les fiches de rôle seront distribuées et déverrouillées en classe.
+        <span class="en">Read tonight: this common section is the only thing to read before class. Role sheets are distributed and unlocked in class.</span></div>
+    </div>
+  </section>
+
+  <!-- ====================== PREP GUIDE ====================== -->
+  <section class="block" id="prep">
+    <div class="sec-head"><div class="tag common">Section commune 2 &middot; Common</div>
+      <h2>Bien se préparer<span class="en">How to prepare well</span></h2></div>
+
+    <div class="card">
+      <p>On ne vous donne pas la solution. On vous donne la <strong>façon de la trouver</strong>. Une équipe bien préparée n'est pas celle qui a deviné le bon accord d'avance — c'est celle qui s'est organisée pour le découvrir <em>ensemble</em>, à la table.
+        <span class="en">We don't give you the solution. We give you the way to find it. A well-prepared team isn't the one that guessed the right deal in advance — it's the one that organised itself to discover it together, at the table.</span></p>
+      <div class="callout gold"><strong>L'idée-clé.</strong> Votre réunion de préparation <em>est elle-même une négociation.</em> Trois personnes aux priorités différentes doivent s'accorder sur une stratégie commune avant même de rencontrer l'autre camp. Si vous ratez cette négociation-là, vous arriverez divisé·e·s à la table.
+        <span class="en">Key idea: your prep meeting is itself a negotiation. Three people with different priorities must agree on a shared strategy before even meeting the other side. Botch that negotiation and you arrive at the table divided.</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Une méthode en 5 temps<span class="en">A five-step method</span></h3>
+      <p>Suivez cet ordre pendant vos ~50 minutes de préparation. Ne sautez aucune étape.
+        <span class="en">Follow this order during your ~50 minutes of prep. Skip no step.</span></p>
+      <div class="stepgrid">
+        <div class="step"><div class="num">1</div><h4>Fixer le but de la réunion<span class="en">Set the meeting's purpose</span></h4><p>Avant de discuter du fond&nbsp;: pourquoi se réunit-on&nbsp;? Quel <em>produit</em> veut-on sortir d'ici 50 min (un ordre du jour&nbsp;? une liste de propositions&nbsp;? des rôles attribués&nbsp;?)<span class="en">Before any substance: why are we meeting? What product do we want in 50 min — an agenda? a list of proposals? assigned roles?</span></p></div>
+        <div class="step"><div class="num">2</div><h4>Partager l'information<span class="en">Share information</span></h4><p>Chacun·e dit ce qu'il/elle sait et ce qui lui tient à cœur. Vous découvrirez que vos priorités internes <em>divergent</em>. C'est normal — et c'est le vrai travail.<span class="en">Each person says what they know and what they care about. You'll find your internal priorities diverge. That's normal — and it's the real work.</span></p></div>
+        <div class="step"><div class="num">3</div><h4>Intérêts, pas positions<span class="en">Interests, not positions</span></h4><p>Pour chaque grief&nbsp;: quel <em>intérêt</em> se cache derrière&nbsp;? «&nbsp;Je veux la barrière&nbsp;» est une position. «&nbsp;Je veux que mes enfants soient en sécurité&nbsp;» est un intérêt — et il ouvre plus d'options.<span class="en">For each grievance: what interest sits behind it? "I want the fence" is a position. "I want my kids safe" is an interest — and it opens more options.</span></p></div>
+        <div class="step"><div class="num">4</div><h4>Options &amp; critères<span class="en">Options &amp; criteria</span></h4><p>Inventez plusieurs solutions possibles <em>avant</em> de juger. Cherchez des critères objectifs (normes de sécurité, coûts de marché, précédents) sur lesquels vous appuyer.<span class="en">Invent several possible solutions before judging. Look for objective criteria (safety norms, market costs, precedents) to lean on.</span></p></div>
+        <div class="step"><div class="num">5</div><h4>BATNA &amp; processus<span class="en">BATNA &amp; process</span></h4><p>Quelle est votre meilleure solution <em>sans</em> accord&nbsp;? Et concrètement&nbsp;: qui parle&nbsp;? dans quel ordre&nbsp;? qui écoute et prend des notes&nbsp;?<span class="en">What's your best alternative to a negotiated agreement? And concretely: who speaks? in what order? who listens and takes notes?</span></p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Sept éléments à avoir en tête<span class="en">Seven elements to keep in mind</span></h3>
+      <p>Le cadre des «&nbsp;sept éléments&nbsp;» (Harvard) est une liste de contrôle utile pendant la préparation&nbsp;:
+        <span class="en">The Harvard "seven elements" framework is a useful preparation checklist:</span></p>
+      <ul>
+        <li>Intérêts — ce que chaque partie veut vraiment, sous les positions affichées.<span class="en">Interests — what each party truly wants, beneath stated positions.</span></li>
+        <li>Options — les accords possibles, inventés avant d'être jugés.<span class="en">Options — possible agreements, invented before being judged.</span></li>
+        <li>Critères — les normes objectives qui rendent un accord légitime.<span class="en">Criteria — objective standards that make a deal legitimate.</span></li>
+        <li>Alternatives (BATNA) — ce que vous faites faute d'accord.<span class="en">Alternatives (BATNA) — what you do absent a deal.</span></li>
+        <li>Communication — comment vous écoutez et vous faites comprendre.<span class="en">Communication — how you listen and make yourself understood.</span></li>
+        <li>Relation — l'état du lien entre les parties, pour aujourd'hui et demain.<span class="en">Relationship — the state of the bond between parties, today and tomorrow.</span></li>
+        <li>Engagement — des promesses claires, réalistes et tenables.<span class="en">Commitment — promises that are clear, realistic and operational.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ====================== PROCESS CONSCIOUSNESS ====================== -->
+  <section class="block" id="process">
+    <div class="sec-head"><div class="tag common">Section commune 3 &middot; Common</div>
+      <h2>La conscience du processus<span class="en">Process consciousness</span></h2></div>
+
+    <div class="card">
+      <p><strong>Conscience du processus</strong> = la capacité à observer <em>comment</em> votre groupe travaille pendant qu'il travaille, et à le réorienter si besoin — au lieu de simplement réagir à ce qui arrive.
+        <span class="en">Process consciousness = the ability to watch how your group is working while it works, and to redirect it if needed — instead of merely reacting to whatever comes up.</span></p>
+      <div class="callout"><strong>Purposif vs. réactif.</strong> Un groupe <em>purposif</em> sait à chaque instant pourquoi il fait ce qu'il fait. Un groupe <em>réactif</em> rebondit d'un sujet à l'autre, suit la dernière personne qui a parlé fort, et s'aperçoit à la fin qu'il n'a rien décidé.
+        <span class="en">Purposive vs. reactive. A purposive group knows at every moment why it is doing what it's doing. A reactive group bounces between topics, follows whoever last spoke loudest, and realises at the end that it decided nothing.</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Pourquoi c'est décisif<span class="en">Why it matters</span></h3>
+      <p>La plupart des équipes échouent non pas faute de bonnes idées, mais faute de <em>processus</em>&nbsp;: elles passent 50 minutes à se plaindre du chantier sans jamais décider qui parlera ni dans quel ordre. Puis elles arrivent à la table improvisées et divisées. La partie adverse n'a alors qu'à les diviser davantage.
+        <span class="en">Most teams fail not for lack of good ideas, but for lack of process: they spend 50 minutes complaining about the worksite without ever deciding who will speak or in what order. Then they arrive at the table improvising and divided. The other side need only divide them further.</span></p>
+      <h3 style="margin-top:18px">Les trois P d'une réunion<span class="en">The three P's of a meeting</span></h3>
+      <div class="stepgrid">
+        <div class="step"><div class="num">P</div><h4>Purpose / But<span class="en"></span></h4><p>Avez-vous décidé du but&nbsp;? L'avez-vous atteint&nbsp;?<span class="en">Did you decide the purpose? Did you reach it?</span></p></div>
+        <div class="step"><div class="num">P</div><h4>Product / Produit<span class="en"></span></h4><p>Que produit concrètement la réunion&nbsp;? Un plan&nbsp;? Des rôles&nbsp;?<span class="en">What does the meeting concretely produce? A plan? Roles?</span></p></div>
+        <div class="step"><div class="num">P</div><h4>Process / Processus<span class="en"></span></h4><p>Comment avez-vous travaillé&nbsp;? Organisé ou chaotique&nbsp;? Pourquoi&nbsp;?<span class="en">How did you work? Organised or chaotic? Why?</span></p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Pendant la préparation, posez-vous ces questions<span class="en">During prep, ask yourselves</span></h3>
+      <ul>
+        <li>Sommes-nous satisfait·e·s de notre façon de travailler en ce moment&nbsp;?<span class="en">Are we satisfied with how we're working right now?</span></li>
+        <li>Qu'est-ce qui marche bien&nbsp;? Qu'est-ce qui ne marche pas&nbsp;? Pourquoi&nbsp;?<span class="en">What's working well? What isn't? Why?</span></li>
+        <li>Tournons-nous en rond&nbsp;? Si oui, qui peut nous recentrer&nbsp;?<span class="en">Are we going in circles? If so, who can refocus us?</span></li>
+        <li>Avons-nous décidé quelque chose, ou seulement parlé&nbsp;?<span class="en">Have we decided anything, or only talked?</span></li>
+        <li>Traitons-nous cette préparation comme une vraie négociation interne&nbsp;?<span class="en">Are we treating this prep as a real internal negotiation?</span></li>
+      </ul>
+      <div class="callout forest"><strong>Conseil.</strong> Désignez dès le départ une personne «&nbsp;gardienne du processus&nbsp;» dont le seul rôle est d'interrompre toutes les 10 minutes pour demander&nbsp;: «&nbsp;Où en est-on&nbsp;? Avance-t-on vers notre but&nbsp;?&nbsp;»
+        <span class="en">Tip: from the outset, appoint a "process guardian" whose only job is to interrupt every 10 minutes and ask: "Where are we? Are we moving toward our goal?"</span></div>
+    </div>
+  </section>
+
+  <!-- ====================== GENERAL INSTRUCTIONS: DEV ====================== -->
+  <section class="block" id="gen-dev">
+    <div class="sec-head"><div class="tag common">Section commune 4 &middot; Common</div>
+      <h2>Instructions générales — Équipe SMM<span class="en">General instructions — SMM team</span></h2></div>
+    <div class="card">
+      <p>Vous représentez <strong>la Société de Mobilité Méridienne</strong>, opérateur de mobilité partagée présent dans plusieurs villes. Le corridor de la rue des Tilleuls est votre premier projet dans cette ville&nbsp;: une vitrine. La municipalité vous a accordé le contrat en espérant un modèle reproductible ailleurs.
+        <span class="en">You represent Méridienne Mobility (SMM), a shared-mobility operator active in several cities. The Linden Street corridor is your first project in this city: a showcase. The city awarded the contract hoping for a model it can replicate elsewhere.</span></p>
+      <p>Le projet a bien démarré, puis deux mauvaises nouvelles sont tombées&nbsp;: un sous-sol rocheux imprévu a fait grimper les coûts d'excavation, et les relations avec les riverains se sont effondrées. Vous vous réunissez à trois pour préparer la rencontre de cet après-midi avec le comité des riverains.
+        <span class="en">The project started well, then two pieces of bad news hit: unexpected bedrock pushed up excavation costs, and relations with residents collapsed. The three of you meet to prepare for this afternoon's meeting with the residents' committee.</span></p>
+      <p>Vous partagez tou·te·s trois un intérêt commun&nbsp;: <strong>livrer le projet à temps, sans scandale public, et préserver la réputation de la SMM</strong> pour décrocher les prochains contrats. Mais vos priorités sur «&nbsp;comment&nbsp;» y parvenir diffèrent. Découvrez-le pendant votre préparation.
+        <span class="en">All three of you share a common interest: deliver the project on time, without public scandal, and protect SMM's reputation to win the next contracts. But your priorities on how to get there differ. Discover that during your prep.</span></p>
+    </div>
+  </section>
+
+  <!-- ====================== GENERAL INSTRUCTIONS: RES ====================== -->
+  <section class="block" id="gen-res">
+    <div class="sec-head"><div class="tag common">Section commune 5 &middot; Common</div>
+      <h2>Instructions générales — Comité des riverains<span class="en">General instructions — Residents' committee</span></h2></div>
+    <div class="card">
+      <p>Vous habitez la rue des Tilleuls et avez été élu·e·s au comité de négociation lors de la réunion à l'école. La rue était calme, sûre, familiale&nbsp;; le chantier a tout bouleversé en six semaines. Vous vous réunissez à trois pour préparer la rencontre avec la SMM.
+        <span class="en">You live on Linden Street and were elected to the negotiating committee at the school meeting. The street was quiet, safe, family-friendly; the worksite upended everything in six weeks.</span></p>
+      <p>Vous n'avez trouvé <strong>aucun moyen légal d'arrêter le projet</strong>&nbsp;: les permis sont en règle. Mais la SMM redoute la mauvaise presse, et vous avez du poids&nbsp;: pétitions, médias locaux, élu·e·s municipaux sensibles à l'opinion. Votre force est collective — à condition de rester uni·e·s.
+        <span class="en">You've found no legal way to stop the project: the permits are valid. But SMM fears bad press, and you have leverage: petitions, local media, council members sensitive to opinion. Your strength is collective — provided you stay united.</span></p>
+      <p>Attention&nbsp;: vous ne voulez pas tou·te·s exactement la même chose, et vous ne le découvrirez qu'en préparant ensemble. Une équipe qui n'a pas aligné ses priorités internes se fera diviser à la table.
+        <span class="en">Careful: you don't all want exactly the same thing, and you'll only find that out by preparing together. A team that hasn't aligned its internal priorities will be split at the table.</span></p>
+    </div>
+  </section>
+
+  <!-- ====================== SECRET ROLES: DEV ====================== -->
+  <section class="block" id="roles-dev">
+    <div class="sec-head"><div class="tag secret">Section secrète A &middot; Secret</div>
+      <h2>Fiches confidentielles — Équipe SMM<span class="en">Confidential sheets — SMM team</span></h2></div>
+    <p style="color:var(--slate);margin:0 0 6px"><em>Saisissez votre code pour déverrouiller votre fiche. Ne lisez que la vôtre. / Enter your PIN to unlock your sheet. Read only your own.</em></p>
+    <div class="rolegrid" id="grid-dev"></div>
+  </section>
+
+  <!-- ====================== SECRET ROLES: RES ====================== -->
+  <section class="block" id="roles-res">
+    <div class="sec-head"><div class="tag secret">Section secrète B &middot; Secret</div>
+      <h2>Fiches confidentielles — Comité des riverains<span class="en">Confidential sheets — Residents' committee</span></h2></div>
+    <p style="color:var(--slate);margin:0 0 6px"><em>Saisissez votre code pour déverrouiller votre fiche. Ne lisez que la vôtre. / Enter your PIN to unlock your sheet. Read only your own.</em></p>
+    <div class="rolegrid" id="grid-res"></div>
+  </section>
+
+  <!-- ====================== DEBRIEF ====================== -->
+  <section class="block" id="debrief">
+    <div class="sec-head"><div class="tag common">Section commune 6 &middot; Common</div>
+      <h2>Débrief<span class="en">Debrief</span></h2></div>
+    <div class="card">
+      <h3>Sur la préparation<span class="en">On the preparation</span></h3>
+      <ul>
+        <li>Aviez-vous décidé du but de votre réunion de prép&nbsp;? L'avez-vous atteint&nbsp;?<span class="en">Did you decide the purpose of your prep meeting? Did you reach it?</span></li>
+        <li>Quel a été le <em>produit</em> de la préparation&nbsp;? Un vrai plan, ou des notes éparses&nbsp;?<span class="en">What was the product of prep? A real plan, or scattered notes?</span></li>
+        <li>À quel moment avez-vous été purposif·ve·s&nbsp;? À quel moment réactif·ve·s&nbsp;?<span class="en">When were you purposive? When were you reactive?</span></li>
+        <li>Avez-vous traité la préparation comme une négociation&nbsp;? Pourquoi&nbsp;?<span class="en">Did you treat prep as a negotiation? Why or why not?</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Sur la négociation<span class="en">On the negotiation</span></h3>
+      <ul>
+        <li>Quel était votre objectif&nbsp;? L'avez-vous atteint&nbsp;? Sinon, pourquoi&nbsp;?<span class="en">What was your goal? Did you reach it? If not, why?</span></li>
+        <li>Quels étaient — selon vous — les intérêts de l'autre équipe&nbsp;? Vérifiez avec elle.<span class="en">What did you think the other team's interests were? Check with them.</span></li>
+        <li>Y a-t-il eu un désaccord interne pendant la table&nbsp;? L'autre équipe l'a-t-elle vu&nbsp;? Exploité&nbsp;?<span class="en">Was there internal disagreement at the table? Did the other team see it? Exploit it?</span></li>
+        <li>Avez-vous trouvé des accords qui créaient de la valeur pour les deux camps&nbsp;?<span class="en">Did you find agreements that created value for both sides?</span></li>
+        <li>En quoi votre préparation a-t-elle façonné ce qui s'est passé à la table&nbsp;?<span class="en">How did your preparation shape what happened at the table?</span></li>
+      </ul>
+      <div class="callout gold"><strong>La leçon centrale.</strong> Comparez les équipes&nbsp;: celles qui ont le mieux négocié sont presque toujours celles qui se sont le mieux <em>préparées</em> — pas celles qui avaient les personnalités les plus fortes.
+        <span class="en">The central lesson: compare the teams — the ones who negotiated best are almost always the ones who prepared best, not the ones with the strongest personalities.</span></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    Dr. Jan Erik Meidell &middot; UMEF Suisse &middot; MSc Business Administration &middot; Négociation
+    <div class="en">Original simulation — not derived from any copyrighted case. Non-scoreable, preparation-focused.</div>
+  </div>
+
+</div>
+
+<script>
+// ---------- navigation ----------
+const sections = [
+  {id:'home',     fr:'Accueil',      en:'Start'},
+  {id:'scenario', fr:'Scénario',     en:'Scenario'},
+  {id:'prep',     fr:'Se préparer',  en:'Prepare'},
+  {id:'process',  fr:'Processus',    en:'Process'},
+  {id:'gen-dev',  fr:'Instr. SMM',   en:'SMM instr.'},
+  {id:'gen-res',  fr:'Instr. Riverains', en:'Resident instr.'},
+  {id:'roles-dev',fr:'🔒 Rôles SMM', en:'SMM roles'},
+  {id:'roles-res',fr:'🔒 Rôles Riverains', en:'Resident roles'},
+  {id:'debrief',  fr:'Débrief',      en:'Debrief'},
+];
+const nav = document.getElementById('nav');
+sections.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.textContent=s.fr;
+  b.onclick=()=>show(s.id,b);
+  if(i===0)b.classList.add('active');
+  nav.appendChild(b);
+});
+function show(id,btn){
+  document.querySelectorAll('section.block').forEach(s=>s.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ---------- roles + PIN gating ----------
+const roles=[
+  // DEV side
+  {side:'dev',pin:'2701',title:"Directrice / Directeur de projet",en:"Project Director (authority)",
+   teaser:"Vous détenez l'autorité finale côté SMM. / You hold final authority on the SMM side.",
+   body:`
+     <h5>Qui vous êtes<span class="en">Who you are</span></h5>
+     <p>Vous pilotez le projet et vous avez le dernier mot dans l'équipe. Votre carrière à la SMM dépend de la réussite de cette vitrine&nbsp;: si elle tourne au scandale, la ville n'accordera pas les prochains contrats, et la direction cherchera un·e responsable.
+       <span class="en">You run the project and have the final say on the team. Your career at SMM rides on this showcase: if it turns into a scandal, the city won't grant the next contracts, and head office will look for someone to blame.</span></p>
+     <div class="priv"><b>Information privée :</b> vous disposez d'une <b>réserve budgétaire d'environ 60&nbsp;000&nbsp;€</b> pour imprévus, encore largement intacte malgré le surcoût rocheux. Vous n'êtes pas obligé·e de l'annoncer — mais elle existe, et elle permet des gestes concrets (barrière, ralentisseurs, médiateur de quartier, compensation de stationnement).
+       <span class="en">Private info: you hold a contingency reserve of about €60,000, still largely intact despite the bedrock overrun. You needn't announce it — but it exists, and it funds concrete gestures (fence, speed bumps, neighbourhood liaison, parking compensation).</span></div>
+     <h5>Votre dilemme interne<span class="en">Your internal dilemma</span></h5>
+     <p>Votre responsable opérations veut tout verrouiller sur les coûts et le calendrier. Votre responsable communication veut dépenser pour acheter la paix sociale. Les deux ont raison en partie. Votre travail en préparation&nbsp;: les faire converger sur <em>une</em> stratégie, sans imposer brutalement votre autorité — orienter vaut mieux que dicter.
+       <span class="en">Your operations lead wants everything locked on cost and schedule. Your communications lead wants to spend to buy social peace. Both are partly right. Your prep job: get them to converge on one strategy without bluntly pulling rank — steering beats dictating.</span></p>`},
+
+  {side:'dev',pin:'5042',title:"Responsable des opérations",en:"Operations Lead (cost & schedule)",
+   teaser:"Vous tenez le budget et le calendrier. / You hold the budget and schedule.",
+   body:`
+     <h5>Qui vous êtes<span class="en">Who you are</span></h5>
+     <p>Trente ans de chantiers. Vous savez qu'un projet qui glisse sur les coûts ou les délais est un projet qui finit mal pour celui qui l'a géré — vous. Le sous-sol rocheux a déjà mangé une partie de la marge, et vous refusez d'aggraver le dérapage.
+       <span class="en">Thirty years on worksites. You know a project that slips on cost or schedule ends badly for whoever ran it — you. The bedrock already ate part of the margin, and you refuse to deepen the slide.</span></p>
+     <div class="priv"><b>Votre conviction :</b> la plupart des plaintes des riverains ne coûtent presque rien à régler (poser la barrière déjà commandée, limiter les horaires de bruit, couvrir les camions, mettre un agent au carrefour). Ce qui vous inquiète, ce sont les demandes <b>coûteuses ou qui ralentissent le chantier</b>&nbsp;: déplacer le tracé, refaire le stationnement, suspendre les travaux. Là, vous résisterez.
+       <span class="en">Your conviction: most resident complaints cost almost nothing to fix (put up the already-ordered fence, limit noisy hours, cover trucks, post a marshal at the junction). What worries you are expensive demands or ones that slow the site: moving the route, rebuilding parking, halting work. There you'll resist.</span></div>
+     <h5>En préparation<span class="en">In prep</span></h5>
+     <p>Vous aurez tendance à dire «&nbsp;non&nbsp;» à tout ce qui coûte. Méfiez-vous de ce réflexe&nbsp;: certaines dépenses modestes achètent une paix qui, elle, vaut très cher. Votre collègue communication va pousser dans l'autre sens. Trouvez la ligne ensemble.
+       <span class="en">You'll tend to say "no" to anything costly. Beware that reflex: some modest spending buys a peace that is itself very valuable. Your comms colleague will push the other way. Find the line together.</span></p>`},
+
+  {side:'dev',pin:'3A99',title:"Responsable communication",en:"Communications Lead (reputation)",
+   teaser:"Vous protégez l'image de la SMM. / You protect SMM's image.",
+   body:`
+     <h5>Qui vous êtes<span class="en">Who you are</span></h5>
+     <p>Vous êtes arrivé·e récemment, après un projet de la SMM dans une autre ville qui a viré au cauchemar médiatique. Vous savez qu'une seule photo d'un enfant manquant de se faire renverser, relayée par la presse locale, peut tuer non seulement ce corridor mais tous les futurs contrats.
+       <span class="en">You joined recently, after an SMM project in another city became a media nightmare. You know one photo of a child nearly hit, picked up by local press, can kill not just this corridor but every future contract.</span></p>
+     <div class="priv"><b>Votre conviction :</b> les gens en colère ne le sont pas tant à cause du projet que parce qu'<b>on ne leur a jamais parlé</b>. La SMM a répondu par des lettres-types. Un geste visible et un canal de dialogue permanent désamorceraient l'essentiel. Vous êtes prêt·e à dépenser pour cela — vous y voyez un investissement, pas un coût.
+       <span class="en">Your conviction: angry people are angry less about the project than about never being spoken to. SMM answered with form letters. A visible gesture and a permanent dialogue channel would defuse most of it. You're willing to spend on that — you see investment, not cost.</span></div>
+     <h5>En préparation<span class="en">In prep</span></h5>
+     <p>Vous vous heurterez à votre collègue opérations, qui voit chaque euro comme une fuite. Ne transformez pas la préparation en bras de fer&nbsp;: cherchez les gestes qui sont <em>à la fois</em> peu coûteux et très visibles. C'est là que vous vous rejoindrez.
+       <span class="en">You'll clash with your operations colleague, who sees every euro as a leak. Don't turn prep into a tug-of-war: look for gestures that are both cheap and highly visible. That's where you'll meet.</span></p>`},
+
+  // RES side
+  {side:'res',pin:'1761',title:"Avocat·e du quartier",en:"Neighbourhood Lawyer (near-miss child)",
+   teaser:"Vous menez le comité. Vous êtes en colère. / You lead the committee. You are angry.",
+   body:`
+     <h5>Qui vous êtes<span class="en">Who you are</span></h5>
+     <p>Avocat·e, vous habitez tout au bout de la rue. C'est vous qui avez décroché le rendez-vous avec la SMM. Avant-hier, un camion du chantier a failli renverser votre enfant sur le chemin de l'école&nbsp;: il/elle est terrorisé·e à l'idée de sortir. Pour vous, c'est non négociable&nbsp;: cela ne doit plus jamais arriver.
+       <span class="en">A lawyer, you live at the very end of the street. You're the one who secured the meeting with SMM. The day before yesterday a site truck nearly ran over your child on the school walk: they're now terrified to go out. For you this is non-negotiable: it must never happen again.</span></p>
+     <div class="priv"><b>Information privée :</b> vous avez étudié le dossier. Vous n'avez <b>aucun moyen légal d'arrêter le projet</b> — les permis sont solides. Mais vous pensez pouvoir obtenir gain de cause sur la <b>sécurité</b> (barrière, ralentisseurs, horaires, agent au carrefour) en menaçant de manière crédible d'une campagne médiatique et d'un recours. Ne dévoilez pas trop tôt la faiblesse de votre position juridique.
+       <span class="en">Private info: you've studied the file. You have no legal way to stop the project — the permits are solid. But you think you can win on safety (fence, speed bumps, hours, junction marshal) by credibly threatening a media campaign and a legal challenge. Don't reveal the weakness of your legal position too early.</span></div>
+     <h5>En préparation<span class="en">In prep</span></h5>
+     <p>Votre colère est légitime mais peut vous rendre <em>réactif·ve</em>. Votre rôle naturel est de mener le comité&nbsp;; veillez à écouter les deux autres, dont les priorités ne sont pas exactement les vôtres.
+       <span class="en">Your anger is legitimate but can make you reactive. Your natural role is to lead the committee; make sure you listen to the other two, whose priorities aren't exactly yours.</span></p>`},
+
+  {side:'res',pin:'2C5F',title:"Parent &amp; enseignant·e",en:"Parent & Teacher (safety/community)",
+   teaser:"Vous parlez pour les familles et l'école. / You speak for families and the school.",
+   body:`
+     <h5>Qui vous êtes<span class="en">Who you are</span></h5>
+     <p>Vous enseignez à l'école au bout de la rue et vous avez deux enfants. Le chantier non clôturé, les camions rapides, l'absence de trottoir&nbsp;: vous y voyez un danger quotidien. Une élève est tombée dans une tranchée il y a deux semaines (sans gravité, mais la peur était réelle).
+       <span class="en">You teach at the school at the end of the street and have two children. The unfenced site, fast trucks, no pavement: you see daily danger. A pupil fell into a trench two weeks ago (unhurt, but the fear was real).</span></p>
+     <div class="priv"><b>Ce que vous voulez vraiment :</b> la sécurité des enfants, point. Vous n'êtes pas hostile au vélo en soi — au contraire, un corridor cyclable <b>bien fait</b> pourrait même servir l'école. Vous pourriez donc accepter le projet s'il devient sûr. Cela fait de vous un pont possible vers la SMM — mais ne lâchez rien sur la sécurité.
+       <span class="en">What you really want: child safety, full stop. You're not against cycling as such — done well, a corridor could even serve the school. So you could accept the project if it's made safe. That makes you a possible bridge to SMM — but give nothing on safety.</span></div>
+     <h5>En préparation<span class="en">In prep</span></h5>
+     <p>Votre modération peut tempérer la colère de l'avocat·e. Mais attention&nbsp;: si vous paraissez trop conciliant·e trop tôt, l'équipe peut se fracturer. Alignez la stratégie <em>avant</em> la table.
+       <span class="en">Your moderation can temper the lawyer's anger. But beware: appearing too conciliatory too early can fracture the team. Align strategy before the table.</span></p>`},
+
+  {side:'res',pin:'C99A',title:"Commerçant·e",en:"Shopkeeper (secret beneficiary)",
+   teaser:"Vous tenez un commerce sur le boulevard. / You run a shop on the boulevard.",
+   body:`
+     <h5>Qui vous êtes<span class="en">Who you are</span></h5>
+     <p>Vous possédez une boutique au débouché de la rue et une maison que vous comptez vendre bientôt (pour raisons familiales). Vous siégez au comité comme les autres et partagez certaines plaintes — la poussière, une fissure dans votre mur que la SMM refuse d'examiner.
+       <span class="en">You own a shop at the mouth of the street and a house you plan to sell soon (family reasons). You sit on the committee like the others and share some complaints — dust, a crack in your wall SMM refuses to look at.</span></p>
+     <div class="priv"><b>Votre secret :</b> au fond, le projet <b>vous arrange</b>. Un corridor vélo et un pôle de mobilité amèneront du passage devant votre boutique et feront <b>monter la valeur</b> de votre bien avant la vente. Vous ne pouvez pas l'avouer à vos voisin·e·s en colère — vous perdriez toute influence. Vous devez donc <b>paraître contrarié·e</b> tout en évitant discrètement que la négociation ne fasse capoter le projet.
+       <span class="en">Your secret: deep down, the project suits you. A bike corridor and mobility hub will bring footfall past your shop and raise your property's value before the sale. You can't admit this to your angry neighbours — you'd lose all influence. So you must appear upset while quietly making sure the negotiation doesn't sink the project.</span></div>
+     <h5>En préparation<span class="en">In prep</span></h5>
+     <p>Jouez fin. Vous avez deux vraies petites demandes (la fissure, la poussière) qui vous donnent une couverture crédible. Utilisez-les. Mais votre intérêt profond est qu'un accord se conclue — pas que la table explose.
+       <span class="en">Play it subtle. You have two genuine small asks (the crack, the dust) that give you credible cover. Use them. But your deep interest is that a deal closes — not that the table blows up.</span></div>`},
+];
+
+function makeCard(r){
+  const sideClass = r.side==='dev'?'dev':'res';
+  const sideLabel = r.side==='dev'?'SMM &middot; Promoteur':'Riverains &middot; Residents';
+  const div=document.createElement('div');
+  div.className='rolecard '+sideClass;
+  div.innerHTML=`
+    <div class="band"><div class="side">${sideLabel}</div>
+      <h4>${r.title}<span class="en">${r.en}</span></h4></div>
+    <div class="body">
+      <div class="locktag">🔒 Fiche confidentielle / Confidential</div>
+      <div class="teaser">${r.teaser}</div>
+      <div class="pinrow">
+        <input type="text" maxlength="4" placeholder="••••" aria-label="PIN">
+        <button>Ouvrir / Unlock</button>
+      </div>
+      <div class="lockmsg"></div>
+      <div class="secretbody">${r.body}</div>
+    </div>`;
+  const input=div.querySelector('input');
+  const btn=div.querySelector('button');
+  const msg=div.querySelector('.lockmsg');
+  const secret=div.querySelector('.secretbody');
+  const tryOpen=()=>{
+    if(input.value.trim().toUpperCase()===r.pin){
+      secret.classList.add('open');
+      msg.textContent='✓ Déverrouillé / Unlocked';
+      msg.classList.add('ok');
+      input.disabled=true;btn.disabled=true;
+    }else{
+      msg.classList.remove('ok');
+      msg.textContent='Code incorrect / Wrong PIN';
+      input.value='';input.focus();
+    }
+  };
+  btn.onclick=tryOpen;
+  input.onkeydown=e=>{if(e.key==='Enter')tryOpen();};
+  return div;
+}
+const gdev=document.getElementById('grid-dev');
+const gres=document.getElementById('grid-res');
+roles.forEach(r=>{(r.side==='dev'?gdev:gres).appendChild(makeCard(r));});
+</script>
+</body>
+</html>

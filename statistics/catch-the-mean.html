@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Catch the Mean</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --teal:#2DB6A8; --purple:#7E5AE8; --amber:#E8A33C;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:"Calibri","Helvetica Neue",sans-serif;color:#fff;
+  background:radial-gradient(ellipse at top,var(--navy-mid) 0%,var(--navy-deep) 70%);
+  min-height:100vh;line-height:1.5;
+}
+.wrap{max-width:840px;margin:0 auto;padding:34px 20px 80px;}
+
+.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--blue-glow);font-weight:700;}
+h1{font-size:29px;margin:8px 0 6px;color:#fff;letter-spacing:.3px;}
+.scene{color:var(--grey-muted);font-size:15px;max-width:700px;}
+.scene b{color:var(--gold-bright);font-weight:600;}
+
+.acts{display:flex;gap:8px;margin:22px 0 6px;flex-wrap:wrap;}
+.act{flex:1;min-width:150px;background:rgba(30,52,112,.4);border:1px solid rgba(74,144,226,.25);
+     border-radius:12px;padding:11px 13px;transition:.25s;opacity:.5;}
+.act.live{opacity:1;border-color:var(--gold);box-shadow:0 4px 18px rgba(0,0,0,.35);}
+.act.done{opacity:.85;border-color:var(--green-soft);}
+.act .n{font-size:11px;letter-spacing:1px;color:var(--gold-bright);font-weight:700;text-transform:uppercase;}
+.act .t{font-size:13.5px;color:#fff;margin-top:3px;font-weight:600;}
+.act .d{font-size:11.5px;color:var(--grey-muted);margin-top:2px;}
+
+.panel{background:linear-gradient(160deg,rgba(30,52,112,.5),rgba(10,26,58,.5));
+       border:1px solid rgba(74,144,226,.28);border-radius:16px;padding:18px;margin-top:16px;}
+.panel h2{font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey-muted);
+          font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.panel .hint{font-size:12.5px;color:var(--grey-muted);margin-bottom:10px;}
+.panel .hint em{color:var(--gold-bright);font-style:normal;font-weight:600;}
+
+#ciCanvas{width:100%;display:block;border-radius:10px;background:rgba(10,26,58,.55);}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--grey-muted);margin-top:8px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.swatch{width:12px;height:12px;border-radius:3px;display:inline-block;}
+
+.readout{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:13px;}
+.readout div{color:var(--grey-muted);}
+.readout b{display:block;font-size:17px;color:#fff;}
+.readout .hit b{color:var(--green-correct);}
+.readout .miss b{color:var(--red-wrong);}
+.readout .rate b{color:var(--gold-bright);}
+
+.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+.btn{background:linear-gradient(180deg,var(--gold),var(--gold-dark));color:#1a1205;border:none;
+     border-radius:30px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;
+     font-family:inherit;transition:.18s;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,0,0,.4);}
+.btn.sec{background:rgba(255,255,255,.08);color:var(--gold-bright);border:1px solid rgba(240,179,61,.45);}
+.btn.sec:hover{background:rgba(240,179,61,.16);}
+.btn.ghost{background:transparent;color:var(--grey-muted);border:1px solid rgba(176,188,214,.3);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.slider-row{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;}
+.slider-row label{font-size:13px;color:var(--grey-muted);white-space:nowrap;}
+.slider-row label b{color:var(--gold-bright);font-size:16px;}
+input[type=range]{flex:1;min-width:160px;accent-color:var(--gold);height:5px;}
+
+.insight{background:rgba(46,168,74,.1);border-left:3px solid var(--green-correct);
+         border-radius:8px;padding:11px 14px;margin-top:12px;font-size:13.5px;color:#dfeede;display:none;}
+.insight.show{display:block;animation:rise .4s;}
+.insight b{color:var(--green-correct);}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.pvdef{background:rgba(30,52,112,.55);border:1px dashed rgba(240,179,61,.5);border-radius:10px;
+       padding:14px 16px;margin-top:14px;font-size:14px;color:#fff;display:none;}
+.pvdef.show{display:block;animation:rise .4s;}
+.pvdef .big{font-size:15px;color:var(--gold-bright);font-weight:700;margin-bottom:6px;}
+.pvdef .warn{font-size:12.5px;color:var(--grey-muted);margin-top:8px;}
+.pvdef .warn s{color:var(--red-wrong);text-decoration:line-through;}
+.pvdef .warn b{color:var(--green-correct);}
+
+.quiz{margin-top:16px;display:none;}
+.quiz.show{display:block;}
+.quiz .q{font-size:15px;color:#fff;font-weight:600;margin-bottom:10px;}
+.opt{background:rgba(255,255,255,.05);border:1px solid rgba(74,144,226,.3);border-radius:10px;
+     padding:11px 14px;margin-bottom:8px;cursor:pointer;font-size:14px;transition:.15s;display:flex;gap:10px;}
+.opt:hover{border-color:var(--gold);background:rgba(240,179,61,.08);}
+.opt .L{font-weight:700;color:var(--gold-bright);}
+.opt.correct{border-color:var(--green-correct);background:rgba(46,168,74,.16);}
+.opt.wrong{border-color:var(--red-wrong);background:rgba(200,49,43,.14);}
+.qfb{font-size:13.5px;margin-top:8px;padding:11px 14px;border-radius:8px;display:none;}
+.qfb.show{display:block;}
+.qfb.ok{background:rgba(46,168,74,.12);color:#dfeede;}
+.qfb.no{background:rgba(200,49,43,.12);color:#f3d6d4;}
+
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:34px;opacity:.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Inferential Statistics · Interactive · 9.3</div>
+  <h1>Catch the Mean</h1>
+  <p class="scene">
+    Back to the coffee chain. Each sample gives one average — but a smart analyst reports a
+    <b>range</b> around it: a confidence interval. The famous claim is "95% confident the true
+    average is in here." But 95% of <b>what</b>, exactly? Let's draw a hundred intervals and watch.
+  </p>
+
+  <div class="acts">
+    <div class="act live" id="act1">
+      <div class="n">Step 1</div>
+      <div class="t">Draw one interval</div>
+      <div class="d">One sample → one range around its mean</div>
+    </div>
+    <div class="act" id="act2">
+      <div class="n">Step 2</div>
+      <div class="t">Draw a hundred</div>
+      <div class="d">Watch how many catch the truth</div>
+    </div>
+    <div class="act" id="act3">
+      <div class="n">Step 3</div>
+      <div class="t">Change the confidence</div>
+      <div class="d">Wider nets, fewer misses</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>A hundred analysts, a hundred samples</h2>
+    <div class="hint">
+      The gold line is the <em>true</em> average (which a real analyst never sees). Each horizontal bar is one
+      sample's interval. Green = it <em>caught</em> the truth. Red = it <em>missed</em>.
+    </div>
+    <canvas id="ciCanvas" height="300"></canvas>
+    <div class="legend">
+      <span><i class="swatch" style="background:#2EA84A"></i> interval that caught the true mean</span>
+      <span><i class="swatch" style="background:#C8312B"></i> interval that missed</span>
+      <span><i class="swatch" style="background:#FFD24A"></i> true mean</span>
+    </div>
+
+    <div class="readout">
+      <div>Intervals drawn<b id="rCount">0</b></div>
+      <div class="hit">Caught the truth<b id="rHit">0</b></div>
+      <div class="miss">Missed<b id="rMiss">0</b></div>
+      <div class="rate">Catch rate<b id="rRate">—</b></div>
+    </div>
+
+    <div class="slider-row">
+      <label>Confidence level: <b id="confVal">95</b>%</label>
+      <input type="range" id="confSlider" min="80" max="99" value="95" step="1">
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="drawOne">Draw one interval →</button>
+      <button class="btn sec" id="draw100">Draw 100</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="insight" id="insight1">
+      <b>Notice:</b> your single interval either caught the truth or didn't — you can't tell which from one sample alone. The "95%" was never about this one interval.
+    </div>
+    <div class="insight" id="insight2">
+      <b>The pattern:</b> across many intervals, close to 95% of them catch the true mean and about 5% miss (the red ones). The 95% is the <b>long-run success rate of the method</b> — a property of the procedure, not of any single result.
+    </div>
+
+    <div class="pvdef" id="cidef">
+      <div class="big">So what does "95% confidence" really mean?</div>
+      It means: <b>if you repeated this whole sampling-and-interval process many times, about 95% of the intervals would contain the true value.</b>
+      <div class="warn">
+        Careful: for the one interval you actually computed, it's <s>not</s> "a 95% chance the truth is inside it."
+        The truth is fixed; your interval either caught it or didn't. The 95% is <b>how often the method succeeds in the long run.</b>
+      </div>
+    </div>
+
+    <div class="quiz" id="quiz">
+      <div class="q">You compute a single 95% confidence interval: [11.2, 13.0]. Which statement is correct?</div>
+      <div class="opt" data-ok="0"><span class="L">A</span><span>There's a 95% probability the true mean is between 11.2 and 13.0.</span></div>
+      <div class="opt" data-ok="0"><span class="L">B</span><span>95% of customers spend between 11.2 and 13.0.</span></div>
+      <div class="opt" data-ok="1"><span class="L">C</span><span>The method that produced this interval catches the true mean about 95% of the time.</span></div>
+      <div class="qfb" id="qfb"></div>
+    </div>
+  </div>
+
+  <div class="foot">Catch the Mean · built for teaching · Jan Erik Meidell</div>
+</div>
+
+<script>
+// ============================================================
+// POPULATION (same coffee-spend world as 9.1, right-skewed)
+// ============================================================
+const POP_N=40000, pop=[];
+function rskew(){let u=Math.random(),v=Math.random();let z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);return Math.max(2,Math.exp(2.15+0.45*z));}
+for(let i=0;i<POP_N;i++) pop.push(rskew());
+const TRUE_MEAN=pop.reduce((a,b)=>a+b,0)/POP_N;
+
+// z-multipliers for confidence levels
+function zFor(conf){
+  // approximate inverse normal for two-sided conf level
+  const table={80:1.282,85:1.440,90:1.645,95:1.960,99:2.576};
+  if(table[conf]) return table[conf];
+  // linear interpolate for in-between integer values
+  const keys=Object.keys(table).map(Number).sort((a,b)=>a-b);
+  for(let i=0;i<keys.length-1;i++){
+    if(conf>=keys[i]&&conf<=keys[i+1]){
+      const t=(conf-keys[i])/(keys[i+1]-keys[i]);
+      return table[keys[i]]+t*(table[keys[i+1]]-table[keys[i]]);
+    }
+  }
+  return 1.96;
+}
+
+const SAMPLE_N=40;           // each analyst samples 40 customers
+const MAX_SHOWN=100;         // intervals visible on screen
+let conf=95, intervals=[], hits=0;
+
+// view window for the x-axis (CHF)
+const X_MIN=6, X_MAX=14;
+
+// ============================================================
+// CANVAS (fixed height)
+// ============================================================
+const CANVAS_H={ciCanvas:300};
+function setupCanvas(id){
+  const c=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const w=c.parentElement.clientWidth-36;
+  const h=CANVAS_H[id];
+  c.style.width=w+'px'; c.style.height=h+'px';
+  c.width=w*dpr; c.height=h*dpr;
+  const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {c,ctx,w,h};
+}
+
+function xToPx(x,w,pad){ return pad+(x-X_MIN)/(X_MAX-X_MIN)*(w-2*pad); }
+
+function draw(){
+  const {ctx,w,h}=setupCanvas('ciCanvas');
+  ctx.clearRect(0,0,w,h);
+  const pad=20, topPad=8, botPad=18;
+  // true mean line
+  const tx=xToPx(TRUE_MEAN,w,pad);
+  ctx.strokeStyle='#FFD24A'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(tx,topPad); ctx.lineTo(tx,h-botPad); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#FFD24A'; ctx.font='10px Calibri'; ctx.textAlign='center';
+  ctx.fillText('true mean '+TRUE_MEAN.toFixed(2), tx, h-5);
+
+  const shown=intervals.slice(-MAX_SHOWN);
+  if(shown.length===0){
+    ctx.fillStyle='rgba(176,188,214,.4)'; ctx.font='13px Calibri'; ctx.textAlign='center';
+    ctx.fillText('Press "Draw" — each bar is one sample\u2019s confidence interval', w/2, h/2);
+    return;
+  }
+  const rowH=(h-topPad-botPad)/MAX_SHOWN;
+  shown.forEach((iv,i)=>{
+    const y=topPad+i*rowH+rowH/2;
+    const x1=xToPx(iv.lo,w,pad), x2=xToPx(iv.hi,w,pad), xm=xToPx(iv.mean,w,pad);
+    ctx.strokeStyle=iv.hit?'rgba(46,168,74,.85)':'#C8312B';
+    ctx.lineWidth=iv.hit?1.4:2;
+    ctx.beginPath(); ctx.moveTo(Math.max(pad-4,x1),y); ctx.lineTo(Math.min(w-pad+4,x2),y); ctx.stroke();
+    // mean dot
+    ctx.fillStyle=iv.hit?'#6Fd089':'#E8635E';
+    ctx.beginPath(); ctx.arc(xm,y,Math.max(1.2,rowH*0.32),0,7); ctx.fill();
+  });
+}
+
+// ============================================================
+// SAMPLING + INTERVAL
+// ============================================================
+function oneInterval(){
+  let s=0, vals=[];
+  for(let i=0;i<SAMPLE_N;i++){ const v=pop[(Math.random()*POP_N)|0]; vals.push(v); s+=v; }
+  const mean=s/SAMPLE_N;
+  let ss=0; for(const v of vals) ss+=(v-mean)**2;
+  const sd=Math.sqrt(ss/(SAMPLE_N-1));
+  const se=sd/Math.sqrt(SAMPLE_N);
+  const z=zFor(conf);
+  const lo=mean-z*se, hi=mean+z*se;
+  const hit=(TRUE_MEAN>=lo && TRUE_MEAN<=hi);
+  return {mean,lo,hi,hit};
+}
+
+function add(k){
+  for(let i=0;i<k;i++){ const iv=oneInterval(); intervals.push(iv); if(iv.hit) hits++; }
+  update(); draw();
+}
+
+function update(){
+  const n=intervals.length;
+  document.getElementById('rCount').textContent=n;
+  document.getElementById('rHit').textContent=hits;
+  document.getElementById('rMiss').textContent=n-hits;
+  document.getElementById('rRate').textContent=n?((hits/n*100).toFixed(1)+'%'):'—';
+
+  if(n>=1) document.getElementById('insight1').classList.add('show');
+  if(n>=1) document.getElementById('act1').classList.add('done');
+  if(n>=100){
+    document.getElementById('act2').classList.add('done','live');
+    document.getElementById('insight2').classList.add('show');
+    document.getElementById('cidef').classList.add('show');
+    document.getElementById('act3').classList.add('live');
+  }
+}
+
+// ============================================================
+// WIRING
+// ============================================================
+document.getElementById('drawOne').onclick=()=>add(1);
+document.getElementById('draw100').onclick=()=>add(100);
+document.getElementById('resetBtn').onclick=()=>{ intervals=[]; hits=0; update(); draw(); };
+
+const slider=document.getElementById('confSlider');
+slider.oninput=function(){
+  conf=+this.value;
+  document.getElementById('confVal').textContent=conf;
+  // restart cleanly so the new catch-rate is honest
+  intervals=[]; hits=0;
+  add(100);
+  document.getElementById('act3').classList.add('done');
+  document.getElementById('quiz').classList.add('show');
+};
+
+document.querySelectorAll('.opt').forEach(o=>{
+  o.onclick=function(){
+    const ok=this.dataset.ok==='1';
+    document.querySelectorAll('.opt').forEach(x=>x.style.pointerEvents='none');
+    this.classList.add(ok?'correct':'wrong');
+    if(!ok) document.querySelector('.opt[data-ok="1"]').classList.add('correct');
+    const fb=document.getElementById('qfb');
+    fb.className='qfb show '+(ok?'ok':'no');
+    fb.innerHTML=ok
+      ? '<b>Right.</b> The confidence lives in the method. This particular interval already either contains the true mean or doesn\u2019t \u2014 we just can\u2019t see which. Across many intervals, about 95% succeed.'
+      : (this.dataset.ok==='0' && this.querySelector('span:last-child').textContent.includes('customers')
+          ? 'No \u2014 that confuses the interval with the spread of individuals. A confidence interval is about the <b>mean</b>, not where 95% of customers fall. The answer is C.'
+          : 'That\u2019s the classic trap. The true mean is fixed; your one interval caught it or missed it. The 95% is the <b>long-run success rate of the method</b>, not a probability about this single interval. The answer is C.');
+  };
+});
+
+window.addEventListener('resize', draw);
+draw(); update();
+</script>
+</body>
+</html>

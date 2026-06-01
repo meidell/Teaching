@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Story of Science · An Interactive Journey with Mouna</title>
+<style>
+:root {
+  --navy-deep: #0A1A3A;
+  --navy-mid: #152A5E;
+  --navy-light: #1E3470;
+  --blue-bright: #1E5AA8;
+  --blue-glow: #4A90E2;
+  --gold: #F0B33D;
+  --gold-bright: #FFD24A;
+  --gold-dark: #8C6A1F;
+  --white: #FFFFFF;
+  --grey-muted: #B0BCD6;
+  --green-correct: #2EA84A;
+  --green-soft: #1E6E33;
+  --red-wrong: #C8312B;
+  --red-soft: #5E1F1C;
+  --amber: #E8A33C;
+  --purple-defi: #7E5AE8;
+  --teal: #2DB6A8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  min-height: 100%;
+  font-family: 'Calibri', 'Helvetica Neue', sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(30,90,168,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(126,90,232,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 75%);
+  background-attachment: fixed;
+  color: var(--white);
+  line-height: 1.5;
+}
+body { padding-bottom: 80px; }
+
+/* === Top progress bar === */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10,26,58,0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(240,179,61,0.3);
+  padding: 10px 16px;
+}
+.topbar-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.topbar .course-title { font-size: 10px; letter-spacing: 2px; color: var(--gold); font-weight: bold; white-space: nowrap; }
+.progress-track { flex: 1; height: 6px; background: var(--navy-deep); border-radius: 3px; overflow: hidden; border: 1px solid rgba(176,188,214,0.2); }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
+.progress-pct { font-size: 11px; color: var(--gold-bright); font-weight: bold; font-family: Georgia, serif; min-width: 36px; text-align: right; }
+
+/* === Main container === */
+.container { max-width: 860px; margin: 0 auto; padding: 20px 16px; }
+
+/* === Home / Hero === */
+.hero { text-align: center; padding: 40px 16px 26px; }
+.hero .eyebrow { font-size: 11px; letter-spacing: 4px; color: var(--gold); font-weight: bold; margin-bottom: 16px; }
+.hero h1 {
+  font-family: Georgia, serif; font-size: 40px; font-style: italic; line-height: 1.1; margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--white), var(--gold-bright));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero h1 .sub-line { display:block; font-size: 20px; font-style: italic; margin-top: 8px; -webkit-text-fill-color: var(--grey-muted); color: var(--grey-muted); }
+.hero p { color: var(--grey-muted); font-size: 16px; max-width: 620px; margin: 0 auto 8px; }
+.phase-divider {
+  display: flex; align-items: center; gap: 12px; margin: 26px 4px 8px;
+  font-size: 10px; letter-spacing: 3px; color: var(--gold); font-weight: bold;
+}
+.phase-divider::before, .phase-divider::after { content: ""; flex: 1; height: 1px; background: rgba(240,179,61,0.3); }
+
+.section-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.section-card {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--navy-mid); border: 1px solid var(--blue-bright); border-radius: 12px;
+  padding: 15px 18px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+}
+.section-card:hover { border-color: var(--gold); transform: translateX(4px); }
+.section-card.done { border-color: var(--green-correct); }
+.section-card .num { font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: var(--gold); min-width: 38px; text-align: center; }
+.section-card.done .num { color: var(--green-correct); }
+.section-card .info { flex: 1; }
+.section-card .info .name { font-size: 16px; font-weight: bold; font-family: Georgia, serif; }
+.section-card .info .tag { font-size: 12px; color: var(--grey-muted); margin-top: 2px; }
+.section-card .status { font-size: 20px; }
+.section-card .phase-pill {
+  position: absolute; top: 8px; right: 10px; font-size: 8px; letter-spacing: 1px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+}
+.phase-pill.ancient { background: rgba(30,90,168,0.5); color: var(--blue-glow); }
+.phase-pill.revolution { background: rgba(240,179,61,0.2); color: var(--gold-bright); }
+.phase-pill.modern { background: rgba(45,182,168,0.25); color: var(--teal); }
+
+/* === Concept screens === */
+.screen { display: none; }
+.screen.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-header { text-align: center; margin-bottom: 8px; }
+.section-header .kicker { font-size: 11px; letter-spacing: 3px; color: var(--gold); font-weight: bold; }
+.section-header h2 { font-family: Georgia, serif; font-size: 30px; font-style: italic; margin: 6px 0 2px; line-height: 1.15; }
+.section-header .sub { color: var(--grey-muted); font-size: 13px; }
+
+/* === Step card === */
+.step-card { background: rgba(21,42,94,0.6); border: 1px solid var(--blue-bright); border-radius: 16px; padding: 24px 22px; margin-bottom: 18px; backdrop-filter: blur(4px); }
+.step-label { display: inline-block; font-size: 10px; letter-spacing: 2px; font-weight: bold; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; }
+.step-label.problem { background: var(--red-soft); color: #FF9B95; border: 1px solid var(--red-wrong); }
+.step-label.mechanism { background: rgba(30,90,168,0.3); color: var(--blue-glow); border: 1px solid var(--blue-bright); }
+.step-label.why { background: rgba(240,179,61,0.18); color: var(--gold-bright); border: 1px solid var(--gold); }
+.step-label.case { background: rgba(45,182,168,0.2); color: var(--teal); border: 1px solid var(--teal); }
+.step-card h3 { font-family: Georgia, serif; font-size: 22px; margin-bottom: 8px; line-height: 1.25; }
+.step-card p { color: #DCE3F2; margin-bottom: 12px; font-size: 15px; }
+.step-card p.lead { font-size: 16px; }
+.step-card strong { color: var(--gold-bright); font-weight: 600; }
+.step-card em { color: var(--blue-glow); font-style: italic; }
+.step-card ul { margin: 4px 0 12px 4px; }
+.step-card ul li { color: #DCE3F2; font-size: 14px; list-style: none; padding: 4px 0 4px 22px; position: relative; }
+.step-card ul li::before { content: "▸"; position: absolute; left: 0; color: var(--gold); }
+.step-card .punch { font-family: Georgia, serif; font-size: 18px; font-style: italic; color: var(--gold-bright); border-left: 3px solid var(--gold); padding-left: 16px; margin: 16px 0 4px; line-height: 1.4; }
+
+/* === Interactive sandbox === */
+.sandbox { background: var(--navy-deep); border: 1px solid rgba(74,144,226,0.4); border-radius: 12px; padding: 18px; margin: 16px 0; }
+.sandbox-title { font-size: 10px; letter-spacing: 2px; color: var(--teal); font-weight: bold; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.sandbox-title::before { content: "▸ TRY IT"; }
+.sandbox-prompt { font-size: 13px; color: var(--grey-muted); margin-bottom: 12px; }
+
+.btn { background: var(--gold); color: var(--navy-deep); border: none; padding: 11px 22px; font-family: inherit; font-size: 13px; font-weight: bold; letter-spacing: 1px; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+.btn:hover { background: var(--gold-bright); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn.ghost { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+.btn.ghost:hover { background: rgba(240,179,61,0.12); }
+.btn.small { padding: 7px 14px; font-size: 11px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+
+/* === Nav footer === */
+.nav-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,26,58,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(240,179,61,0.3); padding: 12px 16px; z-index: 50; }
+.nav-footer-inner { max-width: 860px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+
+/* === Reveal tiles === */
+.reveal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 8px; margin: 6px 0; }
+.reveal-tile {
+  background: var(--navy-mid); border: 1.5px solid var(--blue-bright); border-radius: 10px; padding: 12px 14px;
+  cursor: pointer; transition: all 0.2s; position: relative; min-height: 70px;
+}
+.reveal-tile:hover { border-color: var(--gold); transform: translateY(-2px); }
+.reveal-tile .icon { font-size: 22px; }
+.reveal-tile .name { font-size: 13px; font-weight: bold; margin-top: 4px; font-family: Georgia, serif; }
+.reveal-tile .desc { font-size: 11.5px; color: var(--grey-muted); margin-top: 6px; display: none; line-height: 1.4; }
+.reveal-tile.open { background: var(--navy-light); border-color: var(--gold); }
+.reveal-tile.open .desc { display: block; }
+.reveal-tile.flipped { animation: tilePulse 0.4s; }
+@keyframes tilePulse { 0% { box-shadow: 0 0 0 0 rgba(240,179,61,0.6);} 100% { box-shadow: 0 0 0 12px rgba(240,179,61,0);} }
+
+/* === Sort/categorise game === */
+.sort-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.sort-chip {
+  background: var(--navy-mid); border: 1.5px solid var(--blue-bright); border-radius: 20px;
+  padding: 8px 14px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.sort-chip:hover { border-color: var(--gold); }
+.sort-chip.selected { border-color: var(--gold); background: var(--navy-light); }
+.sort-chip.placed { opacity: 0.35; pointer-events: none; text-decoration: line-through; }
+.sort-bins { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px){ .sort-bins { grid-template-columns: 1fr; } }
+.sort-bin { background: var(--navy-deep); border: 1.5px dashed var(--blue-bright); border-radius: 10px; padding: 12px; min-height: 90px; cursor: pointer; transition: all 0.2s; }
+.sort-bin:hover { border-color: var(--gold); }
+.sort-bin .bin-title { font-size: 11px; letter-spacing: 1px; font-weight: bold; color: var(--gold); margin-bottom: 8px; }
+.sort-bin .bin-items { display: flex; flex-direction: column; gap: 6px; }
+.sort-bin .bin-item { font-size: 12px; padding: 6px 10px; border-radius: 6px; }
+.sort-bin .bin-item.correct { background: var(--green-soft); border: 1px solid var(--green-correct); }
+.sort-bin .bin-item.wrong { background: var(--red-soft); border: 1px solid var(--red-wrong); }
+.sort-active-prompt { font-size: 12px; color: var(--gold-bright); margin-bottom: 10px; min-height: 18px; }
+
+/* === Dialogue / tap-to-reveal === */
+.dlg { display:flex; flex-direction:column; gap:10px; margin:10px 0; }
+.dlg-card { background:var(--navy-deep); border:1.5px solid var(--blue-bright); border-radius:12px; padding:14px; cursor:pointer; transition:all .2s; }
+.dlg-card:hover { border-color:var(--gold); }
+.dlg-them { font-size:14px; }
+.dlg-them .who { font-size:10px; letter-spacing:1px; color:var(--amber); font-weight:bold; }
+.dlg-them .line { margin-top:4px; }
+.dlg-you { margin-top:10px; display:none; }
+.dlg-you .who { font-size:10px; letter-spacing:1px; color:var(--blue-glow); font-weight:bold; }
+.dlg-you .mirror { font-family:Georgia,serif; font-size:16px; color:var(--gold-bright); margin-top:4px; }
+.dlg-elab { margin-top:10px; padding:10px 12px; border-left:3px solid var(--green-correct); background:rgba(46,168,74,0.1); border-radius:0 8px 8px 0; font-size:13px; display:none; }
+.dlg-elab .who { font-size:10px; letter-spacing:1px; color:var(--green-correct); font-weight:bold; }
+.dlg-elab .line { margin-top:3px; }
+.dlg-card.s1 .dlg-you { display:block; animation:fadeIn .3s; }
+.dlg-card.s2 .dlg-elab { display:block; animation:fadeIn .3s; }
+.dlg-hint { font-size:11px; color:var(--teal); margin-top:8px; }
+
+/* === Two-column do/don't (think like a scientist) === */
+.dd-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0; }
+@media (max-width:560px){ .dd-grid { grid-template-columns:1fr; } }
+.dd-col { border-radius:10px; padding:12px 14px; }
+.dd-col.do { background:rgba(46,168,74,0.12); border:1px solid var(--green-correct); }
+.dd-col.dont { background:rgba(200,49,43,0.12); border:1px solid var(--red-wrong); }
+.dd-col .dd-h { font-size:11px; letter-spacing:1px; font-weight:bold; margin-bottom:8px; }
+.dd-col.do .dd-h { color:var(--green-correct); }
+.dd-col.dont .dd-h { color:#FF9B95; }
+.dd-col ul { margin:0; }
+.dd-col ul li { font-size:12.5px; padding:3px 0 3px 18px; }
+.dd-col ul li::before { left:0; }
+.dd-col.do ul li::before { content:"✓"; color:var(--green-correct); }
+.dd-col.dont ul li::before { content:"✕"; color:#FF9B95; }
+
+/* === info table === */
+.info-table { width:100%; border-collapse: collapse; font-size:13px; margin:8px 0;}
+.info-table td, .info-table th { border:1px solid var(--blue-bright); padding:9px 11px; text-align:left; vertical-align:top;}
+.info-table th { background: var(--navy-mid); color: var(--gold); font-size:11px; letter-spacing:1px;}
+.info-table td:first-child { color: var(--gold-bright); font-weight:bold; white-space:nowrap; }
+
+/* === contrast cards === */
+.contrast { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0; }
+@media (max-width:560px){ .contrast { grid-template-columns:1fr; } }
+.contrast-card { border-radius:12px; padding:16px; text-align:center; }
+.contrast-card.bad { background:rgba(200,49,43,0.12); border:1.5px solid var(--red-wrong); }
+.contrast-card.good { background:rgba(46,168,74,0.12); border:1.5px solid var(--green-correct); }
+.contrast-card .quote { font-family:Georgia,serif; font-size:19px; font-style:italic; }
+.contrast-card.bad .quote { color:#FF9B95; }
+.contrast-card.good .quote { color:var(--green-correct); }
+.contrast-card .trans { font-size:12.5px; margin-top:8px; color:#DCE3F2; }
+
+/* === Timeline slider === */
+.tl-wrap { margin: 14px 0; }
+.tl-readout { background: var(--navy-mid); border:1px solid var(--blue-bright); border-radius:12px; padding:16px; margin-bottom:14px; min-height: 150px; transition: all .3s; }
+.tl-readout .tl-year { font-family:Georgia,serif; font-size:28px; color:var(--gold-bright); font-weight:bold; }
+.tl-readout .tl-who { font-size:14px; color:var(--teal); font-weight:bold; margin-top:2px; letter-spacing:0.5px; }
+.tl-readout .tl-what { font-size:14px; color:#DCE3F2; margin-top:8px; line-height:1.5; }
+.tl-readout .tl-icon { font-size:30px; float:right; }
+.tl-slider-row input[type=range] { width:100%; accent-color: var(--gold); }
+.tl-ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--grey-muted); margin-top:4px; }
+
+/* === Checkpoint quiz === */
+.checkpoint { background: linear-gradient(135deg, rgba(126,90,232,0.15), rgba(30,90,168,0.15)); border: 2px solid var(--purple-defi); border-radius: 16px; padding: 24px 22px; margin-bottom: 18px; }
+.checkpoint-header { text-align: center; margin-bottom: 18px; }
+.checkpoint-header .badge { display: inline-block; background: var(--purple-defi); color: var(--white); font-size: 10px; letter-spacing: 2px; font-weight: bold; padding: 4px 14px; border-radius: 20px; margin-bottom: 8px; }
+.checkpoint-header h3 { font-family: Georgia, serif; font-size: 22px; font-style: italic; }
+.checkpoint-header p { color: var(--grey-muted); font-size: 13px; margin-top: 4px; }
+.quiz-q { margin-bottom: 18px; }
+.quiz-q .q-text { font-family: Georgia, serif; font-size: 17px; margin-bottom: 8px; line-height: 1.35; }
+.quiz-q .q-num { color: var(--gold); font-weight: bold; margin-right: 6px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt { background: var(--navy-deep); border: 1.5px solid var(--blue-bright); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.quiz-opt:hover:not(.locked) { border-color: var(--gold); background: var(--navy-mid); }
+.quiz-opt .opt-letter { font-family: Georgia, serif; font-weight: bold; color: var(--gold); min-width: 20px; }
+.quiz-opt.correct { background: var(--green-soft); border-color: var(--green-correct); }
+.quiz-opt.correct .opt-letter { color: var(--green-correct); }
+.quiz-opt.wrong { background: var(--red-soft); border-color: var(--red-wrong); }
+.quiz-opt.wrong .opt-letter { color: #FF9B95; }
+.quiz-opt.locked { cursor: default; }
+.quiz-feedback { margin-top: 10px; padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.5; display: none; }
+.quiz-feedback.show { display: block; }
+.quiz-feedback.right { background: var(--green-soft); border: 1px solid var(--green-correct); }
+.quiz-feedback.wrong-fb { background: var(--red-soft); border: 1px solid var(--red-wrong); }
+.quiz-feedback .fb-label { font-weight: bold; letter-spacing: 1px; margin-right: 6px; }
+.checkpoint-result { text-align: center; padding: 16px; display: none; }
+.checkpoint-result.show { display: block; }
+.checkpoint-result .score { font-family: Georgia, serif; font-size: 40px; font-weight: bold; color: var(--gold-bright); }
+.checkpoint-result .msg { color: var(--grey-muted); margin: 8px 0 16px; }
+
+/* === reset link === */
+.reset-link { text-align: center; margin-top: 30px; font-size: 11px; color: var(--grey-muted); }
+.reset-link a { color: var(--gold); cursor: pointer; text-decoration: underline; }
+.fineprint { font-size: 11px; color: var(--grey-muted); text-align:center; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="course-title">STORY OF SCIENCE</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="eyebrow">WITH MOUNA · AGES 12–15</div>
+      <h1>The Story of Science<span class="sub-line">How humans learned to ask "How do we KNOW?"</span></h1>
+      <p>Science isn't a pile of facts to memorise — it's a <em>way of finding things out</em>. In this journey you'll meet the people who changed how we see the universe, the body, and the tiniest pieces of matter. Tap, drag, slide, and answer your way through five big leaps in human knowledge.</p>
+    </div>
+    <div class="phase-divider">THE ANCIENT WORLD · FIRST QUESTIONS</div>
+    <div class="section-list" id="sectionListA"></div>
+    <div class="phase-divider">THE SCIENTIFIC REVOLUTION · A NEW METHOD</div>
+    <div class="section-list" id="sectionListR"></div>
+    <div class="phase-divider">THE MODERN WORLD · DEEPER MYSTERIES</div>
+    <div class="section-list" id="sectionListM"></div>
+    <div class="reset-link">
+      Your progress is saved on this device. <a id="resetBtn">Start over</a>
+      <div class="fineprint">Progress saves automatically. Click "Start over" to clear it.</div>
+    </div>
+  </div>
+  <div id="screenMount"></div>
+</div>
+
+<div class="nav-footer">
+  <div class="nav-footer-inner">
+    <button class="btn ghost" id="navBack">← Back</button>
+    <span style="font-size:11px;color:var(--grey-muted);" id="navLabel"></span>
+    <button class="btn" id="navNext">Start →</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SECTION MAP
+// ============================================================
+const SECTIONS = [
+  { id:'origins', num:1, phase:'A', name:'Where Science Began', tag:'Myths, the Greeks, and the first big question: why?' },
+  { id:'method',  num:2, phase:'R', name:'The Scientific Method', tag:'Observe, guess, test, repeat — the engine of science' },
+  { id:'cosmos',  num:3, phase:'R', name:'The Revolution in the Sky', tag:'Copernicus, Galileo, Newton — moving Earth out of the centre' },
+  { id:'life',    num:4, phase:'M', name:'The Story of Life & Cells', tag:'Microscopes, germs, and Darwin\u2019s big idea' },
+  { id:'atom',    num:5, phase:'M', name:'Inside the Atom', tag:'Curie, Einstein, and the hidden world of tiny particles' },
+];
+
+// ============================================================
+// PROGRESS PERSISTENCE
+// ============================================================
+const STORAGE_KEY = 'hist_science_progress_v1';
+let progress = loadProgress();
+function loadProgress() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch(e){}
+  try { if (window._hsp) return window._hsp; } catch(e){}
+  return { completed:{}, current:null };
+}
+function saveProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch(e){}
+  try { window._hsp = progress; } catch(e){}
+}
+function markComplete(id){ progress.completed[id]=true; saveProgress(); updateProgressBar(); }
+function updateProgressBar(){
+  const total=SECTIONS.length;
+  const done=Object.keys(progress.completed).filter(k=>progress.completed[k]).length;
+  const pct=Math.round((done/total)*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressPct').textContent=pct+'%';
+}
+
+// ============================================================
+// SECTION MAP RENDER
+// ============================================================
+function renderSectionList(){
+  const lists={A:document.getElementById('sectionListA'),R:document.getElementById('sectionListR'),M:document.getElementById('sectionListM')};
+  Object.values(lists).forEach(l=>l.innerHTML='');
+  const phaseClass={A:'ancient',R:'revolution',M:'modern'};
+  const phaseLabel={A:'ANCIENT',R:'REVOLUTION',M:'MODERN'};
+  SECTIONS.forEach(sec=>{
+    const done=!!progress.completed[sec.id];
+    const card=document.createElement('div');
+    card.className='section-card'+(done?' done':'');
+    card.innerHTML=`
+      <div class="num">${sec.num}</div>
+      <div class="info">
+        <div class="name">${sec.name}</div>
+        <div class="tag">${sec.tag}</div>
+      </div>
+      <div class="status">${done?'✓':'▸'}</div>
+      <div class="phase-pill ${phaseClass[sec.phase]}">${phaseLabel[sec.phase]}</div>`;
+    card.onclick=()=>openSection(sec.id);
+    lists[sec.phase].appendChild(card);
+  });
+}
+
+// ============================================================
+// SHARED HELPERS
+// ============================================================
+function checkpointHTML(id){
+  const cp=CHECKPOINTS[id]; if(!cp) return '';
+  const qs=cp.questions.map((q,qi)=>`
+    <div class="quiz-q" data-qi="${qi}">
+      <div class="q-text"><span class="q-num">Q${qi+1}.</span>${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((opt,oi)=>`<div class="quiz-opt" data-qi="${qi}" data-oi="${oi}"><span class="opt-letter">${String.fromCharCode(65+oi)}</span><span>${opt}</span></div>`).join('')}
+      </div>
+      <div class="quiz-feedback" data-qi="${qi}"></div>
+    </div>`).join('');
+  return `
+    <div class="checkpoint" data-section="${id}">
+      <div class="checkpoint-header">
+        <div class="badge">✦ CHECKPOINT</div>
+        <h3>${cp.title}</h3>
+        <p>${cp.sub}</p>
+      </div>
+      <div class="quiz-body">${qs}</div>
+      <div class="checkpoint-result">
+        <div class="score"></div>
+        <div class="msg"></div>
+        <button class="btn" data-action="finish-section">Mark section complete →</button>
+      </div>
+    </div>`;
+}
+
+// Generic reveal-tile wiring
+function wireReveals(){
+  document.querySelectorAll('.reveal-tile').forEach(t=>{
+    t.onclick=()=>{ t.classList.toggle('open'); t.classList.remove('flipped'); void t.offsetWidth; t.classList.add('flipped'); };
+  });
+}
+
+// Generic tap-to-reveal dialogue builder
+function buildDlg(mountId, lines){
+  const wrap=document.getElementById(mountId);
+  lines.forEach(l=>{
+    const c=document.createElement('div'); c.className='dlg-card';
+    c.innerHTML=`
+      <div class="dlg-them"><span class="who">${l.whoThem}</span><div class="line">${l.them}</div></div>
+      <div class="dlg-you"><span class="who">${l.whoYou}</span><div class="mirror">${l.you}</div></div>
+      <div class="dlg-elab"><span class="who">${l.whoElab}</span><div class="line">${l.elab}</div></div>
+      <div class="dlg-hint">▸ Tap to reveal</div>`;
+    let state=0;
+    c.onclick=()=>{ state++;
+      if(state===1){c.classList.add('s1'); c.querySelector('.dlg-hint').textContent='▸ Tap again to see what happened next';}
+      else if(state===2){c.classList.add('s2'); c.querySelector('.dlg-hint').textContent=l.closeHint || '✓';} };
+    wrap.appendChild(c);
+  });
+}
+
+// Generic sort-into-bins game (tap chip, then tap a bin)
+function wireSortGame(rootSel, items, bins){
+  const root=document.querySelector(rootSel); if(!root)return;
+  const prompt=root.querySelector('.sort-active-prompt');
+  let selected=null;
+  const placed={};
+  root.querySelectorAll('.sort-chip').forEach(chip=>{
+    chip.onclick=()=>{
+      if(chip.classList.contains('placed'))return;
+      root.querySelectorAll('.sort-chip').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected'); selected=chip;
+      prompt.textContent='Now tap the box where it belongs.';
+    };
+  });
+  root.querySelectorAll('.sort-bin').forEach(bin=>{
+    bin.onclick=()=>{
+      if(!selected)return;
+      const itemKey=selected.dataset.key;
+      const correctBin=items[itemKey];
+      const isRight=(bin.dataset.bin===correctBin);
+      const itemsBox=bin.querySelector('.bin-items');
+      const div=document.createElement('div');
+      div.className='bin-item '+(isRight?'correct':'wrong');
+      div.textContent=(isRight?'✓ ':'✗ ')+selected.textContent;
+      itemsBox.appendChild(div);
+      selected.classList.add('placed'); selected.classList.remove('selected');
+      placed[itemKey]=true; selected=null;
+      const allDone=Object.keys(items).every(k=>placed[k]);
+      prompt.textContent= allDone ? '✓ All sorted! Read the boxes to check yourself.' : 'Tap another card to sort it.';
+    };
+  });
+}
+
+// ============================================================
+// SECTION 1 — WHERE SCIENCE BEGAN
+// ============================================================
+function buildOrigins(){
+  return `
+    <div class="section-header">
+      <div class="kicker">SECTION 1 · THE ANCIENT WORLD</div>
+      <h2>Where Science Began</h2>
+      <div class="sub">From "the gods did it" to "let's figure out the rules"</div>
+    </div>
+    <div class="step-card">
+      <span class="step-label problem">THE BIG SHIFT</span>
+      <h3>Before science: stories explained everything</h3>
+      <p class="lead">For most of human history, people explained the world with <strong>myths</strong>. Thunder? An angry god. Disease? A curse. These stories were powerful — but they couldn't be <em>tested</em>, and they didn't help you predict tomorrow.</p>
+      <p>Around <strong>2,600 years ago</strong> in ancient Greece, a few thinkers tried something new. They asked: what if the world runs on <em>rules we can work out</em> using observation and reasoning — not just stories? That question is the seed of all science.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">MEET THE FIRST THINKERS</span>
+      <h3>Tap a thinker to discover their idea</h3>
+      <div class="reveal-grid">
+        <div class="reveal-tile"><div class="icon">🌊</div><div class="name">Thales</div><div class="desc">~600 BCE. Guessed everything was made of <strong>water</strong>. He was wrong — but he was the first to look for a natural cause instead of a god.</div></div>
+        <div class="reveal-tile"><div class="icon">📐</div><div class="name">Pythagoras</div><div class="desc">~550 BCE. Saw that the universe follows <strong>numbers and patterns</strong>. Maths could describe reality — a huge idea.</div></div>
+        <div class="reveal-tile"><div class="icon">⚛️</div><div class="name">Democritus</div><div class="desc">~430 BCE. Said all matter is built from tiny invisible bits he called <strong>"atomos"</strong> (atoms). It took 2,000+ years to prove him right!</div></div>
+        <div class="reveal-tile"><div class="icon">🦉</div><div class="name">Aristotle</div><div class="desc">~350 BCE. Studied animals, motion, weather. He valued <strong>observation</strong> — but trusted pure logic too much, and some of his ideas were wrong for centuries.</div></div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label case">SCIENCE IS GLOBAL</span>
+      <h3>Not just the Greeks</h3>
+      <p>Knowledge grew all over the world. Scholars in the <strong>Islamic Golden Age</strong> (around 800–1200 CE), like <em>Ibn al-Haytham</em>, ran careful experiments on light and vision — some call him the first true experimental scientist. Thinkers in <strong>China, India, and the Maya world</strong> tracked the stars, invented number systems, and recorded eclipses with stunning accuracy.</p>
+      <p class="punch">Science has no single home. It grew wherever people decided to ask "how do we KNOW?" — and check the answer.</p>
+    </div>
+    ${checkpointHTML('origins')}`;
+}
+function wireOrigins(){ wireReveals(); }
+
+// ============================================================
+// SECTION 2 — THE SCIENTIFIC METHOD
+// ============================================================
+function buildMethod(){
+  return `
+    <div class="section-header">
+      <div class="kicker">SECTION 2 · THE SCIENTIFIC REVOLUTION</div>
+      <h2>The Scientific Method</h2>
+      <div class="sub">The repeatable recipe that powers all of science</div>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">THE ENGINE OF SCIENCE</span>
+      <h3>Five steps, on a loop</h3>
+      <p>The scientific method is just a clever, honest way of asking questions. It's a <strong>loop</strong>, not a straight line — when you learn something, you go around again.</p>
+      <ul>
+        <li><strong>Observe</strong> — notice something curious in the world.</li>
+        <li><strong>Question</strong> — ask "why?" or "how?"</li>
+        <li><strong>Hypothesis</strong> — make a testable guess ("I think… because…").</li>
+        <li><strong>Experiment</strong> — test it fairly, changing only one thing at a time.</li>
+        <li><strong>Conclude &amp; repeat</strong> — see if the data fits, then test again.</li>
+      </ul>
+      <p class="punch">The magic word is <em>testable</em>. If no possible experiment could ever prove an idea wrong, it isn't science — yet.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label why">A FAIR TEST</span>
+      <h3>What makes an experiment trustworthy?</h3>
+      <div class="dd-grid">
+        <div class="dd-col do"><div class="dd-h">A GOOD SCIENTIST…</div><ul>
+          <li>Changes only <strong>one variable</strong> at a time.</li>
+          <li>Uses a <strong>control group</strong> for comparison.</li>
+          <li>Repeats the test to be sure.</li>
+          <li>Reports results even when they're surprising.</li>
+        </ul></div>
+        <div class="dd-col dont"><div class="dd-h">RED FLAGS…</div><ul>
+          <li>Changing many things at once — you can't tell what mattered.</li>
+          <li>Only keeping results you like ("cherry-picking").</li>
+          <li>A claim that can never be tested.</li>
+          <li>"Trust me" with no evidence.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">YOUR TURN</span>
+      <h3>Sort the steps into the right order</h3>
+      <div class="sandbox">
+        <div class="sandbox-title"></div>
+        <div class="sandbox-prompt">A student wonders if plants grow taller with music. Tap a card, then tap the box where each part belongs.</div>
+        <div id="methodGame">
+          <div class="sort-active-prompt">Tap a card to start.</div>
+          <div class="sort-pool">
+            <div class="sort-chip" data-key="a">"Plants near speakers look taller."</div>
+            <div class="sort-chip" data-key="b">"Music makes plants grow more."</div>
+            <div class="sort-chip" data-key="c">Two identical plants: one with music, one without.</div>
+            <div class="sort-chip" data-key="d">Measure both after 4 weeks; repeat with more plants.</div>
+          </div>
+          <div class="sort-bins">
+            <div class="sort-bin" data-bin="obs"><div class="bin-title">OBSERVATION / HYPOTHESIS</div><div class="bin-items"></div></div>
+            <div class="sort-bin" data-bin="exp"><div class="bin-title">EXPERIMENT / DATA</div><div class="bin-items"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label case">KNOW THE LIMITS</span>
+      <h3>Science changes its mind — on purpose</h3>
+      <p>Being able to say <em>"we were wrong"</em> is a strength, not a weakness. When better evidence shows up, science updates. That's exactly why it works so well over time — it's self-correcting.</p>
+    </div>
+    ${checkpointHTML('method')}`;
+}
+function wireMethod(){
+  wireSortGame('#methodGame',
+    { a:'obs', b:'obs', c:'exp', d:'exp' },
+    {});
+}
+
+// ============================================================
+// SECTION 3 — THE REVOLUTION IN THE SKY
+// ============================================================
+function buildCosmos(){
+  return `
+    <div class="section-header">
+      <div class="kicker">SECTION 3 · THE SCIENTIFIC REVOLUTION</div>
+      <h2>The Revolution in the Sky</h2>
+      <div class="sub">How we discovered Earth is not the centre of everything</div>
+    </div>
+    <div class="step-card">
+      <span class="step-label problem">THE OLD PICTURE</span>
+      <h3>For 1,400 years: Earth at the centre</h3>
+      <p>Following Aristotle and Ptolemy, almost everyone believed Earth sat <strong>still at the centre</strong> of the universe, with the Sun, planets and stars circling around it. It matched what your eyes seem to see — the Sun "rises" and "sets," after all.</p>
+      <p>But the planets did weird things, like appearing to loop backwards. Explaining that needed more and more complicated circles. Something felt off.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">THE BREAKTHROUGH CHAIN</span>
+      <h3>Slide through the discoveries</h3>
+      <div class="sandbox">
+        <div class="sandbox-title"></div>
+        <div class="sandbox-prompt">Drag the slider to travel through the people who rebuilt our picture of the sky.</div>
+        <div class="tl-wrap">
+          <div class="tl-readout" id="cosmosReadout"></div>
+          <div class="tl-slider-row">
+            <input type="range" id="cosmosSlider" min="0" max="3" value="0" step="1">
+            <div class="tl-ticks"><span>1543</span><span>1609</span><span>1610</span><span>1687</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label why">WHY IT MATTERED</span>
+      <h3>Evidence beat tradition</h3>
+      <p>This was the moment science truly grew up. <strong>Galileo</strong> pointed a new tool — the telescope — at the sky and saw moons orbiting Jupiter. The evidence didn't fit the old story. He got into serious trouble for saying so, but the data was on his side.</p>
+      <p class="punch">A good idea backed by evidence can overturn 1,400 years of "everybody knows." That's the power — and the courage — of science.</p>
+    </div>
+    ${checkpointHTML('cosmos')}`;
+}
+function wireCosmos(){
+  const data=[
+    {year:'1543', icon:'☀️', who:'COPERNICUS', what:'Proposed the Sun — not Earth — sits at the centre, with Earth as just another planet orbiting it. Bold, and at the time, shocking.'},
+    {year:'1609', icon:'🔭', who:'KEPLER', what:'Using careful data, showed planets move in ellipses (stretched circles), not perfect circles. The maths finally matched the sky.'},
+    {year:'1610', icon:'🪐', who:'GALILEO', what:'Turned a telescope on Jupiter and saw four moons orbiting IT — direct proof that not everything circles Earth.'},
+    {year:'1687', icon:'🍎', who:'NEWTON', what:'Explained it all with one idea: gravity. The same force that drops an apple keeps the Moon in orbit. One law for heaven and Earth.'},
+  ];
+  const slider=document.getElementById('cosmosSlider'), out=document.getElementById('cosmosReadout');
+  function render(){
+    const d=data[+slider.value];
+    out.innerHTML=`<span class="tl-icon">${d.icon}</span><div class="tl-year">${d.year}</div><div class="tl-who">${d.who}</div><div class="tl-what">${d.what}</div>`;
+  }
+  slider.oninput=render; render();
+}
+
+// ============================================================
+// SECTION 4 — THE STORY OF LIFE & CELLS
+// ============================================================
+function buildLife(){
+  return `
+    <div class="section-header">
+      <div class="kicker">SECTION 4 · THE MODERN WORLD</div>
+      <h2>The Story of Life &amp; Cells</h2>
+      <div class="sub">A hidden world too small to see — until we built the right tools</div>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">A NEW TOOL OPENS A NEW WORLD</span>
+      <h3>The microscope reveals the invisible</h3>
+      <p>In the 1600s, better lenses let people see what no human ever had. <strong>Robert Hooke</strong> looked at a thin slice of cork and saw tiny boxes — he called them <em>cells</em>. <strong>Antonie van Leeuwenhoek</strong> peered into pond water and found it swarming with "little animals" (microbes).</p>
+      <p class="punch">Big leaps in science often follow a new <em>tool</em>. The telescope opened the sky; the microscope opened the world of the very small.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label why">GERMS, NOT BAD AIR</span>
+      <h3>Why people stopped dying of mystery illnesses</h3>
+      <p>For ages, people blamed disease on "bad air." Then <strong>Louis Pasteur</strong> and <strong>Robert Koch</strong> showed that tiny living germs cause many illnesses. This <em>germ theory</em> led to handwashing, clean water, vaccines and antibiotics — and saved more lives than almost any idea in history.</p>
+      <div class="contrast">
+        <div class="contrast-card bad"><div class="quote">"It's the bad air."</div><div class="trans">Old idea: untestable, and it didn't help anyone get better.</div></div>
+        <div class="contrast-card good"><div class="quote">"It's a germ."</div><div class="trans">New idea: testable, explained the evidence, and led to cures.</div></div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">DARWIN'S BIG IDEA</span>
+      <h3>Tap each clue Darwin pieced together</h3>
+      <div class="sandbox">
+        <div class="sandbox-title"></div>
+        <div class="sandbox-prompt">On his voyage, Darwin collected clues. Tap each card to see what it told him.</div>
+        <div class="reveal-grid">
+          <div class="reveal-tile"><div class="icon">🐢</div><div class="name">Different islands</div><div class="desc">Animals on nearby islands were similar but not identical — as if they'd changed to fit each place.</div></div>
+          <div class="reveal-tile"><div class="icon">🐦</div><div class="name">Finch beaks</div><div class="desc">Finches had different beak shapes matching their food. The environment seemed to "select" useful traits.</div></div>
+          <div class="reveal-tile"><div class="icon">🦴</div><div class="name">Fossils</div><div class="desc">Old bones showed creatures that no longer exist — life had a long, changing history.</div></div>
+          <div class="reveal-tile"><div class="icon">⏳</div><div class="name">Tiny changes, lots of time</div><div class="desc">Over millions of years, small useful changes add up. This is <strong>natural selection</strong> — the core of evolution.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label case">A THEORY IS NOT A GUESS</span>
+      <h3>What "theory" really means in science</h3>
+      <p>In everyday talk, "theory" means a hunch. In science, a <strong>theory</strong> is a powerful explanation supported by mountains of evidence — like the theory of evolution or the germ theory of disease. It's the opposite of a wild guess.</p>
+    </div>
+    ${checkpointHTML('life')}`;
+}
+function wireLife(){ wireReveals(); }
+
+// ============================================================
+// SECTION 5 — INSIDE THE ATOM
+// ============================================================
+function buildAtom(){
+  return `
+    <div class="section-header">
+      <div class="kicker">SECTION 5 · THE MODERN WORLD</div>
+      <h2>Inside the Atom</h2>
+      <div class="sub">The 20th century cracked open the smallest pieces of reality</div>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">DEMOCRITUS WAS RIGHT</span>
+      <h3>2,300 years later, we found the atom</h3>
+      <p>Remember Democritus and his "atomos"? In the 1800s and 1900s, scientists finally proved matter really is made of <strong>atoms</strong> — and then discovered atoms have <em>parts</em>: a tiny nucleus of protons and neutrons, surrounded by electrons.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label mechanism">THE PIONEERS</span>
+      <h3>Slide through the people who explored the atom</h3>
+      <div class="sandbox">
+        <div class="sandbox-title"></div>
+        <div class="sandbox-prompt">Drag the slider to meet the scientists who revealed the hidden world inside matter.</div>
+        <div class="tl-wrap">
+          <div class="tl-readout" id="atomReadout"></div>
+          <div class="tl-slider-row">
+            <input type="range" id="atomSlider" min="0" max="3" value="0" step="1">
+            <div class="tl-ticks"><span>1898</span><span>1905</span><span>1911</span><span>1938</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label why">POWER COMES WITH CHOICES</span>
+      <h3>Knowledge can heal or harm</h3>
+      <p>Understanding the atom gave us life-saving cancer treatments and clean nuclear energy — and also the atomic bomb. Science gives us <strong>power</strong>; what we DO with it is a human choice. That's why scientists today think carefully about ethics and responsibility.</p>
+      <p class="punch">Science tells us what we <em>can</em> do. It can't tell us what we <em>should</em> do — that's up to all of us.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label case">THE STORY CONTINUES</span>
+      <h3>You're living in the next chapter</h3>
+      <p>From DNA and space telescopes to climate science and AI, the story isn't finished — it's being written right now. Every time you ask "how do we KNOW?" and check the evidence, you're doing the same thing Thales did 2,600 years ago.</p>
+    </div>
+    ${checkpointHTML('atom')}`;
+}
+function wireAtom(){
+  const data=[
+    {year:'1898', icon:'☢️', who:'MARIE CURIE', what:'Discovered radioactivity and new elements (polonium, radium). The first person to win TWO Nobel Prizes — in two different sciences.'},
+    {year:'1905', icon:'💡', who:'ALBERT EINSTEIN', what:'Showed that energy and mass are linked (E=mc²) and changed how we understand space, time, and light forever.'},
+    {year:'1911', icon:'🎯', who:'ERNEST RUTHERFORD', what:'Fired particles at gold foil and found the atom is mostly empty space with a tiny, dense nucleus at its heart.'},
+    {year:'1938', icon:'⚡', who:'MEITNER & HAHN', what:'Discovered nuclear fission — splitting the atom releases enormous energy. A discovery that would reshape the world.'},
+  ];
+  const slider=document.getElementById('atomSlider'), out=document.getElementById('atomReadout');
+  function render(){
+    const d=data[+slider.value];
+    out.innerHTML=`<span class="tl-icon">${d.icon}</span><div class="tl-year">${d.year}</div><div class="tl-who">${d.who}</div><div class="tl-what">${d.what}</div>`;
+  }
+  slider.oninput=render; render();
+}
+
+// ============================================================
+// CHECKPOINTS
+// ============================================================
+const CHECKPOINTS={
+  origins:{title:'Lock it in',sub:'Answer the 3 questions to complete Section 1',questions:[
+    {q:'What was new about the early Greek thinkers?',opts:['They wrote the best myths','They looked for natural causes and rules instead of only gods','They invented writing','They believed thunder was an angry god'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>Instead of explaining the world only with stories about gods, they searched for natural rules they could reason about.'},
+    {q:'Democritus is famous for the idea that…',opts:['Everything is made of water','The Earth is flat','All matter is built from tiny invisible particles ("atoms")','The Sun orbits the Earth'],correct:2,fb:'<span class="fb-label">✓ CORRECT</span>He proposed "atomos" — and over 2,000 years later, science proved atoms are real.'},
+    {q:'Which statement about the history of science is TRUE?',opts:['Only ancient Greeks contributed to science','Science grew in many cultures — Greek, Islamic, Chinese, Indian, Maya','Science began in the 1900s','Myths and science are the same thing'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>Knowledge grew wherever people asked "how do we know?" — all around the world.'},
+  ]},
+  method:{title:'Lock it in',sub:'Answer the 3 questions to complete Section 2',questions:[
+    {q:'What single word decides if an idea is scientific?',opts:['Popular','Old','Testable','Complicated'],correct:2,fb:'<span class="fb-label">✓ CORRECT</span>If no experiment could ever prove it wrong, it isn\u2019t science (yet). Ideas must be testable.'},
+    {q:'In a fair experiment, you should…',opts:['Change many things at once','Change only one thing at a time','Only keep results you like','Skip repeating the test'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>Changing one variable at a time lets you tell what actually caused the result.'},
+    {q:'Why is it a STRENGTH that science can change its mind?',opts:['It means scientists are unreliable','It lets science correct itself when better evidence appears','It means nothing is ever true','It makes science slower'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>Self-correction is exactly why science gets more accurate over time.'},
+  ]},
+  cosmos:{title:'Lock it in',sub:'Answer the 3 questions to complete Section 3',questions:[
+    {q:'What did Copernicus propose in 1543?',opts:['The Earth is at the centre','The Sun is at the centre, with Earth orbiting it','The universe has no centre','The Moon orbits the Sun'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>He moved the Sun to the centre and made Earth just another planet — a radical idea then.'},
+    {q:'How did Galileo support the new picture of the sky?',opts:['He guessed','He used a telescope and saw moons orbiting Jupiter','He read old myths','He measured the temperature'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>His telescope gave direct evidence that not everything orbits Earth.'},
+    {q:'What was Newton\u2019s great unifying idea in 1687?',opts:['Plants grow with music','Gravity explains both falling apples and orbiting moons','Atoms are tiny','Germs cause disease'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>One law of gravity for the heavens and the Earth — a stunning unification.'},
+  ]},
+  life:{title:'Lock it in',sub:'Answer the 3 questions to complete Section 4',questions:[
+    {q:'What new tool revealed cells and microbes?',opts:['The telescope','The microscope','The thermometer','The calculator'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>The microscope opened the world of the very small — just as the telescope opened the sky.'},
+    {q:'Germ theory showed that many diseases are caused by…',opts:['Bad air','Curses','Tiny living organisms (germs)','Cold weather alone'],correct:2,fb:'<span class="fb-label">✓ CORRECT</span>This led to handwashing, clean water, vaccines and antibiotics — saving countless lives.'},
+    {q:'In science, the word "theory" means…',opts:['A wild guess','A powerful explanation backed by lots of evidence','A myth','Something nobody believes'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>A scientific theory (like evolution) is the opposite of a hunch — it\u2019s strongly supported.'},
+  ]},
+  atom:{title:'Lock it in',sub:'Last checkpoint — finish the journey',questions:[
+    {q:'Whose ancient idea was finally proven by atomic science?',opts:['Aristotle','Democritus','Ptolemy','Pythagoras'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>Democritus\u2019 "atomos" turned out to be real, over 2,000 years later.'},
+    {q:'Marie Curie is famous for…',opts:['Inventing the telescope','Discovering radioactivity and winning two Nobel Prizes','Proposing the Sun-centred model','Drawing the first cells'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>She discovered radioactivity and new elements, winning Nobel Prizes in two different sciences.'},
+    {q:'What is the key lesson about scientific power?',opts:['Science decides what we should do','Science gives us power, but humans choose how to use it','Powerful science is always safe','Ethics has nothing to do with science'],correct:1,fb:'<span class="fb-label">✓ CORRECT</span>Science tells us what we CAN do; what we SHOULD do is a human responsibility.'},
+  ]},
+};
+
+// ============================================================
+// ROUTING + WIRING ENGINE
+// ============================================================
+const BUILDERS={origins:buildOrigins,method:buildMethod,cosmos:buildCosmos,life:buildLife,atom:buildAtom};
+const WIRERS={origins:wireOrigins,method:wireMethod,cosmos:wireCosmos,life:wireLife,atom:wireAtom};
+let currentSectionIdx=-1;
+
+function openSection(id){
+  const idx=SECTIONS.findIndex(s=>s.id===id); if(idx<0)return;
+  currentSectionIdx=idx;
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screenMount').innerHTML=`<div class="screen active">${BUILDERS[id]()}</div>`;
+  if(WIRERS[id]) WIRERS[id]();
+  wireCheckpoint(id);
+  updateNavFooter();
+  window.scrollTo({top:0,behavior:'smooth'});
+  progress.current=id; saveProgress();
+}
+function goHome(){
+  currentSectionIdx=-1;
+  document.getElementById('screenMount').innerHTML='';
+  document.getElementById('screen-home').classList.add('active');
+  renderSectionList(); updateNavFooter();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function updateNavFooter(){
+  const back=document.getElementById('navBack'),next=document.getElementById('navNext'),label=document.getElementById('navLabel');
+  if(currentSectionIdx<0){
+    back.style.visibility='hidden';
+    const firstInc=SECTIONS.findIndex(s=>!progress.completed[s.id]);
+    next.textContent=firstInc>=0?'Start →':'Review →';
+    next.disabled=false;
+    next.onclick=()=>openSection(SECTIONS[firstInc>=0?firstInc:0].id);
+    label.textContent='';
+  } else {
+    back.style.visibility='visible'; back.textContent='← All sections'; back.onclick=goHome;
+    const sec=SECTIONS[currentSectionIdx];
+    label.textContent=`Section ${sec.num} / ${SECTIONS.length}`;
+    const done=!!progress.completed[sec.id]; const nextIdx=currentSectionIdx+1;
+    if(done && nextIdx<SECTIONS.length){ next.textContent='Next section →'; next.disabled=false; next.onclick=()=>openSection(SECTIONS[nextIdx].id); }
+    else if(done && nextIdx>=SECTIONS.length){ next.textContent='🎉 Finish'; next.disabled=false; next.onclick=goHome; }
+    else { next.textContent='Finish the checkpoint'; next.disabled=true; next.onclick=null; }
+  }
+}
+
+function wireCheckpoint(id){
+  const cp=CHECKPOINTS[id]; if(!cp)return;
+  const cpEl=document.querySelector(`.checkpoint[data-section="${id}"]`); if(!cpEl)return;
+  const answered={}; const total=cp.questions.length;
+  const correctCount=()=>Object.values(answered).filter(v=>v===true).length;
+  cpEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+    opt.onclick=()=>{
+      const qi=+opt.dataset.qi, oi=+opt.dataset.oi;
+      if(answered[qi]!==undefined)return;
+      const q=cp.questions[qi];
+      const opts=cpEl.querySelectorAll(`.quiz-opt[data-qi="${qi}"]`);
+      opts.forEach(o=>o.classList.add('locked'));
+      const fb=cpEl.querySelector(`.quiz-feedback[data-qi="${qi}"]`);
+      if(oi===q.correct){ opt.classList.add('correct'); answered[qi]=true; fb.className='quiz-feedback right show'; fb.innerHTML=q.fb; }
+      else { opt.classList.add('wrong'); opts[q.correct].classList.add('correct'); answered[qi]=false; fb.className='quiz-feedback wrong-fb show'; fb.innerHTML=`<span class="fb-label">✗ NOT QUITE</span>${q.fb.replace(/<span class="fb-label">✓ CORRECT<\/span>/,'')}`; }
+      if(Object.keys(answered).length===total) showResult();
+    };
+  });
+  function showResult(){
+    const result=cpEl.querySelector('.checkpoint-result');
+    const score=correctCount();
+    result.querySelector('.score').textContent=`${score} / ${total}`;
+    let msg;
+    if(score===total) msg='Perfect — you\u2019ve got this! Section complete.';
+    else if(score>=total-1) msg='Strong work! Review the one you missed, then continue.';
+    else msg='Good effort — scroll up and re-read; the ideas will click. You can still continue.';
+    result.querySelector('.msg').textContent=msg;
+    result.classList.add('show');
+    result.scrollIntoView({behavior:'smooth',block:'center'});
+    const finishBtn=result.querySelector('[data-action="finish-section"]');
+    finishBtn.onclick=()=>{
+      markComplete(id); updateNavFooter();
+      const nextIdx=currentSectionIdx+1; const nextBtn=document.getElementById('navNext');
+      nextBtn.disabled=false;
+      if(nextIdx<SECTIONS.length){ nextBtn.textContent='Next section →'; nextBtn.onclick=()=>openSection(SECTIONS[nextIdx].id); }
+      else { nextBtn.textContent='🎉 Finish'; nextBtn.onclick=goHome; }
+      finishBtn.textContent='✓ Completed'; finishBtn.disabled=true;
+      nextBtn.scrollIntoView({behavior:'smooth'});
+    };
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('resetBtn').onclick=()=>{ progress={completed:{},current:null}; saveProgress(); renderSectionList(); updateProgressBar(); updateNavFooter(); };
+renderSectionList();
+updateProgressBar();
+updateNavFooter();
+</script>
+
+<a href="https://www.linkedin.com/in/mouna-chaari-phd-21071413/" target="_blank" rel="noopener" id="jem-badge" title="Mouna Chaari — LinkedIn" style="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F0B33D,#FFD24A);color:#0A1A3A;font-family:Georgia,serif;font-weight:bold;font-size:15px;border:1.5px solid #F0B33D;">MC</span>
+<span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Mouna Chaari</span>
+</a>
+</body>
+</html>
