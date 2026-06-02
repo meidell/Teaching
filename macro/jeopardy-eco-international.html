@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeopardy! · Économie Internationale</title>
+<style>
+:root {
+  --navy-deep: #0A1A3A;
+  --navy-mid: #152A5E;
+  --navy-light: #1E3470;
+  --blue-bright: #1E5AA8;
+  --blue-glow: #4A90E2;
+  --gold: #F0B33D;
+  --gold-bright: #FFD24A;
+  --gold-dark: #8C6A1F;
+  --white: #FFFFFF;
+  --grey-muted: #B0BCD6;
+  --green-correct: #2EA84A;
+  --green-soft: #1E6E33;
+  --red-wrong: #C8312B;
+  --amber: #E8A33C;
+  --jeopardy-blue: #060CE9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  font-family: 'Calibri', 'Helvetica Neue', sans-serif;
+  background: radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 70%);
+  color: var(--white);
+  user-select: none;
+}
+
+/* === Setup screen === */
+.setup-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  overflow-y: auto;
+}
+.setup-screen.hidden { display: none; }
+
+.setup-content {
+  max-width: 720px;
+  width: 100%;
+  text-align: center;
+  padding: 40px 20px;
+}
+.setup-content h1 {
+  font-family: Georgia, serif;
+  font-size: 48px;
+  font-style: italic;
+  font-weight: bold;
+  color: var(--gold);
+  margin-bottom: 6px;
+  line-height: 1.1;
+  text-shadow: 2px 2px 0 var(--gold-dark);
+}
+.setup-content .subtitle {
+  color: var(--grey-muted);
+  letter-spacing: 3px;
+  font-size: 12px;
+  margin-bottom: 32px;
+}
+.setup-section {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.setup-section h2 {
+  color: var(--gold);
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  font-family: Georgia, serif;
+}
+.team-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.team-input-row label {
+  color: var(--grey-muted);
+  font-size: 11px;
+  width: 70px;
+  letter-spacing: 1px;
+}
+.team-input-row input {
+  flex: 1;
+  background: var(--navy-deep);
+  border: 1px solid var(--blue-bright);
+  color: var(--white);
+  padding: 10px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  border-radius: 4px;
+  outline: none;
+}
+.team-input-row input:focus { border-color: var(--gold); }
+.team-count-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.count-btn {
+  background: var(--navy-mid);
+  border: 1px solid var(--blue-bright);
+  color: var(--white);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.count-btn.active {
+  background: var(--gold);
+  color: var(--navy-deep);
+  border-color: var(--gold);
+  font-weight: bold;
+}
+.count-btn:hover:not(.active) { background: var(--navy-light); border-color: var(--gold); }
+.rules-list { list-style: none; font-size: 13px; line-height: 1.7; color: var(--grey-muted); }
+.rules-list li { padding: 4px 0; }
+.rules-list .badge {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-right: 8px;
+  letter-spacing: 1px;
+}
+.start-btn {
+  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+  color: var(--navy-deep);
+  border: none;
+  padding: 16px 40px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-top: 12px;
+  transition: all 0.2s;
+}
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(240,179,61,0.4); }
+.start-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* === Main game === */
+.app { display: none; max-width: 1500px; margin: 0 auto; padding: 0 0 30px; }
+.app.visible { display: block; }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 2px solid var(--gold);
+  background: rgba(0,0,0,0.2);
+}
+.brand { font-size: 11px; font-weight: bold; color: var(--gold); letter-spacing: 3px; }
+.header-title {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--gold-bright);
+  letter-spacing: 1px;
+}
+.progress { color: var(--gold); font-size: 11px; letter-spacing: 2px; font-weight: bold; }
+
+/* === Team strip === */
+.team-strip {
+  display: grid;
+  gap: 10px;
+  padding: 12px 24px;
+  background: rgba(0,0,0,0.15);
+}
+.team-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy-mid);
+  border: 1.5px solid var(--blue-bright);
+  border-radius: 6px;
+  padding: 10px 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.team-mini.leader {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 14px rgba(240,179,61,0.4);
+  background: linear-gradient(135deg, var(--navy-mid), var(--navy-light));
+}
+.team-mini.active-team {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 0 2px var(--gold-bright);
+}
+.team-mini .name {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--white);
+  font-family: Georgia, serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.team-mini .bank { font-size: 18px; font-weight: bold; color: var(--gold-bright); font-family: Georgia, serif; }
+.team-mini .bank.negative { color: var(--red-wrong); }
+
+/* === Board === */
+.board-wrap { padding: 16px 24px; }
+.board {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.cat-cell {
+  background: var(--jeopardy-blue);
+  border: 2px solid var(--gold);
+  border-radius: 4px;
+  padding: 14px 8px;
+  text-align: center;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: var(--gold-bright);
+  text-transform: uppercase;
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+}
+.clue-cell {
+  background: var(--jeopardy-blue);
+  border: 2px solid var(--blue-bright);
+  border-radius: 4px;
+  padding: 18px 8px;
+  text-align: center;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  font-size: 28px;
+  color: var(--gold);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 1px 1px 0 var(--navy-deep);
+}
+.clue-cell:hover:not(.used) {
+  background: var(--navy-light);
+  border-color: var(--gold-bright);
+  transform: scale(1.03);
+}
+.clue-cell.used {
+  background: var(--navy-deep);
+  color: transparent;
+  cursor: default;
+  border-color: rgba(176,188,214,0.15);
+}
+
+/* === Modal clue === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6,12,30,0.82);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 200;
+}
+.modal-overlay.visible { display: flex; }
+.clue-modal {
+  background: var(--jeopardy-blue);
+  border: 3px solid var(--gold);
+  border-radius: 8px;
+  max-width: 820px;
+  width: 100%;
+  padding: 36px 40px 28px;
+  box-shadow: 0 0 50px rgba(0,0,0,0.7);
+  text-align: center;
+}
+.modal-tag {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--navy-deep);
+  padding: 4px 16px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+.modal-value {
+  font-family: Georgia, serif;
+  font-size: 30px;
+  font-weight: bold;
+  color: var(--gold-bright);
+  margin-bottom: 22px;
+}
+.modal-clue {
+  font-family: Georgia, serif;
+  font-size: 26px;
+  line-height: 1.4;
+  color: var(--white);
+  text-transform: uppercase;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 18px;
+}
+.modal-answer {
+  background: rgba(46,168,74,0.18);
+  border: 1.5px solid var(--green-correct);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 8px 0 4px;
+  display: none;
+}
+.modal-answer.visible { display: block; }
+.modal-answer .a-label {
+  font-size: 11px;
+  color: var(--gold-bright);
+  letter-spacing: 2px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 6px;
+}
+.modal-answer .a-text {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--white);
+}
+.modal-answer .a-note {
+  font-size: 13px;
+  color: var(--grey-muted);
+  line-height: 1.5;
+  margin-top: 10px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.btn {
+  background: var(--gold);
+  color: var(--navy-deep);
+  border: none;
+  padding: 11px 22px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.btn:hover { background: var(--gold-bright); transform: translateY(-1px); }
+.btn.secondary { background: var(--navy-mid); color: var(--gold); border: 1px solid var(--gold); }
+.btn.secondary:hover { background: var(--navy-light); }
+.btn.green { background: var(--green-correct); color: var(--white); }
+.btn.green:hover { background: var(--green-soft); }
+.btn.danger { background: var(--red-wrong); color: var(--white); }
+.btn.danger:hover { background: #a8221c; }
+
+.score-prompt { font-size: 12px; color: var(--grey-muted); letter-spacing: 1px; margin-bottom: 8px; }
+.team-pick-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.team-pick-btn {
+  background: var(--navy-mid);
+  border: 1px solid var(--blue-bright);
+  color: var(--white);
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.15s;
+}
+.team-pick-btn:hover { border-color: var(--gold-bright); background: var(--navy-light); }
+.team-pick-btn.sel { background: var(--gold); color: var(--navy-deep); border-color: var(--gold); }
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  border-top: 1px solid rgba(176,188,214,0.2);
+  font-size: 10px;
+  color: var(--grey-muted);
+}
+footer a { color: var(--gold-bright); text-decoration: none; }
+
+/* === Final === */
+.final-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 70%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 300;
+  overflow-y: auto;
+}
+.final-screen.visible { display: flex; }
+.final-content { text-align: center; max-width: 700px; width: 100%; }
+.final-content h1 {
+  font-family: Georgia, serif;
+  font-size: 46px;
+  font-style: italic;
+  font-weight: bold;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.confetti { font-size: 72px; margin-bottom: 8px; }
+.final-podium { display: grid; gap: 12px; margin: 24px 0; }
+.final-row {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  background: var(--navy-mid);
+  border: 1px solid var(--blue-bright);
+  border-radius: 6px;
+  padding: 14px 20px;
+}
+.final-row .place { font-family: Georgia, serif; font-size: 22px; font-weight: bold; color: var(--gold); }
+.final-row .team-name { font-family: Georgia, serif; font-size: 20px; font-weight: bold; color: var(--white); text-align: left; }
+.final-row .bank-amount { font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: var(--gold-bright); }
+.final-row.winner {
+  background: linear-gradient(135deg, var(--gold-dark), var(--navy-light));
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 24px rgba(240,179,61,0.5);
+}
+.final-row.winner .place::before { content: "🏆 "; }
+
+@media (max-width: 720px) {
+  .clue-cell { font-size: 18px; padding: 12px 4px; min-height: 56px; }
+  .cat-cell { font-size: 10px; padding: 8px 4px; min-height: 60px; }
+  .modal-clue { font-size: 19px; }
+  .board { gap: 3px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-content">
+    <h1>Jeopardy!</h1>
+    <div class="subtitle">ÉCONOMIE INTERNATIONALE · RÉVISION</div>
+
+    <div class="setup-section">
+      <h2>ÉQUIPES</h2>
+      <div class="team-count-row" id="countRow"></div>
+      <div id="teamInputs"></div>
+    </div>
+
+    <div class="setup-section">
+      <h2>RÈGLES DU JEU</h2>
+      <ul class="rules-list">
+        <li><span class="badge">1</span>Choisissez une catégorie et une valeur sur le tableau.</li>
+        <li><span class="badge">2</span>Lisez l'indice à voix haute. La première équipe à répondre se manifeste.</li>
+        <li><span class="badge">3</span>Cliquez « RÉVÉLER » pour afficher la bonne réponse.</li>
+        <li><span class="badge">4</span>Désignez l'équipe : <strong>bonne réponse</strong> = +la valeur · <strong>mauvaise</strong> = −la valeur.</li>
+        <li><span class="badge">5</span>Quand toutes les cases sont jouées, le classement final s'affiche.</li>
+      </ul>
+    </div>
+
+    <button class="start-btn" id="startBtn">COMMENCER →</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="app" id="app">
+  <header>
+    <span class="brand">JAN ERIK MEIDELL</span>
+    <span class="header-title">Jeopardy! · Économie Internationale</span>
+    <span class="progress" id="progress">0 / 30</span>
+  </header>
+
+  <div class="team-strip" id="teamStrip"></div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <footer>
+    <span>Cliquez sur une case pour jouer · Tapez <strong style="color:var(--gold-bright)">Espace</strong> pour révéler</span>
+    <span>Révision · Économie Internationale</span>
+  </footer>
+</div>
+
+<!-- CLUE MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="clue-modal">
+    <div class="modal-tag" id="modalCat">CATÉGORIE</div>
+    <div class="modal-value" id="modalValue">200</div>
+    <div class="modal-clue" id="modalClue"></div>
+
+    <div class="modal-answer" id="modalAnswer">
+      <span class="a-label">RÉPONSE</span>
+      <span class="a-text" id="modalAnswerText"></span>
+      <div class="a-note" id="modalAnswerNote"></div>
+    </div>
+
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="final-screen" id="finalScreen">
+  <div class="final-content">
+    <div class="confetti">🏆</div>
+    <h1 id="finalTitle">Fin de la partie !</h1>
+    <div class="subtitle">CLASSEMENT FINAL</div>
+    <div class="final-podium" id="finalPodium"></div>
+    <button class="start-btn" onclick="location.reload()">REJOUER</button>
+  </div>
+</div>
+
+<script>
+/* ===== DONNÉES ===== */
+const CATEGORIES = [
+  {
+    name: "PIB & Croissance",
+    clues: [
+      { v:200, clue:"Cet indicateur mesure la valeur totale des biens et services produits dans un pays sur une année.", answer:"Qu'est-ce que le PIB ?", note:"Produit Intérieur Brut — la mesure de référence de l'activité économique." },
+      { v:400, clue:"Ce PIB corrige l'effet de l'inflation en utilisant les prix d'une année de référence.", answer:"Qu'est-ce que le PIB réel ?", note:"Le PIB nominal grimpe avec les prix ; le PIB réel isole la vraie croissance de la production." },
+      { v:600, clue:"On divise le PIB par cette donnée pour comparer le niveau de vie moyen entre pays.", answer:"Qu'est-ce que la population (PIB par habitant) ?", note:"Le PIB/habitant approche le niveau de vie moyen, mais masque les inégalités." },
+      { v:800, clue:"Selon cette loi de 1962, chaque point de chômage au-dessus du taux naturel coûte environ 2 % de PIB potentiel.", answer:"Qu'est-ce que la loi d'Okun ?", note:"Le chômage a un coût économique mesurable, en plus de son coût social." },
+      { v:1000, clue:"Ce taux de croissance, ni inflationniste ni récessif, correspond à la pleine utilisation des facteurs de production.", answer:"Qu'est-ce que la croissance potentielle ?", note:"L'écart entre PIB réel et PIB potentiel est l'« output gap »." }
+    ]
+  },
+  {
+    name: "Inflation & Chômage",
+    clues: [
+      { v:200, clue:"C'est l'augmentation générale des prix qui réduit le pouvoir d'achat.", answer:"Qu'est-ce que l'inflation ?", note:"Le même bien coûte plus cher avec le temps." },
+      { v:400, clue:"Selon le BIT, il faut être sans emploi, disponible rapidement ET en recherche active pour être compté ainsi.", answer:"Qu'est-ce qu'un chômeur ?", note:"Les trois conditions sont nécessaires simultanément." },
+      { v:600, clue:"La banque centrale relève cet instrument pour rendre le crédit plus cher et freiner l'inflation.", answer:"Qu'est-ce que le taux d'intérêt directeur ?", note:"Effet avec 12 à 18 mois de délai sur la demande." },
+      { v:800, clue:"Cet acronyme désigne le taux de chômage compatible avec une inflation stable.", answer:"Qu'est-ce que le NAIRU ?", note:"Non-Accelerating Inflation Rate of Unemployment, ≈ 2–4 % dans les économies avancées." },
+      { v:1000, clue:"Cette courbe illustre la relation à court terme — et son arbitrage — entre inflation et chômage.", answer:"Qu'est-ce que la courbe de Phillips ?", note:"L'arbitrage tient à court terme mais disparaît à long terme (anticipations)." }
+    ]
+  },
+  {
+    name: "Avantage Comparatif",
+    clues: [
+      { v:200, clue:"Cet économiste écossais (1776) définit l'avantage absolu : produire un bien avec moins de ressources.", answer:"Qui est Adam Smith ?", note:"« La Richesse des Nations », 1776." },
+      { v:400, clue:"Cet économiste (1817) montre que l'échange est gagnant même sans avantage absolu.", answer:"Qui est David Ricardo ?", note:"Le fondement théorique du libre-échange moderne." },
+      { v:600, clue:"C'est le vrai fondement de l'avantage comparatif : ce à quoi on renonce pour produire un bien.", answer:"Qu'est-ce que le coût d'opportunité ?", note:"On se spécialise là où son coût d'opportunité est le plus bas." },
+      { v:800, clue:"Suisse : montre 2 h, t-shirt 4 h ; Roumanie : 10 h et 8 h. C'est ce que la Suisse doit produire.", answer:"Que sont les montres ?", note:"Coût d'opportunité Suisse : 0,5 t-shirt par montre — le plus bas. La Roumanie se spécialise dans les t-shirts." },
+      { v:1000, clue:"C'est ce qui se passe quand chaque pays se spécialise selon son avantage comparatif puis échange.", answer:"Qu'est-ce qu'un gain mutuel (les deux pays gagnent) ?", note:"La spécialisation augmente la production mondiale totale et le bien-être des deux partenaires." }
+    ]
+  },
+  {
+    name: "Tarifs & Protectionnisme",
+    clues: [
+      { v:200, clue:"Cette personne paie réellement un tarif de 25 % sur un t-shirt importé aux USA.", answer:"Qui est le consommateur américain ?", note:"Le distributeur répercute le tarif sur le prix final — l'erreur la plus courante du débat public." },
+      { v:400, clue:"Tarifs, quotas, subventions et normes en sont des exemples ; la TVA intérieure n'en est PAS un.", answer:"Que sont les instruments du protectionnisme ?", note:"La TVA frappe identiquement biens locaux et importés — ce n'est pas une barrière commerciale." },
+      { v:600, clue:"Ce type de barrière limite la quantité d'un bien importé, sans toucher directement à son prix.", answer:"Qu'est-ce qu'un quota d'importation ?", note:"Contrairement au tarif, le quota agit sur les volumes, pas sur le prix unitaire." },
+      { v:800, clue:"En avril 2025 (« Liberation Day »), le tarif US sur la Chine a culminé à ce pourcentage.", answer:"Qu'est-ce que 145 % ?", note:"Riposte chinoise de 125 %. Le tarif US moyen effectif est passé de 2,5 % à 27 % (×11)." },
+      { v:1000, clue:"Cet argument justifie de protéger temporairement une jeune industrie le temps qu'elle devienne compétitive.", answer:"Qu'est-ce que l'argument de l'industrie naissante ?", note:"Friedrich List ; valide en théorie, souvent détourné en protection permanente en pratique." }
+    ]
+  },
+  {
+    name: "Taux de Change & Balance",
+    clues: [
+      { v:200, clue:"En une phrase, un taux de change est avant tout cela : le prix d'une monnaie en une autre.", answer:"Qu'est-ce qu'un prix ?", note:"Comme tout prix, il bouge selon l'offre et la demande." },
+      { v:400, clue:"Cette identité comptable s'équilibre toujours : courant + financier + erreurs ≈ 0.", answer:"Qu'est-ce que la balance des paiements ?", note:"Un déficit courant (USA) est financé par des entrées de capitaux." },
+      { v:600, clue:"Cette théorie de Cassel (1918) : à long terme, les taux égalisent le prix d'un même panier de biens.", answer:"Qu'est-ce que la PPA (Parité de Pouvoir d'Achat) ?", note:"Cf. l'indice Big Mac. Selon la PPA, le CHF est surévalué." },
+      { v:800, clue:"Ce « triangle » de Mundell (1963) interdit d'avoir ensemble taux fixe, politique monétaire autonome et capitaux libres.", answer:"Qu'est-ce que le triangle d'incompatibilité ?", note:"Suisse, USA et Eurozone sacrifient le taux fixe (régime flottant)." },
+      { v:1000, clue:"Le 15 janvier 2015, cette banque a abandonné sans préavis le cours plancher de 1,20 CHF/EUR.", answer:"Qu'est-ce que la BNS ?", note:"–30 % en 20 min, ~70 mia. CHF de pertes, des courtiers FX en faillite, SMI –9 %." }
+    ]
+  },
+  {
+    name: "Institutions Internationales",
+    clues: [
+      { v:200, clue:"Créée à Genève en 1995 (succédant au GATT), elle arbitre le commerce mondial.", answer:"Qu'est-ce que l'OMC ?", note:"166 pays membres, ≈ 98 % du commerce mondial sous ses règles." },
+      { v:400, clue:"Issue de Bretton Woods (1944), c'est le « pompier monétaire » qui prête en urgence aux pays en crise.", answer:"Qu'est-ce que le FMI ?", note:"La Banque mondiale, elle, est « l'architecte » du développement à long terme." },
+      { v:600, clue:"Cet accord de 1944 a fixé l'architecture monétaire d'après-guerre et créé le FMI et la Banque mondiale.", answer:"Que sont les accords de Bretton Woods ?", note:"Système de changes fixes ancré au dollar, lui-même convertible en or jusqu'en 1971." },
+      { v:800, clue:"Avec ≈ 17 % des voix et un seuil de 85 % requis, ce pays dispose de fait d'un veto au FMI.", answer:"Qui sont les États-Unis ?", note:"La Chine n'a que ≈ 6,4 % — d'où les tensions sur la légitimité de la gouvernance." },
+      { v:1000, clue:"Lors de la crise grecque, ce trio (FMI, BCE, Commission UE) a imposé l'austérité.", answer:"Qu'est-ce que la Troïka ?", note:"Bilan : PIB −25 %, chômage à 27 %. Le FMI a reconnu en 2016 avoir « sur-vendu » l'austérité." }
+    ]
+  }
+];
+
+/* ===== ÉTAT ===== */
+let teams = [];
+let teamCount = 3;
+let selectedTeamForScoring = null;
+let currentClue = null;
+let cluesPlayed = 0;
+const TOTAL_CLUES = CATEGORIES.length * 5;
+
+/* ===== SETUP ===== */
+const countRow = document.getElementById('countRow');
+const teamInputs = document.getElementById('teamInputs');
+[2,3,4,5,6].forEach(n => {
+  const b = document.createElement('button');
+  b.className = 'count-btn' + (n===3?' active':'');
+  b.textContent = n + ' équipes';
+  b.onclick = () => { teamCount = n; renderCountButtons(); renderTeamInputs(); };
+  b.dataset.n = n;
+  countRow.appendChild(b);
+});
+function renderCountButtons(){
+  countRow.querySelectorAll('.count-btn').forEach(b=>{
+    b.classList.toggle('active', +b.dataset.n === teamCount);
+  });
+}
+const DEFAULT_NAMES = ["Les Mercantilistes","Team Ricardo","Smith & Co","Les Keynésiens","Bretton Woods","Avantage Comparatif"];
+function renderTeamInputs(){
+  teamInputs.innerHTML = '';
+  for(let i=0;i<teamCount;i++){
+    const row = document.createElement('div');
+    row.className = 'team-input-row';
+    row.innerHTML = `<label>Équipe ${i+1}</label><input type="text" id="team${i}" value="${DEFAULT_NAMES[i]||('Équipe '+(i+1))}" maxlength="22">`;
+    teamInputs.appendChild(row);
+  }
+}
+renderTeamInputs();
+
+document.getElementById('startBtn').onclick = () => {
+  teams = [];
+  for(let i=0;i<teamCount;i++){
+    const v = document.getElementById('team'+i).value.trim() || ('Équipe '+(i+1));
+    teams.push({ name:v, score:0 });
+  }
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  buildBoard();
+  renderTeams();
+};
+
+/* ===== BOARD ===== */
+function buildBoard(){
+  const board = document.getElementById('board');
+  board.style.gridTemplateColumns = `repeat(${CATEGORIES.length}, 1fr)`;
+  board.innerHTML = '';
+  CATEGORIES.forEach(cat=>{
+    const c = document.createElement('div');
+    c.className = 'cat-cell';
+    c.textContent = cat.name;
+    board.appendChild(c);
+  });
+  for(let r=0;r<5;r++){
+    CATEGORIES.forEach((cat,ci)=>{
+      const clue = cat.clues[r];
+      const cell = document.createElement('div');
+      cell.className = 'clue-cell';
+      cell.textContent = clue.v;
+      cell.dataset.ci = ci;
+      cell.dataset.r = r;
+      cell.onclick = () => openClue(ci, r, cell);
+      board.appendChild(cell);
+    });
+  }
+}
+
+/* ===== TEAMS ===== */
+function renderTeams(){
+  const strip = document.getElementById('teamStrip');
+  strip.style.gridTemplateColumns = `repeat(${teams.length}, 1fr)`;
+  const max = Math.max(...teams.map(t=>t.score));
+  strip.innerHTML = '';
+  teams.forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className = 'team-mini' + (t.score===max && max!==0 ? ' leader':'');
+    d.innerHTML = `<span class="name">${escapeHtml(t.name)}</span><span class="bank ${t.score<0?'negative':''}">${t.score} pts</span>`;
+    strip.appendChild(d);
+  });
+  document.getElementById('progress').textContent = `${cluesPlayed} / ${TOTAL_CLUES}`;
+}
+
+/* ===== CLUE FLOW ===== */
+function openClue(ci, r, cell){
+  if(cell.classList.contains('used')) return;
+  currentClue = { ci, r, cell, data: CATEGORIES[ci].clues[r] };
+  selectedTeamForScoring = null;
+
+  document.getElementById('modalCat').textContent = CATEGORIES[ci].name;
+  document.getElementById('modalValue').textContent = currentClue.data.v + ' points';
+  document.getElementById('modalClue').textContent = currentClue.data.clue;
+  document.getElementById('modalAnswerText').textContent = currentClue.data.answer;
+  document.getElementById('modalAnswerNote').textContent = currentClue.data.note || '';
+  document.getElementById('modalAnswer').classList.remove('visible');
+
+  renderRevealStage();
+  document.getElementById('modalOverlay').classList.add('visible');
+}
+
+function renderRevealStage(){
+  const actions = document.getElementById('modalActions');
+  actions.innerHTML = '';
+  const reveal = document.createElement('button');
+  reveal.className = 'btn';
+  reveal.textContent = 'RÉVÉLER LA RÉPONSE';
+  reveal.onclick = showAnswer;
+  const close = document.createElement('button');
+  close.className = 'btn secondary';
+  close.textContent = 'FERMER';
+  close.onclick = closeModal;
+  actions.appendChild(reveal);
+  actions.appendChild(close);
+}
+
+function showAnswer(){
+  document.getElementById('modalAnswer').classList.add('visible');
+  const actions = document.getElementById('modalActions');
+  actions.innerHTML = '';
+
+  const prompt = document.createElement('div');
+  prompt.className = 'score-prompt';
+  prompt.textContent = 'Quelle équipe a répondu ? Sélectionnez-la, puis attribuez les points.';
+  prompt.style.width = '100%';
+  actions.appendChild(prompt);
+
+  const pickRow = document.createElement('div');
+  pickRow.className = 'team-pick-row';
+  pickRow.style.width = '100%';
+  teams.forEach((t,i)=>{
+    const b = document.createElement('button');
+    b.className = 'team-pick-btn';
+    b.textContent = t.name;
+    b.onclick = () => {
+      selectedTeamForScoring = i;
+      pickRow.querySelectorAll('.team-pick-btn').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    pickRow.appendChild(b);
+  });
+  actions.appendChild(pickRow);
+
+  const correct = document.createElement('button');
+  correct.className = 'btn green';
+  correct.textContent = '✓ BONNE RÉPONSE (+' + currentClue.data.v + ')';
+  correct.onclick = () => score(+1);
+
+  const wrong = document.createElement('button');
+  wrong.className = 'btn danger';
+  wrong.textContent = '✕ MAUVAISE (−' + currentClue.data.v + ')';
+  wrong.onclick = () => score(-1);
+
+  const noone = document.createElement('button');
+  noone.className = 'btn secondary';
+  noone.textContent = 'PERSONNE';
+  noone.onclick = () => finishClue();
+
+  actions.appendChild(correct);
+  actions.appendChild(wrong);
+  actions.appendChild(noone);
+}
+
+function score(sign){
+  if(selectedTeamForScoring === null){
+    flashPrompt();
+    return;
+  }
+  teams[selectedTeamForScoring].score += sign * currentClue.data.v;
+  finishClue();
+}
+
+function flashPrompt(){
+  const p = document.querySelector('.score-prompt');
+  if(!p) return;
+  p.style.color = 'var(--red-wrong)';
+  p.textContent = '⚠ Sélectionnez d\'abord une équipe.';
+  setTimeout(()=>{ p.style.color=''; p.textContent='Quelle équipe a répondu ? Sélectionnez-la, puis attribuez les points.'; }, 1500);
+}
+
+function finishClue(){
+  currentClue.cell.classList.add('used');
+  cluesPlayed++;
+  closeModal();
+  renderTeams();
+  if(cluesPlayed >= TOTAL_CLUES) showFinal();
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('visible');
+}
+
+/* ===== FINAL ===== */
+function showFinal(){
+  const sorted = [...teams].sort((a,b)=>b.score-a.score);
+  const podium = document.getElementById('finalPodium');
+  podium.innerHTML = '';
+  sorted.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'final-row' + (i===0?' winner':'');
+    row.innerHTML = `<span class="place">${i+1}</span><span class="team-name">${escapeHtml(t.name)}</span><span class="bank-amount">${t.score} pts</span>`;
+    podium.appendChild(row);
+  });
+  document.getElementById('finalTitle').textContent = sorted[0].name + ' remporte la partie !';
+  setTimeout(()=>document.getElementById('finalScreen').classList.add('visible'), 400);
+}
+
+/* ===== UTILS ===== */
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('modalOverlay').classList.contains('visible')) return;
+  if(e.code === 'Space'){
+    e.preventDefault();
+    if(!document.getElementById('modalAnswer').classList.contains('visible')) showAnswer();
+  }
+  if(e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
