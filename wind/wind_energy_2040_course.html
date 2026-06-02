@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The European Wind Energy Mix · An Interactive Course</title>
+<style>
+:root {
+  --navy-deep: #0A1A3A;
+  --navy-mid: #152A5E;
+  --navy-light: #1E3470;
+  --blue-bright: #1E5AA8;
+  --blue-glow: #4A90E2;
+  --gold: #F0B33D;
+  --gold-bright: #FFD24A;
+  --gold-dark: #8C6A1F;
+  --white: #FFFFFF;
+  --grey-muted: #B0BCD6;
+  --green-correct: #2EA84A;
+  --green-soft: #1E6E33;
+  --red-wrong: #C8312B;
+  --red-soft: #5E1F1C;
+  --amber: #E8A33C;
+  --purple: #7E5AE8;
+  --teal: #2DB6A8;
+  --wind-green: #4FB477;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  min-height: 100%;
+  font-family: 'Calibri', 'Helvetica Neue', sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(30,90,168,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(45,182,168,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 75%);
+  background-attachment: fixed;
+  color: var(--white);
+  line-height: 1.5;
+}
+body { padding-bottom: 80px; }
+
+/* === Top progress bar === */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10,26,58,0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(240,179,61,0.3);
+  padding: 10px 16px;
+}
+.topbar-inner {
+  max-width: 820px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+}
+.topbar .course-title {
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--gold); font-weight: bold; white-space: nowrap;
+}
+.progress-track {
+  flex: 1; height: 6px; background: var(--navy-deep);
+  border-radius: 3px; overflow: hidden;
+  border: 1px solid rgba(176,188,214,0.2);
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  width: 0%; transition: width 0.5s ease; border-radius: 3px;
+}
+.progress-pct {
+  font-size: 11px; color: var(--gold-bright); font-weight: bold;
+  font-family: Georgia, serif; min-width: 36px; text-align: right;
+}
+
+.container { max-width: 820px; margin: 0 auto; padding: 20px 16px; }
+
+/* === Hero === */
+.hero { text-align: center; padding: 40px 16px 28px; }
+.hero .eyebrow {
+  font-size: 11px; letter-spacing: 4px; color: var(--gold);
+  font-weight: bold; margin-bottom: 16px;
+}
+.hero h1 {
+  font-family: Georgia, serif; font-size: 38px; font-style: italic;
+  line-height: 1.12; margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--white), var(--gold-bright));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero p { color: var(--grey-muted); font-size: 16px; max-width: 580px; margin: 0 auto 8px; }
+.hero .byline {
+  margin-top: 18px; font-size: 12px; color: var(--grey-muted);
+  letter-spacing: 0.5px;
+}
+.hero .byline strong { color: var(--gold-bright); }
+
+/* === Section list === */
+.section-list { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.section-card {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--navy-mid); border: 1px solid var(--blue-bright);
+  border-radius: 12px; padding: 16px 18px; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.section-card:hover { border-color: var(--gold); transform: translateX(4px); }
+.section-card.done { border-color: var(--green-correct); }
+.section-card .num {
+  font-family: Georgia, serif; font-size: 24px; font-weight: bold;
+  color: var(--gold); min-width: 36px; text-align: center;
+}
+.section-card.done .num { color: var(--green-correct); }
+.section-card .info { flex: 1; }
+.section-card .info .name { font-size: 16px; font-weight: bold; font-family: Georgia, serif; }
+.section-card .info .tag { font-size: 12px; color: var(--grey-muted); margin-top: 2px; }
+.section-card .status { font-size: 20px; }
+
+.reset-link { text-align: center; margin-top: 24px; font-size: 12px; color: var(--grey-muted); }
+.reset-link a { color: var(--gold); cursor: pointer; text-decoration: underline; }
+
+/* === Concept screen === */
+.screen { display: none; }
+.screen.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-header { text-align: center; margin-bottom: 8px; }
+.section-header .kicker { font-size: 11px; letter-spacing: 3px; color: var(--gold); font-weight: bold; }
+.section-header h2 {
+  font-family: Georgia, serif; font-size: 30px; font-style: italic;
+  margin: 6px 0; line-height: 1.15;
+}
+.section-header .intro { color: var(--grey-muted); font-size: 15px; max-width: 620px; margin: 8px auto 0; }
+
+/* === Step card === */
+.step-card {
+  background: rgba(21,42,94,0.6); border: 1px solid var(--blue-bright);
+  border-radius: 16px; padding: 24px 22px; margin-bottom: 18px;
+  backdrop-filter: blur(4px);
+}
+.step-label {
+  display: inline-block; font-size: 10px; letter-spacing: 2px; font-weight: bold;
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
+}
+.step-label.context { background: rgba(30,90,168,0.3); color: var(--blue-glow); border: 1px solid var(--blue-bright); }
+.step-label.tension { background: var(--red-soft); color: #FF9B95; border: 1px solid var(--red-wrong); }
+.step-label.insight { background: rgba(240,179,61,0.18); color: var(--gold-bright); border: 1px solid var(--gold); }
+.step-label.data { background: rgba(45,182,168,0.18); color: var(--teal); border: 1px solid var(--teal); }
+
+.step-card h3 { font-family: Georgia, serif; font-size: 22px; margin-bottom: 12px; line-height: 1.25; }
+.step-card p { color: #DCE3F2; margin-bottom: 12px; font-size: 15px; }
+.step-card p.lead { font-size: 16px; }
+.step-card strong { color: var(--gold-bright); font-weight: 600; }
+.step-card ul { margin: 4px 0 14px 20px; color: #DCE3F2; font-size: 15px; }
+.step-card ul li { margin-bottom: 7px; }
+.step-card .punch {
+  font-family: Georgia, serif; font-size: 18px; font-style: italic;
+  color: var(--gold-bright); border-left: 3px solid var(--gold);
+  padding-left: 16px; margin: 16px 0 4px; line-height: 1.4;
+}
+.step-card .source {
+  font-size: 11px; color: var(--grey-muted); font-style: italic; margin-top: 6px;
+}
+
+/* === Stat strip === */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px; margin: 16px 0;
+}
+.stat-box {
+  background: var(--navy-deep); border: 1px solid rgba(74,144,226,0.4);
+  border-radius: 10px; padding: 14px; text-align: center;
+}
+.stat-box .val { font-family: Georgia, serif; font-size: 26px; font-weight: bold; color: var(--gold-bright); }
+.stat-box .lbl { font-size: 11px; color: var(--grey-muted); letter-spacing: 1px; margin-top: 4px; }
+
+/* === Interactive sandbox === */
+.sandbox {
+  background: var(--navy-deep); border: 1px solid rgba(74,144,226,0.4);
+  border-radius: 12px; padding: 18px; margin: 16px 0;
+}
+.sandbox-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--teal);
+  font-weight: bold; margin-bottom: 14px;
+}
+.sandbox-title::before { content: "▸ EXPLORE   "; white-space: pre; }
+
+/* === Buttons === */
+.btn {
+  background: var(--gold); color: var(--navy-deep); border: none;
+  padding: 11px 22px; font-family: inherit; font-size: 13px; font-weight: bold;
+  letter-spacing: 1px; cursor: pointer; border-radius: 8px; transition: all 0.2s;
+}
+.btn:hover { background: var(--gold-bright); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn.ghost { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+.btn.ghost:hover { background: rgba(240,179,61,0.12); }
+.btn.small { padding: 7px 14px; font-size: 11px; }
+.btn.teal { background: var(--teal); color: var(--navy-deep); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+
+/* === Nav footer === */
+.nav-footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10,26,58,0.95); backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(240,179,61,0.3); padding: 12px 16px; z-index: 50;
+}
+.nav-footer-inner {
+  max-width: 820px; margin: 0 auto; display: flex;
+  justify-content: space-between; align-items: center; gap: 12px;
+}
+
+/* === Bar chart viz (energy mix / supply / demand) === */
+.bars { display: flex; flex-direction: column; gap: 9px; margin: 6px 0; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { font-size: 12px; color: #C5D0E8; min-width: 130px; text-align: right; }
+.bar-track { flex: 1; height: 22px; background: var(--navy-mid); border-radius: 5px; overflow: hidden; position: relative; }
+.bar-fill {
+  height: 100%; border-radius: 5px; transition: width 1s cubic-bezier(.2,.8,.2,1);
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;
+  font-size: 11px; font-weight: bold; color: var(--navy-deep); white-space: nowrap;
+}
+
+/* === Toggle pills === */
+.toggle-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.toggle-pill {
+  background: var(--navy-mid); border: 1px solid var(--blue-bright);
+  color: var(--grey-muted); padding: 8px 16px; border-radius: 20px;
+  cursor: pointer; font-size: 12px; font-weight: bold; letter-spacing: 1px; transition: all 0.2s;
+}
+.toggle-pill.active { background: var(--gold); color: var(--navy-deep); border-color: var(--gold); }
+
+/* === Scenario matrix (2x2) === */
+.matrix-wrap { margin: 16px 0; position: relative; padding-left: 28px; padding-bottom: 24px; }
+.matrix-axis-y {
+  position: absolute; left: 0; top: 0; bottom: 24px; width: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.matrix-axis-y span {
+  transform: rotate(-90deg); white-space: nowrap; font-size: 10px;
+  letter-spacing: 2px; color: var(--teal); font-weight: bold;
+}
+.matrix-axis-x {
+  position: absolute; left: 28px; right: 0; bottom: 0; height: 20px;
+  text-align: center; font-size: 10px; letter-spacing: 2px; color: var(--teal); font-weight: bold;
+}
+.matrix-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; }
+.matrix-cell {
+  border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;
+  border: 2px solid var(--blue-bright); background: var(--navy-mid); min-height: 120px;
+}
+.matrix-cell:hover { transform: scale(1.02); border-color: var(--gold); }
+.matrix-cell.active { border-color: var(--gold); box-shadow: 0 0 18px rgba(240,179,61,0.4); }
+.matrix-cell.base { border-style: solid; }
+.matrix-cell .mc-name { font-family: Georgia, serif; font-size: 16px; font-weight: bold; color: var(--gold-bright); }
+.matrix-cell .mc-prob { font-size: 11px; color: var(--teal); font-weight: bold; margin: 3px 0 6px; }
+.matrix-cell .mc-desc { font-size: 12px; color: #C5D0E8; }
+.matrix-cell .mc-tag { font-size: 9px; letter-spacing: 1px; color: var(--grey-muted); margin-top: 6px; }
+.scenario-detail {
+  margin-top: 14px; background: var(--navy-deep); border: 1px solid var(--gold);
+  border-radius: 12px; padding: 16px; display: none;
+}
+.scenario-detail.show { display: block; animation: fadeIn 0.3s ease; }
+.scenario-detail h4 { font-family: Georgia, serif; color: var(--gold-bright); font-size: 18px; margin-bottom: 8px; }
+.scenario-detail .sd-line { font-size: 13px; color: #DCE3F2; margin-bottom: 8px; }
+.scenario-detail .sd-line b { color: var(--teal); }
+
+/* === Comparison two-column (Ørsted vs TotalEnergies) === */
+.versus { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.versus-col {
+  background: var(--navy-deep); border: 1px solid var(--blue-bright);
+  border-radius: 12px; padding: 16px;
+}
+.versus-col.orsted { border-color: var(--wind-green); }
+.versus-col.total { border-color: var(--amber); }
+.versus-col h4 { font-family: Georgia, serif; font-size: 17px; margin-bottom: 4px; }
+.versus-col.orsted h4 { color: var(--wind-green); }
+.versus-col.total h4 { color: var(--amber); }
+.versus-col .vsub { font-size: 11px; color: var(--grey-muted); margin-bottom: 10px; font-style: italic; }
+.versus-col ul { margin-left: 16px; font-size: 13px; color: #DCE3F2; }
+.versus-col ul li { margin-bottom: 7px; }
+
+/* === Bottleneck cards === */
+.bn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 10px; margin: 14px 0; }
+.bn-card {
+  background: var(--navy-deep); border: 1px solid var(--red-wrong);
+  border-radius: 10px; padding: 14px;
+}
+.bn-card .bn-num {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--red-soft);
+  color: #FF9B95; display: flex; align-items: center; justify-content: center;
+  font-weight: bold; font-size: 13px; margin-bottom: 8px;
+}
+.bn-card h5 { font-size: 14px; color: var(--gold-bright); margin-bottom: 6px; }
+.bn-card p { font-size: 12px; color: #C5D0E8; }
+
+/* === Table === */
+.data-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+.data-table th {
+  text-align: left; padding: 9px 10px; color: var(--gold-bright);
+  border-bottom: 2px solid var(--gold-dark); font-size: 12px; letter-spacing: 0.5px;
+}
+.data-table td { padding: 9px 10px; border-bottom: 1px solid rgba(176,188,214,0.15); color: #DCE3F2; }
+.data-table tr:hover td { background: rgba(30,90,168,0.15); }
+
+/* === Checkpoint quiz === */
+.checkpoint {
+  background: linear-gradient(135deg, rgba(126,90,232,0.15), rgba(30,90,168,0.15));
+  border: 2px solid var(--purple); border-radius: 16px; padding: 24px 22px; margin-top: 22px;
+}
+.checkpoint-header { text-align: center; margin-bottom: 18px; }
+.checkpoint-header .badge {
+  display: inline-block; background: var(--purple); color: var(--white);
+  font-size: 10px; letter-spacing: 2px; font-weight: bold; padding: 4px 14px;
+  border-radius: 20px; margin-bottom: 10px;
+}
+.checkpoint-header h3 { font-family: Georgia, serif; font-size: 22px; margin-bottom: 4px; }
+.checkpoint-header p { font-size: 13px; color: var(--grey-muted); }
+.quiz-q { margin-bottom: 18px; }
+.quiz-q .q-text { font-size: 15px; margin-bottom: 10px; }
+.quiz-q .q-num { color: var(--gold); font-weight: bold; margin-right: 6px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--navy-deep); border: 1px solid var(--blue-bright);
+  border-radius: 8px; padding: 11px 14px; cursor: pointer; transition: all 0.15s; font-size: 14px;
+}
+.quiz-opt:hover:not(.locked) { border-color: var(--gold); background: var(--navy-mid); }
+.quiz-opt .opt-letter {
+  font-weight: bold; color: var(--gold); min-width: 18px;
+}
+.quiz-opt.correct { background: var(--green-soft); border-color: var(--green-correct); }
+.quiz-opt.correct .opt-letter { color: var(--green-correct); }
+.quiz-opt.wrong { background: var(--red-soft); border-color: var(--red-wrong); }
+.quiz-opt.wrong .opt-letter { color: #FF9B95; }
+.quiz-opt.locked { cursor: default; }
+.quiz-feedback {
+  display: none; margin-top: 10px; padding: 12px 14px; border-radius: 8px; font-size: 13px;
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.right { background: var(--green-soft); border: 1px solid var(--green-correct); }
+.quiz-feedback.wrong-fb { background: var(--red-soft); border: 1px solid var(--red-wrong); }
+.quiz-feedback .fb-label { font-weight: bold; letter-spacing: 1px; margin-right: 6px; }
+.checkpoint-result { display: none; text-align: center; margin-top: 16px; }
+.checkpoint-result.show { display: block; }
+.checkpoint-result .score { font-family: Georgia, serif; font-size: 28px; color: var(--gold-bright); }
+.checkpoint-result .msg { font-size: 14px; color: #DCE3F2; margin: 8px 0 14px; }
+
+@media (max-width: 600px) {
+  .hero h1 { font-size: 28px; }
+  .section-header h2 { font-size: 24px; }
+  .step-card { padding: 18px 16px; }
+  .versus { grid-template-columns: 1fr; }
+  .bar-label { min-width: 95px; font-size: 11px; }
+  .matrix-cell { min-height: 105px; padding: 10px; }
+}
+
+/* === PIN gate === */
+.pin-gate {
+  position: fixed; inset: 0; z-index: 9999;
+  background: radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 70%);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.pin-gate.hidden { display: none; }
+.pin-box { text-align: center; max-width: 360px; width: 100%; }
+.pin-box h2 { font-family: Georgia, serif; font-size: 28px; color: var(--gold); margin-bottom: 6px; }
+.pin-box .pin-sub { color: var(--grey-muted); font-size: 13px; margin-bottom: 24px; }
+.pin-box input {
+  width: 180px; background: var(--navy-deep); border: 2px solid var(--blue-bright);
+  color: var(--white); padding: 14px 18px; font-size: 28px; font-family: Georgia, serif;
+  text-align: center; letter-spacing: 8px; border-radius: 6px; outline: none;
+}
+.pin-box input:focus { border-color: var(--gold); }
+.pin-box input.shake { animation: pinShake 0.4s ease; border-color: var(--red-wrong); }
+.pin-box .pin-btn {
+  display: block; margin: 16px auto 0;
+  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+  color: var(--navy-deep); border: none; padding: 12px 32px;
+  font-family: inherit; font-size: 14px; font-weight: bold;
+  letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.2s;
+}
+.pin-box .pin-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(240,179,61,0.4); }
+.pin-box .pin-error { color: var(--red-wrong); font-size: 13px; margin-top: 12px; min-height: 20px; }
+@keyframes pinShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+</style>
+</head>
+<body>
+
+<div class="pin-gate" id="pinGate">
+  <div class="pin-box">
+    <h2>🔒 Access</h2>
+    <div class="pin-sub">Enter the PIN to access the course</div>
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="····">
+    <button class="pin-btn" id="pinBtn">ENTER</button>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="course-title">WIND 2040</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="eyebrow">MBA · SUMAS · AN INTERACTIVE COURSE</div>
+      <h1>The European Energy Mix &amp; the Impact of Wind through 2040</h1>
+      <p>A guided walk through a strategic analysis of Europe's offshore wind sector — where it stands, what will constrain it, the futures it might take, and how two energy giants should play it.</p>
+      <p><strong>Read, explore the graphics, test your insight.</strong> Eight modules, in the report's own order.</p>
+      <div class="byline">
+        Based on the report by <strong>Vittoria Biscotti · Swetha Karempudi · Tanya Joshi · Ayaka Sambe · Takeru Agawa</strong><br>
+        Submitted to Jan Erik Meidell · June 2026
+      </div>
+      <a href="wind-energy-2040-report.pdf" download style="display:inline-block;margin-top:18px;background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:var(--navy-deep);padding:10px 24px;border-radius:4px;font-weight:bold;font-size:13px;letter-spacing:1.5px;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 14px rgba(240,179,61,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow=''">📄 DOWNLOAD THE FULL REPORT (PDF)</a>
+    </div>
+    <div class="section-list" id="sectionList"></div>
+    <div class="reset-link">
+      Progress saves automatically on this device. <a id="resetBtn">Start over</a>
+    </div>
+  </div>
+  <div id="screenMount"></div>
+</div>
+
+<div class="nav-footer">
+  <div class="nav-footer-inner">
+    <button class="btn ghost" id="navBack">← Back</button>
+    <span style="font-size:11px;color:var(--grey-muted);" id="navLabel"></span>
+    <button class="btn" id="navNext">Continue →</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PIN GATE
+// ============================================================
+(function(){
+  const PIN = '1031';
+  const gate = document.getElementById('pinGate');
+  const inp = document.getElementById('pinInput');
+  const err = document.getElementById('pinError');
+  function check(){
+    if(inp.value === PIN){
+      gate.classList.add('hidden');
+    } else {
+      inp.classList.add('shake');
+      err.textContent = 'Incorrect code';
+      setTimeout(()=>{ inp.classList.remove('shake'); }, 400);
+      inp.value = '';
+      inp.focus();
+    }
+  }
+  document.getElementById('pinBtn').onclick = check;
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') check(); });
+  inp.focus();
+})();
+
+// ============================================================
+// COURSE DATA MODEL
+// ============================================================
+const SECTIONS = [
+  { id: 'today',     num: 1, name: 'Where Wind Stands Today',     tag: 'The 2026 starting line' },
+  { id: 'demand',    num: 2, name: 'Demand & Supply to 2040',     tag: 'A grid that must double' },
+  { id: 'forces',    num: 3, name: 'Three Structural Forces',     tag: 'Why the shift is self-sustaining' },
+  { id: 'bottlenecks',num: 4,name: 'The Bottlenecks',             tag: 'Permits, grid, supply chain' },
+  { id: 'triple',    num: 5, name: 'The Triple Threat of 2040',   tag: 'Materials, logistics, people' },
+  { id: 'scenarios', num: 6, name: 'Four Futures',                tag: 'The 2×2 scenario matrix' },
+  { id: 'orsted',    num: 7, name: 'Ørsted: Win by Executing',    tag: 'The pure-play moat' },
+  { id: 'total',     num: 8, name: 'TotalEnergies: Win by Integrating', tag: 'The integrated edge' },
+];
+
+const STORAGE_KEY = 'wind2040_progress_v1';
+let progress = loadProgress();
+
+function loadProgress() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+  try { if (window._windProgress) return window._windProgress; } catch (e) {}
+  return { completed: {}, current: null };
+}
+function saveProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {}
+  try { window._windProgress = progress; } catch (e) {}
+}
+function markComplete(id) { progress.completed[id] = true; saveProgress(); updateProgressBar(); }
+function updateProgressBar() {
+  const total = SECTIONS.length;
+  const done = Object.keys(progress.completed).filter(k => progress.completed[k]).length;
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function renderSectionList() {
+  const list = document.getElementById('sectionList');
+  list.innerHTML = '';
+  SECTIONS.forEach((sec) => {
+    const done = !!progress.completed[sec.id];
+    const card = document.createElement('div');
+    card.className = 'section-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="num">${sec.num}</div>
+      <div class="info">
+        <div class="name">${sec.name}</div>
+        <div class="tag">${sec.tag}</div>
+      </div>
+      <div class="status">${done ? '✓' : '▸'}</div>`;
+    card.onclick = () => openSection(sec.id);
+    list.appendChild(card);
+  });
+}
+
+// ============================================================
+// SECTION CONTENT BUILDERS
+// ============================================================
+function sectionHead(num, title, intro) {
+  return `<div class="section-header">
+    <div class="kicker">MODULE ${num}</div>
+    <h2>${title}</h2>
+    <p class="intro">${intro}</p>
+  </div>`;
+}
+
+// ---------- MODULE 1: TODAY ----------
+function buildToday() {
+  return sectionHead(1, 'Where Wind Stands Today',
+    "Before forecasting 2040, anchor on 2026. Europe is mid-transition: renewables rising fast, coal fading, gas still holding the grid together.")
+  + `<div class="step-card">
+      <span class="step-label context">THE STARTING LINE</span>
+      <h3>Two different numbers, often confused</h3>
+      <p>Wind's share depends on what you measure. In the EU's total <strong>energy</strong> mix (heat, transport, industry, everything), renewables are about a fifth. But in <strong>electricity</strong> alone, renewables are roughly half — and in 2025, wind and solar together out-generated fossil fuels for the first time.</p>
+      <div class="sandbox">
+        <div class="sandbox-title">TOTAL ENERGY  vs  ELECTRICITY ONLY</div>
+        <div class="toggle-row" id="mixToggle">
+          <div class="toggle-pill active" data-view="total">Total energy mix (2023)</div>
+          <div class="toggle-pill" data-view="elec">Electricity only (2025)</div>
+        </div>
+        <div class="bars" id="mixBars"></div>
+        <p class="source" id="mixSource"></p>
+      </div>
+      <p class="punch">In the total energy mix, oil &amp; gas still dominate. In electricity, the transition is already visibly under way.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label data">CAPACITY ON THE GRID</span>
+      <h3>~40 GW of offshore wind, very unevenly spread</h3>
+      <p>By 2026, Europe has roughly <strong>39–41 GW</strong> of offshore wind connected to the grid — the product of decades of investment. But a handful of North Sea nations hold the majority.</p>
+      <div class="stat-strip">
+        <div class="stat-box"><div class="val">15 GW</div><div class="lbl">UNITED KINGDOM</div></div>
+        <div class="stat-box"><div class="val">9.5 GW</div><div class="lbl">GERMANY</div></div>
+        <div class="stat-box"><div class="val">5.5 GW</div><div class="lbl">NETHERLANDS</div></div>
+        <div class="stat-box"><div class="val">~40 GW</div><div class="lbl">EUROPE TOTAL</div></div>
+      </div>
+      <p>Offshore's appeal is technical: stronger, steadier winds allow far larger turbines — today's standard is the <strong>14–15 MW</strong> platform, nearly double the output per foundation of five years ago. The trade-off is cost: harsher conditions, complex grid connection, and higher installation and maintenance bills than onshore.</p>
+      <p class="source">Sources: Eurostat 2025 · WindEurope 2025</p>
+    </div>`;
+}
+
+// ---------- MODULE 2: DEMAND ----------
+function buildDemand() {
+  return sectionHead(2, 'Demand &amp; Supply to 2040',
+    "Europe's power demand is set to jump 66% as transport, heating, industry and AI electrify. Meeting it means rebuilding the supply mix from the ground up.")
+  + `<div class="step-card">
+      <span class="step-label data">THE DEMAND WAVE</span>
+      <h3>From 2,730 TWh to 4,530 TWh</h3>
+      <p>Demand rises about <strong>66%</strong> by 2040 — not because Europe wastes more energy, but because it deliberately electrifies sectors that used to burn fossil fuels. Tap each driver to see how much it adds.</p>
+      <div class="sandbox">
+        <div class="sandbox-title">DEMAND BY SECTOR · 2024 → 2040 (TWh)</div>
+        <div class="bars" id="demandBars"></div>
+        <p class="source">Biggest movers: Transport (EVs ~5M→90M cars) and Buildings (heat pumps). Source: IEA WEO 2024 · European Commission 2024.</p>
+      </div>
+      <p class="punch">A grid that must roughly double its output — while removing fossil fuels at the same time.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label insight">THE SUPPLY ANSWER</span>
+      <h3>Renewables: 48% → 83% of electricity</h3>
+      <p>On the supply side, the whole generation mix is restructured. The single most dramatic move in proportional terms is offshore wind, rising from about <strong>3% of EU generation today to 18% by 2040</strong> — a roughly tenfold increase in output. This is exactly why the rest of the report focuses on offshore wind.</p>
+      <div class="stat-strip">
+        <div class="stat-box"><div class="val">3% → 18%</div><div class="lbl">OFFSHORE WIND SHARE</div></div>
+        <div class="stat-box"><div class="val">48% → 83%</div><div class="lbl">ALL RENEWABLES</div></div>
+        <div class="stat-box"><div class="val">~10×</div><div class="lbl">OFFSHORE OUTPUT</div></div>
+      </div>
+    </div>`;
+}
+
+// ---------- MODULE 3: FORCES ----------
+function buildForces() {
+  return sectionHead(3, 'Three Structural Forces',
+    "The transition isn't just a policy wish. Three reinforcing forces make it increasingly self-sustaining — meaning wind grows even without new subsidy.")
+  + `<div class="step-card">
+      <span class="step-label insight">WHY IT WON'T STALL EASILY</span>
+      <h3>Policy floor, better economics, energy security</h3>
+      <div class="sandbox">
+        <div class="sandbox-title">THE THREE FORCES — tap to expand</div>
+        <div id="forceAccordion"></div>
+      </div>
+      <p class="punch">Offshore wind is growing not because of policy support alone, but because it is economically competitive, strategically necessary, and structurally irreplaceable.</p>
+    </div>`;
+}
+
+// ---------- MODULE 4: BOTTLENECKS ----------
+function buildBottlenecks() {
+  return sectionHead(4, 'The Bottlenecks',
+    "The technology is mature. What lags is everything around it: the permits to build, the grid to connect, and the supply chain to deliver.")
+  + `<div class="step-card">
+      <span class="step-label tension">BOTTLENECK 1 · PERMITTING</span>
+      <h3>Years lost before a turbine is even ordered</h3>
+      <p>Permitting is the most immediate administrative barrier. Approval timelines range widely across Europe, eroding investment returns and delaying capacity.</p>
+      <table class="data-table">
+        <tr><th>Region</th><th>Permit time</th><th>RED III goal</th></tr>
+        <tr><td>North Sea (DE, DK, NL)</td><td>3–5 years</td><td>Under 2 years</td></tr>
+        <tr><td>United Kingdom</td><td>4–6 years</td><td>Streamlined</td></tr>
+        <tr><td>Mediterranean (IT, ES, FR)</td><td>7–9 years</td><td>"Go-to" areas</td></tr>
+      </table>
+      <p>Reforms (RED III, the Industrial Accelerator Act) aim to halve these times via designated "go-to areas" — but implementation across 27 member states is uneven, and maritime spatial conflicts (military zones restrict up to 30% of sea area in places) can't be fixed by regulation alone.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label tension">BOTTLENECK 2 · GRID</span>
+      <h3>The strategic wall: connection queues of 4–10 years</h3>
+      <p>Even a permitted project can sit stranded waiting to connect. Three failures compound:</p>
+      <div class="bn-grid">
+        <div class="bn-card"><div class="bn-num">1</div><h5>Queue backlogs</h5><p>Legacy radial connections, not the meshed networks variable generation needs.</p></div>
+        <div class="bn-card"><div class="bn-num">2</div><h5>HVDC immaturity</h5><p>Poor interoperability between turbine and converter makers; each project becomes bespoke.</p></div>
+        <div class="bn-card"><div class="bn-num">3</div><h5>Ageing grid</h5><p>~30% of EU distribution grids are 40+ years old and need full replacement.</p></div>
+      </div>
+      <p>Fixing this needs an estimated <strong>€584 billion</strong> in EU grid investment by 2030. Grid expansion has become as strategically important as turbine deployment itself.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label tension">BOTTLENECK 3 · COST &amp; SUPPLY CHAIN</span>
+      <h3>Capital-intensive, and the supply chain is maxed out</h3>
+      <p>Offshore wind costs €3,000–9,100 per kW; each MW needs ~15 tonnes of critical minerals. Higher interest rates since 2021 added 15–20% to effective project costs. The result shows up in <strong>LCOE</strong> — the lifetime cost per MWh:</p>
+      <div class="sandbox">
+        <div class="sandbox-title">LCOE RANGE BY MARKET (€/MWh)</div>
+        <div class="bars" id="lcoeBars"></div>
+        <p class="source">Wide ranges reflect grid distance, seabed, and supply-chain access. Floating wind is still structurally pricier. Source: IRENA 2025.</p>
+      </div>
+      <p>Meanwhile installation vessels can't handle 15 MW+ turbines (new builds take 5+ years), ports lack quay-load capacity, and subsea cable lead times exceed 36 months.</p>
+    </div>`;
+}
+
+// ---------- MODULE 5: TRIPLE THREAT ----------
+function buildTriple() {
+  return sectionHead(5, 'The Triple Threat of 2040',
+    "Look past 2030 and three constraints converge into a compounding crisis — each one making the others worse.")
+  + `<div class="step-card">
+      <span class="step-label tension">A COMPOUNDING CRISIS</span>
+      <h3>Materials × Logistics × People</h3>
+      <p>Individually manageable; together, a reinforcing bottleneck on the pace of the transition. Tap each to explore.</p>
+      <div class="sandbox">
+        <div class="sandbox-title">THE TRIPLE THREAT</div>
+        <div id="tripleAccordion"></div>
+      </div>
+      <p class="punch">Each constraint amplifies the others — and several trace back to a single geopolitical dependency: China.</p>
+    </div>`;
+}
+
+// ---------- MODULE 6: SCENARIOS ----------
+function buildScenarios() {
+  return sectionHead(6, 'Four Futures',
+    "Two genuinely uncertain, independent forces define the outcome space: the policy &amp; permitting environment, and supply-chain resilience. Cross them and you get four scenarios.")
+  + `<div class="step-card">
+      <span class="step-label insight">THE 2×2 MATRIX</span>
+      <h3>Why these two axes?</h3>
+      <p>Good scenario axes are uncertain, consequential, and independent. Cost/LCOE fails the last test — it's an <em>output</em> of policy and supply chain, not an independent driver. So the axes are <strong>policy</strong> (vertical) and <strong>supply chain</strong> (horizontal). Tap a quadrant.</p>
+      <div class="matrix-wrap">
+        <div class="matrix-axis-y"><span>POLICY  →  STRONG</span></div>
+        <div class="matrix-grid" id="scenarioMatrix"></div>
+        <div class="matrix-axis-x">SUPPLY CHAIN  →  RESILIENT</div>
+      </div>
+      <div class="scenario-detail" id="scenarioDetail"></div>
+      <p class="punch">The base case is Policy-Led Push (30–35%): reform succeeds, but turbine and vessel scarcity becomes the real limit.</p>
+    </div>`;
+}
+
+// ---------- MODULE 7: ØRSTED ----------
+function buildOrsted() {
+  return sectionHead(7, 'Ørsted: Win by Executing',
+    "The world's leading offshore developer, freshly reset after cancelling Hornsea 4 and raising DKK 60bn. Its moat isn't its balance sheet — it's thirty years of execution.")
+  + `<div class="step-card">
+      <span class="step-label insight">THE STRATEGIC PIVOT</span>
+      <h3>From first-mover developer to industrial operator</h3>
+      <p>In the base case, the binding constraint is <strong>execution capacity</strong>, not project access. Ørsted's edge is thirty years of regulatory relationships and offshore delivery across eight jurisdictions — something new entrants, including Chinese state-owned developers, can't replicate on a compressed timeline.</p>
+      <p>The imperative: deliver faster, more reliably, and cheaper than anyone. Three levers:</p>
+      <div class="sandbox">
+        <div class="sandbox-title">ØRSTED'S THREE LEVERS</div>
+        <div id="orstedAccordion"></div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label tension">THE REAL THREAT</span>
+      <h3>Chinese state-backed developers</h3>
+      <p>The danger isn't another European firm — it's <strong>Ming Yang and CSSC</strong> entering EU auctions with structurally lower costs from domestic manufacturing and subsidised capital. Ørsted can't win on cost alone against sovereign backing.</p>
+      <p class="punch">The defence must be institutional: permitting relationships, community trust, and a regulatory track record that money can't fast-track.</p>
+    </div>`;
+}
+
+// ---------- MODULE 8: TOTAL ----------
+function buildTotal() {
+  return sectionHead(8, 'TotalEnergies: Win by Integrating',
+    "An integrated energy major where wind is important but not existential. That structure is both its greatest strength and its biggest risk.")
+  + `<div class="step-card">
+      <span class="step-label insight">A DIFFERENT GAME</span>
+      <h3>Sell value, not volume</h3>
+      <p>TotalEnergies spans LNG, power trading, storage and renewables. It can offer industrial customers <strong>firm, dispatchable, decarbonised power</strong> bundled with storage and long-term PPAs — something a pure-play developer can't match. Its 7.5 GW German North Sea hub (with RWE) concentrates work for procurement, logistics and O&amp;M synergies.</p>
+      <div class="sandbox">
+        <div class="sandbox-title">FIVE MARGIN-PROTECTION STRATEGIES</div>
+        <div id="totalAccordion"></div>
+      </div>
+    </div>
+    <div class="step-card">
+      <span class="step-label tension">THE INTERNAL RISK</span>
+      <h3>Capital allocation drift</h3>
+      <p>The biggest threat is internal: when oil and LNG margins beat renewables, pressure builds to redirect capital away from wind. The fix is a board-level minimum offshore-wind investment commitment, held regardless of commodity swings.</p>
+      <p class="punch">The market doesn't need both firms to play the same way. It needs Ørsted to execute, and TotalEnergies to integrate.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-label context">THE TWO PLAYBOOKS, SIDE BY SIDE</span>
+      <h3>One market, two competitive architectures</h3>
+      <div class="versus">
+        <div class="versus-col orsted">
+          <h4>Ørsted</h4>
+          <div class="vsub">Pure-play · execution moat</div>
+          <ul>
+            <li>30-yr permitting relationships</li>
+            <li>Largest single component buyer → procurement leverage</li>
+            <li>Standardise &amp; sequence the pipeline</li>
+            <li>Defence vs China: institutional, not cost</li>
+          </ul>
+        </div>
+        <div class="versus-col total">
+          <h4>TotalEnergies</h4>
+          <div class="vsub">Integrated major · value edge</div>
+          <ul>
+            <li>7.5 GW concentrated German hub</li>
+            <li>Wind + storage + PPAs = firm power</li>
+            <li>Capital recycling &amp; diversification buffer</li>
+            <li>Risk: capital drifts back to oil/gas</li>
+          </ul>
+        </div>
+      </div>
+    </div>`;
+}
+
+const BUILDERS = {
+  today: buildToday, demand: buildDemand, forces: buildForces,
+  bottlenecks: buildBottlenecks, triple: buildTriple, scenarios: buildScenarios,
+  orsted: buildOrsted, total: buildTotal,
+};
+
+// ============================================================
+// INTERACTIVE DATA
+// ============================================================
+const MIX_DATA = {
+  total: {
+    source: "EU gross available energy, 2023. Source: Eurostat 2025.",
+    bars: [
+      { l: 'Oil & petroleum', v: 37.7, c: '#C8312B' },
+      { l: 'Natural gas', v: 20.4, c: '#E8A33C' },
+      { l: 'Renewables', v: 19.5, c: '#4FB477' },
+      { l: 'Nuclear', v: 11.8, c: '#7E5AE8' },
+      { l: 'Coal & solid fuels', v: 10.6, c: '#6B7280' },
+    ]
+  },
+  elec: {
+    source: "EU electricity generation, 2025. Wind & solar beat fossil fuels for the first time. Source: European Commission / Reuters / Copernicus 2025.",
+    bars: [
+      { l: 'All renewables', v: 47, c: '#4FB477' },
+      { l: '— of which wind', v: 18, c: '#2DB6A8' },
+      { l: 'Fossil fuels', v: 38, c: '#C8312B' },
+      { l: 'Nuclear', v: 15, c: '#7E5AE8' },
+    ]
+  }
+};
+
+const DEMAND_DATA = [
+  { l: 'Industry', a: 1050, b: 1400 },
+  { l: 'Buildings', a: 950, b: 1370 },
+  { l: 'Transport (EVs)', a: 80, b: 650 },
+  { l: 'Data Centres & AI', a: 100, b: 280 },
+  { l: 'Green Hydrogen', a: 10, b: 200 },
+  { l: 'Other', a: 540, b: 630 },
+];
+
+const LCOE_DATA = [
+  { l: 'Netherlands', min: 55, max: 120 },
+  { l: 'Denmark', min: 56, max: 102 },
+  { l: 'Germany', min: 62, max: 109 },
+  { l: 'France', min: 114, max: 170 },
+  { l: 'Floating wind', min: 180, max: 230 },
+];
+
+const FORCES = [
+  { t: 'Binding policy mandates', d: 'A 42.5% renewables target by 2030 and a legally enforceable 90% emissions cut by 2040 create a regulatory floor beneath investment.' },
+  { t: 'Economics have flipped', d: 'Solar costs fell 90%+ since 2010, wind 60–70%. Renewables are now the cheapest new generation in Europe — without subsidy.' },
+  { t: 'Energy security', d: 'After 2022, domestic renewable generation became a strategic imperative, building political consensus even among previously hesitant states.' },
+];
+
+const TRIPLE = [
+  { t: '1 · Raw material scaling crisis', d: 'Up to 31× more praseodymium for offshore magnets, 1.0 Mt of copper for cabling (global gap >5 Mt/yr by 2040), 250+ Mt of steel. Rare-earth processing concentrated in China adds geopolitical risk.' },
+  { t: '2 · The logistics wall', d: '4–6 new installation vessels needed per year; current WTIVs can\'t handle 250m+ rotors. Outside China, fleets may cover only 35% of planned capacity by 2040.' },
+  { t: '3 · The human capital roadblock', d: '~2 million extra green jobs needed by 2050. 96% of stakeholders already call the workforce gap a present constraint; 71% of the existing workforce lacks the needed skills.' },
+];
+
+const SCENARIOS_DATA = {
+  green:   { name: 'Green Acceleration', prob: '25–30%', pos: 'tl', tag: 'Strong policy + resilient chain',
+    desc: 'Both deliver. Wind becomes the backbone.',
+    detail: 'Permitting falls below 3 years in core markets; supply chain structurally recovers; 20+ MW platforms scale; LCOE resumes falling. <b>Ørsted:</b> Hornsea 3 & Borkum Riffgrund 3 on schedule, EBITDA margins 38–45%. <b>TotalEnergies:</b> full 7.5 GW hub on/ahead of schedule. <b>Risk:</b> Chinese developers enter with lower costs.' },
+  supply:  { name: 'Supply Chain Advantage', prob: '20–25%', pos: 'bl', tag: 'Weak policy + resilient chain',
+    desc: 'Chains recover, but only the best-permitted developers can build.',
+    detail: 'Supply chains recover and prices fall, but permitting reform fails to scale (>5 yr timelines). Permits become the scarce asset. <b>Ørsted:</b> 30-yr relationships give preferential permit access and scarcity premiums. <b>TotalEnergies:</b> German hub slowed; strong CPPA pricing as customers compete for supply.' },
+  policy:  { name: 'Policy-Led Push', prob: '30–35%', pos: 'tr', tag: 'Strong policy + constrained chain', base: true,
+    desc: 'BASE CASE. Reform unlocks pipelines, but turbines & vessels are the limit.',
+    detail: 'Approvals accelerate from 2026; supply chain stays tight. More consented projects than can physically be built — the constraint shifts from permitting to execution. CfD prices competed down, compressing margins. <b>Ørsted:</b> sequence the pipeline; lock in vessels early. <b>TotalEnergies:</b> hub scale = negotiating power; explore hydrogen offtake. <b>Risk:</b> Chinese supply-chain advantage.' },
+  stalled: { name: 'Stalled Transition', prob: '10–15%', pos: 'br', tag: 'Weak policy + constrained chain',
+    desc: 'Worst case. Reform blocked and chains disrupted — projects cancelled.',
+    detail: 'Permitting reform diluted (>7 yr in Germany); supply chains worsen; geopolitical disruption (China ~90% of rare-earth processing). Wave of cancellations — already visible in Hornsea 4 and Attentive Energy. <b>Ørsted:</b> deferrals, M&A vulnerability, defend credit rating. <b>TotalEnergies:</b> balance-sheet strength enables buying distressed assets cheap.' },
+};
+
+const ORSTED_LEVERS = [
+  { t: 'Pipeline: portfolio over flagship', d: 'Sequence a diversified programme; favour mid-sized 400–800 MW projects that fit supply-chain limits and spread risk. Volume of delivery, not project size, is resilience.' },
+  { t: 'Margins: cut LCOE, diversify revenue', d: 'A 100bp WACC reduction lifts IRRs by 2–3 points. Add corporate PPAs alongside CfDs; recycle capital via farm-downs of operational assets.' },
+  { t: 'Supply chain: lock the slots', d: 'As Europe\'s largest component buyer, sign multi-project framework deals with Vestas, Siemens Gamesa and vessel operators. Co-invest in ports. When 5 vessels exist and 10 developers need them, the one with a contract wins by default.' },
+];
+
+const TOTAL_STRATS = [
+  { t: '1 · CAPEX optimisation through scale', d: 'Bigger turbines mean fewer units, less foundation and cable cost per MW. The 7.5 GW hub gives procurement leverage; long-term supply deals lock out cost inflation.' },
+  { t: '2 · OPEX efficiency through clustering', d: 'Shared O&M bases, lower vessel mobilisation, standardised maintenance, and AI-driven predictive maintenance across co-located projects.' },
+  { t: '3 · Long-term PPAs', d: '10–20 year fixed-price deals with industrials and tech firms give revenue certainty. Investment-grade rating wins anchor offtake over smaller rivals.' },
+  { t: '4 · Capital recycling', d: 'Develop through high-risk early phases, then sell down equity at a premium and redeploy — more projects per unit of capital.' },
+  { t: '5 · Portfolio resilience', d: 'In a downturn, LNG/gas/oil cash flows buffer the group — letting TotalEnergies invest counter-cyclically when pure-plays are constrained.' },
+];
+
+// ============================================================
+// CHECKPOINTS
+// ============================================================
+const CHECKPOINTS = {
+  today: { title: 'Quick insight check', sub: 'Two questions on the starting line.', questions: [
+    { q: 'Why can wind\'s "share" sound so different depending on the source?', opts: ['Sources disagree randomly', 'Total energy mix vs electricity-only are two different denominators', 'Wind is being double-counted', 'Offshore and onshore are added together'], correct: 1, fb: 'Right. In the total energy mix renewables are ~a fifth; in electricity alone they\'re ~half. Always check which denominator is meant.' },
+    { q: 'What mainly makes offshore wind attractive versus onshore — despite higher cost?', opts: ['It needs no permits', 'Stronger, steadier winds allow larger turbines and far higher output', 'It uses no critical minerals', 'It connects to the grid instantly'], correct: 1, fb: 'Exactly. Better wind resource and room for 14–15 MW turbines drive much higher output per unit.' },
+  ]},
+  demand: { title: 'Quick insight check', sub: 'The demand-and-supply squeeze.', questions: [
+    { q: 'What is the core driver of Europe\'s ~66% electricity demand growth to 2040?', opts: ['Population boom', 'Deliberate electrification of transport, heating and industry', 'Air conditioning alone', 'Crypto mining'], correct: 1, fb: 'Correct. Demand grows because sectors that ran on fossil fuels are being moved onto the grid on purpose.' },
+    { q: 'Which shift best captures offshore wind\'s strategic importance?', opts: ['3% → 18% of generation, ~10× output', 'It stays flat', 'It replaces nuclear entirely', '48% → 50% of renewables'], correct: 0, fb: 'Yes — offshore wind\'s ~tenfold rise is the most dramatic proportional move in the supply mix.' },
+  ]},
+  forces: { title: 'Quick insight check', sub: 'Why the transition is hard to reverse.', questions: [
+    { q: 'The report argues wind grows even without subsidy mainly because…', opts: ['Governments mandate it', 'Renewables are now the cheapest new generation', 'Fossil fuels are banned', 'Consumers demand it'], correct: 1, fb: 'Right. The economics flipped — that\'s what makes the policy floor self-reinforcing rather than dependent on handouts.' },
+  ]},
+  bottlenecks: { title: 'Quick insight check', sub: 'What actually slows deployment.', questions: [
+    { q: 'A developer holds every permit but still can\'t deliver power. Most likely cause?', opts: ['No demand', 'Grid connection queue (4–10 years)', 'No turbines exist', 'Wind stopped blowing'], correct: 1, fb: 'Exactly — grid is a parallel bottleneck. Permits and grid are separate walls; clearing one doesn\'t clear the other.' },
+    { q: 'Why is LCOE treated as the key cost metric?', opts: ['It\'s the upfront price', 'It\'s the lifetime net-present cost per MWh that drives investment decisions', 'It\'s set by governments', 'It only applies to floating wind'], correct: 1, fb: 'Correct. LCOE folds CAPEX, financing and project specifics into one comparable lifetime cost.' },
+  ]},
+  triple: { title: 'Quick insight check', sub: 'The 2040 compounding crisis.', questions: [
+    { q: 'What makes the "triple threat" worse than three separate problems?', opts: ['They cancel out', 'They reinforce one another', 'Only one happens at a time', 'They\'re purely financial'], correct: 1, fb: 'Right. Materials, logistics and skills compound — and several converge on dependency on China.' },
+  ]},
+  scenarios: { title: 'Quick insight check', sub: 'Reading the matrix.', questions: [
+    { q: 'Why is Cost/LCOE rejected as a scenario axis?', opts: ['It\'s too hard to measure', 'It\'s an output of policy and supply chain, not an independent driver', 'Nobody cares about cost', 'It only applies to floating wind'], correct: 1, fb: 'Exactly. Good axes must be independent; cost is downstream of the two chosen forces.' },
+    { q: 'In the base case (Policy-Led Push), the binding constraint becomes…', opts: ['Permitting', 'Physical execution capacity — turbines and vessels', 'Lack of demand', 'Public opposition'], correct: 1, fb: 'Correct. Reform unlocks approvals faster than the supply chain can physically build them.' },
+  ]},
+  orsted: { title: 'Quick insight check', sub: 'The execution moat.', questions: [
+    { q: 'In the base case, what becomes Ørsted\'s decisive advantage?', opts: ['The biggest balance sheet', 'Ability to execute: relationships, procurement scale, sequencing', 'Owning the most oil', 'Lowest headcount'], correct: 1, fb: 'Right. When execution is the constraint, delivery capability beats financial scale.' },
+    { q: 'How should Ørsted defend against Chinese state-backed entrants?', opts: ['Undercut them on cost alone', 'Lean on institutional advantages money can\'t fast-track', 'Exit Europe', 'Merge with them'], correct: 1, fb: 'Exactly — cost alone loses to sovereign backing; permitting trust and track record can\'t be replicated quickly.' },
+  ]},
+  total: { title: 'Final insight check', sub: 'The integrated edge — and the catch.', questions: [
+    { q: 'What can TotalEnergies offer that a pure-play developer can\'t?', opts: ['Cheaper turbines', 'Firm, dispatchable power bundled with storage and long-term PPAs', 'Faster permits', 'More wind'], correct: 1, fb: 'Correct. Integration lets it sell value (firm decarbonised power), not just volume of electricity.' },
+    { q: 'What is TotalEnergies\' biggest internal risk?', opts: ['Too much wind', 'Capital allocation drift back to oil/gas when their margins beat renewables', 'No customers', 'Government ownership'], correct: 1, fb: 'Right — the integrated structure that protects it also tempts capital away from wind. Hence board-level minimum commitments. 🎉 You\'ve finished the course!' },
+  ]},
+};
+
+function buildCheckpoint(id) {
+  const cp = CHECKPOINTS[id];
+  if (!cp) return '';
+  const qs = cp.questions.map((q, qi) => `
+    <div class="quiz-q" data-qi="${qi}">
+      <div class="q-text"><span class="q-num">Q${qi + 1}.</span>${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((opt, oi) => `
+          <div class="quiz-opt" data-qi="${qi}" data-oi="${oi}">
+            <span class="opt-letter">${String.fromCharCode(65 + oi)}</span><span>${opt}</span>
+          </div>`).join('')}
+      </div>
+      <div class="quiz-feedback" data-qi="${qi}"></div>
+    </div>`).join('');
+  return `<div class="checkpoint" data-section="${id}">
+      <div class="checkpoint-header">
+        <div class="badge">✦ CHECKPOINT</div>
+        <h3>${cp.title}</h3><p>${cp.sub}</p>
+      </div>
+      <div class="quiz-body">${qs}</div>
+      <div class="checkpoint-result">
+        <div class="score"></div><div class="msg"></div>
+        <button class="btn" data-action="finish-section">Mark module complete →</button>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// ROUTING
+// ============================================================
+let currentSectionIdx = -1;
+
+function openSection(id) {
+  const idx = SECTIONS.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  currentSectionIdx = idx;
+  const sec = SECTIONS[idx];
+  document.getElementById('screen-home').classList.remove('active');
+  const mount = document.getElementById('screenMount');
+  const html = BUILDERS[sec.id]() + buildCheckpoint(sec.id);
+  mount.innerHTML = `<div class="screen active">${html}</div>`;
+  wireSection(sec.id);
+  wireCheckpoint(sec.id);
+  updateNavFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  progress.current = id; saveProgress();
+}
+
+function goHome() {
+  currentSectionIdx = -1;
+  document.getElementById('screenMount').innerHTML = '';
+  document.getElementById('screen-home').classList.add('active');
+  renderSectionList();
+  updateNavFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateNavFooter() {
+  const back = document.getElementById('navBack');
+  const next = document.getElementById('navNext');
+  const label = document.getElementById('navLabel');
+  if (currentSectionIdx < 0) {
+    back.style.visibility = 'hidden';
+    const firstIncomplete = SECTIONS.findIndex(s => !progress.completed[s.id]);
+    next.textContent = firstIncomplete >= 0 ? 'Start →' : 'Review →';
+    next.onclick = () => openSection(SECTIONS[firstIncomplete >= 0 ? firstIncomplete : 0].id);
+    label.textContent = '';
+  } else {
+    back.style.visibility = 'visible';
+    back.onclick = goHome; back.textContent = '← All modules';
+    const sec = SECTIONS[currentSectionIdx];
+    label.textContent = `Module ${sec.num} of ${SECTIONS.length}`;
+    const done = !!progress.completed[sec.id];
+    const nextIdx = currentSectionIdx + 1;
+    if (done && nextIdx < SECTIONS.length) {
+      next.textContent = 'Next module →'; next.disabled = false;
+      next.onclick = () => openSection(SECTIONS[nextIdx].id);
+    } else if (done && nextIdx >= SECTIONS.length) {
+      next.textContent = '🎉 Finish'; next.disabled = false; next.onclick = goHome;
+    } else {
+      next.textContent = 'Finish checkpoint'; next.disabled = true; next.onclick = null;
+    }
+  }
+}
+
+// ============================================================
+// WIRING
+// ============================================================
+function accordion(items) {
+  return items.map((it, i) => `
+    <div class="acc-item" data-ai="${i}" style="border:1px solid var(--blue-bright);border-radius:10px;margin-bottom:8px;overflow:hidden;">
+      <div class="acc-head" style="padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--navy-mid);">
+        <span style="font-weight:bold;color:var(--gold-bright);font-size:14px;">${it.t}</span>
+        <span class="acc-icon" style="color:var(--gold);font-size:18px;">+</span>
+      </div>
+      <div class="acc-body" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">
+        <p style="padding:12px 14px;font-size:13px;color:#DCE3F2;margin:0;">${it.d}</p>
+      </div>
+    </div>`).join('');
+}
+function wireAccordion(rootId) {
+  const root = document.getElementById(rootId);
+  if (!root) return;
+  root.querySelectorAll('.acc-head').forEach(head => {
+    head.onclick = () => {
+      const body = head.nextElementSibling;
+      const icon = head.querySelector('.acc-icon');
+      const open = body.style.maxHeight && body.style.maxHeight !== '0px';
+      body.style.maxHeight = open ? '0px' : body.scrollHeight + 40 + 'px';
+      icon.textContent = open ? '+' : '−';
+    };
+  });
+}
+
+function renderMixBars(view) {
+  const d = MIX_DATA[view];
+  const bars = document.getElementById('mixBars');
+  bars.innerHTML = d.bars.map(b => `
+    <div class="bar-row">
+      <div class="bar-label">${b.l}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${b.c};">${b.v}%</div></div>
+    </div>`).join('');
+  document.getElementById('mixSource').textContent = d.source;
+  requestAnimationFrame(() => {
+    bars.querySelectorAll('.bar-fill').forEach((f, i) => f.style.width = (d.bars[i].v * 1.6) + '%');
+  });
+}
+
+function wireSection(id) {
+  if (id === 'today') {
+    renderMixBars('total');
+    document.querySelectorAll('#mixToggle .toggle-pill').forEach(p => {
+      p.onclick = () => {
+        document.querySelectorAll('#mixToggle .toggle-pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        renderMixBars(p.dataset.view);
+      };
+    });
+  }
+  if (id === 'demand') {
+    const max = 1400, bars = document.getElementById('demandBars');
+    bars.innerHTML = DEMAND_DATA.map((d, i) => `
+      <div class="bar-row">
+        <div class="bar-label">${d.l}</div>
+        <div class="bar-track" style="height:30px;">
+          <div class="bar-fill" data-i="${i}" data-a="${d.a}" data-b="${d.b}" style="width:0%;background:linear-gradient(90deg,var(--blue-bright),var(--teal));cursor:pointer;">${d.a} TWh</div>
+        </div>
+      </div>`).join('');
+    let showing = 'a';
+    const paint = () => bars.querySelectorAll('.bar-fill').forEach(f => {
+      const v = +f.dataset[showing];
+      f.style.width = (v / max * 100) + '%';
+      f.textContent = v + ' TWh';
+      f.style.background = showing === 'b'
+        ? 'linear-gradient(90deg,var(--gold-dark),var(--gold))'
+        : 'linear-gradient(90deg,var(--blue-bright),var(--teal))';
+    });
+    requestAnimationFrame(paint);
+    bars.querySelectorAll('.bar-fill').forEach(f => f.onclick = () => { showing = showing === 'a' ? 'b' : 'a'; paint(); });
+  }
+  if (id === 'forces') { document.getElementById('forceAccordion').innerHTML = accordion(FORCES); wireAccordion('forceAccordion'); }
+  if (id === 'bottlenecks') {
+    const max = 230, bars = document.getElementById('lcoeBars');
+    bars.innerHTML = LCOE_DATA.map(d => `
+      <div class="bar-row">
+        <div class="bar-label">${d.l}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0%;background:linear-gradient(90deg,var(--green-correct),var(--amber));">€${d.min}–${d.max}</div></div>
+      </div>`).join('');
+    requestAnimationFrame(() => bars.querySelectorAll('.bar-fill').forEach((f, i) => f.style.width = (LCOE_DATA[i].max / max * 100) + '%'));
+  }
+  if (id === 'triple') { document.getElementById('tripleAccordion').innerHTML = accordion(TRIPLE); wireAccordion('tripleAccordion'); }
+  if (id === 'scenarios') {
+    const grid = document.getElementById('scenarioMatrix');
+    const order = ['green', 'policy', 'supply', 'stalled']; // tl, tr, bl, br
+    grid.innerHTML = order.map(k => {
+      const s = SCENARIOS_DATA[k];
+      return `<div class="matrix-cell${s.base ? ' base' : ''}" data-k="${k}">
+        <div class="mc-name">${s.name}</div>
+        <div class="mc-prob">${s.prob}${s.base ? ' · BASE CASE' : ''}</div>
+        <div class="mc-desc">${s.desc}</div>
+        <div class="mc-tag">${s.tag}</div>
+      </div>`;
+    }).join('');
+    const detail = document.getElementById('scenarioDetail');
+    grid.querySelectorAll('.matrix-cell').forEach(cell => {
+      cell.onclick = () => {
+        grid.querySelectorAll('.matrix-cell').forEach(c => c.classList.remove('active'));
+        cell.classList.add('active');
+        const s = SCENARIOS_DATA[cell.dataset.k];
+        detail.innerHTML = `<h4>${s.name} · ${s.prob}</h4><div class="sd-line">${s.detail}</div>`;
+        detail.classList.add('show');
+      };
+    });
+  }
+  if (id === 'orsted') { document.getElementById('orstedAccordion').innerHTML = accordion(ORSTED_LEVERS); wireAccordion('orstedAccordion'); }
+  if (id === 'total') { document.getElementById('totalAccordion').innerHTML = accordion(TOTAL_STRATS); wireAccordion('totalAccordion'); }
+}
+
+// ============================================================
+// CHECKPOINT LOGIC
+// ============================================================
+function wireCheckpoint(id) {
+  const cp = CHECKPOINTS[id];
+  const cpEl = document.querySelector(`.checkpoint[data-section="${id}"]`);
+  if (!cp || !cpEl) return;
+  const answered = {};
+  cpEl.querySelectorAll('.quiz-opt').forEach(opt => {
+    opt.onclick = () => {
+      const qi = +opt.dataset.qi, oi = +opt.dataset.oi;
+      if (answered[qi] !== undefined) return;
+      answered[qi] = oi;
+      const q = cp.questions[qi];
+      const opts = cpEl.querySelectorAll(`.quiz-opt[data-qi="${qi}"]`);
+      const fb = cpEl.querySelector(`.quiz-feedback[data-qi="${qi}"]`);
+      opts.forEach(o => {
+        o.classList.add('locked');
+        if (+o.dataset.oi === q.correct) o.classList.add('correct');
+        else if (+o.dataset.oi === oi) o.classList.add('wrong');
+      });
+      const right = oi === q.correct;
+      fb.className = 'quiz-feedback show ' + (right ? 'right' : 'wrong-fb');
+      fb.innerHTML = `<span class="fb-label">${right ? '✓ CORRECT' : '✗ NOT QUITE'}</span>${q.fb}`;
+      if (Object.keys(answered).length === cp.questions.length) showResult();
+    };
+  });
+  function showResult() {
+    let correct = 0;
+    cp.questions.forEach((q, qi) => { if (answered[qi] === q.correct) correct++; });
+    const res = cpEl.querySelector('.checkpoint-result');
+    res.querySelector('.score').textContent = `${correct} / ${cp.questions.length}`;
+    res.querySelector('.msg').textContent = correct === cp.questions.length
+      ? 'Nailed it. You\'ve got the key insight.'
+      : 'Good — review the feedback above, then continue.';
+    res.classList.add('show');
+    res.querySelector('[data-action="finish-section"]').onclick = () => {
+      markComplete(id); updateNavFooter();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    };
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('resetBtn').onclick = () => {
+  progress = { completed: {}, current: null };
+  saveProgress(); updateProgressBar(); renderSectionList(); updateNavFooter();
+};
+renderSectionList();
+updateProgressBar();
+updateNavFooter();
+</script>
+</body>
+</html>
