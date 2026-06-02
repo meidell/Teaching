@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz DeFi · Tableau de bord formateur</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --purple:#7E5AE8; --teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+  background:radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);color:var(--white);line-height:1.45;}
+.hidden{display:none!important;}
+
+/* gate */
+.gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;z-index:100;}
+.gate-box{max-width:480px;width:100%;text-align:center;}
+.gate-box .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:12px;}
+.gate-box h1{font-family:Georgia,serif;font-size:30px;font-style:italic;margin-bottom:8px;color:var(--gold-bright);}
+.gate-box p{color:var(--grey-muted);font-size:14px;margin-bottom:22px;}
+.field{text-align:left;margin-bottom:16px;}
+.field label{display:block;font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:bold;margin-bottom:6px;}
+.field input{width:100%;padding:13px 14px;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;color:#fff;font-size:16px;font-family:inherit;}
+#codeInput{letter-spacing:6px;text-align:center;font-family:Georgia,serif;font-size:26px;font-weight:bold;color:var(--gold-bright);}
+.field input:focus{outline:none;border-color:var(--gold);}
+.hintline{font-size:12px;color:var(--grey-muted);margin-top:8px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:12px 24px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:9px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.small{padding:8px 14px;font-size:12px;}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(10,26,58,0.95);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:12px 18px;}
+.topbar-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.codepill{font-family:Georgia,serif;font-size:26px;font-weight:bold;color:var(--navy-deep);background:var(--gold);padding:4px 18px;border-radius:10px;letter-spacing:4px;}
+.codepill small{display:block;font-size:9px;letter-spacing:2px;color:var(--navy-mid);font-weight:bold;font-family:'Calibri';}
+.live{font-size:14px;color:var(--gold-bright);font-weight:bold;}
+.live .muted{color:var(--grey-muted);font-weight:normal;font-size:13px;}
+.spacer{flex:1;}
+.live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green-correct);margin-right:6px;animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.wrap{max-width:1280px;margin:0 auto;padding:18px;}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.tab{padding:9px 14px;border-radius:9px;border:1px solid var(--blue-bright);background:var(--navy-mid);cursor:pointer;font-size:13px;transition:all .2s;display:flex;align-items:center;gap:8px;}
+.tab:hover{border-color:var(--gold);}
+.tab.active{border-color:var(--gold);background:var(--navy-light);color:var(--gold-bright);font-weight:bold;}
+.tab .badge{font-size:11px;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:20px;padding:1px 8px;font-weight:bold;}
+
+.panel{display:none;}
+.panel.active{display:block;animation:fade .3s ease;}
+@keyframes fade{from{opacity:0;}to{opacity:1;}}
+
+/* MC question */
+.qhead{font-size:13px;color:var(--grey-muted);margin-bottom:4px;letter-spacing:1px;}
+.qtitle{font-family:Georgia,serif;font-size:22px;font-style:italic;margin-bottom:18px;line-height:1.3;}
+.dist{display:flex;flex-direction:column;gap:10px;max-width:760px;}
+.bar-row{display:flex;align-items:center;gap:12px;}
+.bar-letter{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;background:var(--navy-deep);border:1px solid var(--blue-bright);flex-shrink:0;}
+.bar-row.correct .bar-letter{background:var(--green-correct);border-color:var(--green-correct);}
+.bar-main{flex:1;}
+.bar-opt{font-size:14px;margin-bottom:4px;}
+.bar-opt .tag-correct{font-size:10px;letter-spacing:1px;color:var(--green-correct);font-weight:bold;border:1px solid var(--green-correct);border-radius:4px;padding:1px 6px;margin-left:8px;}
+.bar-track{height:26px;background:var(--navy-deep);border-radius:6px;overflow:hidden;border:1px solid rgba(176,188,214,.15);}
+.bar-fill{height:100%;border-radius:6px;background:var(--blue-bright);transition:width .5s ease;min-width:2px;}
+.bar-row.correct .bar-fill{background:var(--green-correct);}
+.bar-count{width:80px;text-align:right;font-family:Georgia,serif;font-size:16px;color:var(--gold-bright);flex-shrink:0;}
+.qstats{margin-top:18px;font-size:14px;color:var(--grey-muted);}
+.qstats b{color:var(--gold-bright);}
+
+/* open/search answers */
+.ans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.ans-card{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:14px 16px;}
+.ans-card .nm{font-weight:bold;color:var(--gold-bright);font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.ans-card .nm .seed{font-size:10px;color:var(--grey-muted);font-weight:normal;}
+.ans-card .body{font-size:14px;color:#DCE3F2;white-space:pre-wrap;word-break:break-word;}
+.ans-card .body.empty{color:var(--grey-muted);font-style:italic;}
+.modref{background:rgba(46,168,74,.12);border:1px solid var(--green-soft);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#B6F0C2;}
+.modref b{color:var(--green-correct);}
+
+/* roster */
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.rcard{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:12px 14px;}
+.rcard .rn{font-weight:bold;color:var(--gold-bright);font-size:14px;}
+.rcard .rs{font-size:12px;color:var(--grey-muted);margin-top:3px;}
+.rcard .rprog{height:6px;background:var(--navy-deep);border-radius:3px;margin-top:8px;overflow:hidden;}
+.rcard .rprog div{height:100%;background:var(--gold);border-radius:3px;}
+.rcard.sub{border-color:var(--green-correct);}
+.rcard.sub .rs{color:var(--green-correct);}
+.empty-state{text-align:center;padding:60px 20px;color:var(--grey-muted);}
+.empty-state .big{font-size:40px;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<!-- ============ GATE ============ -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="eyebrow">FINTECH · DeFi</div>
+    <h1>Tableau de bord — formateur</h1>
+    <p>Choisis un code de séance (ex. les 4 lettres affichées à tes élèves), puis ouvre le tableau. Les réponses arrivent en direct.</p>
+    <div class="field"><label>Code de la séance</label><input id="codeInput" maxlength="6" placeholder="DEFI" autocomplete="off"></div>
+    <button class="btn" id="openBtn" style="width:100%;">Ouvrir le tableau →</button>
+    <p class="hintline">Donne ce même code à tes élèves (page <b>defi-quiz-student.html</b>). Tout ce qui partage le code partage la session.</p>
+    <p class="hintline" id="connHint">Connexion Firebase…</p>
+  </div>
+</div>
+
+<!-- ============ TOPBAR ============ -->
+<div class="topbar hidden" id="topbar">
+  <div class="topbar-inner">
+    <div class="codepill"><small>CODE SÉANCE</small><span id="codeShow">—</span></div>
+    <div class="live"><span class="live-dot"></span><span id="liveTxt">—</span></div>
+    <div class="spacer"></div>
+    <button class="btn ghost small" id="refreshNow">↻ Rafraîchir</button>
+    <button class="btn ghost small" id="resetView">Changer de code</button>
+  </div>
+</div>
+
+<!-- ============ BOARD ============ -->
+<div class="wrap hidden" id="board">
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",
+  authDomain: "teaching-70f1c.firebaseapp.com",
+  databaseURL: "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "teaching-70f1c",
+  storageBucket: "teaching-70f1c.firebasestorage.app",
+  messagingSenderId: "1026356553251",
+  appId: "1:1026356553251:web:d23a4c30af7e6983463396"
+};
+let _db=null;
+try{ _db=getDatabase(initializeApp(firebaseConfig)); }catch(e){ console.error("Firebase init failed",e); }
+const keyPath = k => k.replace(/[:.#$\[\]]/g, "_");
+window.__store = {
+  async get(key){ if(!_db) return null; try{ const snap=await get(child(ref(_db),keyPath(key))); return snap.exists()?snap.val():null; }catch(e){ console.error("get fail",e); return null; } }
+};
+window.__storeReady=!!_db;
+document.getElementById('connHint').textContent = _db ? '✓ Connecté à Firebase' : '✗ Connexion échouée — vérifie ta config et recharge';
+</script>
+
+<script>
+// ============================================================
+// QUESTION MODEL — must match the student file (+ correct answers & model notes)
+// ============================================================
+const QUESTIONS = [
+  { id:'q1', type:'mc', topic:'DeFi', text:"La DeFi désigne des services financiers qui fonctionnent…",
+    opts:["avec une banque centrale comme garant","sans intermédiaire traditionnel, via blockchain et smart contracts","uniquement entre banques agréées par la FINMA"], correct:1 },
+  { id:'q2', type:'mc', topic:'Smart contracts', text:"Un smart contract est avant tout…",
+    opts:["un contrat papier signé électroniquement","un programme qui s'exécute automatiquement quand ses conditions sont remplies","un accord verbal entre deux wallets"], correct:1 },
+  { id:'q3', type:'mc', topic:'Aave', text:"Pour emprunter 100 USDC sur Aave, l'utilisateur doit déposer…",
+    opts:["exactement 100 USD de garantie","une garantie sur-collatéralisée, ex. 150 USD d'ETH","aucune garantie, seulement une pièce d'identité"], correct:1 },
+  { id:'q4', type:'mc', topic:'Uniswap', text:"La formule de prix au cœur d'Uniswap (v2) est…",
+    opts:["x + y = k","x × y = k","x ÷ y = k"], correct:1 },
+  { id:'q5', type:'mc', topic:'Oracle', text:"Un oracle blockchain sert à…",
+    opts:["miner des blocs plus rapidement","acheminer des données externes (off-chain) vers la blockchain (on-chain)","stocker les clés privées des utilisateurs"], correct:1 },
+  { id:'q6', type:'mc', topic:'CBDC', text:"Ce qui distingue une CBDC (e-CNY) d'une stablecoin (USDC) :",
+    opts:["la CBDC est émise par une banque centrale, la stablecoin par une entreprise privée","elles sont strictement identiques","la stablecoin est la seule monnaie ayant cours légal"], correct:0 },
+  { id:'q7', type:'search', topic:'Oracle', text:"★ Cite un oracle décentralisé populaire et son rôle.",
+    model:"Chainlink (le plus utilisé), Pyth Network, Band Protocol, UMA. Rôle : acheminer des données externes fiables (prix, météo…) vers les smart contracts." },
+  { id:'q8', type:'search', topic:'TVL', text:"★ Sur DeFiLlama : protocole avec la plus grande TVL ?",
+    model:"Réponse vivante — vérifie sur defillama.com pendant le cours. Souvent Lido, Aave, EigenLayer ou Maker en tête. L'important : l'élève sait lire la TVL et citer une source." },
+  { id:'q9', type:'search', topic:'Hack', text:"★ Un piratage célèbre DeFi / bridge.",
+    model:"The DAO (2016, ~60 M$), Poly Network (2021, ~600 M$), Ronin Bridge (2022, ~625 M$), Wormhole (2022, ~320 M$). Valoriser nom + année + montant + leçon (risque smart contract)." },
+  { id:'q10', type:'open', topic:'Synthèse', text:"Pourquoi Aave/Uniswap sont-ils « décentralisés » ?",
+    model:"Pas d'intermédiaire ; les smart contracts s'exécutent automatiquement ; code open source sur blockchain publique ; n'importe qui interagit sans KYC ni autorisation préalable." },
+];
+
+let CODE=null, pollTimer=null, activeTab='q1', cache=[];
+
+async function sharedGet(k){ if(!window.__store) return null; return await window.__store.get(k); }
+
+// ---- gate ----
+document.getElementById('codeInput').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+document.getElementById('openBtn').onclick=()=>{
+  const c=document.getElementById('codeInput').value.trim().toUpperCase();
+  if(c.length<3){ document.getElementById('codeInput').focus(); return; }
+  if(!window.__storeReady){ alert('Connexion non prête — recharge la page.'); return; }
+  CODE=c;
+  document.getElementById('codeShow').textContent=c;
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('topbar').classList.remove('hidden');
+  document.getElementById('board').classList.remove('hidden');
+  buildTabs();
+  selectTab('q1');
+  startPolling();
+};
+document.getElementById('resetView').onclick=()=>{ if(pollTimer)clearInterval(pollTimer); location.reload(); };
+document.getElementById('refreshNow').onclick=render;
+
+function buildTabs(){
+  const t=document.getElementById('tabs'); t.innerHTML='';
+  QUESTIONS.forEach((q,i)=>{
+    const el=document.createElement('div'); el.className='tab'+(q.id===activeTab?' active':''); el.dataset.tab=q.id;
+    const mark = q.type==='mc' ? '◉' : '★';
+    el.innerHTML=`${mark} Q${i+1} <span class="badge" data-resp="${q.id}">0</span>`;
+    el.onclick=()=>selectTab(q.id);
+    t.appendChild(el);
+  });
+  const r=document.createElement('div'); r.className='tab'; r.dataset.tab='roster';
+  r.innerHTML=`👥 Élèves <span class="badge" data-resp="roster">0</span>`;
+  r.onclick=()=>selectTab('roster'); t.appendChild(r);
+}
+function selectTab(id){
+  activeTab=id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  render();
+}
+
+// ---- polling ----
+function startPolling(){ if(pollTimer)clearInterval(pollTimer); render(); pollTimer=setInterval(render,4000); }
+
+async function fetchStudents(){
+  const root=await sharedGet(`defiquiz:${CODE}:students`);
+  if(!root) return [];
+  // root is an object keyed by sanitised sid; each has meta + data
+  const out=[];
+  Object.keys(root).forEach(sid=>{
+    const node=root[sid]||{};
+    const data=node.data||null;
+    const meta=node.meta||null;
+    out.push({ sid, name:(data&&data.name)||(meta&&meta.name)||'—', data, meta });
+  });
+  return out;
+}
+
+async function render(){
+  if(!CODE) return;
+  cache = await fetchStudents();
+  const joined=cache.length;
+  const submitted=cache.filter(s=>s.data&&s.data.submitted).length;
+  document.getElementById('liveTxt').innerHTML=`${joined} élève(s) connecté(s) <span class="muted">· ${submitted} ont envoyé</span>`;
+
+  // tab badges = number of non-empty answers for that question
+  QUESTIONS.forEach(q=>{
+    const n=cache.filter(s=>{ const v=s.data&&s.data.answers&&s.data.answers[q.id]; return v!==undefined&&v!==''&&!(typeof v==='string'&&v.trim()===''); }).length;
+    const b=document.querySelector(`.badge[data-resp="${q.id}"]`); if(b)b.textContent=n;
+  });
+  const rb=document.querySelector('.badge[data-resp="roster"]'); if(rb)rb.textContent=joined;
+
+  const panels=document.getElementById('panels');
+  if(activeTab==='roster'){ panels.innerHTML=renderRoster(); return; }
+  const q=QUESTIONS.find(x=>x.id===activeTab);
+  panels.innerHTML = q.type==='mc' ? renderMC(q) : renderOpen(q);
+}
+
+function escapeHTML(s){ return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function renderMC(q){
+  const counts=q.opts.map(()=>0); let answered=0,correctN=0;
+  cache.forEach(s=>{
+    const v=s.data&&s.data.answers&&s.data.answers[q.id];
+    if(v!==undefined&&v!==null&&v!==''){ counts[v]=(counts[v]||0)+1; answered++; if(v===q.correct)correctN++; }
+  });
+  const max=Math.max(1,...counts);
+  const rows=q.opts.map((o,oi)=>{
+    const c=counts[oi]||0; const pct=Math.round(c/max*100); const isC=oi===q.correct;
+    return `<div class="bar-row${isC?' correct':''}">
+      <div class="bar-letter">${String.fromCharCode(65+oi)}</div>
+      <div class="bar-main">
+        <div class="bar-opt">${escapeHTML(o)}${isC?'<span class="tag-correct">RÉPONSE</span>':''}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="bar-count">${c}</div>
+    </div>`;
+  }).join('');
+  const rate = answered?Math.round(correctN/answered*100):0;
+  return `<div class="panel active">
+    <div class="qhead">QUESTION ${QUESTIONS.indexOf(q)+1} · CHOIX MULTIPLE · ${q.topic}</div>
+    <div class="qtitle">${escapeHTML(q.text)}</div>
+    <div class="dist">${rows}</div>
+    <div class="qstats">${answered} réponse(s) · <b>${correctN}</b> correcte(s) — soit <b>${rate}%</b> de la classe. ${answered<3?'(Attends quelques réponses avant de révéler.)':''}</div>
+  </div>`;
+}
+
+function renderOpen(q){
+  const withAns=cache.filter(s=>{ const v=s.data&&s.data.answers&&s.data.answers[q.id]; return v!==undefined&&typeof v==='string'&&v.trim()!==''; });
+  const cards = withAns.length ? withAns.map(s=>{
+    const v=s.data.answers[q.id];
+    return `<div class="ans-card"><div class="nm">${escapeHTML(s.name)}</div><div class="body">${escapeHTML(v)}</div></div>`;
+  }).join('') : `<div class="empty-state"><div class="big">⏳</div>En attente des réponses…</div>`;
+  return `<div class="panel active">
+    <div class="qhead">QUESTION ${QUESTIONS.indexOf(q)+1} · ${q.type==='search'?'★ RECHERCHE EN LIGNE':'RÉFLEXION'} · ${q.topic}</div>
+    <div class="qtitle">${escapeHTML(q.text)}</div>
+    <div class="modref"><b>Repère de correction :</b> ${escapeHTML(q.model)}</div>
+    <div class="ans-grid">${cards}</div>
+  </div>`;
+}
+
+function renderRoster(){
+  if(!cache.length) return `<div class="panel active"><div class="empty-state"><div class="big">👥</div>Aucun élève connecté pour le moment.<br>Partage le code <b>${CODE}</b> et la page <b>defi-quiz-student.html</b>.</div></div>`;
+  const total=QUESTIONS.length;
+  const cards=cache.sort((a,b)=>a.name.localeCompare(b.name)).map(s=>{
+    const ans=s.data&&s.data.answers||{};
+    const n=QUESTIONS.filter(q=>{ const v=ans[q.id]; return v!==undefined&&v!==''&&!(typeof v==='string'&&v.trim()===''); }).length;
+    const sub=s.data&&s.data.submitted;
+    const pct=Math.round(n/total*100);
+    return `<div class="rcard${sub?' sub':''}"><div class="rn">${escapeHTML(s.name)}</div>
+      <div class="rs">${sub?'✓ envoyé':'en cours'} · ${n}/${total} répondu</div>
+      <div class="rprog"><div style="width:${pct}%"></div></div></div>`;
+  }).join('');
+  return `<div class="panel active"><div class="qhead">ÉLÈVES CONNECTÉS</div><div class="qtitle" style="margin-bottom:14px;">Progression individuelle</div><div class="roster">${cards}</div></div>`;
+}
+</script>
+</body>
+</html>

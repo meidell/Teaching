@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Quiz DeFi · Élève</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --purple:#7E5AE8; --teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+  background:radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;color:var(--white);line-height:1.5;}
+body{padding-bottom:90px;}
+.hidden{display:none!important;}
+
+/* gate */
+.gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;z-index:100;
+  background:radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);}
+.gate-box{max-width:440px;width:100%;text-align:center;}
+.gate-box .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:12px;}
+.gate-box h1{font-family:Georgia,serif;font-size:32px;font-style:italic;margin-bottom:8px;
+  background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.gate-box p{color:var(--grey-muted);font-size:14px;margin-bottom:24px;}
+.field{text-align:left;margin-bottom:16px;}
+.field label{display:block;font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:bold;margin-bottom:6px;}
+.field input{width:100%;padding:13px 14px;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;color:#fff;font-size:16px;font-family:inherit;}
+.field input:focus{outline:none;border-color:var(--gold);}
+#codeInput{letter-spacing:6px;text-align:center;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--gold-bright);}
+.gate-err{color:#FF9B95;font-size:13px;min-height:18px;margin-bottom:10px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:13px 26px;font-family:inherit;font-size:14px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:10px;transition:all .2s;width:100%;}
+.btn:hover{background:var(--gold-bright);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.small{width:auto;padding:9px 18px;font-size:12px;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.topbar .who{font-size:12px;color:var(--gold-bright);font-weight:bold;white-space:nowrap;}
+.topbar .sess{font-size:10px;letter-spacing:2px;color:var(--grey-muted);}
+.progress-track{flex:1;height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;border:1px solid rgba(176,188,214,0.2);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:0%;transition:width .4s ease;border-radius:3px;}
+.progress-pct{font-size:11px;color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;min-width:34px;text-align:right;}
+
+.container{max-width:720px;margin:0 auto;padding:18px 16px;}
+.hero{text-align:center;padding:18px 8px 6px;}
+.hero h2{font-family:Georgia,serif;font-size:24px;font-style:italic;margin-bottom:6px;}
+.hero p{color:var(--grey-muted);font-size:14px;}
+
+.q-card{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:20px 18px;margin-bottom:16px;}
+.q-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.q-badge{font-size:10px;letter-spacing:1px;font-weight:bold;padding:4px 10px;border-radius:20px;}
+.q-badge.mc{background:rgba(30,90,168,.3);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.q-badge.search{background:rgba(45,182,168,.18);color:var(--teal);border:1px solid var(--teal);}
+.q-badge.open{background:rgba(126,90,232,.2);color:#D6C7FF;border:1px solid var(--purple);}
+.q-num{font-family:Georgia,serif;font-size:13px;color:var(--grey-muted);margin-left:auto;}
+.q-text{font-size:16px;font-weight:600;line-height:1.4;margin-bottom:14px;}
+.q-hint{font-size:13px;color:var(--grey-muted);font-style:italic;margin-bottom:12px;}
+.q-hint a{color:var(--gold);}
+.opt{display:flex;align-items:center;gap:10px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .18s;font-size:15px;}
+.opt:hover{border-color:var(--gold);}
+.opt.sel{border-color:var(--gold);background:var(--navy-light);}
+.opt .letter{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--navy-deep);border:1px solid var(--blue-bright);font-size:12px;font-weight:bold;flex-shrink:0;}
+.opt.sel .letter{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);}
+textarea{width:100%;min-height:90px;padding:12px 14px;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;color:#fff;font-size:15px;font-family:inherit;resize:vertical;}
+textarea:focus{outline:none;border-color:var(--gold);}
+.saved-tick{font-size:12px;color:var(--green-correct);margin-top:6px;min-height:16px;font-weight:bold;}
+
+.submit-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,26,58,0.96);backdrop-filter:blur(10px);border-top:1px solid rgba(240,179,61,0.3);padding:12px 16px;z-index:50;}
+.submit-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.submit-inner .status{flex:1;font-size:13px;color:var(--grey-muted);}
+.done-screen{text-align:center;padding:50px 20px;}
+.done-screen .big{font-size:54px;margin-bottom:10px;}
+.done-screen h2{font-family:Georgia,serif;font-size:28px;font-style:italic;color:var(--gold-bright);margin-bottom:10px;}
+.done-screen p{color:var(--grey-muted);font-size:15px;max-width:420px;margin:0 auto 8px;}
+.conn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--grey-muted);margin-right:5px;}
+.conn-dot.ok{background:var(--green-correct);}
+.conn-dot.bad{background:var(--red-wrong);}
+</style>
+</head>
+<body>
+
+<!-- ============ GATE ============ -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="eyebrow">FINTECH · QUIZ DeFi</div>
+    <h1>Rejoindre la séance</h1>
+    <p>Saisis le code affiché à l'écran, puis ton prénom. Tes réponses sont enregistrées au fur et à mesure.</p>
+    <div class="field"><label>Code de la séance</label><input id="codeInput" maxlength="6" placeholder="••••" autocomplete="off"></div>
+    <div class="field"><label>Ton prénom (ou pseudo)</label><input id="nameInput" maxlength="24" placeholder="Ex. Sophie" autocomplete="off"></div>
+    <div class="gate-err" id="gateErr"></div>
+    <button class="btn" id="enterBtn">Entrer →</button>
+    <p style="margin-top:14px;font-size:11px;"><span class="conn-dot" id="connDot"></span><span id="connTxt">Connexion…</span></p>
+  </div>
+</div>
+
+<!-- ============ TOPBAR ============ -->
+<div class="topbar hidden" id="topbar">
+  <div class="topbar-inner">
+    <div><div class="who" id="whoTag">—</div><div class="sess">SÉANCE <span id="sessTag">—</span></div></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="container hidden" id="app">
+  <div class="hero">
+    <h2>Quiz DeFi & Blockchain</h2>
+    <p>Réponds à ton rythme. ★ = à chercher en ligne. Tout est sauvegardé automatiquement.</p>
+  </div>
+  <div id="quizMount"></div>
+</div>
+
+<!-- ============ DONE ============ -->
+<div class="container hidden" id="doneScreen">
+  <div class="done-screen">
+    <div class="big">✅</div>
+    <h2>Réponses envoyées !</h2>
+    <p>Tes réponses sont enregistrées et visibles par le formateur. Tu peux encore les modifier : tes changements se synchronisent automatiquement.</p>
+    <p style="margin-top:18px;"><button class="btn small ghost" id="backToQuiz">← Revoir / modifier mes réponses</button></p>
+  </div>
+</div>
+
+<!-- ============ SUBMIT BAR ============ -->
+<div class="submit-bar hidden" id="submitBar">
+  <div class="submit-inner">
+    <span class="status" id="submitStatus">0 / 0 répondu</span>
+    <button class="btn small" id="submitBtn">Envoyer mes réponses</button>
+  </div>
+</div>
+
+<script type="module">
+// ============================================================
+// FIREBASE CONFIG  — même projet que tes autres pages
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",
+  authDomain: "teaching-70f1c.firebaseapp.com",
+  databaseURL: "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "teaching-70f1c",
+  storageBucket: "teaching-70f1c.firebasestorage.app",
+  messagingSenderId: "1026356553251",
+  appId: "1:1026356553251:web:d23a4c30af7e6983463396"
+};
+
+let _db = null;
+try { _db = getDatabase(initializeApp(firebaseConfig)); }
+catch(e){ console.error("Firebase init failed", e); }
+
+const keyPath = k => k.replace(/[:.#$\[\]]/g, "_");   // sanitise for Firebase paths
+window.__store = {
+  async set(key, value){ if(!_db) return null; try { await set(ref(_db, keyPath(key)), value); return true; } catch(e){ console.error("set fail", e); return null; } },
+  async get(key){ if(!_db) return null; try { const snap = await get(child(ref(_db), keyPath(key))); return snap.exists() ? snap.val() : null; } catch(e){ console.error("get fail", e); return null; } }
+};
+window.__storeReady = !!_db;
+// connection indicator
+const dot=document.getElementById('connDot'),ct=document.getElementById('connTxt');
+if(_db){dot.classList.add('ok');ct.textContent='Connecté';}else{dot.classList.add('bad');ct.textContent='Hors-ligne — préviens le formateur';}
+</script>
+
+<script>
+// ============================================================
+// QUESTIONS  (alignées sur l'examen module 2.1/2.2/2.3)
+// type: 'mc' (choix multiple) · 'search' (recherche en ligne) · 'open' (réponse libre)
+// ============================================================
+const QUESTIONS = [
+  { id:'q1', type:'mc', topic:'DeFi', text:"La DeFi désigne des services financiers qui fonctionnent…",
+    opts:["avec une banque centrale comme garant","sans intermédiaire traditionnel, via blockchain et smart contracts","uniquement entre banques agréées par la FINMA"] },
+  { id:'q2', type:'mc', topic:'Smart contracts', text:"Un smart contract est avant tout…",
+    opts:["un contrat papier signé électroniquement","un programme qui s'exécute automatiquement quand ses conditions sont remplies","un accord verbal entre deux wallets"] },
+  { id:'q3', type:'mc', topic:'Aave', text:"Pour emprunter 100 USDC sur Aave, l'utilisateur doit déposer…",
+    opts:["exactement 100 USD de garantie","une garantie sur-collatéralisée, ex. 150 USD d'ETH","aucune garantie, seulement une pièce d'identité"] },
+  { id:'q4', type:'mc', topic:'Uniswap', text:"La formule de prix au cœur d'Uniswap (v2) est…",
+    opts:["x + y = k","x × y = k","x ÷ y = k"] },
+  { id:'q5', type:'mc', topic:'Oracle', text:"Un oracle blockchain sert à…",
+    opts:["miner des blocs plus rapidement","acheminer des données externes (off-chain) vers la blockchain (on-chain)","stocker les clés privées des utilisateurs"] },
+  { id:'q6', type:'mc', topic:'CBDC', text:"Ce qui distingue une CBDC (e-CNY) d'une stablecoin (USDC) :",
+    opts:["la CBDC est émise par une banque centrale, la stablecoin par une entreprise privée","elles sont strictement identiques","la stablecoin est la seule monnaie ayant cours légal"] },
+  { id:'q7', type:'search', topic:'Oracle', text:"★ Cherche en ligne : cite UN oracle décentralisé populaire (autre nom que Chainlink accepté) et indique en une phrase à quoi il sert.",
+    hint:"Pistes : Chainlink, Pyth Network, Band Protocol, UMA. Cherche « decentralized oracle blockchain »." },
+  { id:'q8', type:'search', topic:'TVL', text:"★ Va sur DeFiLlama (defillama.com) : quel protocole DeFi a actuellement la plus grande TVL (Total Value Locked) ? Donne son nom et le montant approximatif.",
+    hint:"TVL = valeur totale verrouillée dans le protocole. Ouvre defillama.com, onglet « Protocols »." },
+  { id:'q9', type:'search', topic:'Hack', text:"★ Cherche un piratage célèbre d'un protocole DeFi ou d'un pont (bridge). Nomme-le, donne l'année et le montant approximatif volé.",
+    hint:"Pistes : The DAO (2016), Poly Network (2021), Ronin Bridge (2022), Wormhole (2022)." },
+  { id:'q10', type:'open', topic:'Synthèse', text:"En une ou deux phrases : pourquoi dit-on qu'un protocole comme Aave ou Uniswap est « décentralisé » ?",
+    hint:"Pense : intermédiaire, smart contracts, code open source, autorisation préalable." },
+];
+
+// ============================================================
+// SESSION STATE
+// ============================================================
+const STATE = { code:null, name:null, sid:null };
+let answers = {};   // {qid: value}
+let submitted = false;
+
+async function sharedSet(key, value){ if(!window.__store) return null; return await window.__store.set(key, value); }
+async function sharedGet(key){ if(!window.__store) return null; return await window.__store.get(key); }
+
+// stable per-device student id (so refresh keeps the same row)
+function getSid(){
+  let s = null;
+  try { s = localStorage.getItem('defiquiz_sid'); } catch(e){}
+  if(!s){ s = 's' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-3); try{localStorage.setItem('defiquiz_sid',s);}catch(e){} }
+  return s;
+}
+const localKey = () => `defiquiz_${STATE.code}_${STATE.sid}`;
+function loadLocal(){ try{ const r=localStorage.getItem(localKey()); if(r){ const p=JSON.parse(r); answers=p.answers||{}; submitted=!!p.submitted; } }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(localKey(), JSON.stringify({answers,submitted})); }catch(e){} }
+
+// ---- gate ----
+document.getElementById('codeInput').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+document.getElementById('enterBtn').onclick = async ()=>{
+  const err=document.getElementById('gateErr');
+  const code=document.getElementById('codeInput').value.trim().toUpperCase();
+  const name=document.getElementById('nameInput').value.trim();
+  if(code.length<3){ err.textContent='Saisis le code de la séance affiché à l\'écran.'; return; }
+  if(!name){ err.textContent='Indique ton prénom.'; return; }
+  if(!window.__storeReady){ err.textContent='Connexion non prête — recharge la page.'; return; }
+  STATE.code=code; STATE.name=name; STATE.sid=getSid();
+  err.textContent='';
+  loadLocal();
+  // register presence
+  await sharedSet(`defiquiz:${code}:students:${STATE.sid}:meta`, { name, joined:Date.now() });
+  document.getElementById('whoTag').textContent=name;
+  document.getElementById('sessTag').textContent=code;
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('topbar').classList.remove('hidden');
+  document.getElementById('submitBar').classList.remove('hidden');
+  if(submitted){ showDone(); } else { showQuiz(); }
+  buildQuiz();
+  pushAll(); // sync any locally-restored answers
+};
+
+// ---- build quiz ----
+function buildQuiz(){
+  const mount=document.getElementById('quizMount'); mount.innerHTML='';
+  QUESTIONS.forEach((q,i)=>{
+    const card=document.createElement('div'); card.className='q-card'; card.dataset.q=q.id;
+    const badge = q.type==='mc' ? '<span class="q-badge mc">CHOIX</span>'
+                : q.type==='search' ? '<span class="q-badge search">★ RECHERCHE</span>'
+                : '<span class="q-badge open">RÉFLEXION</span>';
+    let inner = `<div class="q-top">${badge}<span class="q-num">${i+1} / ${QUESTIONS.length}</span></div><div class="q-text">${q.text}</div>`;
+    if(q.hint) inner += `<div class="q-hint">${q.hint}</div>`;
+    if(q.type==='mc'){
+      inner += q.opts.map((o,oi)=>`<div class="opt" data-q="${q.id}" data-oi="${oi}"><span class="letter">${String.fromCharCode(65+oi)}</span><span>${o}</span></div>`).join('');
+    } else {
+      inner += `<textarea data-q="${q.id}" placeholder="${q.type==='search'?'Note ce que tu as trouvé (source bienvenue)…':'Ta réponse…'}"></textarea>`;
+    }
+    inner += `<div class="saved-tick" data-tick="${q.id}"></div>`;
+    card.innerHTML=inner; mount.appendChild(card);
+  });
+  // restore + wire
+  QUESTIONS.forEach(q=>{
+    const v=answers[q.id];
+    if(q.type==='mc'){
+      document.querySelectorAll(`.opt[data-q="${q.id}"]`).forEach(opt=>{
+        if(v!==undefined && +opt.dataset.oi===v) opt.classList.add('sel');
+        opt.onclick=()=>{
+          document.querySelectorAll(`.opt[data-q="${q.id}"]`).forEach(o=>o.classList.remove('sel'));
+          opt.classList.add('sel');
+          answers[q.id]=+opt.dataset.oi;
+          tick(q.id); saveLocal(); pushOne(q.id); updateStatus();
+        };
+      });
+    } else {
+      const ta=document.querySelector(`textarea[data-q="${q.id}"]`);
+      if(v!==undefined) ta.value=v;
+      let t=null;
+      ta.addEventListener('input',()=>{
+        answers[q.id]=ta.value;
+        saveLocal(); updateStatus();
+        clearTimeout(t); t=setTimeout(()=>{ tick(q.id); pushOne(q.id); }, 700);
+      });
+    }
+  });
+  updateStatus();
+}
+function tick(qid){ const el=document.querySelector(`[data-tick="${qid}"]`); if(el){ el.textContent='✓ enregistré'; setTimeout(()=>{el.textContent='';},1600); } }
+
+function answeredCount(){
+  return QUESTIONS.filter(q=>{ const v=answers[q.id]; return v!==undefined && v!=='' && !(typeof v==='string'&&v.trim()===''); }).length;
+}
+function updateStatus(){
+  const n=answeredCount(), t=QUESTIONS.length;
+  document.getElementById('submitStatus').textContent=`${n} / ${t} répondu`;
+  const pct=Math.round(n/t*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressPct').textContent=pct+'%';
+}
+
+// ---- push to firebase ----
+function answersPayload(){
+  // store with question meta so the dashboard can show text + correctness
+  return { name:STATE.name, sid:STATE.sid, updated:Date.now(), submitted, answers };
+}
+async function pushOne(qid){ await sharedSet(`defiquiz:${STATE.code}:students:${STATE.sid}:data`, answersPayload()); }
+async function pushAll(){ await sharedSet(`defiquiz:${STATE.code}:students:${STATE.sid}:data`, answersPayload()); }
+
+// ---- submit ----
+document.getElementById('submitBtn').onclick = async ()=>{
+  const n=answeredCount();
+  if(n<QUESTIONS.length){
+    if(!confirm(`Tu as répondu à ${n} question(s) sur ${QUESTIONS.length}. Envoyer quand même ? Tu pourras encore modifier ensuite.`)) return;
+  }
+  submitted=true; saveLocal(); await pushAll();
+  showDone();
+};
+document.getElementById('backToQuiz').onclick=()=>showQuiz();
+
+function showQuiz(){ document.getElementById('app').classList.remove('hidden'); document.getElementById('doneScreen').classList.add('hidden'); document.getElementById('submitBar').classList.remove('hidden'); window.scrollTo({top:0}); }
+function showDone(){ document.getElementById('app').classList.add('hidden'); document.getElementById('doneScreen').classList.remove('hidden'); document.getElementById('submitBar').classList.add('hidden'); window.scrollTo({top:0}); }
+</script>
+</body>
+</html>
