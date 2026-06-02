@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Migration · Menschen in Bewegung — Eine interaktive Reise</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A;--navy-mid:#152A5E;--navy-light:#1E3470;
+  --blue-bright:#1E5AA8;--blue-glow:#4A90E2;
+  --gold:#F0B33D;--gold-bright:#FFD24A;--white:#fff;--grey-muted:#B0BCD6;
+  --green-correct:#2EA84A;--green-soft:#1E6E33;--red-wrong:#C8312B;--red-soft:#5E1F1C;
+  --amber:#E8A33C;--purple-defi:#7E5AE8;--teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+  background:radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;color:var(--white);line-height:1.5;}
+body{padding-bottom:80px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:860px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;white-space:nowrap;}
+.progress-track{flex:1;height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;border:1px solid rgba(176,188,214,0.2);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:0%;transition:width .5s ease;border-radius:3px;}
+.progress-pct{font-size:11px;color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;min-width:36px;text-align:right;}
+.lang-toggle{display:flex;gap:2px;background:var(--navy-deep);border:1px solid rgba(240,179,61,0.4);border-radius:20px;padding:2px;}
+.lang-toggle button{background:transparent;border:none;color:var(--grey-muted);font-family:inherit;font-size:11px;font-weight:bold;letter-spacing:1px;padding:4px 10px;border-radius:16px;cursor:pointer;transition:.2s;}
+.lang-toggle button.active{background:var(--gold);color:var(--navy-deep);}
+.container{max-width:860px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:40px 16px 26px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:16px;}
+.hero h1{font-family:Georgia,serif;font-size:40px;font-style:italic;line-height:1.1;margin-bottom:10px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero h1 .sub-line{display:block;font-size:19px;font-style:italic;margin-top:8px;-webkit-text-fill-color:var(--grey-muted);color:var(--grey-muted);}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:620px;margin:0 auto 8px;}
+.phase-divider{display:flex;align-items:center;gap:12px;margin:26px 4px 8px;font-size:10px;letter-spacing:3px;color:var(--gold);font-weight:bold;}
+.phase-divider::before,.phase-divider::after{content:"";flex:1;height:1px;background:rgba(240,179,61,0.3);}
+.curric-note{background:rgba(45,182,168,0.1);border:1px solid var(--teal);border-radius:12px;padding:12px 16px;margin:18px 0 6px;font-size:12.5px;color:#CDE7E4;}
+.curric-note .ct{font-size:10px;letter-spacing:2px;color:var(--teal);font-weight:bold;display:block;margin-bottom:5px;}
+.section-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+.section-card{display:flex;align-items:center;gap:16px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:15px 18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.section-card:hover{border-color:var(--gold);transform:translateX(4px);}
+.section-card.done{border-color:var(--green-correct);}
+.section-card .num{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--gold);min-width:38px;text-align:center;}
+.section-card.done .num{color:var(--green-correct);}
+.section-card .info{flex:1;}
+.section-card .info .name{font-size:16px;font-weight:bold;font-family:Georgia,serif;}
+.section-card .info .tag{font-size:12px;color:var(--grey-muted);margin-top:2px;}
+.section-card .status{font-size:20px;}
+.screen{display:none;}
+.screen.active{display:block;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.section-header{text-align:center;margin-bottom:8px;}
+.section-header .kicker{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:bold;}
+.section-header h2{font-family:Georgia,serif;font-size:30px;font-style:italic;margin:6px 0 2px;line-height:1.15;}
+.section-header .sub{color:var(--grey-muted);font-size:13px;}
+.step-card{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:24px 22px;margin-bottom:18px;backdrop-filter:blur(4px);}
+.step-label{display:inline-block;font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.step-label.problem{background:var(--red-soft);color:#FF9B95;border:1px solid var(--red-wrong);}
+.step-label.mechanism{background:rgba(30,90,168,0.3);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.step-label.why{background:rgba(240,179,61,0.18);color:var(--gold-bright);border:1px solid var(--gold);}
+.step-label.case{background:rgba(45,182,168,0.2);color:var(--teal);border:1px solid var(--teal);}
+.step-card h3{font-family:Georgia,serif;font-size:22px;margin-bottom:8px;line-height:1.25;}
+.step-card p{color:#DCE3F2;margin-bottom:12px;font-size:15px;}
+.step-card p.lead{font-size:16px;}
+.step-card strong{color:var(--gold-bright);font-weight:600;}
+.step-card em{color:var(--blue-glow);font-style:italic;}
+.step-card .punch{font-family:Georgia,serif;font-size:18px;font-style:italic;color:var(--gold-bright);border-left:3px solid var(--gold);padding-left:16px;margin:16px 0 4px;line-height:1.4;}
+.sandbox{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:12px;padding:18px;margin:16px 0;}
+.sandbox-prompt{font-size:13px;color:var(--grey-muted);margin-bottom:12px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.nav-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(10,26,58,0.95);backdrop-filter:blur(10px);border-top:1px solid rgba(240,179,61,0.3);padding:12px 16px;z-index:50;}
+.nav-footer-inner{max-width:860px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:6px 0;}
+.reveal-tile{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;min-height:70px;}
+.reveal-tile:hover{border-color:var(--gold);transform:translateY(-2px);}
+.reveal-tile .icon{font-size:22px;}
+.reveal-tile .name{font-size:13px;font-weight:bold;margin-top:4px;font-family:Georgia,serif;}
+.reveal-tile .desc{font-size:11.5px;color:var(--grey-muted);margin-top:6px;display:none;line-height:1.4;}
+.reveal-tile.open{background:var(--navy-light);border-color:var(--gold);}
+.reveal-tile.open .desc{display:block;}
+.reveal-tile.flipped{animation:tilePulse .4s;}
+@keyframes tilePulse{0%{box-shadow:0 0 0 0 rgba(240,179,61,0.6);}100%{box-shadow:0 0 0 12px rgba(240,179,61,0);}}
+.dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
+@media(max-width:560px){.dd-grid{grid-template-columns:1fr;}}
+.dd-col{border-radius:10px;padding:12px 14px;}
+.dd-col.do{background:rgba(46,168,74,0.12);border:1px solid var(--green-correct);}
+.dd-col.dont{background:rgba(232,163,60,0.12);border:1px solid var(--amber);}
+.dd-col .dd-h{font-size:11px;letter-spacing:1px;font-weight:bold;margin-bottom:8px;}
+.dd-col.do .dd-h{color:var(--green-correct);}
+.dd-col.dont .dd-h{color:var(--amber);}
+.dd-col ul{margin:0;}
+.dd-col ul li{font-size:12.5px;padding:3px 0 3px 18px;position:relative;list-style:none;}
+.dd-col.do ul li::before{content:"⟳";color:var(--green-correct);position:absolute;left:0;}
+.dd-col.dont ul li::before{content:"↗";color:var(--amber);position:absolute;left:0;}
+.tl-wrap{margin:14px 0;}
+.tl-readout{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:16px;margin-bottom:14px;min-height:160px;transition:all .3s;}
+.tl-readout .tl-year{font-family:Georgia,serif;font-size:28px;color:var(--gold-bright);font-weight:bold;}
+.tl-readout .tl-who{font-size:14px;color:var(--teal);font-weight:bold;margin-top:2px;letter-spacing:0.5px;}
+.tl-readout .tl-what{font-size:14px;color:#DCE3F2;margin-top:8px;line-height:1.5;}
+.tl-readout .tl-icon{font-size:30px;float:right;}
+.tl-slider-row input[type=range]{width:100%;accent-color:var(--gold);}
+.tl-ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--grey-muted);margin-top:4px;}
+.scn{background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:12px;padding:18px;margin:14px 0;}
+.scn .scn-role{font-size:10px;letter-spacing:2px;color:var(--amber);font-weight:bold;}
+.scn .scn-situation{font-size:15px;color:#E6ECF7;margin:8px 0 14px;line-height:1.55;}
+.scn-choices{display:flex;flex-direction:column;gap:8px;}
+.scn-choice{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;font-size:14px;}
+.scn-choice:hover:not(.locked){border-color:var(--gold);}
+.scn-choice.chosen{border-color:var(--gold);background:var(--navy-light);}
+.scn-choice.locked{cursor:default;}
+.scn-outcome{margin-top:12px;padding:12px 14px;border-radius:8px;font-size:13.5px;line-height:1.55;display:none;background:rgba(45,182,168,0.1);border-left:3px solid var(--teal);}
+.scn-outcome.show{display:block;animation:fadeIn .3s;}
+.scn-outcome .so-h{font-size:10px;letter-spacing:1px;font-weight:bold;color:var(--teal);display:block;margin-bottom:5px;}
+.scn-note{font-size:12px;color:var(--grey-muted);margin-top:10px;font-style:italic;}
+.checkpoint{background:linear-gradient(135deg,rgba(126,90,232,0.15),rgba(30,90,168,0.15));border:2px solid var(--purple-defi);border-radius:16px;padding:24px 22px;margin-bottom:18px;}
+.checkpoint-header{text-align:center;margin-bottom:18px;}
+.checkpoint-header .badge{display:inline-block;background:var(--purple-defi);color:var(--white);font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 14px;border-radius:20px;margin-bottom:8px;}
+.checkpoint-header h3{font-family:Georgia,serif;font-size:22px;font-style:italic;}
+.checkpoint-header p{color:var(--grey-muted);font-size:13px;margin-top:4px;}
+.quiz-q{margin-bottom:18px;}
+.quiz-q .q-text{font-family:Georgia,serif;font-size:17px;margin-bottom:8px;line-height:1.35;}
+.quiz-q .q-num{color:var(--gold);font-weight:bold;margin-right:6px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{background:var(--navy-deep);border:1.5px solid var(--blue-bright);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;font-size:14px;}
+.quiz-opt:hover:not(.locked){border-color:var(--gold);background:var(--navy-mid);}
+.quiz-opt .opt-letter{font-family:Georgia,serif;font-weight:bold;color:var(--gold);min-width:20px;}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green-correct);}
+.quiz-opt.correct .opt-letter{color:var(--green-correct);}
+.quiz-opt.wrong{background:var(--red-soft);border-color:var(--red-wrong);}
+.quiz-opt.wrong .opt-letter{color:#FF9B95;}
+.quiz-opt.locked{cursor:default;}
+.quiz-feedback{margin-top:10px;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.5;display:none;}
+.quiz-feedback.show{display:block;}
+.quiz-feedback.right{background:var(--green-soft);border:1px solid var(--green-correct);}
+.quiz-feedback.wrong-fb{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.quiz-feedback .fb-label{font-weight:bold;letter-spacing:1px;margin-right:6px;}
+.checkpoint-result{text-align:center;padding:16px;display:none;}
+.checkpoint-result.show{display:block;}
+.checkpoint-result .score{font-family:Georgia,serif;font-size:40px;font-weight:bold;color:var(--gold-bright);}
+.checkpoint-result .msg{color:var(--grey-muted);margin:8px 0 16px;}
+.teacher-toggle{text-align:center;margin:4px 0 0;}
+.teacher-toggle a{font-size:11px;color:var(--teal);cursor:pointer;text-decoration:underline;letter-spacing:0.5px;}
+.teacher-box{background:rgba(45,182,168,0.08);border:1px dashed var(--teal);border-radius:12px;padding:14px 16px;margin:12px 0 4px;display:none;}
+.teacher-box.show{display:block;animation:fadeIn .3s;}
+.teacher-box .tb-h{font-size:10px;letter-spacing:2px;color:var(--teal);font-weight:bold;margin-bottom:8px;}
+.teacher-box p{font-size:12.5px;color:#CDE7E4;margin-bottom:6px;line-height:1.5;}
+.teacher-box .comp{display:inline-block;background:rgba(45,182,168,0.2);color:var(--teal);font-size:10px;font-weight:bold;padding:2px 8px;border-radius:10px;margin:2px 4px 2px 0;letter-spacing:0.5px;}
+.reset-link{text-align:center;margin-top:30px;font-size:11px;color:var(--grey-muted);}
+.reset-link a{color:var(--gold);cursor:pointer;text-decoration:underline;}
+.fineprint{font-size:11px;color:var(--grey-muted);text-align:center;margin-top:8px;}
+.modal-bg{position:fixed;inset:0;background:rgba(5,12,28,0.82);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.show{display:flex;animation:fadeIn .3s;}
+.modal{background:linear-gradient(160deg,var(--navy-light),var(--navy-deep));border:1.5px solid var(--gold);border-radius:18px;padding:26px 24px;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.modal h3{font-family:Georgia,serif;font-size:24px;font-style:italic;color:var(--gold-bright);margin-bottom:8px;}
+.modal p{font-size:13.5px;color:var(--grey-muted);margin-bottom:16px;line-height:1.55;}
+.modal .code{background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;padding:13px;font-family:'Courier New',monospace;font-size:12px;color:var(--teal);word-break:break-all;margin-bottom:14px;}
+.modal .mbtn-row{display:flex;gap:10px;justify-content:center;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="../../index.html" style="color:var(--teal);text-decoration:none;font-size:11px;white-space:nowrap;">◂ Platform</a>
+    <span class="course-title">MIGRATION</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+    <div class="lang-toggle">
+      <button id="langDE" class="active" onclick="setLang('de')">DE</button>
+      <button id="langEN" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="eyebrow" data-i18n="hero.eyebrow"></div>
+      <h1><span data-i18n="hero.title"></span><span class="sub-line" data-i18n="hero.subtitle"></span></h1>
+      <p data-i18n="hero.intro"></p>
+    </div>
+    <div class="curric-note"><span class="ct" data-i18n="curric.label"></span><span data-i18n="curric.body"></span></div>
+    <div class="phase-divider" data-i18n="phase.one"></div>
+    <div class="section-list" id="sectionList"></div>
+    <div class="reset-link"><span data-i18n="reset.saved"></span> <a id="resetBtn" data-i18n="reset.startover"></a><div class="fineprint" data-i18n="reset.fineprint"></div></div>
+  </div>
+  <div id="screenMount"></div>
+</div>
+
+<div class="modal-bg" id="resultModal">
+  <div class="modal">
+    <h3 id="rmTitle"></h3><p id="rmBody"></p><div class="code" id="rmCode"></div>
+    <div class="mbtn-row"><button class="btn" id="rmCopy"></button><button class="btn ghost" id="rmClose"></button></div>
+  </div>
+</div>
+
+<div class="nav-footer">
+  <div class="nav-footer-inner">
+    <button class="btn ghost" id="navBack"></button>
+    <span style="font-size:11px;color:var(--grey-muted);" id="navLabel"></span>
+    <button class="btn" id="navNext"></button>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script>
+// competency map per chapter/question
+const COMP_MAP = {
+  leave:   ['cause','perspective','cause'],
+  journey: ['perspective','judgement','perspective'],
+  change:  ['continuity','present','continuity'],
+};
+
+const I18N = {
+  de:{ courseTitle:'MIGRATION',
+    nav:{back:'← Zurück',allSections:'← Alle Kapitel',start:'Starten →',review:'Wiederholen →',next:'Nächstes Kapitel →',finish:'🎉 Fertig',finishCp:'Schliesse den Checkpoint ab',completed:'✓ Abgeschlossen',markComplete:'Kapitel abschliessen →',sectionOf:(n,t)=>`Kapitel ${n} / ${t}`},
+    hero:{eyebrow:'MIT MOUNA · 13–15 JAHRE',title:'Migration',subtitle:'Menschen in Bewegung — und wie sie Gesellschaften formen',intro:'Migration ist keine Ausnahme der Geschichte — sie ist eine ihrer Konstanten. Menschen sind immer gewandert: aus Not, aus Hoffnung, aus Zwang. Folge ihren Wegen, triff Entscheidungen und entdecke, wie Wanderung die Welt — und die Schweiz — geprägt hat.'},
+    curric:{label:'LEHRPLAN 21 · RZG',body:'Dieses Kapitel arbeitet an den Kompetenzen Perspektivenübernahme, Ursache & Wirkung und Gegenwartsbezug.'},
+    phase:{one:'EINE GESCHICHTE DER BEWEGUNG'},
+    reset:{saved:'Dein Fortschritt wird auf diesem Gerät gespeichert.',startover:'Neu beginnen',fineprint:'Speichert automatisch. Klicke „Neu beginnen“, um zu löschen.'},
+    teacher:{open:'▸ Für Lehrpersonen: Kompetenzen & Hinweise',heading:'LEHRPERSONEN-HINWEIS'},
+    result:{title:'Geschafft! Dein Ergebnis-Code',body:'Kopiere diesen Code und gib ihn deiner Lehrperson.',copy:'Code kopieren',copied:'✓ Kopiert',close:'Schliessen'},
+    cp:{badge:'✦ CHECKPOINT',perfect:'Perfekt — sitzt! Kapitel abgeschlossen.',strong:'Stark! Schau dir die eine Frage nochmal an, dann weiter.',ok:'Gut gemacht — scrolle hoch und lies nach. Du kannst trotzdem weiter.',correct:'✓ RICHTIG',notquite:'✗ NICHT GANZ'} },
+  en:{ courseTitle:'MIGRATION',
+    nav:{back:'← Back',allSections:'← All chapters',start:'Start →',review:'Review →',next:'Next chapter →',finish:'🎉 Finish',finishCp:'Finish the checkpoint',completed:'✓ Completed',markComplete:'Mark chapter complete →',sectionOf:(n,t)=>`Chapter ${n} / ${t}`},
+    hero:{eyebrow:'WITH MOUNA · AGES 13–15',title:'Migration',subtitle:'People on the move — and how they shape societies',intro:'Migration isn\'t an exception in history — it\'s one of its constants. People have always moved: out of need, out of hope, under force. Follow their paths, make choices, and discover how migration shaped the world — and Switzerland.'},
+    curric:{label:'LEHRPLAN 21 · RZG',body:'This chapter builds the competencies perspective-taking, cause & effect, and present-day relevance.'},
+    phase:{one:'A HISTORY OF MOVEMENT'},
+    reset:{saved:'Your progress is saved on this device.',startover:'Start over',fineprint:'Saves automatically. Click "Start over" to clear it.'},
+    teacher:{open:'▸ For teachers: competencies & notes',heading:'TEACHER NOTE'},
+    result:{title:'Done! Your result code',body:'Copy this code and give it to your teacher.',copy:'Copy code',copied:'✓ Copied',close:'Close'},
+    cp:{badge:'✦ CHECKPOINT',perfect:'Perfect — you\'ve got it! Chapter complete.',strong:'Strong work! Review the one you missed, then continue.',ok:'Good effort — scroll up and re-read. You can still continue.',correct:'✓ CORRECT',notquite:'✗ NOT QUITE'} },
+};
+
+const SECTIONS=[
+  {id:'leave',num:1,name:{de:'Warum Menschen gehen',en:'Why People Leave'},tag:{de:'Push und Pull — die Kräfte hinter jeder Wanderung',en:'Push and pull — the forces behind every migration'}},
+  {id:'journey',num:2,name:{de:'Die Reise',en:'The Journey'},tag:{de:'Entscheidungen unterwegs — aus verschiedenen Perspektiven',en:'Choices on the way — from different perspectives'}},
+  {id:'change',num:3,name:{de:'Was bleibt, was sich ändert',en:'What Stays, What Changes'},tag:{de:'Von der Vergangenheit bis in die Schweiz von heute',en:'From the past to today\'s Switzerland'}},
+];
+
+const CONTENT={
+  leave:{
+    de:{kicker:'KAPITEL 1',h2:'Warum Menschen gehen',sub:'Hinter jeder Wanderung stehen Kräfte, die ziehen und drücken',
+      blocks:[
+        {label:'problem',lt:'DIE AUSGANGSLAGE',h:'Wandern ist menschlich',p:['Seit es Menschen gibt, sind sie gewandert. Unsere Vorfahren verliessen vor zehntausenden Jahren Afrika und besiedelten die ganze Welt. <strong>Bewegung</strong> ist kein Sonderfall der Geschichte — sie ist ein roter Faden.','Historiker fragen bei jeder Wanderung: Was <em>drückte</em> die Menschen weg von zu Hause (Push)? Und was <em>zog</em> sie an einen neuen Ort (Pull)?']},
+        {label:'mechanism',lt:'TIPPE EINE KACHEL AN',h:'Push & Pull',reveals:[
+          {icon:'🌾',name:'Hunger & Not',desc:'Missernten, Armut und Hunger trieben Menschen weg. Im 19. Jh. verliessen Hunderttausende Europäer ihre Heimat — auch aus der <strong>Schweiz</strong>.'},
+          {icon:'⚔️',name:'Krieg & Verfolgung',desc:'Wer um Leben oder Freiheit fürchtet, flieht. <strong>Flucht</strong> ist eine erzwungene Form der Migration — gestern wie heute.'},
+          {icon:'💼',name:'Arbeit & Chancen',desc:'Neue Jobs, höhere Löhne, bessere Bildung ziehen Menschen an. Ein starker <strong>Pull-Faktor</strong> über die ganze Geschichte hinweg.'},
+          {icon:'👨‍👩‍👧',name:'Familie',desc:'Menschen folgen denen, die schon gegangen sind. Bestehende Gemeinschaften ziehen weitere Migration nach — eine <strong>Kettenwanderung</strong>.'},
+        ]},
+        {label:'why',lt:'DIE KERNIDEE',h:'Selten nur ein Grund',p:['Migration hat fast nie eine einzige Ursache. Meist wirken <strong>mehrere Push- und Pull-Faktoren zusammen</strong>. Wer nur einen Grund nennt, vereinfacht zu stark.'],punch:'Eine ehrliche Frage der Geschichte lautet nicht „warum gehen die?“, sondern „welche Kräfte wirkten zusammen — und hätte ich anders gehandelt?“'},
+      ],teacher:{comps:['Ursache & Wirkung','Perspektivenübernahme'],notes:['Push/Pull-Faktoren an der Tafel sammeln — welche gelten auch heute?','Bezug zur Schweiz: das Land war historisch sowohl Auswanderungs- als auch Einwanderungsland.']}},
+    en:{kicker:'CHAPTER 1',h2:'Why People Leave',sub:'Behind every migration are forces that pull and push',
+      blocks:[
+        {label:'problem',lt:'THE STARTING POINT',h:'Moving is human',p:['As long as there have been humans, they have migrated. Our ancestors left Africa tens of thousands of years ago and settled the whole world. <strong>Movement</strong> is not an exception in history — it\'s a constant thread.','Historians ask of every migration: what <em>pushed</em> people away from home (push)? And what <em>pulled</em> them to a new place (pull)?']},
+        {label:'mechanism',lt:'TAP A TILE',h:'Push & pull',reveals:[
+          {icon:'🌾',name:'Hunger & need',desc:'Crop failures, poverty and hunger drove people away. In the 1800s hundreds of thousands of Europeans left home — including from <strong>Switzerland</strong>.'},
+          {icon:'⚔️',name:'War & persecution',desc:'Those who fear for life or freedom flee. <strong>Forced migration</strong> — yesterday and today.'},
+          {icon:'💼',name:'Work & opportunity',desc:'New jobs, higher wages, better education pull people in. A strong <strong>pull factor</strong> across all of history.'},
+          {icon:'👨‍👩‍👧',name:'Family',desc:'People follow those who already left. Existing communities draw further migration — a <strong>chain migration</strong>.'},
+        ]},
+        {label:'why',lt:'THE CORE IDEA',h:'Rarely just one reason',p:['Migration almost never has a single cause. Usually <strong>several push and pull factors work together</strong>. Naming only one reason oversimplifies.'],punch:'An honest historical question isn\'t "why do they leave?" but "which forces combined — and would I have acted differently?"'},
+      ],teacher:{comps:['Cause & effect','Perspective-taking'],notes:['Collect push/pull factors on the board — which still apply today?','Swiss connection: historically both an emigration and immigration country.']}},
+  },
+  journey:{
+    de:{kicker:'KAPITEL 2',h2:'Die Reise',sub:'Migration bedeutet Entscheidungen — oft unter schwierigen Bedingungen',
+      blocks:[
+        {label:'problem',lt:'WORUM ES GEHT',h:'Menschen, keine Statistik',p:['In Nachrichten erscheint Migration oft als Zahl. Doch jede Zahl besteht aus <strong>Menschen mit eigenen Entscheidungen</strong>, Hoffnungen und Ängsten. In diesem Kapitel nimmst du verschiedene Perspektiven ein.']},
+        {label:'mechanism',lt:'ENTSCHEIDE & SIEH DIE FOLGE',h:'Zwei Perspektiven',scenarios:[
+          {role:'PERSPEKTIVE · AUSWANDERIN AUS DER SCHWEIZ, 1850',sit:'Deine Familie ist arm, die Ernte schlecht. Ein Schiff nach Amerika verspricht Land und Arbeit. Was wiegt schwerer?',
+           choices:[
+             {t:'Die Sicherheit der Heimat',out:'Viele blieben — Heimat, Sprache und Familie wogen schwer. Migration ist nie nur eine Rechnung; sie bedeutet auch <strong>Verlust</strong>.'},
+             {t:'Die Hoffnung auf Land',out:'Tausende Schweizer wanderten im 19. Jh. aus, viele nach Amerika oder Russland. <strong>Hoffnung</strong> war ein starker Motor — mit ungewissem Ausgang.'},
+             {t:'Beides gleichzeitig',out:'Die realistischste Antwort. Auswanderung war ein <strong>Abwägen zwischen Verlust und Hoffnung</strong> — selten leicht, selten eindeutig.'},
+           ],note:'Es gibt keine „richtige“ Antwort — der Punkt ist, die Schwere der Entscheidung zu spüren.'},
+          {role:'PERSPEKTIVE · EINHEIMISCHE IM ANKUNFTSORT',sit:'In deine Stadt kommen viele Neue mit anderer Sprache und Kultur. Wie reagiert eine Gesellschaft?',
+           choices:[
+             {t:'Mit Angst und Abschottung',out:'Eine häufige erste Reaktion in der Geschichte — Misstrauen gegenüber „den Neuen“. Doch Abschottung übersah oft, was Migration <em>brachte</em>.'},
+             {t:'Mit Offenheit und Austausch',out:'Wo Austausch gelang, brachten Migranten Wissen, Arbeit und neue Ideen. Viele Städte wuchsen gerade <strong>durch</strong> Zuwanderung.'},
+             {t:'Beides gab es nebeneinander',out:'Historisch am genauesten. Gesellschaften reagierten <strong>gemischt</strong> — und wie sie reagierten, prägte das Ergebnis stark.'},
+           ],note:'Diese Frage übt Perspektivenübernahme: dieselbe Lage sieht aus zwei Blickwinkeln ganz anders aus.'},
+        ]},
+        {label:'why',lt:'WARUM SO',h:'Verstehen, nicht urteilen',p:['Ziel ist nicht, Migranten zu bemitleiden oder Einheimische zu verurteilen, sondern <strong>beide Perspektiven zu verstehen</strong>. Geschichte wird klarer, wenn man mehrere Blickwinkel zugleich hält.'],punch:'Wer nur eine Seite sieht, versteht Migration nie ganz. Geschichte lebt vom Perspektivenwechsel.'},
+      ],teacher:{comps:['Perspektivenübernahme','Historisches Urteilen'],notes:['Migration kann persönlich betreffen. Sensibel moderieren; Lernende teilen eigene Geschichten nur freiwillig.','Die zweite Szene eignet sich für ein Rollengespräch mit Perspektivenwechsel.']}},
+    en:{kicker:'CHAPTER 2',h2:'The Journey',sub:'Migration means choices — often under hard conditions',
+      blocks:[
+        {label:'problem',lt:'WHAT THIS IS ABOUT',h:'People, not statistics',p:['In the news, migration often appears as a number. But every number is made of <strong>people with their own choices</strong>, hopes and fears. In this chapter you take on different perspectives.']},
+        {label:'mechanism',lt:'DECIDE & SEE THE CONSEQUENCE',h:'Two perspectives',scenarios:[
+          {role:'PERSPECTIVE · EMIGRANT FROM SWITZERLAND, 1850',sit:'Your family is poor, the harvest failed. A ship to America promises land and work. What weighs more?',
+           choices:[
+             {t:'The safety of home',out:'Many stayed — home, language and family weighed heavily. Migration is never just a calculation; it also means <strong>loss</strong>.'},
+             {t:'The hope of land',out:'Thousands of Swiss emigrated in the 1800s, many to America or Russia. <strong>Hope</strong> was a powerful engine — with an uncertain outcome.'},
+             {t:'Both at once',out:'The most realistic answer. Emigration was a <strong>weighing of loss against hope</strong> — rarely easy, rarely clear-cut.'},
+           ],note:'There is no "right" answer — the point is to feel the weight of the decision.'},
+          {role:'PERSPECTIVE · LOCAL IN THE ARRIVAL PLACE',sit:'Many newcomers arrive in your town with a different language and culture. How does a society react?',
+           choices:[
+             {t:'With fear and closing off',out:'A common first reaction in history — distrust of "the new ones". But closing off often missed what migration <em>brought</em>.'},
+             {t:'With openness and exchange',out:'Where exchange worked, migrants brought knowledge, labour and new ideas. Many cities grew precisely <strong>through</strong> immigration.'},
+             {t:'Both existed side by side',out:'Historically most accurate. Societies reacted in <strong>mixed</strong> ways — and how they reacted shaped the outcome a lot.'},
+           ],note:'This question practises perspective-taking: the same situation looks very different from two viewpoints.'},
+        ]},
+        {label:'why',lt:'WHY THIS WAY',h:'Understand, don\'t judge',p:['The goal isn\'t to pity migrants or condemn locals, but to <strong>understand both perspectives</strong>. History becomes clearer when you hold several viewpoints at once.'],punch:'Whoever sees only one side never fully understands migration. History lives on shifting perspective.'},
+      ],teacher:{comps:['Perspective-taking','Historical judgement'],notes:['Migration can be personal. Facilitate sensitively; students share their own stories only voluntarily.','The second scene suits a role conversation with perspective shifts.']}},
+  },
+  change:{
+    de:{kicker:'KAPITEL 3',h2:'Was bleibt, was sich ändert',sub:'Migration früher und heute — und die Schweiz mittendrin',
+      blocks:[
+        {label:'mechanism',lt:'SCHIEBE DURCH DIE ZEIT',h:'Migration im Wandel',p:['Ziehe den Regler und reise durch die Geschichte der Migration — mit Blick auf die Schweiz.'],timeline:true},
+        {label:'why',lt:'KONTINUITÄT & WANDEL',h:'Was bleibt, was sich ändert',dd:{
+          doH:'WAS BLEIBT (Kontinuität)',doItems:['Menschen wandern aus Not und Hoffnung.','Push- und Pull-Faktoren wirken zusammen.','Ankunftsorte reagieren gemischt — Angst und Offenheit.','Migration verändert beide Seiten.'],
+          dontH:'WAS SICH ÄNDERTE (Wandel)',dontItems:['Reisen ist heute schneller und weiter.','Es gibt internationale Regeln und Asylrecht.','Die Schweiz wurde vom Auswanderungs- zum Einwanderungsland.','Kommunikation hält Familien über Grenzen verbunden.']
+        }},
+        {label:'case',lt:'GEGENWARTSBEZUG',h:'Die Schweiz ist Migrationsgeschichte',p:['Die Schweiz, die du kennst, ist ohne Migration nicht denkbar — Auswanderung im 19. Jh., Arbeitsmigration im 20. Jh., Flucht und Zuwanderung heute. <strong>Du</strong> lebst in dieser Geschichte.'],punch:'Migration ist nicht „die anderen“. Sie ist ein roter Faden, der auch durch deine Stadt und deine Schule läuft.'},
+      ],teacher:{comps:['Kontinuität & Wandel','Gegenwartsbezug'],notes:['Schweizer Migrationsgeschichte einbeziehen: Aus- und Einwanderung im Vergleich über die Zeit.','Abschluss-Schreibaufgabe: „Nenne je ein Beispiel für Kontinuität und Wandel in der Migrationsgeschichte.“']}},
+    en:{kicker:'CHAPTER 3',h2:'What Stays, What Changes',sub:'Migration past and present — with Switzerland in the middle',
+      blocks:[
+        {label:'mechanism',lt:'SLIDE THROUGH TIME',h:'Migration changing over time',p:['Drag the slider and travel through the history of migration — with an eye on Switzerland.'],timeline:true},
+        {label:'why',lt:'CONTINUITY & CHANGE',h:'What stays, what changes',dd:{
+          doH:'WHAT STAYED (continuity)',doItems:['People migrate out of need and hope.','Push and pull factors work together.','Arrival places react in mixed ways — fear and openness.','Migration changes both sides.'],
+          dontH:'WHAT CHANGED (change)',dontItems:['Travel is now faster and farther.','There are international rules and asylum law.','Switzerland shifted from emigration to immigration country.','Communication keeps families connected across borders.']
+        }},
+        {label:'case',lt:'PRESENT-DAY RELEVANCE',h:'Switzerland is migration history',p:['The Switzerland you know is unthinkable without migration — emigration in the 1800s, labour migration in the 1900s, refuge and immigration today. <strong>You</strong> live inside this history.'],punch:'Migration isn\'t "other people". It\'s a thread running through your town and your school too.'},
+      ],teacher:{comps:['Continuity & change','Present-day relevance'],notes:['Bring in Swiss migration history: emigration and immigration compared over time.','Closing writing task: "Give one example each of continuity and change in migration history."']}},
+  },
+};
+
+const TIMELINE={
+  de:[
+    {year:'Urzeit',icon:'🚶',who:'AUS AFRIKA',what:'Vor zehntausenden Jahren verliessen Menschen Afrika und besiedelten die ganze Erde. Die erste grosse Wanderung.'},
+    {year:'1800s',icon:'⛵',who:'AUSWANDERUNG',what:'Armut treibt Hunderttausende Europäer — auch Schweizer — über den Atlantik. Die Schweiz ist ein Auswanderungsland.'},
+    {year:'1950s',icon:'🏗️',who:'ARBEITSMIGRATION',what:'Nach dem Krieg holt die Schweiz Arbeitskräfte aus Italien, Spanien und Portugal. Das Land wird zum Einwanderungsland.'},
+    {year:'Heute',icon:'🌐',who:'GLOBAL VERNETZT',what:'Flucht, Arbeit, Studium, Familie: Migration ist vielfältig und weltweit vernetzt. Internationale Regeln und Asylrecht prägen sie.'},
+  ],
+  en:[
+    {year:'Prehistory',icon:'🚶',who:'OUT OF AFRICA',what:'Tens of thousands of years ago, humans left Africa and settled the whole earth. The first great migration.'},
+    {year:'1800s',icon:'⛵',who:'EMIGRATION',what:'Poverty drives hundreds of thousands of Europeans — including Swiss — across the Atlantic. Switzerland is an emigration country.'},
+    {year:'1950s',icon:'🏗️',who:'LABOUR MIGRATION',what:'After the war, Switzerland recruits workers from Italy, Spain and Portugal. The country becomes an immigration country.'},
+    {year:'Today',icon:'🌐',who:'GLOBALLY CONNECTED',what:'Refuge, work, study, family: migration is diverse and globally connected. International rules and asylum law shape it.'},
+  ],
+};
+
+const CHECKPOINTS={
+  leave:{de:{title:'Festigen',sub:'Beantworte die 3 Fragen, um Kapitel 1 abzuschliessen',questions:[
+      {q:'Was ist ein „Push-Faktor“?',opts:['Etwas, das Menschen an einen neuen Ort zieht','Etwas, das Menschen von zu Hause wegdrückt','Eine Art Schiff','Eine moderne Erfindung'],correct:1,fb:'Push-Faktoren wie Hunger oder Krieg drücken Menschen weg von zu Hause.'},
+      {q:'Warum ist Migration „menschlich“?',opts:['Weil nur moderne Menschen wandern','Weil Menschen schon immer gewandert sind','Weil es selten vorkommt','Weil es verboten war'],correct:1,fb:'Bewegung ist ein roter Faden der Geschichte — seit dem Aufbruch aus Afrika.'},
+      {q:'Wie viele Ursachen hat Migration meist?',opts:['Immer genau eine','Meist mehrere zusammen','Nie eine','Nur wirtschaftliche'],correct:1,fb:'Fast immer wirken mehrere Push- und Pull-Faktoren zusammen.'},
+    ]},en:{title:'Lock it in',sub:'Answer the 3 questions to complete Chapter 1',questions:[
+      {q:'What is a "push factor"?',opts:['Something that pulls people to a new place','Something that pushes people away from home','A kind of ship','A modern invention'],correct:1,fb:'Push factors like hunger or war push people away from home.'},
+      {q:'Why is migration "human"?',opts:['Because only modern people migrate','Because people have always migrated','Because it is rare','Because it was forbidden'],correct:1,fb:'Movement is a constant thread of history — since leaving Africa.'},
+      {q:'How many causes does migration usually have?',opts:['Always exactly one','Usually several together','Never one','Only economic ones'],correct:1,fb:'Almost always several push and pull factors work together.'},
+    ]}},
+  journey:{de:{title:'Festigen',sub:'Beantworte die 3 Fragen, um Kapitel 2 abzuschliessen',questions:[
+      {q:'Warum nehmen wir mehrere Perspektiven ein?',opts:['Um eine Seite zu verurteilen','Um Migration vollständiger zu verstehen','Weil es Vorschrift ist','Um Zahlen zu lernen'],correct:1,fb:'Geschichte wird klarer, wenn man mehrere Blickwinkel zugleich hält.'},
+      {q:'Was bedeutete Auswanderung für viele Schweizer im 19. Jh.?',opts:['Nur Gewinn','Ein Abwägen zwischen Verlust und Hoffnung','Eine Pflicht','Eine Strafe'],correct:1,fb:'Auswanderung war selten leicht — Hoffnung stand gegen den Verlust der Heimat.'},
+      {q:'Wie reagierten Ankunftsgesellschaften historisch?',opts:['Immer offen','Immer ablehnend','Gemischt — Angst und Offenheit','Gar nicht'],correct:2,fb:'Gesellschaften reagierten gemischt — und das prägte das Ergebnis stark.'},
+    ]},en:{title:'Lock it in',sub:'Answer the 3 questions to complete Chapter 2',questions:[
+      {q:'Why do we take on several perspectives?',opts:['To condemn one side','To understand migration more fully','Because it\'s a rule','To learn numbers'],correct:1,fb:'History becomes clearer when you hold several viewpoints at once.'},
+      {q:'What did emigration mean for many Swiss in the 1800s?',opts:['Only gain','A weighing of loss against hope','A duty','A punishment'],correct:1,fb:'Emigration was rarely easy — hope stood against the loss of home.'},
+      {q:'How did arrival societies react historically?',opts:['Always openly','Always rejecting','Mixed — fear and openness','Not at all'],correct:2,fb:'Societies reacted in mixed ways — and that shaped the outcome a lot.'},
+    ]}},
+  change:{de:{title:'Festigen',sub:'Letzter Checkpoint — schliesse die Reise ab',questions:[
+      {q:'Was ist ein Beispiel für KONTINUITÄT in der Migration?',opts:['Reisen ist heute schneller','Menschen wandern aus Not und Hoffnung','Es gibt Asylrecht','Die Schweiz wurde Einwanderungsland'],correct:1,fb:'Die Motive — Not und Hoffnung — sind über die Zeit geblieben.'},
+      {q:'Was ist ein Beispiel für WANDEL?',opts:['Menschen folgen ihrer Familie','Ankunftsorte reagieren gemischt','Die Schweiz wurde vom Auswanderungs- zum Einwanderungsland','Migration verändert beide Seiten'],correct:2,fb:'Der Wechsel der Schweiz ist ein klarer Wandel über die Zeit.'},
+      {q:'Was ist die Kernbotschaft des Kapitels?',opts:['Migration betrifft nur andere','Migration ist ein roter Faden, der auch durch dein Leben läuft','Migration endete im 19. Jh.','Migration ist selten'],correct:1,fb:'Die Schweiz von heute ist ohne Migration nicht denkbar — du lebst in dieser Geschichte.'},
+    ]},en:{title:'Lock it in',sub:'Final checkpoint — finish the journey',questions:[
+      {q:'What is an example of CONTINUITY in migration?',opts:['Travel is faster today','People migrate out of need and hope','There is asylum law','Switzerland became an immigration country'],correct:1,fb:'The motives — need and hope — have stayed over time.'},
+      {q:'What is an example of CHANGE?',opts:['People follow their family','Arrival places react in mixed ways','Switzerland shifted from emigration to immigration country','Migration changes both sides'],correct:2,fb:'Switzerland\'s shift is a clear change over time.'},
+      {q:'What is the core message of the chapter?',opts:['Migration only concerns others','Migration is a thread running through your life too','Migration ended in the 1800s','Migration is rare'],correct:1,fb:'Today\'s Switzerland is unthinkable without migration — you live inside this history.'},
+    ]}},
+};
+
+// ===== engine (shared pattern) =====
+let LANG='de';
+const STORAGE_KEY='migration_progress_v1', LANG_KEY='ghp_lang';
+let progress=loadProgress(), currentSectionIdx=-1;
+function loadProgress(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)return JSON.parse(r);}catch(e){}try{if(window._mgp)return window._mgp;}catch(e){}return{completed:{},current:null};}
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(progress));}catch(e){}try{window._mgp=progress;}catch(e){}}
+function markComplete(id){progress.completed[id]=true;saveProgress();updateProgressBar();}
+function updateProgressBar(){const total=SECTIONS.length,done=Object.keys(progress.completed).filter(k=>progress.completed[k]).length,pct=Math.round(done/total*100);document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressPct').textContent=pct+'%';}
+function t(){return I18N[LANG];}
+function setLang(l){LANG=l;try{localStorage.setItem(LANG_KEY,l);}catch(e){}document.documentElement.lang=l;document.getElementById('langDE').classList.toggle('active',l==='de');document.getElementById('langEN').classList.toggle('active',l==='en');renderHomeStatics();renderSectionList();updateNavFooter();if(currentSectionIdx>=0)openSection(SECTIONS[currentSectionIdx].id,true);}
+function renderHomeStatics(){const T=t();document.querySelector('.course-title').textContent=T.courseTitle;document.querySelectorAll('[data-i18n]').forEach(el=>{const path=el.getAttribute('data-i18n').split('.');let v=T;path.forEach(p=>v=v&&v[p]);if(typeof v==='string')el.textContent=v;});}
+function renderSectionList(){const list=document.getElementById('sectionList');list.innerHTML='';SECTIONS.forEach(sec=>{const done=!!progress.completed[sec.id];const card=document.createElement('div');card.className='section-card'+(done?' done':'');card.innerHTML=`<div class="num">${sec.num}</div><div class="info"><div class="name">${sec.name[LANG]}</div><div class="tag">${sec.tag[LANG]}</div></div><div class="status">${done?'✓':'▸'}</div>`;card.onclick=()=>openSection(sec.id);list.appendChild(card);});}
+function checkpointHTML(id){const cp=CHECKPOINTS[id][LANG];if(!cp)return'';const T=t();const qs=cp.questions.map((q,qi)=>`<div class="quiz-q" data-qi="${qi}"><div class="q-text"><span class="q-num">Q${qi+1}.</span>${q.q}</div><div class="quiz-opts">${q.opts.map((opt,oi)=>`<div class="quiz-opt" data-qi="${qi}" data-oi="${oi}"><span class="opt-letter">${String.fromCharCode(65+oi)}</span><span>${opt}</span></div>`).join('')}</div><div class="quiz-feedback" data-qi="${qi}"></div></div>`).join('');return `<div class="checkpoint" data-section="${id}"><div class="checkpoint-header"><div class="badge">${T.cp.badge}</div><h3>${cp.title}</h3><p>${cp.sub}</p></div><div class="quiz-body">${qs}</div><div class="checkpoint-result"><div class="score"></div><div class="msg"></div><button class="btn" data-action="finish-section">${T.nav.markComplete}</button></div></div>`;}
+function teacherBoxHTML(id){const data=CONTENT[id][LANG].teacher;if(!data)return'';const T=t();return `<div class="teacher-toggle"><a class="teacher-open">${T.teacher.open}</a></div><div class="teacher-box"><div class="tb-h">${T.teacher.heading}</div><div style="margin-bottom:8px;">${data.comps.map(c=>`<span class="comp">${c}</span>`).join('')}</div>${data.notes.map(n=>`<p>• ${n}</p>`).join('')}</div>`;}
+function blockHTML(b){let inner='';if(b.p)inner+=b.p.map((para,i)=>`<p${i===0?' class="lead"':''}>${para}</p>`).join('');if(b.reveals)inner+=`<div class="reveal-grid">`+b.reveals.map(r=>`<div class="reveal-tile"><div class="icon">${r.icon}</div><div class="name">${r.name}</div><div class="desc">${r.desc}</div></div>`).join('')+`</div>`;if(b.scenarios)inner+=scenariosHTML(b.scenarios);if(b.timeline)inner+=timelineHTML();if(b.dd)inner+=`<div class="dd-grid"><div class="dd-col do"><div class="dd-h">${b.dd.doH}</div><ul>${b.dd.doItems.map(i=>`<li>${i}</li>`).join('')}</ul></div><div class="dd-col dont"><div class="dd-h">${b.dd.dontH}</div><ul>${b.dd.dontItems.map(i=>`<li>${i}</li>`).join('')}</ul></div></div>`;if(b.punch)inner+=`<p class="punch">${b.punch}</p>`;return `<div class="step-card"><span class="step-label ${b.label}">${b.lt}</span><h3>${b.h}</h3>${inner}</div>`;}
+function scenariosHTML(scenarios){return scenarios.map((s,si)=>`<div class="scn" data-scn="${si}"><div class="scn-role">${s.role}</div><div class="scn-situation">${s.sit}</div><div class="scn-choices">${s.choices.map((c,ci)=>`<div class="scn-choice" data-scn="${si}" data-choice="${ci}">${c.t}</div>`).join('')}</div><div class="scn-outcome" data-scn="${si}"><span class="so-h">${LANG==='de'?'WAS GESCHAH':'WHAT HAPPENED'}</span><span class="so-body"></span></div><div class="scn-note">${s.note}</div></div>`).join('');}
+function timelineHTML(){const data=TIMELINE[LANG];return `<div class="sandbox"><div class="tl-wrap"><div class="tl-readout" id="tlReadout"></div><div class="tl-slider-row"><input type="range" id="tlSlider" min="0" max="${data.length-1}" value="0" step="1"><div class="tl-ticks">${data.map(d=>`<span>${d.year}</span>`).join('')}</div></div></div></div>`;}
+function buildSection(id){const c=CONTENT[id][LANG];return `<div class="section-header"><div class="kicker">${c.kicker}</div><h2>${c.h2}</h2><div class="sub">${c.sub}</div></div>${c.blocks.map(blockHTML).join('')}${teacherBoxHTML(id)}${checkpointHTML(id)}`;}
+function wireSection(id){document.querySelectorAll('.reveal-tile').forEach(t=>{t.onclick=()=>{t.classList.toggle('open');t.classList.remove('flipped');void t.offsetWidth;t.classList.add('flipped');};});const open=document.querySelector('.teacher-open'),box=document.querySelector('.teacher-box');if(open&&box)open.onclick=()=>box.classList.toggle('show');if(id==='journey')wireScenarios();if(id==='change')wireTimeline();}
+function wireScenarios(){const scnData=CONTENT['journey'][LANG].blocks.find(b=>b.scenarios).scenarios;document.querySelectorAll('.scn').forEach(scn=>{const si=+scn.dataset.scn;const choices=scn.querySelectorAll('.scn-choice');const outcome=scn.querySelector('.scn-outcome');choices.forEach(ch=>{ch.onclick=()=>{if(scn.dataset.locked)return;scn.dataset.locked='1';const ci=+ch.dataset.choice;choices.forEach(x=>x.classList.add('locked'));ch.classList.add('chosen');outcome.querySelector('.so-body').innerHTML=scnData[si].choices[ci].out;outcome.classList.add('show');};});});}
+function wireTimeline(){const data=TIMELINE[LANG],slider=document.getElementById('tlSlider'),out=document.getElementById('tlReadout');function render(){const d=data[+slider.value];out.innerHTML=`<span class="tl-icon">${d.icon}</span><div class="tl-year">${d.year}</div><div class="tl-who">${d.who}</div><div class="tl-what">${d.what}</div>`;}slider.oninput=render;render();}
+function wireCheckpoint(id){const cp=CHECKPOINTS[id][LANG];if(!cp)return;const T=t();const cpEl=document.querySelector(`.checkpoint[data-section="${id}"]`);if(!cpEl)return;const answered={},total=cp.questions.length;const correctCount=()=>Object.values(answered).filter(v=>v===true).length;cpEl.querySelectorAll('.quiz-opt').forEach(opt=>{opt.onclick=()=>{const qi=+opt.dataset.qi,oi=+opt.dataset.oi;if(answered[qi]!==undefined)return;const q=cp.questions[qi];const opts=cpEl.querySelectorAll(`.quiz-opt[data-qi="${qi}"]`);opts.forEach(o=>o.classList.add('locked'));const fb=cpEl.querySelector(`.quiz-feedback[data-qi="${qi}"]`);if(oi===q.correct){opt.classList.add('correct');answered[qi]=true;fb.className='quiz-feedback right show';fb.innerHTML=`<span class="fb-label">${T.cp.correct}</span>${q.fb}`;}else{opt.classList.add('wrong');opts[q.correct].classList.add('correct');answered[qi]=false;fb.className='quiz-feedback wrong-fb show';fb.innerHTML=`<span class="fb-label">${T.cp.notquite}</span>${q.fb}`;}try{const comp=(COMP_MAP[id]&&COMP_MAP[id][qi])||'cause';Store.record(id,qi,comp,oi===q.correct);}catch(e){}if(Object.keys(answered).length===total)showResult();};});function showResult(){const result=cpEl.querySelector('.checkpoint-result');const score=correctCount();result.querySelector('.score').textContent=`${score} / ${total}`;let msg;if(score===total)msg=T.cp.perfect;else if(score>=total-1)msg=T.cp.strong;else msg=T.cp.ok;result.querySelector('.msg').textContent=msg;result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'center'});const finishBtn=result.querySelector('[data-action="finish-section"]');finishBtn.onclick=()=>{markComplete(id);updateNavFooter();const nextIdx=currentSectionIdx+1;const nextBtn=document.getElementById('navNext');nextBtn.disabled=false;if(nextIdx<SECTIONS.length){nextBtn.textContent=T.nav.next;nextBtn.onclick=()=>openSection(SECTIONS[nextIdx].id);}else{nextBtn.textContent=T.nav.finish;nextBtn.onclick=goHome;showResultModal();}finishBtn.textContent=T.nav.completed;finishBtn.disabled=true;nextBtn.scrollIntoView({behavior:'smooth'});};}}
+function openSection(id,keep){const idx=SECTIONS.findIndex(s=>s.id===id);if(idx<0)return;currentSectionIdx=idx;document.getElementById('screen-home').classList.remove('active');document.getElementById('screenMount').innerHTML=`<div class="screen active">${buildSection(id)}</div>`;wireSection(id);wireCheckpoint(id);updateNavFooter();if(!keep)window.scrollTo({top:0,behavior:'smooth'});progress.current=id;saveProgress();}
+function goHome(){currentSectionIdx=-1;document.getElementById('screenMount').innerHTML='';document.getElementById('screen-home').classList.add('active');renderSectionList();updateNavFooter();window.scrollTo({top:0,behavior:'smooth'});}
+function updateNavFooter(){const T=t();const back=document.getElementById('navBack'),next=document.getElementById('navNext'),label=document.getElementById('navLabel');if(currentSectionIdx<0){back.style.visibility='hidden';const firstInc=SECTIONS.findIndex(s=>!progress.completed[s.id]);next.textContent=firstInc>=0?T.nav.start:T.nav.review;next.disabled=false;next.onclick=()=>openSection(SECTIONS[firstInc>=0?firstInc:0].id);label.textContent='';}else{back.style.visibility='visible';back.textContent=T.nav.allSections;back.onclick=goHome;const sec=SECTIONS[currentSectionIdx];label.textContent=T.nav.sectionOf(sec.num,SECTIONS.length);const done=!!progress.completed[sec.id];const nextIdx=currentSectionIdx+1;if(done&&nextIdx<SECTIONS.length){next.textContent=T.nav.next;next.disabled=false;next.onclick=()=>openSection(SECTIONS[nextIdx].id);}else if(done&&nextIdx>=SECTIONS.length){next.textContent=T.nav.finish;next.disabled=false;next.onclick=goHome;}else{next.textContent=T.nav.finishCp;next.disabled=true;next.onclick=null;}}}
+function showResultModal(){const T=t();let code='';try{code=Store.encode(Store.getSession());Store.cacheLocal();}catch(e){code='GHP1|migration||';}document.getElementById('rmTitle').textContent=T.result.title;document.getElementById('rmBody').textContent=T.result.body;document.getElementById('rmCode').textContent=code;const copy=document.getElementById('rmCopy'),close=document.getElementById('rmClose');copy.textContent=T.result.copy;close.textContent=T.result.close;copy.onclick=()=>{try{navigator.clipboard.writeText(code);}catch(e){}copy.textContent=T.result.copied;};close.onclick=()=>document.getElementById('resultModal').classList.remove('show');document.getElementById('resultModal').classList.add('show');}
+document.getElementById('resetBtn').onclick=()=>{progress={completed:{},current:null};saveProgress();renderSectionList();updateProgressBar();updateNavFooter();};
+try{const s=localStorage.getItem(LANG_KEY);if(s)LANG=s;}catch(e){}
+try{Store.startSession('migration',null);}catch(e){}
+setLang(LANG);updateProgressBar();
+
+// LinkedIn badge
+const badge=document.createElement('a');badge.href='https://www.linkedin.com/in/mouna-chaari-phd-21071413/';badge.target='_blank';badge.rel='noopener';badge.title='Mouna Chaari — LinkedIn';
+badge.style.cssText="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;";
+badge.innerHTML=`<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F0B33D,#FFD24A);color:#0A1A3A;font-family:Georgia,serif;font-weight:bold;font-size:15px;border:1.5px solid #F0B33D;">MC</span><span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Mouna Chaari</span>`;
+document.body.appendChild(badge);
+</script>
+</body>
+</html>
