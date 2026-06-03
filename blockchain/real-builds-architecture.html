@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Real Sustainability Builds · Architecture Teardowns</title>
+<style>
+:root {
+  --navy-deep: #0A1A3A;
+  --navy-mid: #152A5E;
+  --navy-light: #1E3470;
+  --blue-bright: #1E5AA8;
+  --blue-glow: #4A90E2;
+  --gold: #F0B33D;
+  --gold-bright: #FFD24A;
+  --gold-dark: #8C6A1F;
+  --white: #FFFFFF;
+  --grey-muted: #B0BCD6;
+  --green-correct: #2EA84A;
+  --green-soft: #1E6E33;
+  --red-wrong: #C8312B;
+  --red-soft: #5E1F1C;
+  --amber: #E8A33C;
+  --purple-defi: #7E5AE8;
+  --teal: #2DB6A8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  min-height: 100%;
+  font-family: 'Calibri', 'Helvetica Neue', sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(30,90,168,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(126,90,232,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 75%);
+  background-attachment: fixed;
+  color: var(--white);
+  line-height: 1.5;
+}
+
+body { padding-bottom: 80px; }
+
+/* === Top progress bar === */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(10,26,58,0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(240,179,61,0.3);
+  padding: 10px 16px;
+}
+.topbar-inner {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topbar .course-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  font-weight: bold;
+  white-space: nowrap;
+}
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--navy-deep);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(176,188,214,0.2);
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  width: 0%;
+  transition: width 0.5s ease;
+  border-radius: 3px;
+}
+.progress-pct {
+  font-size: 11px;
+  color: var(--gold-bright);
+  font-weight: bold;
+  font-family: Georgia, serif;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* === Main container === */
+.container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+/* === Section map (home) === */
+.hero {
+  text-align: center;
+  padding: 40px 16px 32px;
+}
+.hero .eyebrow {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+.hero h1 {
+  font-family: Georgia, serif;
+  font-size: 40px;
+  font-style: italic;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--white), var(--gold-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero p {
+  color: var(--grey-muted);
+  font-size: 16px;
+  max-width: 560px;
+  margin: 0 auto 8px;
+}
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+.section-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--navy-mid);
+  border: 1px solid var(--blue-bright);
+  border-radius: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.section-card:hover { border-color: var(--gold); transform: translateX(4px); }
+.section-card.locked { opacity: 0.45; cursor: not-allowed; }
+.section-card.locked:hover { transform: none; border-color: var(--blue-bright); }
+.section-card.done { border-color: var(--green-correct); }
+.section-card .num {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--gold);
+  min-width: 36px;
+  text-align: center;
+}
+.section-card.done .num { color: var(--green-correct); }
+.section-card .info { flex: 1; }
+.section-card .info .name {
+  font-size: 16px;
+  font-weight: bold;
+  font-family: Georgia, serif;
+}
+.section-card .info .tag {
+  font-size: 12px;
+  color: var(--grey-muted);
+  margin-top: 2px;
+}
+.section-card .status {
+  font-size: 20px;
+}
+.section-card .ribbon {
+  position: absolute;
+  top: 8px;
+  right: -28px;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font-size: 8px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding: 2px 32px;
+  transform: rotate(45deg);
+}
+
+/* === Concept screen layout === */
+.screen { display: none; }
+.screen.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.section-header .kicker {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  font-weight: bold;
+}
+.section-header h2 {
+  font-family: Georgia, serif;
+  font-size: 30px;
+  font-style: italic;
+  margin: 6px 0;
+  line-height: 1.15;
+}
+
+/* === Step card (the unit of teaching) === */
+.step-card {
+  background: rgba(21,42,94,0.6);
+  border: 1px solid var(--blue-bright);
+  border-radius: 16px;
+  padding: 24px 22px;
+  margin-bottom: 18px;
+  backdrop-filter: blur(4px);
+}
+.step-label {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+.step-label.problem { background: var(--red-soft); color: #FF9B95; border: 1px solid var(--red-wrong); }
+.step-label.mechanism { background: rgba(30,90,168,0.3); color: var(--blue-glow); border: 1px solid var(--blue-bright); }
+.step-label.why { background: rgba(240,179,61,0.18); color: var(--gold-bright); border: 1px solid var(--gold); }
+
+.step-card h3 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+.step-card p {
+  color: #DCE3F2;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+.step-card p.lead { font-size: 16px; }
+.step-card strong { color: var(--gold-bright); font-weight: 600; }
+.step-card .punch {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-style: italic;
+  color: var(--gold-bright);
+  border-left: 3px solid var(--gold);
+  padding-left: 16px;
+  margin: 16px 0 4px;
+  line-height: 1.4;
+}
+
+/* === Interactive sandbox === */
+.sandbox {
+  background: var(--navy-deep);
+  border: 1px solid rgba(74,144,226,0.4);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 16px 0;
+}
+.sandbox-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--teal);
+  font-weight: bold;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sandbox-title::before { content: "▸ TRY IT"; }
+
+.btn {
+  background: var(--gold);
+  color: var(--navy-deep);
+  border: none;
+  padding: 11px 22px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.btn:hover { background: var(--gold-bright); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn.ghost {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+.btn.ghost:hover { background: rgba(240,179,61,0.12); }
+.btn.danger { background: var(--red-wrong); color: var(--white); }
+.btn.danger:hover { background: #E04540; }
+.btn.small { padding: 7px 14px; font-size: 11px; }
+.btn.teal { background: var(--teal); color: var(--navy-deep); }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+
+/* === Navigation footer === */
+.nav-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10,26,58,0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(240,179,61,0.3);
+  padding: 12px 16px;
+  z-index: 50;
+}
+.nav-footer-inner {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* === Ledger / node visualizations === */
+.ledger-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 8px 0;
+}
+.ledger-book {
+  background: var(--navy-mid);
+  border: 2px solid var(--blue-bright);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 11px;
+  transition: all 0.3s;
+}
+.ledger-book.tampered {
+  border-color: var(--red-wrong);
+  background: var(--red-soft);
+  animation: shake 0.4s;
+}
+.ledger-book.rejected {
+  opacity: 0.4;
+  border-style: dashed;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.ledger-book .book-title {
+  font-weight: bold;
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ledger-book .entry {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #C5D0E8;
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(176,188,214,0.2);
+}
+.ledger-book .entry.highlight { color: var(--gold-bright); font-weight: bold; }
+.ledger-book .verdict {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+  padding: 3px;
+  border-radius: 4px;
+}
+.ledger-book .verdict.agree { background: var(--green-soft); color: #A8E8B5; }
+.ledger-book .verdict.disagree { background: var(--red-soft); color: #FF9B95; }
+
+/* === Network node viz === */
+.network-stage {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  background: radial-gradient(ellipse at center, var(--navy-mid) 0%, var(--navy-deep) 80%);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.node {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--navy-light);
+  border: 2px solid var(--blue-bright);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.4s;
+  z-index: 2;
+}
+.node.has-tx {
+  background: var(--gold);
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 16px rgba(240,179,61,0.7);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+.node.verifying {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+.node.origin {
+  border-color: var(--gold-bright);
+  border-width: 3px;
+}
+.edge {
+  position: absolute;
+  height: 2px;
+  background: rgba(74,144,226,0.25);
+  transform-origin: left center;
+  z-index: 1;
+  transition: background 0.3s;
+}
+.edge.active {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+}
+.network-caption {
+  text-align: center;
+  font-size: 13px;
+  color: var(--gold-bright);
+  margin-top: 10px;
+  min-height: 20px;
+  font-style: italic;
+}
+.network-stat {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.network-stat .stat { text-align: center; }
+.network-stat .stat .val {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--gold-bright);
+}
+.network-stat .stat .lbl { color: var(--grey-muted); font-size: 10px; letter-spacing: 1px; }
+
+/* === Double-spend demo === */
+.actor-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 16px 0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.actor {
+  text-align: center;
+  flex: 1;
+  min-width: 90px;
+}
+.actor .avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin: 0 auto 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: var(--navy-mid);
+  border: 2px solid var(--blue-bright);
+  transition: all 0.3s;
+}
+.actor.alice .avatar { border-color: var(--gold); }
+.actor.confused .avatar { border-color: var(--red-wrong); animation: shake 0.5s; }
+.actor .label { font-size: 12px; font-weight: bold; }
+.actor .balance { font-size: 13px; color: var(--gold-bright); font-family: Georgia, serif; }
+.actor .balance.bad { color: var(--red-wrong); }
+.flow-arrow {
+  font-size: 24px;
+  color: var(--gold);
+}
+
+/* === Checkpoint quiz === */
+.checkpoint {
+  background: linear-gradient(135deg, rgba(126,90,232,0.15), rgba(30,90,168,0.15));
+  border: 2px solid var(--purple-defi);
+  border-radius: 16px;
+  padding: 24px 22px;
+  margin-bottom: 18px;
+}
+.checkpoint-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.checkpoint-header .badge {
+  display: inline-block;
+  background: var(--purple-defi);
+  color: var(--white);
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.checkpoint-header h3 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-style: italic;
+}
+.checkpoint-header p { color: var(--grey-muted); font-size: 13px; margin-top: 4px; }
+
+.quiz-q { margin-bottom: 18px; }
+.quiz-q .q-text {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  margin-bottom: 12px;
+  line-height: 1.35;
+}
+.quiz-q .q-num {
+  color: var(--gold);
+  font-weight: bold;
+  margin-right: 6px;
+}
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt {
+  background: var(--navy-deep);
+  border: 1.5px solid var(--blue-bright);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.quiz-opt:hover:not(.locked) { border-color: var(--gold); background: var(--navy-mid); }
+.quiz-opt .opt-letter {
+  font-family: Georgia, serif;
+  font-weight: bold;
+  color: var(--gold);
+  min-width: 20px;
+}
+.quiz-opt.correct {
+  background: var(--green-soft);
+  border-color: var(--green-correct);
+}
+.quiz-opt.correct .opt-letter { color: var(--green-correct); }
+.quiz-opt.wrong {
+  background: var(--red-soft);
+  border-color: var(--red-wrong);
+}
+.quiz-opt.wrong .opt-letter { color: #FF9B95; }
+.quiz-opt.locked { cursor: default; }
+.quiz-feedback {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  display: none;
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.right { background: var(--green-soft); border: 1px solid var(--green-correct); }
+.quiz-feedback.wrong-fb { background: var(--red-soft); border: 1px solid var(--red-wrong); }
+.quiz-feedback .fb-label { font-weight: bold; letter-spacing: 1px; margin-right: 6px; }
+
+.checkpoint-result {
+  text-align: center;
+  padding: 16px;
+  display: none;
+}
+.checkpoint-result.show { display: block; }
+.checkpoint-result .score {
+  font-family: Georgia, serif;
+  font-size: 40px;
+  font-weight: bold;
+  color: var(--gold-bright);
+}
+.checkpoint-result .msg { color: var(--grey-muted); margin: 8px 0 16px; }
+
+/* === Hash demo === */
+.hash-demo input {
+  width: 100%;
+  background: var(--navy-mid);
+  border: 1px solid var(--blue-bright);
+  color: var(--white);
+  padding: 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.hash-demo input:focus { border-color: var(--gold); }
+.hash-output {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  word-break: break-all;
+  background: var(--navy-deep);
+  padding: 14px;
+  border-radius: 8px;
+  margin-top: 12px;
+  border: 1px solid var(--blue-bright);
+  color: var(--teal);
+  transition: all 0.2s;
+  line-height: 1.6;
+}
+.hash-output.flash { animation: hashFlash 0.5s; }
+@keyframes hashFlash {
+  0% { background: var(--gold); color: var(--navy-deep); }
+  100% { background: var(--navy-deep); color: var(--teal); }
+}
+
+/* === stub / coming soon === */
+.stub-box {
+  text-align: center;
+  padding: 50px 24px;
+  background: rgba(21,42,94,0.4);
+  border: 1px dashed var(--blue-bright);
+  border-radius: 16px;
+}
+.stub-box .icon { font-size: 48px; margin-bottom: 16px; }
+.stub-box h3 { font-family: Georgia, serif; font-size: 24px; font-style: italic; margin-bottom: 10px; }
+.stub-box p { color: var(--grey-muted); max-width: 440px; margin: 0 auto 8px; }
+.stub-box .preview-list {
+  text-align: left;
+  max-width: 420px;
+  margin: 18px auto 0;
+  font-size: 14px;
+  color: #C5D0E8;
+}
+.stub-box .preview-list li { padding: 5px 0; padding-left: 24px; position: relative; }
+.stub-box .preview-list li::before {
+  content: "→"; position: absolute; left: 0; color: var(--gold);
+}
+
+/* === reset link === */
+.reset-link {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 11px;
+  color: var(--grey-muted);
+}
+.reset-link a { color: var(--gold); cursor: pointer; text-decoration: underline; }
+
+.fineprint { font-size: 11px; color: var(--grey-muted); text-align:center; margin-top: 8px; }
+
+@media (max-width: 600px) {
+  .hero h1 { font-size: 30px; }
+  .section-header h2 { font-size: 24px; }
+  .step-card { padding: 18px 16px; }
+}
+
+/* === Sustainability-specific widgets === */
+
+/* Property test grid (the killer question) */
+.prop-grid { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.prop-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--navy-mid);
+  border: 1px solid var(--blue-bright);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.prop-row:hover { border-color: var(--gold); }
+.prop-row .verdict-box {
+  min-width: 90px; text-align: center;
+  font-size: 10px; font-weight: bold; letter-spacing: 1px;
+  padding: 4px 6px; border-radius: 6px;
+  background: var(--navy-deep); color: var(--grey-muted);
+  border: 1px solid rgba(176,188,214,0.3);
+}
+.prop-row.pass .verdict-box { background: var(--green-soft); color: #A8E8B5; border-color: var(--green-correct); }
+.prop-row.fail .verdict-box { background: var(--red-soft); color: #FF9B95; border-color: var(--red-wrong); }
+.prop-row .prop-text { flex: 1; font-size: 13px; color: #DCE3F2; }
+.prop-row .prop-text small { display:block; color: var(--grey-muted); font-size: 11px; margin-top: 2px; }
+.prop-tally {
+  text-align: center; margin-top: 12px;
+  font-family: Georgia, serif; font-size: 15px; font-style: italic;
+  color: var(--gold-bright); min-height: 24px;
+}
+
+/* Token mint / retire widget */
+.token-stage {
+  display: flex; justify-content: space-around; align-items: center;
+  flex-wrap: wrap; gap: 12px; margin: 16px 0;
+}
+.token-col { text-align: center; flex: 1; min-width: 110px; }
+.token-col .col-label { font-size: 10px; letter-spacing: 2px; color: var(--teal); font-weight: bold; margin-bottom: 8px; }
+.token-chip {
+  display: inline-block; margin: 3px;
+  background: var(--gold); color: var(--navy-deep);
+  font-family: Georgia, serif; font-weight: bold; font-size: 11px;
+  padding: 6px 10px; border-radius: 16px;
+  transition: all 0.3s;
+}
+.token-chip.retired {
+  background: transparent; color: var(--grey-muted);
+  border: 1px dashed var(--grey-muted); text-decoration: line-through;
+}
+.token-bin {
+  min-height: 60px; background: var(--navy-deep);
+  border: 1px dashed var(--blue-bright); border-radius: 10px;
+  padding: 10px; margin-top: 6px;
+}
+.token-bin.retire-bin { border-color: var(--green-correct); }
+
+/* Oracle bridge */
+.oracle-stage { margin: 16px 0; }
+.oracle-lane {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+}
+.oracle-box {
+  flex: 1; min-width: 110px; text-align: center;
+  background: var(--navy-mid); border: 2px solid var(--blue-bright);
+  border-radius: 10px; padding: 12px 8px; transition: all 0.3s;
+}
+.oracle-box .ico { font-size: 26px; }
+.oracle-box .nm { font-size: 11px; font-weight: bold; margin-top: 4px; }
+.oracle-box .st { font-size: 10px; color: var(--grey-muted); margin-top: 2px; min-height: 14px; }
+.oracle-box.world { border-color: var(--teal); }
+.oracle-box.oracle.lying { border-color: var(--red-wrong); background: var(--red-soft); animation: shake 0.4s; }
+.oracle-box.chain.poisoned { border-color: var(--red-wrong); }
+.oracle-box.chain.poisoned .st { color: #FF9B95; }
+.oracle-arrow { font-size: 20px; color: var(--gold); }
+
+/* On/off-chain split */
+.split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.split-col {
+  border-radius: 10px; padding: 12px; font-size: 12px;
+}
+.split-col.onchain { background: rgba(46,168,74,0.12); border: 1px solid var(--green-correct); }
+.split-col.offchain { background: rgba(200,49,43,0.12); border: 1px solid var(--red-wrong); }
+.split-col h4 { font-family: Georgia, serif; font-size: 14px; margin-bottom: 8px; }
+.split-col.onchain h4 { color: #A8E8B5; }
+.split-col.offchain h4 { color: #FF9B95; }
+.split-col ul { list-style: none; }
+.split-col li { padding: 3px 0 3px 18px; position: relative; color: #DCE3F2; }
+.split-col.onchain li::before { content: "✓"; position: absolute; left: 0; color: var(--green-correct); }
+.split-col.offchain li::before { content: "✗"; position: absolute; left: 0; color: var(--red-wrong); }
+@media (max-width: 600px) { .split-grid { grid-template-columns: 1fr; } }
+
+/* Case study cards */
+.case-card {
+  background: var(--navy-mid); border-left: 4px solid var(--blue-bright);
+  border-radius: 8px; padding: 14px 16px; margin: 10px 0;
+}
+.case-card.good { border-left-color: var(--green-correct); }
+.case-card.bad { border-left-color: var(--red-wrong); }
+.case-card .case-tag { font-size: 10px; letter-spacing: 2px; font-weight: bold; }
+.case-card.good .case-tag { color: #A8E8B5; }
+.case-card.bad .case-tag { color: #FF9B95; }
+.case-card h4 { font-family: Georgia, serif; font-size: 17px; margin: 4px 0 6px; }
+.case-card p { font-size: 13px; color: #DCE3F2; margin-bottom: 6px; }
+
+/* === Insight chart cards === */
+.chart-card {
+  background: var(--navy-deep);
+  border: 1px solid rgba(74,144,226,0.4);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 16px 0;
+}
+.chart-card .chart-eyebrow {
+  font-size: 10px; letter-spacing: 2px; color: var(--teal);
+  font-weight: bold; margin-bottom: 4px;
+}
+.chart-card .chart-eyebrow::before { content: "\25C8 INSIGHT  "; }
+.chart-card .chart-title {
+  font-family: Georgia, serif; font-size: 15px; font-style: italic;
+  color: var(--gold-bright); margin-bottom: 12px; line-height: 1.3;
+}
+.chart-holder { position: relative; width: 100%; }
+.chart-legend {
+  display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px;
+  font-size: 11px; color: var(--grey-muted); justify-content: center;
+}
+.chart-legend span { display: flex; align-items: center; gap: 5px; }
+.chart-legend .sw { width: 11px; height: 11px; border-radius: 3px; display:inline-block; }
+.chart-takeaway {
+  font-size: 12px; color: #C5D0E8; margin-top: 10px;
+  border-left: 2px solid var(--teal); padding-left: 10px; line-height: 1.5;
+}
+
+/* === Predict-before-reveal === */
+.predict {
+  background: rgba(126,90,232,0.12);
+  border: 1px solid var(--purple-defi);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.predict .predict-q {
+  font-size: 12px; font-weight: bold; letter-spacing: 0.5px;
+  color: #C9B8FF; margin-bottom: 10px;
+}
+.predict .predict-q::before { content: "\1F52E  PREDICT FIRST  \B7  "; color: var(--purple-defi); letter-spacing: 1px; }
+.predict-opts { display: flex; flex-direction: column; gap: 6px; }
+.predict-opt {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--navy-mid);
+  border: 1px solid rgba(126,90,232,0.4);
+  border-radius: 7px; padding: 8px 11px;
+  font-size: 13px; color: #DCE3F2; cursor: pointer;
+  transition: all 0.15s;
+}
+.predict-opt:hover:not(.chosen):not(.locked) { border-color: var(--purple-defi); background: var(--navy-light); }
+.predict-opt .pick {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--grey-muted); display: flex;
+  align-items: center; justify-content: center; font-size: 11px;
+}
+.predict-opt.chosen { border-color: var(--purple-defi); background: rgba(126,90,232,0.22); }
+.predict-opt.chosen .pick { border-color: var(--gold-bright); background: var(--gold-bright); color: var(--navy-deep); }
+.predict-opt.locked { cursor: default; opacity: 0.75; }
+.predict-result {
+  display: none; margin-top: 10px; font-size: 13px;
+  color: #C9B8FF; font-style: italic; line-height: 1.4;
+}
+.predict-result.show { display: block; }
+.predict-result .commit { font-style: normal; font-weight: bold; color: var(--gold-bright); }
+
+/* === Glossary === */
+.gloss-fab {
+  position: fixed; bottom: 76px; right: 14px; z-index: 60;
+  background: var(--teal); color: var(--navy-deep);
+  border: none; border-radius: 24px; padding: 9px 16px;
+  font-family: inherit; font-size: 12px; font-weight: bold;
+  letter-spacing: 0.5px; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+  display: flex; align-items: center; gap: 6px;
+}
+.gloss-fab:hover { background: #46cdbe; }
+.gloss-overlay {
+  display: none; position: fixed; inset: 0; z-index: 70;
+  background: rgba(5,12,28,0.78); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+.gloss-overlay.open { display: flex; }
+.gloss-panel {
+  background: var(--navy-mid);
+  border: 1px solid var(--teal);
+  border-radius: 16px;
+  max-width: 480px; width: 100%;
+  max-height: 76vh; overflow-y: auto;
+  padding: 22px 22px 16px;
+}
+.gloss-panel h3 {
+  font-family: Georgia, serif; font-size: 22px; font-style: italic;
+  color: var(--gold-bright); margin-bottom: 4px;
+}
+.gloss-panel .gloss-sub { font-size: 12px; color: var(--grey-muted); margin-bottom: 16px; }
+.gloss-item { border-bottom: 1px dotted rgba(176,188,214,0.25); padding: 10px 0; }
+.gloss-item:last-child { border-bottom: none; }
+.gloss-item .term { font-weight: bold; color: var(--teal); font-size: 14px; }
+.gloss-item .def { font-size: 13px; color: #DCE3F2; margin-top: 3px; line-height: 1.45; }
+.gloss-close {
+  display: block; margin: 14px auto 0;
+  background: transparent; color: var(--gold); border: 1px solid var(--gold);
+  border-radius: 8px; padding: 8px 20px; font-family: inherit;
+  font-size: 12px; font-weight: bold; letter-spacing: 1px; cursor: pointer;
+}
+.gloss-close:hover { background: rgba(240,179,61,0.12); }
+.gterm {
+  border-bottom: 1px dashed var(--teal); cursor: help;
+  color: var(--gold-bright);
+}
+
+/* === Architecture spec table === */
+.spec {
+  background: var(--navy-deep);
+  border: 1px solid rgba(74,144,226,0.4);
+  border-radius: 12px;
+  padding: 6px 16px;
+  margin: 16px 0;
+}
+.spec-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px dotted rgba(176,188,214,0.2);
+}
+.spec-row:last-child { border-bottom: none; }
+.spec-row .spec-ico { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.spec-row .spec-body { flex: 1; }
+.spec-row .spec-label {
+  font-size: 10px; letter-spacing: 1.5px; font-weight: bold;
+  color: var(--teal); margin-bottom: 3px;
+}
+.spec-row .spec-val { font-size: 14px; color: #DCE3F2; line-height: 1.45; }
+.spec-row .spec-val strong { color: var(--gold-bright); font-weight: 600; }
+.spec-row .spec-val code {
+  font-family: 'Courier New', monospace; font-size: 12px;
+  background: var(--navy-mid); padding: 1px 6px; border-radius: 4px;
+  color: var(--teal);
+}
+
+/* === Verdict badge (killer question) === */
+.verdict {
+  display: flex; align-items: center; gap: 12px;
+  border-radius: 12px; padding: 14px 16px; margin: 16px 0;
+}
+.verdict.pass { background: rgba(46,168,74,0.14); border: 1px solid var(--green-correct); }
+.verdict.partial { background: rgba(240,179,61,0.14); border: 1px solid var(--gold); }
+.verdict.fail { background: rgba(200,49,43,0.14); border: 1px solid var(--red-wrong); }
+.verdict .v-mark { font-size: 30px; flex-shrink: 0; }
+.verdict .v-text { font-size: 13px; line-height: 1.45; }
+.verdict .v-text .v-head { font-family: Georgia, serif; font-size: 16px; font-style: italic; display: block; margin-bottom: 3px; }
+.verdict.pass .v-head { color: #A8E8B5; }
+.verdict.partial .v-head { color: var(--gold-bright); }
+.verdict.fail .v-head { color: #FF9B95; }
+.verdict .v-text p { color: #DCE3F2; }
+
+/* === Chose vs Happened === */
+.cvh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.cvh-col { border-radius: 12px; padding: 14px 16px; }
+.cvh-col.chose { background: rgba(74,144,226,0.12); border: 1px solid var(--blue-bright); }
+.cvh-col.happened { background: rgba(126,90,232,0.12); border: 1px solid var(--purple-defi); }
+.cvh-col .cvh-head {
+  font-size: 10px; letter-spacing: 2px; font-weight: bold; margin-bottom: 8px;
+}
+.cvh-col.chose .cvh-head { color: var(--blue-glow); }
+.cvh-col.chose .cvh-head::before { content: "\1F3AF  THEY CHOSE"; }
+.cvh-col.happened .cvh-head { color: #C9B8FF; }
+.cvh-col.happened .cvh-head::before { content: "\1F4C8  WHAT HAPPENED"; }
+.cvh-col p { font-size: 13px; color: #DCE3F2; line-height: 1.5; }
+@media (max-width: 600px) { .cvh-grid { grid-template-columns: 1fr; } }
+
+/* === Stack pills (chain/token tags on project cards) === */
+.stack-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.stack-pill {
+  font-size: 10px; letter-spacing: 0.5px; font-weight: bold;
+  padding: 3px 9px; border-radius: 12px;
+  background: var(--navy-mid); color: var(--teal);
+  border: 1px solid rgba(45,182,168,0.4);
+}
+.stack-pill.chain { color: var(--gold-bright); border-color: rgba(240,179,61,0.4); }
+.stack-pill.perm { color: #C9B8FF; border-color: rgba(126,90,232,0.4); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="course-title">REAL BUILDS · ARCHITECTURE</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="eyebrow">FOUR REAL TEARDOWNS · WEEK 8</div>
+      <h1>What did they<br>actually build?</h1>
+      <p>You've learned the principles. Now open the hood on four real sustainability projects and see the concrete choices each one made: which chain, which token, how they fed in real-world data, and what they kept off-chain.</p>
+      <p><strong>For each one:</strong> the architecture they chose, then what actually happened when it met the real world. Exactly the lens to point at your own pitch &mdash; and your rivals'.</p>
+    </div>
+    <div class="section-list" id="sectionList"></div>
+    <div class="reset-link">
+      Progress saves automatically on this device. <a id="resetBtn">Start over</a>
+    </div>
+  </div>
+
+  <div id="screenMount"></div>
+
+</div>
+
+<div class="nav-footer">
+  <div class="nav-footer-inner">
+    <button class="btn ghost" id="navBack">← Back</button>
+    <span style="font-size:11px;color:var(--grey-muted);" id="navLabel"></span>
+    <button class="btn" id="navNext">Continue →</button>
+  </div>
+</div>
+
+<button class="gloss-fab" id="glossFab" aria-label="Open key terms glossary">📖 Key terms</button>
+<div class="gloss-overlay" id="glossOverlay" role="dialog" aria-label="Key terms glossary">
+  <div class="gloss-panel">
+    <h3>Key terms</h3>
+    <div class="gloss-sub">Architecture vocabulary for reading these teardowns.</div>
+    <div id="glossList"></div>
+    <button class="gloss-close" id="glossClose">Close</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ============================================================
+// DATA MODEL — Real sustainability builds (Week 8 companion)
+// ============================================================
+const SECTIONS = [
+  { id: 'power',  num: 1, name: 'Power Ledger',     tag: 'P2P energy \u00b7 dual-chain', built: true },
+  { id: 'toucan', num: 2, name: 'Toucan Protocol',  tag: 'Carbon bridge \u00b7 Polygon', built: true },
+  { id: 'klima',  num: 3, name: 'KlimaDAO',         tag: 'Carbon treasury \u00b7 OHM fork', built: true },
+  { id: 'food',   num: 4, name: 'IBM Food Trust',   tag: 'Provenance \u00b7 permissioned', built: true },
+];
+
+const STORAGE_KEY = 'real_builds_arch_v1';
+let progress = loadProgress();
+function loadProgress() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+  try { if (window._buildsProgress) return window._buildsProgress; } catch (e) {}
+  return { completed: {}, current: null };
+}
+function saveProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {}
+  try { window._buildsProgress = progress; } catch (e) {}
+}
+function markComplete(id) { progress.completed[id] = true; saveProgress(); updateProgressBar(); }
+function isUnlocked() { return true; }
+function updateProgressBar() {
+  const total = SECTIONS.length;
+  const done = Object.keys(progress.completed).filter(k => progress.completed[k]).length;
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function renderSectionList() {
+  const list = document.getElementById('sectionList');
+  list.innerHTML = '';
+  SECTIONS.forEach((sec, idx) => {
+    const done = !!progress.completed[sec.id];
+    const card = document.createElement('div');
+    card.className = 'section-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="num">${sec.num}</div>
+      <div class="info">
+        <div class="name">${sec.name}</div>
+        <div class="tag">${sec.tag}</div>
+      </div>
+      <div class="status">${done ? '\u2713' : '\u25B8'}</div>
+    `;
+    card.onclick = () => openSection(sec.id);
+    list.appendChild(card);
+  });
+}
+
+// ============================================================
+// PROJECT BUILDERS
+// ============================================================
+
+function specRow(ico, label, val) {
+  return `<div class="spec-row"><div class="spec-ico">${ico}</div><div class="spec-body"><div class="spec-label">${label}</div><div class="spec-val">${val}</div></div></div>`;
+}
+
+function buildPower() {
+  return `
+    <div class="section-header">
+      <div class="kicker">TEARDOWN 1 \u00b7 ENERGY</div>
+      <h2>Power Ledger</h2>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label why">THE GOAL</span>
+      <h3>Let neighbours trade rooftop solar directly \u2014 and trade renewable certificates and carbon credits.</h3>
+      <p class="lead">An Australian project (founded 2016) aiming to <strong>democratise power</strong>: households with solar sell surplus to neighbours (xGrid), and corporates trade Renewable Energy Certificates through a marketplace (TraceX). Many parties who don\u2019t fully trust each other, needing fast settlement \u2014 a textbook case for distributed ledgers.</p>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label mechanism">THE ARCHITECTURE THEY CHOSE</span>
+      <h3>A dual-chain split: one chain for value, one for volume.</h3>
+      ${specRow('\u26D3\uFE0F', 'CHAIN(S)', 'Started on an Ethereum fork, then ran their <strong>own chain</strong>, then deprecated it (Oct 2024). Now <strong>dual-chain</strong>: <strong>Ethereum</strong> holds the token, <strong>Solana</strong> processes high-volume energy transactions.')}
+      ${specRow('\uD83E\uDE99', 'TOKEN', '<strong>POWR</strong> \u2014 an <code>ERC-20</code> on Ethereum, also issued as an <code>SPL</code> token on Solana. Fixed supply of <strong>1 billion</strong>. Functions as a software <em>access licence</em>: businesses must hold POWR to use the platform.')}
+      ${specRow('\uD83D\uDD17', 'CROSS-CHAIN', 'Wormhole <strong>NTT</strong> bridges POWR between Ethereum and Solana. For every token minted on Solana, an equal amount is <strong>locked</strong> on Ethereum \u2014 no new supply.')}
+      ${specRow('\uD83D\uDCE1', 'ORACLE / DATA', 'Smart <strong>meters</strong> report generation and consumption. This is the trust-edge: the chain settles whatever the meters report.')}
+      ${specRow('\uD83D\uDD12', 'ON / OFF-CHAIN', 'On-chain: token, settlement, REC ownership. Off-chain: <strong>KYC, contracts, and personal billing data</strong> (TraceX automates counterparty KYC separately).')}
+    </div>
+
+    <div class="cvh-grid">
+      <div class="cvh-col chose"><div class="cvh-head"></div>
+        <p>Build energy trading on a fast, cheap, low-energy chain, with the token kept on Ethereum for security and liquidity.</p></div>
+      <div class="cvh-col happened"><div class="cvh-head"></div>
+        <p>The architecture <em>changed three times</em> \u2014 Ethereum fork \u2192 own chain \u2192 dual Ethereum+Solana. The energy-trading vision works in pilots, but is gated by regulators allowing P2P trades and by meter trust.</p></div>
+    </div>
+
+    <div class="verdict pass">
+      <div class="v-mark">\u2713</div>
+      <div class="v-text"><span class="v-head">Killer question: passes</span>
+        <p>Genuine mutual distrust between prosumers, utilities and corporates; need for tamper-evident, auto-settled trades. A blockchain is justified \u2014 though the oracle (meters) and regulation remain the real constraints.</p></div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label problem">THE TEACHING POINT</span>
+      <h3>"Which chain" is not a one-time decision.</h3>
+      <p>Power Ledger\u2019s stack evolved as priorities shifted from <em>proving it works</em> to <em>working at scale</em>. Your pitch should name a chain <strong>and</strong> the property you\u2019re optimising for (cost? security? throughput?) \u2014 and acknowledge it may change.</p>
+    </div>
+
+    ${buildPredict('power')}
+    ${buildArchChart('power')}
+    ${buildCheckpoint('power')}
+  `;
+}
+
+function buildToucan() {
+  return `
+    <div class="section-header">
+      <div class="kicker">TEARDOWN 2 \u00b7 CARBON</div>
+      <h2>Toucan Protocol</h2>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label why">THE GOAL</span>
+      <h3>Bring real-world carbon credits on-chain so they can be traded transparently.</h3>
+      <p class="lead">Launched Oct 2021. Takes credits from legacy registries (starting with <strong>Verra</strong>) and tokenises them, so carbon becomes a liquid, programmable Web3 asset \u2014 aiming to fix the old market\u2019s fragmentation, poor price discovery, and opacity.</p>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label mechanism">THE ARCHITECTURE THEY CHOSE</span>
+      <h3>A bridge, then a pool: from unique credit to fungible token.</h3>
+      ${specRow('\u26D3\uFE0F', 'CHAIN', '<strong>Polygon</strong> (later also Celo) \u2014 EVM-compatible, <strong>Proof-of-Stake</strong>, ~99% less energy than Proof-of-Work. A deliberate sustainability choice.')}
+      ${specRow('\uD83E\uDE99', 'TOKEN MODEL', 'Three layers: a <code>BatchNFT</code> (ERC-721) per retired batch \u2192 fractionalised into <strong>TCO2</strong> (ERC-20) carrying project/vintage metadata \u2192 deposited into a pool to mint a fungible reference token, <strong>BCT</strong> (Base Carbon Tonne).')}
+      ${specRow('\uD83C\uDF09', 'THE BRIDGE', 'Toucan Carbon Bridge connects to registries. The credit is <strong>permanently retired on the legacy registry</strong> first, with the on-chain wallet declared as beneficiary \u2014 preventing double-spend across the two systems.')}
+      ${specRow('\uD83D\uDC64', 'VERIFICATION', 'A <strong>Toucan Verifier</strong> approves each BatchNFT before tokenisation. (Note: this is a trusted human step \u2014 an oracle in disguise.)')}
+      ${specRow('\uD83D\uDD12', 'ON / OFF-CHAIN', 'On-chain: tokens, retirement, metadata. Off-chain: the actual <strong>registry records and project documentation</strong> at Verra/Gold Standard.')}
+    </div>
+
+    <div class="cvh-grid">
+      <div class="cvh-col chose"><div class="cvh-head"></div>
+        <p>A permissive bridge: any Verra credit of 2008 vintage or later could be bridged into the Base Carbon Pool for BCT.</p></div>
+      <div class="cvh-col happened"><div class="cvh-head"></div>
+        <p>That permissiveness let <strong>~600,000 tonnes of phased-out HFC-23 credits</strong> get bridged. Toucan blocklisted those projects and tightened the gating. Then Verra <em>banned</em> tokenisation of retired credits, breaking the original bridge.</p></div>
+    </div>
+
+    <div class="verdict partial">
+      <div class="v-mark">\u26A0</div>
+      <div class="v-text"><span class="v-head">Killer question: partial</span>
+        <p>The ledger mechanics are sound, but the value depends entirely on the <strong>quality of credits entering the bridge</strong>. A perfect on-chain record of low-quality credits is still low-quality. The upstream problem wasn\u2019t solved by tokenising downstream.</p></div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label problem">THE TEACHING POINT</span>
+      <h3>Garbage in, immutable garbage out.</h3>
+      <p>Toucan\u2019s verifier and gating criteria <em>are</em> its oracle. The HFC-23 episode is the oracle problem made concrete: the chain faithfully tokenised exactly what it was told to. Your pitch must name who validates the real-world data \u2014 and what stops bad data entering.</p>
+    </div>
+
+    ${buildPredict('toucan')}
+    ${buildArchChart('toucan')}
+    ${buildCheckpoint('toucan')}
+  `;
+}
+
+function buildKlima() {
+  return `
+    <div class="section-header">
+      <div class="kicker">TEARDOWN 3 \u00b7 CARBON FINANCE</div>
+      <h2>KlimaDAO</h2>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label why">THE GOAL</span>
+      <h3>Push up the price of carbon by buying and locking away as many credits as possible.</h3>
+      <p class="lead">Launched Oct 2021, built directly <strong>on top of Toucan</strong>. The idea: a treasury that hoards tokenised carbon (BCT), backing a token (KLIMA) so that as carbon demand rises, so does the protocol \u2014 \u201cfinancial activism for the climate.\u201d</p>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label mechanism">THE ARCHITECTURE THEY CHOSE</span>
+      <h3>An Olympus DAO fork, pointed at carbon instead of stablecoins.</h3>
+      ${specRow('\u26D3\uFE0F', 'CHAIN', '<strong>Polygon</strong> \u2014 inherited from Toucan, since KLIMA is built on Toucan\u2019s BCT.')}
+      ${specRow('\uD83E\uDE99', 'TOKEN', '<strong>KLIMA</strong> \u2014 an <code>ERC-20</code> <em>rebase</em> token (supply algorithmically expands). Each KLIMA is backed by at least <strong>1 BCT</strong> held in the treasury.')}
+      ${specRow('\uD83D\uDD01', 'MECHANISM', '<strong>Bonding</strong> (deposit BCT or LP tokens, get discounted KLIMA after ~5 days) + <strong>staking</strong> (rebase rewards advertised at tens of thousands of % APY). Copied from Olympus DAO\u2019s OHM.')}
+      ${specRow('\uD83C\uDFE6', 'TREASURY', 'Amassed close to <strong>10 million BCT</strong>; by 2021 reportedly held ~2% of the entire voluntary carbon market.')}
+      ${specRow('\u2696\uFE0F', 'GOVERNANCE', 'Snapshot voting by KLIMA holders, executed by a <strong>DAO multisig</strong> \u2014 the multisig pattern from your Week 8 security topic, in the wild.')}
+    </div>
+
+    <div class="cvh-grid">
+      <div class="cvh-col chose"><div class="cvh-head"></div>
+        <p>A high-yield reserve currency backed by carbon, so buying KLIMA both rewards holders and drives carbon prices up.</p></div>
+      <div class="cvh-col happened"><div class="cvh-head"></div>
+        <p>KLIMA spiked to <strong>~$3,600</strong> in Oct 2021, then collapsed to around <strong>$3</strong>. The yield only works while new buyers keep arriving \u2014 the same reflexive shape as algorithmic-stablecoin death spirals.</p></div>
+    </div>
+
+    <div class="verdict fail">
+      <div class="v-mark">\u2717</div>
+      <div class="v-text"><span class="v-head">Killer question: the tokenomics, not the chain, is the problem</span>
+        <p>The chain choice is fine (it\u2019s just Toucan\u2019s). The failure is economic design: incentives that depend on perpetual new demand. A green narrative doesn\u2019t make speculative tokenomics sound.</p></div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label problem">THE TEACHING POINT</span>
+      <h3>Most "blockchain failures" are really tokenomics failures.</h3>
+      <p>KlimaDAO\u2019s smart contracts did exactly what they were coded to do. The collapse came from an incentive model that couldn\u2019t survive a falling price. When you design a token, ask: <strong>what happens when the price goes down?</strong></p>
+    </div>
+
+    ${buildPredict('klima')}
+    ${buildArchChart('klima')}
+    ${buildCheckpoint('klima')}
+  `;
+}
+
+function buildFood() {
+  return `
+    <div class="section-header">
+      <div class="kicker">TEARDOWN 4 \u00b7 SUPPLY CHAIN</div>
+      <h2>IBM Food Trust</h2>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label why">THE GOAL</span>
+      <h3>Trace food from farm to shelf in seconds, not days.</h3>
+      <p class="lead">A supply-chain provenance network (used by Walmart and others). The famous result: tracing a mango\u2019s origin dropped from <strong>~7 days to 2.2 seconds</strong>. The deliberate counter-example to everything else here \u2014 and arguably the most operationally successful.</p>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label mechanism">THE ARCHITECTURE THEY CHOSE</span>
+      <h3>A permissioned enterprise chain \u2014 no coin, no public network.</h3>
+      ${specRow('\u26D3\uFE0F', 'CHAIN', '<strong>Hyperledger Fabric</strong> \u2014 a <strong>permissioned</strong> chain. IBM evaluated Ethereum and others, chose Fabric for being enterprise-grade and access-controlled. Offered as Blockchain-as-a-Service on IBM Cloud.')}
+      ${specRow('\uD83D\uDEAB', 'TOKEN', '<strong>None.</strong> No cryptocurrency, no mining, no Proof-of-Work. Consensus comes from known, vetted participants endorsing transactions \u2014 no economic incentive layer needed.')}
+      ${specRow('\uD83D\uDD10', 'DATA CONTROL', 'The <strong>data owner controls who sees it.</strong> Each member owns their uploaded data and grants permission per-party \u2014 the opposite of a public ledger\u2019s radical transparency.')}
+      ${specRow('\uD83D\uDCE6', 'DATA / ORACLE', 'Suppliers upload via web interface using <strong>GS1 standards</strong> (GTIN/UPC). The oracle problem is managed by <em>knowing and vetting</em> every data provider \u2014 they\u2019re not anonymous.')}
+      ${specRow('\uD83D\uDD12', 'ON / OFF-CHAIN', 'Transaction records and certificates on the permissioned ledger; sensitive commercial terms stay private via access controls.')}
+    </div>
+
+    <div class="cvh-grid">
+      <div class="cvh-col chose"><div class="cvh-head"></div>
+        <p>A private, permissioned chain run by a known consortium \u2014 trading public verifiability for control, speed, and data privacy.</p></div>
+      <div class="cvh-col happened"><div class="cvh-head"></div>
+        <p>Operationally a success (Walmart traceability, fast recalls). But critics ask: with a trusted operator (IBM) and vetted members, <strong>is this really a blockchain \u2014 or a well-run shared database?</strong></p>
+    </div>
+
+    <div class="verdict partial">
+      <div class="v-mark">\u26A0</div>
+      <div class="v-text"><span class="v-head">Killer question: the hardest case</span>
+        <p>It deliberately <em>fails</em> "no trusted central party" \u2014 IBM and the consortium are trusted. Yet it works. This forces the real question: do you need <strong>all four</strong> properties, or were you only ever buying tamper-evidence and shared access? If so, a permissioned chain (or even a database) may be the honest answer.</p></div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-label problem">THE TEACHING POINT</span>
+      <h3>The most successful "blockchain" here is the least trustless.</h3>
+      <p>Food Trust is the mirror your pitch should look into. If your project, stripped of buzzwords, is a vetted consortium sharing tamper-evident records \u2014 say so, and pick the permissioned tool that fits. Honesty about which properties you actually need is the strongest possible position.</p>
+    </div>
+
+    ${buildPredict('food')}
+    ${buildArchChart('food')}
+    ${buildCheckpoint('food')}
+  `;
+}
+
+// ---- Predict prompts ----
+const PREDICTS = {
+  power: { q: 'Power Ledger needs a fast, cheap chain for energy trades but a secure, liquid home for its token. What did they do?',
+    opts: ['Put everything on Bitcoin', 'Split across two chains (Ethereum + Solana)', 'Build one custom chain forever'], reveal: 'They went dual-chain \u2014 and changed stack three times getting there.' },
+  toucan: { q: 'Toucan let any Verra credit from 2008 onward be bridged. What do you think went wrong?',
+    opts: ['The chain ran out of space', 'Low-quality phased-out credits flooded in', 'Nobody used it'], reveal: '~600,000 tonnes of phased-out HFC-23 credits were bridged before they clamped down.' },
+  klima: { q: 'KLIMA offered tens of thousands of % APY, backed by carbon. What happened to the price?',
+    opts: ['Stayed stable, backed by real carbon', 'Spiked then crashed (~$3,600 \u2192 ~$3)', 'Slowly rose forever'], reveal: 'It spiked to ~$3,600 then collapsed to ~$3 \u2014 a reflexive death-spiral shape.' },
+  food: { q: 'IBM Food Trust is run by a known consortium with a trusted operator. Which chain type fits?',
+    opts: ['A public chain like Ethereum', 'A permissioned chain (Hyperledger Fabric)', 'No chain at all'], reveal: 'Permissioned Hyperledger Fabric \u2014 no token, data-owner controls access.' }
+};
+function buildPredict(id) {
+  const p = PREDICTS[id]; if (!p) return '';
+  return `
+    <div class="predict" data-reveal="${p.reveal}">
+      <div class="predict-q">${p.q}</div>
+      <div class="predict-opts">
+        ${p.opts.map(o => `<div class="predict-opt"><span class="pick"></span>${o}</div>`).join('')}
+      </div>
+      <div class="predict-result"><span class="commit">Locked in.</span> ${p.reveal}</div>
+    </div>`;
+}
+
+// ---- Architecture chart placeholder (rendered by Chart.js) ----
+function buildArchChart(id) {
+  const meta = {
+    power:  { eyebrow: 'TRUST-MINIMISATION SCORE', title: 'How decentralised is each layer, really? (1 = fully trusted party, 5 = fully trustless)' },
+    toucan: { eyebrow: 'WHERE THE TRUST SITS', title: 'The chain is trustless; the bridge and verifier are not.' },
+    klima:  { eyebrow: 'WHAT BACKS THE TOKEN', title: 'KLIMA\u2019s value is reflexive \u2014 it leans on incoming demand, not just reserves.' },
+    food:   { eyebrow: 'PROPERTIES IT ACTUALLY USES', title: 'Food Trust buys tamper-evidence and shared access \u2014 not trustlessness.' }
+  }[id];
+  if (!meta) return '';
+  return `
+    <div class="chart-card">
+      <div class="chart-eyebrow">${meta.eyebrow}</div>
+      <div class="chart-title">${meta.title}</div>
+      <div class="chart-holder" style="height:240px;"><canvas id="chart_${id}" role="img" aria-label="${meta.title}">${meta.title}</canvas></div>
+      <div class="chart-takeaway" id="take_${id}"></div>
+    </div>`;
+}
+
+// ============================================================
+// CHECKPOINTS
+// ============================================================
+const CHECKPOINTS = {
+  power: { title: 'Lock it in', sub: 'Answer all to complete Teardown 1', questions: [
+    { q: 'Why does Power Ledger keep POWR on Ethereum but run energy trades on Solana?',
+      opts: ['Ethereum is faster', 'Token security/liquidity on Ethereum; cheap high-volume trades on Solana', 'Solana is more secure', 'It was random'], correct: 1,
+      fb: 'Right \u2014 each chain is chosen for a different property: Ethereum for security/liquidity, Solana for throughput and cost.' },
+    { q: 'What is the trust-edge (oracle) in Power Ledger\u2019s design?',
+      opts: ['The POWR token', 'The smart meters reporting generation/consumption', 'The Wormhole bridge', 'Ethereum miners'], correct: 1,
+      fb: 'Correct \u2014 the chain settles whatever the meters report, so the meters are the trusted real-world input.' },
+    { q: 'What\u2019s the lesson from Power Ledger changing its stack three times?',
+      opts: ['Blockchains never work', '"Which chain" tracks your priority \u2014 cost vs security vs throughput \u2014 and can change', 'Always use Bitcoin', 'Tokens are unnecessary'], correct: 1,
+      fb: 'Right \u2014 name the chain AND the property you\u2019re optimising for; expect it to evolve.' } ] },
+  toucan: { title: 'Lock it in', sub: 'Answer all to complete Teardown 2', questions: [
+    { q: 'Why did Toucan choose Polygon?',
+      opts: ['It\u2019s the only EVM chain', 'Proof-of-Stake \u2014 ~99% less energy than Proof-of-Work', 'It has no fees', 'Verra required it'], correct: 1,
+      fb: 'Correct \u2014 a PoS chain was a deliberate sustainability choice for a carbon project.' },
+    { q: 'In Toucan\u2019s token model, what is BCT?',
+      opts: ['A unique NFT per credit', 'A fungible pool reference token minted from deposited TCO2', 'The Verra registry', 'A stablecoin'], correct: 1,
+      fb: 'Right \u2014 unique TCO2 tokens go into a pool; depositing them mints fungible BCT.' },
+    { q: 'What does the HFC-23 incident illustrate?',
+      opts: ['Polygon is insecure', 'A perfect ledger of low-quality credits is still low-quality \u2014 the oracle/quality problem', 'NFTs don\u2019t work', 'Bridges are illegal'], correct: 1,
+      fb: 'Correct \u2014 garbage in, immutable garbage out. The chain tokenised exactly what it was told to.' } ] },
+  klima: { title: 'Lock it in', sub: 'Answer all to complete Teardown 3', questions: [
+    { q: 'KlimaDAO\u2019s bonding-and-rebase model was forked from\u2026',
+      opts: ['Bitcoin', 'Olympus DAO (OHM)', 'Verra', 'Hyperledger'], correct: 1,
+      fb: 'Right \u2014 it applied Olympus DAO\u2019s reserve-currency mechanics to carbon.' },
+    { q: 'Each KLIMA token is backed by\u2026',
+      opts: ['1 US dollar', 'At least 1 BCT in the treasury', 'A barrel of oil', 'Nothing'], correct: 1,
+      fb: 'Correct \u2014 minimum 1 BCT per KLIMA held in reserves.' },
+    { q: 'The KLIMA crash (~$3,600 \u2192 ~$3) was fundamentally a failure of\u2026',
+      opts: ['The Polygon chain', 'Smart-contract bugs', 'Tokenomics \u2014 incentives needing perpetual new demand', 'The Toucan bridge'], correct: 2,
+      fb: 'Right \u2014 the contracts worked as coded; the economic design couldn\u2019t survive a falling price.' } ] },
+  food: { title: 'Final checkpoint', sub: 'Answer all to complete the module', questions: [
+    { q: 'IBM Food Trust runs on\u2026',
+      opts: ['Public Ethereum', 'Permissioned Hyperledger Fabric', 'Bitcoin', 'Solana'], correct: 1,
+      fb: 'Correct \u2014 a permissioned, access-controlled enterprise chain, no cryptocurrency.' },
+    { q: 'How does Food Trust handle the oracle problem?',
+      opts: ['Ignores it', 'Decentralised oracle network', 'By vetting and knowing every data provider (not anonymous)', 'Satellite data only'], correct: 2,
+      fb: 'Right \u2014 trust is managed by permissioning, since all participants are identified and vetted.' },
+    { q: 'Why is Food Trust the hardest case for the killer question?',
+      opts: ['It uses too much energy', 'It deliberately fails "no trusted central party" yet works \u2014 maybe it only needed tamper-evidence + shared access', 'It has no users', 'It\u2019s illegal'], correct: 1,
+      fb: 'Correct \u2014 it forces you to ask which properties you actually need, rather than defaulting to "trustless".' } ] }
+};
+
+function buildCheckpoint(id) {
+  const cp = CHECKPOINTS[id]; if (!cp) return '';
+  const qs = cp.questions.map((q, qi) => `
+    <div class="quiz-q" data-qi="${qi}">
+      <div class="q-text"><span class="q-num">Q${qi + 1}.</span>${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((opt, oi) => `
+          <div class="quiz-opt" data-qi="${qi}" data-oi="${oi}">
+            <span class="opt-letter">${String.fromCharCode(65 + oi)}</span><span>${opt}</span>
+          </div>`).join('')}
+      </div>
+      <div class="quiz-feedback" data-qi="${qi}"></div>
+    </div>`).join('');
+  return `
+    <div class="checkpoint" data-section="${id}">
+      <div class="checkpoint-header">
+        <div class="badge">\u2726 CHECKPOINT</div>
+        <h3>${cp.title}</h3>
+        <p>${cp.sub}</p>
+      </div>
+      <div class="quiz-body">${qs}</div>
+      <div class="checkpoint-result">
+        <div class="score"></div>
+        <div class="msg"></div>
+        <button class="btn" data-action="finish-section">Mark teardown complete \u2192</button>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// ROUTING
+// ============================================================
+let currentSectionIdx = -1;
+const BUILDERS = { power: buildPower, toucan: buildToucan, klima: buildKlima, food: buildFood };
+
+function openSection(id) {
+  const idx = SECTIONS.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  currentSectionIdx = idx;
+  const sec = SECTIONS[idx];
+  document.getElementById('screen-home').classList.remove('active');
+  const mount = document.getElementById('screenMount');
+  mount.innerHTML = `<div class="screen active">${BUILDERS[sec.id]()}</div>`;
+  wireSection(sec.id);
+  renderArchChart(sec.id);
+  updateNavFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  progress.current = id; saveProgress();
+}
+function goHome() {
+  currentSectionIdx = -1;
+  document.getElementById('screenMount').innerHTML = '';
+  document.getElementById('screen-home').classList.add('active');
+  renderSectionList(); updateNavFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function updateNavFooter() {
+  const back = document.getElementById('navBack');
+  const next = document.getElementById('navNext');
+  const label = document.getElementById('navLabel');
+  if (currentSectionIdx < 0) {
+    back.style.visibility = 'hidden';
+    const firstIncomplete = SECTIONS.findIndex((s) => !progress.completed[s.id]);
+    next.textContent = firstIncomplete >= 0 ? 'Start \u2192' : 'Review \u2192';
+    next.onclick = () => openSection(SECTIONS[firstIncomplete >= 0 ? firstIncomplete : 0].id);
+    label.textContent = '';
+  } else {
+    back.style.visibility = 'visible';
+    back.onclick = goHome; back.textContent = '\u2190 All teardowns';
+    const sec = SECTIONS[currentSectionIdx];
+    label.textContent = `Teardown ${sec.num} of ${SECTIONS.length}`;
+    const done = !!progress.completed[sec.id];
+    const nextIdx = currentSectionIdx + 1;
+    if (done && nextIdx < SECTIONS.length) {
+      next.textContent = 'Next teardown \u2192'; next.disabled = false;
+      next.onclick = () => openSection(SECTIONS[nextIdx].id);
+    } else if (done && nextIdx >= SECTIONS.length) {
+      next.textContent = '\uD83C\uDF89 Finish'; next.disabled = false; next.onclick = goHome;
+    } else {
+      next.textContent = 'Finish checkpoint'; next.disabled = true; next.onclick = null;
+    }
+  }
+}
+
+// ============================================================
+// WIRING
+// ============================================================
+function wireSection(id) {
+  wireCheckpoint(id);
+  wirePredict();
+}
+function wirePredict() {
+  document.querySelectorAll('.predict').forEach(block => {
+    const opts = block.querySelectorAll('.predict-opt');
+    const result = block.querySelector('.predict-result');
+    opts.forEach(opt => {
+      opt.onclick = () => {
+        if (block.dataset.locked) return;
+        block.dataset.locked = '1';
+        opts.forEach(o => o.classList.add('locked'));
+        opt.classList.add('chosen');
+        opt.querySelector('.pick').textContent = '\u2713';
+        if (result) result.classList.add('show');
+      };
+    });
+  });
+}
+function wireCheckpoint(id) {
+  const cp = CHECKPOINTS[id]; if (!cp) return;
+  const cpEl = document.querySelector(`.checkpoint[data-section="${id}"]`); if (!cpEl) return;
+  const answered = {};
+  const correctCount = () => Object.values(answered).filter(v => v === true).length;
+  const total = cp.questions.length;
+  cpEl.querySelectorAll('.quiz-opt').forEach(opt => {
+    opt.onclick = () => {
+      const qi = parseInt(opt.dataset.qi), oi = parseInt(opt.dataset.oi);
+      if (answered[qi] !== undefined) return;
+      const q = cp.questions[qi];
+      const opts = cpEl.querySelectorAll(`.quiz-opt[data-qi="${qi}"]`);
+      opts.forEach(o => o.classList.add('locked'));
+      const fb = cpEl.querySelector(`.quiz-feedback[data-qi="${qi}"]`);
+      if (oi === q.correct) {
+        opt.classList.add('correct'); answered[qi] = true;
+        fb.className = 'quiz-feedback right show';
+        fb.innerHTML = `<span class="fb-label">\u2713 CORRECT</span>${q.fb}`;
+      } else {
+        opt.classList.add('wrong'); opts[q.correct].classList.add('correct'); answered[qi] = false;
+        fb.className = 'quiz-feedback wrong-fb show';
+        fb.innerHTML = `<span class="fb-label">\u2717 NOT QUITE</span>${q.fb}`;
+      }
+      if (Object.keys(answered).length === total) showResult();
+    };
+  });
+  function showResult() {
+    const result = cpEl.querySelector('.checkpoint-result');
+    const score = correctCount();
+    result.querySelector('.score').textContent = `${score} / ${total}`;
+    let msg;
+    if (score === total) msg = 'Perfect \u2014 you can read this architecture cold.';
+    else if (score >= total - 1) msg = 'Strong. Review the one you missed, then carry on.';
+    else msg = 'Good effort \u2014 scroll up and re-read the spec, it\u2019ll click.';
+    result.querySelector('.msg').textContent = msg;
+    result.classList.add('show');
+    result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const finishBtn = result.querySelector('[data-action="finish-section"]');
+    finishBtn.onclick = () => {
+      markComplete(id); updateNavFooter();
+      const nextIdx = currentSectionIdx + 1;
+      const nextBtn = document.getElementById('navNext');
+      nextBtn.disabled = false;
+      if (nextIdx < SECTIONS.length) { nextBtn.textContent = 'Next teardown \u2192'; nextBtn.onclick = () => openSection(SECTIONS[nextIdx].id); }
+      else { nextBtn.textContent = '\uD83C\uDF89 Finish'; nextBtn.onclick = goHome; }
+      finishBtn.textContent = '\u2713 Completed'; finishBtn.disabled = true;
+      nextBtn.scrollIntoView({ behavior: 'smooth' });
+    };
+  }
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+const CH = { gold:'#F0B33D', goldB:'#FFD24A', teal:'#2DB6A8', blue:'#4A90E2', red:'#C8312B', green:'#2EA84A', purple:'#7E5AE8', grey:'#B0BCD6', grid:'rgba(176,188,214,0.15)', tick:'#B0BCD6' };
+let _charts = [];
+function destroyCharts() { _charts.forEach(c => { try { c.destroy(); } catch (e) {} }); _charts = []; }
+
+function renderArchChart(id) {
+  destroyCharts();
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.font.family = "'Calibri','Helvetica Neue',sans-serif";
+  Chart.defaults.color = CH.tick;
+  const c = document.getElementById('chart_' + id); if (!c) return;
+  const take = document.getElementById('take_' + id);
+  const barOpts = (max) => ({ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{ x:{ ticks:{ color:CH.tick, font:{size:10} }, grid:{ display:false } },
+             y:{ beginAtZero:true, max:max||5, ticks:{ color:CH.tick, stepSize:1 }, grid:{ color:CH.grid } } } });
+
+  if (id === 'power') {
+    _charts.push(new Chart(c, { type:'bar', data:{
+      labels:['Token layer\n(Ethereum)','Settlement\n(Solana)','Cross-chain\n(Wormhole)','Energy data\n(meters)'],
+      datasets:[{ data:[5,4,3,2], backgroundColor:[CH.green,CH.green,CH.gold,CH.red], borderRadius:6 }] } ,
+      options: barOpts(5) }));
+    if (take) take.textContent = 'The token and settlement layers are strongly decentralised; the meters (oracle) are the weakest, most-trusted link.';
+  } else if (id === 'toucan') {
+    _charts.push(new Chart(c, { type:'bar', data:{
+      labels:['Polygon\nchain','Token model\n(TCO2/BCT)','Carbon\nbridge','Toucan\nverifier'],
+      datasets:[{ data:[5,5,3,2], backgroundColor:[CH.green,CH.green,CH.gold,CH.red], borderRadius:6 }] },
+      options: barOpts(5) }));
+    if (take) take.textContent = 'On-chain mechanics score high; the bridge and the human verifier are where trust (and the HFC-23 failure) actually sat.';
+  } else if (id === 'klima') {
+    _charts.push(new Chart(c, { type:'line', data:{
+      labels:['Launch','+1 mo','+2 mo','+3 mo','later','now'],
+      datasets:[
+        { label:'KLIMA price (relative)', data:[100,720,180,40,8,7], borderColor:CH.red, backgroundColor:'rgba(200,49,43,0.12)', fill:true, borderWidth:2, pointRadius:3, pointBackgroundColor:CH.red, tension:0.2 },
+        { label:'BCT backing (per token)', data:[100,100,100,100,100,100], borderColor:CH.teal, borderWidth:2, borderDash:[6,4], pointRadius:0, tension:0 }
+      ] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+        scales:{ x:{ ticks:{ color:CH.tick, font:{size:10} }, grid:{ display:false } },
+                 y:{ beginAtZero:true, ticks:{ color:CH.tick }, grid:{ color:CH.grid } } } } }));
+    if (take) take.textContent = 'Illustrative shape (relative, not exact $): the carbon backing held steady while the market price spiked and collapsed. The gap is pure speculation.';
+  } else if (id === 'food') {
+    _charts.push(new Chart(c, { type:'bar', data:{
+      labels:['No trusted\ncentral party','Tamper-\nevidence','External\nverification','Shared\naccess'],
+      datasets:[{ data:[1,5,2,5], backgroundColor:[CH.red,CH.green,CH.gold,CH.green], borderRadius:6 }] },
+      options: barOpts(5) }));
+    if (take) take.textContent = 'Food Trust scores low on "no trusted party" and public verification \u2014 it never needed them. It bought tamper-evidence and shared access, which a permissioned chain delivers.';
+  }
+}
+
+// ============================================================
+// GLOSSARY
+// ============================================================
+const GLOSSARY = [
+  { term: 'Public vs permissioned chain', def: 'Public (Ethereum, Solana, Polygon): anyone can join and verify. Permissioned (Hyperledger Fabric): only vetted members participate, and a known operator runs it.' },
+  { term: 'Dual-chain / multichain', def: 'Using more than one blockchain, each for what it\u2019s best at \u2014 e.g. Ethereum for token security, Solana for cheap high-volume transactions.' },
+  { term: 'Bridge', def: 'Software that moves a token or asset from one chain to another. Often locks the asset on chain A and mints an equivalent on chain B (e.g. Wormhole NTT, Toucan Carbon Bridge).' },
+  { term: 'ERC-20 / ERC-721 / SPL', def: 'Token standards. ERC-20 = fungible (interchangeable) on Ethereum. ERC-721 = non-fungible (unique, an NFT). SPL = Solana\u2019s token standard.' },
+  { term: 'TCO2 / BCT / NCT', def: 'Toucan\u2019s carbon tokens. TCO2 = one tokenised credit with its metadata. BCT/NCT = fungible reference tokens minted by pooling TCO2s.' },
+  { term: 'Rebase token', def: 'A token whose supply is algorithmically expanded (or contracted). KLIMA is a rebase token; "staking rewards" come from new supply, not external revenue.' },
+  { term: 'Bonding', def: 'Depositing an asset (e.g. carbon tokens or LP tokens) into a treasury in exchange for discounted protocol tokens after a vesting period. From Olympus DAO.' },
+  { term: 'Oracle', def: 'Whatever feeds real-world data into the chain \u2014 a smart meter, a human verifier, a supplier upload. The trusted weak point in an otherwise trustless system.' },
+  { term: 'Proof of Stake (PoS)', def: 'A consensus mechanism that secures the chain via staked capital instead of energy-intensive mining. ~99% less energy than Proof of Work \u2014 why carbon projects prefer it.' },
+  { term: 'DAO multisig', def: 'A wallet requiring multiple signatures to act, used to execute decisions a DAO has voted on. The multisig security pattern from your Week 8 topic.' },
+  { term: 'Voluntary carbon market (VCM)', def: 'The market where companies buy carbon credits voluntarily (not legally mandated) to offset emissions. Where Toucan and KlimaDAO operate.' }
+];
+function renderGlossary() {
+  const list = document.getElementById('glossList'); if (!list) return;
+  list.innerHTML = GLOSSARY.map(g => `<div class="gloss-item"><div class="term">${g.term}</div><div class="def">${g.def}</div></div>`).join('');
+}
+(function wireGlossary() {
+  const fab = document.getElementById('glossFab');
+  const overlay = document.getElementById('glossOverlay');
+  const close = document.getElementById('glossClose');
+  if (!fab) return;
+  renderGlossary();
+  fab.onclick = () => overlay.classList.add('open');
+  close.onclick = () => overlay.classList.remove('open');
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove('open'); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+})();
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('resetBtn').onclick = () => {
+  progress = { completed: {}, current: null };
+  saveProgress(); renderSectionList(); updateProgressBar(); updateNavFooter();
+};
+renderSectionList();
+updateProgressBar();
+updateNavFooter();
+</script>
+
+<a href="https://www.linkedin.com/in/jmeidell/" target="_blank" rel="noopener" id="jem-badge" title="Jan Erik Meidell — LinkedIn" style="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;">
+<img src="data:image/png;base64,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" alt="Jan Erik Meidell" style="width:34px;height:34px;border-radius:50%;display:block;border:1.5px solid #F0B33D;">
+<span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Jan Erik Meidell</span>
+</a>
+
+</body>
+</html>
