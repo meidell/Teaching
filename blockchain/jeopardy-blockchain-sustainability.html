@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeopardy · Blockchain &amp; Cybersecurity</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --purple:#7E5AE8; --teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+  background:radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;color:var(--white);}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:12px 20px;}
+.topbar-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.topbar .title{font-family:Georgia,serif;font-style:italic;font-size:20px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar .sub{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:bold;}
+.container{max-width:1100px;margin:0 auto;padding:20px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn.green{background:var(--green-correct);color:#fff;}
+.btn.red{background:var(--red-wrong);color:#fff;}
+
+/* SETUP */
+#setup{max-width:560px;margin:30px auto;background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:28px;}
+#setup h2{font-family:Georgia,serif;font-style:italic;font-size:24px;margin-bottom:8px;}
+#setup p{color:var(--grey-muted);font-size:14px;margin-bottom:18px;}
+.team-input{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.team-input input{flex:1;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:8px;padding:10px 12px;color:#fff;font-family:inherit;font-size:14px;}
+.team-input .dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;}
+.team-input button{background:transparent;border:none;color:var(--red-wrong);cursor:pointer;font-size:18px;}
+.rules{background:var(--navy-deep);border-radius:10px;padding:14px;font-size:13px;color:#CDD6EC;margin:16px 0;}
+.rules b{color:var(--gold-bright);}
+.rules ul{margin:8px 0 0 18px;}
+.rules li{margin-bottom:5px;}
+
+/* SCOREBOARD */
+.scoreboard{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+.team-score{background:var(--navy-mid);border:2px solid var(--blue-bright);border-radius:12px;padding:10px 18px;text-align:center;min-width:120px;transition:all .25s;}
+.team-score.active{border-color:var(--gold);box-shadow:0 0 16px rgba(240,179,61,.4);transform:translateY(-3px);}
+.team-score .tname{font-size:13px;font-weight:bold;display:flex;align-items:center;gap:6px;justify-content:center;}
+.team-score .tname .dot{width:12px;height:12px;border-radius:50%;}
+.team-score .tval{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:var(--gold-bright);}
+.turn-banner{text-align:center;font-size:14px;color:var(--grey-muted);margin-bottom:16px;}
+.turn-banner b{color:var(--gold-bright);font-family:Georgia,serif;font-size:16px;}
+
+/* BOARD */
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+.cat-head{background:var(--navy-light);border:1px solid var(--gold-dark);border-radius:10px;padding:12px 6px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:12px;color:var(--gold-bright);min-height:64px;display:flex;align-items:center;justify-content:center;line-height:1.2;}
+.cell{background:linear-gradient(160deg,var(--navy-mid),var(--navy-light));border:1px solid var(--blue-bright);border-radius:10px;padding:18px 8px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:24px;color:var(--gold);cursor:pointer;transition:all .18s;min-height:62px;display:flex;align-items:center;justify-content:center;}
+.cell:hover{background:var(--blue-bright);transform:scale(1.04);color:#fff;}
+.cell.used{background:var(--navy-deep);color:transparent;cursor:default;border-color:rgba(176,188,214,.12);}
+.cell.used:hover{transform:none;}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(5,12,28,.88);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:linear-gradient(160deg,var(--navy-mid),var(--navy-deep));border:2px solid var(--gold);border-radius:20px;max-width:760px;width:100%;padding:32px;animation:pop .3s ease;}
+@keyframes pop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal .m-cat{font-size:12px;letter-spacing:2px;color:var(--gold);font-weight:bold;text-align:center;}
+.modal .m-val{font-family:Georgia,serif;font-size:34px;color:var(--gold-bright);text-align:center;margin:4px 0 20px;}
+.modal .m-q{font-size:22px;line-height:1.4;text-align:center;margin-bottom:24px;font-weight:600;}
+.modal .m-timer{height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;margin-bottom:20px;}
+.modal .m-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:100%;transition:width 1s linear;}
+.m-answer{background:var(--green-soft);border:1px solid var(--green-correct);border-radius:12px;padding:16px;margin-bottom:20px;display:none;}
+.m-answer.show{display:block;}
+.m-answer .lbl{font-size:11px;letter-spacing:2px;color:#B6F0C2;font-weight:bold;}
+.m-answer .txt{font-size:17px;margin-top:6px;}
+.m-controls{display:flex;flex-direction:column;gap:12px;}
+.m-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;}
+.m-hint{text-align:center;font-size:13px;color:var(--grey-muted);font-style:italic;}
+.steal-box{background:var(--red-soft);border:1px solid var(--red-wrong);border-radius:12px;padding:14px;margin-top:6px;}
+.steal-box .lbl{font-size:12px;color:#FFC4C0;font-weight:bold;text-align:center;margin-bottom:10px;}
+.award-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.award-btn{border:1px solid;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:bold;background:var(--navy-mid);transition:all .2s;}
+.award-btn:hover{transform:translateY(-2px);}
+
+/* WINNER */
+#winner{display:none;text-align:center;padding:40px 20px;}
+#winner.show{display:block;}
+#winner .crown{font-size:60px;}
+#winner h2{font-family:Georgia,serif;font-style:italic;font-size:34px;margin:10px 0;color:var(--gold-bright);}
+#winner .podium{display:flex;justify-content:center;align-items:flex-end;gap:12px;margin:24px 0;flex-wrap:wrap;}
+.pod{border-radius:10px 10px 0 0;padding:14px;min-width:110px;text-align:center;border:1px solid;}
+.pod .pn{font-weight:bold;font-size:14px;}
+.pod .pv{font-family:Georgia,serif;font-size:22px;color:var(--gold-bright);}
+
+.hidden{display:none!important;}
+@media(max-width:680px){
+  .board{grid-template-columns:repeat(6,1fr);gap:4px;}
+  .cell{font-size:16px;padding:12px 2px;min-height:46px;}
+  .cat-head{font-size:9px;padding:8px 3px;min-height:54px;}
+  .modal{padding:20px;}.modal .m-q{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="title">Jeopardy — Blockchain &amp; Cybersecurity</div>
+      <div class="sub">SUMAS · COURSE REVISION</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn ghost small hidden" id="btnRestart">↺ Restart</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SETUP -->
+  <div id="setup">
+    <h2>Set up the game</h2>
+    <p>Team game, run from the board (Zoom / screen share). Add 2 to 5 teams, then start the game.</p>
+    <div id="teamInputs"></div>
+    <button class="btn ghost small" id="addTeam">+ Add a team</button>
+    <div class="rules">
+      <b>Rules</b>
+      <ul>
+        <li>The team whose turn it is picks a tile (category + points).</li>
+        <li>You read the question aloud. The team answers before the timer runs out (30 s).</li>
+        <li>Click <b>Reveal</b>, then award points: <b>Correct</b> (active team) or open the <b>steal</b> to let another team try.</li>
+        <li>Correct answer = +points. A successful steal = +points for the stealing team.</li>
+        <li>The game ends when all tiles are played. Highest score = winner.</li>
+      </ul>
+    </div>
+    <button class="btn" id="startGame" style="width:100%;">▶ Start the game</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="hidden">
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="turn-banner" id="turnBanner"></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- WINNER -->
+  <div id="winner">
+    <div class="crown">👑</div>
+    <h2 id="winnerName"></h2>
+    <div class="podium" id="podium"></div>
+    <button class="btn" id="playAgain">↺ New game</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="m-cat" id="mCat"></div>
+    <div class="m-val" id="mVal"></div>
+    <div class="m-q" id="mQ"></div>
+    <div class="m-timer"><i id="mTimerBar"></i></div>
+    <div class="m-answer" id="mAnswer"><div class="lbl">ANSWER</div><div class="txt" id="mAnswerTxt"></div></div>
+    <div class="m-controls">
+      <div class="m-hint" id="mHint">The active team answers out loud. Click “Reveal the answer” when time is up.</div>
+      <div class="m-row" id="mRowReveal">
+        <button class="btn" id="btnReveal">Reveal the answer</button>
+      </div>
+      <div class="m-row hidden" id="mRowAward">
+        <button class="btn green" id="btnCorrect">✓ Correct (+points)</button>
+        <button class="btn ghost" id="btnSteal">↪ No one / Open the steal</button>
+        <button class="btn red" id="btnWrong">✗ No team — skip</button>
+      </div>
+      <div class="steal-box hidden" id="stealBox">
+        <div class="lbl">STEAL — which team gave the right answer?</div>
+        <div class="award-grid" id="stealGrid"></div>
+        <div class="m-row" style="margin-top:10px;"><button class="btn ghost small" id="btnNoSteal">No one — skip</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA — Blockchain & Cybersecurity course revision board
+// 5 categories x 5 values, drawn from the course slides (Blocks 1-5).
+// ============================================================
+const CATEGORIES=[
+  {name:'THE DOUBLE-SPEND PROBLEM',q:[
+    {v:100,q:"What fundamental problem was blockchain invented to solve?",a:"The double-spend problem — preventing the same digital money from being spent twice."},
+    {v:200,q:"Why is digital money hard to secure, unlike a €20 banknote?",a:"A digital file copies perfectly — you keep the original when you send it; a physical note leaves your hand."},
+    {v:300,q:"How do traditional banks prevent double spending?",a:"With a centralized database (a ledger) that the bank updates and whose accuracy it guarantees."},
+    {v:400,q:"In 2008, what new idea did Bitcoin propose to replace trust in a bank?",a:"Trust a distributed network of thousands of nodes instead of a central company."},
+    {v:500,q:"Name two pre-Bitcoin digital money systems and their common weakness.",a:"DigiCash, e-gold, Liberty Reserve — all relied on centralized servers (hacking, fraud, government shutdown)."},
+  ]},
+  {name:'HASHING & INTEGRITY',q:[
+    {v:100,q:"What is a hash function, in one sentence?",a:"A function that turns any data into a fixed-size digital fingerprint (e.g. 256 bits)."},
+    {v:200,q:"Name the third key property of a hash, alongside determinism and fixed output size.",a:"The avalanche effect (sensitivity) — a tiny input change flips ~50% of the output bits."},
+    {v:300,q:"Why is hashing 'one-way'? Can you recover the input from the hash?",a:"No — it's irreversible: the output space is smaller than the input space and mixing destroys structure. Reversing SHA-256 is infeasible."},
+    {v:400,q:"Why does a 'naive' hash like summing ASCII codes fail (e.g. 'cat' vs 'act')?",a:"It's order-blind: 'cat' and 'act' produce the same hash → a collision. You must weight by position."},
+    {v:500,q:"In a Bitcoin block, what structure combines all transaction hashes into a single fingerprint?",a:"The Merkle tree — its root (Merkle root) is stored in the block header."},
+  ]},
+  {name:'KEYS & SIGNATURES',q:[
+    {v:100,q:"Hashes detect if data changed. What problem can they NOT solve?",a:"Authorization: who created the transaction and who is allowed to spend the funds. That's a signature problem."},
+    {v:200,q:"In a key pair, which key stays secret and which can be shared?",a:"The private key stays secret (to sign); the public key is shared (to verify)."},
+    {v:300,q:"You sign a transaction with the private key. What does the network verify it with?",a:"The matching public key — Verify(public key, signature, hash)."},
+    {v:400,q:"Why do you sign the HASH of the message rather than the message itself?",a:"Fixed, manageable size regardless of message length, while still uniquely representing the message — efficient and secure."},
+    {v:500,q:"In Bitcoin, how does the address stop an attacker from substituting their own public key?",a:"The address = HASH160 of the public key. You can't swap keys without changing the address; nodes check hash(public key) == address."},
+  ]},
+  {name:'CONSENSUS: POW & POS',q:[
+    {v:100,q:"Why can two valid blocks exist at the same time, with no fraud at all?",a:"It's a distributed relay network: miners work in parallel and information arrives at different times (a temporary fork)."},
+    {v:200,q:"What is the rule that resolves a fork in Proof of Work?",a:"Follow the chain with the most cumulative work — not the one with the most blocks."},
+    {v:300,q:"In Proof of Work, what is the 'work' miners must perform?",a:"Find a nonce so that hash(block + nonce) is below a target — many leading zeros. Hard to produce, easy to verify."},
+    {v:400,q:"In Proof of Stake, how is a dishonest validator punished, and what is the mechanism called?",a:"Part or all of their stake is destroyed: this is slashing. Attacking = destroying your own money."},
+    {v:500,q:"What is the main criticism of Proof of Stake regarding decentralization?",a:"Wealth concentration: more stake → more rewards → more power. Power = capital, with no physical ceiling."},
+  ]},
+  {name:'BLOCKCHAIN & SUSTAINABILITY',q:[
+    {v:100,q:"The course's 'killer question': before choosing a blockchain, what must you always ask?",a:"'Could a regular database do this?' If yes, blockchain adds cost and complexity without adding value."},
+    {v:200,q:"Name two of the four properties that justify using a blockchain over a database.",a:"No trusted central party, immutability, verifiable transparency, and programmable enforcement (smart contracts)."},
+    {v:300,q:"What limitation of blockchain does the KlimaDAO 'zombie credits' scandal illustrate?",a:"'Garbage in, garbage out': blockchain guarantees a record is tamper-proof, not that it is truthful. Transparency doesn't replace quality."},
+    {v:400,q:"Why do carbon market projects (Toucan, KlimaDAO) choose Polygon over Ethereum L1?",a:"Very low cost + public transparency + Ethereum compatibility — paying $5 of gas on a $3 carbon credit makes no sense."},
+    {v:500,q:"In the Remix activity you deploy an ERC-20 'CarbonCredit' token. What can it NOT prove?",a:"That it corresponds to a real tonne of CO₂ avoided — that's the oracle problem (the link to the physical world stays off-chain)."},
+  ]},
+    {name:'SUSTAINABILITY IN PRACTICE',q:[
+    {v:100,q:"Walmart traces leafy greens from farm to shelf on IBM Food Trust. By how much did tracing time drop?",a:"From ~7 days to 2.2 seconds — using IBM Food Trust on Hyperledger."},
+    {v:200,q:"The UN World Food Programme delivered $325M+ of aid in Jordan refugee camps. What did it pair blockchain with for identity?",a:"Iris scanning (WFP Building Blocks) — instant, dignified cash assistance without bank accounts."},
+    {v:300,q:"Across the 8 sustainability domains, what three problems does blockchain actually address — making it an enabler, not a solution?",a:"Transparency, traceability, and accountability — only when applied to the right use case."},
+    {v:400,q:"Why does an enterprise supply chain like IBM Food Trust use a private chain (Hyperledger) rather than a public one?",a:"Commercial confidentiality — Walmart can't expose supplier and pricing data to competitors on a public ledger."},
+    {v:500,q:"What mandatory EU requirement from 2027 is expected to drive mass blockchain adoption across supply chains?",a:"The EU Digital Product Passport — every product sold in the EU carries verified sustainability data (materials, carbon footprint, recyclability)."},
+  ]},
+];
+
+const TEAM_COLORS=['#F0B33D','#4A90E2','#2EA84A','#7E5AE8','#E8643C'];
+const QUESTION_TIME=30;
+
+let teams=[];      // {name,score,color}
+let turn=0;        // index of active team
+let used={};       // "c-r" -> true
+let cellsTotal=CATEGORIES.length*5;
+let current=null;  // {ci,ri,val}
+let timer=null;
+
+// ---------- SETUP ----------
+function renderTeamInputs(){
+  const wrap=document.getElementById('teamInputs');wrap.innerHTML='';
+  teams.forEach((t,i)=>{
+    const row=document.createElement('div');row.className='team-input';
+    row.innerHTML=`<span class="dot" style="background:${TEAM_COLORS[i]}"></span><input type="text" value="${t}" data-i="${i}" placeholder="Team ${i+1} name">${teams.length>2?`<button data-del="${i}">✕</button>`:''}`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{teams[+inp.dataset.i]=inp.value;});
+  wrap.querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>{teams.splice(+b.dataset.del,1);renderTeamInputs();});
+}
+document.getElementById('addTeam').onclick=()=>{if(teams.length<5){teams.push('Team '+(teams.length+1));renderTeamInputs();}};
+teams=['Team 1','Team 2'];renderTeamInputs();
+
+document.getElementById('startGame').onclick=()=>{
+  teams=teams.map((t,i)=>({name:t.trim()||('Team '+(i+1)),score:0,color:TEAM_COLORS[i]}));
+  turn=0;used={};current=null;
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  document.getElementById('btnRestart').classList.remove('hidden');
+  renderScore();renderBoard();
+};
+document.getElementById('btnRestart').onclick=()=>location.reload();
+document.getElementById('playAgain').onclick=()=>location.reload();
+
+// ---------- SCOREBOARD ----------
+function renderScore(){
+  const sb=document.getElementById('scoreboard');sb.innerHTML='';
+  teams.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='team-score'+(i===turn?' active':'');
+    d.innerHTML=`<div class="tname"><span class="dot" style="background:${t.color}"></span>${t.name}</div><div class="tval">${t.score}</div>`;
+    sb.appendChild(d);
+  });
+  document.getElementById('turnBanner').innerHTML=`Now playing: <b style="color:${teams[turn].color}">${teams[turn].name}</b> — pick a tile`;
+}
+
+// ---------- BOARD ----------
+function renderBoard(){
+  const board=document.getElementById('board');board.innerHTML='';
+  CATEGORIES.forEach(c=>{const h=document.createElement('div');h.className='cat-head';h.textContent=c.name;board.appendChild(h);});
+  for(let r=0;r<5;r++){
+    CATEGORIES.forEach((c,ci)=>{
+      const key=ci+'-'+r;const cell=document.createElement('div');
+      const q=c.q[r];
+      if(used[key]){cell.className='cell used';cell.textContent='';}
+      else{cell.className='cell';cell.textContent=q.v;cell.onclick=()=>openQuestion(ci,r);}
+      board.appendChild(cell);
+    });
+  }
+}
+
+// ---------- QUESTION MODAL ----------
+function openQuestion(ci,ri){
+  const cat=CATEGORIES[ci];const q=cat.q[ri];
+  current={ci,ri,val:q.v};
+  document.getElementById('mCat').textContent=cat.name;
+  document.getElementById('mVal').textContent=q.v+' pts';
+  document.getElementById('mQ').textContent=q.q;
+  document.getElementById('mAnswerTxt').textContent=q.a;
+  document.getElementById('mAnswer').classList.remove('show');
+  document.getElementById('mRowReveal').classList.remove('hidden');
+  document.getElementById('mRowAward').classList.add('hidden');
+  document.getElementById('stealBox').classList.add('hidden');
+  document.getElementById('mHint').textContent=`Now playing: “${teams[turn].name}”. Read the question aloud.`;
+  document.getElementById('modalBg').classList.add('show');
+  startTimer();
+}
+function startTimer(){
+  const bar=document.getElementById('mTimerBar');bar.style.transition='none';bar.style.width='100%';
+  let t=QUESTION_TIME;
+  void bar.offsetWidth;
+  bar.style.transition='width 1s linear';bar.style.width='0%';
+  clearInterval(timer);
+  timer=setInterval(()=>{t--;if(t<=0){clearInterval(timer);}},1000);
+}
+function stopTimer(){clearInterval(timer);document.getElementById('mTimerBar').style.width=getComputedStyle(document.getElementById('mTimerBar')).width;}
+
+document.getElementById('btnReveal').onclick=()=>{
+  stopTimer();
+  document.getElementById('mAnswer').classList.add('show');
+  document.getElementById('mRowReveal').classList.add('hidden');
+  document.getElementById('mRowAward').classList.remove('hidden');
+  document.getElementById('mHint').textContent='Award points based on the spoken answer.';
+};
+
+document.getElementById('btnCorrect').onclick=()=>{
+  teams[turn].score+=current.val;
+  closeAndAdvance(true);
+};
+document.getElementById('btnWrong').onclick=()=>{
+  closeAndAdvance(true);
+};
+document.getElementById('btnSteal').onclick=()=>{
+  // build steal buttons for all OTHER teams
+  const grid=document.getElementById('stealGrid');grid.innerHTML='';
+  teams.forEach((t,i)=>{
+    if(i===turn)return;
+    const b=document.createElement('div');b.className='award-btn';b.style.borderColor=t.color;b.style.color=t.color;
+    b.textContent=t.name+' (+'+current.val+')';
+    b.onclick=()=>{teams[i].score+=current.val;closeAndAdvance(true);};
+    grid.appendChild(b);
+  });
+  document.getElementById('stealBox').classList.remove('hidden');
+  document.getElementById('mRowAward').classList.add('hidden');
+};
+document.getElementById('btnNoSteal').onclick=()=>{closeAndAdvance(true);};
+
+function closeAndAdvance(advance){
+  if(current){used[current.ci+'-'+current.ri]=true;}
+  document.getElementById('modalBg').classList.remove('show');
+  current=null;
+  if(advance)turn=(turn+1)%teams.length;
+  renderScore();renderBoard();
+  if(Object.keys(used).length>=cellsTotal)endGame();
+}
+
+// ---------- END ----------
+function endGame(){
+  document.getElementById('game').classList.add('hidden');
+  const sorted=[...teams].sort((a,b)=>b.score-a.score);
+  const top=sorted[0];
+  const tied=sorted.filter(t=>t.score===top.score);
+  document.getElementById('winnerName').textContent=tied.length>1?('Tie: '+tied.map(t=>t.name).join(' & ')+'!'):(top.name+' wins!');
+  const pod=document.getElementById('podium');pod.innerHTML='';
+  const heights=[150,110,86,70,60];
+  sorted.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='pod';
+    d.style.height=heights[i]+'px';d.style.background=t.color+'22';d.style.borderColor=t.color;
+    d.innerHTML=`<div class="pn" style="color:${t.color}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''} ${t.name}</div><div class="pv">${t.score}</div>`;
+    pod.appendChild(d);
+  });
+  document.getElementById('winner').classList.add('show');
+  document.getElementById('btnRestart').classList.add('hidden');
+}
+</script>
+</body>
+</html>
