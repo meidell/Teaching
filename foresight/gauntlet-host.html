@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foresight Gauntlet · Teacher Scoreboard</title>
+<style>
+:root{--navy-deep:#0A1A3A;--navy-mid:#152A5E;--navy-light:#1E3470;--blue-bright:#1E5AA8;--blue-glow:#4A90E2;--gold:#F0B33D;--gold-bright:#FFD24A;--white:#fff;--grey-muted:#B0BCD6;--green-correct:#2EA84A;--green-soft:#1E6E33;--red-wrong:#C8312B;--red-soft:#5E1F1C;--purple-defi:#7E5AE8;--teal:#2DB6A8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;background:radial-gradient(ellipse at 20% 0%,rgba(30,90,168,.18) 0,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(126,90,232,.12) 0,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0,var(--navy-deep) 75%);background-attachment:fixed;color:var(--white);line-height:1.45;}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;}
+.topbar{display:flex;align-items:center;gap:18px;border-bottom:1px solid rgba(240,179,61,.3);padding-bottom:14px;margin-bottom:20px;}
+.topbar .ttl{font-family:Georgia,serif;font-size:24px;font-style:italic;color:var(--gold-bright);}
+.code-chip{margin-left:auto;background:var(--navy-deep);border:2px solid var(--gold);border-radius:12px;padding:8px 18px;text-align:center;}
+.code-chip .lbl{font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:bold;}
+.code-chip .code{font-family:Georgia,serif;font-size:30px;font-weight:bold;letter-spacing:6px;color:var(--white);}
+.conn{font-size:11px;color:var(--grey-muted);}
+.status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green-correct);margin-right:5px;}
+.status-dot.off{background:var(--red-wrong);}
+.screen{display:none;}.screen.active{display:block;animation:fade .4s ease;}
+@keyframes fade{from{opacity:0;}to{opacity:1;}}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:13px 26px;font-family:inherit;font-size:15px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover:not(:disabled){background:var(--gold-bright);transform:translateY(-1px);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn.teal{background:var(--teal);color:var(--navy-deep);}
+.btn.purple{background:var(--purple-defi);color:#fff;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.big{font-size:18px;padding:16px 34px;}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px;}
+/* setup */
+.setup{text-align:center;padding:40px 20px;}
+.setup h1{font-family:Georgia,serif;font-size:40px;font-style:italic;margin-bottom:10px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.setup p{color:var(--grey-muted);max-width:600px;margin:0 auto 24px;font-size:16px;}
+.case-choice{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin:10px 0 24px;}
+.case-opt{background:var(--navy-mid);border:2px solid var(--blue-bright);border-radius:16px;padding:22px;width:300px;cursor:pointer;transition:all .2s;text-align:left;}
+.case-opt:hover{border-color:var(--gold);transform:translateY(-2px);}
+.case-opt.sel{border-color:var(--gold);background:var(--navy-light);}
+.case-opt .ck{font-size:10px;letter-spacing:2px;font-weight:bold;color:var(--teal);}
+.case-opt.c2 .ck{color:var(--purple-defi);}
+.case-opt h3{font-family:Georgia,serif;font-size:22px;margin:6px 0 8px;}
+.case-opt .bf{font-size:12.5px;color:var(--grey-muted);}
+.case-opt .dl{display:block;margin-top:8px;color:#8FA0C4;font-size:11px;line-height:1.4;}
+/* lobby grid of groups */
+.lobby-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0;}
+.globby{background:var(--navy-mid);border:2px dashed var(--blue-bright);border-radius:14px;padding:20px;text-align:center;min-height:120px;display:flex;flex-direction:column;justify-content:center;}
+.globby.in{border-style:solid;border-color:var(--green-correct);}
+.globby .gn{font-family:Georgia,serif;font-size:30px;font-weight:bold;color:var(--gold);}
+.globby.in .gn{color:var(--green-correct);}
+.globby .nm{font-size:14px;margin-top:6px;color:var(--white);font-weight:bold;}
+.globby .wait{font-size:12px;color:var(--grey-muted);margin-top:6px;}
+/* play header */
+.lvlhead{display:flex;align-items:flex-end;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+.lvl-tag{font-size:11px;letter-spacing:2px;font-weight:bold;padding:5px 14px;border-radius:20px;background:rgba(30,90,168,.4);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.lvl-tag.normative{background:rgba(240,179,61,.18);color:var(--gold-bright);border-color:var(--gold);}
+.lvlhead h2{font-family:Georgia,serif;font-size:30px;font-style:italic;}
+.lvlhead .kick{font-size:12px;color:var(--gold);letter-spacing:2px;font-weight:bold;}
+.layout{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;}
+@media(max-width:900px){.layout{grid-template-columns:1fr;}}
+.panel{background:rgba(21,42,94,.6);border:1px solid var(--blue-bright);border-radius:16px;padding:20px;}
+.panel h4{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:bold;margin-bottom:12px;}
+.prompt{font-size:15px;color:#DCE3F2;margin-bottom:12px;}
+/* live submit tracker */
+.subtrack{display:flex;flex-direction:column;gap:10px;}
+.strow{display:flex;align-items:center;gap:12px;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;padding:12px 14px;}
+.strow .gnum{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:var(--gold);min-width:30px;}
+.strow .gnm{flex:1;font-weight:bold;}
+.strow .st{font-size:12px;font-weight:bold;letter-spacing:1px;padding:4px 10px;border-radius:12px;}
+.st.waiting{background:rgba(176,188,214,.15);color:var(--grey-muted);}
+.st.locked{background:var(--green-soft);color:#9BE8AC;border:1px solid var(--green-correct);}
+.strow .pts{font-family:Georgia,serif;font-weight:bold;color:var(--gold-bright);min-width:54px;text-align:right;display:none;}
+.strow.revealed .pts{display:block;}
+.strow.revealed .st{display:none;}
+/* leaderboard */
+.lb{display:flex;flex-direction:column;gap:10px;}
+.lbrow{display:flex;align-items:center;gap:12px;}
+.lbrow .rank{font-family:Georgia,serif;font-size:18px;font-weight:bold;color:var(--gold);min-width:24px;}
+.lbrow .nm{min-width:120px;font-weight:bold;font-size:14px;}
+.lbtrack{flex:1;height:22px;background:var(--navy-deep);border-radius:11px;overflow:hidden;border:1px solid rgba(176,188,214,.2);}
+.lbfill{height:100%;background:linear-gradient(90deg,var(--green-soft),var(--green-correct));border-radius:11px;transition:width .6s ease;}
+.lbrow .sc{font-family:Georgia,serif;font-weight:bold;color:var(--gold-bright);min-width:54px;text-align:right;}
+/* canon reveal */
+.canon-box{background:rgba(46,168,74,.1);border-left:3px solid var(--green-correct);padding:14px 16px;border-radius:8px;margin-top:6px;}
+.cb-label{font-size:10px;letter-spacing:2px;color:var(--green-correct);font-weight:bold;}
+.canon-box ul{margin:8px 0 0 18px;font-size:14px;color:#DCE3F2;}.canon-box li{margin-bottom:4px;}
+.revealnote{font-size:13px;color:var(--gold-bright);margin-top:10px;font-weight:bold;}
+.controlbar{position:sticky;bottom:0;background:rgba(10,26,58,.95);backdrop-filter:blur(8px);border-top:1px solid rgba(240,179,61,.3);padding:14px 24px;margin-top:24px;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.controlbar .info{font-size:13px;color:var(--grey-muted);}
+/* podium */
+.podium{text-align:center;padding:30px 20px;}
+.podium h1{font-family:Georgia,serif;font-size:42px;font-style:italic;color:var(--gold-bright);margin-bottom:20px;}
+.podrow{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+.pod{display:flex;align-items:center;gap:16px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:14px;padding:18px 22px;}
+.pod.first{border-color:var(--gold);background:linear-gradient(135deg,rgba(240,179,61,.16),rgba(30,90,168,.1));}
+.pod .medal{font-size:30px;}
+.pod .pnm{flex:1;text-align:left;font-family:Georgia,serif;font-size:22px;}
+.pod .psc{font-family:Georgia,serif;font-size:26px;font-weight:bold;color:var(--gold-bright);}
+.reset-link{text-align:center;margin-top:20px;font-size:12px;color:var(--grey-muted);}
+.reset-link a{color:var(--gold);cursor:pointer;text-decoration:underline;}
+.steps{text-align:left;max-width:560px;margin:0 auto 20px;color:var(--grey-muted);font-size:14px;}
+.steps li{margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <span class="ttl">\uD83D\uDD2D The Foresight Gauntlet</span>
+    <span class="conn" id="conn"><span class="status-dot off" id="dot"></span>connecting…</span>
+    <div class="code-chip" id="codeChip" style="display:none;"><div class="lbl">SESSION CODE</div><div class="code" id="codeShow">—</div></div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="screen active" id="setup">
+    <div class="setup">
+      <h1>Host a Live Game</h1>
+      <p>Four groups race through six foresight tools. They lock in answers; you reveal the verdict and advance the room together. Pick a case to begin.</p>
+      <div class="case-choice" id="caseChoice"></div>
+      <ol class="steps">
+        <li>1 &middot; Pick a case &rarr; a session code appears.</li>
+        <li>2 &middot; Groups open the <b>group page</b>, enter the code, claim Group 1\u20134.</li>
+        <li>3 &middot; Start. Each level: groups lock in &rarr; you <b>Reveal</b> &rarr; you <b>Advance</b>.</li>
+      </ol>
+      <button class="btn big" id="createBtn" onclick="createSession()" disabled>Create session &rarr;</button>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="lobby">
+    <div class="setup" style="padding-top:10px;">
+      <h1 style="font-size:30px;">Waiting for groups…</h1>
+      <p>Students go to the <b>group page</b>, enter code <b id="lobbyCode"></b>, and claim a group below.</p>
+    </div>
+    <div class="lobby-grid" id="lobbyGrid"></div>
+    <div style="text-align:center;">
+      <button class="btn big teal" id="startBtn" onclick="startGame()" disabled>Start the Gauntlet \u2192</button>
+      <div class="info" id="lobbyInfo" style="color:var(--grey-muted);font-size:13px;margin-top:10px;">At least 1 group must join.</div>
+    </div>
+  </div>
+
+  <!-- PLAY -->
+  <div class="screen" id="play">
+    <div class="lvlhead">
+      <span class="lvl-tag" id="pTag">LEVEL 1 OF 6</span>
+      <div><div class="kick" id="pKick"></div><h2 id="pTitle"></h2></div>
+    </div>
+    <div class="layout">
+      <div class="panel">
+        <h4 id="pPromptLabel">THE QUESTION</h4>
+        <div class="prompt" id="pPrompt"></div>
+        <div id="pCanon" style="display:none;"></div>
+      </div>
+      <div class="panel">
+        <h4 id="pTrackLabel">WHO'S LOCKED IN</h4>
+        <div class="subtrack" id="subtrack"></div>
+        <h4 style="margin-top:20px;">LEADERBOARD</h4>
+        <div class="lb" id="lb"></div>
+      </div>
+    </div>
+    <div class="controlbar">
+      <span class="info" id="ctrlInfo"></span>
+      <button class="btn big" id="revealBtn" onclick="reveal()">Reveal the verdict</button>
+      <button class="btn big teal" id="advanceBtn" onclick="advance()" style="display:none;">Advance the room \u2192</button>
+    </div>
+  </div>
+
+  <!-- PODIUM -->
+  <div class="screen" id="podium">
+    <div class="podium">
+      <h1>\uD83C\uDFC6 Final Standings</h1>
+      <div class="podrow" id="podRow"></div>
+      <div class="btn-row" style="justify-content:center;margin-top:24px;">
+        <button class="btn ghost" onclick="location.reload()">New game</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="reset-link" id="resetLink" style="display:none;"><a onclick="resetSession()">End & reset this session</a></div>
+</div>
+
+<!-- Firebase store helper -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const firebaseConfig={apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
+let _db=null; try{ _db=getDatabase(initializeApp(firebaseConfig)); }catch(e){ console.error(e); }
+const kp=k=>k.replace(/[:.#$\[\]]/g,"_");
+window.__store={ async set(k,v){ if(!_db)return null; try{await set(ref(_db,kp(k)),v);return true;}catch(e){return null;} }, async get(k){ if(!_db)return null; try{const s=await get(child(ref(_db),kp(k)));return s.exists()?s.val():null;}catch(e){return null;} } };
+window.__storeReady=!!_db; document.dispatchEvent(new Event("storeready"));
+</script>
+<script>
+/* ============================================================
+   FORESIGHT GAUNTLET — SHARED CONTENT & GRADING (multiplayer)
+   Identical pedagogy to the single-player build.
+   Used by BOTH the group page and the host/scoreboard page.
+   Exposed as window.GAUNTLET = { cases:[...], canonOf(c,l) }
+   Each level: { tool, phase, title, sub, type, intro, opts|moves|quads,
+                 grade(payload)->{pts,max,...}, correctionHTML(payload,g),
+                 canonHTML, canonAnswerHTML }
+   payload shapes:
+     multi/single : array of selected indices
+     matrix       : { names:[4], move:int }
+============================================================ */
+(function(){
+
+function canonBox(title, items){
+  return `<div class="canon-box"><div class="cb-label">\u2713 ${title}</div><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+}
+
+/* ---------- CASE A : BANKING ---------- */
+const CASE_A = {
+  title:"The Bank of 2040",
+  kicker:"CASE A \u00b7 FINANCIAL SERVICES",
+  brief:`<b>Méridien Banque</b> \u2014 mid-size European retail bank, 4.2m customers, 380 branches. The board wants a strategy that survives to 2040.<br>
+  <span class="dl">62% bank via app; branch visits \u22129%/yr; over-65s prefer branches \u00b7 3 neobanks launched generative-AI advisors; fraud +18% \u00b7 margins squeezed; a fintech holds 11% of under-30 current accounts \u00b7 EU AI Act live; digital-euro pilot running \u00b7 40% of call-centre roles automatable in 5 yrs.</span>`,
+  levels: caseA()
+};
+/* ---------- CASE B : WATER ---------- */
+const CASE_B = {
+  title:"The Thirsty City 2040",
+  kicker:"CASE B \u00b7 PUBLIC SECTOR",
+  brief:`<b>Costa Verde</b> \u2014 Mediterranean city of 1.8m, growing 2%/yr. The metro water authority wants a secure supply to 2040.<br>
+  <span class="dl">70% from one reservoir (30-yr low last summer); desal covers 12% \u00b7 rainfall \u221215% over 20 yrs; heatwaves doubled since 2010 \u00b7 agriculture uses 55%; data-centre cluster proposed \u00b7 smart meters at 30%; leaks ~22% \u00b7 tariffs politically sensitive; river dispute with neighbour region.</span>`,
+  levels: caseB()
+};
+
+window.GAUNTLET = { cases:[CASE_A, CASE_B], canonBox };
+
+/* ================= CASE A LEVELS ================= */
+function caseA(){ return [
+{
+  tool:"TOOL 1", phase:"ANALYTICAL", title:"STEEPLED Scan", type:"multi", pick:3,
+  sub:"Pick the three forces that are both HIGH IMPACT and HIGH UNCERTAINTY. Certainties and present facts are assumptions, not scenario drivers.",
+  intro:`Select the <b>3</b> strongest scenario drivers.`,
+  opts:[
+    {t:"Pace & autonomy of AI customer advice", d:"Technological \u00b7 could replace advisors \u2014 or stall on trust", good:true},
+    {t:"Digital-euro (CBDC) adoption", d:"Political/Legal \u00b7 genuinely uncertain; could reroute deposits", good:true},
+    {t:"Customer trust in being served by machines", d:"Social \u00b7 the swing factor for AI advice", good:true},
+    {t:"Smartphones will keep existing", d:"True but certain \u2014 an assumption, not a driver", good:false},
+    {t:"Over-65s currently prefer branches", d:"A present fact, not a future fork", good:false},
+    {t:"Net interest margins are squeezed today", d:"Describes the present, not an uncertainty", good:false},
+    {t:"The bank has 380 branches", d:"Internal fact \u2014 not a macro force", good:false},
+  ],
+  grade(sel){ const gi=this.opts.map((o,i)=>o.good?i:-1).filter(i=>i>=0); const hits=sel.filter(i=>this.opts[i].good).length; const fp=sel.filter(i=>!this.opts[i].good).length; const missed=gi.filter(i=>!sel.includes(i)); return {pts:Math.max(0,hits-fp*0.5),max:3,hits,fp,missed}; },
+  correctionHTML(sel,g){ let h=scoreHead(`${g.hits}/3`,"DRIVERS FOUND"); h+=`<p>STEEPLED separates <b>drivers</b> (high impact <i>and</i> uncertain) from <b>assumptions</b> (certain) and present facts.</p>`; if(g.fp>0)h+=`<p><span class="pill bias">WATCH</span> You picked ${g.fp} certainty/present-fact. A scenario axis must break two ways.</p>`; if(g.missed.length)h+=`<p>Under-weighted: <b>${g.missed.map(i=>this.opts[i].t).join(', ')}</b>. The most under-scanned lens is usually <b>Social</b>.</p>`; return h; },
+  canonAnswerHTML:canonBox("The 3 drivers carried forward",["AI advice autonomy (Tech)","Digital-euro adoption (Political/Legal)","Customer trust in machines (Social)"])
+},
+{
+  tool:"TOOL 2", phase:"ANALYTICAL", title:"Weak Signals & Trends", type:"single",
+  sub:"A weak signal is early, ambiguous, and not yet mainstream \u2014 not a trend everyone already cites.",
+  intro:`Which is a genuine <b>weak signal</b> \u2014 not an established trend?`,
+  opts:[
+    {t:"\u201CMobile banking is growing\u201D", d:"Mainstream trend, not a signal", good:false},
+    {t:"A credit union lets members co-sign loans via a social-graph app", d:"Tiny, ambiguous, early \u2014 may signal community-underwritten credit", good:true},
+    {t:"\u201CAI is important for banking\u201D", d:"A truism, no observable behaviour", good:false},
+    {t:"Interest rates changed last quarter", d:"A reported data point, not emergent", good:false},
+  ],
+  grade(sel){ const ok=sel.length>0&&this.opts[sel[0]]&&this.opts[sel[0]].good; return {pts:ok?2:0,max:2,ok}; },
+  correctionHTML(sel,g){ let h=scoreHead(g.ok?"\u2713":"\u2717",g.ok?"SHARP EYE":"NOT A WEAK SIGNAL"); h+= g.ok?`<p>Correct \u2014 small, ambiguous, pre-mainstream. That's what a weak signal looks like before it becomes a trend.</p>`:`<p><span class="pill bias">TRAP</span> You picked something already mainstream/reported. A weak signal hasn't reached everyone's slide deck yet.</p>`; return h; },
+  canonAnswerHTML:canonBox("Signal carried forward",["Social-graph community underwriting \u2014 early sign that trust & lending may decentralise away from the bank"])
+},
+{
+  tool:"TOOL 3", phase:"ANALYTICAL", title:"Systems Thinking & CLA", type:"single",
+  sub:"Drill the iceberg: Litany \u2192 System \u2192 Worldview \u2192 Myth. Surface fixes don't hold if the deep driver regenerates the problem.",
+  intro:`\u201CUnder-30s are leaving for fintechs.\u201D Which response reaches the <b>leverage layer</b>?`,
+  opts:[
+    {t:"Run more ads aimed at young people", d:"Litany \u2014 treats the symptom", good:false},
+    {t:"Add app features to match competitors", d:"Shallow system fix \u2014 easily copied", good:false},
+    {t:"The bank sees itself as 'a building you visit'; under-30s see banking as an invisible embedded service", d:"Worldview layer \u2014 shift this and the strategy reorients", good:true},
+    {t:"Hire more branch staff", d:"Litany \u2014 adds capacity to a dying model", good:false},
+  ],
+  grade(sel){ const ok=sel.length>0&&this.opts[sel[0]]&&this.opts[sel[0]].good; return {pts:ok?2:0,max:2,ok}; },
+  correctionHTML(sel,g){ let h=scoreHead(g.ok?"\u2713":"\u2717",g.ok?"REACHED THE WORLDVIEW":"STUCK ON THE SURFACE"); h+= g.ok?`<p>Yes \u2014 a worldview clash. Change the self-image and the surface fixes realign.</p>`:`<p><span class="pill bias">LITANY TRAP</span> Ask: if we only do this, what regenerates the problem? The deep driver is the bank seeing itself as a <b>place you visit</b>.</p>`; return h; },
+  canonAnswerHTML:canonBox("Deep driver + lever carried forward",["DEEP DRIVER: 'bank = a building you visit'","LEVER: redefine the bank as an embedded, invisible service in customers' digital lives"])
+},
+{
+  tool:"TOOL 4", phase:"ANALYTICAL", title:"Cross-Impact Analysis", type:"single",
+  sub:"The pair that is high-impact, uncertain AND independent becomes your two scenario axes. A pair where one causes the other can't span four worlds.",
+  intro:`Which <b>pair</b> should become your two 2\u00d72 axes?`,
+  opts:[
+    {t:"AI autonomy \u00d7 Customer trust", d:"Both big, but NOT independent \u2014 trust drives adoption; they collapse to one axis", good:false},
+    {t:"AI autonomy \u00d7 Digital-euro adoption", d:"Both uncertain, move for different reasons (tech vs policy) \u2014 independent", good:true},
+    {t:"Net interest margins \u00d7 Number of branches", d:"An output and an internal lever \u2014 not external uncertainties", good:false},
+    {t:"Customer trust \u00d7 Smartphones existing", d:"One axis is near-certain \u2014 two empty quadrants", good:false},
+  ],
+  grade(sel){ const ok=sel.length>0&&this.opts[sel[0]]&&this.opts[sel[0]].good; return {pts:ok?3:0,max:3,ok}; },
+  correctionHTML(sel,g){ let h=scoreHead(g.ok?"\u2713":"\u2717",g.ok?"CLEAN INDEPENDENT AXES":"AXES WOULD COLLAPSE"); h+= g.ok?`<p>Right \u2014 high-impact, uncertain, and independent. Four genuinely different worlds emerge.</p>`:`<p><span class="pill bias">DEPENDENCE TRAP</span> Choosing two variables where one causes the other yields empty quadrants. Same reason cost/LCOE is a bad axis \u2014 it's an <i>output</i>.</p>`; return h; },
+  canonAnswerHTML:canonBox("Two axes carried forward",["X: AI advice autonomy \u2014 Augmented \u2194 Autonomous","Y: Digital-euro \u2014 Marginal \u2194 Mainstream"])
+},
+{
+  tool:"TOOL 5", phase:"ANALYTICAL", title:"2\u00d72 Scenario Matrix", type:"matrix",
+  sub:"Axes fixed by Cross-Impact. Build four worlds \u2014 then find the move that pays off in ALL of them. The payoff is the stress-test, not the worlds.",
+  intro:`Name the four worlds (no Good/Bad labels), then pick the single most <b>robust</b> move.`,
+  quads:[
+    {label:"Autonomous AI \u00b7 Mainstream \u20ac"},{label:"Augmented AI \u00b7 Mainstream \u20ac"},
+    {label:"Autonomous AI \u00b7 Marginal \u20ac"},{label:"Augmented AI \u00b7 Marginal \u20ac"},
+  ],
+  moves:[
+    {t:"Bet everything on full AI-autonomous advice now", d:"Wins in only 2 of 4 worlds \u2014 a bet", good:false},
+    {t:"Build a secure digital-identity & trust layer", d:"Pays off in every quadrant \u2014 a No-Regret move", good:true},
+    {t:"Label one scenario 'worst case' and ignore it", d:"Valence-label failure \u2014 destroys the stress-test", good:false},
+    {t:"Close all branches immediately", d:"Wins only if both go mainstream \u2014 fragile", good:false},
+  ],
+  grade(p){ const named=p.names.filter(n=>n.trim().length>1).length; const moveOk=p.move>=0&&this.moves[p.move].good; const val=p.names.some(n=>/best|worst|good|bad|optimist|pessimist/i.test(n)); let pts=0; if(named>=4)pts+=1; if(moveOk)pts+=2; if(val)pts-=0.5; return {pts:Math.max(0,pts),max:3,named,moveOk,val}; },
+  correctionHTML(p,g){ let h=scoreHead(`${fmt(g.pts)}/3`,"STRESS-TEST"); if(g.named<4)h+=`<p>Named ${g.named}/4 \u2014 a full set fills all four so none is ignored.</p>`; if(g.val)h+=`<p><span class="pill bias">VALENCE LABELS</span> 'Best/worst case' lets the board dismiss the hard world.</p>`; h+= g.moveOk?`<p>Your move is a true <b>No-Regret</b>: a trust/identity layer pays off in all four worlds.</p>`:`<p><span class="pill bias">FRAGILE BET</span> The robust play survives all four \u2014 a trust & digital-identity layer.</p>`; return h; },
+  canonAnswerHTML:canonBox("Carried into Backcasting",["Robust endpoint: Méridien as a trusted identity & money layer","No-Regret anchor: build the trust/identity infrastructure now"])
+},
+{
+  tool:"TOOL 6", phase:"NORMATIVE", title:"Backcasting from 2040", type:"multi", pick:2,
+  sub:"Walk 2040 \u2192 2026. What must START NOW? The longest-lead-time moves can't wait, even if they feel less urgent.",
+  intro:`Pick the <b>2</b> moves Méridien must start in 2026 \u2014 longest lead time, everything depends on them.`,
+  opts:[
+    {t:"Begin building the trusted digital-identity & data-trust platform", d:"Longest lead time; every scenario needs it", good:true},
+    {t:"Start reskilling staff from transactions toward advice & trust", d:"Workforce change is slow; the automation clock is running", good:true},
+    {t:"Run a 2039 marketing campaign", d:"Short lead time \u2014 a 2040 task", good:false},
+    {t:"Redesign branch lobby furniture", d:"Low-leverage, reversible", good:false},
+    {t:"Wait to see which scenario emerges, then act", d:"The trap backcasting breaks \u2014 forfeits long-lead moves", good:false},
+  ],
+  grade(sel){ const gi=this.opts.map((o,i)=>o.good?i:-1).filter(i=>i>=0); const hits=sel.filter(i=>this.opts[i].good).length; const fp=sel.filter(i=>!this.opts[i].good).length; const missed=gi.filter(i=>!sel.includes(i)); return {pts:Math.max(0,hits-fp*0.5),max:2,hits,fp,missed}; },
+  correctionHTML(sel,g){ let h=scoreHead(`${g.hits}/2`,"2026 PRIORITIES"); const waitI=this.opts.findIndex(o=>/Wait to see/.test(o.t)); if(sel.includes(waitI))h+=`<p><span class="pill bias">WAIT-AND-SEE</span> By the time the world is clear, the long-lead moves are already too late.</p>`; h+=`<p>The test is <b>lead time</b>, not urgency. Trust platform + reskilling underpin every world \u2014 start in 2026.</p>`; return h; },
+  canonAnswerHTML:canonBox("Your 2026 action plan",["START NOW: trusted identity & data platform","START NOW: reskill workforce toward advice & trust","WATCH: early-warning on AI-autonomy maturity & digital-euro adoption"])
+}
+];}
+
+/* ================= CASE B LEVELS ================= */
+function caseB(){ return [
+{
+  tool:"TOOL 1", phase:"ANALYTICAL", title:"STEEPLED Scan", type:"multi", pick:3,
+  sub:"Pick the three forces that are both HIGH IMPACT and HIGH UNCERTAINTY. Present facts and certainties are assumptions, not drivers.",
+  intro:`Select the <b>3</b> strongest scenario drivers for Costa Verde's water future.`,
+  opts:[
+    {t:"Severity & timing of climate-driven drought", d:"Environmental \u00b7 huge impact, uncertain pace", good:true},
+    {t:"Public/political acceptance of tariffs & restrictions", d:"Political/Social \u00b7 swing factor for any demand strategy", good:true},
+    {t:"Cost trajectory of desalination & reuse tech", d:"Tech/Economic \u00b7 decides whether supply can scale", good:true},
+    {t:"The reservoir supplies 70% today", d:"Present fact, not a fork", good:false},
+    {t:"Water is essential for life", d:"A truism \u2014 no strategic uncertainty", good:false},
+    {t:"The city has one desal plant today", d:"Present infrastructure fact", good:false},
+    {t:"Heatwaves doubled since 2010", d:"Reported past trend \u2014 data, not the fork itself", good:false},
+  ],
+  grade(sel){ const gi=this.opts.map((o,i)=>o.good?i:-1).filter(i=>i>=0); const hits=sel.filter(i=>this.opts[i].good).length; const fp=sel.filter(i=>!this.opts[i].good).length; const missed=gi.filter(i=>!sel.includes(i)); return {pts:Math.max(0,hits-fp*0.5),max:3,hits,fp,missed}; },
+  correctionHTML(sel,g){ let h=scoreHead(`${g.hits}/3`,"DRIVERS FOUND"); h+=`<p>Drivers must be uncertain. \u201CReservoir supplies 70%\u201D is true today \u2014 an assumption.</p>`; if(g.fp>0)h+=`<p><span class="pill bias">WATCH</span> ${g.fp} present-fact/truism. An axis must break two ways.</p>`; if(g.missed.length)h+=`<p>Under-weighted: <b>${g.missed.map(i=>this.opts[i].t).join(', ')}</b>. Teams under-scan the <b>Political/Social</b> lens.</p>`; return h; },
+  canonAnswerHTML:canonBox("The 3 drivers carried forward",["Drought severity & timing (Environmental)","Tariff/restriction acceptance (Political/Social)","Desal & reuse cost (Tech/Economic)"])
+},
+{
+  tool:"TOOL 2", phase:"ANALYTICAL", title:"Weak Signals & Trends", type:"single",
+  sub:"A weak signal is early, ambiguous, not yet mainstream \u2014 not a trend everyone already cites.",
+  intro:`Which is a genuine <b>weak signal</b>?`,
+  opts:[
+    {t:"\u201CClimate change is reducing rainfall\u201D", d:"Mainstream \u2014 already in every report", good:false},
+    {t:"A start-up sells 'atmospheric water' units to villas; three appear in the hills", d:"Tiny, ambiguous, early \u2014 may signal off-grid private supply", good:true},
+    {t:"\u201CWater is becoming scarce\u201D", d:"A truism", good:false},
+    {t:"Reservoir hit a 30-year low last summer", d:"A reported data point", good:false},
+  ],
+  grade(sel){ const ok=sel.length>0&&this.opts[sel[0]]&&this.opts[sel[0]].good; return {pts:ok?2:0,max:2,ok}; },
+  correctionHTML(sel,g){ let h=scoreHead(g.ok?"\u2713":"\u2717",g.ok?"SHARP EYE":"NOT A WEAK SIGNAL"); h+= g.ok?`<p>Correct \u2014 wealthy users going off-grid could erode the public system's revenue base. Small, ambiguous, pre-mainstream.</p>`:`<p><span class="pill bias">TRAP</span> Mainstream or already reported. The signal is the odd early behaviour at the edges.</p>`; return h; },
+  canonAnswerHTML:canonBox("Signal carried forward",["Private off-grid water among wealthy users \u2014 demand may fragment away from the public utility"])
+},
+{
+  tool:"TOOL 3", phase:"ANALYTICAL", title:"Systems Thinking & CLA", type:"single",
+  sub:"Drill the iceberg. A surface fix won't hold if the deep driver regenerates the shortage.",
+  intro:`\u201CThe city keeps running short of water.\u201D Which reaches the <b>leverage layer</b>?`,
+  opts:[
+    {t:"Build another desalination plant", d:"Adds supply but leaves demand & worldview untouched \u2014 shortage returns", good:false},
+    {t:"Issue summer hosepipe bans", d:"Litany \u2014 a reactive yearly patch", good:false},
+    {t:"The region treats water as a free, infinite right rather than a priced, shared, finite resource", d:"Worldview \u2014 until this shifts, new supply is consumed away", good:true},
+    {t:"Send leaflets asking people to save water", d:"Litany \u2014 awareness without changing incentives", good:false},
+  ],
+  grade(sel){ const ok=sel.length>0&&this.opts[sel[0]]&&this.opts[sel[0]].good; return {pts:ok?2:0,max:2,ok}; },
+  correctionHTML(sel,g){ let h=scoreHead(g.ok?"\u2713":"\u2717",g.ok?"REACHED THE WORLDVIEW":"STUCK ON THE SURFACE"); h+= g.ok?`<p>Yes \u2014 the 'fixes that fail' loop. Build desal, but if demand behaves as if water is limitless, the new supply is absorbed.</p>`:`<p><span class="pill bias">LITANY TRAP</span> A new plant adds supply, but the free-infinite-water worldview pulls demand right back up.</p>`; return h; },
+  canonAnswerHTML:canonBox("Deep driver + lever carried forward",["DEEP DRIVER: water-as-free-infinite-right","LEVER: reframe water as a priced, shared, finite commons (metering + fair tariffs + visible scarcity)"])
+},
+{
+  tool:"TOOL 4", phase:"ANALYTICAL", title:"Cross-Impact Analysis", type:"single",
+  sub:"High-impact, uncertain AND independent becomes your axes. A pair where one causes the other can't span four worlds.",
+  intro:`Which <b>pair</b> should become your two 2\u00d72 axes?`,
+  opts:[
+    {t:"Drought severity \u00d7 Reservoir level", d:"Not independent \u2014 drought drives reservoir level", good:false},
+    {t:"Drought severity \u00d7 Tariff/restriction acceptance", d:"Climate \u00d7 politics \u2014 both uncertain, independent", good:true},
+    {t:"Desal cost \u00d7 Water is essential", d:"One axis is a truism \u2014 empty quadrants", good:false},
+    {t:"Leak losses \u00d7 Number of desal plants", d:"Both internal levers/outputs", good:false},
+  ],
+  grade(sel){ const ok=sel.length>0&&this.opts[sel[0]]&&this.opts[sel[0]].good; return {pts:ok?3:0,max:3,ok}; },
+  correctionHTML(sel,g){ let h=scoreHead(g.ok?"\u2713":"\u2717",g.ok?"CLEAN INDEPENDENT AXES":"AXES WOULD COLLAPSE"); h+= g.ok?`<p>Right \u2014 a climate uncertainty crossed with a political one. Four distinct worlds.</p>`:`<p><span class="pill bias">DEPENDENCE TRAP</span> Drought <i>causes</i> reservoir level. Leaks & plant-count are levers/outputs, not external uncertainties.</p>`; return h; },
+  canonAnswerHTML:canonBox("Two axes carried forward",["X: Drought severity \u2014 Manageable \u2194 Severe","Y: Public acceptance \u2014 Resistant \u2194 Supportive"])
+},
+{
+  tool:"TOOL 5", phase:"ANALYTICAL", title:"2\u00d72 Scenario Matrix", type:"matrix",
+  sub:"Axes fixed by Cross-Impact. Build four worlds \u2014 then find the move that pays off in ALL of them.",
+  intro:`Name the four worlds (no Good/Bad labels), then pick the most <b>robust</b> move.`,
+  quads:[
+    {label:"Severe drought \u00b7 Supportive public"},{label:"Manageable drought \u00b7 Supportive"},
+    {label:"Severe drought \u00b7 Resistant public"},{label:"Manageable drought \u00b7 Resistant"},
+  ],
+  moves:[
+    {t:"Bet the budget on one giant desal plant now", d:"Wins only if drought severe AND tech cooperates \u2014 a bet", good:false},
+    {t:"Fix the 22% leaks + roll out smart metering", d:"Pays off in every quadrant \u2014 No-Regret", good:true},
+    {t:"Label 'severe \u00b7 resistant' the worst case and plan around it", d:"Valence-label failure", good:false},
+    {t:"Sign the data-centre cooling deal immediately", d:"Adds demand; only safe in the mildest world \u2014 fragile", good:false},
+  ],
+  grade(p){ const named=p.names.filter(n=>n.trim().length>1).length; const moveOk=p.move>=0&&this.moves[p.move].good; const val=p.names.some(n=>/best|worst|good|bad|optimist|pessimist/i.test(n)); let pts=0; if(named>=4)pts+=1; if(moveOk)pts+=2; if(val)pts-=0.5; return {pts:Math.max(0,pts),max:3,named,moveOk,val}; },
+  correctionHTML(p,g){ let h=scoreHead(`${fmt(g.pts)}/3`,"STRESS-TEST"); if(g.named<4)h+=`<p>Named ${g.named}/4 \u2014 fill all four so none is dropped.</p>`; if(g.val)h+=`<p><span class="pill bias">VALENCE LABELS</span> 'Worst case' lets the board ignore the hard world.</p>`; h+= g.moveOk?`<p>True <b>No-Regret</b>: leak repair + metering delivers more usable water in all four worlds.</p>`:`<p><span class="pill bias">FRAGILE BET</span> The robust play survives all four: fix leaks + smart-meter demand.</p>`; return h; },
+  canonAnswerHTML:canonBox("Carried into Backcasting",["Robust endpoint: a low-leak, metered, demand-resilient system","No-Regret anchor: leak repair + smart metering now"])
+},
+{
+  tool:"TOOL 6", phase:"NORMATIVE", title:"Backcasting from 2040", type:"multi", pick:2,
+  sub:"Walk 2040 \u2192 2026. What must START NOW? Longest-lead moves can't wait, even if this summer's crisis feels louder.",
+  intro:`Pick the <b>2</b> moves Costa Verde must start in 2026.`,
+  opts:[
+    {t:"Begin the multi-year leak-repair & smart-meter programme", d:"Long lead, pays off in every scenario", good:true},
+    {t:"Start the tariff-reform & public-engagement process now", d:"Acceptance is slow political work \u2014 start early", good:true},
+    {t:"Run a 2039 'save water' poster campaign", d:"Short lead \u2014 a 2040 task", good:false},
+    {t:"Repaint the reservoir visitor centre", d:"Low-leverage, irrelevant", good:false},
+    {t:"Wait for a drought to force the public to accept tariffs", d:"Wait-and-see \u2014 courts a crisis", good:false},
+  ],
+  grade(sel){ const gi=this.opts.map((o,i)=>o.good?i:-1).filter(i=>i>=0); const hits=sel.filter(i=>this.opts[i].good).length; const fp=sel.filter(i=>!this.opts[i].good).length; const missed=gi.filter(i=>!sel.includes(i)); return {pts:Math.max(0,hits-fp*0.5),max:2,hits,fp,missed}; },
+  correctionHTML(sel,g){ let h=scoreHead(`${g.hits}/2`,"2026 PRIORITIES"); const waitI=this.opts.findIndex(o=>/Wait for a drought/.test(o.t)); if(sel.includes(waitI))h+=`<p><span class="pill bias">WAIT-AND-SEE</span> Waiting for a crisis means the slow moves are already too late.</p>`; h+=`<p>The test is <b>lead time</b>. Infrastructure + tariff acceptance take years \u2014 start in 2026.</p>`; return h; },
+  canonAnswerHTML:canonBox("Your 2026 action plan",["START NOW: leak-repair + smart-meter programme","START NOW: tariff reform + public engagement","WATCH: drought indicators & desal cost"])
+}
+];}
+
+function scoreHead(score,label){ return `<div class="c-head"><span class="c-score">${score}</span><span class="c-label">${label}</span></div>`; }
+function fmt(n){ return (Math.round(n*10)/10).toString().replace(/\.0$/,''); }
+window.GAUNTLET.fmt = fmt;
+
+})();
+
+</script>
+<script>
+let CODE=null, CASEIDX=null, levels=null, curLevel=0, revealed=false;
+let pollTimer=null;
+const K={ meta:c=>`sessions_${c}_meta`, state:c=>`sessions_${c}_state`, groups:c=>`sessions_${c}_groups`, ans:(c,l)=>`sessions_${c}_answers_${l}`, ansG:(c,l,g)=>`sessions_${c}_answers_${l}_g${g}`, scoreG:(c,g)=>`sessions_${c}_score_g${g}`, joinG:(c,g)=>`sessions_${c}_join_g${g}` };
+
+document.addEventListener("storeready",()=>{ const d=document.getElementById("dot"),c=document.getElementById("conn"); if(window.__storeReady){d.classList.remove("off");c.innerHTML='<span class="status-dot"></span>connected';} else c.textContent="offline"; });
+
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
+
+// aggregate per-group presence + score keys into {g1:{joined,name,score},...}
+async function readGroups(){
+  const out={};
+  for(let i=1;i<=4;i++){
+    const j=await window.__store.get(K.joinG(CODE,i));
+    if(j&&j.joined){ const s=await window.__store.get(K.scoreG(CODE,i)); out["g"+i]={joined:true,name:j.name,score:s||0}; }
+  }
+  return out;
+}
+// aggregate per-group answers for a level into {g1:{submitted,pts,...},...}
+async function readAnswers(level){
+  const out={};
+  for(let i=1;i<=4;i++){ const a=await window.__store.get(K.ansG(CODE,level,i)); if(a) out["g"+i]=a; }
+  return out;
+}
+
+// render case picker
+(function renderCases(){
+  const wrap=document.getElementById("caseChoice");
+  GAUNTLET.cases.forEach((c,i)=>{
+    const div=document.createElement("div");
+    div.className="case-opt"+(i===1?" c2":"");
+    div.innerHTML=`<div class="ck">${c.kicker}</div><h3>${c.title}</h3><div class="bf">${c.brief}</div>`;
+    div.onclick=()=>{ document.querySelectorAll(".case-opt").forEach(x=>x.classList.remove("sel")); div.classList.add("sel"); CASEIDX=i; document.getElementById("createBtn").disabled=false; };
+    wrap.appendChild(div);
+  });
+})();
+
+function genCode(){ const a="ACDEFGHJKLMNPQRTUVWXYZ2346789"; let s=""; for(let i=0;i<4;i++)s+=a[Math.floor(Math.random()*a.length)]; return s; }
+
+async function createSession(){
+  if(CASEIDX===null||!window.__storeReady) return;
+  CODE=genCode(); levels=GAUNTLET.cases[CASEIDX].levels;
+  await window.__store.set(K.meta(CODE),{case:CASEIDX,createdAt:Date.now()});
+  await window.__store.set(K.state(CODE),{level:0,revealed:false,phase:"lobby"});
+  document.getElementById("codeShow").textContent=CODE;
+  document.getElementById("lobbyCode").textContent=CODE;
+  document.getElementById("codeChip").style.display="block";
+  document.getElementById("resetLink").style.display="block";
+  show("lobby"); startLobbyPoll();
+}
+
+function startLobbyPoll(){ if(pollTimer)clearInterval(pollTimer); lobbyTick(); pollTimer=setInterval(lobbyTick,1300); }
+async function lobbyTick(){
+  const groups=await readGroups();
+  const grid=document.getElementById("lobbyGrid"); grid.innerHTML="";
+  let n=0;
+  for(let i=1;i<=4;i++){
+    const g=groups["g"+i]; const inn=g&&g.joined; if(inn)n++;
+    const div=document.createElement("div");
+    div.className="globby"+(inn?" in":"");
+    div.innerHTML=`<div class="gn">${i}</div>`+(inn?`<div class="nm">${g.name}</div><div class="wait">\u2713 ready</div>`:`<div class="wait">waiting…</div>`);
+    grid.appendChild(div);
+  }
+  document.getElementById("startBtn").disabled=n<1;
+  document.getElementById("lobbyInfo").textContent=n<1?"At least 1 group must join.":`${n} group${n>1?"s":""} ready \u2014 start when the room is set.`;
+}
+
+async function startGame(){
+  curLevel=0; revealed=false;
+  await window.__store.set(K.state(CODE),{level:0,revealed:false,phase:"play"});
+  show("play"); renderPlay(); startPlayPoll();
+}
+
+function renderPlay(){
+  const L=levels[curLevel];
+  document.getElementById("pTag").textContent=`LEVEL ${curLevel+1} OF 6 \u00b7 ${L.phase}`;
+  document.getElementById("pTag").className="lvl-tag"+(L.phase==="NORMATIVE"?" normative":"");
+  document.getElementById("pKick").textContent=`${L.tool} \u00b7 ${GAUNTLET.cases[CASEIDX].title}`;
+  document.getElementById("pTitle").textContent=L.title;
+  document.getElementById("pPrompt").innerHTML=`<b>${L.intro}</b><br><span style="color:var(--grey-muted);font-size:13px;">${L.sub}</span>`;
+  document.getElementById("pCanon").style.display="none";
+  document.getElementById("pCanon").innerHTML="";
+  document.getElementById("revealBtn").style.display="inline-block";
+  document.getElementById("revealBtn").disabled=false;
+  document.getElementById("advanceBtn").style.display="none";
+  document.getElementById("ctrlInfo").textContent="Groups are answering on their devices…";
+}
+
+function startPlayPoll(){ if(pollTimer)clearInterval(pollTimer); playTick(); pollTimer=setInterval(playTick,1300); }
+async function playTick(){
+  const groups=await readGroups();
+  const ans=await readAnswers(curLevel);
+  // submit tracker
+  const st=document.getElementById("subtrack"); st.innerHTML="";
+  const joined=[];
+  for(let i=1;i<=4;i++){ const g=groups["g"+i]; if(g&&g.joined) joined.push(i); }
+  joined.forEach(i=>{
+    const g=groups["g"+i]; const a=ans["g"+i];
+    const row=document.createElement("div"); row.className="strow"+(revealed?" revealed":"");
+    row.innerHTML=`<span class="gnum">${i}</span><span class="gnm">${g.name}</span>`+
+      (revealed && a ? `<span class="pts">+${GAUNTLET.fmt(a.pts)}</span>` :
+        `<span class="st ${a&&a.submitted?"locked":"waiting"}">${a&&a.submitted?"\u2713 LOCKED IN":"answering…"}</span>`);
+    st.appendChild(row);
+  });
+  // leaderboard
+  renderLB(groups);
+  // enable reveal once all joined groups submitted (or allow anytime)
+  const allIn = joined.length>0 && joined.every(i=>ans["g"+i]&&ans["g"+i].submitted);
+  if(!revealed){
+    document.getElementById("ctrlInfo").textContent = allIn ? "All groups locked in \u2014 reveal when ready." : `${joined.filter(i=>ans["g"+i]&&ans["g"+i].submitted).length}/${joined.length} locked in. You can reveal early.`;
+  }
+}
+
+function renderLB(groups){
+  const arr=[]; for(let i=1;i<=4;i++){ const g=groups["g"+i]; if(g&&g.joined) arr.push({i,nm:g.name,s:g.score||0}); }
+  arr.sort((a,b)=>b.s-a.s);
+  const max=Math.max(15, ...arr.map(a=>a.s),1);
+  const lb=document.getElementById("lb"); lb.innerHTML="";
+  arr.forEach((a,idx)=>{
+    const row=document.createElement("div"); row.className="lbrow";
+    row.innerHTML=`<span class="rank">${idx+1}</span><span class="nm">${a.nm}</span><div class="lbtrack"><div class="lbfill" style="width:${(a.s/max)*100}%"></div></div><span class="sc">${GAUNTLET.fmt(a.s)}</span>`;
+    lb.appendChild(row);
+  });
+}
+
+async function reveal(){
+  revealed=true;
+  await window.__store.set(K.state(CODE),{level:curLevel,revealed:true,phase:"play"});
+  const L=levels[curLevel];
+  const canon=document.getElementById("pCanon");
+  canon.style.display="block";
+  canon.innerHTML=`<div style="margin-top:14px;">${L.canonAnswerHTML}</div><div class="revealnote">\u2713 Verdict pushed to all group screens.</div>`;
+  document.getElementById("revealBtn").style.display="none";
+  document.getElementById("advanceBtn").style.display="inline-block";
+  document.getElementById("advanceBtn").textContent = curLevel<5 ? "Advance the room \u2192" : "Show final standings \uD83C\uDFC6";
+  document.getElementById("ctrlInfo").textContent="Discuss the canonical answer, then advance.";
+  playTick();
+}
+
+async function advance(){
+  if(curLevel<5){
+    curLevel++; revealed=false;
+    await window.__store.set(K.state(CODE),{level:curLevel,revealed:false,phase:"play"});
+    renderPlay(); playTick();
+  } else {
+    await window.__store.set(K.state(CODE),{level:curLevel,revealed:true,phase:"done"});
+    showPodium();
+  }
+}
+
+async function showPodium(){
+  if(pollTimer)clearInterval(pollTimer);
+  const groups=await readGroups();
+  const arr=[]; for(let i=1;i<=4;i++){ const g=groups["g"+i]; if(g&&g.joined) arr.push({i,nm:g.name,s:g.score||0}); }
+  arr.sort((a,b)=>b.s-a.s);
+  const medals=["\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49","\uD83C\uDFC5"];
+  const row=document.getElementById("podRow"); row.innerHTML="";
+  arr.forEach((a,idx)=>{
+    const d=document.createElement("div"); d.className="pod"+(idx===0?" first":"");
+    d.innerHTML=`<span class="medal">${medals[idx]||""}</span><span class="pnm">${a.nm}</span><span class="psc">${GAUNTLET.fmt(a.s)} pts</span>`;
+    row.appendChild(d);
+  });
+  show("podium");
+}
+
+async function resetSession(){ if(CODE){ await window.__store.set(K.state(CODE),{level:0,revealed:false,phase:"ended"}); } location.reload(); }
+</script>
+</body>
+</html>
