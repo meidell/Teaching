@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DBA · The Three Traps · Data Analysis</title>
+<style>
+:root{
+ --navy-deep:#0A1A3A;--navy-mid:#152A5E;--navy-light:#1E3470;--blue-bright:#1E5AA8;
+ --blue-glow:#4A90E2;--gold:#F0B33D;--gold-bright:#FFD24A;--gold-dark:#8C6A1F;
+ --white:#FFFFFF;--grey-muted:#B0BCD6;--green-correct:#2EA84A;--green-soft:#1E6E33;
+ --red-wrong:#C8312B;--red-soft:#5E1F1C;--amber:#E8A33C;--purple-defi:#7E5AE8;--teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+ background:
+  radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),
+  radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+ background-attachment:fixed;color:var(--white);line-height:1.55;}
+body{padding-bottom:90px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;white-space:nowrap;}
+.progress-track{flex:1;height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;border:1px solid rgba(176,188,214,0.2);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:0%;transition:width .5s ease;border-radius:3px;}
+.progress-pct{font-size:11px;color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;min-width:36px;text-align:right;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:34px 16px 20px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:14px;}
+.hero h1{font-family:Georgia,serif;font-size:33px;font-style:italic;line-height:1.14;margin-bottom:10px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:640px;margin:0 auto 8px;}
+.series-nav{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px auto 0;max-width:720px;}
+.series-nav a{font-size:11px;color:var(--gold-bright);text-decoration:none;border:1px solid rgba(240,179,61,0.35);background:rgba(255,255,255,0.05);border-radius:20px;padding:5px 12px;transition:.2s;}
+.series-nav a:hover{background:rgba(240,179,61,0.16);border-color:var(--gold);}
+.series-nav a.here{background:rgba(240,179,61,0.2);border-color:var(--gold);color:var(--white);}
+.phase-divider{display:flex;align-items:center;gap:12px;margin:26px 4px 8px;font-size:10px;letter-spacing:3px;color:var(--gold);font-weight:bold;}
+.phase-divider::before,.phase-divider::after{content:"";flex:1;height:1px;background:rgba(240,179,61,0.3);}
+/* generic cards */
+.step-card{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:24px 22px;margin-bottom:18px;backdrop-filter:blur(4px);}
+.step-label{display:inline-block;font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.step-label.problem{background:var(--red-soft);color:#FF9B95;border:1px solid var(--red-wrong);}
+.step-label.mechanism{background:rgba(30,90,168,0.3);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.step-label.why{background:rgba(240,179,61,0.18);color:var(--gold-bright);border:1px solid var(--gold);}
+.step-label.case{background:rgba(45,182,168,0.2);color:var(--teal);border:1px solid var(--teal);}
+.step-label.math{background:rgba(126,90,232,0.2);color:#C9B6FF;border:1px solid var(--purple-defi);}
+.step-card h3{font-family:Georgia,serif;font-size:23px;margin-bottom:8px;line-height:1.25;}
+.step-card h4{font-size:14px;letter-spacing:1px;color:var(--gold);margin:14px 0 6px;text-transform:uppercase;}
+.step-card p{color:#DCE3F2;margin-bottom:12px;font-size:15px;}
+.step-card p.lead{font-size:16px;}
+.step-card strong{color:var(--gold-bright);font-weight:600;}
+.step-card em{color:#EAD9A8;font-style:italic;}
+.step-card ul,.step-card ol{margin:4px 0 12px 4px;}
+.step-card ul li{color:#DCE3F2;font-size:14px;list-style:none;padding:4px 0 4px 22px;position:relative;}
+.step-card ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.step-card ol{padding-left:22px;}
+.step-card ol li{color:#DCE3F2;font-size:14px;margin-bottom:5px;}
+.step-card .punch{font-family:Georgia,serif;font-size:18px;font-style:italic;color:var(--gold-bright);border-left:3px solid var(--gold);padding-left:16px;margin:16px 0 4px;line-height:1.4;}
+/* maths block */
+.math-block{background:var(--navy-deep);border:1px solid var(--purple-defi);border-radius:10px;padding:16px 18px;margin:12px 0;font-family:Georgia,serif;}
+.math-block .eq{font-size:21px;text-align:center;color:var(--white);margin:6px 0 10px;line-height:1.6;}
+.math-block .eq .hl{color:var(--gold-bright);}
+.math-block .eq .hl2{color:var(--teal);}
+.math-block .eq .hl3{color:#C9B6FF;}
+.math-block .legend{font-family:'Calibri',sans-serif;font-size:13px;color:var(--grey-muted);}
+.math-block .legend b{color:var(--white);}
+.math-block .legend .row{display:flex;gap:10px;margin:4px 0;align-items:baseline;}
+.math-block .legend .sym{font-family:Georgia,serif;color:var(--gold-bright);min-width:42px;font-size:15px;}
+.note-box{background:rgba(45,182,168,0.1);border:1px solid var(--teal);border-radius:10px;padding:13px 15px;font-size:13px;color:#DCE3F2;margin:10px 0;}
+.note-box b{color:var(--teal);}
+.warn-box{background:rgba(232,163,60,0.12);border:1px solid var(--amber);border-radius:10px;padding:13px 15px;font-size:13px;color:#F2E2C4;margin:10px 0;}
+.warn-box b{color:var(--amber);}
+/* sandbox */
+.sandbox{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:12px;padding:18px;margin:16px 0;}
+.sandbox-title{font-size:10px;letter-spacing:2px;color:var(--teal);font-weight:bold;margin-bottom:14px;}
+.sandbox-title::before{content:"▸ TRY IT";}
+.sandbox-prompt{font-size:13px;color:var(--grey-muted);margin-bottom:12px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+/* sliders */
+.slider-row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+.slider-row label{font-size:13px;color:var(--grey-muted);min-width:120px;}
+.slider-row label b{color:var(--gold-bright);font-family:Georgia,serif;}
+.slider-row input[type=range]{flex:1;min-width:140px;accent-color:var(--gold);height:6px;}
+.readout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0;}
+.readout-cell{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:8px;padding:9px 11px;text-align:center;}
+.readout-cell .rc-label{font-size:9px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;}
+.readout-cell .rc-val{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:var(--gold-bright);transition:color .2s;}
+.readout-cell .rc-val.good{color:var(--green-correct);}
+.readout-cell .rc-val.bad{color:#FF9B95;}
+canvas{max-width:100%;display:block;border-radius:8px;}
+.canvas-wrap{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px;margin:8px 0;}
+/* reveal tiles */
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:6px 0;}
+.reveal-tile{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s;position:relative;min-height:64px;}
+.reveal-tile:hover{border-color:var(--gold);transform:translateY(-2px);}
+.reveal-tile .letter{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--gold);}
+.reveal-tile .name{font-size:12px;font-weight:bold;margin-top:2px;}
+.reveal-tile .desc{font-size:11px;color:var(--grey-muted);margin-top:6px;display:none;line-height:1.4;}
+.reveal-tile.open{background:var(--navy-light);border-color:var(--gold);}
+.reveal-tile.open .desc{display:block;}
+/* sorters */
+.sort-pool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.sort-chip{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all .2s;}
+.sort-chip:hover{border-color:var(--gold);}
+.sort-chip.placed{opacity:.35;pointer-events:none;text-decoration:line-through;}
+.sort-bins{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sort-bins-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media (max-width:560px){.sort-bins,.sort-bins-3{grid-template-columns:1fr;}.slider-row label{min-width:90px;}}
+.sort-bin{background:var(--navy-deep);border:1.5px dashed var(--blue-bright);border-radius:10px;padding:12px;min-height:80px;cursor:pointer;}
+.sort-bin .bin-title{font-size:11px;letter-spacing:1px;font-weight:bold;color:var(--gold);margin-bottom:8px;}
+.sort-bin .bin-items{display:flex;flex-direction:column;gap:6px;}
+.sort-bin .bin-item{font-size:12px;padding:6px 10px;border-radius:6px;}
+.sort-bin .bin-item.correct{background:var(--green-soft);border:1px solid var(--green-correct);}
+.sort-bin .bin-item.wrong{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.sort-active-prompt{font-size:12px;color:var(--gold-bright);margin-bottom:10px;min-height:18px;}
+/* data tables */
+.info-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
+.info-table td,.info-table th{border:1px solid var(--blue-bright);padding:9px 11px;text-align:left;vertical-align:top;}
+.info-table th{background:var(--navy-mid);color:var(--gold);font-size:11px;letter-spacing:1px;}
+.info-table td:first-child{color:var(--gold-bright);font-weight:bold;}
+.rt-table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums;}
+.rt-table th{background:var(--navy-mid);color:var(--gold);font-size:10px;letter-spacing:1px;padding:8px 9px;text-align:left;border:1px solid var(--blue-bright);}
+.rt-table td{border:1px solid var(--blue-bright);padding:9px;cursor:pointer;transition:all .15s;}
+.rt-table tr.data-row:hover td{background:var(--navy-light);}
+.rt-table tr.data-row.sel td{background:rgba(240,179,61,0.14);}
+.rt-table td.varname{color:var(--gold-bright);font-weight:bold;}
+.rt-table .num{text-align:right;font-family:Georgia,serif;}
+.rt-table .sig{color:var(--green-correct);font-weight:bold;}
+.rt-table .nsig{color:var(--grey-muted);}
+.rt-readout{background:var(--navy-deep);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:13px 15px;margin-top:10px;font-size:13px;min-height:54px;line-height:1.5;}
+.rt-readout .hint{color:var(--grey-muted);font-style:italic;}
+.rt-fit{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
+.rt-fit .chip{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--grey-muted);cursor:pointer;}
+.rt-fit .chip b{color:var(--gold-bright);}
+/* checkpoint */
+.checkpoint{background:linear-gradient(135deg,rgba(126,90,232,0.15),rgba(30,90,168,0.15));border:2px solid var(--purple-defi);border-radius:16px;padding:24px 22px;margin-bottom:18px;}
+.checkpoint-header{text-align:center;margin-bottom:18px;}
+.checkpoint-header .badge{display:inline-block;background:var(--purple-defi);color:var(--white);font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 14px;border-radius:20px;margin-bottom:8px;}
+.checkpoint-header h3{font-family:Georgia,serif;font-size:22px;font-style:italic;}
+.checkpoint-header p{color:var(--grey-muted);font-size:13px;margin-top:4px;}
+.quiz-q{margin-bottom:18px;}
+.quiz-q .q-text{font-family:Georgia,serif;font-size:17px;margin-bottom:8px;line-height:1.35;}
+.quiz-q .q-num{color:var(--gold);font-weight:bold;margin-right:6px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{background:var(--navy-deep);border:1.5px solid var(--blue-bright);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;font-size:14px;}
+.quiz-opt:hover:not(.locked){border-color:var(--gold);background:var(--navy-mid);}
+.quiz-opt .opt-letter{font-family:Georgia,serif;font-weight:bold;color:var(--gold);min-width:20px;}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green-correct);}
+.quiz-opt.correct .opt-letter{color:var(--green-correct);}
+.quiz-opt.wrong{background:var(--red-soft);border-color:var(--red-wrong);}
+.quiz-opt.wrong .opt-letter{color:#FF9B95;}
+.quiz-opt.locked{cursor:default;}
+.quiz-feedback{margin-top:10px;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.5;display:none;}
+.quiz-feedback.show{display:block;}
+.quiz-feedback.right{background:var(--green-soft);border:1px solid var(--green-correct);}
+.quiz-feedback.wrong-fb{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.quiz-feedback .fb-label{font-weight:bold;letter-spacing:1px;margin-right:6px;}
+.checkpoint-result{text-align:center;padding:16px;display:none;}
+.checkpoint-result.show{display:block;}
+.checkpoint-result .score{font-family:Georgia,serif;font-size:40px;font-weight:bold;color:var(--gold-bright);}
+.checkpoint-result .msg{color:var(--grey-muted);margin:8px 0 16px;}
+/* footer nav */
+.nav-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(10,26,58,0.95);backdrop-filter:blur(10px);border-top:1px solid rgba(240,179,61,0.3);padding:12px 16px;z-index:50;}
+.nav-footer-inner{max-width:880px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.nav-footer a.navlink{flex:1;text-decoration:none;text-align:center;}
+.fineprint{font-size:11px;color:var(--grey-muted);text-align:center;margin-top:18px;}
+.scope-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.scope-strip .scope-pill{background:rgba(200,49,43,0.12);border:1px solid rgba(200,49,43,0.5);color:#FF9B95;font-size:11px;border-radius:20px;padding:6px 12px;}
+.toc-card{display:flex;align-items:center;gap:16px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:15px 18px;cursor:pointer;transition:all .2s;position:relative;text-decoration:none;color:inherit;margin-bottom:10px;}
+.toc-card:hover{border-color:var(--gold);transform:translateX(4px);}
+.toc-card .num{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--gold);min-width:38px;text-align:center;}
+.toc-card .info .name{font-size:16px;font-weight:bold;font-family:Georgia,serif;}
+.toc-card .info .tag{font-size:12px;color:var(--grey-muted);margin-top:2px;}
+.toc-card .phase-pill{position:absolute;top:8px;right:10px;font-size:8px;letter-spacing:1px;font-weight:bold;padding:2px 7px;border-radius:10px;background:rgba(45,182,168,0.2);color:var(--teal);}
+/* fork switch (page 1) */
+.fork-switch{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.fork-switch button{flex:1;min-width:160px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:11px 14px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:all .2s;}
+.fork-switch button.active{background:rgba(240,179,61,0.16);border-color:var(--gold);color:var(--gold-bright);}
+.fork-panel{display:flex;flex-direction:column;gap:8px;}
+.fork-row{background:var(--navy-mid);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:10px 13px;transition:background .25s;}
+.fork-row.flash{background:var(--navy-light);}
+.fork-row .fr-label{font-size:9px;letter-spacing:1.5px;color:var(--gold);font-weight:bold;margin-bottom:3px;}
+.fork-row .fr-val{font-size:13px;color:#DCE3F2;}
+/* gallery (page 5) */
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:560px){.gallery{grid-template-columns:1fr;}}
+.gal-item{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .2s;}
+.gal-item:hover{border-color:var(--gold);transform:translateY(-2px);}
+.gal-item.open{border-color:var(--gold);background:var(--navy-light);}
+.gal-item .gal-pair{font-size:14px;font-weight:bold;color:var(--white);font-family:Georgia,serif;}
+.gal-item .gal-corr{font-size:11px;color:var(--amber);margin-top:4px;}
+.gal-item .gal-reveal{font-size:12px;color:#DCE3F2;margin-top:8px;display:none;line-height:1.45;border-top:1px solid rgba(176,188,214,0.2);padding-top:8px;}
+.gal-item.open .gal-reveal{display:block;}
+/* data-quality (page 5) */
+.dq-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.dq-item{display:flex;align-items:center;gap:12px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:8px;padding:10px 13px;cursor:pointer;transition:all .2s;}
+.dq-item .dq-check{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--grey-muted);display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;flex-shrink:0;}
+.dq-item.on{border-color:var(--red-wrong);background:var(--red-soft);}
+.dq-item.on .dq-check{background:var(--red-wrong);border-color:var(--red-wrong);color:#fff;}
+.dq-item .dq-text{font-size:13px;color:#DCE3F2;}
+.dq-meter{background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;padding:16px;}
+/* viva sentence builder (page 6) */
+.vb-group{margin-bottom:12px;}
+.vb-q{font-family:Georgia,serif;font-size:15px;color:#DCE3F2;margin-bottom:6px;}
+.vb-opts{display:flex;flex-wrap:wrap;gap:7px;}
+.vb-opts button{background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:7px 13px;border-radius:20px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s;}
+.vb-opts button:hover{border-color:var(--gold);}
+.vb-opts button.on{background:rgba(240,179,61,0.18);border-color:var(--gold);color:var(--gold-bright);font-weight:bold;}
+.vb-output{background:var(--navy-deep);border:1px solid var(--gold);border-left:3px solid var(--gold);border-radius:8px;padding:15px 17px;margin:14px 0 4px;font-family:Georgia,serif;font-size:15px;line-height:1.55;color:#fff;font-style:italic;min-height:60px;}
+.vb-output b{color:var(--gold-bright);font-style:normal;}
+
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+ <span class="course-title">DBA · DATA ANALYSIS · 05</span>
+ <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+ <span class="progress-pct" id="progressPct">0%</span>
+</div></div>
+<div class="container">
+ <div class="hero">
+   <div class="eyebrow">DATA ANALYSIS FOR THE DBA · PART 5 OF 6</div>
+   <h1>The Three Traps</h1>
+   <p>The same three mistakes sink DBA theses again and again. Each one here is something you can see happen, not just a warning.</p>
+   <div class="series-nav"><a href="da_index.html" title="Series home">⌂</a><a href="da_1_explain_predict.html">1</a><a href="da_2_supervised_unsupervised.html">2</a><a href="da_3_the_methods.html">3</a><a href="da_4_read_results.html">4</a><a href="da_5_three_traps.html" class="here">5</a><a href="da_6_decision_aid.html">6</a></div>
+ </div>
+ 
+<div class="phase-divider">TRAP 1 · CONFOUNDING</div>
+<div class="step-card">
+ <span class="step-label problem">CORRELATION IS NOT CAUSATION</span>
+ <h3>The third variable that explains both</h3>
+ <p>Two variables move together. The lazy conclusion: one causes the other. The usual reality: a hidden <strong>confounder</strong> drives both, and the direct link is an illusion. The classic structure:</p>
+ <div class="math-block">
+   <div class="eq">X &nbsp;<span class="hl3">⇠</span>&nbsp; <span class="hl">Z</span> &nbsp;<span class="hl3">⇢</span>&nbsp; Y</div>
+   <div class="legend"><div class="row"><span class="sym">Z</span><span>the confounder. It causes both X and Y, manufacturing a correlation between them even though X does not cause Y at all.</span></div></div>
+ </div>
+ <p>Tap each famous pair to reveal its hidden Z. Then use the second tool to <em>watch</em> a confounder fabricate a correlation — and watch it vanish when you account for Z.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 1a — tap a pair to expose the confounder.</div>
+   <div class="gallery" id="spurGallery"></div>
+ </div>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 1b — turn the confounder up. The raw correlation appears from nothing.</div>
+   <div class="slider-row"><label>Confounder strength <b id="confV">0.0</b></label><input type="range" id="confS" min="0" max="100" step="5" value="0"></div>
+   <div class="canvas-wrap"><canvas id="confCanvas" width="760" height="320"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Raw correlation (X,Y)</div><div class="rc-val" id="confRaw">—</div></div>
+     <div class="readout-cell"><div class="rc-label">True direct effect</div><div class="rc-val good" id="confTrue">0.00</div></div>
+   </div>
+ </div>
+ <div class="note-box"><b>What rescues you.</b> Three options: (1) a true <em>experiment</em> (randomise X, breaking Z's influence); (2) <em>control</em> for Z by adding it to a regression ("all else equal"); (3) honesty — write "is associated with", report the confounders you couldn't rule out, and don't claim cause. On observational DBA data, option 3 is often the right one.</div>
+</div>
+
+<div class="phase-divider">TRAP 2 · OVERFITTING</div>
+<div class="step-card">
+ <span class="step-label problem">"MY MODEL IS 98% ACCURATE"</span>
+ <h3>Memorising is not learning</h3>
+ <p>A model flexible enough can fit your data <em>perfectly</em> — including its random noise. It looks brilliant on the data it trained on and fails on anything new. The defence is the <strong>train/test split</strong>: hide some data, train on the rest, and judge the model only on the hidden part it never saw.</p>
+ <p>This is the <strong>bias–variance tradeoff</strong>. Slide model complexity from a stiff straight line to a wild wiggly curve. Watch training error fall forever while <em>test</em> error falls, bottoms out, then climbs — the U-shape that defines the sweet spot.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 2 — find the complexity that minimises TEST error, not training error.</div>
+   <div class="slider-row"><label>Model complexity <b id="cxV">1</b></label><input type="range" id="cxS" min="1" max="12" step="1" value="1"></div>
+   <div class="canvas-wrap"><canvas id="ofCanvas" width="760" height="380"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Training error</div><div class="rc-val" id="ofTrain">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Test error (unseen)</div><div class="rc-val" id="ofTest">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Diagnosis</div><div class="rc-val" id="ofDiag" style="font-size:13px">—</div></div>
+   </div>
+ </div>
+ <div class="warn-box"><b>The tells of overfitting:</b> a big gap between training and test performance; a model with almost as many parameters as data points; "perfect" accuracy. The fixes: more data, a simpler model, cross-validation, and regularisation. Always report performance on held-out data, never on the training set.</div>
+</div>
+
+<div class="phase-divider">TRAP 3 · DATA QUALITY</div>
+<div class="step-card">
+ <span class="step-label problem">GARBAGE IN, GARBAGE OUT</span>
+ <h3>No method rescues bad data</h3>
+ <p>The most sophisticated model in the world, fed flawed data, produces confident nonsense. Before any analysis, audit the inputs. Toggle the problems present in a dataset and watch a defensibility score collapse — each issue maps to a real threat to validity.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 3a — toggle the issues your data has.</div>
+   <div class="dq-list" id="dqList"></div>
+   <div class="dq-meter">
+     <div class="dq-score" id="dqScore" style="font-family:Georgia,serif;font-size:34px;font-weight:bold;text-align:center;color:var(--green-correct)">100</div>
+     <div style="height:10px;background:var(--navy-mid);border-radius:5px;overflow:hidden;margin:8px 0;border:1px solid var(--blue-bright)"><div id="dqFill" style="height:100%;width:100%;border-radius:5px;background:var(--green-correct);transition:width .4s,background .4s"></div></div>
+     <div class="dq-msg" id="dqMsg" style="text-align:center;font-size:12px;color:var(--grey-muted)">Confidence in your conclusions</div>
+   </div>
+ </div>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 3b — one outlier, one big lie. Drag the rogue point and watch the regression line and mean swing.</div>
+   <div class="slider-row"><label>Outlier position <b id="outV">normal</b></label><input type="range" id="outS" min="0" max="100" step="2" value="20"></div>
+   <div class="canvas-wrap"><canvas id="outCanvas" width="760" height="340"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Slope with outlier</div><div class="rc-val" id="outSlope">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Slope without it</div><div class="rc-val good" id="outClean">—</div></div>
+   </div>
+ </div>
+ <div class="note-box"><b>The discipline:</b> plot your raw data before modelling; investigate outliers (a data-entry error? or your most important case?); report missingness and how you handled it; and be explicit about who is <em>not</em> in your sample. A limitations section that names these honestly is a sign of rigour, not weakness.</div>
+</div>
+
+<div class="step-card" id="cpCard"></div>
+
+ <div class="fineprint">Scroll progress saves on this device. Part of the DBA Data-Analysis series by Jan Erik Meidell.</div>
+</div>
+<div class="nav-footer"><div class="nav-footer-inner"><a class="navlink" href="da_4_read_results.html"><button class="btn ghost" style="width:100%">← Reading the Output</button></a><span style="font-size:11px;color:var(--grey-muted);white-space:nowrap;">5 / 6</span><a class="navlink" href="da_6_decision_aid.html"><button class="btn" style="width:100%">Choosing & Defending →</button></a></div></div>
+<a href="https://www.linkedin.com/in/jmeidell/" target="_blank" rel="noopener" title="Jan Erik Meidell — LinkedIn" style="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;"><span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F0B33D,#FFD24A);color:#0A1A3A;font-family:Georgia,serif;font-weight:bold;font-size:15px;border:1.5px solid #F0B33D;">JM</span><span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Jan Erik Meidell</span></a>
+<script>
+// progress = % scrolled, persisted per page
+(function(){
+ const KEY='dba_da_deep_da_5_three_traps';
+ const fill=document.getElementById('progressFill'),pct=document.getElementById('progressPct');
+ function upd(){const h=document.documentElement;const max=h.scrollHeight-h.clientHeight;const p=max>0?Math.min(100,Math.round(h.scrollTop/max*100)):0;fill.style.width=p+'%';pct.textContent=p+'%';try{localStorage.setItem(KEY,p);}catch(e){}}
+ window.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();
+})();
+// shared checkpoint renderer
+function renderCheckpoint(mountId,cp){
+ const mount=document.getElementById(mountId);if(!mount)return;
+ const qs=cp.questions.map((q,qi)=>'<div class="quiz-q" data-qi="'+qi+'"><div class="q-text"><span class="q-num">Q'+(qi+1)+'.</span>'+q.q+'</div><div class="quiz-opts">'+q.opts.map((opt,oi)=>'<div class="quiz-opt" data-qi="'+qi+'" data-oi="'+oi+'"><span class="opt-letter">'+String.fromCharCode(65+oi)+'</span><span>'+opt+'</span></div>').join('')+'</div><div class="quiz-feedback" data-qi="'+qi+'"></div></div>').join('');
+ mount.className='checkpoint';
+ mount.innerHTML='<div class="checkpoint-header"><div class="badge">✦ CHECKPOINT</div><h3>'+cp.title+'</h3><p>'+cp.sub+'</p></div><div class="quiz-body">'+qs+'</div><div class="checkpoint-result"><div class="score"></div><div class="msg"></div></div>';
+ const answered={},total=cp.questions.length;
+ mount.querySelectorAll('.quiz-opt').forEach(opt=>{opt.onclick=()=>{const qi=+opt.dataset.qi,oi=+opt.dataset.oi;if(answered[qi]!==undefined)return;const q=cp.questions[qi];const opts=mount.querySelectorAll('.quiz-opt[data-qi="'+qi+'"]');opts.forEach(o=>o.classList.add('locked'));const fb=mount.querySelector('.quiz-feedback[data-qi="'+qi+'"]');if(oi===q.correct){opt.classList.add('correct');answered[qi]=true;fb.className='quiz-feedback right show';fb.innerHTML='<span class="fb-label">✓ CORRECT</span>'+q.fb;}else{opt.classList.add('wrong');opts[q.correct].classList.add('correct');answered[qi]=false;fb.className='quiz-feedback wrong-fb show';fb.innerHTML='<span class="fb-label">✗ NOT QUITE</span>'+q.fb;}if(Object.keys(answered).length===total){const sc=Object.values(answered).filter(Boolean).length;const res=mount.querySelector('.checkpoint-result');res.querySelector('.score').textContent=sc+' / '+total;res.querySelector('.msg').textContent=sc===total?'Perfect — you\'ve got the logic.':sc>=total-1?'Strong — review the one you missed.':'Re-read the section above, then retry.';res.classList.add('show');}};});
+}
+
+// ---------- 1a: confounder gallery ----------
+(function(){
+ const pairs=[
+  {p:'Ice-cream sales ↔ Drownings',corr:'r = 0.90',why:'Confounder Z = <b>summer heat</b>. Hot days drive both ice-cream buying and swimming. Ice cream does not cause drowning.'},
+  {p:'Shoe size ↔ Reading ability (children)',corr:'r = 0.80',why:'Confounder Z = <b>age</b>. Older children have bigger feet and read better. Feet don\'t cause literacy.'},
+  {p:'Firefighters sent ↔ Fire damage',corr:'r = 0.75',why:'Confounder Z = <b>fire size</b>. Big fires summon more crews and cause more damage. Firefighters don\'t cause the damage.'},
+  {p:'Coffee drinking ↔ Heart disease (old studies)',corr:'r ≈ 0.4',why:'Confounder Z = <b>smoking</b>. Heavy coffee drinkers smoked more; smoking drove the disease. Controlling for smoking shrank the coffee effect to near zero.'},
+ ];
+ const gal=document.getElementById('spurGallery');
+ pairs.forEach(pr=>{const d=document.createElement('div');d.className='gal-item';d.innerHTML='<div class="gal-pair">'+pr.p+'</div><div class="gal-corr">'+pr.corr+' — strong raw correlation</div><div class="gal-reveal">'+pr.why+'</div>';d.onclick=()=>d.classList.toggle('open');gal.appendChild(d);});
+})();
+
+// ---------- 1b: confounder generator ----------
+(function(){
+ const cv=document.getElementById('confCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=40;
+ const s=document.getElementById('confS');
+ const Zs=[];for(let i=0;i<70;i++)Zs.push([Math.random(),Math.random(),Math.random()]); // z, noiseX, noiseY
+ function upd(){const k=parseFloat(s.value)/100;document.getElementById('confV').textContent=k.toFixed(1);
+   // X and Y both = k*Z + noise; no direct X->Y link
+   const pts=Zs.map(r=>{const z=r[0];const x=k*z+(1-k)*r[1];const y=k*z+(1-k)*r[2];return [x,y];});
+   const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;
+   let sxy=0,sxx=0,syy=0;pts.forEach(p=>{sxy+=(p[0]-mx)*(p[1]-my);sxx+=(p[0]-mx)**2;syy+=(p[1]-my)**2;});
+   const r=sxy/Math.sqrt(sxx*syy||1);
+   ctx.clearRect(0,0,W,H);
+   ctx.strokeStyle='rgba(176,188,214,0.3)';ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-12,H-pad);ctx.moveTo(pad,H-pad);ctx.lineTo(pad,16);ctx.stroke();
+   ctx.fillStyle='rgba(176,188,214,0.7)';ctx.font='12px Calibri';ctx.fillText('X →',W-60,H-pad+24);
+   pts.forEach(p=>{const px=pad+p[0]*(W-pad*1.4),py=H-pad-p[1]*(H-pad*1.5);ctx.fillStyle='#7E5AE8';ctx.beginPath();ctx.arc(px,py,4,0,7);ctx.fill();});
+   const ro=document.getElementById('confRaw');ro.textContent=r.toFixed(2);ro.className='rc-val '+(Math.abs(r)>0.5?'bad':'');
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- 2: overfitting / bias-variance ----------
+(function(){
+ const cv=document.getElementById('ofCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=44;
+ const s=document.getElementById('cxS');
+ // true function quadratic-ish; train and test sampled with noise
+ const f=x=>0.6+1.4*x-0.9*x*x+0.0*x;
+ function gen(seed){let r=seed;const rnd=()=>{r=(r*9301+49297)%233280;return r/233280;};const pts=[];for(let i=0;i<11;i++){const x=i/10;pts.push([x,f(x)+(rnd()-0.5)*0.5]);}return pts;}
+ const TRAIN=gen(123),TEST=gen(987);
+ const xmax=1,ymin=-0.6,ymax=1.4;
+ const X=x=>pad+x*(W-pad*1.4);const Y=y=>H-pad-((y-ymin)/(ymax-ymin))*(H-pad*1.6);
+ // polynomial fit via least squares (normal equations) degree d
+ function polyfit(pts,d){
+   // build matrices
+   const n=pts.length;const Xm=[],yv=[];
+   for(const p of pts){const row=[];for(let j=0;j<=d;j++)row.push(Math.pow(p[0],j));Xm.push(row);yv.push(p[1]);}
+   // solve (XtX) b = Xt y via Gaussian elimination
+   const m=d+1;const A=[];for(let i=0;i<m;i++){A.push([]);for(let j=0;j<m;j++){let s=0;for(let k=0;k<n;k++)s+=Xm[k][i]*Xm[k][j];A[i].push(s);}let s=0;for(let k=0;k<n;k++)s+=Xm[k][i]*yv[k];A[i].push(s);}
+   // gaussian
+   for(let i=0;i<m;i++){let piv=A[i][i]||1e-9;let mx=Math.abs(piv),mr=i;for(let r=i+1;r<m;r++){if(Math.abs(A[r][i])>mx){mx=Math.abs(A[r][i]);mr=r;}}if(mr!==i){const t=A[i];A[i]=A[mr];A[mr]=t;}piv=A[i][i]||1e-9;for(let r=0;r<m;r++){if(r!==i){const fac=A[r][i]/piv;for(let c=i;c<=m;c++)A[r][c]-=fac*A[i][c];}}}
+   const b=[];for(let i=0;i<m;i++)b.push(A[i][m]/(A[i][i]||1e-9));return b;
+ }
+ function predict(b,x){let s=0;for(let j=0;j<b.length;j++)s+=b[j]*Math.pow(x,j);return s;}
+ function mse(pts,b){return pts.reduce((s,p)=>s+Math.pow(p[1]-predict(b,p[0]),2),0)/pts.length;}
+ function upd(){const cx=parseInt(s.value);document.getElementById('cxV').textContent=cx;
+   const deg=cx; // complexity = polynomial degree
+   const b=polyfit(TRAIN,deg);
+   ctx.clearRect(0,0,W,H);
+   ctx.strokeStyle='rgba(176,188,214,0.3)';ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-12,H-pad);ctx.moveTo(pad,H-pad);ctx.lineTo(pad,16);ctx.stroke();
+   // fitted curve
+   ctx.strokeStyle='#F0B33D';ctx.lineWidth=3;ctx.beginPath();let f1=true;for(let x=0;x<=1;x+=0.01){const px=X(x),py=Y(predict(b,x));if(f1){ctx.moveTo(px,py);f1=false;}else ctx.lineTo(px,py);}ctx.stroke();
+   // train (blue) test (teal)
+   TRAIN.forEach(p=>{ctx.fillStyle='#4A90E2';ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),5,0,7);ctx.fill();});
+   TEST.forEach(p=>{ctx.fillStyle='#2DB6A8';ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),5,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();});
+   ctx.font='12px Calibri';ctx.fillStyle='#4A90E2';ctx.fillText('● training',pad,18);ctx.fillStyle='#2DB6A8';ctx.fillText('   ● test (unseen)',pad+62,18);
+   const tr=mse(TRAIN,b),te=mse(TEST,b);
+   const trEl=document.getElementById('ofTrain');trEl.textContent=tr.toFixed(3);
+   const teEl=document.getElementById('ofTest');teEl.textContent=te.toFixed(3);teEl.className='rc-val '+(te<0.06?'good':te>0.15?'bad':'');
+   const diag=document.getElementById('ofDiag');
+   const gap=te-tr; // train-test gap widens with overfitting
+   if(deg<=1){diag.textContent='underfit (too stiff)';diag.className='rc-val bad';}
+   else if(deg>=6||gap>0.03){diag.textContent='OVERFIT (memorising)';diag.className='rc-val bad';}
+   else if(deg<=4){diag.textContent='good fit ✓';diag.className='rc-val good';}
+   else{diag.textContent='starting to overfit';diag.className='rc-val';}
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- 3a: data quality ----------
+(function(){
+ const issues=[
+  {t:'Missing data — 30% of rows have blanks',cost:25},
+  {t:'Biased sample — only one store, generalised to all',cost:30},
+  {t:'Data-entry errors and duplicate rows',cost:15},
+  {t:'Ambiguous / poorly defined variables',cost:20},
+ ];
+ const list=document.getElementById('dqList');const state={};
+ const score=document.getElementById('dqScore'),fill=document.getElementById('dqFill'),msg=document.getElementById('dqMsg');
+ function recompute(){let sc=100;issues.forEach((it,i)=>{if(state[i])sc-=it.cost;});sc=Math.max(0,sc);score.textContent=sc;fill.style.width=sc+'%';
+   let col;if(sc>=75){col='#2EA84A';msg.textContent='Solid data — defensible conclusions.';}else if(sc>=45){col='#E8A33C';msg.textContent='Shaky — flag prominently as a limitation.';}else{col='#C8312B';msg.textContent='No method will rescue this. Fix the data first.';}
+   score.style.color=col;fill.style.background=col;}
+ issues.forEach((it,i)=>{const d=document.createElement('div');d.className='dq-item';d.innerHTML='<div class="dq-check">✕</div><div class="dq-text">'+it.t+' <span style="color:var(--grey-muted);font-size:11px">(−'+it.cost+')</span></div>';d.onclick=()=>{state[i]=!state[i];d.classList.toggle('on');recompute();};list.appendChild(d);});
+ recompute();
+})();
+
+// ---------- 3b: outlier leverage ----------
+(function(){
+ const cv=document.getElementById('outCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=44,xmax=11,ymax=13;
+ const X=x=>pad+(x/xmax)*(W-pad*1.4);const Y=y=>H-pad-(y/ymax)*(H-pad*1.6);
+ const CLEAN=[[1,2],[2,3],[3,3.5],[4,5],[5,5.5],[6,7],[7,7.5],[8,9]];
+ const s=document.getElementById('outS');
+ function fit(pts){const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;let num=0,den=0;pts.forEach(p=>{num+=(p[0]-mx)*(p[1]-my);den+=(p[0]-mx)**2;});const b1=num/den;return{b1,b0:my-b1*mx};}
+ function upd(){const v=parseFloat(s.value);document.getElementById('outV').textContent=v<35?'normal':v<70?'high':'extreme';
+   const outlier=[9.5, 1+ (v/100)*12]; // rogue point high on x, y pushed up by slider
+   const withO=CLEAN.concat([outlier]);
+   const fO=fit(withO),fC=fit(CLEAN);
+   ctx.clearRect(0,0,W,H);
+   ctx.strokeStyle='rgba(176,188,214,0.3)';ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-12,H-pad);ctx.moveTo(pad,H-pad);ctx.lineTo(pad,16);ctx.stroke();
+   // clean line (green dashed)
+   ctx.strokeStyle='#2EA84A';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(X(0),Y(fC.b0));ctx.lineTo(X(xmax),Y(fC.b0+fC.b1*xmax));ctx.stroke();ctx.setLineDash([]);
+   // with-outlier line (gold)
+   ctx.strokeStyle='#F0B33D';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(X(0),Y(fO.b0));ctx.lineTo(X(xmax),Y(fO.b0+fO.b1*xmax));ctx.stroke();
+   CLEAN.forEach(p=>{ctx.fillStyle='#4A90E2';ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),5,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.stroke();});
+   ctx.fillStyle='#C8312B';ctx.beginPath();ctx.arc(X(outlier[0]),Y(outlier[1]),8,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+   ctx.font='12px Calibri';ctx.fillStyle='#2EA84A';ctx.fillText('-- without outlier',pad,18);ctx.fillStyle='#F0B33D';ctx.fillText('     — with outlier',pad+96,18);
+   document.getElementById('outSlope').textContent=fO.b1.toFixed(2);
+   document.getElementById('outClean').textContent=fC.b1.toFixed(2);
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- checkpoint ----------
+const CP={title:'Lock it in',sub:'Three questions on the traps',questions:[
+ {q:'Ice-cream sales and drownings correlate at r=0.9. The right move is:',opts:['Conclude ice cream causes drowning','Look for a confounder (here, summer heat) that drives both','Increase the sample','Trust the correlation'],correct:1,fb:'A strong correlation with a plausible common cause screams confounding. Heat drives both. On observational data, control for it or report it — never assert cause.'},
+ {q:'Your model scores 99% on training data and 64% on test data. This is:',opts:['A great model','Overfitting — it memorised noise; the test gap is the tell','Underfitting','Proof of causation'],correct:1,fb:'A large train-test gap is the classic overfitting signature. The model learned the training set\'s noise. Simplify it, get more data, or use cross-validation.'},
+ {q:'Before running any analysis, the first defence against bad conclusions is:',opts:['Use a fancier algorithm','Audit and plot the raw data — missingness, outliers, sample bias','Increase the number of predictors','Raise the significance threshold'],correct:1,fb:'Garbage in, garbage out. No method fixes flawed inputs. Plot the data, investigate outliers, document missingness and who is excluded.'},
+]};
+renderCheckpoint('cpCard',CP);
+
+</script>
+</body>
+</html>

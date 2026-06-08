@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DBA · Supervised vs Unsupervised · Data Analysis</title>
+<style>
+:root{
+ --navy-deep:#0A1A3A;--navy-mid:#152A5E;--navy-light:#1E3470;--blue-bright:#1E5AA8;
+ --blue-glow:#4A90E2;--gold:#F0B33D;--gold-bright:#FFD24A;--gold-dark:#8C6A1F;
+ --white:#FFFFFF;--grey-muted:#B0BCD6;--green-correct:#2EA84A;--green-soft:#1E6E33;
+ --red-wrong:#C8312B;--red-soft:#5E1F1C;--amber:#E8A33C;--purple-defi:#7E5AE8;--teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+ background:
+  radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),
+  radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+ background-attachment:fixed;color:var(--white);line-height:1.55;}
+body{padding-bottom:90px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;white-space:nowrap;}
+.progress-track{flex:1;height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;border:1px solid rgba(176,188,214,0.2);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:0%;transition:width .5s ease;border-radius:3px;}
+.progress-pct{font-size:11px;color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;min-width:36px;text-align:right;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:34px 16px 20px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:14px;}
+.hero h1{font-family:Georgia,serif;font-size:33px;font-style:italic;line-height:1.14;margin-bottom:10px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:640px;margin:0 auto 8px;}
+.series-nav{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px auto 0;max-width:720px;}
+.series-nav a{font-size:11px;color:var(--gold-bright);text-decoration:none;border:1px solid rgba(240,179,61,0.35);background:rgba(255,255,255,0.05);border-radius:20px;padding:5px 12px;transition:.2s;}
+.series-nav a:hover{background:rgba(240,179,61,0.16);border-color:var(--gold);}
+.series-nav a.here{background:rgba(240,179,61,0.2);border-color:var(--gold);color:var(--white);}
+.phase-divider{display:flex;align-items:center;gap:12px;margin:26px 4px 8px;font-size:10px;letter-spacing:3px;color:var(--gold);font-weight:bold;}
+.phase-divider::before,.phase-divider::after{content:"";flex:1;height:1px;background:rgba(240,179,61,0.3);}
+/* generic cards */
+.step-card{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:24px 22px;margin-bottom:18px;backdrop-filter:blur(4px);}
+.step-label{display:inline-block;font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.step-label.problem{background:var(--red-soft);color:#FF9B95;border:1px solid var(--red-wrong);}
+.step-label.mechanism{background:rgba(30,90,168,0.3);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.step-label.why{background:rgba(240,179,61,0.18);color:var(--gold-bright);border:1px solid var(--gold);}
+.step-label.case{background:rgba(45,182,168,0.2);color:var(--teal);border:1px solid var(--teal);}
+.step-label.math{background:rgba(126,90,232,0.2);color:#C9B6FF;border:1px solid var(--purple-defi);}
+.step-card h3{font-family:Georgia,serif;font-size:23px;margin-bottom:8px;line-height:1.25;}
+.step-card h4{font-size:14px;letter-spacing:1px;color:var(--gold);margin:14px 0 6px;text-transform:uppercase;}
+.step-card p{color:#DCE3F2;margin-bottom:12px;font-size:15px;}
+.step-card p.lead{font-size:16px;}
+.step-card strong{color:var(--gold-bright);font-weight:600;}
+.step-card em{color:#EAD9A8;font-style:italic;}
+.step-card ul,.step-card ol{margin:4px 0 12px 4px;}
+.step-card ul li{color:#DCE3F2;font-size:14px;list-style:none;padding:4px 0 4px 22px;position:relative;}
+.step-card ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.step-card ol{padding-left:22px;}
+.step-card ol li{color:#DCE3F2;font-size:14px;margin-bottom:5px;}
+.step-card .punch{font-family:Georgia,serif;font-size:18px;font-style:italic;color:var(--gold-bright);border-left:3px solid var(--gold);padding-left:16px;margin:16px 0 4px;line-height:1.4;}
+/* maths block */
+.math-block{background:var(--navy-deep);border:1px solid var(--purple-defi);border-radius:10px;padding:16px 18px;margin:12px 0;font-family:Georgia,serif;}
+.math-block .eq{font-size:21px;text-align:center;color:var(--white);margin:6px 0 10px;line-height:1.6;}
+.math-block .eq .hl{color:var(--gold-bright);}
+.math-block .eq .hl2{color:var(--teal);}
+.math-block .eq .hl3{color:#C9B6FF;}
+.math-block .legend{font-family:'Calibri',sans-serif;font-size:13px;color:var(--grey-muted);}
+.math-block .legend b{color:var(--white);}
+.math-block .legend .row{display:flex;gap:10px;margin:4px 0;align-items:baseline;}
+.math-block .legend .sym{font-family:Georgia,serif;color:var(--gold-bright);min-width:42px;font-size:15px;}
+.note-box{background:rgba(45,182,168,0.1);border:1px solid var(--teal);border-radius:10px;padding:13px 15px;font-size:13px;color:#DCE3F2;margin:10px 0;}
+.note-box b{color:var(--teal);}
+.warn-box{background:rgba(232,163,60,0.12);border:1px solid var(--amber);border-radius:10px;padding:13px 15px;font-size:13px;color:#F2E2C4;margin:10px 0;}
+.warn-box b{color:var(--amber);}
+/* sandbox */
+.sandbox{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:12px;padding:18px;margin:16px 0;}
+.sandbox-title{font-size:10px;letter-spacing:2px;color:var(--teal);font-weight:bold;margin-bottom:14px;}
+.sandbox-title::before{content:"▸ TRY IT";}
+.sandbox-prompt{font-size:13px;color:var(--grey-muted);margin-bottom:12px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+/* sliders */
+.slider-row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+.slider-row label{font-size:13px;color:var(--grey-muted);min-width:120px;}
+.slider-row label b{color:var(--gold-bright);font-family:Georgia,serif;}
+.slider-row input[type=range]{flex:1;min-width:140px;accent-color:var(--gold);height:6px;}
+.readout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0;}
+.readout-cell{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:8px;padding:9px 11px;text-align:center;}
+.readout-cell .rc-label{font-size:9px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;}
+.readout-cell .rc-val{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:var(--gold-bright);transition:color .2s;}
+.readout-cell .rc-val.good{color:var(--green-correct);}
+.readout-cell .rc-val.bad{color:#FF9B95;}
+canvas{max-width:100%;display:block;border-radius:8px;}
+.canvas-wrap{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px;margin:8px 0;}
+/* reveal tiles */
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:6px 0;}
+.reveal-tile{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s;position:relative;min-height:64px;}
+.reveal-tile:hover{border-color:var(--gold);transform:translateY(-2px);}
+.reveal-tile .letter{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--gold);}
+.reveal-tile .name{font-size:12px;font-weight:bold;margin-top:2px;}
+.reveal-tile .desc{font-size:11px;color:var(--grey-muted);margin-top:6px;display:none;line-height:1.4;}
+.reveal-tile.open{background:var(--navy-light);border-color:var(--gold);}
+.reveal-tile.open .desc{display:block;}
+/* sorters */
+.sort-pool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.sort-chip{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all .2s;}
+.sort-chip:hover{border-color:var(--gold);}
+.sort-chip.placed{opacity:.35;pointer-events:none;text-decoration:line-through;}
+.sort-bins{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sort-bins-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media (max-width:560px){.sort-bins,.sort-bins-3{grid-template-columns:1fr;}.slider-row label{min-width:90px;}}
+.sort-bin{background:var(--navy-deep);border:1.5px dashed var(--blue-bright);border-radius:10px;padding:12px;min-height:80px;cursor:pointer;}
+.sort-bin .bin-title{font-size:11px;letter-spacing:1px;font-weight:bold;color:var(--gold);margin-bottom:8px;}
+.sort-bin .bin-items{display:flex;flex-direction:column;gap:6px;}
+.sort-bin .bin-item{font-size:12px;padding:6px 10px;border-radius:6px;}
+.sort-bin .bin-item.correct{background:var(--green-soft);border:1px solid var(--green-correct);}
+.sort-bin .bin-item.wrong{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.sort-active-prompt{font-size:12px;color:var(--gold-bright);margin-bottom:10px;min-height:18px;}
+/* data tables */
+.info-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
+.info-table td,.info-table th{border:1px solid var(--blue-bright);padding:9px 11px;text-align:left;vertical-align:top;}
+.info-table th{background:var(--navy-mid);color:var(--gold);font-size:11px;letter-spacing:1px;}
+.info-table td:first-child{color:var(--gold-bright);font-weight:bold;}
+.rt-table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums;}
+.rt-table th{background:var(--navy-mid);color:var(--gold);font-size:10px;letter-spacing:1px;padding:8px 9px;text-align:left;border:1px solid var(--blue-bright);}
+.rt-table td{border:1px solid var(--blue-bright);padding:9px;cursor:pointer;transition:all .15s;}
+.rt-table tr.data-row:hover td{background:var(--navy-light);}
+.rt-table tr.data-row.sel td{background:rgba(240,179,61,0.14);}
+.rt-table td.varname{color:var(--gold-bright);font-weight:bold;}
+.rt-table .num{text-align:right;font-family:Georgia,serif;}
+.rt-table .sig{color:var(--green-correct);font-weight:bold;}
+.rt-table .nsig{color:var(--grey-muted);}
+.rt-readout{background:var(--navy-deep);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:13px 15px;margin-top:10px;font-size:13px;min-height:54px;line-height:1.5;}
+.rt-readout .hint{color:var(--grey-muted);font-style:italic;}
+.rt-fit{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
+.rt-fit .chip{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--grey-muted);cursor:pointer;}
+.rt-fit .chip b{color:var(--gold-bright);}
+/* checkpoint */
+.checkpoint{background:linear-gradient(135deg,rgba(126,90,232,0.15),rgba(30,90,168,0.15));border:2px solid var(--purple-defi);border-radius:16px;padding:24px 22px;margin-bottom:18px;}
+.checkpoint-header{text-align:center;margin-bottom:18px;}
+.checkpoint-header .badge{display:inline-block;background:var(--purple-defi);color:var(--white);font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 14px;border-radius:20px;margin-bottom:8px;}
+.checkpoint-header h3{font-family:Georgia,serif;font-size:22px;font-style:italic;}
+.checkpoint-header p{color:var(--grey-muted);font-size:13px;margin-top:4px;}
+.quiz-q{margin-bottom:18px;}
+.quiz-q .q-text{font-family:Georgia,serif;font-size:17px;margin-bottom:8px;line-height:1.35;}
+.quiz-q .q-num{color:var(--gold);font-weight:bold;margin-right:6px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{background:var(--navy-deep);border:1.5px solid var(--blue-bright);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;font-size:14px;}
+.quiz-opt:hover:not(.locked){border-color:var(--gold);background:var(--navy-mid);}
+.quiz-opt .opt-letter{font-family:Georgia,serif;font-weight:bold;color:var(--gold);min-width:20px;}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green-correct);}
+.quiz-opt.correct .opt-letter{color:var(--green-correct);}
+.quiz-opt.wrong{background:var(--red-soft);border-color:var(--red-wrong);}
+.quiz-opt.wrong .opt-letter{color:#FF9B95;}
+.quiz-opt.locked{cursor:default;}
+.quiz-feedback{margin-top:10px;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.5;display:none;}
+.quiz-feedback.show{display:block;}
+.quiz-feedback.right{background:var(--green-soft);border:1px solid var(--green-correct);}
+.quiz-feedback.wrong-fb{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.quiz-feedback .fb-label{font-weight:bold;letter-spacing:1px;margin-right:6px;}
+.checkpoint-result{text-align:center;padding:16px;display:none;}
+.checkpoint-result.show{display:block;}
+.checkpoint-result .score{font-family:Georgia,serif;font-size:40px;font-weight:bold;color:var(--gold-bright);}
+.checkpoint-result .msg{color:var(--grey-muted);margin:8px 0 16px;}
+/* footer nav */
+.nav-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(10,26,58,0.95);backdrop-filter:blur(10px);border-top:1px solid rgba(240,179,61,0.3);padding:12px 16px;z-index:50;}
+.nav-footer-inner{max-width:880px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.nav-footer a.navlink{flex:1;text-decoration:none;text-align:center;}
+.fineprint{font-size:11px;color:var(--grey-muted);text-align:center;margin-top:18px;}
+.scope-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.scope-strip .scope-pill{background:rgba(200,49,43,0.12);border:1px solid rgba(200,49,43,0.5);color:#FF9B95;font-size:11px;border-radius:20px;padding:6px 12px;}
+.toc-card{display:flex;align-items:center;gap:16px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:15px 18px;cursor:pointer;transition:all .2s;position:relative;text-decoration:none;color:inherit;margin-bottom:10px;}
+.toc-card:hover{border-color:var(--gold);transform:translateX(4px);}
+.toc-card .num{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--gold);min-width:38px;text-align:center;}
+.toc-card .info .name{font-size:16px;font-weight:bold;font-family:Georgia,serif;}
+.toc-card .info .tag{font-size:12px;color:var(--grey-muted);margin-top:2px;}
+.toc-card .phase-pill{position:absolute;top:8px;right:10px;font-size:8px;letter-spacing:1px;font-weight:bold;padding:2px 7px;border-radius:10px;background:rgba(45,182,168,0.2);color:var(--teal);}
+/* fork switch (page 1) */
+.fork-switch{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.fork-switch button{flex:1;min-width:160px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:11px 14px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:all .2s;}
+.fork-switch button.active{background:rgba(240,179,61,0.16);border-color:var(--gold);color:var(--gold-bright);}
+.fork-panel{display:flex;flex-direction:column;gap:8px;}
+.fork-row{background:var(--navy-mid);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:10px 13px;transition:background .25s;}
+.fork-row.flash{background:var(--navy-light);}
+.fork-row .fr-label{font-size:9px;letter-spacing:1.5px;color:var(--gold);font-weight:bold;margin-bottom:3px;}
+.fork-row .fr-val{font-size:13px;color:#DCE3F2;}
+/* gallery (page 5) */
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:560px){.gallery{grid-template-columns:1fr;}}
+.gal-item{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .2s;}
+.gal-item:hover{border-color:var(--gold);transform:translateY(-2px);}
+.gal-item.open{border-color:var(--gold);background:var(--navy-light);}
+.gal-item .gal-pair{font-size:14px;font-weight:bold;color:var(--white);font-family:Georgia,serif;}
+.gal-item .gal-corr{font-size:11px;color:var(--amber);margin-top:4px;}
+.gal-item .gal-reveal{font-size:12px;color:#DCE3F2;margin-top:8px;display:none;line-height:1.45;border-top:1px solid rgba(176,188,214,0.2);padding-top:8px;}
+.gal-item.open .gal-reveal{display:block;}
+/* data-quality (page 5) */
+.dq-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.dq-item{display:flex;align-items:center;gap:12px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:8px;padding:10px 13px;cursor:pointer;transition:all .2s;}
+.dq-item .dq-check{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--grey-muted);display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;flex-shrink:0;}
+.dq-item.on{border-color:var(--red-wrong);background:var(--red-soft);}
+.dq-item.on .dq-check{background:var(--red-wrong);border-color:var(--red-wrong);color:#fff;}
+.dq-item .dq-text{font-size:13px;color:#DCE3F2;}
+.dq-meter{background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;padding:16px;}
+/* viva sentence builder (page 6) */
+.vb-group{margin-bottom:12px;}
+.vb-q{font-family:Georgia,serif;font-size:15px;color:#DCE3F2;margin-bottom:6px;}
+.vb-opts{display:flex;flex-wrap:wrap;gap:7px;}
+.vb-opts button{background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:7px 13px;border-radius:20px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s;}
+.vb-opts button:hover{border-color:var(--gold);}
+.vb-opts button.on{background:rgba(240,179,61,0.18);border-color:var(--gold);color:var(--gold-bright);font-weight:bold;}
+.vb-output{background:var(--navy-deep);border:1px solid var(--gold);border-left:3px solid var(--gold);border-radius:8px;padding:15px 17px;margin:14px 0 4px;font-family:Georgia,serif;font-size:15px;line-height:1.55;color:#fff;font-style:italic;min-height:60px;}
+.vb-output b{color:var(--gold-bright);font-style:normal;}
+
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+ <span class="course-title">DBA · DATA ANALYSIS · 02</span>
+ <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+ <span class="progress-pct" id="progressPct">0%</span>
+</div></div>
+<div class="container">
+ <div class="hero">
+   <div class="eyebrow">DATA ANALYSIS FOR THE DBA · PART 2 OF 6</div>
+   <h1>Supervised vs Unsupervised</h1>
+   <p>The same data can feed two completely different kinds of learning. Knowing which you are doing — and what "learning" even means — is the foundation under every method that follows.</p>
+   <div class="series-nav"><a href="da_index.html" title="Series home">⌂</a><a href="da_1_explain_predict.html">1</a><a href="da_2_supervised_unsupervised.html" class="here">2</a><a href="da_3_the_methods.html">3</a><a href="da_4_read_results.html">4</a><a href="da_5_three_traps.html">5</a><a href="da_6_decision_aid.html">6</a></div>
+ </div>
+ 
+<div class="phase-divider">1 · THE SHAPE OF DATA</div>
+
+<div class="step-card">
+ <span class="step-label mechanism">VOCABULARY YOU CANNOT SKIP</span>
+ <h3>Rows, features, and the target</h3>
+ <p>Every dataset you analyse has the same shape: a table. Each <strong>row</strong> is one observation (a customer, an employee, a store). Each <strong>column</strong> is a <strong>feature</strong> (also called a variable or predictor) — something you measured. In <em>supervised</em> learning, one special column is the <strong>target</strong> (or label, or outcome): the thing you want to explain or predict.</p>
+ <div class="math-block">
+   <div class="eq"><span class="hl2">X</span> = the features (inputs) &nbsp;&nbsp;→&nbsp;&nbsp; <span class="hl">y</span> = the target (output)</div>
+   <div class="legend"><div class="row"><span class="sym">X</span><span>the matrix of everything you know about each row (age, tenure, spend…).</span></div><div class="row"><span class="sym">y</span><span>the single column you are trying to explain or predict. <b>If there is no y, the problem is unsupervised.</b></span></div></div>
+ </div>
+ <p>Below is a raw customer table. Click a column header to nominate it as the <strong>target (y)</strong>. Everything else becomes the features (X). The point: <em>you</em> decide what the target is — and that decision defines the whole study.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 1 of 3 — click a column header to make it the target.</div>
+   <div id="featTable"></div>
+   <div class="rt-readout" id="featReadout"><span class="hint">Click a header above…</span></div>
+ </div>
+</div>
+
+<div class="phase-divider">2 · WHAT "LEARNING" ACTUALLY MEANS</div>
+
+<div class="step-card">
+ <span class="step-label math">THE CORE MECHANISM</span>
+ <h3>Learning = minimising a loss</h3>
+ <p>This is the idea that unifies almost all of machine learning, and you already met it in Part 1. A model makes predictions; we measure how wrong it is with a <strong>loss function</strong>; then we adjust the model to make that loss smaller. "Training" is just this loop, repeated:</p>
+ <div class="math-block">
+   <div class="eq">guess → measure <span class="hl3">loss</span> → adjust → repeat</div>
+   <div class="legend"><div class="row"><span class="sym">loss</span><span>a single number summarising total error. For a continuous target it is usually the squared error from Part 1: <b>Σ(yᵢ − ŷᵢ)²</b>. Lower loss = better fit.</span></div></div>
+ </div>
+ <p>Supervised learning has a target, so it <em>can</em> compute loss — it always knows the "right answer" for the training rows. Unsupervised learning has no target, so there is no right answer to score against; instead it optimises a different objective, like making groups <em>tight</em>. Watch this loop run live: the model starts as a bad random line and descends toward the least-squares fit, one step at a time.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 2 of 3 — press Step (or Run) and watch the loss fall as the line learns.</div>
+   <div class="canvas-wrap"><canvas id="learnCanvas" width="760" height="380"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Iteration</div><div class="rc-val" id="iterOut">0</div></div>
+     <div class="readout-cell"><div class="rc-label">Loss (SSE)</div><div class="rc-val" id="lossOut">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Slope b₁</div><div class="rc-val" id="slopeOut">—</div></div>
+   </div>
+   <div class="btn-row"><button class="btn small" id="stepBtn">▶ Step</button><button class="btn small ghost" id="runBtn">⏩ Run 30×</button><button class="btn small ghost" id="resetLearn">↺ Reset</button></div>
+ </div>
+ <div class="note-box"><b>This is gradient descent.</b> Each step nudges the slope in the direction that lowers the loss most steeply. Neural networks, logistic regression, and boosting all use versions of this exact loop — just with more parameters. You have now seen the heart of "machine learning."</div>
+</div>
+
+<div class="phase-divider">3 · THE TWO FAMILIES</div>
+
+<div class="step-card">
+ <span class="step-label why">PRACTICE</span>
+ <h3>Sort real problems into the right family</h3>
+ <p>One question decides it every time: <strong>"Is there a known outcome column I'm trying to reproduce?"</strong> Yes → supervised. No, I'm looking for hidden structure → unsupervised.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 3 of 3a — tap a case, then the correct family.</div>
+   <div class="sort-active-prompt" id="suPrompt">Tap a case, then a bin.</div>
+   <div class="sort-pool" id="suPool"></div>
+   <div class="sort-bins">
+     <div class="sort-bin" id="suSupBox"><div class="bin-title">SUPERVISED — has a target y</div><div class="bin-items" id="suSup"></div></div>
+     <div class="sort-bin" id="suUnsupBox"><div class="bin-title">UNSUPERVISED — no target, find groups</div><div class="bin-items" id="suUnsup"></div></div>
+   </div>
+   <div class="btn-row"><span style="font-size:12px;color:var(--grey-muted)" id="suCount">0 / 6 sorted</span></div>
+ </div>
+</div>
+
+<div class="step-card">
+ <span class="step-label math">UNSUPERVISED, MADE CONCRETE</span>
+ <h3>How k-means finds groups with no labels</h3>
+ <p>The most common unsupervised method is <strong>k-means clustering</strong>. With no target to aim at, it optimises a different objective: make each group as <em>tight</em> as possible. The algorithm is almost embarrassingly simple, and it is worth knowing the four steps because examiners ask:</p>
+ <ol>
+   <li>Choose <strong>k</strong> (how many groups you want). <em>You</em> pick this — it is a judgement, not an output.</li>
+   <li>Drop k "centres" at random.</li>
+   <li><strong>Assign</strong> each point to its nearest centre (distance = the objective).</li>
+   <li><strong>Move</strong> each centre to the average of its assigned points. Repeat 3–4 until nothing moves.</li>
+ </ol>
+ <p>Press the buttons to run those exact steps on real-looking data. Notice the centres drift into the heart of each cloud, and the total within-group distance (the objective, sometimes called inertia) drops.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 3 of 3b — set k, then alternate Assign and Move.</div>
+   <div class="slider-row"><label>Number of groups <b id="kVal">3</b></label><input type="range" id="kSlider" min="2" max="4" step="1" value="3"></div>
+   <div class="canvas-wrap"><canvas id="kmCanvas" width="760" height="420"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Step</div><div class="rc-val" id="kmStep" style="font-size:14px">place centres</div></div>
+     <div class="readout-cell"><div class="rc-label">Inertia (tightness)</div><div class="rc-val" id="kmInertia">—</div></div>
+   </div>
+   <div class="btn-row"><button class="btn small" id="kmAssign">① Assign to nearest</button><button class="btn small" id="kmMove">② Move centres</button><button class="btn small ghost" id="kmReset">↺ New random start</button></div>
+ </div>
+ <div class="warn-box"><b>The honest caveat.</b> k-means <em>always</em> returns groups — even in random noise. And different random starts can give different groupings. So in a thesis, clusters are a <em>hypothesis</em> to interpret and validate, never a proven fact. "The algorithm found 3 segments" is not a finding; "these 3 segments differ meaningfully on X and Y, and replicate across starts" is.</p></div>
+</div>
+
+<div class="step-card" id="cpCard"></div>
+
+ <div class="fineprint">Scroll progress saves on this device. Part of the DBA Data-Analysis series by Jan Erik Meidell.</div>
+</div>
+<div class="nav-footer"><div class="nav-footer-inner"><a class="navlink" href="da_1_explain_predict.html"><button class="btn ghost" style="width:100%">← Explain or Predict?</button></a><span style="font-size:11px;color:var(--grey-muted);white-space:nowrap;">2 / 6</span><a class="navlink" href="da_3_the_methods.html"><button class="btn" style="width:100%">The Five Core Methods →</button></a></div></div>
+<a href="https://www.linkedin.com/in/jmeidell/" target="_blank" rel="noopener" title="Jan Erik Meidell — LinkedIn" style="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;"><span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F0B33D,#FFD24A);color:#0A1A3A;font-family:Georgia,serif;font-weight:bold;font-size:15px;border:1.5px solid #F0B33D;">JM</span><span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Jan Erik Meidell</span></a>
+<script>
+// progress = % scrolled, persisted per page
+(function(){
+ const KEY='dba_da_deep_da_2_supervised_unsupervised';
+ const fill=document.getElementById('progressFill'),pct=document.getElementById('progressPct');
+ function upd(){const h=document.documentElement;const max=h.scrollHeight-h.clientHeight;const p=max>0?Math.min(100,Math.round(h.scrollTop/max*100)):0;fill.style.width=p+'%';pct.textContent=p+'%';try{localStorage.setItem(KEY,p);}catch(e){}}
+ window.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();
+})();
+// shared checkpoint renderer
+function renderCheckpoint(mountId,cp){
+ const mount=document.getElementById(mountId);if(!mount)return;
+ const qs=cp.questions.map((q,qi)=>'<div class="quiz-q" data-qi="'+qi+'"><div class="q-text"><span class="q-num">Q'+(qi+1)+'.</span>'+q.q+'</div><div class="quiz-opts">'+q.opts.map((opt,oi)=>'<div class="quiz-opt" data-qi="'+qi+'" data-oi="'+oi+'"><span class="opt-letter">'+String.fromCharCode(65+oi)+'</span><span>'+opt+'</span></div>').join('')+'</div><div class="quiz-feedback" data-qi="'+qi+'"></div></div>').join('');
+ mount.className='checkpoint';
+ mount.innerHTML='<div class="checkpoint-header"><div class="badge">✦ CHECKPOINT</div><h3>'+cp.title+'</h3><p>'+cp.sub+'</p></div><div class="quiz-body">'+qs+'</div><div class="checkpoint-result"><div class="score"></div><div class="msg"></div></div>';
+ const answered={},total=cp.questions.length;
+ mount.querySelectorAll('.quiz-opt').forEach(opt=>{opt.onclick=()=>{const qi=+opt.dataset.qi,oi=+opt.dataset.oi;if(answered[qi]!==undefined)return;const q=cp.questions[qi];const opts=mount.querySelectorAll('.quiz-opt[data-qi="'+qi+'"]');opts.forEach(o=>o.classList.add('locked'));const fb=mount.querySelector('.quiz-feedback[data-qi="'+qi+'"]');if(oi===q.correct){opt.classList.add('correct');answered[qi]=true;fb.className='quiz-feedback right show';fb.innerHTML='<span class="fb-label">✓ CORRECT</span>'+q.fb;}else{opt.classList.add('wrong');opts[q.correct].classList.add('correct');answered[qi]=false;fb.className='quiz-feedback wrong-fb show';fb.innerHTML='<span class="fb-label">✗ NOT QUITE</span>'+q.fb;}if(Object.keys(answered).length===total){const sc=Object.values(answered).filter(Boolean).length;const res=mount.querySelector('.checkpoint-result');res.querySelector('.score').textContent=sc+' / '+total;res.querySelector('.msg').textContent=sc===total?'Perfect — you\'ve got the logic.':sc>=total-1?'Strong — review the one you missed.':'Re-read the section above, then retry.';res.classList.add('show');}};});
+}
+
+// ---------- Interactive 1: feature matrix / target picker ----------
+(function(){
+ const cols=['CustomerID','Age','Tenure (yrs)','Monthly spend','Churned?'];
+ const rows=[['#1','34','2','CHF 45','Yes'],['#2','51','9','CHF 120','No'],['#3','28','1','CHF 30','Yes'],['#4','45','6','CHF 95','No']];
+ const wrap=document.getElementById('featTable');
+ function render(target){
+   let h='<table class="rt-table"><tr>'+cols.map((c,i)=>'<th data-c="'+i+'" style="cursor:pointer">'+c+(i===target?' ◄ y':'')+'</th>').join('')+'</tr>';
+   rows.forEach(r=>{h+='<tr>'+r.map((v,i)=>'<td class="'+(i===target?'varname':'')+'" style="cursor:default">'+v+'</td>').join('')+'</tr>';});
+   h+='</table>';wrap.innerHTML=h;
+   wrap.querySelectorAll('th').forEach(th=>th.onclick=()=>render(+th.dataset.c));
+   const ro=document.getElementById('featReadout');
+   if(target===null){ro.innerHTML='<span class="hint">Click a header above…</span>';return;}
+   if(target===0){ro.innerHTML='<b>CustomerID</b> is an identifier, not a meaningful target — predicting it makes no sense. IDs should usually be dropped from X entirely.';return;}
+   const feats=cols.filter((c,i)=>i!==target&&i!==0).join(', ');
+   const kind=(target===4)?'a <b>yes/no</b> target → this is a <b>classification</b> problem (logistic regression, trees).':'a <b>continuous</b> target → this is a <b>regression</b> problem (linear regression).';
+   ro.innerHTML='Target <b>y = '+cols[target]+'</b>. Features <b>X = {'+feats+'}</b>. Because '+cols[target]+' is '+kind+' Supervised, either way, because a target exists.';
+ }
+ render(4);
+})();
+
+// ---------- Interactive 2: gradient descent learner ----------
+(function(){
+ const DATA=[[1,3.2],[2,4.1],[3,5.9],[4,6.2],[5,8.3],[6,8.9],[7,11.2],[8,11.6]];
+ const cv=document.getElementById('learnCanvas'),ctx=cv.getContext('2d');
+ const pad=44,W=cv.width,H=cv.height,xmax=9,ymax=14;
+ const X=x=>pad+(x/xmax)*(W-pad*1.5);const Y=y=>H-pad-(y/ymax)*(H-pad*1.5);
+ const mx=DATA.reduce((s,d)=>s+d[0],0)/DATA.length, my=DATA.reduce((s,d)=>s+d[1],0)/DATA.length;
+ let b0,b1,iter;const lr=0.0016;
+ function loss(){return DATA.reduce((s,d)=>s+Math.pow(d[1]-(b0+b1*d[0]),2),0);}
+ function reset(){b0=0.5;b1=0.1;iter=0;draw();}
+ function step(){ // gradient of SSE
+   let g0=0,g1=0;DATA.forEach(d=>{const e=(b0+b1*d[0])-d[1];g0+=2*e;g1+=2*e*d[0];});
+   b0-=lr*g0;b1-=lr*g1;iter++;draw();
+ }
+ function draw(){
+   ctx.clearRect(0,0,W,H);
+   ctx.strokeStyle='rgba(176,188,214,0.35)';ctx.lineWidth=1;
+   ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-12,H-pad);ctx.moveTo(pad,H-pad);ctx.lineTo(pad,16);ctx.stroke();
+   DATA.forEach(d=>{const yh=b0+b1*d[0];ctx.strokeStyle='rgba(176,188,214,0.4)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(X(d[0]),Y(d[1]));ctx.lineTo(X(d[0]),Y(yh));ctx.stroke();ctx.setLineDash([]);});
+   ctx.strokeStyle='#F0B33D';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(X(0),Y(b0));ctx.lineTo(X(xmax),Y(b0+b1*xmax));ctx.stroke();
+   DATA.forEach(d=>{ctx.fillStyle='#4A90E2';ctx.beginPath();ctx.arc(X(d[0]),Y(d[1]),5,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.3;ctx.stroke();});
+   document.getElementById('iterOut').textContent=iter;
+   document.getElementById('lossOut').textContent=loss().toFixed(1);
+   document.getElementById('slopeOut').textContent=b1.toFixed(2);
+ }
+ document.getElementById('stepBtn').onclick=step;
+ document.getElementById('runBtn').onclick=()=>{let n=0;const t=setInterval(()=>{step();if(++n>=30)clearInterval(t);},40);};
+ document.getElementById('resetLearn').onclick=reset;
+ reset();
+})();
+
+// ---------- Interactive 3a: supervised/unsupervised sorter ----------
+(function(){
+ const items=[
+  {t:'Predict which customers will cancel (we know who cancelled last year).',sup:true},
+  {t:'Group 5,000 customers into "natural" segments, no labels given.',sup:false},
+  {t:'Explain what drives a 1–10 satisfaction score.',sup:true},
+  {t:'Find hidden profiles among employees with no predefined category.',sup:false},
+  {t:'Predict loan approval (approved/refused) from past decisions.',sup:true},
+  {t:'Discover recurring patterns in unlabelled transaction data.',sup:false},
+ ];
+ const pool=document.getElementById('suPool');let sel=null,placed=0;const prompt=document.getElementById('suPrompt');
+ items.forEach((it,i)=>{const c=document.createElement('div');c.className='sort-chip';c.dataset.i=i;c.textContent=it.t;c.onclick=()=>{pool.querySelectorAll('.sort-chip').forEach(x=>x.style.borderColor='');if(sel===i){sel=null;c.style.borderColor='';prompt.textContent='Tap a case, then a bin.';return;}sel=i;c.style.borderColor='var(--gold)';prompt.textContent='Now tap the correct family.';};pool.appendChild(c);});
+ function place(isSup){if(sel===null){prompt.textContent='Tap a case first.';return;}const it=items[sel];const chip=pool.querySelector('.sort-chip[data-i="'+sel+'"]');const ok=(isSup===it.sup);const bin=document.getElementById(isSup?'suSup':'suUnsup');const el=document.createElement('div');el.className='bin-item '+(ok?'correct':'wrong');el.textContent=(ok?'✓ ':'✗ ')+it.t;bin.appendChild(el);chip.classList.add('placed');placed++;document.getElementById('suCount').textContent=placed+' / 6 sorted';sel=null;prompt.textContent=placed===6?'Done! The test is always: does a known target column exist?':'Tap the next case.';}
+ document.getElementById('suSupBox').onclick=()=>place(true);
+ document.getElementById('suUnsupBox').onclick=()=>place(false);
+})();
+
+// ---------- Interactive 3b: k-means stepper ----------
+(function(){
+ const cv=document.getElementById('kmCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height;
+ const COLS=['#4A90E2','#F0B33D','#2DB6A8','#C9B6FF'];
+ // three latent clusters
+ function genPts(){const blobs=[[180,140],[560,150],[360,320]];const pts=[];blobs.forEach(b=>{for(let i=0;i<22;i++){pts.push([b[0]+(Math.random()-0.5)*150,b[1]+(Math.random()-0.5)*150]);}});return pts;}
+ let pts,centres,assign,k,stepName;
+ function init(){k=parseInt(document.getElementById('kSlider').value);pts=genPts();centres=[];for(let i=0;i<k;i++)centres.push([80+Math.random()*(W-160),60+Math.random()*(H-120)]);assign=pts.map(()=>-1);stepName='place centres';draw();}
+ function doAssign(){assign=pts.map(p=>{let bi=0,bd=1e9;centres.forEach((c,ci)=>{const dd=(p[0]-c[0])**2+(p[1]-c[1])**2;if(dd<bd){bd=dd;bi=ci;}});return bi;});stepName='assigned';draw();}
+ function doMove(){centres=centres.map((c,ci)=>{const mem=pts.filter((p,i)=>assign[i]===ci);if(!mem.length)return c;return [mem.reduce((s,p)=>s+p[0],0)/mem.length,mem.reduce((s,p)=>s+p[1],0)/mem.length];});stepName='moved';draw();}
+ function inertia(){if(assign.some(a=>a<0))return null;return pts.reduce((s,p,i)=>{const c=centres[assign[i]];return s+(p[0]-c[0])**2+(p[1]-c[1])**2;},0);}
+ function draw(){
+   ctx.clearRect(0,0,W,H);
+   pts.forEach((p,i)=>{ctx.fillStyle=assign[i]<0?'rgba(176,188,214,0.7)':COLS[assign[i]];ctx.beginPath();ctx.arc(p[0],p[1],5,0,7);ctx.fill();});
+   centres.forEach((c,ci)=>{ctx.fillStyle=COLS[ci];ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(c[0],c[1],11,0,7);ctx.fill();ctx.stroke();
+     ctx.fillStyle='#0A1A3A';ctx.font='bold 13px Georgia';ctx.fillText('✕',c[0]-4,c[1]+4);});
+   document.getElementById('kmStep').textContent=stepName;
+   const inr=inertia();document.getElementById('kmInertia').textContent=inr==null?'—':Math.round(inr/1000)+'k';
+ }
+ document.getElementById('kmAssign').onclick=doAssign;
+ document.getElementById('kmMove').onclick=doMove;
+ document.getElementById('kmReset').onclick=init;
+ document.getElementById('kSlider').oninput=()=>{document.getElementById('kVal').textContent=document.getElementById('kSlider').value;init();};
+ init();
+})();
+
+// ---------- checkpoint ----------
+const CP={title:'Lock it in',sub:'Three questions on supervised vs unsupervised',questions:[
+ {q:'The single test for "is this supervised?" is:',opts:['Is the dataset large?','Is there a known target column the model tries to reproduce?','Does it use a computer?','Are there more than 3 features?'],correct:1,fb:'A target/label column = supervised (regression or classification). No target, seeking structure = unsupervised (e.g. clustering).'},
+ {q:'In the learning loop, "training" fundamentally means:',opts:['Showing the model more screens','Repeatedly adjusting parameters to reduce a loss','Adding more columns','Deleting outliers'],correct:1,fb:'Guess → measure loss → adjust → repeat. Gradient descent is the most common version. Lower loss = better fit to the training data.'},
+ {q:'A colleague says "k-means proved our customers fall into 3 types." The correct critique is:',opts:['k-means can\'t handle customers','k-means always returns k groups, even from noise — clusters are a hypothesis to validate, not proof','3 is too few','You must use supervised learning instead'],correct:1,fb:'k-means will partition anything into k groups, and different random starts can differ. Clusters must be interpreted and shown to be stable and meaningful before they count as a finding.'},
+]};
+renderCheckpoint('cpCard',CP);
+
+</script>
+</body>
+</html>

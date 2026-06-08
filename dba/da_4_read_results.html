@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DBA · Reading the Output · Data Analysis</title>
+<style>
+:root{
+ --navy-deep:#0A1A3A;--navy-mid:#152A5E;--navy-light:#1E3470;--blue-bright:#1E5AA8;
+ --blue-glow:#4A90E2;--gold:#F0B33D;--gold-bright:#FFD24A;--gold-dark:#8C6A1F;
+ --white:#FFFFFF;--grey-muted:#B0BCD6;--green-correct:#2EA84A;--green-soft:#1E6E33;
+ --red-wrong:#C8312B;--red-soft:#5E1F1C;--amber:#E8A33C;--purple-defi:#7E5AE8;--teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+ background:
+  radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),
+  radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+ background-attachment:fixed;color:var(--white);line-height:1.55;}
+body{padding-bottom:90px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;white-space:nowrap;}
+.progress-track{flex:1;height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;border:1px solid rgba(176,188,214,0.2);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:0%;transition:width .5s ease;border-radius:3px;}
+.progress-pct{font-size:11px;color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;min-width:36px;text-align:right;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:34px 16px 20px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:14px;}
+.hero h1{font-family:Georgia,serif;font-size:33px;font-style:italic;line-height:1.14;margin-bottom:10px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:640px;margin:0 auto 8px;}
+.series-nav{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px auto 0;max-width:720px;}
+.series-nav a{font-size:11px;color:var(--gold-bright);text-decoration:none;border:1px solid rgba(240,179,61,0.35);background:rgba(255,255,255,0.05);border-radius:20px;padding:5px 12px;transition:.2s;}
+.series-nav a:hover{background:rgba(240,179,61,0.16);border-color:var(--gold);}
+.series-nav a.here{background:rgba(240,179,61,0.2);border-color:var(--gold);color:var(--white);}
+.phase-divider{display:flex;align-items:center;gap:12px;margin:26px 4px 8px;font-size:10px;letter-spacing:3px;color:var(--gold);font-weight:bold;}
+.phase-divider::before,.phase-divider::after{content:"";flex:1;height:1px;background:rgba(240,179,61,0.3);}
+/* generic cards */
+.step-card{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:24px 22px;margin-bottom:18px;backdrop-filter:blur(4px);}
+.step-label{display:inline-block;font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.step-label.problem{background:var(--red-soft);color:#FF9B95;border:1px solid var(--red-wrong);}
+.step-label.mechanism{background:rgba(30,90,168,0.3);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.step-label.why{background:rgba(240,179,61,0.18);color:var(--gold-bright);border:1px solid var(--gold);}
+.step-label.case{background:rgba(45,182,168,0.2);color:var(--teal);border:1px solid var(--teal);}
+.step-label.math{background:rgba(126,90,232,0.2);color:#C9B6FF;border:1px solid var(--purple-defi);}
+.step-card h3{font-family:Georgia,serif;font-size:23px;margin-bottom:8px;line-height:1.25;}
+.step-card h4{font-size:14px;letter-spacing:1px;color:var(--gold);margin:14px 0 6px;text-transform:uppercase;}
+.step-card p{color:#DCE3F2;margin-bottom:12px;font-size:15px;}
+.step-card p.lead{font-size:16px;}
+.step-card strong{color:var(--gold-bright);font-weight:600;}
+.step-card em{color:#EAD9A8;font-style:italic;}
+.step-card ul,.step-card ol{margin:4px 0 12px 4px;}
+.step-card ul li{color:#DCE3F2;font-size:14px;list-style:none;padding:4px 0 4px 22px;position:relative;}
+.step-card ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.step-card ol{padding-left:22px;}
+.step-card ol li{color:#DCE3F2;font-size:14px;margin-bottom:5px;}
+.step-card .punch{font-family:Georgia,serif;font-size:18px;font-style:italic;color:var(--gold-bright);border-left:3px solid var(--gold);padding-left:16px;margin:16px 0 4px;line-height:1.4;}
+/* maths block */
+.math-block{background:var(--navy-deep);border:1px solid var(--purple-defi);border-radius:10px;padding:16px 18px;margin:12px 0;font-family:Georgia,serif;}
+.math-block .eq{font-size:21px;text-align:center;color:var(--white);margin:6px 0 10px;line-height:1.6;}
+.math-block .eq .hl{color:var(--gold-bright);}
+.math-block .eq .hl2{color:var(--teal);}
+.math-block .eq .hl3{color:#C9B6FF;}
+.math-block .legend{font-family:'Calibri',sans-serif;font-size:13px;color:var(--grey-muted);}
+.math-block .legend b{color:var(--white);}
+.math-block .legend .row{display:flex;gap:10px;margin:4px 0;align-items:baseline;}
+.math-block .legend .sym{font-family:Georgia,serif;color:var(--gold-bright);min-width:42px;font-size:15px;}
+.note-box{background:rgba(45,182,168,0.1);border:1px solid var(--teal);border-radius:10px;padding:13px 15px;font-size:13px;color:#DCE3F2;margin:10px 0;}
+.note-box b{color:var(--teal);}
+.warn-box{background:rgba(232,163,60,0.12);border:1px solid var(--amber);border-radius:10px;padding:13px 15px;font-size:13px;color:#F2E2C4;margin:10px 0;}
+.warn-box b{color:var(--amber);}
+/* sandbox */
+.sandbox{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:12px;padding:18px;margin:16px 0;}
+.sandbox-title{font-size:10px;letter-spacing:2px;color:var(--teal);font-weight:bold;margin-bottom:14px;}
+.sandbox-title::before{content:"▸ TRY IT";}
+.sandbox-prompt{font-size:13px;color:var(--grey-muted);margin-bottom:12px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+/* sliders */
+.slider-row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+.slider-row label{font-size:13px;color:var(--grey-muted);min-width:120px;}
+.slider-row label b{color:var(--gold-bright);font-family:Georgia,serif;}
+.slider-row input[type=range]{flex:1;min-width:140px;accent-color:var(--gold);height:6px;}
+.readout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0;}
+.readout-cell{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:8px;padding:9px 11px;text-align:center;}
+.readout-cell .rc-label{font-size:9px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;}
+.readout-cell .rc-val{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:var(--gold-bright);transition:color .2s;}
+.readout-cell .rc-val.good{color:var(--green-correct);}
+.readout-cell .rc-val.bad{color:#FF9B95;}
+canvas{max-width:100%;display:block;border-radius:8px;}
+.canvas-wrap{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px;margin:8px 0;}
+/* reveal tiles */
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:6px 0;}
+.reveal-tile{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s;position:relative;min-height:64px;}
+.reveal-tile:hover{border-color:var(--gold);transform:translateY(-2px);}
+.reveal-tile .letter{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--gold);}
+.reveal-tile .name{font-size:12px;font-weight:bold;margin-top:2px;}
+.reveal-tile .desc{font-size:11px;color:var(--grey-muted);margin-top:6px;display:none;line-height:1.4;}
+.reveal-tile.open{background:var(--navy-light);border-color:var(--gold);}
+.reveal-tile.open .desc{display:block;}
+/* sorters */
+.sort-pool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.sort-chip{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all .2s;}
+.sort-chip:hover{border-color:var(--gold);}
+.sort-chip.placed{opacity:.35;pointer-events:none;text-decoration:line-through;}
+.sort-bins{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sort-bins-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media (max-width:560px){.sort-bins,.sort-bins-3{grid-template-columns:1fr;}.slider-row label{min-width:90px;}}
+.sort-bin{background:var(--navy-deep);border:1.5px dashed var(--blue-bright);border-radius:10px;padding:12px;min-height:80px;cursor:pointer;}
+.sort-bin .bin-title{font-size:11px;letter-spacing:1px;font-weight:bold;color:var(--gold);margin-bottom:8px;}
+.sort-bin .bin-items{display:flex;flex-direction:column;gap:6px;}
+.sort-bin .bin-item{font-size:12px;padding:6px 10px;border-radius:6px;}
+.sort-bin .bin-item.correct{background:var(--green-soft);border:1px solid var(--green-correct);}
+.sort-bin .bin-item.wrong{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.sort-active-prompt{font-size:12px;color:var(--gold-bright);margin-bottom:10px;min-height:18px;}
+/* data tables */
+.info-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
+.info-table td,.info-table th{border:1px solid var(--blue-bright);padding:9px 11px;text-align:left;vertical-align:top;}
+.info-table th{background:var(--navy-mid);color:var(--gold);font-size:11px;letter-spacing:1px;}
+.info-table td:first-child{color:var(--gold-bright);font-weight:bold;}
+.rt-table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums;}
+.rt-table th{background:var(--navy-mid);color:var(--gold);font-size:10px;letter-spacing:1px;padding:8px 9px;text-align:left;border:1px solid var(--blue-bright);}
+.rt-table td{border:1px solid var(--blue-bright);padding:9px;cursor:pointer;transition:all .15s;}
+.rt-table tr.data-row:hover td{background:var(--navy-light);}
+.rt-table tr.data-row.sel td{background:rgba(240,179,61,0.14);}
+.rt-table td.varname{color:var(--gold-bright);font-weight:bold;}
+.rt-table .num{text-align:right;font-family:Georgia,serif;}
+.rt-table .sig{color:var(--green-correct);font-weight:bold;}
+.rt-table .nsig{color:var(--grey-muted);}
+.rt-readout{background:var(--navy-deep);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:13px 15px;margin-top:10px;font-size:13px;min-height:54px;line-height:1.5;}
+.rt-readout .hint{color:var(--grey-muted);font-style:italic;}
+.rt-fit{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
+.rt-fit .chip{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--grey-muted);cursor:pointer;}
+.rt-fit .chip b{color:var(--gold-bright);}
+/* checkpoint */
+.checkpoint{background:linear-gradient(135deg,rgba(126,90,232,0.15),rgba(30,90,168,0.15));border:2px solid var(--purple-defi);border-radius:16px;padding:24px 22px;margin-bottom:18px;}
+.checkpoint-header{text-align:center;margin-bottom:18px;}
+.checkpoint-header .badge{display:inline-block;background:var(--purple-defi);color:var(--white);font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 14px;border-radius:20px;margin-bottom:8px;}
+.checkpoint-header h3{font-family:Georgia,serif;font-size:22px;font-style:italic;}
+.checkpoint-header p{color:var(--grey-muted);font-size:13px;margin-top:4px;}
+.quiz-q{margin-bottom:18px;}
+.quiz-q .q-text{font-family:Georgia,serif;font-size:17px;margin-bottom:8px;line-height:1.35;}
+.quiz-q .q-num{color:var(--gold);font-weight:bold;margin-right:6px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{background:var(--navy-deep);border:1.5px solid var(--blue-bright);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;font-size:14px;}
+.quiz-opt:hover:not(.locked){border-color:var(--gold);background:var(--navy-mid);}
+.quiz-opt .opt-letter{font-family:Georgia,serif;font-weight:bold;color:var(--gold);min-width:20px;}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green-correct);}
+.quiz-opt.correct .opt-letter{color:var(--green-correct);}
+.quiz-opt.wrong{background:var(--red-soft);border-color:var(--red-wrong);}
+.quiz-opt.wrong .opt-letter{color:#FF9B95;}
+.quiz-opt.locked{cursor:default;}
+.quiz-feedback{margin-top:10px;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.5;display:none;}
+.quiz-feedback.show{display:block;}
+.quiz-feedback.right{background:var(--green-soft);border:1px solid var(--green-correct);}
+.quiz-feedback.wrong-fb{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.quiz-feedback .fb-label{font-weight:bold;letter-spacing:1px;margin-right:6px;}
+.checkpoint-result{text-align:center;padding:16px;display:none;}
+.checkpoint-result.show{display:block;}
+.checkpoint-result .score{font-family:Georgia,serif;font-size:40px;font-weight:bold;color:var(--gold-bright);}
+.checkpoint-result .msg{color:var(--grey-muted);margin:8px 0 16px;}
+/* footer nav */
+.nav-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(10,26,58,0.95);backdrop-filter:blur(10px);border-top:1px solid rgba(240,179,61,0.3);padding:12px 16px;z-index:50;}
+.nav-footer-inner{max-width:880px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.nav-footer a.navlink{flex:1;text-decoration:none;text-align:center;}
+.fineprint{font-size:11px;color:var(--grey-muted);text-align:center;margin-top:18px;}
+.scope-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.scope-strip .scope-pill{background:rgba(200,49,43,0.12);border:1px solid rgba(200,49,43,0.5);color:#FF9B95;font-size:11px;border-radius:20px;padding:6px 12px;}
+.toc-card{display:flex;align-items:center;gap:16px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:15px 18px;cursor:pointer;transition:all .2s;position:relative;text-decoration:none;color:inherit;margin-bottom:10px;}
+.toc-card:hover{border-color:var(--gold);transform:translateX(4px);}
+.toc-card .num{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--gold);min-width:38px;text-align:center;}
+.toc-card .info .name{font-size:16px;font-weight:bold;font-family:Georgia,serif;}
+.toc-card .info .tag{font-size:12px;color:var(--grey-muted);margin-top:2px;}
+.toc-card .phase-pill{position:absolute;top:8px;right:10px;font-size:8px;letter-spacing:1px;font-weight:bold;padding:2px 7px;border-radius:10px;background:rgba(45,182,168,0.2);color:var(--teal);}
+/* fork switch (page 1) */
+.fork-switch{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.fork-switch button{flex:1;min-width:160px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:11px 14px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:all .2s;}
+.fork-switch button.active{background:rgba(240,179,61,0.16);border-color:var(--gold);color:var(--gold-bright);}
+.fork-panel{display:flex;flex-direction:column;gap:8px;}
+.fork-row{background:var(--navy-mid);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:10px 13px;transition:background .25s;}
+.fork-row.flash{background:var(--navy-light);}
+.fork-row .fr-label{font-size:9px;letter-spacing:1.5px;color:var(--gold);font-weight:bold;margin-bottom:3px;}
+.fork-row .fr-val{font-size:13px;color:#DCE3F2;}
+/* gallery (page 5) */
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:560px){.gallery{grid-template-columns:1fr;}}
+.gal-item{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .2s;}
+.gal-item:hover{border-color:var(--gold);transform:translateY(-2px);}
+.gal-item.open{border-color:var(--gold);background:var(--navy-light);}
+.gal-item .gal-pair{font-size:14px;font-weight:bold;color:var(--white);font-family:Georgia,serif;}
+.gal-item .gal-corr{font-size:11px;color:var(--amber);margin-top:4px;}
+.gal-item .gal-reveal{font-size:12px;color:#DCE3F2;margin-top:8px;display:none;line-height:1.45;border-top:1px solid rgba(176,188,214,0.2);padding-top:8px;}
+.gal-item.open .gal-reveal{display:block;}
+/* data-quality (page 5) */
+.dq-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.dq-item{display:flex;align-items:center;gap:12px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:8px;padding:10px 13px;cursor:pointer;transition:all .2s;}
+.dq-item .dq-check{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--grey-muted);display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;flex-shrink:0;}
+.dq-item.on{border-color:var(--red-wrong);background:var(--red-soft);}
+.dq-item.on .dq-check{background:var(--red-wrong);border-color:var(--red-wrong);color:#fff;}
+.dq-item .dq-text{font-size:13px;color:#DCE3F2;}
+.dq-meter{background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;padding:16px;}
+/* viva sentence builder (page 6) */
+.vb-group{margin-bottom:12px;}
+.vb-q{font-family:Georgia,serif;font-size:15px;color:#DCE3F2;margin-bottom:6px;}
+.vb-opts{display:flex;flex-wrap:wrap;gap:7px;}
+.vb-opts button{background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:7px 13px;border-radius:20px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s;}
+.vb-opts button:hover{border-color:var(--gold);}
+.vb-opts button.on{background:rgba(240,179,61,0.18);border-color:var(--gold);color:var(--gold-bright);font-weight:bold;}
+.vb-output{background:var(--navy-deep);border:1px solid var(--gold);border-left:3px solid var(--gold);border-radius:8px;padding:15px 17px;margin:14px 0 4px;font-family:Georgia,serif;font-size:15px;line-height:1.55;color:#fff;font-style:italic;min-height:60px;}
+.vb-output b{color:var(--gold-bright);font-style:normal;}
+
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+ <span class="course-title">DBA · DATA ANALYSIS · 04</span>
+ <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+ <span class="progress-pct" id="progressPct">0%</span>
+</div></div>
+<div class="container">
+ <div class="hero">
+   <div class="eyebrow">DATA ANALYSIS FOR THE DBA · PART 4 OF 6</div>
+   <h1>Reading the Output</h1>
+   <p>Software hands you a table of numbers. This page turns each one — coefficient, p-value, confidence interval, R², odds ratio — into a sentence you can defend.</p>
+   <div class="series-nav"><a href="da_index.html" title="Series home">⌂</a><a href="da_1_explain_predict.html">1</a><a href="da_2_supervised_unsupervised.html">2</a><a href="da_3_the_methods.html">3</a><a href="da_4_read_results.html" class="here">4</a><a href="da_5_three_traps.html">5</a><a href="da_6_decision_aid.html">6</a></div>
+ </div>
+ 
+<div class="phase-divider">1 · THE COEFFICIENT TABLE</div>
+<div class="step-card">
+ <span class="step-label mechanism">LINEAR REGRESSION OUTPUT</span>
+ <h3>Every regression prints this table</h3>
+ <p>Here is a real-shaped output: we explain a <strong>satisfaction score (0–100)</strong> from three drivers. Tap any row and the panel translates that row into plain English. Tap the fit chips below too.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 1 — tap each row and each chip.</div>
+   <table class="rt-table" id="linTable">
+     <tr><th>Variable</th><th class="num">Coefficient</th><th class="num">Std. error</th><th class="num">p-value</th><th>95% CI</th></tr>
+     <tr class="data-row" data-k="price"><td class="varname">Perceived price</td><td class="num">−4.20</td><td class="num">1.05</td><td class="num">0.001</td><td>[−6.3, −2.1]</td></tr>
+     <tr class="data-row" data-k="wait"><td class="varname">Wait time</td><td class="num">−2.80</td><td class="num">0.95</td><td class="num">0.004</td><td>[−4.7, −0.9]</td></tr>
+     <tr class="data-row" data-k="loyalty"><td class="varname">Loyalty member</td><td class="num">+0.90</td><td class="num">0.72</td><td class="num">0.210</td><td>[−0.5, +2.3]</td></tr>
+   </table>
+   <div class="rt-fit"><span class="chip" data-k="r2">R² = <b>0.62</b></span><span class="chip" data-k="adjr2">Adj. R² = <b>0.60</b></span><span class="chip" data-k="n">n = <b>240</b></span><span class="chip" data-k="f">F-test p <b>&lt; 0.001</b></span></div>
+   <div class="rt-readout" id="linReadout"><span class="hint">Tap a row or chip…</span></div>
+ </div>
+</div>
+
+<div class="phase-divider">2 · WHAT A p-VALUE REALLY IS</div>
+<div class="step-card">
+ <span class="step-label math">THE MOST MISUNDERSTOOD NUMBER IN RESEARCH</span>
+ <h3>The logic of "could this be a fluke?"</h3>
+ <p>Start from a sceptical position called the <strong>null hypothesis</strong>: "this variable has <em>no</em> real effect; its true coefficient is 0." Your data shows <em>some</em> effect — but random sampling alone produces apparent effects even when none exist. The p-value answers one precise question:</p>
+ <div class="math-block">
+   <div class="eq">p = P( seeing an effect this big <span class="hl3">or bigger</span> | the truth is zero )</div>
+   <div class="legend"><div class="row"><span class="sym">small p</span><span>the data would be very surprising if the effect were really zero → evidence the effect is real. By convention p &lt; 0.05 is "statistically significant."</span></div><div class="row"><span class="sym">large p</span><span>this much apparent effect happens easily by chance → you cannot rule out zero.</span></div></div>
+ </div>
+ <p>Below: the bell curve is what the coefficient would look like across many samples <em>if the true effect were zero</em>. Slide your observed coefficient outward. The shaded tails are the p-value — the chance of landing that far out by luck alone.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 2 — push the observed effect away from zero; watch p shrink.</div>
+   <div class="slider-row"><label>Observed effect (in std. errors, "t") <b id="tV">2.0</b></label><input type="range" id="tS" min="0" max="4" step="0.1" value="2"></div>
+   <div class="canvas-wrap"><canvas id="pCanvas" width="760" height="320"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">p-value (two-tailed)</div><div class="rc-val" id="pOut">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Verdict at α=0.05</div><div class="rc-val" id="pVerdict" style="font-size:14px">—</div></div>
+   </div>
+ </div>
+ <div class="warn-box"><b>What p is NOT.</b> It is <em>not</em> the probability the hypothesis is true. It is <em>not</em> the size or importance of the effect (a tiny, useless effect can be "significant" with a big enough sample). And p &gt; 0.05 does <em>not</em> prove "no effect" — only that you couldn't detect one. Report effect sizes and CIs, never p-values alone.</div>
+</div>
+
+<div class="phase-divider">3 · CONFIDENCE INTERVALS</div>
+<div class="step-card">
+ <span class="step-label math">THE NUMBER EXAMINERS PREFER TO p</span>
+ <h3>A range of plausible truths</h3>
+ <p>A coefficient of −4.2 is your single best estimate, but it has uncertainty. The <strong>95% confidence interval</strong> [−6.3, −2.1] gives the range of values consistent with your data. The interpretation that matters:</p>
+ <ul>
+   <li>If the CI <strong>excludes 0</strong>, the effect is significant at the 5% level — the same verdict as p &lt; 0.05, but more informative because it shows the <em>plausible magnitude</em>.</li>
+   <li>A <strong>narrow</strong> CI = a precise estimate (usually more data). A <strong>wide</strong> CI = high uncertainty; be cautious.</li>
+   <li>"95%" refers to the method: across many repeated samples, 95% of such intervals would contain the true value.</li>
+ </ul>
+ <p>Slide the sample size and watch the CI tighten around the estimate — and watch a borderline effect cross from "not significant" to "significant" purely because precision improved.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 3 — more data narrows the interval.</div>
+   <div class="slider-row"><label>Sample size n <b id="nV">120</b></label><input type="range" id="nS" min="20" max="800" step="20" value="120"></div>
+   <div class="canvas-wrap"><canvas id="ciCanvas" width="760" height="220"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Estimate</div><div class="rc-val" id="ciEst">−2.0</div></div>
+     <div class="readout-cell"><div class="rc-label">95% CI</div><div class="rc-val" id="ciRange" style="font-size:15px">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Significant?</div><div class="rc-val" id="ciSig" style="font-size:14px">—</div></div>
+   </div>
+ </div>
+</div>
+
+<div class="phase-divider">4 · ODDS RATIOS (LOGISTIC OUTPUT)</div>
+<div class="step-card">
+ <span class="step-label mechanism">A DIFFERENT TABLE, A DIFFERENT RULE</span>
+ <h3>Logistic regression reports odds ratios</h3>
+ <p>Because logistic models a probability through the log-odds, its coefficients are exponentiated into <strong>odds ratios (OR)</strong>. The single rule:</p>
+ <div class="note-box"><b>OR &gt; 1</b> raises the odds of "yes" · <b>OR &lt; 1</b> lowers them · <b>OR = 1</b> means no effect. A CI for an OR signals significance when it <em>excludes 1</em> (not 0 — because 1 is the "no effect" point on the odds scale).</div>
+ <p>Tap each row of this churn model.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 4 — tap each row. Watch where the "no effect" line (OR=1) falls.</div>
+   <table class="rt-table" id="logTable">
+     <tr><th>Variable</th><th class="num">Odds Ratio</th><th class="num">p-value</th><th>95% CI for OR</th></tr>
+     <tr class="data-row" data-k="complaint"><td class="varname">Filed a complaint</td><td class="num">2.50</td><td class="num">0.002</td><td>[1.4, 4.5]</td></tr>
+     <tr class="data-row" data-k="tenure"><td class="varname">Tenure (per year)</td><td class="num">0.70</td><td class="num">0.010</td><td>[0.55, 0.90]</td></tr>
+     <tr class="data-row" data-k="news"><td class="varname">Newsletter member</td><td class="num">1.05</td><td class="num">0.480</td><td>[0.85, 1.30]</td></tr>
+   </table>
+   <div class="rt-readout" id="logReadout"><span class="hint">Tap a row…</span></div>
+ </div>
+ <p class="punch">Reading these two tables — coefficients with CIs, and odds ratios — is the bulk of what any examiner will ask you to interpret.</p>
+</div>
+
+<div class="step-card" id="cpCard"></div>
+
+ <div class="fineprint">Scroll progress saves on this device. Part of the DBA Data-Analysis series by Jan Erik Meidell.</div>
+</div>
+<div class="nav-footer"><div class="nav-footer-inner"><a class="navlink" href="da_3_the_methods.html"><button class="btn ghost" style="width:100%">← The Five Core Methods</button></a><span style="font-size:11px;color:var(--grey-muted);white-space:nowrap;">4 / 6</span><a class="navlink" href="da_5_three_traps.html"><button class="btn" style="width:100%">The Three Traps →</button></a></div></div>
+<a href="https://www.linkedin.com/in/jmeidell/" target="_blank" rel="noopener" title="Jan Erik Meidell — LinkedIn" style="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;"><span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F0B33D,#FFD24A);color:#0A1A3A;font-family:Georgia,serif;font-weight:bold;font-size:15px;border:1.5px solid #F0B33D;">JM</span><span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Jan Erik Meidell</span></a>
+<script>
+// progress = % scrolled, persisted per page
+(function(){
+ const KEY='dba_da_deep_da_4_read_results';
+ const fill=document.getElementById('progressFill'),pct=document.getElementById('progressPct');
+ function upd(){const h=document.documentElement;const max=h.scrollHeight-h.clientHeight;const p=max>0?Math.min(100,Math.round(h.scrollTop/max*100)):0;fill.style.width=p+'%';pct.textContent=p+'%';try{localStorage.setItem(KEY,p);}catch(e){}}
+ window.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();
+})();
+// shared checkpoint renderer
+function renderCheckpoint(mountId,cp){
+ const mount=document.getElementById(mountId);if(!mount)return;
+ const qs=cp.questions.map((q,qi)=>'<div class="quiz-q" data-qi="'+qi+'"><div class="q-text"><span class="q-num">Q'+(qi+1)+'.</span>'+q.q+'</div><div class="quiz-opts">'+q.opts.map((opt,oi)=>'<div class="quiz-opt" data-qi="'+qi+'" data-oi="'+oi+'"><span class="opt-letter">'+String.fromCharCode(65+oi)+'</span><span>'+opt+'</span></div>').join('')+'</div><div class="quiz-feedback" data-qi="'+qi+'"></div></div>').join('');
+ mount.className='checkpoint';
+ mount.innerHTML='<div class="checkpoint-header"><div class="badge">✦ CHECKPOINT</div><h3>'+cp.title+'</h3><p>'+cp.sub+'</p></div><div class="quiz-body">'+qs+'</div><div class="checkpoint-result"><div class="score"></div><div class="msg"></div></div>';
+ const answered={},total=cp.questions.length;
+ mount.querySelectorAll('.quiz-opt').forEach(opt=>{opt.onclick=()=>{const qi=+opt.dataset.qi,oi=+opt.dataset.oi;if(answered[qi]!==undefined)return;const q=cp.questions[qi];const opts=mount.querySelectorAll('.quiz-opt[data-qi="'+qi+'"]');opts.forEach(o=>o.classList.add('locked'));const fb=mount.querySelector('.quiz-feedback[data-qi="'+qi+'"]');if(oi===q.correct){opt.classList.add('correct');answered[qi]=true;fb.className='quiz-feedback right show';fb.innerHTML='<span class="fb-label">✓ CORRECT</span>'+q.fb;}else{opt.classList.add('wrong');opts[q.correct].classList.add('correct');answered[qi]=false;fb.className='quiz-feedback wrong-fb show';fb.innerHTML='<span class="fb-label">✗ NOT QUITE</span>'+q.fb;}if(Object.keys(answered).length===total){const sc=Object.values(answered).filter(Boolean).length;const res=mount.querySelector('.checkpoint-result');res.querySelector('.score').textContent=sc+' / '+total;res.querySelector('.msg').textContent=sc===total?'Perfect — you\'ve got the logic.':sc>=total-1?'Strong — review the one you missed.':'Re-read the section above, then retry.';res.classList.add('show');}};});
+}
+
+// ---------- 1: linear table ----------
+(function(){
+ const lin={
+  price:'Each 1-unit rise in <b>perceived price</b> lowers satisfaction by <b>4.2 points</b> (negative coefficient), holding wait and loyalty constant. p = 0.001 → very unlikely to be chance. The 95% CI [−6.3, −2.1] excludes 0, confirming significance, and says the true effect is plausibly between −2 and −6.',
+  wait:'Each extra unit of <b>wait time</b> lowers satisfaction by <b>2.8 points</b>, all else equal. p = 0.004, CI [−4.7, −0.9] excludes 0 → significant. Smaller effect than price, but real.',
+  loyalty:'<b>Loyalty membership</b> shows +0.9 but p = 0.210 and the CI [−0.5, +2.3] <b>includes 0</b>. You cannot claim an effect — it could just as easily be zero or slightly negative. Do not report this as a finding.',
+  r2:'<b>R² = 0.62</b>: the three predictors together explain 62% of the variation in satisfaction. The rest is other factors + noise.',
+  adjr2:'<b>Adjusted R²</b> (0.60) penalises R² for the number of predictors. Use it to compare models — adding a useless variable raises R² but not adjusted R².',
+  n:'<b>n = 240</b> observations. Bigger n → smaller standard errors → narrower CIs → easier to reach significance. Always report it.',
+  f:'The <b>overall F-test</b> (p &lt; 0.001) asks "does the model as a whole beat predicting the mean?" Here yes. It is separate from each variable\'s individual p-value.',
+ };
+ const ro=document.getElementById('linReadout');
+ document.querySelectorAll('#linTable .data-row').forEach(r=>r.onclick=()=>{document.querySelectorAll('#linTable .data-row').forEach(x=>x.classList.remove('sel'));r.classList.add('sel');ro.innerHTML=lin[r.dataset.k];});
+ document.querySelectorAll('.rt-fit .chip').forEach(c=>c.onclick=()=>{ro.innerHTML=lin[c.dataset.k];});
+})();
+
+// ---------- 2: p-value tails ----------
+(function(){
+ const cv=document.getElementById('pCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=36;
+ const s=document.getElementById('tS');
+ // standard normal pdf
+ const pdf=z=>Math.exp(-z*z/2)/Math.sqrt(2*Math.PI);
+ // two-tailed p from z via erf approximation
+ function tailP(z){ // P(|Z|>z)
+   const t=1/(1+0.2316419*Math.abs(z));const d=0.3989423*Math.exp(-z*z/2);
+   let p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+   p=1-p; // CDF for positive
+   return 2*(1-p);
+ }
+ const zmax=4.2;
+ const X=z=>W/2+ (z/zmax)*(W/2-pad);
+ const Y=p=>H-pad-p*(H-pad*1.8)/0.4;
+ function upd(){const z=parseFloat(s.value);document.getElementById('tV').textContent=z.toFixed(1);
+   ctx.clearRect(0,0,W,H);
+   // shaded tails
+   ctx.fillStyle='rgba(200,49,43,0.45)';
+   for(let side of [-1,1]){ctx.beginPath();ctx.moveTo(X(side*z),H-pad);for(let zz=z;zz<=zmax;zz+=0.05){const Z=side*zz;ctx.lineTo(X(Z),Y(pdf(zz)));}ctx.lineTo(X(side*zmax),H-pad);ctx.closePath();ctx.fill();}
+   // curve
+   ctx.strokeStyle='#F0B33D';ctx.lineWidth=3;ctx.beginPath();let f=true;for(let zz=-zmax;zz<=zmax;zz+=0.05){const px=X(zz),py=Y(pdf(zz));if(f){ctx.moveTo(px,py);f=false;}else ctx.lineTo(px,py);}ctx.stroke();
+   // axis + zero line
+   ctx.strokeStyle='rgba(176,188,214,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-pad,H-pad);ctx.stroke();
+   ctx.strokeStyle='rgba(176,188,214,0.6)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(W/2,H-pad);ctx.lineTo(W/2,30);ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='rgba(176,188,214,0.85)';ctx.font='12px Calibri';ctx.fillText('true effect = 0',W/2-44,24);
+   ctx.fillStyle='#FFD24A';ctx.fillText('your effect',X(z)-30,H-pad+22);
+   const p=Math.max(0,Math.min(1,tailP(z)));
+   const po=document.getElementById('pOut');po.textContent=p<0.001?'<0.001':p.toFixed(3);po.className='rc-val '+(p<0.05?'good':'bad');
+   const v=document.getElementById('pVerdict');if(p<0.05){v.textContent='significant ✓';v.className='rc-val good';}else{v.textContent='not significant';v.className='rc-val bad';}
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- 3: confidence interval vs n ----------
+(function(){
+ const cv=document.getElementById('ciCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=50;
+ const s=document.getElementById('nS');
+ const est=-2.0, sd=9; // population sd of the effect proxy
+ const lo=-7,hi=3; // axis range for coefficient
+ const X=v=>pad+((v-lo)/(hi-lo))*(W-pad*1.5);
+ function upd(){const n=parseInt(s.value);document.getElementById('nV').textContent=n;
+   const se=sd/Math.sqrt(n);const half=1.96*se;const a=est-half,b=est+half;
+   ctx.clearRect(0,0,W,H);
+   const cy=H/2;
+   // axis
+   ctx.strokeStyle='rgba(176,188,214,0.4)';ctx.beginPath();ctx.moveTo(pad,cy+50);ctx.lineTo(W-12,cy+50);ctx.stroke();
+   for(let v=lo;v<=hi;v++){ctx.fillStyle='rgba(176,188,214,0.7)';ctx.font='11px Calibri';ctx.fillText(v,X(v)-4,cy+68);ctx.beginPath();ctx.moveTo(X(v),cy+46);ctx.lineTo(X(v),cy+54);ctx.stroke();}
+   // zero line
+   ctx.strokeStyle='rgba(232,163,60,0.8)';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(X(0),20);ctx.lineTo(X(0),cy+44);ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='var(--amber)';ctx.fillStyle='#E8A33C';ctx.font='12px Calibri';ctx.fillText('no effect (0)',X(0)-30,16);
+   // CI bar
+   ctx.strokeStyle='#4A90E2';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(X(a),cy);ctx.lineTo(X(b),cy);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(X(a),cy-10);ctx.lineTo(X(a),cy+10);ctx.moveTo(X(b),cy-10);ctx.lineTo(X(b),cy+10);ctx.stroke();
+   ctx.fillStyle='#F0B33D';ctx.beginPath();ctx.arc(X(est),cy,7,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+   document.getElementById('ciRange').textContent='['+a.toFixed(1)+', '+b.toFixed(1)+']';
+   const sig=b<0||a>0;const el=document.getElementById('ciSig');
+   if(sig){el.textContent='yes ✓ (excludes 0)';el.className='rc-val good';}else{el.textContent='no (crosses 0)';el.className='rc-val bad';}
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- 4: logistic OR table ----------
+(function(){
+ const log={
+  complaint:'<b>OR = 2.50 &gt; 1</b>: a customer who filed a complaint has <b>2.5× the odds</b> of churning, all else equal. p = 0.002 and the CI [1.4, 4.5] <b>excludes 1</b> → significant. The strongest churn driver here.',
+  tenure:'<b>OR = 0.70 &lt; 1</b>: each additional year of tenure <b>multiplies the odds of churn by 0.70</b> (≈ a 30% reduction per year). CI [0.55, 0.90] excludes 1 → significant. Loyalty builds with time.',
+  news:'<b>OR = 1.05</b>, essentially 1. p = 0.48 and CI [0.85, 1.30] <b>includes 1</b> → no detectable effect. Newsletter membership tells you nothing about churn here.',
+ };
+ const ro=document.getElementById('logReadout');
+ document.querySelectorAll('#logTable .data-row').forEach(r=>r.onclick=()=>{document.querySelectorAll('#logTable .data-row').forEach(x=>x.classList.remove('sel'));r.classList.add('sel');ro.innerHTML=log[r.dataset.k];});
+})();
+
+// ---------- checkpoint ----------
+const CP={title:'Lock it in',sub:'Three questions on reading output',questions:[
+ {q:'A coefficient has p = 0.32. The correct statement is:',opts:['There is a 32% chance the effect is real','We cannot rule out that the true effect is zero — it is not significant','The effect is definitely zero','The effect is 32% in size'],correct:1,fb:'p = 0.32 means an effect this large happens fairly easily even if the truth is zero, so we cannot claim a real effect. It does NOT prove zero, and it is not a probability that the hypothesis is true.'},
+ {q:'A 95% confidence interval for a coefficient is [−6.3, −2.1]. This tells you:',opts:['The effect is exactly −4.2','The effect is plausibly between −6.3 and −2.1, and since it excludes 0, it is significant','95% of customers agree','Nothing useful'],correct:1,fb:'The CI gives the plausible range and its precision. Excluding 0 = significant at 5%, equivalent to p < 0.05 but more informative about magnitude.'},
+ {q:'A logistic model gives an odds ratio of 0.70 with CI [0.55, 0.90]. This means:',opts:['The factor raises churn odds','The factor lowers the odds (OR<1), and it is significant because the CI excludes 1','No effect','The factor is 70% important'],correct:1,fb:'OR < 1 lowers the odds; significance for odds ratios is judged against 1 (the no-effect point), and [0.55, 0.90] excludes 1.'},
+]};
+renderCheckpoint('cpCard',CP);
+
+</script>
+</body>
+</html>

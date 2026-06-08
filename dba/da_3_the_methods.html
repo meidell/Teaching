@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DBA · The Five Core Methods · Data Analysis</title>
+<style>
+:root{
+ --navy-deep:#0A1A3A;--navy-mid:#152A5E;--navy-light:#1E3470;--blue-bright:#1E5AA8;
+ --blue-glow:#4A90E2;--gold:#F0B33D;--gold-bright:#FFD24A;--gold-dark:#8C6A1F;
+ --white:#FFFFFF;--grey-muted:#B0BCD6;--green-correct:#2EA84A;--green-soft:#1E6E33;
+ --red-wrong:#C8312B;--red-soft:#5E1F1C;--amber:#E8A33C;--purple-defi:#7E5AE8;--teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+ background:
+  radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),
+  radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+ background-attachment:fixed;color:var(--white);line-height:1.55;}
+body{padding-bottom:90px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;white-space:nowrap;}
+.progress-track{flex:1;height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;border:1px solid rgba(176,188,214,0.2);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:0%;transition:width .5s ease;border-radius:3px;}
+.progress-pct{font-size:11px;color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;min-width:36px;text-align:right;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:34px 16px 20px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:14px;}
+.hero h1{font-family:Georgia,serif;font-size:33px;font-style:italic;line-height:1.14;margin-bottom:10px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:640px;margin:0 auto 8px;}
+.series-nav{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px auto 0;max-width:720px;}
+.series-nav a{font-size:11px;color:var(--gold-bright);text-decoration:none;border:1px solid rgba(240,179,61,0.35);background:rgba(255,255,255,0.05);border-radius:20px;padding:5px 12px;transition:.2s;}
+.series-nav a:hover{background:rgba(240,179,61,0.16);border-color:var(--gold);}
+.series-nav a.here{background:rgba(240,179,61,0.2);border-color:var(--gold);color:var(--white);}
+.phase-divider{display:flex;align-items:center;gap:12px;margin:26px 4px 8px;font-size:10px;letter-spacing:3px;color:var(--gold);font-weight:bold;}
+.phase-divider::before,.phase-divider::after{content:"";flex:1;height:1px;background:rgba(240,179,61,0.3);}
+/* generic cards */
+.step-card{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:24px 22px;margin-bottom:18px;backdrop-filter:blur(4px);}
+.step-label{display:inline-block;font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.step-label.problem{background:var(--red-soft);color:#FF9B95;border:1px solid var(--red-wrong);}
+.step-label.mechanism{background:rgba(30,90,168,0.3);color:var(--blue-glow);border:1px solid var(--blue-bright);}
+.step-label.why{background:rgba(240,179,61,0.18);color:var(--gold-bright);border:1px solid var(--gold);}
+.step-label.case{background:rgba(45,182,168,0.2);color:var(--teal);border:1px solid var(--teal);}
+.step-label.math{background:rgba(126,90,232,0.2);color:#C9B6FF;border:1px solid var(--purple-defi);}
+.step-card h3{font-family:Georgia,serif;font-size:23px;margin-bottom:8px;line-height:1.25;}
+.step-card h4{font-size:14px;letter-spacing:1px;color:var(--gold);margin:14px 0 6px;text-transform:uppercase;}
+.step-card p{color:#DCE3F2;margin-bottom:12px;font-size:15px;}
+.step-card p.lead{font-size:16px;}
+.step-card strong{color:var(--gold-bright);font-weight:600;}
+.step-card em{color:#EAD9A8;font-style:italic;}
+.step-card ul,.step-card ol{margin:4px 0 12px 4px;}
+.step-card ul li{color:#DCE3F2;font-size:14px;list-style:none;padding:4px 0 4px 22px;position:relative;}
+.step-card ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.step-card ol{padding-left:22px;}
+.step-card ol li{color:#DCE3F2;font-size:14px;margin-bottom:5px;}
+.step-card .punch{font-family:Georgia,serif;font-size:18px;font-style:italic;color:var(--gold-bright);border-left:3px solid var(--gold);padding-left:16px;margin:16px 0 4px;line-height:1.4;}
+/* maths block */
+.math-block{background:var(--navy-deep);border:1px solid var(--purple-defi);border-radius:10px;padding:16px 18px;margin:12px 0;font-family:Georgia,serif;}
+.math-block .eq{font-size:21px;text-align:center;color:var(--white);margin:6px 0 10px;line-height:1.6;}
+.math-block .eq .hl{color:var(--gold-bright);}
+.math-block .eq .hl2{color:var(--teal);}
+.math-block .eq .hl3{color:#C9B6FF;}
+.math-block .legend{font-family:'Calibri',sans-serif;font-size:13px;color:var(--grey-muted);}
+.math-block .legend b{color:var(--white);}
+.math-block .legend .row{display:flex;gap:10px;margin:4px 0;align-items:baseline;}
+.math-block .legend .sym{font-family:Georgia,serif;color:var(--gold-bright);min-width:42px;font-size:15px;}
+.note-box{background:rgba(45,182,168,0.1);border:1px solid var(--teal);border-radius:10px;padding:13px 15px;font-size:13px;color:#DCE3F2;margin:10px 0;}
+.note-box b{color:var(--teal);}
+.warn-box{background:rgba(232,163,60,0.12);border:1px solid var(--amber);border-radius:10px;padding:13px 15px;font-size:13px;color:#F2E2C4;margin:10px 0;}
+.warn-box b{color:var(--amber);}
+/* sandbox */
+.sandbox{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:12px;padding:18px;margin:16px 0;}
+.sandbox-title{font-size:10px;letter-spacing:2px;color:var(--teal);font-weight:bold;margin-bottom:14px;}
+.sandbox-title::before{content:"▸ TRY IT";}
+.sandbox-prompt{font-size:13px;color:var(--grey-muted);margin-bottom:12px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+/* sliders */
+.slider-row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+.slider-row label{font-size:13px;color:var(--grey-muted);min-width:120px;}
+.slider-row label b{color:var(--gold-bright);font-family:Georgia,serif;}
+.slider-row input[type=range]{flex:1;min-width:140px;accent-color:var(--gold);height:6px;}
+.readout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0;}
+.readout-cell{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:8px;padding:9px 11px;text-align:center;}
+.readout-cell .rc-label{font-size:9px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;}
+.readout-cell .rc-val{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:var(--gold-bright);transition:color .2s;}
+.readout-cell .rc-val.good{color:var(--green-correct);}
+.readout-cell .rc-val.bad{color:#FF9B95;}
+canvas{max-width:100%;display:block;border-radius:8px;}
+.canvas-wrap{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px;margin:8px 0;}
+/* reveal tiles */
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:6px 0;}
+.reveal-tile{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s;position:relative;min-height:64px;}
+.reveal-tile:hover{border-color:var(--gold);transform:translateY(-2px);}
+.reveal-tile .letter{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--gold);}
+.reveal-tile .name{font-size:12px;font-weight:bold;margin-top:2px;}
+.reveal-tile .desc{font-size:11px;color:var(--grey-muted);margin-top:6px;display:none;line-height:1.4;}
+.reveal-tile.open{background:var(--navy-light);border-color:var(--gold);}
+.reveal-tile.open .desc{display:block;}
+/* sorters */
+.sort-pool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.sort-chip{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all .2s;}
+.sort-chip:hover{border-color:var(--gold);}
+.sort-chip.placed{opacity:.35;pointer-events:none;text-decoration:line-through;}
+.sort-bins{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sort-bins-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media (max-width:560px){.sort-bins,.sort-bins-3{grid-template-columns:1fr;}.slider-row label{min-width:90px;}}
+.sort-bin{background:var(--navy-deep);border:1.5px dashed var(--blue-bright);border-radius:10px;padding:12px;min-height:80px;cursor:pointer;}
+.sort-bin .bin-title{font-size:11px;letter-spacing:1px;font-weight:bold;color:var(--gold);margin-bottom:8px;}
+.sort-bin .bin-items{display:flex;flex-direction:column;gap:6px;}
+.sort-bin .bin-item{font-size:12px;padding:6px 10px;border-radius:6px;}
+.sort-bin .bin-item.correct{background:var(--green-soft);border:1px solid var(--green-correct);}
+.sort-bin .bin-item.wrong{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.sort-active-prompt{font-size:12px;color:var(--gold-bright);margin-bottom:10px;min-height:18px;}
+/* data tables */
+.info-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
+.info-table td,.info-table th{border:1px solid var(--blue-bright);padding:9px 11px;text-align:left;vertical-align:top;}
+.info-table th{background:var(--navy-mid);color:var(--gold);font-size:11px;letter-spacing:1px;}
+.info-table td:first-child{color:var(--gold-bright);font-weight:bold;}
+.rt-table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums;}
+.rt-table th{background:var(--navy-mid);color:var(--gold);font-size:10px;letter-spacing:1px;padding:8px 9px;text-align:left;border:1px solid var(--blue-bright);}
+.rt-table td{border:1px solid var(--blue-bright);padding:9px;cursor:pointer;transition:all .15s;}
+.rt-table tr.data-row:hover td{background:var(--navy-light);}
+.rt-table tr.data-row.sel td{background:rgba(240,179,61,0.14);}
+.rt-table td.varname{color:var(--gold-bright);font-weight:bold;}
+.rt-table .num{text-align:right;font-family:Georgia,serif;}
+.rt-table .sig{color:var(--green-correct);font-weight:bold;}
+.rt-table .nsig{color:var(--grey-muted);}
+.rt-readout{background:var(--navy-deep);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:13px 15px;margin-top:10px;font-size:13px;min-height:54px;line-height:1.5;}
+.rt-readout .hint{color:var(--grey-muted);font-style:italic;}
+.rt-fit{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
+.rt-fit .chip{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--grey-muted);cursor:pointer;}
+.rt-fit .chip b{color:var(--gold-bright);}
+/* checkpoint */
+.checkpoint{background:linear-gradient(135deg,rgba(126,90,232,0.15),rgba(30,90,168,0.15));border:2px solid var(--purple-defi);border-radius:16px;padding:24px 22px;margin-bottom:18px;}
+.checkpoint-header{text-align:center;margin-bottom:18px;}
+.checkpoint-header .badge{display:inline-block;background:var(--purple-defi);color:var(--white);font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 14px;border-radius:20px;margin-bottom:8px;}
+.checkpoint-header h3{font-family:Georgia,serif;font-size:22px;font-style:italic;}
+.checkpoint-header p{color:var(--grey-muted);font-size:13px;margin-top:4px;}
+.quiz-q{margin-bottom:18px;}
+.quiz-q .q-text{font-family:Georgia,serif;font-size:17px;margin-bottom:8px;line-height:1.35;}
+.quiz-q .q-num{color:var(--gold);font-weight:bold;margin-right:6px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{background:var(--navy-deep);border:1.5px solid var(--blue-bright);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;font-size:14px;}
+.quiz-opt:hover:not(.locked){border-color:var(--gold);background:var(--navy-mid);}
+.quiz-opt .opt-letter{font-family:Georgia,serif;font-weight:bold;color:var(--gold);min-width:20px;}
+.quiz-opt.correct{background:var(--green-soft);border-color:var(--green-correct);}
+.quiz-opt.correct .opt-letter{color:var(--green-correct);}
+.quiz-opt.wrong{background:var(--red-soft);border-color:var(--red-wrong);}
+.quiz-opt.wrong .opt-letter{color:#FF9B95;}
+.quiz-opt.locked{cursor:default;}
+.quiz-feedback{margin-top:10px;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.5;display:none;}
+.quiz-feedback.show{display:block;}
+.quiz-feedback.right{background:var(--green-soft);border:1px solid var(--green-correct);}
+.quiz-feedback.wrong-fb{background:var(--red-soft);border:1px solid var(--red-wrong);}
+.quiz-feedback .fb-label{font-weight:bold;letter-spacing:1px;margin-right:6px;}
+.checkpoint-result{text-align:center;padding:16px;display:none;}
+.checkpoint-result.show{display:block;}
+.checkpoint-result .score{font-family:Georgia,serif;font-size:40px;font-weight:bold;color:var(--gold-bright);}
+.checkpoint-result .msg{color:var(--grey-muted);margin:8px 0 16px;}
+/* footer nav */
+.nav-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(10,26,58,0.95);backdrop-filter:blur(10px);border-top:1px solid rgba(240,179,61,0.3);padding:12px 16px;z-index:50;}
+.nav-footer-inner{max-width:880px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.nav-footer a.navlink{flex:1;text-decoration:none;text-align:center;}
+.fineprint{font-size:11px;color:var(--grey-muted);text-align:center;margin-top:18px;}
+.scope-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.scope-strip .scope-pill{background:rgba(200,49,43,0.12);border:1px solid rgba(200,49,43,0.5);color:#FF9B95;font-size:11px;border-radius:20px;padding:6px 12px;}
+.toc-card{display:flex;align-items:center;gap:16px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:15px 18px;cursor:pointer;transition:all .2s;position:relative;text-decoration:none;color:inherit;margin-bottom:10px;}
+.toc-card:hover{border-color:var(--gold);transform:translateX(4px);}
+.toc-card .num{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--gold);min-width:38px;text-align:center;}
+.toc-card .info .name{font-size:16px;font-weight:bold;font-family:Georgia,serif;}
+.toc-card .info .tag{font-size:12px;color:var(--grey-muted);margin-top:2px;}
+.toc-card .phase-pill{position:absolute;top:8px;right:10px;font-size:8px;letter-spacing:1px;font-weight:bold;padding:2px 7px;border-radius:10px;background:rgba(45,182,168,0.2);color:var(--teal);}
+/* fork switch (page 1) */
+.fork-switch{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.fork-switch button{flex:1;min-width:160px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:11px 14px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:all .2s;}
+.fork-switch button.active{background:rgba(240,179,61,0.16);border-color:var(--gold);color:var(--gold-bright);}
+.fork-panel{display:flex;flex-direction:column;gap:8px;}
+.fork-row{background:var(--navy-mid);border:1px solid var(--blue-bright);border-left:3px solid var(--gold);border-radius:8px;padding:10px 13px;transition:background .25s;}
+.fork-row.flash{background:var(--navy-light);}
+.fork-row .fr-label{font-size:9px;letter-spacing:1.5px;color:var(--gold);font-weight:bold;margin-bottom:3px;}
+.fork-row .fr-val{font-size:13px;color:#DCE3F2;}
+/* gallery (page 5) */
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:560px){.gallery{grid-template-columns:1fr;}}
+.gal-item{background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .2s;}
+.gal-item:hover{border-color:var(--gold);transform:translateY(-2px);}
+.gal-item.open{border-color:var(--gold);background:var(--navy-light);}
+.gal-item .gal-pair{font-size:14px;font-weight:bold;color:var(--white);font-family:Georgia,serif;}
+.gal-item .gal-corr{font-size:11px;color:var(--amber);margin-top:4px;}
+.gal-item .gal-reveal{font-size:12px;color:#DCE3F2;margin-top:8px;display:none;line-height:1.45;border-top:1px solid rgba(176,188,214,0.2);padding-top:8px;}
+.gal-item.open .gal-reveal{display:block;}
+/* data-quality (page 5) */
+.dq-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.dq-item{display:flex;align-items:center;gap:12px;background:var(--navy-mid);border:1.5px solid var(--blue-bright);border-radius:8px;padding:10px 13px;cursor:pointer;transition:all .2s;}
+.dq-item .dq-check{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--grey-muted);display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;flex-shrink:0;}
+.dq-item.on{border-color:var(--red-wrong);background:var(--red-soft);}
+.dq-item.on .dq-check{background:var(--red-wrong);border-color:var(--red-wrong);color:#fff;}
+.dq-item .dq-text{font-size:13px;color:#DCE3F2;}
+.dq-meter{background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:10px;padding:16px;}
+/* viva sentence builder (page 6) */
+.vb-group{margin-bottom:12px;}
+.vb-q{font-family:Georgia,serif;font-size:15px;color:#DCE3F2;margin-bottom:6px;}
+.vb-opts{display:flex;flex-wrap:wrap;gap:7px;}
+.vb-opts button{background:var(--navy-mid);border:1.5px solid var(--blue-bright);color:var(--grey-muted);padding:7px 13px;border-radius:20px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s;}
+.vb-opts button:hover{border-color:var(--gold);}
+.vb-opts button.on{background:rgba(240,179,61,0.18);border-color:var(--gold);color:var(--gold-bright);font-weight:bold;}
+.vb-output{background:var(--navy-deep);border:1px solid var(--gold);border-left:3px solid var(--gold);border-radius:8px;padding:15px 17px;margin:14px 0 4px;font-family:Georgia,serif;font-size:15px;line-height:1.55;color:#fff;font-style:italic;min-height:60px;}
+.vb-output b{color:var(--gold-bright);font-style:normal;}
+
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+ <span class="course-title">DBA · DATA ANALYSIS · 03</span>
+ <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+ <span class="progress-pct" id="progressPct">0%</span>
+</div></div>
+<div class="container">
+ <div class="hero">
+   <div class="eyebrow">DATA ANALYSIS FOR THE DBA · PART 3 OF 6</div>
+   <h1>The Five Core Methods</h1>
+   <p>Five tools cover almost every DBA thesis. Here is what each one really computes — the equation, the intuition, and a hands-on demo of the engine underneath.</p>
+   <div class="series-nav"><a href="da_index.html" title="Series home">⌂</a><a href="da_1_explain_predict.html">1</a><a href="da_2_supervised_unsupervised.html">2</a><a href="da_3_the_methods.html" class="here">3</a><a href="da_4_read_results.html">4</a><a href="da_5_three_traps.html">5</a><a href="da_6_decision_aid.html">6</a></div>
+ </div>
+ 
+<div class="step-card">
+ <span class="step-label mechanism">THE MAP</span>
+ <h3>Five methods, three jobs</h3>
+ <p>Before the detail, the lay of the land. Tap each card for the one-line summary; the rest of the page is a deep dive into each.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive — tap each card.</div>
+   <div class="reveal-grid" id="mapGrid"></div>
+ </div>
+ <table class="info-table">
+   <tr><th>Method</th><th>Target</th><th>Answers</th></tr>
+   <tr><td>Linear regression</td><td>Continuous (a number)</td><td>How much does X change y?</td></tr>
+   <tr><td>Logistic regression</td><td>Binary (yes/no)</td><td>How does X change the probability of yes?</td></tr>
+   <tr><td>Decision tree / forest</td><td>Either</td><td>What if/then rules predict y?</td></tr>
+   <tr><td>k-means clustering</td><td>None</td><td>What natural groups exist?</td></tr>
+   <tr><td>Correlation</td><td>None (a pair)</td><td>Do two variables move together?</td></tr>
+ </table>
+</div>
+
+<div class="phase-divider">1 · LINEAR REGRESSION</div>
+<div class="step-card">
+ <span class="step-label math">THE EQUATION</span>
+ <h3>A weighted sum of your predictors</h3>
+ <p>With several predictors it generalises Part 1's line into a plane:</p>
+ <div class="math-block">
+   <div class="eq"><span class="hl2">ŷ</span> = b₀ + <span class="hl">b₁</span>x₁ + <span class="hl">b₂</span>x₂ + … + <span class="hl">bₖ</span>xₖ</div>
+   <div class="legend"><div class="row"><span class="sym">bⱼ</span><span>the effect of predictor xⱼ <b>holding the others constant</b> — this "all else equal" is the entire reason regression beats simple correlation.</span></div></div>
+ </div>
+ <p>Below, predict an employee's <strong>salary</strong> from <strong>years of experience</strong> and <strong>training days</strong>. Tune the two slopes; the readout shows a prediction for a specific person and the model's overall fit.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 1 — two predictors, one prediction.</div>
+   <div class="slider-row"><label>Per year of exp. <b id="le1v">3.0</b>k</label><input type="range" id="le1" min="0" max="8" step="0.1" value="3"></div>
+   <div class="slider-row"><label>Per training day <b id="le2v">0.5</b>k</label><input type="range" id="le2" min="0" max="3" step="0.1" value="0.5"></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Predicted salary<br>(8 yrs, 10 days)</div><div class="rc-val" id="lem" style="font-size:18px">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Fit R²</div><div class="rc-val" id="ler2">—</div></div>
+   </div>
+   <div class="btn-row"><button class="btn small" id="leSolve">⚡ Best-fit slopes</button></div>
+ </div>
+ <div class="note-box"><b>Assumptions (the viva favourites):</b> a roughly <em>linear</em> relationship, residuals that are independent and roughly <em>normal</em> with constant spread, and predictors not too <em>collinear</em> (not near-duplicates of each other). Violations don't break the maths but weaken your claims — name them.</div>
+</div>
+
+<div class="phase-divider">2 · LOGISTIC REGRESSION</div>
+<div class="step-card">
+ <span class="step-label math">WHY A NEW MODEL IS NEEDED</span>
+ <h3>You cannot fit a straight line to yes/no</h3>
+ <p>If the target is 0 or 1 (churn / stay), a straight line happily predicts 1.4 or −0.3 — nonsense as a probability. Logistic regression fixes this by passing the linear part through the <strong>sigmoid</strong> (S-curve), which squeezes any number into the 0–1 range:</p>
+ <div class="math-block">
+   <div class="eq">P(yes) = 1 / (1 + e<sup>−z</sup>) , &nbsp; where z = b₀ + <span class="hl">b₁</span>x</div>
+   <div class="legend"><div class="row"><span class="sym">z</span><span>the familiar linear part (the "log-odds").</span></div><div class="row"><span class="sym">e</span><span>≈ 2.718. The sigmoid turns z into a probability: very negative z → 0, very positive z → 1, z = 0 → exactly 0.5.</span></div></div>
+ </div>
+ <p>Drag the curve. <strong>b₁</strong> controls steepness (how sharply yes/no flips); <strong>b₀</strong> shifts it left/right (the threshold). The dots are real customers at 0 (stayed) and 1 (churned).</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 2 — shape the S-curve to separate the two outcomes.</div>
+   <div class="slider-row"><label>Steepness b₁ <b id="lg1v">1.0</b></label><input type="range" id="lg1" min="0.1" max="3" step="0.1" value="1"></div>
+   <div class="slider-row"><label>Shift b₀ <b id="lg0v">-5.0</b></label><input type="range" id="lg0" min="-12" max="2" step="0.2" value="-5"></div>
+   <div class="canvas-wrap"><canvas id="logCanvas" width="760" height="360"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">P(churn) at x=7</div><div class="rc-val" id="lgP">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Classified correctly</div><div class="rc-val" id="lgAcc">—</div></div>
+   </div>
+   <div class="btn-row"><button class="btn small" id="lgSolve">⚡ Good-fit curve</button></div>
+ </div>
+ <div class="note-box"><b>Reading the output:</b> logistic software reports <b>odds ratios</b>, not slopes. OR &gt; 1 means the factor raises the odds of "yes"; OR &lt; 1 lowers them. Part 4 drills this.</div>
+</div>
+
+<div class="phase-divider">3 · DECISION TREES</div>
+<div class="step-card">
+ <span class="step-label math">HOW A SPLIT IS CHOSEN</span>
+ <h3>Twenty questions, chosen by maths</h3>
+ <p>A tree asks yes/no questions to carve the data into ever-purer groups. The art is <em>which</em> question to ask. The tree tries every possible threshold on every feature and keeps the split that best <strong>reduces impurity</strong> — a measure of how mixed the outcomes are. A common impurity measure is the <strong>Gini index</strong>:</p>
+ <div class="math-block">
+   <div class="eq">Gini = 1 − Σ pᵢ²</div>
+   <div class="legend"><div class="row"><span class="sym">pᵢ</span><span>the proportion of class i in a group. A pure group (all churned) has Gini 0; a 50/50 mix has Gini 0.5 — maximally impure.</span></div></div>
+ </div>
+ <p>Below, pick a split point on "tenure". Watch the two resulting groups and their combined impurity. The tree would pick the threshold that drives the weighted Gini lowest — find it by hand.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 3 — slide the split; minimise the weighted impurity.</div>
+   <div class="slider-row"><label>Split: tenure &lt; <b id="splitV">5</b> yrs</label><input type="range" id="splitS" min="1" max="11" step="1" value="5"></div>
+   <div class="canvas-wrap"><canvas id="treeCanvas" width="760" height="300"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Left Gini</div><div class="rc-val" id="giniL">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Right Gini</div><div class="rc-val" id="giniR">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Weighted (lower=better)</div><div class="rc-val" id="giniW">—</div></div>
+   </div>
+ </div>
+ <div class="note-box"><b>From tree to forest.</b> A single deep tree overfits (Part 5). A <b>random forest</b> grows hundreds of trees on random slices of data and averages them — far more accurate, but you trade away the simple readable rules. Classic accuracy-vs-interpretability tension.</div>
+</div>
+
+<div class="phase-divider">4 · CLUSTERING &amp; 5 · CORRELATION</div>
+<div class="step-card">
+ <span class="step-label mechanism">CLUSTERING — RECAP</span>
+ <h3>k-means: covered hands-on in Part 2</h3>
+ <p>Clustering is the unsupervised method; you ran its four-step engine in Part 2 (choose k → assign to nearest centre → move centres → repeat). Its objective is minimising within-group distance (inertia). The key reminders: <strong>you choose k</strong>, results depend on the random start, and clusters are a hypothesis to validate.</p>
+ <p style="margin-bottom:0"><a href="da_2_supervised_unsupervised.html" style="color:var(--gold-bright)">↩ Replay the k-means demo in Part 2</a></p>
+</div>
+
+<div class="step-card">
+ <span class="step-label math">CORRELATION</span>
+ <h3>One number for "do they move together?"</h3>
+ <p>Pearson's <strong>r</strong> measures the strength and direction of a <em>linear</em> link between two variables, from −1 (perfect down) through 0 (none) to +1 (perfect up):</p>
+ <div class="math-block">
+   <div class="eq">r = Σ(xᵢ−x̄)(yᵢ−ȳ) / √[ Σ(xᵢ−x̄)² Σ(yᵢ−ȳ)² ]</div>
+   <div class="legend"><div class="row"><span class="sym">idea</span><span>when x is above its average <em>and</em> y is too, the product is positive; do that consistently and r climbs toward +1. The denominator just rescales it to the −1…+1 range.</span></div></div>
+ </div>
+ <p>Drag the slider to change the true strength of the relationship and watch both the cloud and r respond. Note how r² (the share of variance explained) is literally the regression R² from Part 1 for a single predictor.</p>
+ <div class="sandbox">
+   <div class="sandbox-title"></div>
+   <div class="sandbox-prompt">Interactive 5 — change the strength; read r.</div>
+   <div class="slider-row"><label>True strength <b id="corrV">0.6</b></label><input type="range" id="corrS" min="-100" max="100" step="5" value="60"></div>
+   <div class="canvas-wrap"><canvas id="corrCanvas" width="760" height="340"></canvas></div>
+   <div class="readout-grid">
+     <div class="readout-cell"><div class="rc-label">Correlation r</div><div class="rc-val" id="corrOut">—</div></div>
+     <div class="readout-cell"><div class="rc-label">r² (variance shared)</div><div class="rc-val" id="corr2Out">—</div></div>
+     <div class="readout-cell"><div class="rc-label">Verbal strength</div><div class="rc-val" id="corrWord" style="font-size:14px">—</div></div>
+   </div>
+ </div>
+ <div class="warn-box"><b>r measures only straight-line links.</b> A perfect U-shape can have r ≈ 0. Always plot first. And — the drum we keep beating — a high r is <em>association</em>, never proof of <em>causation</em> (Part 5).</div>
+</div>
+
+<div class="step-card">
+ <span class="step-label case">OUT OF SCOPE</span>
+ <h3>Name them, don't claim them</h3>
+ <p>These appear in papers but need data volumes and skills beyond a typical DBA. Cite them as future work; don't claim to have applied them.</p>
+ <div class="scope-strip"><span class="scope-pill">Neural networks / Deep learning</span><span class="scope-pill">SVM</span><span class="scope-pill">Time series / ARIMA</span><span class="scope-pill">PCA</span><span class="scope-pill">Gradient boosting</span></div>
+</div>
+
+<div class="step-card" id="cpCard"></div>
+
+ <div class="fineprint">Scroll progress saves on this device. Part of the DBA Data-Analysis series by Jan Erik Meidell.</div>
+</div>
+<div class="nav-footer"><div class="nav-footer-inner"><a class="navlink" href="da_2_supervised_unsupervised.html"><button class="btn ghost" style="width:100%">← Supervised vs Unsupervised</button></a><span style="font-size:11px;color:var(--grey-muted);white-space:nowrap;">3 / 6</span><a class="navlink" href="da_4_read_results.html"><button class="btn" style="width:100%">Reading the Output →</button></a></div></div>
+<a href="https://www.linkedin.com/in/jmeidell/" target="_blank" rel="noopener" title="Jan Erik Meidell — LinkedIn" style="position:fixed;top:84px;right:12px;z-index:99999;display:flex;align-items:center;gap:8px;text-decoration:none;background:rgba(10,26,58,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 12px 5px 5px;border-radius:30px;border:1px solid rgba(240,179,61,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.35);font-family:'Calibri','Helvetica Neue',sans-serif;"><span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F0B33D,#FFD24A);color:#0A1A3A;font-family:Georgia,serif;font-weight:bold;font-size:15px;border:1.5px solid #F0B33D;">JM</span><span style="color:#FFD24A;font-size:12px;font-weight:600;letter-spacing:0.2px;white-space:nowrap;">Jan Erik Meidell</span></a>
+<script>
+// progress = % scrolled, persisted per page
+(function(){
+ const KEY='dba_da_deep_da_3_the_methods';
+ const fill=document.getElementById('progressFill'),pct=document.getElementById('progressPct');
+ function upd(){const h=document.documentElement;const max=h.scrollHeight-h.clientHeight;const p=max>0?Math.min(100,Math.round(h.scrollTop/max*100)):0;fill.style.width=p+'%';pct.textContent=p+'%';try{localStorage.setItem(KEY,p);}catch(e){}}
+ window.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();
+})();
+// shared checkpoint renderer
+function renderCheckpoint(mountId,cp){
+ const mount=document.getElementById(mountId);if(!mount)return;
+ const qs=cp.questions.map((q,qi)=>'<div class="quiz-q" data-qi="'+qi+'"><div class="q-text"><span class="q-num">Q'+(qi+1)+'.</span>'+q.q+'</div><div class="quiz-opts">'+q.opts.map((opt,oi)=>'<div class="quiz-opt" data-qi="'+qi+'" data-oi="'+oi+'"><span class="opt-letter">'+String.fromCharCode(65+oi)+'</span><span>'+opt+'</span></div>').join('')+'</div><div class="quiz-feedback" data-qi="'+qi+'"></div></div>').join('');
+ mount.className='checkpoint';
+ mount.innerHTML='<div class="checkpoint-header"><div class="badge">✦ CHECKPOINT</div><h3>'+cp.title+'</h3><p>'+cp.sub+'</p></div><div class="quiz-body">'+qs+'</div><div class="checkpoint-result"><div class="score"></div><div class="msg"></div></div>';
+ const answered={},total=cp.questions.length;
+ mount.querySelectorAll('.quiz-opt').forEach(opt=>{opt.onclick=()=>{const qi=+opt.dataset.qi,oi=+opt.dataset.oi;if(answered[qi]!==undefined)return;const q=cp.questions[qi];const opts=mount.querySelectorAll('.quiz-opt[data-qi="'+qi+'"]');opts.forEach(o=>o.classList.add('locked'));const fb=mount.querySelector('.quiz-feedback[data-qi="'+qi+'"]');if(oi===q.correct){opt.classList.add('correct');answered[qi]=true;fb.className='quiz-feedback right show';fb.innerHTML='<span class="fb-label">✓ CORRECT</span>'+q.fb;}else{opt.classList.add('wrong');opts[q.correct].classList.add('correct');answered[qi]=false;fb.className='quiz-feedback wrong-fb show';fb.innerHTML='<span class="fb-label">✗ NOT QUITE</span>'+q.fb;}if(Object.keys(answered).length===total){const sc=Object.values(answered).filter(Boolean).length;const res=mount.querySelector('.checkpoint-result');res.querySelector('.score').textContent=sc+' / '+total;res.querySelector('.msg').textContent=sc===total?'Perfect — you\'ve got the logic.':sc>=total-1?'Strong — review the one you missed.':'Re-read the section above, then retry.';res.classList.add('show');}};});
+}
+
+// ---------- map cards ----------
+(function(){
+ const m=[
+  {ab:'LR',name:'Linear reg.',d:'Continuous target. Reports slopes = effect sizes.'},
+  {ab:'Log',name:'Logistic reg.',d:'Yes/no target. Reports odds ratios.'},
+  {ab:'Tree',name:'Tree / Forest',d:'If/then rules. Forest = many trees averaged.'},
+  {ab:'k',name:'k-means',d:'No target. Finds k groups by distance.'},
+  {ab:'r',name:'Correlation',d:'A pair of variables. One number, −1 to +1.'},
+ ];
+ const g=document.getElementById('mapGrid');
+ m.forEach(x=>{const t=document.createElement('div');t.className='reveal-tile';t.innerHTML='<div class="letter">'+x.ab+'</div><div class="name">'+x.name+'</div><div class="desc">'+x.d+'</div>';t.onclick=()=>t.classList.toggle('open');g.appendChild(t);});
+})();
+
+// ---------- 1: multiple linear regression ----------
+(function(){
+ // data: [exp, trainDays, salary k]
+ const D=[[1,2,33],[3,5,46],[5,8,60],[2,10,44],[7,4,72],[8,12,86],[4,6,55],[6,9,70]];
+ const meanY=D.reduce((s,d)=>s+d[2],0)/D.length;
+ const TSS=D.reduce((s,d)=>s+(d[2]-meanY)**2,0);
+ // fixed intercept for simplicity
+ const B0=28;
+ function sse(b1,b2){return D.reduce((s,d)=>s+(d[2]-(B0+b1*d[0]+b2*d[1]))**2,0);}
+ // crude grid solve for "best"
+ function best(){let bb1=0,bb2=0,bs=1e9;for(let a=0;a<=8;a+=0.1)for(let b=0;b<=3;b+=0.1){const e=sse(a,b);if(e<bs){bs=e;bb1=a;bb2=b;}}return{b1:bb1,b2:bb2};}
+ const B=best();
+ const e1=document.getElementById('le1'),e2=document.getElementById('le2');
+ function upd(){const b1=parseFloat(e1.value),b2=parseFloat(e2.value);
+   document.getElementById('le1v').textContent=b1.toFixed(1);document.getElementById('le2v').textContent=b2.toFixed(1);
+   document.getElementById('lem').textContent='CHF '+(B0+b1*8+b2*10).toFixed(0)+'k';
+   const r2=1-sse(b1,b2)/TSS;const el=document.getElementById('ler2');el.textContent=r2.toFixed(3);el.className='rc-val '+(r2>0.85?'good':r2<0.4?'bad':'');}
+ e1.oninput=upd;e2.oninput=upd;
+ document.getElementById('leSolve').onclick=()=>{e1.value=B.b1.toFixed(1);e2.value=B.b2.toFixed(1);upd();};
+ upd();
+})();
+
+// ---------- 2: logistic sigmoid ----------
+(function(){
+ // x values 1..10, label 0/1
+ const D=[[1,0],[2,0],[3,0],[4,0],[5,0],[6,1],[7,0],[8,1],[9,1],[10,1]];
+ const cv=document.getElementById('logCanvas'),ctx=cv.getContext('2d');
+ const pad=44,W=cv.width,H=cv.height,xmax=11;
+ const X=x=>pad+(x/xmax)*(W-pad*1.4);const Y=p=>H-pad-p*(H-pad*1.7);
+ const b1s=document.getElementById('lg1'),b0s=document.getElementById('lg0');
+ const sig=z=>1/(1+Math.exp(-z));
+ function upd(){const b1=parseFloat(b1s.value),b0=parseFloat(b0s.value);
+   document.getElementById('lg1v').textContent=b1.toFixed(1);document.getElementById('lg0v').textContent=b0.toFixed(1);
+   ctx.clearRect(0,0,W,H);
+   ctx.strokeStyle='rgba(176,188,214,0.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,Y(0));ctx.lineTo(W-12,Y(0));ctx.moveTo(pad,Y(0));ctx.lineTo(pad,Y(1)-6);ctx.stroke();
+   ctx.fillStyle='rgba(176,188,214,0.7)';ctx.font='11px Calibri';ctx.fillText('P=1',pad-30,Y(1)+4);ctx.fillText('P=0',pad-30,Y(0)+4);ctx.fillText('P=0.5',pad-38,Y(0.5)+4);
+   ctx.strokeStyle='rgba(176,188,214,0.25)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pad,Y(0.5));ctx.lineTo(W-12,Y(0.5));ctx.stroke();ctx.setLineDash([]);
+   // curve
+   ctx.strokeStyle='#F0B33D';ctx.lineWidth=3;ctx.beginPath();let first=true;for(let x=0;x<=xmax;x+=0.1){const p=sig(b0+b1*x);const px=X(x),py=Y(p);if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);}ctx.stroke();
+   // points
+   let correct=0;D.forEach(d=>{const p=sig(b0+b1*d[0]);const pred=p>=0.5?1:0;if(pred===d[1])correct++;ctx.fillStyle=d[1]===1?'#2EA84A':'#C8312B';ctx.beginPath();ctx.arc(X(d[0]),Y(d[1]),6,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.4;ctx.stroke();});
+   const pAt7=sig(b0+b1*7);document.getElementById('lgP').textContent=(pAt7*100).toFixed(0)+'%';
+   const acc=document.getElementById('lgAcc');acc.textContent=correct+' / 10';acc.className='rc-val '+(correct>=9?'good':correct<=6?'bad':'');
+ }
+ b1s.oninput=upd;b0s.oninput=upd;
+ document.getElementById('lgSolve').onclick=()=>{b1s.value='1.2';b0s.value='-7';upd();};
+ upd();
+})();
+
+// ---------- 3: decision tree split ----------
+(function(){
+ // tenure 1..11, churn 1 (left/low tenure churns more)
+ const D=[[1,1],[2,1],[3,1],[4,0],[4,1],[5,0],[6,0],[7,1],[8,0],[9,0],[10,0],[11,0]];
+ const cv=document.getElementById('treeCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=40,xmax=12;
+ const X=x=>pad+(x/xmax)*(W-pad*1.4);
+ const s=document.getElementById('splitS');
+ function gini(arr){if(!arr.length)return 0;const p=arr.reduce((a,b)=>a+b,0)/arr.length;return 1-(p*p+(1-p)*(1-p));}
+ function upd(){const sp=parseInt(s.value);document.getElementById('splitV').textContent=sp;
+   const left=D.filter(d=>d[0]<sp).map(d=>d[1]);const right=D.filter(d=>d[0]>=sp).map(d=>d[1]);
+   const gL=gini(left),gR=gini(right);const w=(left.length*gL+right.length*gR)/D.length;
+   ctx.clearRect(0,0,W,H);
+   // baseline row of points coloured by churn, y fixed
+   const cy=120;
+   ctx.strokeStyle='rgba(176,188,214,0.3)';ctx.beginPath();ctx.moveTo(pad,cy);ctx.lineTo(W-12,cy);ctx.stroke();
+   D.forEach(d=>{ctx.fillStyle=d[1]===1?'#C8312B':'#2EA84A';ctx.beginPath();ctx.arc(X(d[0]),cy,7,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.3;ctx.stroke();});
+   // split line
+   const sx=X(sp);ctx.strokeStyle='#F0B33D';ctx.lineWidth=3;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(sx,40);ctx.lineTo(sx,H-40);ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='#F0B33D';ctx.font='bold 12px Calibri';ctx.fillText('tenure < '+sp,sx-70,32);ctx.fillText('tenure ≥ '+sp,sx+8,32);
+   // labels
+   ctx.fillStyle='rgba(176,188,214,0.85)';ctx.font='12px Calibri';
+   ctx.fillText('LEFT group: '+left.length+' people',pad,cy+50);
+   ctx.fillText('RIGHT group: '+right.length+' people',W/2,cy+50);
+   ctx.fillStyle='#C8312B';ctx.fillText('● churned',pad,cy+72);ctx.fillStyle='#2EA84A';ctx.fillText('   ● stayed',pad+70,cy+72);
+   document.getElementById('giniL').textContent=gL.toFixed(2);
+   document.getElementById('giniR').textContent=gR.toFixed(2);
+   const we=document.getElementById('giniW');we.textContent=w.toFixed(3);we.className='rc-val '+(w<0.28?'good':w>0.45?'bad':'');
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- 5: correlation ----------
+(function(){
+ const cv=document.getElementById('corrCanvas'),ctx=cv.getContext('2d');
+ const W=cv.width,H=cv.height,pad=40;
+ const s=document.getElementById('corrS');
+ let base=[];for(let i=0;i<60;i++)base.push([Math.random(),Math.random()]);
+ function upd(){const rho=parseFloat(s.value)/100;document.getElementById('corrV').textContent=rho.toFixed(2);
+   // generate y correlated with x at strength rho
+   const pts=base.map(b=>{const x=b[0];const noise=b[1];const y=rho*x+(1-Math.abs(rho))*noise;return [x,y];});
+   // compute r
+   const n=pts.length;const mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;
+   let sxy=0,sxx=0,syy=0;pts.forEach(p=>{sxy+=(p[0]-mx)*(p[1]-my);sxx+=(p[0]-mx)**2;syy+=(p[1]-my)**2;});
+   const r=sxy/Math.sqrt(sxx*syy||1);
+   ctx.clearRect(0,0,W,H);
+   ctx.strokeStyle='rgba(176,188,214,0.3)';ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-12,H-pad);ctx.moveTo(pad,H-pad);ctx.lineTo(pad,16);ctx.stroke();
+   pts.forEach(p=>{const px=pad+p[0]*(W-pad*1.4),py=H-pad-p[1]*(H-pad*1.4);ctx.fillStyle='#4A90E2';ctx.beginPath();ctx.arc(px,py,4,0,7);ctx.fill();});
+   const ro=document.getElementById('corrOut');ro.textContent=r.toFixed(2);ro.className='rc-val '+(Math.abs(r)>0.7?'good':Math.abs(r)<0.3?'bad':'');
+   document.getElementById('corr2Out').textContent=(r*r).toFixed(2);
+   const a=Math.abs(r);document.getElementById('corrWord').textContent=a<0.2?'negligible':a<0.4?'weak':a<0.6?'moderate':a<0.8?'strong':'very strong';
+ }
+ s.oninput=upd;upd();
+})();
+
+// ---------- checkpoint ----------
+const CP={title:'Lock it in',sub:'Match the method to its logic',questions:[
+ {q:'Why does logistic regression exist when we already have linear regression?',opts:['It is newer','A straight line can predict impossible probabilities like 1.4 or −0.3; the sigmoid keeps predictions in 0–1','It is faster','It needs less data'],correct:1,fb:'For a 0/1 target, a line gives nonsensical values. The sigmoid squashes the linear part z into a valid probability between 0 and 1.'},
+ {q:'A decision tree chooses a split by:',opts:['Picking the middle value','Trying thresholds and keeping the one that most reduces impurity (e.g. Gini)','Asking the analyst','Random choice'],correct:1,fb:'It searches splits and keeps the one that makes the resulting groups purest — lowest weighted Gini. Purer groups = better separation of the outcome.'},
+ {q:'Correlation r = 0.05 between two variables most likely means:',opts:['A strong link','Little or no <em>linear</em> link — but check a plot, the relationship could be curved','Causation is disproven','The data is wrong'],correct:1,fb:'r near 0 means no straight-line association, but r is blind to curves (a U-shape can give r≈0). Always plot. And r says nothing about causation either way.'},
+]};
+renderCheckpoint('cpCard',CP);
+
+</script>
+</body>
+</html>
