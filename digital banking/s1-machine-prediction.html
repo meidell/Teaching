@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labo ML · La machine à prédire</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --amber:#E8A33C; --teal:#2DB6A8; --purple:#7E5AE8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);
+  background:radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(46,168,74,0.10) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;line-height:1.5;}
+body{padding-bottom:60px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;}
+.topbar .jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.topbar .jump a{font-size:11px;color:var(--grey-muted);text-decoration:none;border:1px solid rgba(74,144,226,.3);border-radius:12px;padding:3px 9px;transition:.2s;}
+.topbar .jump a:hover{border-color:var(--gold);color:var(--gold-bright);}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:40px 16px 24px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:16px;}
+.hero h1{font-family:Georgia,serif;font-size:34px;font-style:italic;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:640px;margin:0 auto;}
+.lab{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:18px;padding:24px 22px;margin-bottom:24px;backdrop-filter:blur(4px);scroll-margin-top:70px;}
+.lab-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+.lab-num{font-family:Georgia,serif;font-size:30px;font-weight:bold;color:var(--gold);line-height:1;}
+.lab-head h2{font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.15;}
+.lab-tag{font-size:11px;letter-spacing:2px;color:var(--teal);font-weight:bold;text-transform:uppercase;margin-bottom:14px;}
+.lab-intro{font-size:14.5px;color:#DCE3F2;margin-bottom:18px;}
+.lab-intro strong{color:var(--gold-bright);}
+.lab-intro em{color:#fff;font-style:italic;}
+.panel{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:14px;padding:18px 18px 20px;}
+.ctrl{margin:6px 0 18px;}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;color:var(--grey-muted);margin-bottom:8px;}
+.ctrl label .val{color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;font-size:17px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--navy-light);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);box-shadow:0 0 8px rgba(240,179,61,.6);}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:6px;}
+.metric{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:14px 12px;text-align:center;transition:border-color .25s,background .25s;}
+.metric .mlabel{font-size:10.5px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;margin-bottom:6px;}
+.metric .mval{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:var(--white);transition:color .25s;}
+.metric .marrow{font-size:13px;margin-top:3px;min-height:18px;font-weight:bold;}
+.metric .sub{font-size:11px;color:var(--grey-muted);margin-top:4px;}
+.metric.up{border-color:var(--green-correct);}
+.metric.up .mval{color:#7DE69A;}
+.metric.down{border-color:var(--red-wrong);}
+.metric.down .mval{color:#FF9B95;}
+.up-arrow{color:#7DE69A;}.down-arrow{color:#FF9B95;}.flat-arrow{color:var(--grey-muted);}
+.toggle-row{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 16px;}
+.tg{background:var(--navy-mid);border:1px solid var(--blue-bright);color:var(--grey-muted);border-radius:20px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;}
+.tg:hover{border-color:var(--gold);}
+.tg.active{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);}
+.tg.danger.active{background:var(--red-wrong);color:#fff;border-color:var(--red-wrong);}
+.tg.calm.active{background:var(--teal);color:var(--navy-deep);border-color:var(--teal);}
+.why{margin-top:16px;}
+.why-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;}
+.why-btn:hover{background:rgba(240,179,61,.12);}
+.why-card{max-height:0;overflow:hidden;transition:max-height .4s ease;background:linear-gradient(160deg,rgba(126,90,232,.14),rgba(30,90,168,.1));border-radius:12px;margin-top:0;}
+.why-card.open{max-height:1400px;margin-top:12px;border:1px solid var(--purple);}
+.why-inner{padding:18px 20px;}
+.why-inner .wt{font-size:11px;letter-spacing:2px;color:#C3AEFF;font-weight:bold;margin-bottom:10px;}
+.why-inner p{font-size:14px;color:#E4E9F5;margin-bottom:10px;}
+.why-inner p strong{color:var(--gold-bright);}
+.why-inner p em{color:#fff;font-style:italic;}
+.why-inner .chainline{font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);background:var(--navy-deep);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;margin:10px 0;text-align:center;}
+.why-inner ul{list-style:none;margin:6px 0;}
+.why-inner ul li{font-size:13.5px;color:#DCE3F2;padding-left:20px;position:relative;margin-bottom:7px;}
+.why-inner ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.why-inner ul li strong{color:var(--gold-bright);}
+.formula{background:var(--navy-mid);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;text-align:center;font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);margin:8px 0;}
+.gauge-track{height:14px;border-radius:7px;background:linear-gradient(90deg,#C8312B,#E8A33C,#2EA84A);position:relative;margin:18px 0 6px;}
+.gauge-dot{position:absolute;top:-5px;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--navy-deep);transform:translateX(-50%);transition:left .35s;box-shadow:0 2px 6px rgba(0,0,0,.5);}
+.gauge-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey-muted);letter-spacing:1px;}
+.verdict{text-align:center;font-family:Georgia,serif;font-size:17px;font-style:italic;margin-top:14px;padding:12px;border-radius:10px;transition:.3s;}
+.verdict.good{background:var(--green-soft);color:#B6F0C2;}
+.verdict.bad{background:var(--red-soft);color:#FFC4C0;}
+.verdict.neutral{background:rgba(30,90,168,.2);color:var(--grey-muted);}
+.cm{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;margin:8px 0;font-size:12px;}
+.cm .cmh{display:flex;align-items:center;justify-content:center;color:var(--grey-muted);font-size:10.5px;text-transform:uppercase;letter-spacing:1px;text-align:center;padding:4px;}
+.cm .cmcell{border-radius:10px;padding:12px 8px;text-align:center;transition:.3s;border:1px solid var(--blue-bright);background:var(--navy-mid);}
+.cm .cmcell .cmn{font-family:Georgia,serif;font-size:26px;font-weight:bold;display:block;}
+.cm .cmcell .cmt{font-size:10px;color:var(--grey-muted);display:block;margin-top:2px;}
+.cm .cmcell.tp{background:rgba(46,168,74,.18);border-color:var(--green-correct);}
+.cm .cmcell.tn{background:rgba(46,168,74,.18);border-color:var(--green-correct);}
+.cm .cmcell.fp{background:rgba(232,163,60,.16);border-color:var(--amber);}
+.cm .cmcell.fn{background:rgba(200,49,43,.18);border-color:var(--red-wrong);}
+.scatter-wrap{text-align:center;}
+.detective-opt{display:flex;align-items:center;gap:10px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:12px 14px;margin-bottom:9px;cursor:pointer;transition:.18s;font-size:14px;}
+.detective-opt:hover{border-color:var(--gold);}
+.detective-opt.correct{border-color:var(--green-correct);background:var(--green-soft);}
+.detective-opt.wrong{border-color:var(--red-wrong);background:var(--red-soft);}
+.detective-opt .ol{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--navy-deep);border:1px solid var(--blue-bright);font-size:12px;font-weight:bold;flex-shrink:0;}
+.det-fb{font-size:13.5px;margin-top:6px;padding:12px 14px;border-radius:8px;display:none;line-height:1.5;}
+.det-fb.show{display:block;}
+.det-fb.good{background:var(--green-soft);color:#B6F0C2;}
+.scenario-line{font-family:Georgia,serif;font-style:italic;font-size:16px;color:var(--gold-bright);text-align:center;margin:8px 0 14px;}
+.btn.small{background:var(--gold);color:var(--navy-deep);border:none;padding:7px 14px;font-family:inherit;font-size:11px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;}
+.btn.small:hover{background:var(--gold-bright);}
+.hint{font-size:12px;color:var(--grey-muted);text-align:center;margin-top:8px;font-style:italic;}
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:30px;}
+.foot a{color:var(--gold-bright);text-decoration:none;}
+.legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--grey-muted);margin-top:10px;flex-wrap:wrap;}
+.legend span b{color:#7DE69A;}.legend span i{color:#FF9B95;font-style:normal;}
+.dotleg{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-right:4px;}
+.tree-node{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px 12px;margin:6px 0;}
+.tree-q{font-size:13.5px;color:var(--gold-bright);font-weight:bold;}
+.alloc-bar{height:34px;border-radius:8px;overflow:hidden;display:flex;margin:10px 0;border:1px solid var(--blue-bright);}
+.alloc-seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:#fff;transition:.4s;white-space:nowrap;overflow:hidden;}
+/* decision tree flow (card 1) */
+.tq{background:var(--navy-mid);border:1px solid var(--blue-glow);border-radius:10px;padding:11px 14px;text-align:center;font-size:14px;font-weight:bold;color:#fff;max-width:360px;margin:0 auto;}
+.tq .qsub{display:block;font-size:11px;color:var(--grey-muted);font-weight:normal;margin-top:2px;}
+.tcount{display:inline-block;background:var(--navy-deep);border:1px solid var(--gold);color:var(--gold-bright);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:bold;margin:8px auto;}
+.tcount-wrap{text-align:center;}
+.tbranches{display:flex;justify-content:center;gap:8px;align-items:flex-start;margin:6px 0;}
+.tbranch{flex:1;max-width:210px;text-align:center;}
+.tbranch .blabel{font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+.tbranch.kept .blabel{color:#7DE69A;}
+.tbranch.dropped .blabel{color:#FF9B95;}
+.tbranch .bbox{border-radius:10px;padding:9px 8px;font-size:13px;transition:.3s;}
+.tbranch.kept .bbox{background:rgba(46,168,74,.14);border:1.5px solid var(--green-correct);}
+.tbranch.dropped .bbox{background:rgba(200,49,43,.1);border:1px dashed var(--red-wrong);opacity:.65;}
+.tbranch .bn{font-family:Georgia,serif;font-size:20px;font-weight:bold;display:block;}
+.tbranch.kept .bn{color:#7DE69A;}
+.tbranch.dropped .bn{color:#FF9B95;}
+.tbranch .bt{font-size:10.5px;color:var(--grey-muted);}
+.tarrow{text-align:center;color:var(--gold);font-size:18px;line-height:1;margin:2px 0;}
+.tdots{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px;}
+.tdot{width:9px;height:9px;border-radius:50%;}
+.tdot.g{background:#7DE69A;}.tdot.r{background:#FF9B95;}.tdot.x{background:#3A4A66;}
+.treeresult{text-align:center;border-radius:12px;padding:16px;margin-top:14px;transition:.3s;background:var(--navy-deep);border:1px solid var(--blue-bright);}
+.treeresult .trbig{font-family:Georgia,serif;font-size:34px;font-weight:bold;}
+.treeresult .trlabel{font-size:12px;color:var(--grey-muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.treeresult .trcalc{font-size:13px;color:#DCE3F2;margin-top:8px;}
+.treeresult.good{border-color:var(--green-correct);}.treeresult.good .trbig{color:#7DE69A;}
+.treeresult.bad{border-color:var(--red-wrong);}.treeresult.bad .trbig{color:#FF9B95;}
+/* exercises */
+.appcard{background:var(--navy-mid);border:1px solid var(--blue-glow);border-radius:14px;padding:18px 20px;}
+.appcard .apphead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+.appcard .appname{font-family:Georgia,serif;font-size:20px;font-style:italic;color:#fff;}
+.appcard .appage{font-size:12px;color:var(--grey-muted);}
+.appcard .appgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;}
+.appcard .appf{background:var(--navy-deep);border-radius:10px;padding:10px;text-align:center;}
+.appcard .appf .afl{font-size:10px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;margin-bottom:4px;}
+.appcard .appf .afv{font-family:Georgia,serif;font-size:18px;font-weight:bold;color:var(--gold-bright);}
+.appcard .appf .afv.warn{color:#FF9B95;}
+.appcard .appf .afv.ok{color:#7DE69A;}
+.e1fb{text-align:center;font-size:14px;font-weight:bold;margin-top:14px;min-height:24px;transition:.2s;}
+.e1fb.good{color:#7DE69A;}.e1fb.bad{color:#FF9B95;}
+.trial-opts .detective-opt{margin-bottom:9px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="course-title">LABO ML · SÉANCE 1 · LA MACHINE À PRÉDIRE</div>
+    <div class="jump">
+      <a href="#l0">0</a><a href="#l1">1</a><a href="#l2">2</a><a href="#l3">3</a><a href="#l3b">3+</a><a href="#l4">4</a><a href="#l5">5</a>
+      <a href="#l6">6</a><a href="#l7">7</a><a href="#l8">8</a><a href="#l9">9</a><a href="#l10">10</a>
+      <a href="#e1" style="border-color:var(--gold);color:var(--gold-bright);">★ Exos</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="eyebrow">LABORATOIRE INTERACTIF · MACHINE LEARNING</div>
+    <h1>La machine à prédire</h1>
+    <p>Un parcours pour <em>fabriquer</em>, à la main, un modèle qui décide d'accorder ou non un crédit — puis comprendre <em>pourquoi</em> les vraies banques laissent une machine apprendre à votre place. On part du tableau de données, on trace les frontières, on apprend à tester un modèle. Bougez les curseurs. Lisez les cartes « Pourquoi ? ».</p>
+    <div class="legend"><span><b class="dotleg" style="background:#7DE69A"></b>Bon client (rembourse)</span><span><i class="dotleg" style="background:#FF9B95"></i>Mauvais client (défaut)</span></div>
+  </div>
+
+  <!-- =============== LAB 0 : DU TABLEAU AU GRAPHIQUE =============== -->
+  <div class="lab" id="l0">
+    <div class="lab-tag">Le point de départ · Données</div>
+    <div class="lab-head"><span class="lab-num">0</span><h2>Du tableau au graphique</h2></div>
+    <p class="lab-intro">Avant tout modèle, il y a un <strong>tableau</strong> : une ligne par client, une colonne par information. Mais une machine ne « voit » pas un tableau — elle voit des <strong>points dans l'espace</strong>. Survolez ou cliquez une ligne : chaque client devient un point, placé selon son <em>salaire</em> (horizontal) et le <em>montant du prêt demandé</em> (vertical).</p>
+    <div class="panel">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="l0grid">
+        <div>
+          <table id="l0table" style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="color:var(--gold-bright);text-align:left;border-bottom:1px solid var(--blue-bright);">
+                <th style="padding:6px 4px;">Client</th>
+                <th style="padding:6px 4px;">Salaire</th>
+                <th style="padding:6px 4px;">Prêt</th>
+                <th style="padding:6px 4px;">Statut</th>
+              </tr>
+            </thead>
+            <tbody id="l0tbody"></tbody>
+          </table>
+          <div class="hint" style="text-align:left;margin-top:8px;">Cliquez une ligne pour la mettre en évidence sur le graphique →</div>
+        </div>
+        <div>
+          <svg id="l0svg" viewBox="0 0 260 240" width="100%" style="max-width:300px;background:var(--navy-deep);border-radius:10px;"></svg>
+        </div>
+      </div>
+      <div class="legend" style="margin-top:14px;"><span><b class="dotleg" style="background:#7DE69A"></b>A remboursé</span><span><i class="dotleg" style="background:#FF9B95"></i>A fait défaut</span></div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w0">💡 Pourquoi ? — pourquoi transformer un tableau en points ?</button>
+      <div class="why-card" id="w0"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Chaque <strong>colonne devient une dimension</strong> (un axe), chaque <strong>ligne devient un point</strong>. Deux colonnes → un plan en 2D, comme ici. Trois colonnes → un espace en 3D. Et au-delà ? La machine continue dans des dizaines de dimensions qu'on ne peut plus dessiner, mais où les calculs restent les mêmes.</p>
+        <div class="chainline">1 ligne du tableau = 1 client = 1 point · 1 colonne = 1 axe = 1 dimension</div>
+        <ul>
+          <li>Une fois les clients devenus des points, « apprendre » consiste à trouver des <strong>régions</strong> dans cet espace : ici, en bas à droite (gros salaire, petit prêt) on rembourse ; en haut à gauche on fait défaut.</li>
+          <li>C'est tout l'enjeu des labos suivants : <em>tracer la frontière</em> entre les régions (labo 2), puis décider de quel côté tombe un nouveau client.</li>
+          <li>On parle de <strong>variables</strong> (ou <em>features</em>) pour les colonnes, et d'<strong>observations</strong> pour les lignes — le vocabulaire de tout projet data en banque.</li>
+        </ul>
+        <p>Retenez l'image : <em>un modèle ne lit pas un fichier Excel, il navigue dans un nuage de points.</em> Tout le reste en découle.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 1 : LE GRAND CLASSIFIEUR =============== -->
+  <div class="lab" id="l1">
+    <div class="lab-tag">Vue d'ensemble · Classification</div>
+    <div class="lab-head"><span class="lab-num">1</span><h2>Le grand classifieur</h2></div>
+    <p class="lab-intro">Reprenons les <strong>10 clients du tableau</strong> (carte 0). Comment la machine décide-t-elle qui rembourse ? Elle ne regarde pas tout d'un coup : elle pose une <strong>suite de questions</strong>, et à chaque réponse, des clients sortent. À la fin, il reste un petit groupe — et la <em>part de bons payeurs dans ce groupe donne la probabilité</em>. C'est ça, classer : <strong>filtrer ligne après ligne jusqu'à une probabilité.</strong></p>
+
+    <!-- DECISION TREE FLOW -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:1px;color:var(--gold-bright);font-weight:bold;text-transform:uppercase;margin-bottom:4px;">L'arbre de décision · du tableau à la probabilité</div>
+      <div style="font-size:13px;color:var(--grey-muted);margin-bottom:14px;">Suivez un nouveau client. À chaque question, regardez combien de lignes <b>entrent</b>, combien <b>sortent</b>, combien <b>continuent</b>.</div>
+
+      <!-- new client controls -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+        <div class="ctrl" style="flex:1;min-width:200px;margin:0;">
+          <label>Salaire du nouveau client <span class="val" id="l1tsal">55k</span></label>
+          <input type="range" id="l1salslider" min="25" max="95" step="5" value="55">
+        </div>
+        <div class="ctrl" style="flex:1;min-width:200px;margin:0;">
+          <label>Prêt demandé <span class="val" id="l1tloan">40k</span></label>
+          <input type="range" id="l1loanslider" min="15" max="65" step="5" value="40">
+        </div>
+      </div>
+
+      <div id="l1tree"></div>
+
+      <div class="treeresult" id="l1treeresult"></div>
+      <div class="hint">Les nombres sur chaque branche = combien de clients du tableau suivent ce chemin. La probabilité finale = bons payeurs ÷ clients restants.</div>
+    </div>
+
+    <p class="lab-intro" style="margin-top:4px;">Cette probabilité, on la transforme en décision avec un <strong>seuil</strong>. Au-dessus, on refuse ; en dessous, on accorde. Voici le même mécanisme sur l'ensemble du portefeuille — un seul curseur, et toute la banque réagit.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Seuil de refus du crédit <span class="val" id="l1thr">50</span></label>
+        <input type="range" id="l1slider" min="5" max="95" step="5" value="50">
+      </div>
+      <div class="readout">
+        <div class="metric" id="l1m-acc"><div class="mlabel">Bonnes décisions</div><div class="mval">—</div><div class="marrow">&nbsp;</div></div>
+        <div class="metric" id="l1m-ref"><div class="mlabel">Crédits refusés</div><div class="mval">—</div><div class="sub">sur 100 demandes</div></div>
+        <div class="metric" id="l1m-bad"><div class="mlabel">Défauts ratés</div><div class="mval">—</div><div class="sub">accordés à tort</div></div>
+        <div class="metric" id="l1m-lost"><div class="mlabel">Bons clients perdus</div><div class="mval">—</div><div class="sub">refusés à tort</div></div>
+      </div>
+      <div class="hint">Poussez le seuil très bas, puis très haut. Aucun réglage n'est parfait — c'est tout le problème.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w1">💡 Pourquoi ? — il n'existe pas de seuil parfait</button>
+      <div class="why-card" id="w1"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Un classifieur ne dit jamais « oui / non » d'un coup. Il <strong>filtre la population par questions successives</strong>, puis calcule une <strong>probabilité</strong> sur le groupe qui reste.</p>
+        <div class="chainline">10 lignes entrent → une question en élimine une partie → … → il reste N lignes → probabilité = bons ÷ N</div>
+        <ul>
+          <li><strong>Chaque question = une coupe</strong> dans le tableau. « Salaire &gt; 50k ? » envoie les clients à gauche ou à droite. Ceux qui ne suivent pas le chemin du nouveau client <em>sortent</em> du calcul.</li>
+          <li><strong>La probabilité vient des lignes restantes</strong> : s'il reste 4 clients ressemblants dont 3 ont remboursé, le modèle estime 75 % de chances de remboursement. Pas de magie — juste un comptage.</li>
+          <li>Cette probabilité, c'est vous (la banque) qui la transformez en décision avec un <strong>seuil</strong>. Le seuil est un choix business : prudent (couper bas) ou agressif (couper haut).</li>
+          <li>Le modèle est le même — seul le curseur bouge. Retenez ça : <em>on ne juge jamais un modèle sur un seul chiffre.</em></li>
+        </ul>
+        <p>Les labos suivants décortiquent chaque pièce : la frontière (labo 2), le sur-apprentissage (labo 3), le test honnête (labo 3+) et le vrai coût des erreurs en francs (labo 5).</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 2 : TRACER LA FRONTIÈRE =============== -->
+  <div class="lab" id="l2">
+    <div class="lab-tag">Frontière de décision</div>
+    <div class="lab-head"><span class="lab-num">2</span><h2>Tracez la frontière</h2></div>
+    <p class="lab-intro">Voici 40 clients passés, placés selon leur <strong>revenu</strong> (horizontal) et leur <strong>endettement</strong> (vertical). Les verts ont remboursé, les rouges ont fait défaut. Bougez la droite : c'est <em>vous</em> qui devenez l'algorithme. Trouvez la séparation qui fait le moins d'erreurs.</p>
+    <div class="panel">
+      <div class="scatter-wrap">
+        <svg id="l2svg" viewBox="0 0 360 280" width="100%" style="max-width:420px;background:var(--navy-deep);border-radius:10px;"></svg>
+      </div>
+      <div class="ctrl" style="margin-top:14px;">
+        <label>Pente de la frontière <span class="val" id="l2slopeV">0</span></label>
+        <input type="range" id="l2slope" min="-100" max="100" step="5" value="0">
+      </div>
+      <div class="ctrl">
+        <label>Hauteur de la frontière <span class="val" id="l2interV">140</span></label>
+        <input type="range" id="l2inter" min="40" max="240" step="5" value="140">
+      </div>
+      <div class="readout">
+        <div class="metric" id="l2m-err"><div class="mlabel">Clients mal classés</div><div class="mval">—</div><div class="sub">sur 40</div></div>
+        <div class="metric" id="l2m-acc"><div class="mlabel">Précision</div><div class="mval">—</div></div>
+      </div>
+      <div class="hint">Une simple droite suffit-elle à séparer parfaitement ? Essayez. Vous verrez que non — et c'est normal.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w2">💡 Pourquoi ? — ce que « apprendre » veut vraiment dire</button>
+      <div class="why-card" id="w2"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Vous venez de faire, à la main, ce qu'une régression logistique fait automatiquement : <strong>chercher la frontière qui minimise les erreurs</strong>.</p>
+        <ul>
+          <li>« Entraîner un modèle » = laisser l'ordinateur essayer des milliers de droites et garder la meilleure.</li>
+          <li>Il ne « comprend » rien au crédit. Il <em>optimise un nombre</em> : le total d'erreurs.</li>
+          <li>Aucune droite ne sépare parfaitement les vrais clients — il y a toujours du <strong>chevauchement</strong>. Un revenu élevé ET très endetté reste ambigu.</li>
+        </ul>
+        <div class="chainline">Apprendre = trouver les paramètres (pente, hauteur) qui collent le mieux aux données passées</div>
+        <p>Et si on autorisait des frontières <em>tordues</em>, pas juste des droites ? On classerait mieux le passé… mais attention au labo suivant.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 3 : SUR-APPRENTISSAGE =============== -->
+  <div class="lab" id="l3">
+    <div class="lab-tag">Le piège central du ML</div>
+    <div class="lab-head"><span class="lab-num">3</span><h2>Apprendre par cœur ≠ comprendre</h2></div>
+    <p class="lab-intro">On augmente la <strong>complexité</strong> du modèle : de la droite toute simple jusqu'à la courbe qui se faufile entre chaque point. Regardez deux scores en même temps : sur les données <em>connues</em> (entraînement) et sur des clients <em>jamais vus</em> (test). Ils ne bougent pas dans le même sens.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Complexité du modèle <span class="val" id="l3cxV">3</span></label>
+        <input type="range" id="l3cx" min="1" max="12" step="1" value="3">
+      </div>
+      <div class="scatter-wrap">
+        <svg id="l3svg" viewBox="0 0 360 200" width="100%" style="max-width:440px;background:var(--navy-deep);border-radius:10px;"></svg>
+      </div>
+      <div class="readout">
+        <div class="metric" id="l3m-train"><div class="mlabel">Précision entraînement</div><div class="mval">—</div><div class="sub">clients connus</div></div>
+        <div class="metric" id="l3m-test"><div class="mlabel">Précision test</div><div class="mval">—</div><div class="sub">nouveaux clients</div></div>
+      </div>
+      <div class="verdict neutral" id="l3verdict">Modèle équilibré.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w3">💡 Pourquoi ? — le sur-apprentissage (overfitting)</button>
+      <div class="why-card" id="w3"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Plus le modèle est complexe, mieux il « colle » au passé — jusqu'à apprendre <strong>par cœur</strong> chaque client, bruit compris. Sur les anciens dossiers : 100 %. Sur les nouveaux : il s'effondre.</p>
+        <div class="chainline">Trop simple → rate des structures réelles (sous-apprentissage)</div>
+        <div class="chainline">Trop complexe → mémorise le bruit (sur-apprentissage)</div>
+        <ul>
+          <li><strong>L'étudiant qui récite l'examen de l'an dernier</strong> a 20/20… sur cet examen précis. Donnez-lui de nouvelles questions et il coule. Voilà l'overfitting.</li>
+          <li>C'est <em>la</em> raison pour laquelle on sépare toujours données d'entraînement et données de test. Un modèle qui n'a pas été testé sur du neuf ne vaut rien.</li>
+        </ul>
+        <p>Le bon modèle n'est pas le plus précis sur le passé. C'est celui qui <strong>généralise</strong> au futur.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 3b : ENTRAÎNEMENT ET TEST =============== -->
+  <div class="lab" id="l3b">
+    <div class="lab-tag">La règle d'or · Validation</div>
+    <div class="lab-head"><span class="lab-num">3+</span><h2>Entraînement et test</h2></div>
+    <p class="lab-intro">D'où vient cette « précision sur de nouveaux clients » du labo précédent ? D'une règle absolue du ML : on <strong>coupe les données en deux</strong>. Le modèle apprend sur une partie (entraînement) et on le note sur une partie qu'il <em>n'a jamais vue</em> (test). Réglez la coupe et regardez ce qui se passe.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Part des données réservée au test <span class="val" id="l3bsplitV">20 %</span></label>
+        <input type="range" id="l3bsplit" min="0" max="50" step="5" value="20">
+      </div>
+      <svg id="l3bsvg" viewBox="0 0 360 90" width="100%" style="max-width:480px;background:var(--navy-deep);border-radius:10px;"></svg>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="l3bm-train"><div class="mlabel">Clients d'entraînement</div><div class="mval">—</div><div class="sub">le modèle apprend dessus</div></div>
+        <div class="metric" id="l3bm-test"><div class="mlabel">Clients de test</div><div class="mval">—</div><div class="sub">jamais vus à l'apprentissage</div></div>
+        <div class="metric" id="l3bm-rel"><div class="mlabel">Fiabilité du test</div><div class="mval">—</div></div>
+      </div>
+      <div class="verdict neutral" id="l3bverdict">—</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w3b">💡 Pourquoi ? — réviser sur les annales, être noté sur l'examen</button>
+      <div class="why-card" id="w3b"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Si on évalue un modèle sur les <em>mêmes</em> données qui ont servi à l'entraîner, on mesure sa <strong>mémoire</strong>, pas son intelligence. Il peut tout connaître par cœur et sembler parfait — jusqu'au premier vrai client.</p>
+        <div class="chainline">Données → entraînement (apprendre) + test (vérifier sur du jamais-vu)</div>
+        <ul>
+          <li><strong>L'analogie de l'étudiant</strong> : réviser sur les annales (entraînement), c'est utile. Mais on le note sur un <em>nouvel</em> examen (test). Sinon, réciter les annales donnerait 20/20 sans rien comprendre — exactement le sur-apprentissage du labo précédent.</li>
+          <li><strong>Trop peu de test</strong> (coupe à 0–5 %) : la note n'est pas fiable, calculée sur une poignée de clients. Le chiffre danse au hasard.</li>
+          <li><strong>Trop de test</strong> (coupe à 50 %) : il reste peu de données pour apprendre, le modèle est moins bon. Le compromis habituel est <strong>70–80 % entraînement / 20–30 % test</strong>.</li>
+          <li>En pratique on va plus loin (validation croisée : on tourne plusieurs découpes), mais l'idée reste la même : <em>ne jamais se noter sur ce qu'on a déjà vu.</em></li>
+        </ul>
+        <p>Déduction bancaire : un modèle de crédit présenté avec une seule précision « sur ses propres données » doit vous alerter. La bonne question à poser au data scientist : <strong>« sur quelles données jamais vues l'as-tu testé ? »</strong> C'est aussi ce qu'exigent les validateurs de modèles et le régulateur.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 4 : MATRICE DE CONFUSION =============== -->
+  <div class="lab" id="l4">
+    <div class="lab-tag">Lire un modèle en banquier</div>
+    <div class="lab-head"><span class="lab-num">4</span><h2>La matrice de confusion</h2></div>
+    <p class="lab-intro">« 95 % de précision » ne veut rien dire tout seul. Ce qui compte : <em>quel genre</em> d'erreur. Bougez le seuil et regardez les quatre cases se remplir. Deux erreurs très différentes vous attendent.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Seuil de détection (fraude / blanchiment) <span class="val" id="l4thr">50</span></label>
+        <input type="range" id="l4slider" min="5" max="95" step="5" value="50">
+      </div>
+      <div class="cm">
+        <div class="cmh"></div><div class="cmh">Prédit : suspect</div><div class="cmh">Prédit : normal</div>
+        <div class="cmh" style="writing-mode:vertical-rl;transform:rotate(180deg);">Réel : suspect</div>
+        <div class="cmcell tp" id="l4tp"><span class="cmn">—</span><span class="cmt">Vrai positif ✓ alerte juste</span></div>
+        <div class="cmcell fn" id="l4fn"><span class="cmn">—</span><span class="cmt">Faux négatif ✗ fraude RATÉE</span></div>
+        <div class="cmh" style="writing-mode:vertical-rl;transform:rotate(180deg);">Réel : normal</div>
+        <div class="cmcell fp" id="l4fp"><span class="cmn">—</span><span class="cmt">Faux positif ✗ client embêté</span></div>
+        <div class="cmcell tn" id="l4tn"><span class="cmn">—</span><span class="cmt">Vrai négatif ✓ laissé passer</span></div>
+      </div>
+      <div class="readout">
+        <div class="metric" id="l4m-prec"><div class="mlabel">Précision</div><div class="mval">—</div><div class="sub">alertes justes</div></div>
+        <div class="metric" id="l4m-rec"><div class="mlabel">Rappel</div><div class="mval">—</div><div class="sub">fraudes attrapées</div></div>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w4">💡 Pourquoi ? — précision vs rappel, le dilemme du compliance</button>
+      <div class="why-card" id="w4"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Les deux erreurs n'ont pas le même prix dans une banque :</p>
+        <ul>
+          <li><strong>Faux positif</strong> : vous bloquez la carte d'un client honnête en vacances. Il appelle, il râle, il part chez Neon. Coûteux, mais réparable.</li>
+          <li><strong>Faux négatif</strong> : vous laissez passer un vrai blanchiment. FINMA, amende, presse, réputation. <em>Bien plus grave.</em></li>
+        </ul>
+        <div class="chainline">Rappel (recall) = part des vraies fraudes attrapées · Précision = part des alertes qui sont justes</div>
+        <p>En anti-blanchiment, on accepte <strong>beaucoup de faux positifs</strong> pour rater le moins de cas possible : on privilégie le <em>rappel</em>. Un analyste humain trie ensuite. C'est exactement ce que fait le système de transaction monitoring à côté duquel vous travaillez.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 5 : LE SEUIL QUI COÛTE CHER =============== -->
+  <div class="lab" id="l5">
+    <div class="lab-tag">Le coût réel · en CHF</div>
+    <div class="lab-head"><span class="lab-num">5</span><h2>Le seuil qui coûte cher</h2></div>
+    <p class="lab-intro">Mettons des francs sur les erreurs. Vous fixez le coût d'un <strong>bon client perdu</strong> et d'un <strong>défaut accordé</strong>. Le modèle, lui, vous dit où placer le seuil pour <em>minimiser la facture</em>. Ce n'est presque jamais 50.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Coût d'un défaut non détecté <span class="val" id="l5fnV">20 000 CHF</span></label>
+        <input type="range" id="l5fn" min="2000" max="80000" step="2000" value="20000">
+      </div>
+      <div class="ctrl">
+        <label>Coût d'un bon client refusé (manque à gagner) <span class="val" id="l5fpV">3 000 CHF</span></label>
+        <input type="range" id="l5fp" min="500" max="20000" step="500" value="3000">
+      </div>
+      <div class="formula">Seuil optimal calculé : <span id="l5opt" style="color:#7DE69A">—</span></div>
+      <div class="gauge-track"><div class="gauge-dot" id="l5dot" style="left:50%"></div></div>
+      <div class="gauge-labels"><span>REFUSE LARGE</span><span>ÉQUILIBRE</span><span>ACCORDE LARGE</span></div>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="l5m-cost"><div class="mlabel">Coût total au seuil optimal</div><div class="mval">—</div></div>
+      </div>
+      <div class="verdict neutral" id="l5verdict">—</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w5">💡 Pourquoi ? — le bon seuil dépend de l'argent, pas du modèle</button>
+      <div class="why-card" id="w5"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le modèle sort des probabilités identiques pour tout le monde. Mais <strong>le seuil optimal change selon les enjeux financiers</strong> :</p>
+        <ul>
+          <li>Si rater un défaut coûte très cher (gros crédit hypothécaire), on coupe <em>bas</em> : on refuse au moindre doute.</li>
+          <li>Si refuser un bon client coûte cher (marché concurrentiel, marge sur les jeunes clients), on coupe <em>haut</em>.</li>
+        </ul>
+        <div class="chainline">Coût(défaut) ↑ ⇒ seuil de refus ↓ · Coût(client perdu) ↑ ⇒ seuil de refus ↑</div>
+        <p>Voilà pourquoi UBS et Raiffeisen, avec le <em>même type</em> de modèle, n'accordent pas les crédits de la même façon : leurs coûts ne sont pas les mêmes. <strong>La data science propose, le métier dispose.</strong></p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 6 : k-NN =============== -->
+  <div class="lab" id="l6">
+    <div class="lab-tag">Algorithme · les plus proches voisins</div>
+    <div class="lab-head"><span class="lab-num">6</span><h2>« Dis-moi qui te ressemble »</h2></div>
+    <p class="lab-intro">Voici l'algorithme le plus intuitif du ML : le <strong>k-NN</strong>. Un nouveau client arrive (le point blanc). On regarde ses <em>k</em> voisins les plus proches et on vote. Bougez le point, changez <em>k</em>, et voyez la décision basculer.</p>
+    <div class="panel">
+      <div class="scatter-wrap">
+        <svg id="l6svg" viewBox="0 0 360 240" width="100%" style="max-width:420px;background:var(--navy-deep);border-radius:10px;cursor:crosshair;"></svg>
+      </div>
+      <div class="ctrl" style="margin-top:14px;">
+        <label>Nombre de voisins consultés (k) <span class="val" id="l6kV">3</span></label>
+        <input type="range" id="l6k" min="1" max="11" step="2" value="3">
+      </div>
+      <div class="readout">
+        <div class="metric" id="l6m-vote"><div class="mlabel">Voisins « bons / mauvais »</div><div class="mval">—</div></div>
+        <div class="metric" id="l6m-dec"><div class="mlabel">Décision</div><div class="mval">—</div></div>
+      </div>
+      <div class="hint">Cliquez n'importe où dans le cadre pour déplacer le nouveau client.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w6">💡 Pourquoi ? — un modèle sans « apprentissage » du tout</button>
+      <div class="why-card" id="w6"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le k-NN ne calcule aucune équation à l'avance. Il <strong>garde tous les exemples passés</strong> et, à chaque nouvelle demande, cherche les plus ressemblants.</p>
+        <ul>
+          <li><strong>k = 1</strong> : on copie le voisin le plus proche. Très sensible au bruit — un seul client atypique fausse tout.</li>
+          <li><strong>k grand</strong> : on moyenne sur beaucoup de voisins. Plus stable, mais on lisse les cas particuliers.</li>
+          <li>Choisir <em>k</em>, c'est le même dilemme qu'au labo 3 : trop petit = sur-apprentissage, trop grand = sous-apprentissage.</li>
+        </ul>
+        <div class="chainline">« Tu ressembles à des clients qui ont remboursé → tu rembourseras probablement »</div>
+        <p>Simple, transparent, explicable — un atout en banque où il faut <em>justifier</em> un refus. Mais lent et gourmand quand les données explosent.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 7 : ARBRE DE DÉCISION =============== -->
+  <div class="lab" id="l7">
+    <div class="lab-tag">Algorithme · l'arbre de décision</div>
+    <div class="lab-head"><span class="lab-num">7</span><h2>Construisez l'arbre de crédit</h2></div>
+    <p class="lab-intro">L'arbre de décision est le modèle que les régulateurs <strong>adorent</strong> : on lit la décision comme une suite de questions oui/non. Activez les règles une à une et regardez la pureté des groupes s'améliorer.</p>
+    <div class="panel">
+      <div class="toggle-row" id="l7toggles">
+        <button class="tg" data-rule="income">Revenu &gt; 60k ?</button>
+        <button class="tg" data-rule="debt">Endettement &lt; 35 % ?</button>
+        <button class="tg" data-rule="tenure">Emploi &gt; 2 ans ?</button>
+      </div>
+      <div id="l7tree"></div>
+      <div class="readout">
+        <div class="metric" id="l7m-pure"><div class="mlabel">Pureté des décisions</div><div class="mval">—</div><div class="sub">groupes bien triés</div></div>
+        <div class="metric" id="l7m-depth"><div class="mlabel">Profondeur de l'arbre</div><div class="mval">0</div><div class="sub">questions posées</div></div>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w7">💡 Pourquoi ? — l'explicabilité, atout réglementaire</button>
+      <div class="why-card" id="w7"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Chaque question <strong>coupe la population en deux</strong> et rend chaque groupe plus « pur » (que des bons, ou que des mauvais). L'arbre cherche, à chaque étape, la question la plus discriminante.</p>
+        <ul>
+          <li><strong>Lisible</strong> : « Refusé car revenu &lt; 60k ET endettement &gt; 35 % ». Un client, un juge, FINMA — tout le monde comprend.</li>
+          <li>Empilez trop de questions → l'arbre mémorise chaque client (sur-apprentissage, encore). On le « taille » (pruning).</li>
+          <li>Des centaines d'arbres votant ensemble = <strong>forêt aléatoire</strong>, l'un des modèles les plus utilisés en scoring.</li>
+        </ul>
+        <div class="chainline">Précision ↗ mais explicabilité ↘ quand le modèle se complexifie</div>
+        <p>Le grand arbitrage du ML en banque : un réseau de neurones est plus précis, mais vous ne pouvez pas <em>expliquer</em> son refus. L'arbre, si. Souvent, le métier choisit l'explicable.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 8 : FEATURES =============== -->
+  <div class="lab" id="l8">
+    <div class="lab-tag">Les variables (features)</div>
+    <div class="lab-head"><span class="lab-num">8</span><h2>Quelles données nourrissent la machine ?</h2></div>
+    <p class="lab-intro">Un modèle ne vaut que par ses <strong>données d'entrée</strong>. Activez/désactivez les variables et regardez la précision bouger. Certaines aident énormément, d'autres ne servent à rien — et une est carrément <em>interdite</em>.</p>
+    <div class="panel">
+      <div class="toggle-row" id="l8toggles">
+        <button class="tg active" data-f="income" data-w="22">Revenu</button>
+        <button class="tg active" data-f="debt" data-w="26">Taux d'endettement</button>
+        <button class="tg" data-f="history" data-w="18">Historique de paiement</button>
+        <button class="tg" data-f="tenure" data-w="9">Ancienneté emploi</button>
+        <button class="tg" data-f="shoe" data-w="0">Pointure de chaussures</button>
+        <button class="tg danger" data-f="origin" data-w="7">Nationalité ⚠</button>
+      </div>
+      <div class="readout">
+        <div class="metric" id="l8m-acc"><div class="mlabel">Précision du modèle</div><div class="mval">—</div></div>
+        <div class="metric" id="l8m-n"><div class="mlabel">Variables actives</div><div class="mval">—</div></div>
+      </div>
+      <div class="verdict neutral" id="l8verdict">—</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w8">💡 Pourquoi ? — « garbage in, garbage out » et la variable interdite</button>
+      <div class="why-card" id="w8"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>La qualité du modèle dépend d'abord des variables, pas de l'algorithme :</p>
+        <ul>
+          <li><strong>Variables utiles</strong> (revenu, endettement, historique) : elles portent vraiment l'information de risque.</li>
+          <li><strong>Variables inutiles</strong> (pointure) : elles n'ajoutent que du bruit et peuvent dégrader le modèle.</li>
+          <li><strong>Variable interdite</strong> (nationalité, sexe, religion) : même si elle « améliore » le chiffre, elle est <em>illégale et discriminatoire</em>. La loi suisse et FINMA l'interdisent.</li>
+        </ul>
+        <div class="chainline">Attention au proxy : le code postal peut « cacher » l'origine → discrimination indirecte</div>
+        <p>C'est le piège n°1 de l'IA bancaire : un modèle apprend les <strong>biais présents dans les données passées</strong>. Si la banque a historiquement moins prêté à un groupe, le modèle reproduit — et amplifie — cette injustice. On reverra ça en séance 2.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 9 : ROBO-ADVISOR =============== -->
+  <div class="lab" id="l9">
+    <div class="lab-tag">Application · WealthTech</div>
+    <div class="lab-head"><span class="lab-num">9</span><h2>Le robo-advisor</h2></div>
+    <p class="lab-intro">Selma, True Wealth, Yuh Invest : derrière l'appli, un modèle traduit votre <strong>profil de risque</strong> en <strong>allocation d'actifs</strong>. Réglez le profil du client et regardez le portefeuille se recomposer en direct.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Tolérance au risque du client <span class="val" id="l9riskV">5</span></label>
+        <input type="range" id="l9risk" min="1" max="10" step="1" value="5">
+      </div>
+      <div class="ctrl">
+        <label>Horizon de placement <span class="val" id="l9horV">10 ans</span></label>
+        <input type="range" id="l9hor" min="1" max="30" step="1" value="10">
+      </div>
+      <div class="alloc-bar" id="l9bar"></div>
+      <div class="readout">
+        <div class="metric" id="l9m-stock"><div class="mlabel">Actions</div><div class="mval">—</div></div>
+        <div class="metric" id="l9m-bond"><div class="mlabel">Obligations</div><div class="mval">—</div></div>
+        <div class="metric" id="l9m-cash"><div class="mlabel">Liquidités</div><div class="mval">—</div></div>
+        <div class="metric" id="l9m-ret"><div class="mlabel">Rendement attendu</div><div class="mval">—</div><div class="sub">indicatif / an</div></div>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w9">💡 Pourquoi ? — quand le ML conseille (et où s'arrête-t-il ?)</button>
+      <div class="why-card" id="w9"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le robo-advisor applique une <strong>règle apprise</strong> : plus de tolérance au risque + horizon long → plus d'actions. Plus de prudence ou horizon court → plus de liquidités et d'obligations.</p>
+        <ul>
+          <li>Avantages : pas cher, disponible 24/7, discipline (rééquilibrage auto), accessible dès quelques centaines de francs.</li>
+          <li>Limites : il ne connaît pas votre divorce, votre achat immobilier imminent, votre angoisse réelle en cas de krach.</li>
+          <li>FINMA encadre le conseil automatisé : l'<strong>adéquation</strong> (suitability) du conseil reste une obligation, robot ou pas.</li>
+        </ul>
+        <div class="chainline">Tolérance ↑ · Horizon ↑ ⇒ part actions ↑ ⇒ rendement attendu ↑ (et risque ↑)</div>
+        <p>C'est de l'IA « simple » mais à fort impact : elle démocratise la gestion de fortune qui était réservée aux clients aisés. Votre banque y réfléchit déjà — ou le propose déjà.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 10 : DÉTECTIVE =============== -->
+  <div class="lab" id="l10">
+    <div class="lab-tag">Synthèse · diagnostic</div>
+    <div class="lab-head"><span class="lab-num">10</span><h2>Détective : qu'est-ce qui cloche ?</h2></div>
+    <p class="lab-intro">Trois modèles déraillent en production. À vous de poser le bon diagnostic avec ce que vous venez d'apprendre. Une seule bonne réponse par cas.</p>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="scenario-line">Cas A — « 99,9 % de précision, et pourtant inutile »</div>
+      <p class="lab-intro">Un modèle anti-fraude affiche 99,9 % de précision. Mais il n'a attrapé <em>aucune</em> des 12 fraudes du mois.</p>
+      <div class="detective-opt" data-d="A" data-correct="0"><span class="ol">1</span> Le modèle a sur-appris les données d'entraînement</div>
+      <div class="detective-opt" data-d="A" data-correct="1"><span class="ol">2</span> La fraude est si rare que « tout dire normal » donne déjà 99,9 % — le rappel est nul</div>
+      <div class="detective-opt" data-d="A" data-correct="0"><span class="ol">3</span> Il manque la variable « revenu »</div>
+      <div class="det-fb" id="fbA"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="scenario-line">Cas B — « Parfait en test, catastrophe en vrai »</div>
+      <p class="lab-intro">Un modèle de crédit obtient 100 % sur les anciens dossiers, mais se trompe une fois sur trois sur les nouveaux clients.</p>
+      <div class="detective-opt" data-d="B" data-correct="1"><span class="ol">1</span> Sur-apprentissage : il a mémorisé le passé au lieu de généraliser</div>
+      <div class="detective-opt" data-d="B" data-correct="0"><span class="ol">2</span> Le seuil de décision est trop bas</div>
+      <div class="detective-opt" data-d="B" data-correct="0"><span class="ol">3</span> Il y a trop peu de variables</div>
+      <div class="det-fb" id="fbB"></div>
+    </div>
+
+    <div class="panel">
+      <div class="scenario-line">Cas C — « Le modèle refuse plus souvent un groupe »</div>
+      <p class="lab-intro">Un scoring refuse systématiquement plus les habitants d'un certain quartier, alors que la nationalité n'est pas dans le modèle.</p>
+      <div class="detective-opt" data-d="C" data-correct="0"><span class="ol">1</span> Pur hasard, rien à signaler</div>
+      <div class="detective-opt" data-d="C" data-correct="0"><span class="ol">2</span> Le modèle est sous-appris</div>
+      <div class="detective-opt" data-d="C" data-correct="1"><span class="ol">3</span> Le code postal sert de <b>proxy</b> à l'origine → biais et discrimination indirecte</div>
+      <div class="det-fb" id="fbC"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ===================  EXERCICES NOTÉS  ====================== -->
+  <!-- ============================================================ -->
+  <div style="text-align:center;margin:36px 0 24px;">
+    <div style="font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;">★ À VOUS DE JOUER ★</div>
+    <h2 style="font-family:Georgia,serif;font-size:28px;font-style:italic;margin-top:8px;background:linear-gradient(135deg,#fff,var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Trois défis à relever</h2>
+    <p style="color:var(--grey-muted);font-size:14px;max-width:560px;margin:8px auto 0;">Fini d'observer — maintenant vous décidez, vous optimisez, vous tranchez. Chaque exercice vous donne un score. Battez-le.</p>
+  </div>
+
+  <!-- EXERCICE 1 : banquier rapide -->
+  <div class="lab" id="e1" style="border-color:var(--gold);">
+    <div class="lab-tag" style="color:var(--gold-bright);">Exercice 1 · Réflexe</div>
+    <div class="lab-head"><span class="lab-num">★1</span><h2>Approuve ou refuse</h2></div>
+    <p class="lab-intro">Vous êtes le modèle. <strong>10 demandes de crédit</strong> défilent, une par une. Pour chacune : <strong>ACCORDER</strong> ou <strong>REFUSER</strong>, en quelques secondes. Un défaut accordé coûte cher ; un bon client refusé aussi. Maximisez le résultat de la banque.</p>
+    <div class="panel" id="e1panel">
+      <div id="e1start" style="text-align:center;padding:20px 0;">
+        <button class="btn" id="e1go" style="font-size:14px;padding:14px 28px;">▶ Démarrer les 10 demandes</button>
+      </div>
+      <div id="e1game" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px;color:var(--grey-muted);">
+          <span>Demande <b id="e1num" style="color:var(--gold-bright);">1</b>/10</span>
+          <span>Résultat : <b id="e1score" style="color:#7DE69A;">0 CHF</b></span>
+        </div>
+        <div class="appcard" id="e1card"></div>
+        <div class="btnrow" style="justify-content:center;margin-top:16px;gap:16px;">
+          <button class="btn" id="e1approve" style="background:var(--green-correct);color:#fff;font-size:14px;padding:13px 26px;">✓ ACCORDER</button>
+          <button class="btn" id="e1refuse" style="background:var(--red-wrong);color:#fff;font-size:14px;padding:13px 26px;">✗ REFUSER</button>
+        </div>
+        <div class="e1fb" id="e1fb"></div>
+      </div>
+      <div id="e1end" style="display:none;text-align:center;padding:10px 0;">
+        <div class="trbig" id="e1final" style="font-family:Georgia,serif;font-size:38px;font-weight:bold;"></div>
+        <div class="trlabel" style="font-size:12px;color:var(--grey-muted);letter-spacing:1px;text-transform:uppercase;">résultat net de la banque</div>
+        <div id="e1rank" style="font-family:Georgia,serif;font-style:italic;font-size:17px;margin-top:10px;"></div>
+        <div id="e1detail" style="font-size:13px;color:#DCE3F2;margin-top:10px;text-align:left;background:var(--navy-mid);border-radius:10px;padding:12px 14px;"></div>
+        <button class="btn ghost" id="e1again" style="margin-top:14px;">↺ Rejouer</button>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="we1">💡 Pourquoi ? — vous venez de « faire tourner » un classifieur à la main</button>
+      <div class="why-card" id="we1"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Chaque demande, vous avez combiné plusieurs variables (salaire, prêt, dette, historique) en une <strong>décision binaire</strong> — exactement ce que fait un modèle de scoring, mais à la vitesse de milliers par seconde.</p>
+        <ul>
+          <li>Vous avez ressenti le vrai arbitrage : refuser par prudence fait <em>aussi</em> perdre de l'argent (bons clients partis à la concurrence).</li>
+          <li>Vos erreurs ne se valent pas : un défaut accordé coûte bien plus qu'un bon client perdu. C'est pourquoi une banque règle son seuil côté prudent (revoir labo 5).</li>
+          <li>Un modèle ne se « fatigue » pas et applique exactement la même règle à la 10ᵉ comme à la 10 000ᵉ demande — votre avantage à vous, c'est le jugement sur les cas limites.</li>
+        </ul>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- EXERCICE 2 : meilleur seuil -->
+  <div class="lab" id="e2" style="border-color:var(--gold);">
+    <div class="lab-tag" style="color:var(--gold-bright);">Exercice 2 · Optimisation</div>
+    <div class="lab-head"><span class="lab-num">★2</span><h2>Trouve le meilleur seuil</h2></div>
+    <p class="lab-intro">Voici un portefeuille de <strong>500 demandes</strong>. Un défaut accordé coûte <strong>25 000 CHF</strong>, un bon client refusé coûte <strong>4 000 CHF</strong> de marge perdue. À vous de placer le <strong>seuil</strong> qui minimise la perte totale. Vous avez <em>un seul essai noté</em> — réfléchissez avant de valider.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Votre seuil de refus <span class="val" id="e2thrV">50</span></label>
+        <input type="range" id="e2thr" min="5" max="95" step="5" value="50">
+      </div>
+      <svg id="e2svg" viewBox="0 0 360 110" width="100%" style="max-width:480px;background:var(--navy-deep);border-radius:10px;"></svg>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="e2m-fn"><div class="mlabel">Défauts accordés</div><div class="mval">—</div></div>
+        <div class="metric" id="e2m-fp"><div class="mlabel">Bons clients perdus</div><div class="mval">—</div></div>
+        <div class="metric" id="e2m-cost"><div class="mlabel">Perte estimée</div><div class="mval">—</div></div>
+      </div>
+      <div class="btnrow" style="justify-content:center;margin-top:14px;">
+        <button class="btn" id="e2submit" style="font-size:14px;padding:12px 26px;">🔒 Valider ce seuil</button>
+      </div>
+      <div class="treeresult" id="e2result" style="display:none;"></div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="we2">💡 Pourquoi ? — pourquoi l'optimum n'est presque jamais 50</button>
+      <div class="why-card" id="we2"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le seuil optimal dépend du <strong>rapport des coûts</strong>, pas du modèle. Ici un défaut coûte ~6× un bon client perdu, donc il faut <strong>couper plutôt bas</strong> : mieux vaut refuser quelques bons clients que laisser passer un défaut.</p>
+        <div class="chainline">Coût(défaut) ≫ coût(client perdu) ⇒ seuil bas (prudent)</div>
+        <ul>
+          <li>Vous avez résolu le même problème que le labo 5, mais en mode <em>défi</em> : trouver le minimum d'une courbe de coût.</li>
+          <li>Dans une vraie banque, ce rapport de coûts est une décision de direction — et il change selon le produit (petit crédit conso vs hypothèque).</li>
+          <li>Aucun modèle ne fixe ce seuil pour vous : <em>la data science calcule la probabilité, le métier choisit où couper.</em></li>
+        </ul>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- EXERCICE 3 : le procès du modèle -->
+  <div class="lab" id="e3" style="border-color:var(--gold);">
+    <div class="lab-tag" style="color:var(--gold-bright);">Exercice 3 · Jugement</div>
+    <div class="lab-head"><span class="lab-num">★3</span><h2>Le procès du modèle</h2></div>
+    <p class="lab-intro">Trois modèles, trois situations défendables… ou pas. Pour chacune : le modèle est-il <strong>acceptable</strong> ou faut-il le <strong>bloquer</strong> ? Choisissez, puis lisez le verdict. Il n'y a pas toujours de réponse évidente — c'est le raisonnement qui compte.</p>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="scenario-line">Cas A — Le modèle ultra-performant</div>
+      <p class="lab-intro">Un nouveau modèle de crédit a <strong>96 % de précision</strong>, bien mieux que l'ancien (89 %). Mais c'est un réseau de neurones : impossible d'expliquer pourquoi il refuse un client donné. La direction veut le déployer demain.</p>
+      <div class="trial-opts" data-t="A">
+        <div class="detective-opt" data-correct="0"><span class="ol">A</span> On déploie : 96 % de précision, c'est ce qui compte</div>
+        <div class="detective-opt" data-correct="1"><span class="ol">B</span> On bloque (ou on encadre) : sans explicabilité, on ne peut pas justifier un refus — exigence FINMA</div>
+      </div>
+      <div class="det-fb" id="tfbA"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="scenario-line">Cas B — Le modèle qui ne refuse jamais</div>
+      <p class="lab-intro">Pour « ne perdre aucun bon client », un chef de produit règle le seuil très haut : le modèle accorde 98 % des demandes. Les défauts explosent le trimestre suivant, mais les volumes de crédit n'ont jamais été aussi beaux dans le reporting.</p>
+      <div class="trial-opts" data-t="B">
+        <div class="detective-opt" data-correct="1"><span class="ol">A</span> On bloque : optimiser le volume en ignorant le coût des défauts, c'est piloter à l'aveugle</div>
+        <div class="detective-opt" data-correct="0"><span class="ol">B</span> On garde : plus de crédits accordés = plus de revenus, c'est positif</div>
+      </div>
+      <div class="det-fb" id="tfbB"></div>
+    </div>
+
+    <div class="panel">
+      <div class="scenario-line">Cas C — Le modèle « juste mais gênant »</div>
+      <p class="lab-intro">Un modèle parfaitement légal, basé sur salaire et endettement, refuse statistiquement plus souvent les jeunes de moins de 25 ans — simplement parce qu'ils gagnent moins et sont plus endettés en moyenne. Aucune variable interdite n'est utilisée.</p>
+      <div class="trial-opts" data-t="C">
+        <div class="detective-opt" data-correct="0"><span class="ol">A</span> Scandale : c'est de la discrimination par l'âge, à interdire</div>
+        <div class="detective-opt" data-correct="1"><span class="ol">B</span> Acceptable mais à surveiller : la décision repose sur des critères de risque légitimes, pas sur l'âge — mais l'impact mérite un suivi d'équité</div>
+      </div>
+      <div class="det-fb" id="tfbC"></div>
+    </div>
+
+    <div class="why">
+      <button class="why-btn" data-why="we3">💡 Pourquoi ? — le vrai métier : juger, pas calculer</button>
+      <div class="why-card" id="we3"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Ces cas n'ont pas de bouton « bonne réponse » dans un manuel. Ils demandent d'<strong>arbitrer entre performance, explicabilité, coût et équité</strong> — ce que ni le modèle ni ChatGPT ne tranchent à votre place.</p>
+        <ul>
+          <li><strong>Cas A</strong> : performance vs explicabilité. En crédit aux particuliers, l'explicabilité l'emporte souvent — on doit pouvoir motiver un refus.</li>
+          <li><strong>Cas B</strong> : optimiser le mauvais indicateur (volume) au lieu du bon (profit net du risque). Classique et dangereux.</li>
+          <li><strong>Cas C</strong> : différence entre <em>discrimination</em> (illégale, sur critère interdit) et <em>impact différencié</em> (légal mais à surveiller). Nuance essentielle que les régulateurs scrutent.</li>
+        </ul>
+        <p>C'est exactement ce type de jugement qui <strong>résiste à l'examen open-book</strong> : aucune IA ne vous donnera la « bonne » réponse, parce qu'elle dépend du contexte, du risque et de la réglementation.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <a href="index.html">← Retour à la série de cours</a><br><br>
+    © 2026 Jan Erik Meidell · Digitalisation bancaire · Laboratoire interactif · Séance 1
+  </div>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+function pct(x){return Math.round(x)+' %';}
+function setMetric(el,dir){el.classList.remove('up','down');if(dir>0)el.classList.add('up');else if(dir<0)el.classList.add('down');}
+function arrowHTML(dir,upTxt,downTxt,flatTxt){
+  if(dir>0)return '<span class="up-arrow">↑ '+(upTxt||'monte')+'</span>';
+  if(dir<0)return '<span class="down-arrow">↓ '+(downTxt||'baisse')+'</span>';
+  return '<span class="flat-arrow">→ '+(flatTxt||'stable')+'</span>';
+}
+function chf(x){return Math.round(x).toLocaleString('fr-CH').replace(/\u202f|,/g,' ')+' CHF';}
+
+/* ---------- why-card toggles ---------- */
+document.querySelectorAll('.why-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.getElementById(this.getAttribute('data-why')).classList.toggle('open');
+  });
+});
+
+/* ---------- shared synthetic client dataset (score-based) ---------- */
+/* each client: risk score 0-100; defaulted = true if actually bad */
+var CLIENTS=[];
+(function(){
+  // 100 clients; lower score = lower risk. defaults concentrated at high scores but with overlap
+  var seed=42; function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  for(var i=0;i<100;i++){
+    var s=Math.round(rnd()*100);
+    var pDef=1/(1+Math.exp(-(s-55)/12)); // logistic
+    var def=rnd()<pDef;
+    CLIENTS.push({score:s,def:def});
+  }
+})();
+
+/* ---------- LAB 0 : table to graphic ---------- */
+(function(){
+  var DATA=[
+    {id:'C1',sal:45,loan:30,def:false},
+    {id:'C2',sal:38,loan:55,def:true},
+    {id:'C3',sal:72,loan:25,def:false},
+    {id:'C4',sal:30,loan:48,def:true},
+    {id:'C5',sal:85,loan:40,def:false},
+    {id:'C6',sal:52,loan:60,def:true},
+    {id:'C7',sal:64,loan:20,def:false},
+    {id:'C8',sal:41,loan:42,def:true},
+    {id:'C9',sal:90,loan:35,def:false},
+    {id:'C10',sal:48,loan:28,def:false}
+  ];
+  var W=260,H=240,padL=34,padB=26,padT=12,padR=12;
+  var maxSal=100,maxLoan=70;
+  function X(s){return padL+(s/maxSal)*(W-padL-padR);}
+  function Y(l){return H-padB-(l/maxLoan)*(H-padT-padB);}
+  var tbody=document.getElementById('l0tbody'),svg=document.getElementById('l0svg');
+  var sel=-1;
+  function rows(){
+    tbody.innerHTML='';
+    DATA.forEach(function(d,i){
+      var tr=document.createElement('tr');
+      tr.style.cursor='pointer';tr.style.transition='.15s';
+      tr.style.borderBottom='1px solid rgba(74,144,226,.12)';
+      if(i===sel)tr.style.background='rgba(240,179,61,.15)';
+      var dot=d.def?'#FF9B95':'#7DE69A';
+      tr.innerHTML='<td style="padding:6px 4px;"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+dot+';margin-right:5px;"></span>'+d.id+'</td>'+
+        '<td style="padding:6px 4px;">'+d.sal+'k</td>'+
+        '<td style="padding:6px 4px;">'+d.loan+'k</td>'+
+        '<td style="padding:6px 4px;color:'+(d.def?'#FF9B95':'#7DE69A')+';">'+(d.def?'défaut':'remboursé')+'</td>';
+      tr.addEventListener('click',function(){sel=(sel===i?-1:i);rows();draw();});
+      tr.addEventListener('mouseenter',function(){sel=i;rows();draw();});
+      tbody.appendChild(tr);
+    });
+  }
+  function draw(){
+    var s='';
+    // axes
+    s+='<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(H-padB)+'" stroke="#2A3A66"/>';
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#2A3A66"/>';
+    DATA.forEach(function(d,i){
+      var col=d.def?'#FF9B95':'#7DE69A';
+      var r=(i===sel)?9:5.5;
+      var stroke=(i===sel)?'#FFD24A':'rgba(255,255,255,.25)';
+      s+='<circle cx="'+X(d.sal).toFixed(1)+'" cy="'+Y(d.loan).toFixed(1)+'" r="'+r+'" fill="'+col+'" stroke="'+stroke+'" stroke-width="'+((i===sel)?2.5:1)+'"/>';
+      if(i===sel){
+        s+='<text x="'+(X(d.sal)+11).toFixed(1)+'" y="'+(Y(d.loan)+4).toFixed(1)+'" fill="#FFD24A" font-size="11" font-weight="bold">'+d.id+'</text>';
+      }
+    });
+    s+='<text x="'+(padL+(W-padL-padR)/2)+'" y="'+(H-4)+'" fill="#B0BCD6" font-size="10" text-anchor="middle">Salaire (k CHF) →</text>';
+    s+='<text x="12" y="'+(H/2)+'" fill="#B0BCD6" font-size="10" text-anchor="middle" transform="rotate(-90 12 '+(H/2)+')">Prêt (k CHF) →</text>';
+    svg.innerHTML=s;
+  }
+  document.getElementById('l0grid').addEventListener('mouseleave',function(){sel=-1;rows();draw();});
+  rows();draw();
+})();
+
+/* ---------- LAB 3b : train/test split ---------- */
+(function(){
+  var slider=document.getElementById('l3bsplit'),svg=document.getElementById('l3bsvg');
+  var W=360,H=90,total=100;
+  function up(){
+    var pctTest=+slider.value;
+    document.getElementById('l3bsplitV').textContent=pctTest+' %';
+    var nTest=Math.round(total*pctTest/100), nTrain=total-nTest;
+    // bar
+    var barW=W-20,x0=10,y0=26,h=34;
+    var trainW=barW*nTrain/100, testW=barW*nTest/100;
+    var s='';
+    s+='<rect x="'+x0+'" y="'+y0+'" width="'+trainW.toFixed(1)+'" height="'+h+'" rx="6" fill="#1E5AA8"/>';
+    if(testW>0)s+='<rect x="'+(x0+trainW).toFixed(1)+'" y="'+y0+'" width="'+testW.toFixed(1)+'" height="'+h+'" rx="6" fill="#F0B33D"/>';
+    if(trainW>40)s+='<text x="'+(x0+trainW/2).toFixed(1)+'" y="'+(y0+h/2+4)+'" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">Entraînement '+nTrain+'%</text>';
+    if(testW>40)s+='<text x="'+(x0+trainW+testW/2).toFixed(1)+'" y="'+(y0+h/2+4)+'" fill="#0A1A3A" font-size="12" font-weight="bold" text-anchor="middle">Test '+nTest+'%</text>';
+    s+='<text x="'+x0+'" y="18" fill="#B0BCD6" font-size="10">Toutes les données ('+total+' clients)</text>';
+    svg.innerHTML=s;
+    document.getElementById('l3bm-train').querySelector('.mval').textContent=nTrain;
+    document.getElementById('l3bm-test').querySelector('.mval').textContent=nTest;
+    var rel=document.getElementById('l3bm-rel');
+    var v=document.getElementById('l3bverdict');
+    function setM(el,dir){el.classList.remove('up','down');if(dir>0)el.classList.add('up');else if(dir<0)el.classList.add('down');}
+    if(pctTest===0){rel.querySelector('.mval').textContent='nulle';setM(rel,-1);v.className='verdict bad';v.textContent='Aucun test : on ne mesure que la mémoire du modèle. Inacceptable.';}
+    else if(pctTest<=10){rel.querySelector('.mval').textContent='faible';setM(rel,-1);v.className='verdict bad';v.textContent='Trop peu de test : la note varie au hasard, peu fiable.';}
+    else if(pctTest<=35){rel.querySelector('.mval').textContent='bonne';setM(rel,1);v.className='verdict good';v.textContent='Bon compromis : assez pour apprendre, assez pour tester honnêtement.';}
+    else if(pctTest<50){rel.querySelector('.mval').textContent='correcte';setM(rel,0);v.className='verdict neutral';v.textContent='Test généreux, mais il reste moins de données pour apprendre.';}
+    else{rel.querySelector('.mval').textContent='gâchis';setM(rel,-1);v.className='verdict bad';v.textContent='Moitié en test : le modèle manque de données pour bien apprendre.';}
+  }
+  slider.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 1 : decision tree flow (uses same 10 clients as card 0) ---------- */
+(function(){
+  var DATA=[
+    {id:'C1',sal:45,loan:30,def:false},{id:'C2',sal:38,loan:55,def:true},
+    {id:'C3',sal:72,loan:25,def:false},{id:'C4',sal:30,loan:48,def:true},
+    {id:'C5',sal:85,loan:40,def:false},{id:'C6',sal:52,loan:60,def:true},
+    {id:'C7',sal:64,loan:20,def:false},{id:'C8',sal:41,loan:42,def:true},
+    {id:'C9',sal:90,loan:35,def:false},{id:'C10',sal:48,loan:28,def:false}
+  ];
+  var SAL_CUT=50, LOAN_CUT=45;
+  var sal=document.getElementById('l1salslider'),loan=document.getElementById('l1loanslider');
+  var treeEl=document.getElementById('l1tree'),resEl=document.getElementById('l1treeresult');
+  function dots(group){
+    return '<div class="tdots">'+group.map(function(c){return '<span class="tdot '+(c.def?'r':'g')+'" title="'+c.id+'"></span>';}).join('')+'</div>';
+  }
+  function branchBox(side,n,group,kept,labelKept,labelDropped){
+    var cls=kept?'kept':'dropped';
+    var label=kept?labelKept:labelDropped;
+    return '<div class="tbranch '+cls+'"><div class="blabel">'+label+'</div>'+
+      '<div class="bbox"><span class="bn">'+n+'</span><span class="bt">client'+(n>1?'s':'')+(kept?' continuent':' sortent')+'</span>'+
+      (n>0?dots(group):'')+'</div></div>';
+  }
+  function render(){
+    var s=+sal.value,l=+loan.value;
+    document.getElementById('l1tsal').textContent=s+'k';
+    document.getElementById('l1tloan').textContent=l+'k';
+    var newHighSal = s>=SAL_CUT;
+    var newLowLoan = l<LOAN_CUT;
+
+    // Step 1: split on salary; keep the side the new client falls in
+    var entered=DATA.slice();
+    var s1keep=entered.filter(function(c){return (c.sal>=SAL_CUT)===newHighSal;});
+    var s1drop=entered.filter(function(c){return (c.sal>=SAL_CUT)!==newHighSal;});
+
+    // Step 2: split survivors on loan; keep the side the new client falls in
+    var s2keep=s1keep.filter(function(c){return (c.loan<LOAN_CUT)===newLowLoan;});
+    var s2drop=s1keep.filter(function(c){return (c.loan<LOAN_CUT)!==newLowLoan;});
+
+    var html='';
+    // node 1
+    html+='<div class="tcount-wrap"><span class="tcount">'+entered.length+' clients entrent (tout le tableau)</span></div>';
+    html+='<div class="tq">Question 1 : Salaire ≥ '+SAL_CUT+'k ?<span class="qsub">Le nouveau client : '+s+'k → '+(newHighSal?'OUI':'NON')+'</span></div>';
+    html+='<div class="tarrow">▼</div>';
+    html+='<div class="tbranches">'+
+      branchBox('keep',s1keep.length,s1keep,true, (newHighSal?'≥ 50k (on suit)':'< 50k (on suit)'),'')+
+      branchBox('drop',s1drop.length,s1drop,false,'',(newHighSal?'< 50k (écartés)':'≥ 50k (écartés)'))+
+    '</div>';
+    html+='<div class="tarrow">▼</div>';
+    // node 2
+    html+='<div class="tcount-wrap"><span class="tcount">'+s1keep.length+' clients continuent</span></div>';
+    html+='<div class="tq">Question 2 : Prêt &lt; '+LOAN_CUT+'k ?<span class="qsub">Le nouveau client : '+l+'k → '+(newLowLoan?'OUI':'NON')+'</span></div>';
+    html+='<div class="tarrow">▼</div>';
+    html+='<div class="tbranches">'+
+      branchBox('keep',s2keep.length,s2keep,true,(newLowLoan?'< 45k (on suit)':'≥ 45k (on suit)'),'')+
+      branchBox('drop',s2drop.length,s2drop,false,'',(newLowLoan?'≥ 45k (écartés)':'< 45k (écartés)'))+
+    '</div>';
+    treeEl.innerHTML=html;
+
+    // probability from survivors
+    var survivors=s2keep;
+    var n=survivors.length;
+    var good=survivors.filter(function(c){return !c.def;}).length;
+    if(n===0){
+      resEl.className='treeresult';
+      resEl.innerHTML='<div class="trbig" style="color:var(--grey-muted);">—</div><div class="trlabel">Aucun client semblable dans le tableau</div><div class="trcalc">Avec seulement 10 clients, certains chemins sont vides. Une vraie banque en a des milliers : il reste toujours du monde.</div>';
+      return;
+    }
+    var prob=Math.round(good/n*100);
+    var goodCls=prob>=50;
+    resEl.className='treeresult '+(goodCls?'good':'bad');
+    resEl.innerHTML='<div class="trbig">'+prob+' %</div>'+
+      '<div class="trlabel">probabilité de remboursement</div>'+
+      '<div class="trcalc">Il reste <b>'+n+' client'+(n>1?'s':'')+'</b> qui ressemble'+(n>1?'nt':'')+' au nouveau, dont <b style="color:#7DE69A;">'+good+' '+(good>1?'ont':'a')+' remboursé</b>. → '+good+' ÷ '+n+' = <b>'+prob+' %</b>'+(goodCls?' → on tend vers ACCORDER':' → on tend vers REFUSER')+'</div>';
+  }
+  sal.addEventListener('input',render);loan.addEventListener('input',render);render();
+})();
+
+/* ---------- LAB 1 : grand classifieur ---------- */
+(function(){
+  var s=document.getElementById('l1slider');
+  function up(){
+    var thr=+s.value;document.getElementById('l1thr').textContent=thr;
+    var good=0,refused=0,fn=0,fp=0;
+    CLIENTS.forEach(function(c){
+      var refuse=c.score>=thr;
+      if(refuse)refused++;
+      if(refuse && !c.def)fp++;      // refused a good client
+      if(!refuse && c.def)fn++;      // accepted a bad client
+      if((refuse&&c.def)||(!refuse&&!c.def))good++;
+    });
+    var ma=document.getElementById('l1m-acc');ma.querySelector('.mval').textContent=good;
+    var d=good-75;ma.querySelector('.marrow').innerHTML=arrowHTML(d,'mieux','moins bien','');setMetric(ma,d);
+    document.getElementById('l1m-ref').querySelector('.mval').textContent=refused;
+    var mb=document.getElementById('l1m-bad');mb.querySelector('.mval').textContent=fn;setMetric(mb,-1);
+    var ml=document.getElementById('l1m-lost');ml.querySelector('.mval').textContent=fp;setMetric(ml,-1);
+  }
+  s.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 2 : draw the frontier ---------- */
+(function(){
+  var svg=document.getElementById('l2svg');
+  var W=360,H=280,pad=24;
+  // 40 clients in (income x, debt y). good = low debt / high income region mostly
+  var pts=[];var seed=7;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  for(var i=0;i<40;i++){
+    var x=pad+rnd()*(W-2*pad);
+    var y=pad+rnd()*(H-2*pad);
+    // "true" rule: default if (debt high relative to income) -> y - 0.4*x > 80 roughly, with noise
+    var bad=(y-0.45*x>50)? (rnd()<0.85):(rnd()<0.12);
+    pts.push({x:x,y:y,bad:bad});
+  }
+  var slope=document.getElementById('l2slope'),inter=document.getElementById('l2inter');
+  function draw(){
+    var m=+slope.value/100; // slope
+    var b=+inter.value;     // intercept (y at x=0-ish, in px)
+    document.getElementById('l2slopeV').textContent=(m).toFixed(2).replace('.',',');
+    document.getElementById('l2interV').textContent=b;
+    // line: y = m*x + b ; classify bad if point is ABOVE line (y < line? define) -> predict bad if y_point < (m*x+b)? 
+    // We'll predict "bad" when point is above the line in screen coords (smaller y = higher up). Use: predicted bad if y < m*x+b
+    var err=0;
+    var dots='';
+    pts.forEach(function(p){
+      var lineY=m*p.x+b;
+      var predBad = p.y < lineY; // above the line region
+      if(predBad!==p.bad)err++;
+      var col=p.bad?'#FF9B95':'#7DE69A';
+      var stroke=(predBad!==p.bad)?'#FFD24A':'rgba(255,255,255,.25)';
+      dots+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+col+'" stroke="'+stroke+'" stroke-width="'+((predBad!==p.bad)?2.5:1)+'"/>';
+    });
+    // line endpoints across width
+    var x1=0,x2=W,y1=m*x1+b,y2=m*x2+b;
+    var line='<line x1="'+x1+'" y1="'+y1.toFixed(1)+'" x2="'+x2+'" y2="'+y2.toFixed(1)+'" stroke="#FFD24A" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    var axes='<text x="'+(W/2)+'" y="'+(H-4)+'" fill="#B0BCD6" font-size="10" text-anchor="middle">Revenu →</text>'+
+             '<text x="10" y="'+(H/2)+'" fill="#B0BCD6" font-size="10" text-anchor="middle" transform="rotate(-90 10 '+(H/2)+')">Endettement →</text>';
+    svg.innerHTML=line+dots+axes;
+    var acc=Math.round((40-err)/40*100);
+    var me=document.getElementById('l2m-err');me.querySelector('.mval').textContent=err;setMetric(me,err<=5?1:err>=12?-1:0);
+    var ma=document.getElementById('l2m-acc');ma.querySelector('.mval').textContent=acc+' %';setMetric(ma,acc>=85?1:acc<=70?-1:0);
+  }
+  slope.addEventListener('input',draw);inter.addEventListener('input',draw);draw();
+})();
+
+/* ---------- LAB 3 : overfitting ---------- */
+(function(){
+  var svg=document.getElementById('l3svg');
+  var W=360,H=200,pad=20;
+  // generate points along a gentle true curve + noise, 1D for clarity (x -> class boundary)
+  var pts=[];var seed=11;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  for(var i=0;i<24;i++){
+    var x=pad+ (i/23)*(W-2*pad);
+    var trueY=H/2 + 40*Math.sin((x-pad)/(W-2*pad)*Math.PI*1.2);
+    var y=trueY + (rnd()-0.5)*46;
+    pts.push({x:x,y:y});
+  }
+  var cx=document.getElementById('l3cx');
+  function up(){
+    var c=+cx.value;document.getElementById('l3cxV').textContent=c;
+    // fit a wiggly curve: complexity c controls number of sine terms (proxy)
+    var path='M ';
+    for(var px=pad;px<=W-pad;px+=4){
+      var yy=H/2;
+      // base trend
+      yy+=40*Math.sin((px-pad)/(W-2*pad)*Math.PI*1.2);
+      // add wiggle proportional to complexity, fitting noise
+      for(var k=2;k<=c;k++){
+        yy+=(18/k)*Math.sin((px-pad)/(W-2*pad)*Math.PI*k*1.5 + k);
+      }
+      path+=(px===pad?'':'L ')+px.toFixed(1)+' '+yy.toFixed(1)+' ';
+    }
+    var dots='';
+    pts.forEach(function(p){dots+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#4A90E2" stroke="rgba(255,255,255,.3)"/>';});
+    var curve='<path d="'+path+'" fill="none" stroke="#FFD24A" stroke-width="2.5"/>';
+    svg.innerHTML=dots+curve;
+    // train accuracy rises with complexity; test accuracy peaks then falls
+    var train=Math.min(100,Math.round(60+c*3.6));
+    var test=Math.round(88 - Math.pow(c-4,2)*1.05);
+    test=Math.max(45,Math.min(90,test));
+    var mt=document.getElementById('l3m-train');mt.querySelector('.mval').textContent=train+' %';setMetric(mt,1);
+    var ms=document.getElementById('l3m-test');ms.querySelector('.mval').textContent=test+' %';setMetric(ms,test>=80?1:test<=65?-1:0);
+    var v=document.getElementById('l3verdict');
+    if(c<=2){v.className='verdict bad';v.textContent='Sous-apprentissage : trop simple, rate des structures réelles.';}
+    else if(c>=8){v.className='verdict bad';v.textContent='Sur-apprentissage : la courbe épouse le bruit, le test s\'effondre.';}
+    else{v.className='verdict good';v.textContent='Bon équilibre : le modèle généralise aux nouveaux clients.';}
+  }
+  cx.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 4 : confusion matrix ---------- */
+(function(){
+  var s=document.getElementById('l4slider');
+  function up(){
+    var thr=+s.value;document.getElementById('l4thr').textContent=thr;
+    var tp=0,fp=0,tn=0,fn=0;
+    CLIENTS.forEach(function(c){
+      var flag=c.score>=thr; // flagged suspect
+      if(flag&&c.def)tp++;
+      else if(flag&&!c.def)fp++;
+      else if(!flag&&c.def)fn++;
+      else tn++;
+    });
+    document.getElementById('l4tp').querySelector('.cmn').textContent=tp;
+    document.getElementById('l4fp').querySelector('.cmn').textContent=fp;
+    document.getElementById('l4tn').querySelector('.cmn').textContent=tn;
+    document.getElementById('l4fn').querySelector('.cmn').textContent=fn;
+    var prec=(tp+fp)>0?Math.round(tp/(tp+fp)*100):0;
+    var rec=(tp+fn)>0?Math.round(tp/(tp+fn)*100):0;
+    var mp=document.getElementById('l4m-prec');mp.querySelector('.mval').textContent=prec+' %';setMetric(mp,prec>=70?1:prec<=40?-1:0);
+    var mr=document.getElementById('l4m-rec');mr.querySelector('.mval').textContent=rec+' %';setMetric(mr,rec>=70?1:rec<=40?-1:0);
+  }
+  s.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 5 : cost-optimal threshold ---------- */
+(function(){
+  var fn=document.getElementById('l5fn'),fp=document.getElementById('l5fp');
+  function up(){
+    var cFN=+fn.value,cFP=+fp.value;
+    document.getElementById('l5fnV').textContent=chf(cFN);
+    document.getElementById('l5fpV').textContent=chf(cFP);
+    // sweep thresholds, compute cost
+    var best=null;
+    for(var thr=5;thr<=95;thr+=5){
+      var costFN=0,costFP=0;
+      CLIENTS.forEach(function(c){
+        var refuse=c.score>=thr;
+        if(!refuse&&c.def)costFN+=cFN;     // accepted a bad client
+        if(refuse&&!c.def)costFP+=cFP;     // refused a good client
+      });
+      var tot=costFN+costFP;
+      if(best===null||tot<best.tot)best={thr:thr,tot:tot};
+    }
+    document.getElementById('l5opt').textContent='seuil '+best.thr;
+    var pos=(best.thr-5)/90*100;
+    document.getElementById('l5dot').style.left=pos+'%';
+    document.getElementById('l5m-cost').querySelector('.mval').textContent=chf(best.tot);
+    var v=document.getElementById('l5verdict');
+    if(best.thr<=35){v.className='verdict bad';v.textContent='Le défaut coûte cher → on refuse au moindre doute (seuil bas).';}
+    else if(best.thr>=65){v.className='verdict good';v.textContent='Refuser un bon client coûte cher → on accorde large (seuil haut).';}
+    else{v.className='verdict neutral';v.textContent='Coûts équilibrés → seuil proche du milieu.';}
+  }
+  fn.addEventListener('input',up);fp.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 6 : k-NN ---------- */
+(function(){
+  var svg=document.getElementById('l6svg');
+  var W=360,H=240,pad=22;
+  var pts=[];var seed=99;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  for(var i=0;i<30;i++){
+    var x=pad+rnd()*(W-2*pad), y=pad+rnd()*(H-2*pad);
+    var bad=(x+ (H-y) < W*0.55)? (rnd()<0.8):(rnd()<0.2);
+    pts.push({x:x,y:y,bad:bad});
+  }
+  var newP={x:W/2,y:H/2};
+  var kEl=document.getElementById('l6k');
+  function draw(){
+    var k=+kEl.value;document.getElementById('l6kV').textContent=k;
+    // distances
+    var d=pts.map(function(p){return {p:p,dist:Math.hypot(p.x-newP.x,p.y-newP.y)};});
+    d.sort(function(a,b){return a.dist-b.dist;});
+    var nn=d.slice(0,k);
+    var badN=nn.filter(function(o){return o.p.bad;}).length;
+    var goodN=k-badN;
+    var decBad=badN>goodN;
+    // draw lines to neighbors
+    var lines='';
+    nn.forEach(function(o){lines+='<line x1="'+newP.x+'" y1="'+newP.y+'" x2="'+o.p.x.toFixed(1)+'" y2="'+o.p.y.toFixed(1)+'" stroke="rgba(240,179,61,.5)" stroke-width="1.5"/>';});
+    var dots='';
+    pts.forEach(function(p){
+      var isNN=nn.some(function(o){return o.p===p;});
+      var col=p.bad?'#FF9B95':'#7DE69A';
+      dots+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isNN?7:5)+'" fill="'+col+'" stroke="'+(isNN?'#FFD24A':'rgba(255,255,255,.2)')+'" stroke-width="'+(isNN?2.5:1)+'"/>';
+    });
+    var np='<circle cx="'+newP.x+'" cy="'+newP.y+'" r="9" fill="#fff" stroke="'+(decBad?'#C8312B':'#2EA84A')+'" stroke-width="3"/>';
+    svg.innerHTML=lines+dots+np;
+    document.getElementById('l6m-vote').querySelector('.mval').textContent=goodN+' / '+badN;
+    var md=document.getElementById('l6m-dec');
+    md.querySelector('.mval').textContent=decBad?'Refusé':'Accordé';
+    setMetric(md,decBad?-1:1);
+  }
+  function place(evt){
+    var r=svg.getBoundingClientRect();
+    var px=(evt.clientX-r.left)/r.width*W;
+    var py=(evt.clientY-r.top)/r.height*H;
+    newP.x=Math.max(pad,Math.min(W-pad,px));newP.y=Math.max(pad,Math.min(H-pad,py));
+    draw();
+  }
+  svg.addEventListener('click',place);
+  kEl.addEventListener('input',draw);draw();
+})();
+
+/* ---------- LAB 7 : decision tree ---------- */
+(function(){
+  var rules={income:false,debt:false,tenure:false};
+  var btns=document.querySelectorAll('#l7toggles .tg');
+  var labels={income:'Revenu &gt; 60 000 CHF ?',debt:'Endettement &lt; 35 % ?',tenure:'Emploi stable &gt; 2 ans ?'};
+  function render(){
+    var active=Object.keys(rules).filter(function(k){return rules[k];});
+    var depth=active.length;
+    // purity grows with each meaningful rule, diminishing returns
+    var purity=Math.round([55,72,84,91][depth]);
+    var html='';
+    if(depth===0){
+      html='<div class="tree-node"><div class="tree-q">Aucune règle. Tout le monde dans le même panier → on devine.</div></div>';
+    } else {
+      active.forEach(function(k,idx){
+        html+='<div class="tree-node" style="margin-left:'+(idx*18)+'px;"><div class="tree-q">'+(idx+1)+'. '+labels[k]+'</div><div style="font-size:12px;color:#B0BCD6;margin-top:4px;">→ sépare en « plutôt bons » et « plutôt mauvais »</div></div>';
+      });
+      html+='<div class="tree-node" style="margin-left:'+(depth*18)+'px;border-color:var(--gold);"><div class="tree-q" style="color:#7DE69A;">✓ Décision : accorder / refuser</div></div>';
+    }
+    document.getElementById('l7tree').innerHTML=html;
+    var mp=document.getElementById('l7m-pure');mp.querySelector('.mval').textContent=purity+' %';setMetric(mp,depth>=2?1:depth===0?-1:0);
+    document.getElementById('l7m-depth').querySelector('.mval').textContent=depth;
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      var r=this.getAttribute('data-rule');rules[r]=!rules[r];
+      this.classList.toggle('active',rules[r]);render();
+    });
+  });
+  render();
+})();
+
+/* ---------- LAB 8 : features ---------- */
+(function(){
+  var btns=document.querySelectorAll('#l8toggles .tg');
+  function up(){
+    var sum=0,n=0,origin=false,shoe=false;
+    btns.forEach(function(b){
+      if(b.classList.contains('active')){
+        sum+=+b.getAttribute('data-w');n++;
+        if(b.getAttribute('data-f')==='origin')origin=true;
+        if(b.getAttribute('data-f')==='shoe')shoe=true;
+      }
+    });
+    // accuracy from useful weights, capped; shoe adds noise (slight penalty)
+    var acc=Math.min(94,50+sum);
+    if(shoe)acc-=3;
+    acc=Math.max(45,Math.round(acc));
+    var ma=document.getElementById('l8m-acc');ma.querySelector('.mval').textContent=acc+' %';setMetric(ma,acc>=80?1:acc<=60?-1:0);
+    document.getElementById('l8m-n').querySelector('.mval').textContent=n;
+    var v=document.getElementById('l8verdict');
+    if(origin){v.className='verdict bad';v.textContent='⚠ Variable interdite : utiliser la nationalité est illégal et discriminatoire — désactivez-la.';}
+    else if(shoe){v.className='verdict neutral';v.textContent='La pointure n\'apporte rien : du bruit, pas de l\'information.';}
+    else if(acc>=80){v.className='verdict good';v.textContent='Bon jeu de variables : pertinentes et légales.';}
+    else{v.className='verdict neutral';v.textContent='Ajoutez des variables porteuses d\'information de risque.';}
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){this.classList.toggle('active');up();});
+  });
+  up();
+})();
+
+/* ---------- LAB 9 : robo-advisor ---------- */
+(function(){
+  var risk=document.getElementById('l9risk'),hor=document.getElementById('l9hor');
+  var bar=document.getElementById('l9bar');
+  function up(){
+    var r=+risk.value,h=+hor.value;
+    document.getElementById('l9riskV').textContent=r;
+    document.getElementById('l9horV').textContent=h+' an'+(h>1?'s':'');
+    // stocks scale with risk and horizon
+    var stocks=Math.round(Math.min(90, r*6 + h*1.2));
+    stocks=Math.max(10,stocks);
+    var rest=100-stocks;
+    var bonds=Math.round(rest*0.7);
+    var cash=100-stocks-bonds;
+    bar.innerHTML='<div class="alloc-seg" style="width:'+stocks+'%;background:#1E5AA8;">'+stocks+'% Actions</div>'+
+                  '<div class="alloc-seg" style="width:'+bonds+'%;background:#2DB6A8;">'+bonds+'% Oblig.</div>'+
+                  '<div class="alloc-seg" style="width:'+cash+'%;background:#8C6A1F;">'+cash+'%</div>';
+    document.getElementById('l9m-stock').querySelector('.mval').textContent=stocks+' %';
+    document.getElementById('l9m-bond').querySelector('.mval').textContent=bonds+' %';
+    document.getElementById('l9m-cash').querySelector('.mval').textContent=cash+' %';
+    var ret=(stocks*0.065+bonds*0.02+cash*0.005)/100*100;
+    var mr=document.getElementById('l9m-ret');mr.querySelector('.mval').textContent=ret.toFixed(1).replace('.',',')+' %';setMetric(mr,1);
+  }
+  risk.addEventListener('input',up);hor.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 10 : detective ---------- */
+var DET_FB={
+ A:'Exact : c\'est le piège des <b>classes déséquilibrées</b>. Quand 99,9 % des transactions sont normales, un modèle qui dit toujours « normal » a 99,9 % de précision et un <b>rappel nul</b>. On surveille le rappel, pas la précision globale.',
+ B:'Exact : <b>sur-apprentissage</b> caractérisé. 100 % sur le passé, effondrement sur le neuf = le modèle a mémorisé au lieu de généraliser. Solution : simplifier, régulariser, et toujours valider sur des données de test.',
+ C:'Exact : le code postal agit comme <b>proxy</b> de l\'origine. Le modèle reproduit un biais sans jamais « voir » la variable interdite. C\'est de la <b>discrimination indirecte</b> — un risque juridique et réglementaire majeur.'
+};
+document.querySelectorAll('.detective-opt').forEach(function(opt){
+  opt.addEventListener('click',function(){
+    var grp=this.getAttribute('data-d');
+    var panel=this.closest('.panel');
+    if(panel.dataset.answered==='1')return;
+    if(this.getAttribute('data-correct')==='1'){
+      this.classList.add('correct');panel.dataset.answered='1';
+      panel.querySelectorAll('.detective-opt').forEach(function(s){s.style.pointerEvents='none';});
+      var fb=document.getElementById('fb'+grp);fb.className='det-fb show good';fb.innerHTML=DET_FB[grp];
+    }else{
+      this.classList.add('wrong');
+      var fb=document.getElementById('fb'+grp);fb.className='det-fb show';fb.style.background='var(--red-soft)';fb.style.color='#FFC4C0';fb.innerHTML='Pas tout à fait — relisez les indices et réessayez.';
+      var that=this;setTimeout(function(){that.classList.remove('wrong');fb.classList.remove('show');},1700);
+    }
+  });
+});
+
+/* ================= EXERCICE 1 : banquier rapide ================= */
+(function(){
+  // 10 applicants: salaire(k), prêt(k), dette(%), historique, def(true=would default)
+  var APPS=[
+    {name:'Léa B.',age:24,sal:42,loan:15,debt:22,hist:'bon',def:false},
+    {name:'Marc R.',age:39,sal:78,loan:60,debt:48,hist:'incident',def:true},
+    {name:'Sofia M.',age:31,sal:95,loan:30,debt:18,hist:'bon',def:false},
+    {name:'Tarek B.',age:27,sal:38,loan:45,debt:55,hist:'incident',def:true},
+    {name:'Anne K.',age:45,sal:64,loan:25,debt:30,hist:'bon',def:false},
+    {name:'Jonas W.',age:22,sal:35,loan:40,debt:60,hist:'aucun',def:true},
+    {name:'Carla P.',age:52,sal:88,loan:35,debt:25,hist:'bon',def:false},
+    {name:'Dima S.',age:29,sal:55,loan:55,debt:50,hist:'incident',def:true},
+    {name:'Felix H.',age:36,sal:72,loan:20,debt:28,hist:'bon',def:false},
+    {name:'Nora T.',age:41,sal:48,loan:50,debt:46,hist:'incident',def:true}
+  ];
+  var LOSS=22000, MARGIN=4000; // default approved loss ; good client rejected = lost margin
+  var i=0,score=0,decisions=[];
+  var start=document.getElementById('e1start'),game=document.getElementById('e1game'),end=document.getElementById('e1end');
+  function chf(x){return (x>=0?'+':'−')+Math.abs(x).toLocaleString('fr-CH').replace(/\u202f|,/g,' ')+' CHF';}
+  function render(){
+    var a=APPS[i];
+    document.getElementById('e1num').textContent=i+1;
+    var sc=document.getElementById('e1score');sc.textContent=chf(score);sc.style.color=score>=0?'#7DE69A':'#FF9B95';
+    var histCls=a.hist==='bon'?'ok':(a.hist==='incident'?'warn':'');
+    document.getElementById('e1card').innerHTML=
+      '<div class="apphead"><span class="appname">'+a.name+'</span><span class="appage">'+a.age+' ans</span></div>'+
+      '<div class="appgrid">'+
+        '<div class="appf"><div class="afl">Salaire</div><div class="afv">'+a.sal+'k</div></div>'+
+        '<div class="appf"><div class="afl">Prêt demandé</div><div class="afv">'+a.loan+'k</div></div>'+
+        '<div class="appf"><div class="afl">Endettement</div><div class="afv '+(a.debt>45?'warn':'ok')+'">'+a.debt+'%</div></div>'+
+        '<div class="appf"><div class="afl">Historique</div><div class="afv '+histCls+'">'+a.hist+'</div></div>'+
+      '</div>';
+    document.getElementById('e1fb').textContent='';
+  }
+  function decide(approve){
+    if(i>=APPS.length||game.style.display==='none')return;
+    var a=APPS[i];var delta=0,msg='';
+    if(approve){
+      if(a.def){delta=-LOSS;msg='✗ Défaut ! '+chf(delta);}
+      else{delta=MARGIN;msg='✓ Bon crédit. '+chf(delta);}
+    }else{
+      if(a.def){delta=0;msg='✓ Bien vu, défaut évité. (0)';}
+      else{delta=-MARGIN;msg='✗ Bon client perdu. '+chf(delta);}
+    }
+    score+=delta;decisions.push({a:a,approve:approve,delta:delta});
+    var fb=document.getElementById('e1fb');fb.className='e1fb '+(delta>=0?'good':'bad');fb.textContent=msg;
+    var sc=document.getElementById('e1score');sc.textContent=chf(score);sc.style.color=score>=0?'#7DE69A':'#FF9B95';
+    i++;
+    var ap=document.getElementById('e1approve'),rf=document.getElementById('e1refuse');
+    ap.disabled=true;rf.disabled=true;
+    setTimeout(function(){ ap.disabled=false;rf.disabled=false; if(i>=APPS.length)finish(); else render(); },900);
+  }
+  function finish(){
+    game.style.display='none';end.style.display='block';
+    var fin=document.getElementById('e1final');fin.textContent=chf(score);fin.style.color=score>=0?'#7DE69A':'#FF9B95';
+    // perfect play = approve all good (5*4000) , refuse all bad = +20000
+    var rank=document.getElementById('e1rank');
+    if(score>=18000){rank.textContent='🏆 Banquier d\'élite — quasi parfait !';rank.style.color='#7DE69A';}
+    else if(score>=8000){rank.textContent='👍 Solide. Quelques erreurs de jugement.';rank.style.color='#FFD24A';}
+    else if(score>=0){rank.textContent='😬 La banque survit… de justesse.';rank.style.color='#FFD24A';}
+    else{rank.textContent='💸 Faillite. Les défauts ont coulé l\'agence.';rank.style.color='#FF9B95';}
+    var wrong=decisions.filter(function(d){return (d.approve&&d.a.def)||(!d.approve&&!d.a.def);});
+    document.getElementById('e1detail').innerHTML='<b>Le secret :</b> les 5 profils à incident/endettement élevé faisaient défaut, les 5 « bon » remboursaient. Optimum = +20 000 CHF. '+
+      (wrong.length?('Vous avez mal jugé <b>'+wrong.length+'</b> demande'+(wrong.length>1?'s':'')+'.'):'Sans-faute ! 🎯');
+  }
+  document.getElementById('e1go').addEventListener('click',function(){start.style.display='none';game.style.display='block';i=0;score=0;decisions=[];render();});
+  document.getElementById('e1approve').addEventListener('click',function(){decide(true);});
+  document.getElementById('e1refuse').addEventListener('click',function(){decide(false);});
+  document.getElementById('e1again').addEventListener('click',function(){end.style.display='none';start.style.display='block';});
+})();
+
+/* ================= EXERCICE 2 : meilleur seuil ================= */
+(function(){
+  // 500 applicants by score; default prob logistic
+  var APPS=[];var seed=314;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  for(var k=0;k<500;k++){var s=Math.round(rnd()*100);var pd=1/(1+Math.exp(-(s-58)/11));APPS.push({score:s,def:rnd()<pd});}
+  var LOSS=25000,MARGIN=4000;
+  var thr=document.getElementById('e2thr'),svg=document.getElementById('e2svg');
+  var locked=false;
+  function compute(t){
+    var fn=0,fp=0;
+    APPS.forEach(function(c){var refuse=c.score>=t;if(!refuse&&c.def)fn++;if(refuse&&!c.def)fp++;});
+    return {fn:fn,fp:fp,cost:fn*LOSS+fp*MARGIN};
+  }
+  function chf(x){return Math.round(x).toLocaleString('fr-CH').replace(/\u202f|,/g,' ')+' CHF';}
+  function draw(){
+    var t=+thr.value;document.getElementById('e2thrV').textContent=t;
+    var r=compute(t);
+    document.getElementById('e2m-fn').querySelector('.mval').textContent=r.fn;
+    document.getElementById('e2m-fp').querySelector('.mval').textContent=r.fp;
+    document.getElementById('e2m-cost').querySelector('.mval').textContent=chf(r.cost);
+    // mini cost curve
+    var W=360,H=110,padL=10,padR=10,padB=22,padT=10;
+    var costs=[];for(var x=5;x<=95;x+=5)costs.push({x:x,c:compute(x).cost});
+    var maxC=Math.max.apply(null,costs.map(function(o){return o.c;}));
+    var s='';
+    var d='M ';
+    costs.forEach(function(o,idx){
+      var px=padL+(idx/(costs.length-1))*(W-padL-padR);
+      var py=(H-padB)-(o.c/maxC)*(H-padT-padB);
+      d+=(idx===0?'':'L ')+px.toFixed(1)+' '+py.toFixed(1)+' ';
+    });
+    s+='<path d="'+d+'" fill="none" stroke="#4A90E2" stroke-width="2"/>';
+    // current marker
+    var ci=(t-5)/5;var cx=padL+(ci/(costs.length-1))*(W-padL-padR);
+    var cyv=(H-padB)-(compute(t).cost/maxC)*(H-padT-padB);
+    s+='<circle cx="'+cx.toFixed(1)+'" cy="'+cyv.toFixed(1)+'" r="6" fill="#FFD24A" stroke="#0A1A3A" stroke-width="2"/>';
+    s+='<text x="'+(W/2)+'" y="'+(H-5)+'" fill="#B0BCD6" font-size="9" text-anchor="middle">Seuil bas ← coût total → seuil haut</text>';
+    svg.innerHTML=s;
+  }
+  thr.addEventListener('input',function(){if(!locked)draw();});
+  document.getElementById('e2submit').addEventListener('click',function(){
+    if(locked)return;locked=true;thr.disabled=true;this.style.display='none';
+    var t=+thr.value;var mine=compute(t).cost;
+    // find optimum
+    var best=null;for(var x=5;x<=95;x+=5){var c=compute(x).cost;if(best===null||c<best.cost)best={t:x,cost:c};}
+    var diff=mine-best.cost;
+    var res=document.getElementById('e2result');res.style.display='block';
+    var close=diff<=best.cost*0.05;
+    res.className='treeresult '+(close?'good':'bad');
+    res.innerHTML='<div class="trbig">'+chf(mine)+'</div><div class="trlabel">votre perte au seuil '+t+'</div>'+
+      '<div class="trcalc">L\'optimum était le <b>seuil '+best.t+'</b> → perte minimale de <b>'+chf(best.cost)+'</b>.'+
+      (close?' 🎯 Excellent, à moins de 5 % de l\'optimum !':' Vous êtes à <b>'+chf(diff)+'</b> au-dessus du minimum.')+
+      ' Comme un défaut coûte ~6× un bon client perdu, le bon réflexe est de couper <b>plutôt bas</b>.</div>';
+  });
+  draw();
+})();
+
+/* ================= EXERCICE 3 : procès du modèle ================= */
+(function(){
+  var FB={
+    A:'⚖️ <b>Verdict nuancé.</b> 96 % c\'est tentant, mais en crédit aux particuliers, FINMA et le droit exigent de pouvoir <b>motiver un refus</b>. Un modèle inexplicable se déploie rarement tel quel : on l\'encadre (outils d\'explication type SHAP), on le réserve à des usages internes, ou on garde un modèle explicable en façade. La performance brute ne suffit jamais.',
+    B:'🚫 <b>À bloquer.</b> Optimiser le <b>volume</b> de crédits en ignorant le coût des défauts, c\'est piloter sur le mauvais indicateur. Le bon objectif est le <b>profit net du risque</b>. Un beau reporting de volumes qui cache une vague de défauts est un classique — et un danger réel.',
+    C:'⚖️ <b>Acceptable, mais à surveiller.</b> Le modèle n\'utilise <b>aucune variable interdite</b> : il juge sur le risque réel (revenu, endettement). Refuser plus souvent les jeunes parce qu\'ils sont objectivement plus risqués n\'est pas de la discrimination illégale. <b>Mais</b> l\'impact différencié mérite un suivi d\'équité — la frontière entre « risque légitime » et « discrimination indirecte » est exactement ce que scrutent les régulateurs.'
+  };
+  document.querySelectorAll('.trial-opts').forEach(function(grp){
+    var t=grp.getAttribute('data-t');
+    grp.querySelectorAll('.detective-opt').forEach(function(opt){
+      opt.addEventListener('click',function(){
+        if(grp.dataset.answered==='1')return;
+        var correct=this.getAttribute('data-correct')==='1';
+        if(correct){
+          this.classList.add('correct');grp.dataset.answered='1';
+          grp.querySelectorAll('.detective-opt').forEach(function(s){s.style.pointerEvents='none';});
+          var fb=document.getElementById('tfb'+t);fb.className='det-fb show good';fb.innerHTML=FB[t];
+        }else{
+          this.classList.add('wrong');
+          var fb=document.getElementById('tfb'+t);fb.className='det-fb show';fb.style.background='var(--red-soft)';fb.style.color='#FFC4C0';fb.innerHTML='Pas le meilleur arbitrage — réfléchissez à ce qu\'exige le régulateur, puis réessayez.';
+          var that=this;setTimeout(function(){that.classList.remove('wrong');fb.classList.remove('show');},1900);
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

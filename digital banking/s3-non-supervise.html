@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labo ML · Non-supervisé</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --amber:#E8A33C; --teal:#2DB6A8; --purple:#7E5AE8;
+  --uns:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);
+  background:radial-gradient(ellipse at 20% 0%,rgba(45,182,168,0.18) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(30,90,168,0.12) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;line-height:1.5;}
+body{padding-bottom:60px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(45,182,168,0.4);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:#8FE3DA;font-weight:bold;}
+.topbar .jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.topbar .jump a{font-size:11px;color:var(--grey-muted);text-decoration:none;border:1px solid rgba(45,182,168,.3);border-radius:12px;padding:3px 9px;transition:.2s;}
+.topbar .jump a:hover{border-color:var(--uns);color:#8FE3DA;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:40px 16px 24px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:#8FE3DA;font-weight:bold;margin-bottom:16px;}
+.hero h1{font-family:Georgia,serif;font-size:34px;font-style:italic;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--white),#8FE3DA);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:650px;margin:0 auto;}
+.lab{background:rgba(21,42,94,0.6);border:1px solid var(--uns);border-radius:18px;padding:24px 22px;margin-bottom:24px;backdrop-filter:blur(4px);scroll-margin-top:70px;}
+.lab-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+.lab-num{font-family:Georgia,serif;font-size:30px;font-weight:bold;color:#8FE3DA;line-height:1;}
+.lab-head h2{font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.15;}
+.lab-tag{font-size:11px;letter-spacing:2px;color:var(--teal);font-weight:bold;text-transform:uppercase;margin-bottom:6px;}
+.example-box{background:linear-gradient(160deg,rgba(45,182,168,.14),rgba(30,90,168,.06));border-left:3px solid var(--uns);border-radius:8px;padding:12px 16px;margin:12px 0 16px;font-size:14px;color:#DCE3F2;}
+.example-box .exh{font-size:11px;letter-spacing:1px;color:#8FE3DA;font-weight:bold;text-transform:uppercase;margin-bottom:6px;}
+.example-box strong{color:var(--gold-bright);}
+.lab-intro{font-size:14.5px;color:#DCE3F2;margin-bottom:18px;}
+.lab-intro strong{color:var(--gold-bright);}
+.lab-intro em{color:#fff;font-style:italic;}
+.panel{background:var(--navy-deep);border:1px solid rgba(45,182,168,0.35);border-radius:14px;padding:18px 18px 20px;}
+.ctrl{margin:6px 0 18px;}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;color:var(--grey-muted);margin-bottom:8px;}
+.ctrl label .val{color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;font-size:17px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--navy-light);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--uns);cursor:pointer;border:2px solid #8FE3DA;box-shadow:0 0 8px rgba(45,182,168,.6);}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--uns);cursor:pointer;border:2px solid #8FE3DA;}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:6px;}
+.metric{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:14px 12px;text-align:center;transition:border-color .25s,background .25s;}
+.metric .mlabel{font-size:10.5px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;margin-bottom:6px;}
+.metric .mval{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--white);transition:color .25s;}
+.metric .sub{font-size:11px;color:var(--grey-muted);margin-top:4px;}
+.metric.up{border-color:var(--green-correct);}.metric.up .mval{color:#7DE69A;}
+.metric.down{border-color:var(--red-wrong);}.metric.down .mval{color:#FF9B95;}
+.btn{background:var(--uns);color:var(--navy-deep);border:none;padding:9px 18px;font-family:inherit;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:.2s;}
+.btn:hover{background:#8FE3DA;}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+.why{margin-top:16px;}
+.why-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;margin-bottom:8px;width:100%;text-align:left;}
+.why-btn:hover{background:rgba(240,179,61,.12);}
+.why-btn.mech{border-color:var(--blue-glow);color:var(--blue-glow);}
+.why-btn.mech:hover{background:rgba(74,144,226,.12);}
+.why-card{max-height:0;overflow:hidden;transition:max-height .4s ease;background:linear-gradient(160deg,rgba(126,90,232,.14),rgba(30,90,168,.1));border-radius:12px;}
+.why-card.open{max-height:1600px;margin-bottom:8px;border:1px solid var(--purple);}
+.why-card.mech{background:linear-gradient(160deg,rgba(74,144,226,.16),rgba(30,90,168,.08));}
+.why-card.mech.open{border-color:var(--blue-glow);}
+.why-inner{padding:18px 20px;}
+.why-inner .wt{font-size:11px;letter-spacing:2px;font-weight:bold;margin-bottom:10px;}
+.why-card .wt{color:#C3AEFF;}.why-card.mech .wt{color:#9CC4F0;}
+.why-inner p{font-size:14px;color:#E4E9F5;margin-bottom:10px;}
+.why-inner p strong{color:var(--gold-bright);}
+.why-inner p em{color:#fff;font-style:italic;}
+.why-inner .chainline{font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);background:var(--navy-deep);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;margin:10px 0;text-align:center;}
+.why-inner ul{list-style:none;margin:6px 0;}
+.why-inner ul li{font-size:13.5px;color:#DCE3F2;padding-left:20px;position:relative;margin-bottom:7px;}
+.why-inner ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.why-inner ul li strong{color:var(--gold-bright);}
+.formula{background:var(--navy-mid);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;text-align:center;font-family:Georgia,serif;font-size:15px;color:var(--gold-bright);margin:10px 0;}
+.dataviz{background:var(--navy-deep);border-radius:10px;display:block;margin:0 auto;cursor:default;}
+.verdict{text-align:center;font-family:Georgia,serif;font-size:16px;font-style:italic;margin-top:14px;padding:12px;border-radius:10px;transition:.3s;}
+.verdict.good{background:var(--green-soft);color:#B6F0C2;}
+.verdict.bad{background:var(--red-soft);color:#FFC4C0;}
+.verdict.neutral{background:rgba(30,90,168,.2);color:var(--grey-muted);}
+.hint{font-size:12px;color:var(--grey-muted);text-align:center;margin-top:8px;font-style:italic;}
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:30px;}
+.foot a{color:var(--gold-bright);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="course-title">LABO ML · SÉANCE 3 · 🔍 NON-SUPERVISÉ</div>
+    <div class="jump">
+      <a href="s3-intro.html">← Familles</a><a href="#m1">K-means</a><a href="#m2">Anomalies</a><a href="#m3">PCA</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="eyebrow">FAMILLE 2 · PAS DE RÉPONSES, ON CHERCHE</div>
+    <h1>Apprentissage non-supervisé</h1>
+    <p>Aucune étiquette, aucune « bonne réponse ». Le modèle cherche seul des structures dans les données : des <strong>groupes</strong> (K-means), des <strong>anomalies</strong> (fraude/AML), ou une façon de <strong>résumer beaucoup de colonnes en quelques-unes</strong> (PCA). On découvre, on ne prédit pas.</p>
+  </div>
+
+  <!-- METHOD 1 : K-MEANS -->
+  <div class="lab" id="m1">
+    <div class="lab-tag">Méthode 1 · K-means</div>
+    <div class="lab-head"><span class="lab-num">1</span><h2>Segmenter la clientèle</h2></div>
+    <div class="example-box">
+      <div class="exh">Exemple réel · Marketing bancaire</div>
+      Une banque possède des milliers de clients mais aucune segmentation. Elle veut découvrir des <strong>groupes naturels</strong> (selon revenu et activité du compte) pour adapter ses offres — sans préjugé sur qui appartient à quel groupe. K-means les révèle.
+    </div>
+    <p class="lab-intro">Choisissez le nombre de segments (<strong>k</strong>) puis lancez l'algorithme. Regardez les centres se déplacer pas à pas jusqu'à ce que chaque client rejoigne le groupe le plus proche. C'est l'algorithme qui <em>découvre</em> les segments, pas vous.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Nombre de segments (k) <span class="val" id="kmkV">3</span></label>
+        <input type="range" id="kmk" min="2" max="5" step="1" value="3">
+      </div>
+      <svg id="kmsvg" viewBox="0 0 360 240" width="100%" style="max-width:480px;" class="dataviz"></svg>
+      <div class="btnrow" style="margin-top:12px;">
+        <button class="btn" id="kmstep">▶ Une itération</button>
+        <button class="btn" id="kmrun">⏩ Converger</button>
+        <button class="btn" id="kmreset" style="background:transparent;border:1px solid var(--uns);color:#8FE3DA;">↺ Réinitialiser</button>
+      </div>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="kmm-iter"><div class="mlabel">Itération</div><div class="mval">0</div></div>
+        <div class="metric" id="kmm-inertia"><div class="mlabel">Compacité</div><div class="mval">—</div><div class="sub">+ haut = + serré</div></div>
+      </div>
+      <div class="verdict neutral" id="kmverdict">Lancez l'algorithme pour voir les segments émerger.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="kmmech">⚙️ Le mécanisme — assigner, recentrer, répéter</button>
+      <div class="why-card mech" id="kmmech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>K-means répète deux étapes très simples jusqu'à stabilisation :</p>
+        <div class="chainline">1. Chaque point rejoint le centre le plus proche · 2. Chaque centre se déplace au milieu de ses points · on répète</div>
+        <ul>
+          <li>On choisit <em>k</em> à l'avance — c'est à la fois sa force (rapide) et sa faiblesse (il faut deviner le bon nombre de groupes).</li>
+          <li>L'algorithme minimise la distance totale entre les points et leur centre : des groupes <strong>compacts</strong>.</li>
+          <li>Il converge vite, mais le résultat dépend des positions de départ (d'où plusieurs essais).</li>
+        </ul>
+      </div></div>
+      <button class="why-btn" data-why="kmded">💡 La déduction bancaire — découvrir sans présupposé</button>
+      <div class="why-card" id="kmded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>Le clustering répond à une question que le supervisé ne peut pas poser : <em>« quels groupes existent dans mes données, que je n'avais pas imaginés ? »</em></p>
+        <ul>
+          <li><strong>Segmentation client</strong> : cibler les offres (jeunes actifs digitaux vs retraités prudents) sans plaquer des catégories arbitraires.</li>
+          <li><strong>Attention</strong> : K-means donne des groupes, mais ne les <em>nomme</em> pas. C'est l'expert métier qui interprète « le segment 2 = clients à fort potentiel d'épargne ».</li>
+          <li>Risque : un mauvais <em>k</em> ou des variables mal choisies produisent des segments sans valeur. L'algorithme trouvera <em>toujours</em> des groupes, même là où il n'y en a pas.</li>
+        </ul>
+        <p>Le non-supervisé est un outil d'<strong>exploration</strong> : il génère des hypothèses que le métier valide ensuite.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- METHOD 2 : ANOMALY DETECTION -->
+  <div class="lab" id="m2">
+    <div class="lab-tag">Méthode 2 · Détection d'anomalies</div>
+    <div class="lab-head"><span class="lab-num">2</span><h2>Repérer ce qui sort du lot</h2></div>
+    <div class="example-box">
+      <div class="exh">Exemple réel · Lutte anti-blanchiment (AML)</div>
+      Impossible d'étiqueter toutes les transactions « blanchiment / normal » : la fraude évolue sans cesse. À la place, on apprend ce qu'est un comportement <strong>normal</strong>, et on alerte sur tout ce qui s'en écarte trop. C'est le cœur du <strong>transaction monitoring</strong>.
+    </div>
+    <p class="lab-intro">Réglez le <strong>seuil de sensibilité</strong>. Les points loin de la masse normale sont signalés comme suspects. Trop sensible = trop d'alertes ; pas assez = on rate les vrais cas.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Sensibilité de détection <span class="val" id="anV">moyenne</span></label>
+        <input type="range" id="anslider" min="20" max="95" step="5" value="60">
+      </div>
+      <svg id="ansvg" viewBox="0 0 360 240" width="100%" style="max-width:480px;" class="dataviz"></svg>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="anm-flag"><div class="mlabel">Transactions signalées</div><div class="mval">—</div></div>
+        <div class="metric" id="anm-true"><div class="mlabel">Vraies fraudes attrapées</div><div class="mval">—</div><div class="sub">sur 4</div></div>
+        <div class="metric" id="anm-false"><div class="mlabel">Fausses alertes</div><div class="mval">—</div><div class="sub">normales signalées</div></div>
+      </div>
+      <div class="verdict neutral" id="anverdict">—</div>
+      <div class="hint">Les croix rouges sont les vraies fraudes. Le cercle est la zone « normale » apprise.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="anmech">⚙️ Le mécanisme — apprendre la normalité</button>
+      <div class="why-card mech" id="anmech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le modèle apprend la <strong>distribution normale</strong> des transactions (montant, fréquence, géographie…), puis mesure à quel point chaque nouvelle transaction s'en éloigne.</p>
+        <div class="chainline">Distance à la normale > seuil → alerte</div>
+        <ul>
+          <li>Pas besoin d'exemples de fraude : on n'apprend que le « normal ». Tout le reste est, par définition, anormal.</li>
+          <li>Idéal quand les cas positifs sont <strong>rares et changeants</strong> — exactement le profil du blanchiment.</li>
+          <li>Le seuil arbitre entre rappel (attraper les fraudes) et fausses alertes (revoir séance 1, matrice de confusion).</li>
+        </ul>
+      </div></div>
+      <button class="why-btn" data-why="anded">💡 La déduction bancaire — un déluge d'alertes à trier</button>
+      <div class="why-card" id="anded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>La détection d'anomalies est <strong>obligatoire</strong> en banque (surveillance AML imposée par la loi), mais elle a un coût opérationnel énorme :</p>
+        <ul>
+          <li>Réglée trop sensible, elle noie les analystes sous les <strong>faux positifs</strong> — la grande plaie du compliance (souvent 90 %+ des alertes sont des fausses alertes).</li>
+          <li>Réglée trop lâche, elle laisse passer un vrai cas → amende FINMA, scandale.</li>
+          <li>D'où une chaîne : l'algorithme <em>filtre</em>, un humain <em>enquête</em>. L'IA ne décide jamais seule de bloquer un compte.</li>
+        </ul>
+        <p>C'est le cas d'usage non-supervisé le plus répandu en banque — et celui qui mobilise le plus de personnel derrière.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- METHOD 3 : PCA -->
+  <div class="lab" id="m3">
+    <div class="lab-tag">Méthode 3 · PCA · résumer les données</div>
+    <div class="lab-head"><span class="lab-num">3</span><h2>Résumer plusieurs colonnes en une seule</h2></div>
+    <div class="example-box">
+      <div class="exh">L'idée en une phrase</div>
+      Quand deux informations <strong>disent presque la même chose</strong>, on peut les remplacer par une seule sans perdre grand-chose. Exemple : le <strong>revenu</strong> et le <strong>patrimoine</strong> d'un client vont souvent ensemble (qui gagne beaucoup possède souvent beaucoup). Plutôt que de garder deux colonnes, on peut les résumer en une : la « <strong>richesse</strong> ». C'est ça, la PCA.
+    </div>
+    <p class="lab-intro">Chaque point ci-dessous est un client, placé selon son revenu (horizontal) et son patrimoine (vertical). Comme les deux vont ensemble, les points forment une <strong>diagonale</strong>. Faites tourner la <strong>flèche jaune</strong> pour l'aligner sur cette diagonale : vous trouvez alors <em>l'axe « richesse »</em> qui résume les deux colonnes à lui seul.</p>
+    <div class="panel">
+      <svg id="pcasvg" viewBox="0 0 360 240" width="100%" style="max-width:480px;" class="dataviz"></svg>
+      <div class="ctrl" style="margin-top:14px;">
+        <label>Orientation de la flèche résumé <span class="val" id="pcaaV">0°</span></label>
+        <input type="range" id="pcaa" min="0" max="180" step="5" value="0">
+      </div>
+      <div class="readout">
+        <div class="metric" id="pcam-var"><div class="mlabel">Information conservée</div><div class="mval">—</div><div class="sub">par cette seule flèche</div></div>
+      </div>
+      <div class="verdict neutral" id="pcaverdict">Alignez la flèche sur la diagonale des points.</div>
+      <div class="hint">Les petits traits gris montrent ce qu'on « perd » en projetant chaque client sur la flèche. Bien orientée, on perd presque rien.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="pcamech">⚙️ Le mécanisme — trouver la « bonne diagonale »</button>
+      <div class="why-card mech" id="pcamech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>La PCA cherche la <strong>direction le long de laquelle les points sont le plus étalés</strong>. C'est cette direction qui contient le plus d'information — donc celle qui résume le mieux.</p>
+        <div class="chainline">2 colonnes qui vont ensemble → 1 seule flèche les remplace presque parfaitement</div>
+        <ul>
+          <li>Une fois la flèche bien placée, on note simplement <em>où tombe chaque client le long de la flèche</em> : un seul chiffre au lieu de deux. C'est le résumé.</li>
+          <li>Plus les deux colonnes se ressemblent (revenu / patrimoine), mieux une seule flèche les résume. Si elles n'avaient rien à voir, aucune flèche ne marcherait — il faudrait les garder toutes les deux.</li>
+          <li>Avec beaucoup de colonnes, on garde 2 ou 3 flèches au lieu de 50. On appelle ça « <strong>réduire les dimensions</strong> » : moins de colonnes, presque autant d'information.</li>
+        </ul>
+        <p>En clair : <em>on compresse les données comme on résume un texte — on garde l'essentiel, on jette les répétitions.</em></p>
+      </div></div>
+      <button class="why-btn" data-why="pcaded">💡 La déduction bancaire — à quoi ça sert vraiment</button>
+      <div class="why-card" id="pcaded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>Réduire les colonnes est utile partout où les données sont nombreuses et se recoupent :</p>
+        <ul>
+          <li><strong>Voir ce qu'on ne pouvait pas voir</strong> : une base client a 40 colonnes ? Impossible à dessiner. La PCA la ramène à 2 axes qu'on peut regarder à l'œil nu pour repérer des groupes.</li>
+          <li><strong>Risque de portefeuille</strong> : des dizaines d'actifs bougent souvent ensemble (« quand le marché monte, presque tout monte »). La PCA isole ces quelques mouvements de fond communs.</li>
+          <li><strong>Préparer un autre modèle</strong> : moins de colonnes = calculs plus rapides et moins de risque de sur-apprentissage.</li>
+          <li><strong>La limite</strong> : la flèche-résumé est un <em>mélange</em> de plusieurs colonnes. « Richesse » est facile à nommer ; d'autres résumés sont plus abstraits et plus durs à expliquer à un client ou au régulateur.</li>
+        </ul>
+        <p>Très utile pour <em>explorer et visualiser</em>, mais on garde toujours les colonnes d'origine pour les décisions qu'il faut pouvoir justifier.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <a href="s3-supervise.html">← Supervisé</a> &nbsp;·&nbsp; <a href="s3-renforcement.html">Renforcement →</a><br><br>
+    © 2026 Jan Erik Meidell · Digitalisation bancaire · Séance 3 · Non-supervisé
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.why-btn').forEach(function(b){
+  b.addEventListener('click',function(){document.getElementById(this.getAttribute('data-why')).classList.toggle('open');});
+});
+function setMetric(el,dir){el.classList.remove('up','down');if(dir>0)el.classList.add('up');else if(dir<0)el.classList.add('down');}
+
+/* M1 : K-means */
+(function(){
+  var svg=document.getElementById('kmsvg'),W=360,H=240,pad=22;
+  var COL=['#4A90E2','#2DB6A8','#F0B33D','#7E5AE8','#FF9B95'];
+  var pts=[],centers=[],iter=0,k=3;
+  var seed=33;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  function genPts(){
+    pts=[];
+    // 3 natural blobs
+    var blobs=[[90,80],[260,90],[170,190]];
+    blobs.forEach(function(b){
+      for(var i=0;i<14;i++){pts.push({x:b[0]+(rnd()-0.5)*70,y:b[1]+(rnd()-0.5)*70,c:-1});}
+    });
+  }
+  function initCenters(){
+    centers=[];for(var i=0;i<k;i++){centers.push({x:pad+rnd()*(W-2*pad),y:pad+rnd()*(H-2*pad)});}
+    iter=0;
+  }
+  function assign(){
+    pts.forEach(function(p){
+      var best=0,bd=1e9;
+      centers.forEach(function(c,i){var d=Math.hypot(p.x-c.x,p.y-c.y);if(d<bd){bd=d;best=i;}});
+      p.c=best;
+    });
+  }
+  function update(){
+    centers.forEach(function(c,i){
+      var g=pts.filter(function(p){return p.c===i;});
+      if(g.length){c.x=g.reduce(function(s,p){return s+p.x;},0)/g.length;c.y=g.reduce(function(s,p){return s+p.y;},0)/g.length;}
+    });
+  }
+  function inertia(){
+    var tot=0;pts.forEach(function(p){if(p.c>=0){tot+=Math.hypot(p.x-centers[p.c].x,p.y-centers[p.c].y);}});
+    return tot;
+  }
+  function draw(){
+    var s='';
+    pts.forEach(function(p){
+      var col=p.c>=0?COL[p.c]:'#6A7AA6';
+      s+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="'+col+'" stroke="rgba(255,255,255,.2)"/>';
+    });
+    centers.forEach(function(c,i){
+      s+='<circle cx="'+c.x.toFixed(1)+'" cy="'+c.y.toFixed(1)+'" r="11" fill="none" stroke="'+COL[i]+'" stroke-width="3"/>';
+      s+='<line x1="'+(c.x-5)+'" y1="'+c.y+'" x2="'+(c.x+5)+'" y2="'+c.y+'" stroke="'+COL[i]+'" stroke-width="2"/>';
+      s+='<line x1="'+c.x+'" y1="'+(c.y-5)+'" x2="'+c.x+'" y2="'+(c.y+5)+'" stroke="'+COL[i]+'" stroke-width="2"/>';
+    });
+    svg.innerHTML=s;
+    document.getElementById('kmm-iter').querySelector('.mval').textContent=iter;
+    if(iter>0){
+      var inrt=Math.round(10000/inertia()*100);
+      document.getElementById('kmm-inertia').querySelector('.mval').textContent=inrt;
+    }
+  }
+  function step(){
+    assign();update();iter++;draw();
+    var v=document.getElementById('kmverdict');
+    if(iter>=4){v.className='verdict good';v.textContent='Convergé : '+k+' segments stables ont émergé des données.';}
+    else{v.className='verdict neutral';v.textContent='Les centres se déplacent vers le cœur de chaque groupe…';}
+  }
+  function reset(){genPts();initCenters();draw();document.getElementById('kmverdict').className='verdict neutral';document.getElementById('kmverdict').textContent='Lancez l\'algorithme pour voir les segments émerger.';document.getElementById('kmm-inertia').querySelector('.mval').textContent='—';}
+  document.getElementById('kmk').addEventListener('input',function(){k=+this.value;document.getElementById('kmkV').textContent=k;reset();});
+  document.getElementById('kmstep').addEventListener('click',step);
+  document.getElementById('kmrun').addEventListener('click',function(){var i=0;var t=setInterval(function(){step();if(++i>=5)clearInterval(t);},350);});
+  document.getElementById('kmreset').addEventListener('click',reset);
+  reset();
+})();
+
+/* M2 : anomaly detection */
+(function(){
+  var svg=document.getElementById('ansvg'),W=360,H=240,cx=180,cy=120;
+  var pts=[];var seed=51;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  // normal cluster around center + 4 true frauds far away
+  for(var i=0;i<40;i++){
+    var ang=rnd()*Math.PI*2,r=rnd()*55;
+    pts.push({x:cx+Math.cos(ang)*r,y:cy+Math.sin(ang)*r*0.8,fraud:false});
+  }
+  var frauds=[[60,50],[300,60],[310,200],[50,200]];
+  frauds.forEach(function(f){pts.push({x:f[0],y:f[1],fraud:true});});
+  var slider=document.getElementById('anslider');
+  function draw(){
+    var sens=+slider.value; // higher = more sensitive = smaller radius
+    document.getElementById('anV').textContent=sens<40?'faible':sens<75?'moyenne':'élevée';
+    var radius=120-(sens-20)*0.95; // sensitivity shrinks the "normal" zone
+    var s='';
+    s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+radius+'" ry="'+(radius*0.8)+'" fill="rgba(45,182,168,.08)" stroke="#2DB6A8" stroke-width="1.5" stroke-dasharray="4 4"/>';
+    var flagged=0,caught=0,falseAl=0;
+    pts.forEach(function(p){
+      var d=Math.hypot((p.x-cx),(p.y-cy)/0.8);
+      var flag=d>radius;
+      if(flag)flagged++;
+      if(flag&&p.fraud)caught++;
+      if(flag&&!p.fraud)falseAl++;
+      if(p.fraud){
+        var col=flag?'#FF5B52':'#8C2018';
+        s+='<line x1="'+(p.x-5)+'" y1="'+(p.y-5)+'" x2="'+(p.x+5)+'" y2="'+(p.y+5)+'" stroke="'+col+'" stroke-width="2.5"/>';
+        s+='<line x1="'+(p.x-5)+'" y1="'+(p.y+5)+'" x2="'+(p.x+5)+'" y2="'+(p.y-5)+'" stroke="'+col+'" stroke-width="2.5"/>';
+      }else{
+        s+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="'+(flag?'#F0B33D':'#4A90E2')+'" stroke="rgba(255,255,255,.2)"/>';
+      }
+      if(flag){s+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="9" fill="none" stroke="#F0B33D" stroke-width="1.5"/>';}
+    });
+    svg.innerHTML=s;
+    var mf=document.getElementById('anm-flag');mf.querySelector('.mval').textContent=flagged;
+    var mc=document.getElementById('anm-true');mc.querySelector('.mval').textContent=caught;setMetric(mc,caught>=3?1:caught<=1?-1:0);
+    var mfa=document.getElementById('anm-false');mfa.querySelector('.mval').textContent=falseAl;setMetric(mfa,falseAl<=2?1:falseAl>=8?-1:0);
+    var v=document.getElementById('anverdict');
+    if(caught>=4&&falseAl<=3){v.className='verdict good';v.textContent='Bon réglage : toutes les fraudes attrapées, peu de fausses alertes.';}
+    else if(caught<=2){v.className='verdict bad';v.textContent='Trop laxiste : des fraudes passent inaperçues.';}
+    else if(falseAl>=8){v.className='verdict bad';v.textContent='Trop sensible : les analystes croulent sous les fausses alertes.';}
+    else{v.className='verdict neutral';v.textContent='Compromis intermédiaire — ajustez encore.';}
+  }
+  slider.addEventListener('input',draw);draw();
+})();
+
+/* M3 : PCA */
+(function(){
+  var svg=document.getElementById('pcasvg'),W=360,H=240,cx=180,cy=120;
+  var pts=[];var seed=71;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  // elongated cloud along ~35 degrees
+  var theta0=35*Math.PI/180;
+  for(var i=0;i<32;i++){
+    var u=(rnd()-0.5)*150,v=(rnd()-0.5)*45;
+    var x=cx+u*Math.cos(theta0)-v*Math.sin(theta0);
+    var y=cy+u*Math.sin(theta0)+v*Math.cos(theta0);
+    pts.push({x:x,y:y});
+  }
+  var maxVar=0;
+  pts.forEach(function(){}); // compute later
+  function varianceAlong(angle){
+    var a=angle*Math.PI/180,dx=Math.cos(a),dy=Math.sin(a);
+    var proj=pts.map(function(p){return (p.x-cx)*dx+(p.y-cy)*dy;});
+    var m=proj.reduce(function(s,v){return s+v;},0)/proj.length;
+    return proj.reduce(function(s,v){return s+(v-m)*(v-m);},0)/proj.length;
+  }
+  // find max variance for normalization
+  for(var ang=0;ang<180;ang+=2){maxVar=Math.max(maxVar,varianceAlong(ang));}
+  var slider=document.getElementById('pcaa');
+  function draw(){
+    var angle=+slider.value;document.getElementById('pcaaV').textContent=angle+'°';
+    var a=angle*Math.PI/180,dx=Math.cos(a),dy=Math.sin(a);
+    var s='';
+    // faint axes for context
+    s+='<line x1="20" y1="'+(H-22)+'" x2="'+(W-12)+'" y2="'+(H-22)+'" stroke="#2A3A66"/>';
+    s+='<line x1="20" y1="14" x2="20" y2="'+(H-22)+'" stroke="#2A3A66"/>';
+    s+='<text x="'+(W/2)+'" y="'+(H-6)+'" fill="#B0BCD6" font-size="10" text-anchor="middle">Revenu →</text>';
+    s+='<text x="12" y="'+(H/2)+'" fill="#B0BCD6" font-size="10" text-anchor="middle" transform="rotate(-90 12 '+(H/2)+')">Patrimoine →</text>';
+    // points + projection (what we lose)
+    pts.forEach(function(p){
+      var t=(p.x-cx)*dx+(p.y-cy)*dy;
+      var px=cx+t*dx,py=cy+t*dy;
+      s+='<line x1="'+p.x.toFixed(1)+'" y1="'+p.y.toFixed(1)+'" x2="'+px.toFixed(1)+'" y2="'+py.toFixed(1)+'" stroke="rgba(176,188,214,.3)" stroke-width="1"/>';
+      s+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="#2DB6A8" stroke="rgba(255,255,255,.2)"/>';
+      s+='<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="2.5" fill="#FFD24A"/>';
+    });
+    // the "richesse" summary arrow on top
+    s+='<line x1="'+(cx-dx*150)+'" y1="'+(cy-dy*150)+'" x2="'+(cx+dx*150)+'" y2="'+(cy+dy*150)+'" stroke="#FFD24A" stroke-width="2.5"/>';
+    // arrowhead
+    var hx=cx+dx*150,hy=cy+dy*150;
+    s+='<circle cx="'+hx.toFixed(1)+'" cy="'+hy.toFixed(1)+'" r="4" fill="#FFD24A"/>';
+    s+='<text x="'+(hx+ (dx>=0?-4:4)).toFixed(1)+'" y="'+(hy-8).toFixed(1)+'" fill="#FFD24A" font-size="11" font-weight="bold" text-anchor="'+(dx>=0?'end':'start')+'">richesse</text>';
+    svg.innerHTML=s;
+    var v=varianceAlong(angle);
+    var pctv=Math.round(v/maxVar*100);
+    var mv=document.getElementById('pcam-var');mv.querySelector('.mval').textContent=pctv+' %';setMetric(mv,pctv>90?1:pctv<50?-1:0);
+    var vd=document.getElementById('pcaverdict');
+    if(pctv>=95){vd.className='verdict good';vd.textContent='Flèche bien placée : une seule colonne « richesse » suffit à résumer les deux.';}
+    else if(pctv<55){vd.className='verdict bad';vd.textContent='Mauvaise orientation : on perd beaucoup en résumant ainsi.';}
+    else{vd.className='verdict neutral';vd.textContent='On s\'approche… alignez encore sur la diagonale des points.';}
+  }
+  slider.addEventListener('input',draw);draw();
+})();
+</script>
+</body>
+</html>

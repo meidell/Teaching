@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labo ML · Renforcement</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --amber:#E8A33C; --teal:#2DB6A8; --purple:#7E5AE8;
+  --rl:#F0B33D;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);
+  background:radial-gradient(ellipse at 20% 0%,rgba(240,179,61,0.14) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(30,90,168,0.12) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;line-height:1.5;}
+body{padding-bottom:60px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.4);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold-bright);font-weight:bold;}
+.topbar .jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.topbar .jump a{font-size:11px;color:var(--grey-muted);text-decoration:none;border:1px solid rgba(240,179,61,.3);border-radius:12px;padding:3px 9px;transition:.2s;}
+.topbar .jump a:hover{border-color:var(--gold);color:var(--gold-bright);}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:40px 16px 24px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold-bright);font-weight:bold;margin-bottom:16px;}
+.hero h1{font-family:Georgia,serif;font-size:34px;font-style:italic;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:650px;margin:0 auto;}
+.lab{background:rgba(21,42,94,0.6);border:1px solid var(--rl);border-radius:18px;padding:24px 22px;margin-bottom:24px;backdrop-filter:blur(4px);scroll-margin-top:70px;}
+.lab-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+.lab-num{font-family:Georgia,serif;font-size:30px;font-weight:bold;color:var(--gold-bright);line-height:1;}
+.lab-head h2{font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.15;}
+.lab-tag{font-size:11px;letter-spacing:2px;color:var(--teal);font-weight:bold;text-transform:uppercase;margin-bottom:6px;}
+.example-box{background:linear-gradient(160deg,rgba(240,179,61,.14),rgba(30,90,168,.06));border-left:3px solid var(--rl);border-radius:8px;padding:12px 16px;margin:12px 0 16px;font-size:14px;color:#DCE3F2;}
+.example-box .exh{font-size:11px;letter-spacing:1px;color:var(--gold-bright);font-weight:bold;text-transform:uppercase;margin-bottom:6px;}
+.example-box strong{color:var(--gold-bright);}
+.lab-intro{font-size:14.5px;color:#DCE3F2;margin-bottom:18px;}
+.lab-intro strong{color:var(--gold-bright);}
+.lab-intro em{color:#fff;font-style:italic;}
+.panel{background:var(--navy-deep);border:1px solid rgba(240,179,61,0.35);border-radius:14px;padding:18px 18px 20px;}
+.ctrl{margin:6px 0 18px;}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;color:var(--grey-muted);margin-bottom:8px;}
+.ctrl label .val{color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;font-size:17px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--navy-light);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);box-shadow:0 0 8px rgba(240,179,61,.6);}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:6px;}
+.metric{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:14px 12px;text-align:center;transition:border-color .25s,background .25s;}
+.metric .mlabel{font-size:10.5px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;margin-bottom:6px;}
+.metric .mval{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--white);transition:color .25s;}
+.metric .sub{font-size:11px;color:var(--grey-muted);margin-top:4px;}
+.metric.up{border-color:var(--green-correct);}.metric.up .mval{color:#7DE69A;}
+.metric.down{border-color:var(--red-wrong);}.metric.down .mval{color:#FF9B95;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:.2s;}
+.btn:hover{background:var(--gold-bright);}
+.btn.ghost{background:transparent;border:1px solid var(--gold);color:var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,.12);}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center;}
+.why{margin-top:16px;}
+.why-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;margin-bottom:8px;width:100%;text-align:left;}
+.why-btn:hover{background:rgba(240,179,61,.12);}
+.why-btn.mech{border-color:var(--blue-glow);color:var(--blue-glow);}
+.why-btn.mech:hover{background:rgba(74,144,226,.12);}
+.why-card{max-height:0;overflow:hidden;transition:max-height .4s ease;background:linear-gradient(160deg,rgba(126,90,232,.14),rgba(30,90,168,.1));border-radius:12px;}
+.why-card.open{max-height:1700px;margin-bottom:8px;border:1px solid var(--purple);}
+.why-card.mech{background:linear-gradient(160deg,rgba(74,144,226,.16),rgba(30,90,168,.08));}
+.why-card.mech.open{border-color:var(--blue-glow);}
+.why-inner{padding:18px 20px;}
+.why-inner .wt{font-size:11px;letter-spacing:2px;font-weight:bold;margin-bottom:10px;}
+.why-card .wt{color:#C3AEFF;}.why-card.mech .wt{color:#9CC4F0;}
+.why-inner p{font-size:14px;color:#E4E9F5;margin-bottom:10px;}
+.why-inner p strong{color:var(--gold-bright);}
+.why-inner p em{color:#fff;font-style:italic;}
+.why-inner .chainline{font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);background:var(--navy-deep);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;margin:10px 0;text-align:center;}
+.why-inner ul{list-style:none;margin:6px 0;}
+.why-inner ul li{font-size:13.5px;color:#DCE3F2;padding-left:20px;position:relative;margin-bottom:7px;}
+.why-inner ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.why-inner ul li strong{color:var(--gold-bright);}
+.formula{background:var(--navy-mid);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;text-align:center;font-family:Georgia,serif;font-size:14px;color:var(--gold-bright);margin:10px 0;}
+.dataviz{background:var(--navy-deep);border-radius:10px;display:block;margin:0 auto;}
+.verdict{text-align:center;font-family:Georgia,serif;font-size:16px;font-style:italic;margin-top:14px;padding:12px;border-radius:10px;transition:.3s;}
+.verdict.good{background:var(--green-soft);color:#B6F0C2;}
+.verdict.bad{background:var(--red-soft);color:#FFC4C0;}
+.verdict.neutral{background:rgba(30,90,168,.2);color:var(--grey-muted);}
+.hint{font-size:12px;color:var(--grey-muted);text-align:center;margin-top:8px;font-style:italic;}
+.loop{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:14px 0;}
+.loop .ls{background:var(--navy-mid);border:1px solid var(--rl);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:bold;color:var(--gold-bright);}
+.loop .la{color:var(--grey-muted);font-size:18px;}
+.qtable{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;}
+.qcell{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px 8px;text-align:center;transition:.3s;}
+.qcell .qa{font-size:11px;color:var(--grey-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.qcell .qv{font-family:Georgia,serif;font-size:20px;font-weight:bold;}
+.qcell.best{border-color:var(--gold);background:rgba(240,179,61,.12);}
+.qcell.best .qv{color:var(--gold-bright);}
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:30px;}
+.foot a{color:var(--gold-bright);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="course-title">LABO ML · SÉANCE 3 · 🎲 RENFORCEMENT</div>
+    <div class="jump">
+      <a href="s3-intro.html">← Familles</a><a href="#m1">Q-learning</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="eyebrow">FAMILLE 3 · ON APPREND PAR ESSAI-ERREUR</div>
+    <h1>Apprentissage par renforcement</h1>
+    <p>Pas de bonnes réponses fournies. Un <em>agent</em> agit dans un environnement, récolte des récompenses ou des pertes, et ajuste sa stratégie pour <strong>maximiser son gain à long terme</strong>. C'est ainsi qu'on entraîne un algorithme de trading — ou qu'on a battu les champions du jeu de Go.</p>
+  </div>
+
+  <!-- METHOD : Q-LEARNING -->
+  <div class="lab" id="m1">
+    <div class="lab-tag">La méthode phare · Q-learning</div>
+    <div class="lab-head"><span class="lab-num">1</span><h2>L'agent de trading qui apprend seul</h2></div>
+    <div class="example-box">
+      <div class="exh">Exemple réel · Trading algorithmique</div>
+      Un agent doit décider, à chaque instant, d'<strong>acheter</strong>, <strong>vendre</strong> ou <strong>attendre</strong> une action. Personne ne lui dit la bonne action. Il l'apprend en tradant des milliers de fois sur des données passées, en gardant ce qui rapporte et en abandonnant ce qui fait perdre.
+    </div>
+    <p class="lab-intro">Lancez l'entraînement et regardez l'agent passer de <em>débutant qui perd</em> à <em>stratège rentable</em>, uniquement par essai-erreur. Réglez son goût du risque (exploration) et voyez l'effet.</p>
+    <div class="panel">
+      <svg id="rlsvg" viewBox="0 0 360 180" width="100%" style="max-width:520px;" class="dataviz"></svg>
+      <div class="loop">
+        <span class="ls">État (prix)</span><span class="la">→</span>
+        <span class="ls">Action</span><span class="la">→</span>
+        <span class="ls">Récompense</span><span class="la">↺</span>
+      </div>
+      <div class="ctrl">
+        <label>Exploration (tenter du nouveau vs exploiter le connu) <span class="val" id="rlepsV">moyenne</span></label>
+        <input type="range" id="rleps" min="5" max="60" step="5" value="25">
+      </div>
+      <div class="btnrow">
+        <button class="btn" id="rltrain">▶ Entraîner 50 épisodes</button>
+        <button class="btn ghost" id="rlreset">↺ Réinitialiser l'agent</button>
+      </div>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="rlm-ep"><div class="mlabel">Épisodes joués</div><div class="mval">0</div></div>
+        <div class="metric" id="rlm-pnl"><div class="mlabel">Gain moyen récent</div><div class="mval">—</div><div class="sub">par épisode</div></div>
+        <div class="metric" id="rlm-skill"><div class="mlabel">Niveau de l'agent</div><div class="mval">débutant</div></div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--grey-muted);text-align:center;">Stratégie apprise dans l'état « prix en baisse » :</div>
+      <div class="qtable" id="rlq">
+        <div class="qcell" data-a="0"><div class="qa">Acheter</div><div class="qv">0</div></div>
+        <div class="qcell" data-a="1"><div class="qa">Vendre</div><div class="qv">0</div></div>
+        <div class="qcell" data-a="2"><div class="qa">Attendre</div><div class="qv">0</div></div>
+      </div>
+      <div class="verdict neutral" id="rlverdict">Lancez l'entraînement pour voir l'agent apprendre.</div>
+      <div class="hint">La courbe = gain cumulé de l'agent au fil des épisodes. Elle doit monter à mesure qu'il apprend.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="rlmech">⚙️ Le mécanisme — récompense, valeur, exploration</button>
+      <div class="why-card mech" id="rlmech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>L'agent tient une « table de valeurs » (Q) : pour chaque <strong>état</strong> (situation du marché) et chaque <strong>action</strong> possible, combien ça a rapporté en moyenne. Il la met à jour à chaque essai.</p>
+        <div class="formula">Q(état, action) ← ancienne valeur + α × (récompense + gain futur − ancienne valeur)</div>
+        <ul>
+          <li><strong>Récompense différée</strong> : acheter aujourd'hui ne paie que si on revend plus haut demain. L'agent doit relier action présente et gain futur — le cœur de la difficulté.</li>
+          <li><strong>Exploration vs exploitation</strong> : s'il ne fait que répéter ce qui marche (exploiter), il rate de meilleures stratégies. S'il explore trop, il perd de l'argent en tâtonnant. Tout l'art est dans l'équilibre.</li>
+          <li>Au fil des essais, la table Q converge vers la <strong>meilleure action dans chaque situation</strong> : c'est la stratégie apprise (la « politique »).</li>
+        </ul>
+      </div></div>
+      <button class="why-btn" data-why="rlded">💡 La déduction bancaire — puissant, mais sous haute surveillance</button>
+      <div class="why-card" id="rlded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>Le renforcement brille là où il faut <strong>une suite de décisions dans le temps</strong>, pas une prédiction isolée :</p>
+        <ul>
+          <li><strong>Exécution d'ordres</strong> : découper un gros ordre pour minimiser l'impact sur le marché — un problème séquentiel idéal pour le RL.</li>
+          <li><strong>Trading & market-making, allocation dynamique, tarification</strong> : optimiser un gain cumulé sous contraintes.</li>
+          <li><strong>Les dangers, eux, sont réels</strong> : un agent entraîné sur le passé peut apprendre des stratégies qui explosent en conditions inédites (krach). Il peut aussi « tricher » en exploitant des failles non prévues.</li>
+          <li>D'où un encadrement strict : limites de risque codées en dur, supervision humaine, tests en simulation avant tout argent réel. FINMA et la gestion des risques ne laissent aucun agent trader sans garde-fous.</li>
+        </ul>
+        <div class="chainline">Le RL optimise une récompense — encore faut-il que la récompense reflète VRAIMENT ce que veut la banque</div>
+        <p>C'est la famille la plus spectaculaire (AlphaGo, robots) mais la moins répandue en banque de détail : complexe, gourmande en données, et risquée si la récompense est mal définie.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <a href="s3-non-supervise.html">← Non-supervisé</a> &nbsp;·&nbsp; <a href="s3-intro.html">Les 3 familles</a><br><br>
+    © 2026 Jan Erik Meidell · Digitalisation bancaire · Séance 3 · Renforcement
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.why-btn').forEach(function(b){
+  b.addEventListener('click',function(){document.getElementById(this.getAttribute('data-why')).classList.toggle('open');});
+});
+function setMetric(el,dir){el.classList.remove('up','down');if(dir>0)el.classList.add('up');else if(dir<0)el.classList.add('down');}
+
+/* Q-learning trading agent (simulated, illustrative) */
+(function(){
+  var svg=document.getElementById('rlsvg'),W=360,H=180,padL=30,padB=24,padT=12,padR=12;
+  // Q table: states 0=down,1=up ; actions 0=buy,1=sell,2=hold
+  var Q,episodes,history,eps;
+  function reset(){
+    Q=[[0,0,0],[0,0,0]];episodes=0;history=[];
+    document.getElementById('rlm-ep').querySelector('.mval').textContent=0;
+    document.getElementById('rlm-pnl').querySelector('.mval').textContent='—';
+    var sk=document.getElementById('rlm-skill');sk.querySelector('.mval').textContent='débutant';sk.classList.remove('up','down');
+    drawQ();drawChart();
+    document.getElementById('rlverdict').className='verdict neutral';
+    document.getElementById('rlverdict').textContent='Lancez l\'entraînement pour voir l\'agent apprendre.';
+  }
+  // "true" optimal: in down-state buy is good (mean revert up), in up-state sell good
+  function reward(state,action){
+    var seed2=Math.random();
+    if(state===0){ // price down
+      if(action===0)return 1+ (Math.random()-0.4)*1.2; // buy: good on average
+      if(action===1)return -1+(Math.random()-0.5)*1; // sell: bad
+      return 0+(Math.random()-0.5)*0.4; // hold: neutral
+    } else { // price up
+      if(action===1)return 1+(Math.random()-0.4)*1.2; // sell good
+      if(action===0)return -0.8+(Math.random()-0.5)*1;
+      return 0+(Math.random()-0.5)*0.4;
+    }
+  }
+  function bestAction(state){
+    var q=Q[state];var b=0;for(var i=1;i<3;i++)if(q[i]>q[b])b=i;return b;
+  }
+  function trainEpisode(){
+    var alpha=0.1;
+    var totalR=0;
+    // each episode: 20 steps
+    for(var t=0;t<20;t++){
+      var state=Math.random()<0.5?0:1;
+      var action;
+      if(Math.random()<eps)action=Math.floor(Math.random()*3); // explore
+      else action=bestAction(state); // exploit
+      var r=reward(state,action);
+      totalR+=r;
+      // Q update (no next-state bootstrap for simplicity = contextual bandit style)
+      Q[state][action]+=alpha*(r-Q[state][action]);
+    }
+    episodes++;
+    history.push(totalR);
+    if(history.length>120)history.shift();
+  }
+  function drawQ(){
+    var cells=document.querySelectorAll('#rlq .qcell');
+    var best=bestAction(0);
+    cells.forEach(function(c,i){
+      c.querySelector('.qv').textContent=Q[0][i].toFixed(1).replace('.',',');
+      c.classList.toggle('best',i===best&&episodes>0);
+    });
+  }
+  function drawChart(){
+    var s='';
+    // axes
+    s+='<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(H-padB)+'" stroke="#2A3A66"/>';
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#2A3A66"/>';
+    // zero line
+    var zeroY=(H-padB)-( (0+10)/30 )*(H-padT-padB);
+    s+='<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(W-padR)+'" y2="'+zeroY+'" stroke="#3A4A76" stroke-dasharray="3 3"/>';
+    if(history.length>1){
+      var d='M ';
+      history.forEach(function(v,i){
+        var x=padL+(i/(history.length-1))*(W-padL-padR);
+        var clamped=Math.max(-10,Math.min(20,v));
+        var y=(H-padB)-((clamped+10)/30)*(H-padT-padB);
+        d+=(i===0?'':'L ')+x.toFixed(1)+' '+y.toFixed(1)+' ';
+      });
+      s+='<path d="'+d+'" fill="none" stroke="#FFD24A" stroke-width="2"/>';
+    }
+    s+='<text x="'+(W/2)+'" y="'+(H-4)+'" fill="#B0BCD6" font-size="9" text-anchor="middle">Épisodes →</text>';
+    s+='<text x="12" y="'+(H/2)+'" fill="#B0BCD6" font-size="9" text-anchor="middle" transform="rotate(-90 12 '+(H/2)+')">Gain →</text>';
+    svg.innerHTML=s;
+  }
+  function updateStats(){
+    var recent=history.slice(-20);
+    var avg=recent.reduce(function(s,v){return s+v;},0)/(recent.length||1);
+    document.getElementById('rlm-ep').querySelector('.mval').textContent=episodes;
+    var mp=document.getElementById('rlm-pnl');mp.querySelector('.mval').textContent=(avg>=0?'+':'')+avg.toFixed(1).replace('.',',');setMetric(mp,avg>4?1:avg<0?-1:0);
+    var sk=document.getElementById('rlm-skill');
+    var lvl,d;
+    if(episodes<30){lvl='débutant';d=-1;}
+    else if(avg<5){lvl='en progrès';d=0;}
+    else{lvl='rentable';d=1;}
+    sk.querySelector('.mval').textContent=lvl;setMetric(sk,d);
+    var v=document.getElementById('rlverdict');
+    if(episodes===0){v.className='verdict neutral';v.textContent='Lancez l\'entraînement pour voir l\'agent apprendre.';}
+    else if(avg>=5){v.className='verdict good';v.textContent='L\'agent a appris : il achète dans les creux, vend dans les pics. Rentable.';}
+    else if(episodes<60){v.className='verdict neutral';v.textContent='L\'agent tâtonne et s\'améliore épisode après épisode…';}
+    else{v.className='verdict bad';v.textContent='Trop d\'exploration : l\'agent perd à force de tenter au hasard. Baissez l\'exploration.';}
+  }
+  document.getElementById('rleps').addEventListener('input',function(){
+    eps=+this.value/100;document.getElementById('rlepsV').textContent=this.value<15?'faible':this.value<40?'moyenne':'élevée';
+  });
+  document.getElementById('rltrain').addEventListener('click',function(){
+    eps=+document.getElementById('rleps').value/100;
+    var i=0;var t=setInterval(function(){
+      trainEpisode();
+      if(i%5===0){drawChart();drawQ();updateStats();}
+      if(++i>=50){clearInterval(t);drawChart();drawQ();updateStats();}
+    },20);
+  });
+  document.getElementById('rlreset').addEventListener('click',reset);
+  eps=0.25;reset();
+})();
+</script>
+</body>
+</html>

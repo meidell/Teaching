@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labo ML · Supervisé</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --amber:#E8A33C; --teal:#2DB6A8; --purple:#7E5AE8;
+  --sup:#4A90E2;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);
+  background:radial-gradient(ellipse at 20% 0%,rgba(74,144,226,0.20) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(30,90,168,0.12) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;line-height:1.5;}
+body{padding-bottom:60px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(74,144,226,0.4);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:#9CC4F0;font-weight:bold;}
+.topbar .jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.topbar .jump a{font-size:11px;color:var(--grey-muted);text-decoration:none;border:1px solid rgba(74,144,226,.3);border-radius:12px;padding:3px 9px;transition:.2s;}
+.topbar .jump a:hover{border-color:var(--sup);color:#9CC4F0;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:40px 16px 24px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:#9CC4F0;font-weight:bold;margin-bottom:16px;}
+.hero h1{font-family:Georgia,serif;font-size:34px;font-style:italic;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--white),#9CC4F0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:650px;margin:0 auto;}
+.lab{background:rgba(21,42,94,0.6);border:1px solid var(--sup);border-radius:18px;padding:24px 22px;margin-bottom:24px;backdrop-filter:blur(4px);scroll-margin-top:70px;}
+.lab-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+.lab-num{font-family:Georgia,serif;font-size:30px;font-weight:bold;color:#9CC4F0;line-height:1;}
+.lab-head h2{font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.15;}
+.lab-tag{font-size:11px;letter-spacing:2px;color:var(--teal);font-weight:bold;text-transform:uppercase;margin-bottom:6px;}
+.example-box{background:linear-gradient(160deg,rgba(74,144,226,.14),rgba(30,90,168,.06));border-left:3px solid var(--sup);border-radius:8px;padding:12px 16px;margin:12px 0 16px;font-size:14px;color:#DCE3F2;}
+.example-box .exh{font-size:11px;letter-spacing:1px;color:#9CC4F0;font-weight:bold;text-transform:uppercase;margin-bottom:6px;}
+.example-box strong{color:var(--gold-bright);}
+.lab-intro{font-size:14.5px;color:#DCE3F2;margin-bottom:18px;}
+.lab-intro strong{color:var(--gold-bright);}
+.lab-intro em{color:#fff;font-style:italic;}
+.panel{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:14px;padding:18px 18px 20px;}
+.ctrl{margin:6px 0 18px;}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;color:var(--grey-muted);margin-bottom:8px;}
+.ctrl label .val{color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;font-size:17px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--navy-light);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);box-shadow:0 0 8px rgba(240,179,61,.6);}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:6px;}
+.metric{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:14px 12px;text-align:center;transition:border-color .25s,background .25s;}
+.metric .mlabel{font-size:10.5px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;margin-bottom:6px;}
+.metric .mval{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--white);transition:color .25s;}
+.metric .sub{font-size:11px;color:var(--grey-muted);margin-top:4px;}
+.metric.up{border-color:var(--green-correct);}.metric.up .mval{color:#7DE69A;}
+.metric.down{border-color:var(--red-wrong);}.metric.down .mval{color:#FF9B95;}
+.toggle-row{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 16px;}
+.tg{background:var(--navy-mid);border:1px solid var(--blue-bright);color:var(--grey-muted);border-radius:20px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;}
+.tg:hover{border-color:var(--gold);}
+.tg.active{background:var(--sup);color:#fff;border-color:var(--sup);}
+.why{margin-top:16px;}
+.why-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;margin-bottom:8px;width:100%;text-align:left;}
+.why-btn:hover{background:rgba(240,179,61,.12);}
+.why-btn.mech{border-color:var(--blue-glow);color:var(--blue-glow);}
+.why-btn.mech:hover{background:rgba(74,144,226,.12);}
+.why-card{max-height:0;overflow:hidden;transition:max-height .4s ease;background:linear-gradient(160deg,rgba(126,90,232,.14),rgba(30,90,168,.1));border-radius:12px;}
+.why-card.open{max-height:1600px;margin-bottom:8px;border:1px solid var(--purple);}
+.why-card.mech{background:linear-gradient(160deg,rgba(74,144,226,.16),rgba(30,90,168,.08));}
+.why-card.mech.open{border-color:var(--blue-glow);}
+.why-inner{padding:18px 20px;}
+.why-inner .wt{font-size:11px;letter-spacing:2px;font-weight:bold;margin-bottom:10px;}
+.why-card .wt{color:#C3AEFF;}.why-card.mech .wt{color:#9CC4F0;}
+.why-inner p{font-size:14px;color:#E4E9F5;margin-bottom:10px;}
+.why-inner p strong{color:var(--gold-bright);}
+.why-inner p em{color:#fff;font-style:italic;}
+.why-inner .chainline{font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);background:var(--navy-deep);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;margin:10px 0;text-align:center;}
+.why-inner ul{list-style:none;margin:6px 0;}
+.why-inner ul li{font-size:13.5px;color:#DCE3F2;padding-left:20px;position:relative;margin-bottom:7px;}
+.why-inner ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.why-inner ul li strong{color:var(--gold-bright);}
+.formula{background:var(--navy-mid);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;text-align:center;font-family:Georgia,serif;font-size:15px;color:var(--gold-bright);margin:10px 0;}
+.dataviz{background:var(--navy-deep);border-radius:10px;display:block;margin:0 auto;}
+.verdict{text-align:center;font-family:Georgia,serif;font-size:16px;font-style:italic;margin-top:14px;padding:12px;border-radius:10px;transition:.3s;}
+.verdict.good{background:var(--green-soft);color:#B6F0C2;}
+.verdict.bad{background:var(--red-soft);color:#FFC4C0;}
+.verdict.neutral{background:rgba(30,90,168,.2);color:var(--grey-muted);}
+.hint{font-size:12px;color:var(--grey-muted);text-align:center;margin-top:8px;font-style:italic;}
+.tree-node{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:10px 12px;margin:6px 0;}
+.tree-q{font-size:13.5px;color:#9CC4F0;font-weight:bold;}
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:30px;}
+.foot a{color:var(--gold-bright);text-decoration:none;}
+.legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--grey-muted);margin-top:10px;flex-wrap:wrap;}
+.dotleg{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-right:4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="course-title">LABO ML · SÉANCE 3 · 🎯 SUPERVISÉ</div>
+    <div class="jump">
+      <a href="s3-intro.html">← Familles</a><a href="#m1">Linéaire</a><a href="#m2">Logistique</a><a href="#m3">Forêt</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="eyebrow">FAMILLE 1 · ON CONNAÎT LES RÉPONSES</div>
+    <h1>Apprentissage supervisé</h1>
+    <p>On donne au modèle des exemples <em>étiquetés</em> et il apprend à reproduire la réponse. Trois méthodes, de la plus simple à la plus puissante : prévoir un <strong>montant</strong>, prédire un <strong>oui/non</strong>, puis trancher des cas complexes avec une <strong>forêt</strong>.</p>
+  </div>
+
+  <!-- METHOD 1 : LINEAR REGRESSION -->
+  <div class="lab" id="m1">
+    <div class="lab-tag">Méthode 1 · Régression linéaire</div>
+    <div class="lab-head"><span class="lab-num">1</span><h2>Prévoir un montant</h2></div>
+    <div class="example-box">
+      <div class="exh">Exemple réel · Banque de détail</div>
+      Une banque veut <strong>estimer le revenu annuel</strong> d'un client à partir de son âge, pour pré-dimensionner une offre de crédit. Elle dispose de milliers de clients dont elle connaît déjà le revenu. La régression linéaire trace la <strong>tendance</strong>.
+    </div>
+    <p class="lab-intro">Vous ajustez vous-même la droite de prédiction. Le but : qu'elle passe au plus près de tous les points. La machine fait pareil, mais en calculant la <em>meilleure</em> droite d'un coup.</p>
+    <div class="panel">
+      <svg id="m1svg" viewBox="0 0 360 240" width="100%" style="max-width:480px;" class="dataviz"></svg>
+      <div class="ctrl" style="margin-top:14px;">
+        <label>Pente (revenu gagné par année d'âge) <span class="val" id="m1slopeV">2,0</span></label>
+        <input type="range" id="m1slope" min="0" max="40" step="1" value="20">
+      </div>
+      <div class="ctrl">
+        <label>Ordonnée (revenu de base) <span class="val" id="m1interV">20k</span></label>
+        <input type="range" id="m1inter" min="0" max="60" step="2" value="20">
+      </div>
+      <div class="readout">
+        <div class="metric" id="m1m-err"><div class="mlabel">Erreur totale</div><div class="mval">—</div><div class="sub">somme des écarts²</div></div>
+        <div class="metric" id="m1m-r2"><div class="mlabel">Qualité (R²)</div><div class="mval">—</div></div>
+      </div>
+      <div class="verdict neutral" id="m1verdict">Ajustez la droite pour minimiser l'erreur.</div>
+      <div class="hint">Les traits verticaux gris sont les erreurs. La meilleure droite les rend les plus courts possibles.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="m1mech">⚙️ Le mécanisme — la méthode des moindres carrés</button>
+      <div class="why-card mech" id="m1mech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>La régression linéaire cherche la droite <em>y = a·x + b</em> qui minimise la <strong>somme des erreurs au carré</strong> (la distance verticale entre chaque point et la droite).</p>
+        <div class="formula">revenu ≈ pente × âge + base</div>
+        <ul>
+          <li>On élève les écarts <strong>au carré</strong> pour que les grosses erreurs comptent beaucoup plus, et pour que positif/négatif ne s'annulent pas.</li>
+          <li>Le R² mesure la part de la variation expliquée par le modèle : 1 = parfait, 0 = inutile.</li>
+          <li>Il existe une solution mathématique <em>exacte</em> : pas besoin de tâtonner comme vous le faites — l'ordinateur la calcule directement.</li>
+        </ul>
+      </div></div>
+      <button class="why-btn" data-why="m1ded">💡 La déduction bancaire — simple, lisible, mais limitée</button>
+      <div class="why-card" id="m1ded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>La régression linéaire est le <strong>point de départ</strong> de toute analyse quantitative en finance :</p>
+        <ul>
+          <li>Prévision de revenus, de chiffre d'affaires, de pertes attendues, sensibilité d'un actif à un facteur (le fameux <em>bêta</em> d'une action, c'est une régression).</li>
+          <li><strong>Atout</strong> : totalement transparente. Chaque coefficient se lit (« +2 000 CHF de revenu par année d'âge »). Le régulateur adore.</li>
+          <li><strong>Limite</strong> : elle ne capte que des relations <em>droites</em>. Le revenu ne croît pas linéairement toute la vie (il plafonne, puis baisse à la retraite). Pour ça, il faut des modèles plus riches.</li>
+        </ul>
+        <p>Règle d'or : <em>commencez toujours simple.</em> Si une régression linéaire suffit, inutile de sortir l'artillerie lourde.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- METHOD 2 : LOGISTIC REGRESSION -->
+  <div class="lab" id="m2">
+    <div class="lab-tag">Méthode 2 · Régression logistique</div>
+    <div class="lab-head"><span class="lab-num">2</span><h2>Prédire un oui / non</h2></div>
+    <div class="example-box">
+      <div class="exh">Exemple réel · Scoring de crédit</div>
+      C'est <strong>LE</strong> modèle historique du scoring bancaire. À partir du score de risque d'un client, on ne veut pas un montant, mais une <strong>probabilité de défaut</strong> entre 0 et 100 %. La régression logistique transforme n'importe quelle valeur en probabilité.
+    </div>
+    <p class="lab-intro">Réglez la <strong>pente</strong> de la courbe en S (la sigmoïde) et son <strong>point de bascule</strong>. Observez comment elle écrase tout entre 0 et 1 — une probabilité, jamais en dessous de 0 ni au-dessus de 100 %.</p>
+    <div class="panel">
+      <svg id="m2svg" viewBox="0 0 360 220" width="100%" style="max-width:480px;" class="dataviz"></svg>
+      <div class="ctrl" style="margin-top:14px;">
+        <label>Pente de la sigmoïde (netteté de la décision) <span class="val" id="m2kV">moyenne</span></label>
+        <input type="range" id="m2k" min="2" max="30" step="1" value="12">
+      </div>
+      <div class="ctrl">
+        <label>Score pivot (50 % de défaut) <span class="val" id="m2x0V">55</span></label>
+        <input type="range" id="m2x0" min="30" max="80" step="5" value="55">
+      </div>
+      <div class="readout">
+        <div class="metric" id="m2m-p1"><div class="mlabel">P(défaut) si score 40</div><div class="mval">—</div></div>
+        <div class="metric" id="m2m-p2"><div class="mlabel">P(défaut) si score 70</div><div class="mval">—</div></div>
+      </div>
+      <div class="hint">Pente forte = décision tranchée (presque oui/non). Pente douce = beaucoup de zone grise.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="m2mech">⚙️ Le mécanisme — la fonction sigmoïde</button>
+      <div class="why-card mech" id="m2mech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>On part d'une combinaison linéaire (comme en méthode 1), puis on la fait passer dans une <strong>fonction sigmoïde</strong> qui comprime le résultat entre 0 et 1.</p>
+        <div class="formula">P(défaut) = 1 / (1 + e^−(pente·(score − pivot)))</div>
+        <ul>
+          <li>En dessous du pivot → probabilité basse ; au-dessus → probabilité haute ; au pivot → exactement 50 %.</li>
+          <li>La sortie est une <strong>vraie probabilité</strong>, pas un score arbitraire. On peut dire « 73 % de chances de défaut ».</li>
+          <li>C'est ensuite la banque qui fixe le <em>seuil</em> de refus (revoir séance 1) — le modèle ne fait que donner la probabilité.</li>
+        </ul>
+      </div></div>
+      <button class="why-btn" data-why="m2ded">💡 La déduction bancaire — le standard réglementaire du crédit</button>
+      <div class="why-card" id="m2ded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>La régression logistique domine le scoring de crédit depuis des décennies, et ce n'est pas un hasard :</p>
+        <ul>
+          <li><strong>Interprétable</strong> : chaque variable a un poids lisible. On peut expliquer à un client <em>pourquoi</em> il est refusé — exigence légale et FINMA.</li>
+          <li><strong>Robuste et stable</strong> : elle ne sur-apprend pas facilement, elle se valide bien, elle se documente pour l'audit.</li>
+          <li>C'est le socle des modèles de <strong>probabilité de défaut (PD)</strong> sous Bâle III, utilisés pour calculer les fonds propres réglementaires.</li>
+        </ul>
+        <p>Même à l'ère du deep learning, beaucoup de banques gardent la logistique en production pour le crédit : <em>l'explicabilité prime souvent sur le dernier pour-cent de performance.</em></p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- METHOD 3 : RANDOM FOREST -->
+  <div class="lab" id="m3">
+    <div class="lab-tag">Méthode 3 · Forêt aléatoire</div>
+    <div class="lab-head"><span class="lab-num">3</span><h2>La sagesse de la foule d'arbres</h2></div>
+    <div class="example-box">
+      <div class="exh">Exemple réel · Détection de fraude par carte</div>
+      Une transaction arrive : montant, heure, pays, type de marchand, écart au comportement habituel. Trop de combinaisons pour une simple droite. La <strong>forêt aléatoire</strong> fait voter des centaines d'arbres de décision et tranche : fraude ou non.
+    </div>
+    <p class="lab-intro">Ajoutez des arbres à la forêt et regardez la décision se stabiliser. Un seul arbre se trompe souvent ; <em>des centaines qui votent</em> se trompent beaucoup moins.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Nombre d'arbres dans la forêt <span class="val" id="m3nV">1</span></label>
+        <input type="range" id="m3n" min="1" max="200" step="1" value="1">
+      </div>
+      <svg id="m3svg" viewBox="0 0 360 130" width="100%" style="max-width:480px;" class="dataviz"></svg>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="m3m-acc"><div class="mlabel">Précision</div><div class="mval">—</div></div>
+        <div class="metric" id="m3m-var"><div class="mlabel">Instabilité</div><div class="mval">—</div><div class="sub">variance des décisions</div></div>
+      </div>
+      <div class="verdict neutral" id="m3verdict">—</div>
+      <div class="hint">Chaque carré = un arbre et son vote (vert = légitime, rouge = fraude). La forêt suit la majorité.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn mech" data-why="m3mech">⚙️ Le mécanisme — le vote d'ensemble (bagging)</button>
+      <div class="why-card mech" id="m3mech"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>On entraîne des centaines d'arbres, chacun sur un <strong>échantillon différent</strong> des données et un <strong>sous-ensemble de variables</strong>. Puis on agrège leurs votes.</p>
+        <div class="chainline">Beaucoup d'arbres imparfaits + indépendants → un vote collectif très fiable</div>
+        <ul>
+          <li>Un arbre seul a une forte <strong>variance</strong> : il change beaucoup selon les données. En moyennant plein d'arbres, cette variance s'effondre.</li>
+          <li>Le « aléatoire » (échantillons et variables tirés au hasard) garantit que les arbres ne se trompent pas tous de la même façon.</li>
+          <li>C'est le principe de la <em>sagesse des foules</em> appliqué aux modèles : des erreurs décorrélées s'annulent.</li>
+        </ul>
+      </div></div>
+      <button class="why-btn" data-why="m3ded">💡 La déduction bancaire — puissance contre transparence</button>
+      <div class="why-card" id="m3ded"><div class="why-inner">
+        <div class="wt">LA DÉDUCTION BANCAIRE</div>
+        <p>La forêt aléatoire (et son cousin le gradient boosting) est le <strong>cheval de bataille</strong> de la fraude et du risque modernes :</p>
+        <ul>
+          <li><strong>Atout</strong> : capte des interactions complexes et non-linéaires qu'une logistique manque. Excellente performance « clé en main ».</li>
+          <li><strong>Limite</strong> : moins explicable. Difficile de dire à un client <em>pourquoi</em> 300 arbres ont voté contre lui. On utilise des outils dédiés (importance des variables, SHAP) pour ouvrir la boîte.</li>
+          <li>D'où le partage des usages : <strong>fraude interne</strong> (performance prioritaire) → forêt ; <strong>refus de crédit client</strong> (explicabilité exigée) → souvent logistique.</li>
+        </ul>
+        <p>Le grand arbitrage de la séance, encore : <em>plus c'est puissant, moins c'est transparent.</em> Le métier et le régulateur tranchent au cas par cas.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <a href="s3-intro.html">← Les 3 familles</a> &nbsp;·&nbsp; <a href="s3-non-supervise.html">Non-supervisé →</a><br><br>
+    © 2026 Jan Erik Meidell · Digitalisation bancaire · Séance 3 · Supervisé
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.why-btn').forEach(function(b){
+  b.addEventListener('click',function(){document.getElementById(this.getAttribute('data-why')).classList.toggle('open');});
+});
+function setMetric(el,dir){el.classList.remove('up','down');if(dir>0)el.classList.add('up');else if(dir<0)el.classList.add('down');}
+
+/* M1 : linear regression */
+(function(){
+  var svg=document.getElementById('m1svg'),W=360,H=240,padL=34,padB=28,padT=14,padR=14;
+  var pts=[];var seed=5;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  // age 20-65 -> income ~ 18 + 2.1*age + noise (in k CHF), cap visual
+  for(var i=0;i<24;i++){
+    var age=20+rnd()*45;
+    var inc=18+2.1*age+(rnd()-0.5)*40;
+    pts.push({age:age,inc:Math.max(5,inc)});
+  }
+  var maxAge=70,maxInc=180;
+  function X(age){return padL+(age/maxAge)*(W-padL-padR);}
+  function Y(inc){return H-padB-(inc/maxInc)*(H-padT-padB);}
+  var slope=document.getElementById('m1slope'),inter=document.getElementById('m1inter');
+  function draw(){
+    var a=+slope.value/10,b=+inter.value; // slope in k per year, intercept in k
+    document.getElementById('m1slopeV').textContent=a.toFixed(1).replace('.',',');
+    document.getElementById('m1interV').textContent=b+'k';
+    var err=0;var s='';
+    // axes
+    s+='<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(H-padB)+'" stroke="#2A3A66" stroke-width="1"/>';
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#2A3A66" stroke-width="1"/>';
+    // regression line
+    var y1=a*0+b,y2=a*maxAge+b;
+    s+='<line x1="'+X(0)+'" y1="'+Y(y1)+'" x2="'+X(maxAge)+'" y2="'+Y(y2)+'" stroke="#FFD24A" stroke-width="2.5"/>';
+    // points + error bars
+    pts.forEach(function(p){
+      var pred=a*p.age+b;err+=Math.pow(p.inc-pred,2);
+      s+='<line x1="'+X(p.age)+'" y1="'+Y(p.inc)+'" x2="'+X(p.age)+'" y2="'+Y(pred)+'" stroke="rgba(176,188,214,.45)" stroke-width="1"/>';
+      s+='<circle cx="'+X(p.age)+'" cy="'+Y(p.inc)+'" r="5" fill="#4A90E2" stroke="rgba(255,255,255,.3)"/>';
+    });
+    s+='<text x="'+(W/2)+'" y="'+(H-6)+'" fill="#B0BCD6" font-size="10" text-anchor="middle">Âge →</text>';
+    s+='<text x="14" y="'+(H/2)+'" fill="#B0BCD6" font-size="10" text-anchor="middle" transform="rotate(-90 14 '+(H/2)+')">Revenu (k CHF) →</text>';
+    svg.innerHTML=s;
+    err=Math.round(err/100);
+    // R2 vs baseline (variance)
+    var meanInc=pts.reduce(function(s,p){return s+p.inc;},0)/pts.length;
+    var ssTot=pts.reduce(function(s,p){return s+Math.pow(p.inc-meanInc,2);},0);
+    var ssRes=pts.reduce(function(s,p){return s+Math.pow(p.inc-(a*p.age+b),2);},0);
+    var r2=Math.max(0,1-ssRes/ssTot);
+    var me=document.getElementById('m1m-err');me.querySelector('.mval').textContent=err;setMetric(me,err<50?1:err>200?-1:0);
+    var mr=document.getElementById('m1m-r2');mr.querySelector('.mval').textContent=r2.toFixed(2).replace('.',',');setMetric(mr,r2>0.7?1:r2<0.3?-1:0);
+    var v=document.getElementById('m1verdict');
+    if(r2>0.8){v.className='verdict good';v.textContent='Excellent ajustement : la droite capture bien la tendance.';}
+    else if(r2>0.5){v.className='verdict neutral';v.textContent='Correct, mais on peut faire mieux.';}
+    else{v.className='verdict bad';v.textContent='Mauvais ajustement : la droite rate la tendance.';}
+  }
+  slope.addEventListener('input',draw);inter.addEventListener('input',draw);draw();
+})();
+
+/* M2 : logistic / sigmoid */
+(function(){
+  var svg=document.getElementById('m2svg'),W=360,H=220,padL=34,padB=28,padT=14,padR=14;
+  var k=document.getElementById('m2k'),x0=document.getElementById('m2x0');
+  function X(score){return padL+(score/100)*(W-padL-padR);}
+  function Y(p){return H-padB-p*(H-padT-padB);}
+  function sig(score,kk,x00){return 1/(1+Math.exp(-kk/100*(score-x00)));}
+  function draw(){
+    var kk=+k.value,x00=+x0.value;
+    document.getElementById('m2kV').textContent=kk<8?'douce':kk<18?'moyenne':'forte';
+    document.getElementById('m2x0V').textContent=x00;
+    var s='';
+    s+='<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(H-padB)+'" stroke="#2A3A66"/>';
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#2A3A66"/>';
+    // 0.5 line
+    s+='<line x1="'+padL+'" y1="'+Y(0.5)+'" x2="'+(W-padR)+'" y2="'+Y(0.5)+'" stroke="#2A3A66" stroke-dasharray="3 3"/>';
+    s+='<text x="'+(W-padR)+'" y="'+(Y(0.5)-3)+'" fill="#6A7AA6" font-size="9" text-anchor="end">50%</text>';
+    // curve
+    var d='M ';
+    for(var sc=0;sc<=100;sc+=2){d+=(sc===0?'':'L ')+X(sc).toFixed(1)+' '+Y(sig(sc,kk,x00)).toFixed(1)+' ';}
+    s+='<path d="'+d+'" fill="none" stroke="#FFD24A" stroke-width="2.5"/>';
+    // pivot marker
+    s+='<line x1="'+X(x00)+'" y1="'+padT+'" x2="'+X(x00)+'" y2="'+(H-padB)+'" stroke="rgba(45,182,168,.5)" stroke-dasharray="2 2"/>';
+    s+='<text x="'+(W/2)+'" y="'+(H-6)+'" fill="#B0BCD6" font-size="10" text-anchor="middle">Score de risque →</text>';
+    s+='<text x="14" y="'+(H/2)+'" fill="#B0BCD6" font-size="10" text-anchor="middle" transform="rotate(-90 14 '+(H/2)+')">P(défaut) →</text>';
+    svg.innerHTML=s;
+    document.getElementById('m2m-p1').querySelector('.mval').textContent=Math.round(sig(40,kk,x00)*100)+' %';
+    document.getElementById('m2m-p2').querySelector('.mval').textContent=Math.round(sig(70,kk,x00)*100)+' %';
+  }
+  k.addEventListener('input',draw);x0.addEventListener('input',draw);draw();
+})();
+
+/* M3 : random forest voting */
+(function(){
+  var svg=document.getElementById('m3svg'),W=360,H=130;
+  var n=document.getElementById('m3n');
+  // true label = fraud. single tree acc ~ 0.68, ensemble converges to ~0.94
+  var seed=88;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  function draw(){
+    var N=+n.value;document.getElementById('m3nV').textContent=N;
+    // simulate votes: each tree correct with p; show up to 60 squares
+    var show=Math.min(N,60);
+    var correctP=0.68;
+    var votesFraud=0,total=N;
+    // deterministic-ish: count majority
+    var localSeed=N*7+3;function lr(){localSeed=(localSeed*9301+49297)%233280;return localSeed/233280;}
+    for(var i=0;i<N;i++){if(lr()<correctP)votesFraud++;}
+    var majorityCorrect = votesFraud> N/2;
+    // accuracy of ensemble grows with N (variance reduction)
+    var acc=Math.round((0.68+(0.94-0.68)*(1-Math.exp(-N/30)))*100);
+    var variance=Math.round(Math.max(2,40*Math.exp(-N/25)));
+    // draw squares
+    var s='';var cols=20,sq=14,gap=3,x0=8,y0=10;
+    var ls2=N*3+1;function lr2(){ls2=(ls2*9301+49297)%233280;return ls2/233280;}
+    for(var j=0;j<show;j++){
+      var cx=x0+(j%cols)*(sq+gap),cy=y0+Math.floor(j/cols)*(sq+gap);
+      var fraudVote=lr2()<correctP; // most vote fraud (correct)
+      var col=fraudVote?'#FF9B95':'#7DE69A';
+      s+='<rect x="'+cx+'" y="'+cy+'" width="'+sq+'" height="'+sq+'" rx="3" fill="'+col+'" opacity="0.85"/>';
+    }
+    if(N>60)s+='<text x="'+(x0)+'" y="'+(y0+3*(sq+gap)+12)+'" fill="#B0BCD6" font-size="10">… +'+(N-60)+' autres arbres</text>';
+    svg.innerHTML=s;
+    var ma=document.getElementById('m3m-acc');ma.querySelector('.mval').textContent=acc+' %';setMetric(ma,acc>=88?1:acc<75?-1:0);
+    var mv=document.getElementById('m3m-var');mv.querySelector('.mval').textContent=variance+' %';setMetric(mv,variance<10?1:variance>25?-1:0);
+    var v=document.getElementById('m3verdict');
+    if(N<=3){v.className='verdict bad';v.textContent='Peu d\'arbres : décision instable, un seul peut tout fausser.';}
+    else if(N<30){v.className='verdict neutral';v.textContent='La forêt se renforce : les votes se stabilisent.';}
+    else{v.className='verdict good';v.textContent='Forêt mature : décision fiable et stable par consensus.';}
+  }
+  n.addEventListener('input',draw);draw();
+})();
+</script>
+</body>
+</html>

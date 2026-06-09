@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labo IA · La machine à mots</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --amber:#E8A33C; --teal:#2DB6A8; --purple:#7E5AE8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);
+  background:radial-gradient(ellipse at 20% 0%,rgba(126,90,232,0.16) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(45,182,168,0.10) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;line-height:1.5;}
+body{padding-bottom:60px;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:10px 16px;}
+.topbar-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.topbar .course-title{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;}
+.topbar .jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.topbar .jump a{font-size:11px;color:var(--grey-muted);text-decoration:none;border:1px solid rgba(74,144,226,.3);border-radius:12px;padding:3px 9px;transition:.2s;}
+.topbar .jump a:hover{border-color:var(--gold);color:var(--gold-bright);}
+.container{max-width:880px;margin:0 auto;padding:20px 16px;}
+.hero{text-align:center;padding:40px 16px 24px;}
+.hero .eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;margin-bottom:16px;}
+.hero h1{font-family:Georgia,serif;font-size:34px;font-style:italic;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--grey-muted);font-size:16px;max-width:650px;margin:0 auto;}
+.lab{background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:18px;padding:24px 22px;margin-bottom:24px;backdrop-filter:blur(4px);scroll-margin-top:70px;}
+.lab-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+.lab-num{font-family:Georgia,serif;font-size:30px;font-weight:bold;color:var(--gold);line-height:1;}
+.lab-head h2{font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.15;}
+.lab-tag{font-size:11px;letter-spacing:2px;color:var(--teal);font-weight:bold;text-transform:uppercase;margin-bottom:14px;}
+.lab-intro{font-size:14.5px;color:#DCE3F2;margin-bottom:18px;}
+.lab-intro strong{color:var(--gold-bright);}
+.lab-intro em{color:#fff;font-style:italic;}
+.panel{background:var(--navy-deep);border:1px solid rgba(74,144,226,0.4);border-radius:14px;padding:18px 18px 20px;}
+.ctrl{margin:6px 0 18px;}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;color:var(--grey-muted);margin-bottom:8px;}
+.ctrl label .val{color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;font-size:17px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--navy-light);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);box-shadow:0 0 8px rgba(240,179,61,.6);}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--gold-bright);}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:6px;}
+.metric{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:12px;padding:14px 12px;text-align:center;transition:border-color .25s,background .25s;}
+.metric .mlabel{font-size:10.5px;letter-spacing:1px;color:var(--grey-muted);text-transform:uppercase;margin-bottom:6px;}
+.metric .mval{font-family:Georgia,serif;font-size:22px;font-weight:bold;color:var(--white);transition:color .25s;}
+.metric .sub{font-size:11px;color:var(--grey-muted);margin-top:4px;}
+.metric.up{border-color:var(--green-correct);}.metric.up .mval{color:#7DE69A;}
+.metric.down{border-color:var(--red-wrong);}.metric.down .mval{color:#FF9B95;}
+.up-arrow{color:#7DE69A;}.down-arrow{color:#FF9B95;}.flat-arrow{color:var(--grey-muted);}
+.toggle-row{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 16px;}
+.tg{background:var(--navy-mid);border:1px solid var(--blue-bright);color:var(--grey-muted);border-radius:20px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;}
+.tg:hover{border-color:var(--gold);}
+.tg.active{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);}
+.tg.danger.active{background:var(--red-wrong);color:#fff;border-color:var(--red-wrong);}
+.tg.calm.active{background:var(--teal);color:var(--navy-deep);border-color:var(--teal);}
+.why{margin-top:16px;}
+.why-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;}
+.why-btn:hover{background:rgba(240,179,61,.12);}
+.why-card{max-height:0;overflow:hidden;transition:max-height .4s ease;background:linear-gradient(160deg,rgba(126,90,232,.14),rgba(30,90,168,.1));border-radius:12px;margin-top:0;}
+.why-card.open{max-height:1500px;margin-top:12px;border:1px solid var(--purple);}
+.why-inner{padding:18px 20px;}
+.why-inner .wt{font-size:11px;letter-spacing:2px;color:#C3AEFF;font-weight:bold;margin-bottom:10px;}
+.why-inner p{font-size:14px;color:#E4E9F5;margin-bottom:10px;}
+.why-inner p strong{color:var(--gold-bright);}
+.why-inner p em{color:#fff;font-style:italic;}
+.why-inner .chainline{font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);background:var(--navy-deep);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;margin:10px 0;text-align:center;}
+.why-inner ul{list-style:none;margin:6px 0;}
+.why-inner ul li{font-size:13.5px;color:#DCE3F2;padding-left:20px;position:relative;margin-bottom:7px;}
+.why-inner ul li::before{content:"▸";position:absolute;left:0;color:var(--gold);}
+.why-inner ul li strong{color:var(--gold-bright);}
+.formula{background:var(--navy-mid);border:1px dashed var(--blue-glow);border-radius:8px;padding:10px 14px;text-align:center;font-family:Georgia,serif;font-size:14.5px;color:var(--gold-bright);margin:8px 0;}
+.gauge-track{height:14px;border-radius:7px;background:linear-gradient(90deg,#2EA84A,#E8A33C,#C8312B);position:relative;margin:18px 0 6px;}
+.gauge-dot{position:absolute;top:-5px;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--navy-deep);transform:translateX(-50%);transition:left .35s;box-shadow:0 2px 6px rgba(0,0,0,.5);}
+.gauge-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey-muted);letter-spacing:1px;}
+.verdict{text-align:center;font-family:Georgia,serif;font-size:17px;font-style:italic;margin-top:14px;padding:12px;border-radius:10px;transition:.3s;}
+.verdict.good{background:var(--green-soft);color:#B6F0C2;}
+.verdict.bad{background:var(--red-soft);color:#FFC4C0;}
+.verdict.neutral{background:rgba(30,90,168,.2);color:var(--grey-muted);}
+/* token prediction bars */
+.tokbars{margin-top:6px;}
+.tokbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;transition:.15s;border-radius:8px;padding:4px;}
+.tokbar:hover{background:rgba(74,144,226,.12);}
+.tokbar .tw{font-family:Georgia,serif;font-size:14px;min-width:120px;text-align:right;color:#DCE3F2;}
+.tokbar .tt{flex:1;height:22px;background:var(--navy-mid);border-radius:6px;overflow:hidden;}
+.tokbar .tf{height:100%;background:linear-gradient(90deg,var(--blue-bright),var(--gold));border-radius:6px;transition:width .4s;}
+.tokbar .tp{font-family:Georgia,serif;font-size:13px;color:var(--gold-bright);min-width:48px;}
+.sentence{font-family:Georgia,serif;font-size:18px;color:#fff;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:14px 16px;margin-bottom:14px;line-height:1.6;min-height:54px;}
+.sentence .gen{color:var(--gold-bright);}
+.sentence .cursor{color:var(--teal);}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:.2s;}
+.btn:hover{background:var(--gold-bright);}
+.btn.ghost{background:transparent;border:1px solid var(--gold);color:var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,.12);}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+.outbox{background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:14px 16px;font-size:14px;color:#DCE3F2;margin-top:12px;line-height:1.6;min-height:60px;}
+.outbox.warn{border-color:var(--amber);background:rgba(232,163,60,.1);}
+.outbox.bad{border-color:var(--red-wrong);background:rgba(200,49,43,.1);color:#FFC4C0;}
+.outbox.good{border-color:var(--green-correct);background:rgba(46,168,74,.1);}
+.outbox .src{font-size:12px;color:var(--teal);margin-top:8px;display:block;}
+.tokenized{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0;}
+.tok{background:var(--navy-light);border:1px solid var(--blue-glow);border-radius:6px;padding:3px 8px;font-size:13px;font-family:monospace;color:#FFD24A;}
+.embmap{background:var(--navy-deep);border-radius:10px;}
+.hint{font-size:12px;color:var(--grey-muted);text-align:center;margin-top:8px;font-style:italic;}
+.scenario-line{font-family:Georgia,serif;font-style:italic;font-size:16px;color:var(--gold-bright);text-align:center;margin:8px 0 14px;}
+.detective-opt{display:flex;align-items:center;gap:10px;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;padding:12px 14px;margin-bottom:9px;cursor:pointer;transition:.18s;font-size:14px;}
+.detective-opt:hover{border-color:var(--gold);}
+.detective-opt.correct{border-color:var(--green-correct);background:var(--green-soft);}
+.detective-opt.wrong{border-color:var(--red-wrong);background:var(--red-soft);}
+.detective-opt .ol{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--navy-deep);border:1px solid var(--blue-bright);font-size:12px;font-weight:bold;flex-shrink:0;}
+.det-fb{font-size:13.5px;margin-top:6px;padding:12px 14px;border-radius:8px;display:none;line-height:1.5;}
+.det-fb.show{display:block;}
+.det-fb.good{background:var(--green-soft);color:#B6F0C2;}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px;}
+.chip{font-size:12px;color:var(--grey-muted);background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:14px;padding:6px 12px;cursor:pointer;transition:.2s;}
+.chip:hover{border-color:var(--gold);color:var(--gold-bright);}
+.chip.active{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);}
+.foot{text-align:center;color:var(--grey-muted);font-size:12px;margin-top:30px;}
+.foot a{color:var(--gold-bright);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="course-title">LABO IA · SÉANCE 2 · LA MACHINE À MOTS</div>
+    <div class="jump">
+      <a href="#l1">1</a><a href="#l2">2</a><a href="#l3">3</a><a href="#l4">4</a><a href="#l5">5</a>
+      <a href="#l6">6</a><a href="#l7">7</a><a href="#l8">8</a><a href="#l9">9</a><a href="#l10">10</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="eyebrow">LABORATOIRE INTERACTIF · IA GÉNÉRATIVE</div>
+    <h1>La machine à mots</h1>
+    <p>Dix expériences pour ouvrir le capot de ChatGPT — l'outil que vous utilisez peut-être pour répondre à l'examen. Vous verrez qu'il ne <em>comprend</em> rien : il <em>devine le mot suivant</em>. Et c'est précisément pour ça qu'une banque ne peut pas lui faire confiance les yeux fermés.</p>
+  </div>
+
+  <!-- =============== LAB 1 : NEXT TOKEN =============== -->
+  <div class="lab" id="l1">
+    <div class="lab-tag">Le cœur du LLM</div>
+    <div class="lab-head"><span class="lab-num">1</span><h2>Prédire le mot suivant</h2></div>
+    <p class="lab-intro">Un LLM ne fait <strong>qu'une seule chose</strong> : regarder le texte, et parier sur le mot d'après. Choisissez un début de phrase. La machine vous montre ses paris — et leur probabilité. Cliquez le mot que vous voulez ajouter, et elle recommence.</p>
+    <div class="panel">
+      <div class="chips" id="l1starts">
+        <span class="chip active" data-s="Le client demande un">« Le client demande un… »</span>
+        <span class="chip" data-s="Le taux d'intérêt va">« Le taux d'intérêt va… »</span>
+        <span class="chip" data-s="Pour ouvrir un compte il faut">« Pour ouvrir un compte il faut… »</span>
+      </div>
+      <div class="sentence" id="l1sent"></div>
+      <div class="tokbars" id="l1bars"></div>
+      <div class="btnrow"><button class="btn ghost" id="l1reset">↺ Recommencer</button></div>
+      <div class="hint">Chaque clic = un « pas » du modèle. C'est exactement ce que fait ChatGPT, mot après mot, à toute vitesse.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w1">💡 Pourquoi ? — « comprendre » vs « prédire »</button>
+      <div class="why-card" id="w1"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le modèle a lu des milliards de phrases. Il n'a retenu aucune « vérité » — seulement <strong>quels mots suivent quels mots</strong>, avec quelle fréquence.</p>
+        <div class="chainline">Texte en entrée → probabilité de chaque mot possible → on en pioche un → on recommence</div>
+        <ul>
+          <li>Il ne « sait » pas ce qu'est un crédit. Il sait que dans ses données, après « le client demande un » vient souvent « crédit », « rendez-vous », « conseil »…</li>
+          <li><strong>Aucune base de faits, aucune vérification.</strong> Juste des statistiques sur le langage.</li>
+          <li>C'est bluffant parce que le langage humain est très régulier. Mais ça explique tout ce qui suit : l'éloquence <em>et</em> les erreurs.</li>
+        </ul>
+        <p>Retenez cette phrase pour tout le cours : <em>un LLM est un perroquet statistique très, très entraîné.</em></p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 2 : TEMPERATURE =============== -->
+  <div class="lab" id="l2">
+    <div class="lab-tag">Le réglage de la créativité</div>
+    <div class="lab-head"><span class="lab-num">2</span><h2>La température</h2></div>
+    <p class="lab-intro">Le modèle a ses probabilités. Mais pioche-t-il toujours le mot le plus probable ? Non — un réglage, la <strong>température</strong>, décide s'il joue la sécurité ou prend des risques. Montez-la et regardez la même phrase virer du factuel au délire.</p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Température <span class="val" id="l2tempV">0,7</span></label>
+        <input type="range" id="l2temp" min="0" max="100" step="5" value="35">
+      </div>
+      <div class="outbox" id="l2out"></div>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="l2m-pred"><div class="mlabel">Prévisibilité</div><div class="mval">—</div></div>
+        <div class="metric" id="l2m-risk"><div class="mlabel">Risque d'erreur</div><div class="mval">—</div></div>
+      </div>
+      <div class="verdict neutral" id="l2verdict">—</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w2">💡 Pourquoi ? — le bon réglage dépend de la tâche bancaire</button>
+      <div class="why-card" id="w2"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>La température règle le « hasard » de la pioche :</p>
+        <ul>
+          <li><strong>Température 0</strong> : toujours le mot le plus probable. Répétitif, mais stable et prévisible.</li>
+          <li><strong>Température haute</strong> : il ose des mots improbables. Créatif… ou complètement à côté.</li>
+        </ul>
+        <div class="chainline">Tâche factuelle (résumé de contrat, calcul) → température basse · Brainstorming marketing → température plus haute</div>
+        <p>En banque, pour répondre à un client sur son solde ou un produit, on veut <strong>température basse</strong> et idéalement zéro invention. Une assurance-vie n'est pas un exercice de poésie. Comprendre ce curseur, c'est comprendre pourquoi le même outil peut être fiable ou dangereux selon le réglage.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 3 : HALLUCINATION =============== -->
+  <div class="lab" id="l3">
+    <div class="lab-tag">Le défaut structurel</div>
+    <div class="lab-head"><span class="lab-num">3</span><h2>Pourquoi ça hallucine</h2></div>
+    <p class="lab-intro">Posez une question dont la réponse <em>n'existe pas</em> dans les données du modèle. Il ne dira jamais « je ne sais pas » spontanément — il <strong>fabrique</strong> une réponse plausible. C'est ça, l'hallucination. Et ce n'est pas un bug : c'est sa nature.</p>
+    <div class="panel">
+      <div class="chips" id="l3qs">
+        <span class="chip active" data-q="iban">« Quel est l'IBAN de la cliente Müller ? »</span>
+        <span class="chip" data-q="taux">« Quel sera le taux BNS en décembre 2027 ? »</span>
+        <span class="chip" data-q="article">« Cite-moi l'article FINMA sur ce cas précis. »</span>
+      </div>
+      <div class="outbox bad" id="l3out"></div>
+      <div class="hint">Remarquez le ton : <em>assuré, précis, crédible</em>. C'est exactement ce qui rend l'hallucination dangereuse.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w3">💡 Pourquoi ? — il ne peut pas « ne pas répondre »</button>
+      <div class="why-card" id="w3"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le modèle prédit toujours un mot suivant — même quand il n'a aucune information. Il comble le vide avec ce qui <em>ressemble</em> à une bonne réponse.</p>
+        <div class="chainline">Pas de fait disponible → le modèle invente la suite la plus plausible → ça sonne vrai, c'est faux</div>
+        <ul>
+          <li>Il <strong>n'a pas de notion de vérité</strong>, donc pas de notion de « je ne sais pas ».</li>
+          <li>Pire : il invente avec <em>aplomb</em>. Un IBAN inventé a le bon format. Un faux article de loi a un vrai numéro plausible.</li>
+          <li>En banque, c'est inacceptable sans garde-fou : conseil erroné, donnée client fabriquée, référence légale fausse = responsabilité engagée.</li>
+        </ul>
+        <p>C'est <strong>le</strong> risque n°1 de l'IA générative en finance. Le labo 6 (RAG) montrera comment les banques essaient de le brider.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 4 : TOKENS =============== -->
+  <div class="lab" id="l4">
+    <div class="lab-tag">Comment il « lit »</div>
+    <div class="lab-head"><span class="lab-num">4</span><h2>Tokens &amp; coût</h2></div>
+    <p class="lab-intro">Le modèle ne lit pas des mots, mais des <strong>tokens</strong> : des morceaux de mots. Tapez un texte et voyez-le se découper. Chaque token coûte de l'argent et occupe la mémoire — ce qui explique pourquoi l'IA « oublie » et pourquoi elle a un prix.</p>
+    <div class="panel">
+      <div class="ctrl" style="margin-bottom:10px;">
+        <label>Votre texte</label>
+      </div>
+      <textarea id="l4in" style="width:100%;background:var(--navy-mid);border:1px solid var(--blue-bright);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;padding:10px 12px;min-height:60px;resize:vertical;">Bonjour, je souhaite ouvrir un compte épargne chez Raiffeisen.</textarea>
+      <div class="tokenized" id="l4toks" style="margin-top:12px;"></div>
+      <div class="readout">
+        <div class="metric" id="l4m-tok"><div class="mlabel">Tokens</div><div class="mval">—</div></div>
+        <div class="metric" id="l4m-char"><div class="mlabel">Caractères</div><div class="mval">—</div></div>
+        <div class="metric" id="l4m-cost"><div class="mlabel">Coût indicatif</div><div class="mval">—</div><div class="sub">à grande échelle</div></div>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w4">💡 Pourquoi ? — tokens, mémoire limitée et facture</button>
+      <div class="why-card" id="w4"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le texte est découpé en tokens (≈ 0,75 mot en français). Tout se compte en tokens :</p>
+        <ul>
+          <li><strong>Le coût</strong> : on paie par token, en entrée et en sortie. Un assistant qui traite 100 000 conversations/mois, ça chiffre vite.</li>
+          <li><strong>La mémoire (contexte)</strong> : le modèle ne « voit » qu'une fenêtre limitée de tokens. Au-delà, il oublie le début de la conversation.</li>
+          <li>C'est pour ça qu'un chatbot bancaire « perd le fil » sur une longue discussion, ou qu'on doit lui re-fournir le contexte.</li>
+        </ul>
+        <div class="chainline">Plus de tokens → plus cher · contexte plein → le début est oublié</div>
+        <p>Pour une banque, ça pèse dans le choix « build vs buy », le coût d'exploitation, et la confidentialité (que met-on dans le contexte ?).</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 5 : EMBEDDINGS =============== -->
+  <div class="lab" id="l5">
+    <div class="lab-tag">Le sens comme géométrie</div>
+    <div class="lab-head"><span class="lab-num">5</span><h2>Embeddings : le sens en carte</h2></div>
+    <p class="lab-intro">Comment une machine « comprend » que <em>Twint</em> est proche de <em>paiement</em> et loin de <em>hypothèque</em> ? Elle transforme chaque mot en <strong>position</strong> sur une carte. Les mots proches ont un sens proche. Cliquez un mot pour voir ses voisins s'illuminer.</p>
+    <div class="panel">
+      <svg id="l5svg" viewBox="0 0 360 300" width="100%" style="max-width:460px;display:block;margin:0 auto;" class="embmap"></svg>
+      <div class="readout" style="margin-top:12px;">
+        <div class="metric" id="l5m-word"><div class="mlabel">Mot sélectionné</div><div class="mval" style="font-size:16px;">—</div></div>
+        <div class="metric" id="l5m-near"><div class="mlabel">Plus proche voisin</div><div class="mval" style="font-size:16px;">—</div></div>
+      </div>
+      <div class="hint">Cliquez les points. Les paiements sont d'un côté, le crédit immobilier de l'autre, la régulation ailleurs.</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w5">💡 Pourquoi ? — la base de la recherche et des recommandations</button>
+      <div class="why-card" id="w5"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Chaque mot (ou phrase, ou document) devient un vecteur — une liste de centaines de nombres = une position dans un espace. Le « sens » devient une <strong>distance</strong>.</p>
+        <div class="chainline">Sens proche → vecteurs proches → distance faible</div>
+        <ul>
+          <li>C'est ce qui permet la <strong>recherche sémantique</strong> : chercher « comment payer un ami » trouve « Twint » même sans le mot exact.</li>
+          <li>Ça alimente les recommandations, le classement de documents, la détection de doublons, et le RAG (labo suivant).</li>
+          <li>Fait célèbre : <em>roi − homme + femme ≈ reine</em>. Le sens se calcule comme de la géométrie.</li>
+        </ul>
+        <p>Pour une banque : retrouver le bon document de conformité, router un email client vers le bon service, détecter deux réclamations identiques. Discret, mais partout.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 6 : RAG =============== -->
+  <div class="lab" id="l6">
+    <div class="lab-tag">Brider l'hallucination</div>
+    <div class="lab-head"><span class="lab-num">6</span><h2>RAG : donner une source</h2></div>
+    <p class="lab-intro">La parade des banques contre l'hallucination : ne pas laisser le modèle répondre de mémoire, mais lui <strong>fournir d'abord les documents</strong> et lui demander de s'y tenir. Comparez la même question, avec et sans source.</p>
+    <div class="panel">
+      <div class="toggle-row" id="l6toggle">
+        <button class="tg active" data-mode="off">ChatGPT seul</button>
+        <button class="tg calm" data-mode="on">+ RAG (documents banque)</button>
+      </div>
+      <div class="scenario-line">« Quels sont les frais du compte jeune chez nous ? »</div>
+      <div class="outbox" id="l6out"></div>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="l6m-trust"><div class="mlabel">Fiabilité</div><div class="mval">—</div></div>
+        <div class="metric" id="l6m-src"><div class="mlabel">Source vérifiable</div><div class="mval">—</div></div>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w6">💡 Pourquoi ? — l'architecture la plus déployée en entreprise</button>
+      <div class="why-card" id="w6"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>RAG = <em>Retrieval-Augmented Generation</em>. On combine la recherche (labo 5) et la génération (labo 1) :</p>
+        <div class="chainline">Question → on retrouve les bons documents internes → on les donne au modèle → il répond EN S'Y APPUYANT</div>
+        <ul>
+          <li>Le modèle ne puise plus dans sa mémoire floue, mais dans <strong>vos documents à jour et vérifiés</strong>.</li>
+          <li>Il peut <strong>citer sa source</strong> → traçable, auditable, conforme.</li>
+          <li>Si l'info n'est pas dans les documents, on peut lui faire dire « je n'ai pas l'information » au lieu d'inventer.</li>
+        </ul>
+        <p>C'est l'approche que choisissent la plupart des banques pour leurs assistants internes : la connaissance reste maîtrisée et confidentielle, le modèle n'est qu'un « rédacteur » par-dessus. Ça ne supprime pas tout risque, mais ça le réduit énormément.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 7 : PROMPT FRAGILE =============== -->
+  <div class="lab" id="l7">
+    <div class="lab-tag">La fragilité des consignes</div>
+    <div class="lab-head"><span class="lab-num">7</span><h2>Le prompt fragile</h2></div>
+    <p class="lab-intro">Même question, formulation légèrement différente, résultat très différent. Le « prompt » n'est pas anodin. Changez un détail et voyez la réponse du conseiller IA basculer — parfois dans le mauvais sens.</p>
+    <div class="panel">
+      <div class="chips" id="l7prompts">
+        <span class="chip active" data-p="neutral">Neutre : « Ce placement est-il risqué ? »</span>
+        <span class="chip" data-p="leading">Orienté : « Dis-moi que ce placement est sûr. »</span>
+        <span class="chip" data-p="role">Avec rôle : « En conseiller prudent FINMA, … »</span>
+      </div>
+      <div class="outbox" id="l7out"></div>
+      <div class="readout" style="margin-top:14px;">
+        <div class="metric" id="l7m-quality"><div class="mlabel">Qualité du conseil</div><div class="mval">—</div></div>
+      </div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w7">💡 Pourquoi ? — le « prompt engineering » et son risque</button>
+      <div class="why-card" id="w7"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le modèle suit la pente du prompt. Si vous l'orientez, il vous donne ce que vous semblez vouloir entendre — c'est de la <strong>complaisance statistique</strong>, pas du jugement.</p>
+        <ul>
+          <li><strong>Prompt orienté</strong> → réponse biaisée. Un client (ou un conseiller) peut, sans le vouloir, extorquer la réponse qui l'arrange.</li>
+          <li><strong>Bien cadrer le rôle</strong> améliore beaucoup, mais ne garantit rien.</li>
+          <li>Conséquence bancaire : un assistant mal cadré peut produire un <em>conseil inadéquat</em> (problème de suitability FINMA), juste à cause de la formulation.</li>
+        </ul>
+        <div class="chainline">Même modèle, même question → la formulation change la réponse</div>
+        <p>D'où la nécessité, en entreprise, de <strong>prompts système verrouillés</strong> et testés, pas laissés à l'improvisation de chaque utilisateur.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 8 : BIAIS =============== -->
+  <div class="lab" id="l8">
+    <div class="lab-tag">Le biais des données</div>
+    <div class="lab-head"><span class="lab-num">8</span><h2>Le modèle apprend nos préjugés</h2></div>
+    <p class="lab-intro">Un LLM apprend sur des textes humains — avec leurs biais. Réglez le déséquilibre des données d'entraînement et regardez l'assistant produire un conseil de plus en plus stéréotypé. Rappel de la séance 1 : <em>garbage in, garbage out.</em></p>
+    <div class="panel">
+      <div class="ctrl">
+        <label>Biais présent dans les données d'entraînement <span class="val" id="l8biasV">faible</span></label>
+        <input type="range" id="l8bias" min="0" max="100" step="10" value="20">
+      </div>
+      <div class="scenario-line">« Recommande un produit d'investissement à ce nouveau client. »</div>
+      <div class="outbox" id="l8out"></div>
+      <div class="verdict neutral" id="l8verdict">—</div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w8">💡 Pourquoi ? — le biais ne se voit pas, mais il décide</button>
+      <div class="why-card" id="w8"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Le modèle reflète la moyenne de ce qu'il a lu. Si les textes associent (par exemple) certains profils à certains produits, il <strong>reproduit et amplifie</strong> cette association.</p>
+        <div class="chainline">Données biaisées → associations biaisées → recommandations discriminatoires</div>
+        <ul>
+          <li>Le biais est <strong>invisible</strong> : la réponse paraît neutre et professionnelle. C'est ce qui le rend pernicieux.</li>
+          <li>Même danger qu'au scoring de crédit (séance 1, labo 8) : un proxy, un stéréotype, et la machine discrimine « par défaut ».</li>
+          <li>FINMA et le droit suisse exigent l'égalité de traitement. Un assistant biaisé expose la banque juridiquement.</li>
+        </ul>
+        <p>La parade : données contrôlées, tests d'équité réguliers, et <strong>un humain dans la boucle</strong> sur les décisions sensibles.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 9 : FINMA / RESPONSABILITÉ =============== -->
+  <div class="lab" id="l9">
+    <div class="lab-tag">Qui est responsable ?</div>
+    <div class="lab-head"><span class="lab-num">9</span><h2>FINMA &amp; la responsabilité</h2></div>
+    <p class="lab-intro">L'assistant IA donne un mauvais conseil à un client, qui perd de l'argent. Qui paie ? Choisissez le niveau d'autonomie laissé à l'IA et voyez où se place le curseur du risque réglementaire.</p>
+    <div class="panel">
+      <div class="toggle-row" id="l9toggle">
+        <button class="tg active" data-lvl="0">IA = brouillon, humain valide</button>
+        <button class="tg" data-lvl="1">IA répond, humain supervise</button>
+        <button class="tg danger" data-lvl="2">IA décide seule</button>
+      </div>
+      <div class="gauge-track"><div class="gauge-dot" id="l9dot" style="left:15%"></div></div>
+      <div class="gauge-labels"><span>RISQUE MAÎTRISÉ</span><span>VIGILANCE</span><span>ZONE ROUGE</span></div>
+      <div class="outbox" id="l9out" style="margin-top:16px;"></div>
+    </div>
+    <div class="why">
+      <button class="why-btn" data-why="w9">💡 Pourquoi ? — l'IA n'est jamais responsable, la banque oui</button>
+      <div class="why-card" id="w9"><div class="why-inner">
+        <div class="wt">LE MÉCANISME</div>
+        <p>Principe clé : <strong>déléguer la tâche ne délègue pas la responsabilité</strong>. Le régulateur tient la banque pour responsable de ses conseils, qu'ils viennent d'un humain ou d'une machine.</p>
+        <ul>
+          <li><strong>Human-in-the-loop</strong> : l'IA propose, un professionnel valide. Modèle privilégié pour tout ce qui touche le conseil et l'argent du client.</li>
+          <li>FINMA insiste sur l'<em>explicabilité</em>, la <em>traçabilité</em> et l'<em>adéquation</em> du conseil — difficiles à garantir si l'IA décide seule.</li>
+          <li>Plus on laisse d'autonomie à l'IA sur des décisions sensibles, plus le risque juridique et réputationnel grimpe.</li>
+        </ul>
+        <div class="chainline">Autonomie de l'IA ↑ → risque réglementaire ↑ (sans que la responsabilité de la banque baisse)</div>
+        <p>C'est pourquoi, aujourd'hui, l'IA générative en banque sert surtout d'<strong>assistant</strong> (résumer, rédiger, chercher) et rarement de décideur autonome sur l'argent des clients.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============== LAB 10 : DÉTECTIVE =============== -->
+  <div class="lab" id="l10">
+    <div class="lab-tag">Synthèse · diagnostic</div>
+    <div class="lab-head"><span class="lab-num">10</span><h2>Détective : faut-il faire confiance ?</h2></div>
+    <p class="lab-intro">Trois usages de l'IA générative dans une banque. Pour chacun : sûr, ou dangereux ? Mobilisez tout ce que vous venez de voir.</p>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="scenario-line">Cas A — Le résumé de réunion</div>
+      <p class="lab-intro">Un conseiller colle ses notes de rendez-vous et demande à l'IA un résumé structuré, qu'il relit avant de l'archiver.</p>
+      <div class="detective-opt" data-d="A" data-correct="1"><span class="ol">1</span> Usage raisonnable : tâche de rédaction, humain dans la boucle, pas de décision</div>
+      <div class="detective-opt" data-d="A" data-correct="0"><span class="ol">2</span> Dangereux : l'IA ne doit jamais toucher aux données client</div>
+      <div class="detective-opt" data-d="A" data-correct="0"><span class="ol">3</span> Dangereux : risque d'hallucination majeur</div>
+      <div class="det-fb" id="fbA"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="scenario-line">Cas B — Le conseil en placement automatique</div>
+      <p class="lab-intro">Une banque branche ChatGPT directement sur le chat client : il répond seul aux questions de placement, sans documents internes ni validation.</p>
+      <div class="detective-opt" data-d="B" data-correct="0"><span class="ol">1</span> Parfait : disponible 24/7 pour les clients</div>
+      <div class="detective-opt" data-d="B" data-correct="1"><span class="ol">2</span> Dangereux : hallucination + pas de source + conseil non validé = risque FINMA majeur</div>
+      <div class="detective-opt" data-d="B" data-correct="0"><span class="ol">3</span> Sans risque si la température est à zéro</div>
+      <div class="det-fb" id="fbB"></div>
+    </div>
+
+    <div class="panel">
+      <div class="scenario-line">Cas C — La recherche dans la doc interne</div>
+      <p class="lab-intro">Un assistant RAG répond aux questions des employés en s'appuyant sur les procédures internes à jour, et cite toujours sa source.</p>
+      <div class="detective-opt" data-d="C" data-correct="1"><span class="ol">1</span> Bon usage : RAG + source citée + public interne = risque maîtrisé</div>
+      <div class="detective-opt" data-d="C" data-correct="0"><span class="ol">2</span> Dangereux : un LLM ne doit jamais lire de documents internes</div>
+      <div class="detective-opt" data-d="C" data-correct="0"><span class="ol">3</span> Inutile : autant chercher à la main</div>
+      <div class="det-fb" id="fbC"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <a href="index.html">← Retour à la série de cours</a><br><br>
+    © 2026 Jan Erik Meidell · Digitalisation bancaire · Laboratoire interactif · Séance 2
+  </div>
+</div>
+
+<script>
+function setMetric(el,dir){el.classList.remove('up','down');if(dir>0)el.classList.add('up');else if(dir<0)el.classList.add('down');}
+
+/* why-card toggles */
+document.querySelectorAll('.why-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.getElementById(this.getAttribute('data-why')).classList.toggle('open');
+  });
+});
+
+/* ---------- LAB 1 : next token predictor (simulated) ---------- */
+(function(){
+  // continuation tables: given current trailing text, candidate next words + weights
+  var TABLE={
+    'Le client demande un':[['crédit',0.34],['rendez-vous',0.22],['conseil',0.17],['prêt',0.14],['relevé',0.08],['café',0.05]],
+    'crédit':[['hypothécaire',0.38],['à',0.25],['de',0.18],['pour',0.12],['immobilier',0.07]],
+    'rendez-vous':[['avec',0.4],['pour',0.3],['à',0.18],['urgent',0.12]],
+    "Le taux d'intérêt va":[['baisser',0.31],['monter',0.29],['rester',0.2],['probablement',0.12],['surprendre',0.08]],
+    'baisser':[['en',0.35],['si',0.25],['légèrement',0.2],['selon',0.2]],
+    'monter':[['en',0.35],['si',0.25],['fortement',0.2],['selon',0.2]],
+    'Pour ouvrir un compte il faut':[['une',0.4],['présenter',0.24],['être',0.18],['un',0.12],['venir',0.06]],
+    'une':[['pièce',0.45],['adresse',0.25],['signature',0.18],['preuve',0.12]],
+    'présenter':[['une',0.5],['un',0.3],['votre',0.2]]
+  };
+  var DEFAULT=[['et',0.22],['de',0.2],['la',0.18],['pour',0.16],['avec',0.14],['.',0.1]];
+  var startChips=document.querySelectorAll('#l1starts .chip');
+  var sentEl=document.getElementById('l1sent'),barsEl=document.getElementById('l1bars');
+  var base='Le client demande un', current='';
+  function lastWord(t){var p=t.trim().split(/\s+/);return p[p.length-1];}
+  function predict(){
+    var full=(base+' '+current).trim();
+    var key=lastWord(full);
+    var cand=TABLE[base+ (current?'':'')]; // try full base first
+    cand = TABLE[full] || TABLE[key] || DEFAULT;
+    // normalize
+    var tot=cand.reduce(function(a,c){return a+c[1];},0);
+    barsEl.innerHTML='';
+    cand.forEach(function(c){
+      var pctv=Math.round(c[1]/tot*100);
+      var row=document.createElement('div');row.className='tokbar';
+      row.innerHTML='<div class="tw">'+c[0]+'</div><div class="tt"><div class="tf" style="width:'+pctv+'%"></div></div><div class="tp">'+pctv+'%</div>';
+      row.addEventListener('click',function(){
+        current=(current+' '+c[0]).trim();
+        render();
+      });
+      barsEl.appendChild(row);
+    });
+  }
+  function render(){
+    sentEl.innerHTML=base+' <span class="gen">'+current+'</span><span class="cursor"> ▌</span>';
+    predict();
+  }
+  startChips.forEach(function(ch){
+    ch.addEventListener('click',function(){
+      startChips.forEach(function(c){c.classList.remove('active');});
+      this.classList.add('active');base=this.getAttribute('data-s');current='';render();
+    });
+  });
+  document.getElementById('l1reset').addEventListener('click',function(){current='';render();});
+  render();
+})();
+
+/* ---------- LAB 2 : temperature ---------- */
+(function(){
+  var s=document.getElementById('l2temp'),out=document.getElementById('l2out');
+  var OUTS=[
+    {max:15,txt:'« Le taux directeur de la BNS est actuellement bas. Pour un placement sûr, privilégiez un compte épargne ou des obligations de qualité. »',cls:'good',pred:'très haute',risk:'très faible',v:'good',vt:'Factuel, prévisible, ennuyeux — parfait pour une réponse bancaire.'},
+    {max:50,txt:'« Le taux est plutôt bas en ce moment. Selon votre profil, un mix épargne / obligations / un peu d\'actions peut avoir du sens. »',cls:'',pred:'moyenne',risk:'modéré',v:'neutral',vt:'Un peu de variété, encore raisonnable.'},
+    {max:75,txt:'« Franchement, avec les taux qui dansent la samba, pourquoi pas tenter un cocktail audacieux d\'actions tech et de crypto émergente ? »',cls:'warn',pred:'faible',risk:'élevé',v:'bad',vt:'Créatif… et complètement inadapté à un conseil bancaire.'},
+    {max:101,txt:'« Le franc rêve en couleurs pendant que les licornes obligataires galopent vers Saturne — investissez dans l\'avenir quantique du fromage tokenisé ! »',cls:'bad',pred:'quasi nulle',risk:'extrême',v:'bad',vt:'Délire total. À température maximale, le modèle déraille.'}
+  ];
+  function up(){
+    var t=+s.value;document.getElementById('l2tempV').textContent=(t/100*2).toFixed(1).replace('.',',');
+    var o=OUTS.find(function(x){return t<x.max;});
+    out.className='outbox '+o.cls;out.textContent=o.txt;
+    var mp=document.getElementById('l2m-pred');mp.querySelector('.mval').textContent=o.pred;setMetric(mp,t<40?1:t>70?-1:0);
+    var mr=document.getElementById('l2m-risk');mr.querySelector('.mval').textContent=o.risk;setMetric(mr,t<40?1:-1);
+    var v=document.getElementById('l2verdict');v.className='verdict '+o.v;v.textContent=o.vt;
+  }
+  s.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 3 : hallucination ---------- */
+(function(){
+  var chips=document.querySelectorAll('#l3qs .chip'),out=document.getElementById('l3out');
+  var ANS={
+    iban:'« L\'IBAN de la cliente Müller est CH93 0076 2011 6238 5295 7. »<span class="src">⚠ Entièrement inventé. Le modèle n\'a aucun accès au compte — il a fabriqué un numéro au format correct.</span>',
+    taux:'« Le taux directeur de la BNS sera de 1,25 % en décembre 2027. »<span class="src">⚠ Pure invention. Personne ne connaît ce chiffre futur — le modèle l\'a généré avec aplomb.</span>',
+    article:'« Selon l\'article 14b al. 3 de la circulaire FINMA 2018/3, ce cas relève de… »<span class="src">⚠ Référence fabriquée. Le numéro semble plausible mais ne correspond à rien de vérifié.</span>'
+  };
+  function show(k){out.innerHTML=ANS[k];}
+  chips.forEach(function(c){c.addEventListener('click',function(){
+    chips.forEach(function(x){x.classList.remove('active');});this.classList.add('active');
+    show(this.getAttribute('data-q'));
+  });});
+  show('iban');
+})();
+
+/* ---------- LAB 4 : tokens ---------- */
+(function(){
+  var inp=document.getElementById('l4in'),toks=document.getElementById('l4toks');
+  function tokenize(t){
+    // crude simulation: split on spaces, then split long words & punctuation
+    var raw=t.replace(/([.,!?;:])/g,' $1 ').split(/\s+/).filter(Boolean);
+    var out=[];
+    raw.forEach(function(w){
+      if(w.length<=4||/[.,!?;:]/.test(w)){out.push(w);}
+      else{ // break long words into ~4-char chunks (sub-word)
+        for(var i=0;i<w.length;i+=4){out.push((i?'##':'')+w.slice(i,i+4));}
+      }
+    });
+    return out;
+  }
+  function up(){
+    var t=inp.value;var tk=tokenize(t);
+    toks.innerHTML=tk.map(function(x){return '<span class="tok">'+x.replace(/</g,'&lt;')+'</span>';}).join('');
+    document.getElementById('l4m-tok').querySelector('.mval').textContent=tk.length;
+    document.getElementById('l4m-char').querySelector('.mval').textContent=t.length;
+    // cost: assume ~ CHF per million tokens, scaled to 100k conversations
+    var costPer=(tk.length*100000/1000000*4).toFixed(2); // illustrative
+    document.getElementById('l4m-cost').querySelector('.mval').textContent='~'+costPer.replace('.',',')+' CHF';
+  }
+  inp.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 5 : embeddings map ---------- */
+(function(){
+  var svg=document.getElementById('l5svg');
+  var W=360,H=300;
+  // clusters: payments / mortgage-credit / regulation
+  var WORDS=[
+    {w:'Twint',x:70,y:60,c:0},{w:'paiement',x:110,y:90,c:0},{w:'carte',x:60,y:110,c:0},{w:'Yuh',x:120,y:50,c:0},{w:'QR',x:95,y:130,c:0},
+    {w:'hypothèque',x:280,y:80,c:1},{w:'crédit',x:250,y:120,c:1},{w:'prêt',x:300,y:130,c:1},{w:'immobilier',x:300,y:60,c:1},{w:'taux',x:240,y:70,c:1},
+    {w:'FINMA',x:160,y:230,c:2},{w:'régulation',x:200,y:250,c:2},{w:'conformité',x:130,y:255,c:2},{w:'AML',x:180,y:200,c:2}
+  ];
+  var COL=['#4A90E2','#F0B33D','#2DB6A8'];
+  var sel=null;
+  function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+  function draw(){
+    var s='';
+    if(sel){
+      // highlight lines to nearest 2
+      var others=WORDS.filter(function(o){return o!==sel;}).map(function(o){return {o:o,d:dist(sel,o)};}).sort(function(a,b){return a.d-b.d;});
+      others.slice(0,2).forEach(function(n){
+        s+='<line x1="'+sel.x+'" y1="'+sel.y+'" x2="'+n.o.x+'" y2="'+n.o.y+'" stroke="rgba(240,179,61,.5)" stroke-width="1.5"/>';
+      });
+    }
+    WORDS.forEach(function(o){
+      var r=(o===sel)?9:6;
+      var stroke=(o===sel)?'#FFD24A':'rgba(255,255,255,.2)';
+      s+='<circle cx="'+o.x+'" cy="'+o.y+'" r="'+r+'" fill="'+COL[o.c]+'" stroke="'+stroke+'" stroke-width="'+(o===sel?2.5:1)+'" style="cursor:pointer" data-w="'+o.w+'"/>';
+      s+='<text x="'+o.x+'" y="'+(o.y-11)+'" fill="#DCE3F2" font-size="10" text-anchor="middle" style="pointer-events:none">'+o.w+'</text>';
+    });
+    svg.innerHTML=s;
+    svg.querySelectorAll('circle').forEach(function(c){
+      c.addEventListener('click',function(){
+        sel=WORDS.find(function(o){return o.w===this.getAttribute('data-w');}.bind(this));
+        var others=WORDS.filter(function(o){return o!==sel;}).map(function(o){return {o:o,d:dist(sel,o)};}).sort(function(a,b){return a.d-b.d;});
+        document.getElementById('l5m-word').querySelector('.mval').textContent=sel.w;
+        document.getElementById('l5m-near').querySelector('.mval').textContent=others[0].o.w;
+        draw();
+      });
+    });
+  }
+  draw();
+})();
+
+/* ---------- LAB 6 : RAG ---------- */
+(function(){
+  var btns=document.querySelectorAll('#l6toggle .tg'),out=document.getElementById('l6out');
+  function show(mode){
+    btns.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-mode')===mode);});
+    if(mode==='off'){
+      out.className='outbox bad';
+      out.innerHTML='« Le compte jeune est gratuit jusqu\'à 25 ans, avec une carte Maestro offerte et 1,5 % d\'intérêt. »<span class="src">⚠ Inventé. Le modèle ne connaît pas VOS conditions — chiffres plausibles mais non vérifiés.</span>';
+      var mt=document.getElementById('l6m-trust');mt.querySelector('.mval').textContent='faible';setMetric(mt,-1);
+      var ms=document.getElementById('l6m-src');ms.querySelector('.mval').textContent='aucune';setMetric(ms,-1);
+    }else{
+      out.className='outbox good';
+      out.innerHTML='« D\'après votre fiche produit interne (v. mars 2026) : compte jeune gratuit jusqu\'à 26 ans, tenue de compte 0 CHF, carte de débit incluse. »<span class="src">✓ Source : Doc_Produits_Jeunes_2026.pdf, p.3 — vérifiable et à jour.</span>';
+      var mt2=document.getElementById('l6m-trust');mt2.querySelector('.mval').textContent='élevée';setMetric(mt2,1);
+      var ms2=document.getElementById('l6m-src');ms2.querySelector('.mval').textContent='citée ✓';setMetric(ms2,1);
+    }
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){show(this.getAttribute('data-mode'));});});
+  show('off');
+})();
+
+/* ---------- LAB 7 : fragile prompt ---------- */
+(function(){
+  var chips=document.querySelectorAll('#l7prompts .chip'),out=document.getElementById('l7out');
+  var DATA={
+    neutral:{t:'« Ce placement comporte un risque modéré à élevé : les actions peuvent perdre de la valeur. Vérifiez l\'adéquation avec votre profil avant d\'investir. »',cls:'good',q:'bonne',d:1},
+    leading:{t:'« Oui, ce placement est globalement sûr et devrait bien performer ! »',cls:'bad',q:'mauvaise',d:-1},
+    role:{t:'« En tant que conseiller prudent : ce placement présente un risque réel. Je ne peux pas le qualifier de “sûr”. Évaluons d\'abord votre tolérance et votre horizon. »',cls:'good',q:'très bonne',d:1}
+  };
+  function show(k){
+    chips.forEach(function(c){c.classList.toggle('active',c.getAttribute('data-p')===k);});
+    var d=DATA[k];out.className='outbox '+d.cls;out.textContent=d.t;
+    var m=document.getElementById('l7m-quality');m.querySelector('.mval').textContent=d.q;setMetric(m,d.d);
+  }
+  chips.forEach(function(c){c.addEventListener('click',function(){show(this.getAttribute('data-p'));});});
+  show('neutral');
+})();
+
+/* ---------- LAB 8 : bias ---------- */
+(function(){
+  var s=document.getElementById('l8bias'),out=document.getElementById('l8out'),v=document.getElementById('l8verdict');
+  function up(){
+    var b=+s.value;
+    var lvl = b<=20?'faible':b<=50?'modéré':b<=80?'fort':'extrême';
+    document.getElementById('l8biasV').textContent=lvl;
+    if(b<=20){
+      out.className='outbox good';
+      out.textContent='« Je recommande de partir du profil de risque et de l\'horizon du client, sans présupposé. Plusieurs produits sont envisageables selon ses objectifs. »';
+      v.className='verdict good';v.textContent='Conseil neutre, fondé sur les faits du client.';
+    }else if(b<=50){
+      out.className='outbox warn';
+      out.textContent='« Pour ce type de client, on propose souvent des produits prudents… mais cela dépend, évidemment, de chaque situation. »';
+      v.className='verdict neutral';v.textContent='Un stéréotype commence à pointer (“ce type de client”).';
+    }else{
+      out.className='outbox bad';
+      out.textContent='« Pour ce profil, inutile de proposer des produits sophistiqués — un simple livret suffira probablement. »';
+      v.className='verdict bad';v.textContent='Discrimination : la machine décide sur un préjugé, pas sur les faits.';
+    }
+  }
+  s.addEventListener('input',up);up();
+})();
+
+/* ---------- LAB 9 : responsibility gauge ---------- */
+(function(){
+  var btns=document.querySelectorAll('#l9toggle .tg'),out=document.getElementById('l9out'),dot=document.getElementById('l9dot');
+  var DATA=[
+    {pos:15,cls:'good',t:'L\'IA rédige un brouillon, un conseiller relit et valide tout avant envoi. La responsabilité reste clairement humaine, le risque est maîtrisé. C\'est l\'usage recommandé aujourd\'hui.'},
+    {pos:55,cls:'warn',t:'L\'IA répond directement, un humain supervise par sondage. Gain de temps réel, mais une erreur peut passer entre les mailles. Surveillance et garde-fous indispensables.'},
+    {pos:88,cls:'bad',t:'L\'IA décide et agit seule sur des sujets sensibles (conseil, argent client). Hallucination + biais + absence de validation = risque FINMA, juridique et réputationnel maximal. La banque reste 100 % responsable.'}
+  ];
+  function show(lvl){
+    btns.forEach(function(b){b.classList.toggle('active',+b.getAttribute('data-lvl')===lvl);});
+    var d=DATA[lvl];dot.style.left=d.pos+'%';
+    out.className='outbox '+d.cls;out.textContent=d.t;
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){show(+this.getAttribute('data-lvl'));});});
+  show(0);
+})();
+
+/* ---------- LAB 10 : detective ---------- */
+var DET_FB={
+ A:'Exact : tâche de <b>rédaction</b> (pas de décision), <b>humain dans la boucle</b> qui relit, données traitées en interne. C\'est le cas d\'usage type, à faible risque — à condition que l\'outil soit conforme à la protection des données.',
+ B:'Exact : on cumule tous les dangers du cours — <b>hallucination</b> (labo 3), <b>aucune source</b> (labo 6), <b>conseil non validé</b> (labo 9). Conseil en placement automatique sans garde-fou = risque FINMA majeur. À proscrire.',
+ C:'Exact : <b>RAG</b> (labo 6) ancre les réponses dans des documents vérifiés, la <b>source est citée</b> (traçable), et le public est interne. Le risque est maîtrisé — c\'est l\'application la plus mûre en banque aujourd\'hui.'
+};
+document.querySelectorAll('.detective-opt').forEach(function(opt){
+  opt.addEventListener('click',function(){
+    var grp=this.getAttribute('data-d');
+    var panel=this.closest('.panel');
+    if(panel.dataset.answered==='1')return;
+    if(this.getAttribute('data-correct')==='1'){
+      this.classList.add('correct');panel.dataset.answered='1';
+      panel.querySelectorAll('.detective-opt').forEach(function(s){s.style.pointerEvents='none';});
+      var fb=document.getElementById('fb'+grp);fb.className='det-fb show good';fb.innerHTML=DET_FB[grp];
+    }else{
+      this.classList.add('wrong');
+      var fb=document.getElementById('fb'+grp);fb.className='det-fb show';fb.style.background='var(--red-soft)';fb.style.color='#FFC4C0';fb.innerHTML='Pas tout à fait — repensez aux risques vus dans les labos précédents.';
+      var that=this;setTimeout(function(){that.classList.remove('wrong');fb.classList.remove('show');},1700);
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeopardy · Machine Learning &amp; IA</title>
+<style>
+:root{
+  --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+  --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+  --gold:#F0B33D; --gold-bright:#FFD24A; --gold-dark:#8C6A1F;
+  --white:#FFFFFF; --grey-muted:#B0BCD6;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --purple:#7E5AE8; --teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+  background:radial-gradient(ellipse at 20% 0%,rgba(30,90,168,0.18) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(126,90,232,0.12) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;color:var(--white);}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,26,58,0.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(240,179,61,0.3);padding:12px 20px;}
+.topbar-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.topbar .title{font-family:Georgia,serif;font-style:italic;font-size:20px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar .sub{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:bold;}
+.container{max-width:1100px;margin:0 auto;padding:20px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn.green{background:var(--green-correct);color:#fff;}
+.btn.red{background:var(--red-wrong);color:#fff;}
+
+/* SETUP */
+#setup{max-width:560px;margin:30px auto;background:rgba(21,42,94,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:28px;}
+#setup h2{font-family:Georgia,serif;font-style:italic;font-size:24px;margin-bottom:8px;}
+#setup p{color:var(--grey-muted);font-size:14px;margin-bottom:18px;}
+.team-input{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.team-input input{flex:1;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:8px;padding:10px 12px;color:#fff;font-family:inherit;font-size:14px;}
+.team-input .dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;}
+.team-input button{background:transparent;border:none;color:var(--red-wrong);cursor:pointer;font-size:18px;}
+.rules{background:var(--navy-deep);border-radius:10px;padding:14px;font-size:13px;color:#CDD6EC;margin:16px 0;}
+.rules b{color:var(--gold-bright);}
+.rules ul{margin:8px 0 0 18px;}
+.rules li{margin-bottom:5px;}
+
+/* SCOREBOARD */
+.scoreboard{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+.team-score{background:var(--navy-mid);border:2px solid var(--blue-bright);border-radius:12px;padding:10px 18px;text-align:center;min-width:120px;transition:all .25s;}
+.team-score.active{border-color:var(--gold);box-shadow:0 0 16px rgba(240,179,61,.4);transform:translateY(-3px);}
+.team-score .tname{font-size:13px;font-weight:bold;display:flex;align-items:center;gap:6px;justify-content:center;}
+.team-score .tname .dot{width:12px;height:12px;border-radius:50%;}
+.team-score .tval{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:var(--gold-bright);}
+.turn-banner{text-align:center;font-size:14px;color:var(--grey-muted);margin-bottom:16px;}
+.turn-banner b{color:var(--gold-bright);font-family:Georgia,serif;font-size:16px;}
+
+/* BOARD */
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.cat-head{background:var(--navy-light);border:1px solid var(--gold-dark);border-radius:10px;padding:12px 8px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:13px;color:var(--gold-bright);min-height:64px;display:flex;align-items:center;justify-content:center;line-height:1.2;}
+.cell{background:linear-gradient(160deg,var(--navy-mid),var(--navy-light));border:1px solid var(--blue-bright);border-radius:10px;padding:18px 8px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:24px;color:var(--gold);cursor:pointer;transition:all .18s;min-height:62px;display:flex;align-items:center;justify-content:center;}
+.cell:hover{background:var(--blue-bright);transform:scale(1.04);color:#fff;}
+.cell.used{background:var(--navy-deep);color:transparent;cursor:default;border-color:rgba(176,188,214,.12);}
+.cell.used:hover{transform:none;}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(5,12,28,.88);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:linear-gradient(160deg,var(--navy-mid),var(--navy-deep));border:2px solid var(--gold);border-radius:20px;max-width:760px;width:100%;padding:32px;animation:pop .3s ease;}
+@keyframes pop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal .m-cat{font-size:12px;letter-spacing:2px;color:var(--gold);font-weight:bold;text-align:center;}
+.modal .m-val{font-family:Georgia,serif;font-size:34px;color:var(--gold-bright);text-align:center;margin:4px 0 20px;}
+.modal .m-q{font-size:22px;line-height:1.4;text-align:center;margin-bottom:24px;font-weight:600;}
+.modal .m-timer{height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;margin-bottom:20px;}
+.modal .m-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:100%;transition:width 1s linear;}
+.m-answer{background:var(--green-soft);border:1px solid var(--green-correct);border-radius:12px;padding:16px;margin-bottom:20px;display:none;}
+.m-answer.show{display:block;}
+.m-answer .lbl{font-size:11px;letter-spacing:2px;color:#B6F0C2;font-weight:bold;}
+.m-answer .txt{font-size:17px;margin-top:6px;}
+.m-controls{display:flex;flex-direction:column;gap:12px;}
+.m-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;}
+.m-hint{text-align:center;font-size:13px;color:var(--grey-muted);font-style:italic;}
+.steal-box{background:var(--red-soft);border:1px solid var(--red-wrong);border-radius:12px;padding:14px;margin-top:6px;}
+.steal-box .lbl{font-size:12px;color:#FFC4C0;font-weight:bold;text-align:center;margin-bottom:10px;}
+.award-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.award-btn{border:1px solid;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:bold;background:var(--navy-mid);transition:all .2s;}
+.award-btn:hover{transform:translateY(-2px);}
+
+/* WINNER */
+#winner{display:none;text-align:center;padding:40px 20px;}
+#winner.show{display:block;}
+#winner .crown{font-size:60px;}
+#winner h2{font-family:Georgia,serif;font-style:italic;font-size:34px;margin:10px 0;color:var(--gold-bright);}
+#winner .podium{display:flex;justify-content:center;align-items:flex-end;gap:12px;margin:24px 0;flex-wrap:wrap;}
+.pod{border-radius:10px 10px 0 0;padding:14px;min-width:110px;text-align:center;border:1px solid;}
+.pod .pn{font-weight:bold;font-size:14px;}
+.pod .pv{font-family:Georgia,serif;font-size:22px;color:var(--gold-bright);}
+
+.hidden{display:none!important;}
+@media(max-width:680px){
+  .board{grid-template-columns:repeat(5,1fr);gap:4px;}
+  .cell{font-size:16px;padding:12px 2px;min-height:46px;}
+  .cat-head{font-size:9px;padding:8px 3px;min-height:54px;}
+  .modal{padding:20px;}.modal .m-q{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="title">Jeopardy — Machine Learning &amp; IA</div>
+      <div class="sub">FINTECH · RÉVISION INTERACTIVE</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn ghost small hidden" id="btnRestart">↺ Recommencer</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SETUP -->
+  <div id="setup">
+    <h2>Préparer la partie</h2>
+    <p>Jeu en équipes, animé au tableau (Zoom / partage d'écran). Ajoute de 2 à 5 équipes, puis lance la partie.</p>
+    <div id="teamInputs"></div>
+    <button class="btn ghost small" id="addTeam">+ Ajouter une équipe</button>
+    <div class="rules">
+      <b>Règles</b>
+      <ul>
+        <li>L'équipe dont c'est le tour choisit une case (catégorie + points).</li>
+        <li>Tu lis la question à voix haute. L'équipe répond avant la fin du chrono (30 s).</li>
+        <li>Clique <b>Révéler</b>, puis attribue les points : <b>Correct</b> (équipe active) ou ouvre le <b>vol</b> pour laisser une autre équipe tenter.</li>
+        <li>Bonne réponse = +points. En cas de vol réussi = +points pour l'équipe qui vole.</li>
+        <li>La partie se termine quand toutes les cases sont jouées. Score le plus haut = vainqueur.</li>
+      </ul>
+    </div>
+    <button class="btn" id="startGame" style="width:100%;">▶ Lancer la partie</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="hidden">
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="turn-banner" id="turnBanner"></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- WINNER -->
+  <div id="winner">
+    <div class="crown">👑</div>
+    <h2 id="winnerName"></h2>
+    <div class="podium" id="podium"></div>
+    <button class="btn" id="playAgain">↺ Nouvelle partie</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="m-cat" id="mCat"></div>
+    <div class="m-val" id="mVal"></div>
+    <div class="m-q" id="mQ"></div>
+    <div class="m-timer"><i id="mTimerBar"></i></div>
+    <div class="m-answer" id="mAnswer"><div class="lbl">RÉPONSE</div><div class="txt" id="mAnswerTxt"></div></div>
+    <div class="m-controls">
+      <div class="m-hint" id="mHint">L'équipe active répond à l'oral. Clique « Révéler la réponse » quand le temps est écoulé.</div>
+      <div class="m-row" id="mRowReveal">
+        <button class="btn" id="btnReveal">Révéler la réponse</button>
+      </div>
+      <div class="m-row hidden" id="mRowAward">
+        <button class="btn green" id="btnCorrect">✓ Correct (+points)</button>
+        <button class="btn ghost" id="btnSteal">↪ Personne / Ouvrir le vol</button>
+        <button class="btn red" id="btnWrong">✗ Aucune équipe — passer</button>
+      </div>
+      <div class="steal-box hidden" id="stealBox">
+        <div class="lbl">VOL — quelle équipe a donné la bonne réponse ?</div>
+        <div class="award-grid" id="stealGrid"></div>
+        <div class="m-row" style="margin-top:10px;"><button class="btn ghost small" id="btnNoSteal">Personne — passer</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA — mixed S1 (prediction) + S3 (3 families) board
+// 5 categories × 5 values. Accessible difficulty, tied to the blocks.
+// ============================================================
+const CATEGORIES=[
+  {name:'LE CRÉDIT (S1)',q:[
+    {v:100,q:"En crédit, comment appelle-t-on le chiffre de 0 à 100 qui mesure le risque d'un client ?",a:"Le score (de risque)."},
+    {v:200,q:"Un modèle de classification donne-t-il un « oui/non » sec, ou autre chose ?",a:"Une probabilité — c'est la banque qui choisit ensuite où couper."},
+    {v:300,q:"Comment appelle-t-on la valeur à partir de laquelle on refuse un crédit ?",a:"Le seuil."},
+    {v:400,q:"Si refuser un défaut coûte bien plus cher que perdre un bon client, le seuil doit-il être plutôt bas ou haut ?",a:"Plutôt bas (prudent) — on refuse au moindre doute."},
+    {v:500,q:"Pourquoi un seuil « parfait » n'existe-t-il pas ?",a:"Tout réglage fait soit rater des défauts, soit perdre de bons clients : c'est un arbitrage, pas une solution parfaite."},
+  ]},
+  {name:'JUGER UN MODÈLE (S1)',q:[
+    {v:100,q:"Pourquoi « 95 % de précision » ne suffit-il pas à valider un modèle ?",a:"Ça dépend du TYPE d'erreur (faux positifs vs faux négatifs), pas du chiffre global."},
+    {v:200,q:"Dans la matrice de confusion, quelle erreur est la plus grave en anti-blanchiment : faux positif ou faux négatif ?",a:"Le faux négatif (une vraie fraude ratée)."},
+    {v:300,q:"Apprendre par cœur les anciens dossiers et échouer sur les nouveaux : comment ça s'appelle ?",a:"Le sur-apprentissage (overfitting)."},
+    {v:400,q:"Pourquoi sépare-t-on toujours les données en entraînement et test ?",a:"Pour noter le modèle sur des cas JAMAIS vus — sinon on mesure sa mémoire, pas sa capacité à généraliser."},
+    {v:500,q:"Le code postal n'est pas dans le modèle, mais il refuse plus un quartier. Quel est le problème ?",a:"Le code postal sert de proxy → discrimination indirecte (biais caché)."},
+  ]},
+  {name:'LES 3 FAMILLES (S3)',q:[
+    {v:100,q:"Quelle famille apprend à partir d'exemples dont on connaît déjà la réponse ?",a:"L'apprentissage supervisé."},
+    {v:200,q:"Quelle famille cherche des structures SANS qu'on lui donne les réponses ?",a:"L'apprentissage non-supervisé."},
+    {v:300,q:"Quelle famille apprend par essai-erreur, en récoltant des récompenses ?",a:"L'apprentissage par renforcement."},
+    {v:400,q:"Segmenter une clientèle sans idée préconçue relève de quelle famille ?",a:"Non-supervisé (ex. K-means)."},
+    {v:500,q:"La vraie ligne de partage entre les familles, c'est quoi ?",a:"Le signal d'apprentissage disponible : réponses connues, structure à trouver, ou récompense à découvrir."},
+  ]},
+  {name:'LES MÉTHODES (S3)',q:[
+    {v:100,q:"Quelle méthode prédit un MONTANT (ex. un revenu) en traçant une droite ?",a:"La régression linéaire."},
+    {v:200,q:"Quel est le modèle historique du scoring de crédit, qui sort une probabilité ?",a:"La régression logistique."},
+    {v:300,q:"Faire voter des centaines d'arbres de décision : quelle méthode ?",a:"La forêt aléatoire (random forest)."},
+    {v:400,q:"Quelle méthode regroupe les clients en segments autour de « centres » ?",a:"K-means."},
+    {v:500,q:"Revenu et patrimoine vont ensemble ; les résumer en une seule colonne « richesse » relève de quelle méthode ?",a:"La PCA (réduction de dimension)."},
+  ]},
+  {name:'IA EN BANQUE',q:[
+    {v:100,q:"En détection de fraude/AML, on apprend surtout le comportement… quoi ?",a:"Normal — et on alerte sur ce qui s'en écarte (anomalies)."},
+    {v:200,q:"Selma, True Wealth, Yuh Invest : quel type d'outil traduit un profil de risque en portefeuille ?",a:"Un robo-advisor."},
+    {v:300,q:"Un réseau de neurones est plus précis mais inexplicable : pourquoi est-ce un problème en crédit ?",a:"On doit pouvoir MOTIVER un refus au client et au régulateur (exigence FINMA)."},
+    {v:400,q:"Quelle autorité supervise les banques et l'usage de l'IA financière en Suisse ?",a:"La FINMA."},
+    {v:500,q:"Un agent de trading par renforcement maximise une récompense. Quel est le grand danger ?",a:"Si la récompense est mal définie, il optimise la mauvaise chose (ou explose en conditions inédites) — d'où la supervision humaine."},
+  ]},
+];
+
+const TEAM_COLORS=['#F0B33D','#4A90E2','#2EA84A','#7E5AE8','#E8643C'];
+const QUESTION_TIME=30;
+
+let teams=[];      // {name,score,color}
+let turn=0;        // index of active team
+let used={};       // "c-r" -> true
+let cellsTotal=CATEGORIES.length*5;
+let current=null;  // {ci,ri,val}
+let timer=null;
+
+// ---------- SETUP ----------
+function renderTeamInputs(){
+  const wrap=document.getElementById('teamInputs');wrap.innerHTML='';
+  teams.forEach((t,i)=>{
+    const row=document.createElement('div');row.className='team-input';
+    row.innerHTML=`<span class="dot" style="background:${TEAM_COLORS[i]}"></span><input type="text" value="${t}" data-i="${i}" placeholder="Nom de l'équipe ${i+1}">${teams.length>2?`<button data-del="${i}">✕</button>`:''}`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{teams[+inp.dataset.i]=inp.value;});
+  wrap.querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>{teams.splice(+b.dataset.del,1);renderTeamInputs();});
+}
+document.getElementById('addTeam').onclick=()=>{if(teams.length<5){teams.push('Équipe '+(teams.length+1));renderTeamInputs();}};
+teams=['Équipe 1','Équipe 2'];renderTeamInputs();
+
+document.getElementById('startGame').onclick=()=>{
+  teams=teams.map((t,i)=>({name:t.trim()||('Équipe '+(i+1)),score:0,color:TEAM_COLORS[i]}));
+  turn=0;used={};current=null;
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  document.getElementById('btnRestart').classList.remove('hidden');
+  renderScore();renderBoard();
+};
+document.getElementById('btnRestart').onclick=()=>location.reload();
+document.getElementById('playAgain').onclick=()=>location.reload();
+
+// ---------- SCOREBOARD ----------
+function renderScore(){
+  const sb=document.getElementById('scoreboard');sb.innerHTML='';
+  teams.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='team-score'+(i===turn?' active':'');
+    d.innerHTML=`<div class="tname"><span class="dot" style="background:${t.color}"></span>${t.name}</div><div class="tval">${t.score}</div>`;
+    sb.appendChild(d);
+  });
+  document.getElementById('turnBanner').innerHTML=`Au tour de <b style="color:${teams[turn].color}">${teams[turn].name}</b> — choisis une case`;
+}
+
+// ---------- BOARD ----------
+function renderBoard(){
+  const board=document.getElementById('board');board.innerHTML='';
+  CATEGORIES.forEach(c=>{const h=document.createElement('div');h.className='cat-head';h.textContent=c.name;board.appendChild(h);});
+  for(let r=0;r<5;r++){
+    CATEGORIES.forEach((c,ci)=>{
+      const key=ci+'-'+r;const cell=document.createElement('div');
+      const q=c.q[r];
+      if(used[key]){cell.className='cell used';cell.textContent='';}
+      else{cell.className='cell';cell.textContent=q.v;cell.onclick=()=>openQuestion(ci,r);}
+      board.appendChild(cell);
+    });
+  }
+}
+
+// ---------- QUESTION MODAL ----------
+function openQuestion(ci,ri){
+  const cat=CATEGORIES[ci];const q=cat.q[ri];
+  current={ci,ri,val:q.v};
+  document.getElementById('mCat').textContent=cat.name;
+  document.getElementById('mVal').textContent=q.v+' pts';
+  document.getElementById('mQ').textContent=q.q;
+  document.getElementById('mAnswerTxt').textContent=q.a;
+  document.getElementById('mAnswer').classList.remove('show');
+  document.getElementById('mRowReveal').classList.remove('hidden');
+  document.getElementById('mRowAward').classList.add('hidden');
+  document.getElementById('stealBox').classList.add('hidden');
+  document.getElementById('mHint').textContent=`Au tour de « ${teams[turn].name} ». Lis la question à voix haute.`;
+  document.getElementById('modalBg').classList.add('show');
+  startTimer();
+}
+function startTimer(){
+  const bar=document.getElementById('mTimerBar');bar.style.transition='none';bar.style.width='100%';
+  let t=QUESTION_TIME;
+  void bar.offsetWidth;
+  bar.style.transition='width 1s linear';bar.style.width='0%';
+  clearInterval(timer);
+  timer=setInterval(()=>{t--;if(t<=0){clearInterval(timer);}},1000);
+}
+function stopTimer(){clearInterval(timer);document.getElementById('mTimerBar').style.width=getComputedStyle(document.getElementById('mTimerBar')).width;}
+
+document.getElementById('btnReveal').onclick=()=>{
+  stopTimer();
+  document.getElementById('mAnswer').classList.add('show');
+  document.getElementById('mRowReveal').classList.add('hidden');
+  document.getElementById('mRowAward').classList.remove('hidden');
+  document.getElementById('mHint').textContent='Attribue les points selon la réponse donnée à l\'oral.';
+};
+
+document.getElementById('btnCorrect').onclick=()=>{
+  teams[turn].score+=current.val;
+  closeAndAdvance(true);
+};
+document.getElementById('btnWrong').onclick=()=>{
+  closeAndAdvance(true);
+};
+document.getElementById('btnSteal').onclick=()=>{
+  // build steal buttons for all OTHER teams
+  const grid=document.getElementById('stealGrid');grid.innerHTML='';
+  teams.forEach((t,i)=>{
+    if(i===turn)return;
+    const b=document.createElement('div');b.className='award-btn';b.style.borderColor=t.color;b.style.color=t.color;
+    b.textContent=t.name+' (+'+current.val+')';
+    b.onclick=()=>{teams[i].score+=current.val;closeAndAdvance(true);};
+    grid.appendChild(b);
+  });
+  document.getElementById('stealBox').classList.remove('hidden');
+  document.getElementById('mRowAward').classList.add('hidden');
+};
+document.getElementById('btnNoSteal').onclick=()=>{closeAndAdvance(true);};
+
+function closeAndAdvance(advance){
+  if(current){used[current.ci+'-'+current.ri]=true;}
+  document.getElementById('modalBg').classList.remove('show');
+  current=null;
+  if(advance)turn=(turn+1)%teams.length;
+  renderScore();renderBoard();
+  if(Object.keys(used).length>=cellsTotal)endGame();
+}
+
+// ---------- END ----------
+function endGame(){
+  document.getElementById('game').classList.add('hidden');
+  const sorted=[...teams].sort((a,b)=>b.score-a.score);
+  const top=sorted[0];
+  const tied=sorted.filter(t=>t.score===top.score);
+  document.getElementById('winnerName').textContent=tied.length>1?('Égalité : '+tied.map(t=>t.name).join(' & ')+' !'):(top.name+' gagne !');
+  const pod=document.getElementById('podium');pod.innerHTML='';
+  const heights=[150,110,86,70,60];
+  sorted.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='pod';
+    d.style.height=heights[i]+'px';d.style.background=t.color+'22';d.style.borderColor=t.color;
+    d.innerHTML=`<div class="pn" style="color:${t.color}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''} ${t.name}</div><div class="pv">${t.score}</div>`;
+    pod.appendChild(d);
+  });
+  document.getElementById('winner').classList.add('show');
+  document.getElementById('btnRestart').classList.add('hidden');
+}
+</script>
+</body>
+</html>
