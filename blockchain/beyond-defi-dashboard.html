@@ -96,6 +96,7 @@
   <div class="top">
     <h1>Admin</h1>
     <span class="conn" id="conn"><span class="d"></span><span id="connTxt">…</span></span>
+    <span class="conn" id="authBadge" title="instructor sign-in (required once the database is locked down)"><span class="d"></span><span id="authTxt">—</span></span>
     <div class="spacer"></div>
     <button class="btn" onclick="refreshActive()">↻ Refresh</button>
     <button class="btn" onclick="logout()">Lock</button>
@@ -169,17 +170,25 @@ var LABS=['mev','dao','zk','nft'], LAB_NAME={mev:'MEV / Dark Forest',dao:'DAO go
 var STUDENTS=[], SORT='recent', POLL=null, ACTIVE='subs', subsLoaded=false, statsLoaded=false;
 
 function tryUnlock(){ var v=document.getElementById('passIn').value;
-  if(h256(v)===PASS_HASH){ try{sessionStorage.setItem('bdf-dash','1');}catch(e){} unlock(); }
+  if(h256(v)===PASS_HASH){ try{sessionStorage.setItem('bdf-dash','1');}catch(e){} unlock();
+    if(window.__auth) window.__auth.login(v).then(function(ok){ if(ok) refreshActive(); }); }
   else { document.getElementById('gateErr').textContent='Wrong passphrase.'; } }
 function unlock(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('app').style.display='block';
   setTimeout(setConn,1500); refreshActive(); if(!POLL) POLL=setInterval(refreshActive,20000); }
-function logout(){ try{sessionStorage.removeItem('bdf-dash');}catch(e){} location.reload(); }
+function logout(){ try{sessionStorage.removeItem('bdf-dash');}catch(e){} if(window.__auth) window.__auth.logout().then(function(){location.reload();}); else location.reload(); }
 document.getElementById('passIn').addEventListener('keydown',function(e){ if(e.key==='Enter') tryUnlock(); });
 try{ if(sessionStorage.getItem('bdf-dash')==='1') unlock(); }catch(e){}
 
 function setConn(){ var c=document.getElementById('conn'), ready=window.__store&&window.__store.ready;
   c.className='conn '+(ready?'ok':'bad'); document.getElementById('connTxt').textContent=ready?'online':'offline'; }
-window.addEventListener('bdf-store-ready',setConn);
+function updateAuth(u){ var b=document.getElementById('authBadge'); if(!b) return;
+  var ok=u && window.__auth && u.email===window.__auth.email; b.className='conn '+(ok?'ok':'bad');
+  document.getElementById('authTxt').textContent=ok?'signed in':'not signed in'; }
+function onStoreReady(){ setConn();
+  if(window.__auth){ updateAuth(window.__auth.current());
+    window.__auth.onChange(function(u){ updateAuth(u); if(u && u.email===window.__auth.email){ if(document.getElementById('app').style.display!=='block') unlock(); else refreshActive(); } });
+    try{ var pw=sessionStorage.getItem('bdf-pw'); if(pw){ sessionStorage.removeItem('bdf-pw'); window.__auth.login(pw).then(function(ok){ if(ok) refreshActive(); }); } }catch(e){} } }
+window.addEventListener('bdf-store-ready',onStoreReady);
 
 function setTab(t){ ACTIVE=t;
   document.getElementById('tab-subs').classList.toggle('active',t==='subs');
@@ -300,9 +309,17 @@ function download(text,name,type){ var blob=new Blob([text],{type:type}); var a=
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const firebaseConfig = { apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw", authDomain:"teaching-70f1c.firebaseapp.com", databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", projectId:"teaching-70f1c", storageBucket:"teaching-70f1c.firebasestorage.app", messagingSenderId:"1026356553251", appId:"1:1026356553251:web:d23a4c30af7e6983463396" };
-let _db=null; try{ _db=getDatabase(initializeApp(firebaseConfig)); }catch(e){ console.error("FB init",e); }
+/* the one instructor account that may READ the private trees (set in Firebase console) */
+const ADMIN_EMAIL="janerik.meidell@gmail.com";
+let app=null,_db=null,_auth=null; try{ app=initializeApp(firebaseConfig); _db=getDatabase(app); _auth=getAuth(app); }catch(e){ console.error("FB init",e); }
 window.__store={ ready:!!_db, async get(k){ if(!_db) return null; try{ const s=await get(child(ref(_db),k)); return s.exists()?s.val():null; }catch(e){ console.error(e); return null; } } };
+window.__auth={ ready:!!_auth, email:ADMIN_EMAIL,
+  async login(pw){ if(!_auth) return false; try{ await signInWithEmailAndPassword(_auth,ADMIN_EMAIL,pw); return true; }catch(e){ console.warn("auth:",e.code||e.message); return false; } },
+  async logout(){ if(_auth){ try{ await signOut(_auth); }catch(e){} } },
+  onChange(cb){ if(_auth) onAuthStateChanged(_auth,cb); else cb(null); },
+  current(){ return _auth ? _auth.currentUser : null; } };
 window.dispatchEvent(new Event('bdf-store-ready'));
 if(document.getElementById('app').style.display==='block' && window.refreshActive) window.refreshActive();
 </script>
