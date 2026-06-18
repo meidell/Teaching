@@ -103,7 +103,8 @@
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tab-subs" onclick="setTab('subs')">📥 Beyond DeFi submissions</button>
+    <button class="tab active" id="tab-subs" onclick="setTab('subs')">📥 Beyond DeFi</button>
+    <button class="tab" id="tab-fst" onclick="setTab('foresight')">🔭 Foresight</button>
     <button class="tab" id="tab-stats" onclick="setTab('stats')">📊 Site analytics</button>
   </div>
 
@@ -157,6 +158,25 @@
       Pageviews are logged by <code>/track.js</code> on every page → <code>analytics/&lt;date&gt;/…</code> in the same DB. Stored per view: path, time, referrer, language, timezone, a random visitor id, and <b>coarse geo (country/city)</b> from a free IP lookup — the raw IP is never stored. Click any page / country / referrer to filter the recent list. <b>Heads-up:</b> logging visitor location is personal data; for EU/CH visitors consider a short privacy note. The analytics DB is currently world-readable/writable (open rules) — ask to lock it down.
     </div>
   </div>
+
+  <!-- ============ FORESIGHT ============ -->
+  <div id="viewFst" style="display:none">
+    <div class="stats" id="fStats"></div>
+    <div class="sortbar">
+      <span class="spacer"></span>
+      <button class="btn gold" onclick="exportFstCSV()">⬇ Roster CSV</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Case</th><th>Labs</th><th class="num">Total</th>
+        <th class="num">Scan</th><th class="num">Depth</th><th class="num">Scen.</th><th class="num">Act</th>
+        <th class="num">Quiz</th><th>Code</th><th>Sent</th><th>⚠</th></tr></thead>
+      <tbody id="fbody"></tbody>
+    </table>
+    <div class="empty" id="fempty" style="display:none">No foresight submissions yet.</div>
+    <div class="hint">
+      Foresight studies live under <code>foresightpath/&lt;student&gt;</code>. Each student picks their own case and the labs chain (scan → axes → scenarios → vision), so submissions are highly individual; the ⚠ flag marks two students whose case + scenarios are identical. Quiz is summed correct / 12. Click a row for the full study (STEEPLED, CLA, scenarios, backcast…).
+    </div>
+  </div>
 </div>
 
 <script>
@@ -192,11 +212,13 @@ window.addEventListener('bdf-store-ready',onStoreReady);
 
 function setTab(t){ ACTIVE=t;
   document.getElementById('tab-subs').classList.toggle('active',t==='subs');
+  document.getElementById('tab-fst').classList.toggle('active',t==='foresight');
   document.getElementById('tab-stats').classList.toggle('active',t==='stats');
   document.getElementById('viewSubs').style.display=t==='subs'?'block':'none';
+  document.getElementById('viewFst').style.display=t==='foresight'?'block':'none';
   document.getElementById('viewStats').style.display=t==='stats'?'block':'none';
   refreshActive(); }
-function refreshActive(){ if(!window.__store) return; setConn(); if(ACTIVE==='subs') load(); else loadStats(); }
+function refreshActive(){ if(!window.__store) return; setConn(); if(ACTIVE==='subs') load(); else if(ACTIVE==='foresight') loadFst(); else loadStats(); }
 
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
@@ -304,6 +326,46 @@ function exportVisitsCSV(){ var head=['time_iso','page','country','city','countr
 /* shared */
 function csv(v){ v=(v==null?'':String(v)); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
 function download(text,name,type){ var blob=new Blob([text],{type:type}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); }
+
+/* ============ foresight ============ */
+var FST_LABS=['scan','depth','scenarios','act'], FST_LABNAME={scan:'1 · Scan (STEEPLED)',depth:'2 · Depth (CLA/Delphi/MICMAC)',scenarios:'3 · Scenarios (2x2)',act:'4 · Act (vision/backcast)'};
+var FSTUD=[];
+function fstName(labs){ for(var k in labs){ if(labs[k]&&labs[k].name) return labs[k].name; } return ""; }
+async function loadFst(){ var root=await window.__store.get('foresightpath'); FSTUD=[];
+  if(root){ for(var sid in root){ if(!root.hasOwnProperty(sid)||sid.charAt(0)==='_') continue;
+    var node=root[sid]||{}, labs=node.labs||{};
+    var name=node.name||(node.meta&&node.meta.name)||fstName(labs)||sid, caseV=node.case||(node.meta&&node.meta.case)||'';
+    var done=0,quizSum=0,quizTot=0,perlab={},sumSec=0,lastTs=node.submittedAt||0;
+    FST_LABS.forEach(function(k){ var r=labs[k]; if(r&&r.done){ done++; perlab[k]=r.activeSec||0; sumSec+=r.activeSec||0; if(r.quizScore!=null){quizSum+=r.quizScore;quizTot+=(r.quizTotal||3);} if(r.completedAt>lastTs)lastTs=r.completedAt; } else perlab[k]=null; });
+    FSTUD.push({sid:sid,name:name,case:caseV,labs:labs,done:done,perlab:perlab,quizSum:quizSum,quizTot:quizTot,code:node.code||'',submitted:!!node.submittedAt,total:(node.totalActiveMin||Math.round(sumSec/60)),synthesis:node.synthesis||'',lastTs:lastTs}); } }
+  var map={}; FSTUD.forEach(function(s){ var sc=(s.labs.scenarios&&s.labs.scenarios.data&&s.labs.scenarios.data.scenarios)||[]; var sig=(s.case||'').toLowerCase().trim()+'|'+sc.map(function(x){return (x.name||'').toLowerCase();}).join(','); s._sig=sig; if((s.case||'').trim()){ (map[sig]=map[sig]||[]).push(s.sid); } });
+  FSTUD.forEach(function(s){ s.dup = map[s._sig] && map[s._sig].length>1; });
+  renderFstStats(); renderFstTable(); }
+function renderFstStats(){ var n=FSTUD.length, complete=FSTUD.filter(function(s){return s.done===4;}).length, sent=FSTUD.filter(function(s){return s.submitted;}).length, avg=n?Math.round(FSTUD.reduce(function(a,s){return a+s.total;},0)/n):0, fl=FSTUD.filter(function(s){return s.dup;}).length;
+  document.getElementById('fStats').innerHTML=stat('Students',n)+stat('Completed 4/4',complete)+stat('Submitted',sent)+stat('Avg time',avg+'m')+stat('Flagged ⚠',fl); }
+function renderFstTable(){ var tb=document.getElementById('fbody'), rows=FSTUD.slice().sort(function(a,b){return b.lastTs-a.lastTs;});
+  document.getElementById('fempty').style.display=rows.length?'none':'block';
+  tb.innerHTML=rows.map(function(s,i){ var dots=''; FST_LABS.forEach(function(k){ dots+='<span class="dot'+(s.labs[k]&&s.labs[k].done?' on':'')+'" title="'+k+'"></span>'; });
+    return '<tr class="row" onclick="toggleFst(\''+s.sid+'\')"><td>'+(i+1)+'</td><td class="name">'+esc(s.name)+'</td><td>'+esc(s.case||'—')+'</td>'+
+      '<td><span class="dots">'+dots+'</span> '+s.done+'/4</td><td class="num">'+(s.total||'—')+'m</td>'+
+      '<td class="num">'+mm(s.perlab.scan)+'</td><td class="num">'+mm(s.perlab.depth)+'</td><td class="num">'+mm(s.perlab.scenarios)+'</td><td class="num">'+mm(s.perlab.act)+'</td>'+
+      '<td class="num">'+(s.quizTot?s.quizSum+'/'+s.quizTot:'—')+'</td><td class="code">'+esc(s.code||'—')+'</td>'+
+      '<td>'+(s.submitted?'<span class="yes">✓</span>':'<span class="no">—</span>')+'</td><td>'+(s.dup?'<span class="flag" title="identical case + scenarios as another student">⚠</span>':'')+'</td></tr>'+
+      '<tr class="detail" id="fd-'+s.sid+'" style="display:none"><td colspan="13"><div class="inner" id="fdi-'+s.sid+'"></div></td></tr>'; }).join(''); }
+function fstFlat(d){ var L=[]; (function walk(o,pre){ for(var k in o){ if(!o.hasOwnProperty(k))continue; var v=o[k]; if(v==null||v==='')continue;
+  if(Array.isArray(v)){ if(v.length&&typeof v[0]==='object'){ v.forEach(function(it,i){ L.push(pre+k+'['+(i+1)+']: '+Object.keys(it).map(function(kk){return kk+'='+it[kk];}).join(', ')); }); } else L.push(pre+k+': '+v.join(' | ')); }
+  else if(typeof v==='object'){ walk(v,pre+k+'.'); } else L.push(pre+k+': '+v); } })(d,''); return L; }
+function toggleFst(sid){ var row=document.getElementById('fd-'+sid); if(!row) return; if(row.style.display!=='none'){ row.style.display='none'; return; }
+  var s=FSTUD.filter(function(x){return x.sid===sid;})[0]; if(!s) return; var h='<div class="lab"><h3>'+esc(s.case||'(no case)')+'</h3></div>';
+  FST_LABS.forEach(function(k){ var r=s.labs[k]; if(!r) return; h+='<div class="lab"><h3>'+FST_LABNAME[k]+(r.done?' · '+mm(r.activeSec)+'m'+(r.quizScore!=null?' · quiz '+r.quizScore+'/'+(r.quizTotal||3):''):' · (incomplete)')+'</h3>';
+    if(r.data) h+='<div class="nums">'+esc(fstFlat(r.data).join('  ·  '))+'</div>';
+    if(r.writeups&&r.writeups.w1) h+='<div class="wu"><b>Write-up:</b> '+esc(r.writeups.w1)+'</div>'; h+='</div>'; });
+  if(s.synthesis) h+='<div class="syn"><b>Synthesis'+(s.code?' · '+esc(s.code):'')+':</b><br>'+esc(s.synthesis)+'</div>';
+  document.getElementById('fdi-'+sid).innerHTML=h; row.style.display='table-row'; }
+function exportFstCSV(){ var head=['name','student_id','case','labs_done','total_min','scan','depth','scenarios','act','quiz','code','submitted','flagged'];
+  var lines=[head.join(',')];
+  FSTUD.slice().sort(function(a,b){return b.lastTs-a.lastTs;}).forEach(function(s){ lines.push([s.name,s.sid,s.case,s.done,s.total,mm(s.perlab.scan),mm(s.perlab.depth),mm(s.perlab.scenarios),mm(s.perlab.act),(s.quizTot?s.quizSum+'/'+s.quizTot:''),s.code,(s.submitted?'yes':'no'),(s.dup?'dup':'')].map(csv).join(',')); });
+  download(lines.join('\n'),'foresight-roster.csv','text/csv'); }
 </script>
 
 <script type="module">

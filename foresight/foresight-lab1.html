@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr" data-lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner les marges · Scan the edges · Foresight</title>
+<style>
+  :root{
+    --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470;
+    --blue-bright:#1E5AA8; --blue-glow:#4A90E2;
+    --gold:#F0B33D; --gold-bright:#FFD24A;
+    --white:#FFFFFF; --grey-muted:#B0BCD6;
+    --red:#E5484D; --green:#2EA84A; --teal:#2DB6A8; --purple:#7E5AE8; --purple-glow:#9F86FF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{min-height:100%;}
+  body{font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);line-height:1.55;
+    background:radial-gradient(ellipse at 15% -10%,rgba(126,90,232,.20),transparent 55%),radial-gradient(ellipse at 90% 110%,rgba(45,182,168,.12),transparent 55%),linear-gradient(180deg,var(--navy-mid),var(--navy-deep) 80%);
+    background-attachment:fixed;padding-bottom:90px;}
+  h1,h2,h3{font-family:Georgia,serif;font-weight:700;letter-spacing:.2px;}
+  b{color:var(--gold-bright);font-weight:700;}
+  .fr{display:block;} .en{display:block;font-style:italic;color:var(--grey-muted);font-size:.86em;margin-top:2px;}
+  html[data-lang="fr"] .en{display:none !important;} html[data-lang="en"] .fr{display:none !important;}
+  html[data-lang="en"] .en{font-size:inherit;font-style:normal;color:inherit;margin-top:0;}
+  .lbl .fr,.lbl .en,.kicker .fr,.kicker .en,.btn .fr,.btn .en,h1 .fr,h1 .en,h2 .fr,h2 .en,.opt .fr,.opt .en,.flav-q .fr,.flav-q .en,.bdfbar .fr,.bdfbar .en,.bdfhint .fr,.bdfhint .en,.chip .fr,.chip .en{display:inline;}
+
+  .topbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(10,26,58,.94),rgba(10,26,58,.74));border-bottom:1px solid rgba(126,90,232,.3);}
+  .topbar-inner{max-width:880px;margin:0 auto;padding:9px 18px;display:flex;align-items:center;gap:14px;}
+  .brand{font-family:Georgia,serif;font-weight:700;font-size:.78rem;letter-spacing:1.5px;color:var(--gold);white-space:nowrap;}
+  .brand small{display:block;letter-spacing:.5px;color:var(--grey-muted);font-size:.6rem;font-weight:400;font-family:'Calibri',sans-serif;}
+  .pwrap{flex:1;height:7px;background:rgba(255,255,255,.09);border-radius:99px;overflow:hidden;}
+  .pfill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--purple-glow));transition:width .5s;}
+  .timer{font-variant-numeric:tabular-nums;font-size:.8rem;color:var(--grey-muted);} .timer b{color:var(--gold-bright);}
+  .langsw{display:flex;gap:2px;}
+  .langsw button{font:inherit;font-size:.66rem;font-weight:700;letter-spacing:1px;padding:4px 9px;border:1px solid rgba(126,90,232,.45);background:transparent;color:var(--grey-muted);border-radius:7px;cursor:pointer;}
+  .langsw button[aria-current="true"]{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);}
+
+  .bdfbar{max-width:820px;margin:10px auto -8px;padding:8px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.82rem;color:var(--grey-muted);}
+  .bdfbar input{background:rgba(255,255,255,.06);border:1px solid rgba(126,90,232,.45);color:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:.82rem;min-width:170px;}
+  .bdfbar #bdfok{color:var(--green);font-weight:700;} .bdfhint{opacity:.65;}
+
+  .wrap{max-width:820px;margin:0 auto;padding:26px 18px;}
+  .kicker{font-size:.7rem;letter-spacing:3px;color:var(--purple-glow);font-weight:700;text-transform:uppercase;margin-bottom:12px;}
+  h1{font-size:2rem;line-height:1.12;margin-bottom:8px;}
+  .lede{font-size:1.04rem;color:#e7edfb;margin:16px 0;}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 4px;}
+  .meta .m{background:rgba(30,52,112,.45);border:1px solid rgba(126,90,232,.3);border-radius:11px;padding:9px 13px;font-size:.8rem;color:var(--grey-muted);}
+  .meta .m b{font-family:Georgia,serif;color:var(--gold-bright);}
+
+  .step{background:rgba(21,42,94,.5);border:1px solid rgba(126,90,232,.28);border-radius:16px;padding:22px 22px 24px;margin:18px 0;opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;}
+  .step.in{opacity:1;transform:none;} .step.locked{display:none;}
+  .step h2{font-size:1.3rem;margin-bottom:6px;}
+  .step .num{font-family:Georgia,serif;color:var(--purple-glow);font-size:.78rem;letter-spacing:2px;font-weight:700;text-transform:uppercase;}
+  .step p{color:#dbe3f7;margin:10px 0;font-size:.96rem;}
+  .step ul{margin:8px 0 8px 4px;list-style:none;}
+  .step li{padding:4px 0 4px 18px;position:relative;font-size:.92rem;color:#dbe3f7;}
+  .step li::before{content:"";position:absolute;left:0;top:11px;width:6px;height:6px;background:var(--purple-glow);border-radius:50%;}
+
+  .carry{background:rgba(45,182,168,.1);border:1px solid rgba(45,182,168,.4);border-radius:11px;padding:11px 14px;margin:10px 0;font-size:.88rem;color:#cdeee9;}
+  .carry b{color:var(--teal);}
+
+  .case-in,textarea,.dim-in{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(126,90,232,.35);border-radius:10px;color:#fff;font-family:'Calibri',sans-serif;font-size:.96rem;padding:11px 13px;margin-top:8px;}
+  textarea{min-height:80px;resize:vertical;} .case-in:focus,textarea:focus,.dim-in:focus{outline:none;border-color:var(--gold);}
+  .wc{font-size:.72rem;color:var(--grey-muted);text-align:right;margin-top:3px;}
+
+  .steeple{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:12px 0;}
+  .dim{background:var(--navy-deep);border:1px solid rgba(126,90,232,.3);border-radius:12px;padding:11px 13px;}
+  .dim .dh{font-weight:700;font-size:.88rem;color:var(--gold-bright);} .dim .dhx{font-size:.74rem;color:var(--grey-muted);}
+  .dim-in{margin-top:6px;font-size:.88rem;padding:8px 10px;}
+  .scan-count{font-size:.74rem;color:var(--grey-muted);text-align:right;margin-top:8px;}
+
+  .flav{background:rgba(255,255,255,.04);border:1px solid rgba(126,90,232,.25);border-radius:12px;padding:14px 15px;margin:11px 0;}
+  .flav-q{font-weight:700;margin-bottom:9px;}
+  .flav-opts{display:flex;gap:7px;flex-wrap:wrap;}
+  .opt{flex:1;min-width:110px;background:rgba(255,255,255,.05);border:1px solid rgba(126,90,232,.35);border-radius:9px;padding:9px 10px;cursor:pointer;font-size:.84rem;text-align:center;transition:.15s;}
+  .opt:hover{border-color:var(--gold);}
+  .opt.correct{background:rgba(46,168,74,.2);border-color:var(--green);color:#bff0c8;}
+  .opt.wrong{background:rgba(229,72,77,.18);border-color:var(--red);color:#ffd2d3;}
+  .flav-fb{font-size:.85rem;color:var(--grey-muted);margin-top:9px;display:none;} .flav-fb.show{display:block;}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+  .chip{background:rgba(255,255,255,.05);border:1px solid rgba(126,90,232,.4);border-radius:10px;padding:8px 12px;font-size:.85rem;cursor:pointer;transition:.15s;max-width:100%;}
+  .chip:hover{border-color:var(--gold);}
+  .chip.sel{background:rgba(240,179,61,.18);border-color:var(--gold);color:#fff;}
+  .chip .cd{font-size:.66rem;color:var(--purple-glow);text-transform:uppercase;letter-spacing:1px;}
+  .pickcount{font-size:.78rem;color:var(--grey-muted);margin-top:4px;}
+
+  .continue{margin-top:14px;background:var(--gold);color:var(--navy-deep);border:0;border-radius:10px;padding:12px 24px;font-size:.92rem;font-weight:700;font-family:'Calibri',sans-serif;cursor:pointer;transition:.2s;}
+  .continue:disabled{opacity:.4;cursor:not-allowed;}
+  .insight{background:linear-gradient(160deg,rgba(126,90,232,.16),rgba(30,90,168,.1));border:1px solid var(--purple);border-radius:14px;padding:18px 20px;}
+  .pathnav{text-align:center;margin-top:26px;} .pathnav a{color:var(--gold-bright);font-weight:700;text-decoration:none;font-size:.92rem;}
+  .done-badge{text-align:center;color:var(--green);font-weight:700;margin-top:10px;}
+  .watch{margin:16px 0 6px;} .watch-lbl{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--purple-glow);font-weight:700;margin-bottom:8px;}
+  .video{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(126,90,232,.4);background:#000;}
+  .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  .watch-link{display:inline-block;margin-top:7px;font-size:.78rem;color:var(--blue-glow);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="topbar-inner">
+  <div class="brand">FORESIGHT<small><span class="fr">Lab 1 · Scanner</span><span class="en">Lab 1 · Scan</span></small></div>
+  <div class="pwrap"><div class="pfill" id="pfill"></div></div>
+  <div class="timer">⏱ <b id="tmr">0:00</b></div>
+  <div class="langsw"><button type="button" data-l="fr">FR</button><button type="button" data-l="en">EN</button></div>
+</div></div>
+
+<div class="bdfbar" id="bdfbar">
+  <span class="fr">👤 Votre nom :</span><span class="en">👤 Your name:</span>
+  <input id="bdfname" oninput="bdfSetName()" placeholder="Prénom Nom" autocomplete="name">
+  <span id="bdfok" style="display:none"></span>
+  <span class="bdfhint"><span class="fr">— pour enregistrer votre travail</span><span class="en">— to log your work</span></span>
+</div>
+
+<div class="wrap">
+  <div class="kicker"><span class="fr">Prospective · Phase analytique</span><span class="en">Foresight · Analytical phase</span></div>
+  <h1><span class="fr">Scanner les marges</span><span class="en">Scan the edges</span></h1>
+  <div class="lede">
+    <span class="fr">Vous avez appliqué la boîte à outils en équipe. Maintenant, vous menez une étude prospective <b>seul·e, de bout en bout</b>, sur un futur que <b>vous</b> choisissez. Tout commence par le balayage : on ne planifie pas pour des forces qu'on n'a jamais vues venir. Ce lab produit votre inventaire de forces de changement — il alimentera les trois labs suivants.</span>
+    <span class="en">You applied the toolkit as a team. Now you run a foresight study <b>solo, end-to-end</b>, on a future <b>you</b> choose. It all starts with scanning: you can't plan for forces you never saw coming. This lab produces your inventory of change forces — it feeds the next three labs.</span>
+  </div>
+  <div class="meta">
+    <div class="m"><b>~45</b> <span class="fr">min</span><span class="en">min</span></div>
+    <div class="m">STEEPLED</div>
+    <div class="m"><span class="fr">signaux faibles</span><span class="en">weak signals</span></div>
+    <div class="m"><b>1/4</b> <span class="fr">labs</span><span class="en">labs</span></div>
+  </div>
+
+  <!-- 1 hook + define case -->
+  <div class="step in" id="st1">
+    <div class="num"><span class="fr">Étape 1 — Votre terrain</span><span class="en">Step 1 — Your case</span></div>
+    <h2><span class="fr">Choisissez un futur à explorer</span><span class="en">Pick a future to explore</span></h2>
+    <p><span class="fr">Choisissez <b>un domaine que vous connaissez ou qui vous intrigue</b> — votre secteur, un pays, un sport, une technologie, une institution. Vous l'explorerez à l'horizon <b>2040</b> à travers toute la boîte à outils. <i>Évitez de reprendre votre cas de groupe</i> (ni la Méridien Banque, ni Costa Verde).</span>
+       <span class="en">Pick <b>a domain you know or are intrigued by</b> — your industry, a country, a sport, a technology, an institution. You'll explore it toward <b>2040</b> through the whole toolkit. <i>Don't reuse your group case</i> (not Méridien Banque, not Costa Verde).</span></p>
+    <label class="lbl" style="font-size:.85rem;color:var(--grey-muted)"><span class="fr">Mon domaine / sujet :</span><span class="en">My domain / topic:</span></label>
+    <input class="case-in" id="caseIn" oninput="onCase()" placeholder="ex. le football européen · the future of European football">
+    <p id="caseEcho" class="carry" style="display:none"></p>
+    <div class="watch">
+      <div class="watch-lbl">▶ <span class="fr">Pour démarrer · ~6 min</span><span class="en">To kick off · ~6 min</span></div>
+      <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/31iwzGVy10s" title="Horizon Scanning & Foresight Toolkit for Innovators" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+      <a class="watch-link" href="https://www.youtube.com/watch?v=31iwzGVy10s" target="_blank" rel="noopener"><span class="fr">Ouvrir sur YouTube ↗</span><span class="en">Open on YouTube ↗</span></a>
+    </div>
+    <button class="continue" id="c1" disabled onclick="reveal(2,this)"><span class="fr">Commencer le balayage →</span><span class="en">Start scanning →</span></button>
+  </div>
+
+  <!-- 2 STEEPLED -->
+  <div class="step locked" id="st2">
+    <div class="num"><span class="fr">Étape 2 — Balayage STEEPLED</span><span class="en">Step 2 — STEEPLED scan</span></div>
+    <h2><span class="fr">Huit dimensions du macro-environnement</span><span class="en">Eight dimensions of the macro-environment</span></h2>
+    <p><span class="fr">Pour votre domaine, notez <b>une force de changement</b> par dimension (au moins <b>5 sur 8</b>). Soyez concret : une tendance, une rupture, une pression — pas une généralité.</span>
+       <span class="en">For your domain, jot <b>one change force</b> per dimension (at least <b>5 of 8</b>). Be concrete: a trend, a disruption, a pressure — not a platitude.</span></p>
+    <div class="steeple" id="steeple">
+      <div class="dim"><div class="dh">S — <span class="fr">Social</span><span class="en">Social</span></div><div class="dhx"><span class="fr">valeurs, modes de vie, comportements</span><span class="en">values, lifestyles, behaviours</span></div><input class="dim-in" data-k="S" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">T — <span class="fr">Technologique</span><span class="en">Technological</span></div><div class="dhx"><span class="fr">innovations, automatisation, IA</span><span class="en">innovation, automation, AI</span></div><input class="dim-in" data-k="T" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">E — <span class="fr">Économique</span><span class="en">Economic</span></div><div class="dhx"><span class="fr">marchés, coûts, modèles d'affaires</span><span class="en">markets, costs, business models</span></div><input class="dim-in" data-k="E1" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">E — <span class="fr">Environnemental</span><span class="en">Environmental</span></div><div class="dhx"><span class="fr">climat, ressources, énergie</span><span class="en">climate, resources, energy</span></div><input class="dim-in" data-k="E2" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">P — <span class="fr">Politique</span><span class="en">Political</span></div><div class="dhx"><span class="fr">pouvoir, géopolitique, politiques</span><span class="en">power, geopolitics, policy</span></div><input class="dim-in" data-k="P" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">L — <span class="fr">Légal</span><span class="en">Legal</span></div><div class="dhx"><span class="fr">lois, normes, régulation</span><span class="en">laws, standards, regulation</span></div><input class="dim-in" data-k="L" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">E — <span class="fr">Éthique</span><span class="en">Ethical</span></div><div class="dhx"><span class="fr">légitimité, confiance, valeurs morales</span><span class="en">legitimacy, trust, moral values</span></div><input class="dim-in" data-k="E3" oninput="scanCount()"></div>
+      <div class="dim"><div class="dh">D — <span class="fr">Démographique</span><span class="en">Demographic</span></div><div class="dhx"><span class="fr">âge, migration, urbanisation</span><span class="en">age, migration, urbanisation</span></div><input class="dim-in" data-k="D" oninput="scanCount()"></div>
+    </div>
+    <div class="scan-count" id="scanCount">0 / 8</div>
+    <button class="continue" id="c2" disabled onclick="reveal(3,this)"><span class="fr">Continuer →</span><span class="en">Continue →</span></button>
+  </div>
+
+  <!-- 3 signal vs noise -->
+  <div class="step locked" id="st3">
+    <div class="num"><span class="fr">Étape 3 — Signal ou bruit ?</span><span class="en">Step 3 — Signal or noise?</span></div>
+    <h2><span class="fr">Le défi n'est pas le manque d'info — c'est le trop-plein</span><span class="en">The challenge isn't too little info — it's too much</span></h2>
+    <p><span class="fr">Classez chaque observation : <b>signal faible</b> (indice précoce et ambigu d'un changement qui pourrait grandir), <b>tendance établie</b> (déjà visible, documentée) ou <b>bruit</b> (battage sans substance structurelle).</span>
+       <span class="en">Classify each observation: <b>weak signal</b> (early, ambiguous hint of change that could grow), <b>established trend</b> (already visible, documented), or <b>noise</b> (hype with no structural substance).</span></p>
+    <div class="flav" data-correct="signal">
+      <div class="flav-q"><span class="fr">Trois start-ups, dans trois pays, lancent du café « cultivé en labo » la même année.</span><span class="en">Three startups, in three countries, launch "lab-grown coffee" in the same year.</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'signal')"><span class="fr">Signal faible</span><span class="en">Weak signal</span></div><div class="opt" onclick="pick(this,'trend')"><span class="fr">Tendance</span><span class="en">Trend</span></div><div class="opt" onclick="pick(this,'noise')"><span class="fr">Bruit</span><span class="en">Noise</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Signal faible : isolé, on l'ignore ; mais <b>plusieurs signaux convergents</b> trahissent une mutation possible (horizon 3–5+ ans).</span><span class="en">✓ Weak signal: alone you'd dismiss it; but <b>several converging signals</b> hint at a possible shift (3–5+ yr horizon).</span></div>
+    </div>
+    <div class="flav" data-correct="trend">
+      <div class="flav-q"><span class="fr">La pénétration mondiale du smartphone dépasse 80 %.</span><span class="en">Global smartphone penetration passes 80%.</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'signal')"><span class="fr">Signal faible</span><span class="en">Weak signal</span></div><div class="opt" onclick="pick(this,'trend')"><span class="fr">Tendance</span><span class="en">Trend</span></div><div class="opt" onclick="pick(this,'noise')"><span class="fr">Bruit</span><span class="en">Noise</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Tendance établie : largement mesurée et mainstream. Utile, mais ne vous donne aucun avantage informationnel.</span><span class="en">✓ Established trend: widely measured and mainstream. Useful, but gives you no informational edge.</span></div>
+    </div>
+    <div class="flav" data-correct="noise">
+      <div class="flav-q"><span class="fr">Une célébrité tweete qu'elle « déménagera sur Mars d'ici 2030 ».</span><span class="en">A celebrity tweets they'll "move to Mars by 2030".</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'signal')"><span class="fr">Signal faible</span><span class="en">Weak signal</span></div><div class="opt" onclick="pick(this,'trend')"><span class="fr">Tendance</span><span class="en">Trend</span></div><div class="opt" onclick="pick(this,'noise')"><span class="fr">Bruit</span><span class="en">Noise</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Bruit : du battage individuel sans indicateur structurel. Le piège classique du balayage.</span><span class="en">✓ Noise: individual hype with no structural indicator. The classic scanning trap.</span></div>
+    </div>
+    <div class="flav" data-correct="signal">
+      <div class="flav-q"><span class="fr">Deux petites villes testent la semaine scolaire de 4 jours ; une assurance lance un produit lié.</span><span class="en">Two small towns pilot a 4-day school week; an insurer launches a related product.</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'signal')"><span class="fr">Signal faible</span><span class="en">Weak signal</span></div><div class="opt" onclick="pick(this,'trend')"><span class="fr">Tendance</span><span class="en">Trend</span></div><div class="opt" onclick="pick(this,'noise')"><span class="fr">Bruit</span><span class="en">Noise</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Signal faible : marginal, mais un acteur établi (l'assureur) qui réagit lui donne du poids.</span><span class="en">✓ Weak signal: fringe, but an established player (the insurer) reacting gives it weight.</span></div>
+    </div>
+    <div class="flav" data-correct="trend">
+      <div class="flav-q"><span class="fr">Le commerce en ligne croît d'environ 10 % par an, encore cette année.</span><span class="en">E-commerce grows ~10% a year, again this year.</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'signal')"><span class="fr">Signal faible</span><span class="en">Weak signal</span></div><div class="opt" onclick="pick(this,'trend')"><span class="fr">Tendance</span><span class="en">Trend</span></div><div class="opt" onclick="pick(this,'noise')"><span class="fr">Bruit</span><span class="en">Noise</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Tendance établie : trajectoire connue. À surveiller pour les <b>inflexions</b>, pas pour la surprise.</span><span class="en">✓ Established trend: known trajectory. Watch it for <b>inflections</b>, not for surprise.</span></div>
+    </div>
+    <button class="continue" id="c3" disabled onclick="reveal(4,this)"><span class="fr">Continuer →</span><span class="en">Continue →</span></button>
+  </div>
+
+  <!-- 4 prioritise -->
+  <div class="step locked" id="st4">
+    <div class="num"><span class="fr">Étape 4 — Priorisez</span><span class="en">Step 4 — Prioritise</span></div>
+    <h2><span class="fr">Vos 3 forces décisives</span><span class="en">Your 3 decisive forces</span></h2>
+    <p><span class="fr">Voici vos forces. Sélectionnez les <b>trois</b> qui sont à la fois <b>à fort impact</b> et <b>très incertaines</b> — ce sont vos futures « incertitudes critiques », celles qui structureront vos scénarios.</span>
+       <span class="en">Here are your forces. Select the <b>three</b> that are both <b>high-impact</b> and <b>highly uncertain</b> — these become your future "critical uncertainties", the ones that will structure your scenarios.</span></p>
+    <div class="chips" id="forceChips"></div>
+    <div class="pickcount" id="pickCount"></div>
+    <button class="continue" id="c4" disabled onclick="reveal(5,this)"><span class="fr">Continuer →</span><span class="en">Continue →</span></button>
+  </div>
+
+  <!-- 5 write-up -->
+  <div class="step locked" id="st5">
+    <div class="num"><span class="fr">Étape 5 — À vous d'écrire</span><span class="en">Step 5 — Your turn to write</span></div>
+    <h2><span class="fr">Pourquoi ces forces ?</span><span class="en">Why these forces?</span></h2>
+    <p><span class="fr">En quelques phrases : pourquoi ces trois forces sont-elles décisives pour l'avenir de votre domaine, et qu'est-ce qui vous a <b>surpris·e</b> pendant le balayage ?</span>
+       <span class="en">In a few sentences: why are these three forces decisive for your domain's future, and what <b>surprised</b> you during the scan?</span></p>
+    <textarea id="w1" data-min="30" oninput="wcount(this,'wc1','c5')"></textarea><div class="wc" id="wc1"></div>
+    <button class="continue" id="c5" disabled onclick="reveal(6,this)"><span class="fr">Continuer →</span><span class="en">Continue →</span></button>
+  </div>
+
+  <!-- 6 continuous scanning concept -->
+  <div class="step locked" id="st6">
+    <div class="num"><span class="fr">Étape 6 — Le balayage ne s'arrête jamais</span><span class="en">Step 6 — Scanning never stops</span></div>
+    <h2><span class="fr">Les insights se périment</span><span class="en">Insights decay</span></h2>
+    <ul>
+      <li><span class="fr">Un balayage est un <b>processus structuré</b>, pas un brainstorming : on cherche méthodiquement aux <i>marges</i>, pas au centre.</span><span class="en">A scan is a <b>structured process</b>, not a brainstorm: you search the <i>edges</i> methodically, not the centre.</span></li>
+      <li><span class="fr">Validité élevée à <b>0–6 mois</b>, déclinante ensuite, largement obsolète à <b>3–5 ans</b>. D'où le <b>balayage continu</b> (outil 10) : une veille permanente, pas un exercice ponctuel.</span><span class="en">High validity at <b>0–6 months</b>, declining after, largely obsolete by <b>3–5 years</b>. Hence <b>continuous scanning</b> (tool 10): a permanent watch, not a one-off.</span></li>
+      <li><span class="fr">Ce que le balayage ne fait <b>pas</b> : dire <i>pourquoi</i> ça change, ni comment les forces interagissent. C'est le travail des labs 2 et 3.</span><span class="en">What scanning does <b>not</b> do: tell you <i>why</i> things change, or how forces interact. That's labs 2 and 3.</span></li>
+    </ul>
+    <button class="continue" onclick="reveal(7,this)"><span class="fr">J'ai compris →</span><span class="en">Got it →</span></button>
+  </div>
+
+  <!-- 7 quiz -->
+  <div class="step locked" id="st7">
+    <div class="num"><span class="fr">Étape 7 — Contrôle express</span><span class="en">Step 7 — Quick check</span></div>
+    <h2><span class="fr">Trois questions</span><span class="en">Three questions</span></h2>
+    <div class="flav" data-correct="b">
+      <div class="flav-q"><span class="fr">Qu'est-ce qui distingue un signal faible d'une tendance ?</span><span class="en">What distinguishes a weak signal from a trend?</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'a')"><span class="fr">Le signal est toujours faux</span><span class="en">The signal is always false</span></div><div class="opt" onclick="pick(this,'b')"><span class="fr">Le signal est précoce et ambigu</span><span class="en">The signal is early and ambiguous</span></div><div class="opt" onclick="pick(this,'c')"><span class="fr">La tendance est plus récente</span><span class="en">The trend is more recent</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Le signal faible précède la tendance : précoce, ambigu, facile à écarter — et c'est là qu'est l'avantage.</span><span class="en">✓ A weak signal precedes the trend: early, ambiguous, easy to dismiss — which is where the edge is.</span></div>
+    </div>
+    <div class="flav" data-correct="c">
+      <div class="flav-q"><span class="fr">Le « E » supplémentaire de STEEPLED (vs STEEP) ajoute notamment…</span><span class="en">The extra letters in STEEPLED (vs STEEP) add, among others…</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'a')"><span class="fr">Énergie</span><span class="en">Energy</span></div><div class="opt" onclick="pick(this,'b')"><span class="fr">Éducation</span><span class="en">Education</span></div><div class="opt" onclick="pick(this,'c')"><span class="fr">Légal, Éthique, Démographique</span><span class="en">Legal, Ethical, Demographic</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ STEEPLED = STEEP + <b>L</b>égal, <b>É</b>thique, <b>D</b>émographique.</span><span class="en">✓ STEEPLED = STEEP + <b>L</b>egal, <b>E</b>thical, <b>D</b>emographic.</span></div>
+    </div>
+    <div class="flav" data-correct="a">
+      <div class="flav-q"><span class="fr">Pourquoi un balayage doit-il être continu ?</span><span class="en">Why must scanning be continuous?</span></div>
+      <div class="flav-opts"><div class="opt" onclick="pick(this,'a')"><span class="fr">Les insights se périment vite</span><span class="en">Insights decay quickly</span></div><div class="opt" onclick="pick(this,'b')"><span class="fr">Pour remplir des rapports</span><span class="en">To fill reports</span></div><div class="opt" onclick="pick(this,'c')"><span class="fr">Parce que c'est gratuit</span><span class="en">Because it's free</span></div></div>
+      <div class="flav-fb"><span class="fr">✓ Validité élevée à court terme, obsolète en quelques années : une veille ponctuelle vieillit vite.</span><span class="en">✓ High short-term validity, obsolete within a few years: a one-off scan ages fast.</span></div>
+    </div>
+    <button class="continue" id="c7" disabled onclick="reveal(8,this);finishLab();"><span class="fr">Terminer le lab →</span><span class="en">Finish the lab →</span></button>
+  </div>
+
+  <!-- 8 insight -->
+  <div class="step locked" id="st8">
+    <div class="num"><span class="fr">L'idée à emporter</span><span class="en">The takeaway</span></div>
+    <div class="insight">
+      <h2 style="margin-bottom:8px"><span class="fr">Voir avant les autres</span><span class="en">Seeing before others</span></h2>
+      <p><span class="fr">L'avantage prospectif ne vient pas de plus de données, mais d'un <b>regard structuré sur les marges</b> : balayer les huit dimensions, repérer les signaux faibles avant qu'ils ne durcissent, et garder la veille vivante. Vous avez maintenant un inventaire de forces et trois incertitudes critiques. <b>Le lab 2 va creuser sous la surface</b> pour comprendre <i>pourquoi</i> elles bougent.</span>
+         <span class="en">The foresight edge comes not from more data but from a <b>structured look at the edges</b>: scanning all eight dimensions, catching weak signals before they harden, and keeping the watch alive. You now have a force inventory and three critical uncertainties. <b>Lab 2 will dig below the surface</b> to understand <i>why</i> they move.</span></p>
+    </div>
+    <div class="carry" id="carryOut"></div>
+    <div class="done-badge">✓ <span class="fr">Lab 1 terminé</span><span class="en">Lab 1 complete</span></div>
+    <div id="bdfLog" style="display:none;text-align:center;font-size:.85rem;color:var(--green);font-weight:700;margin-top:10px"></div>
+    <div class="pathnav"><a href="foresight-path.html"><span class="fr">← Retour au parcours · puis Lab 2</span><span class="en">← Back to the path · then Lab 2</span></a></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+function TR(fr,en){ return document.documentElement.getAttribute('data-lang')==='en' ? en : fr; }
+var TOTAL_STEPS=8, reached=1;
+
+(function(){ var KEY='fst-lang', root=document.documentElement, btns=document.querySelectorAll('.langsw button');
+  function set(l){ root.setAttribute('data-lang',l); root.setAttribute('lang',l);
+    for(var i=0;i<btns.length;i++) btns[i].setAttribute('aria-current', btns[i].getAttribute('data-l')===l?'true':'false');
+    try{localStorage.setItem(KEY,l);}catch(e){} }
+  var s=null; try{s=localStorage.getItem(KEY);}catch(e){}
+  set(s || ((navigator.language||'fr').toLowerCase().indexOf('en')===0?'en':'fr'));
+  for(var i=0;i<btns.length;i++) btns[i].addEventListener('click',(function(b){return function(){set(b.getAttribute('data-l'));};})(btns[i]));
+})();
+
+(function(){ var t0=Date.now(); setInterval(function(){ var s=Math.floor((Date.now()-t0)/1000);
+  document.getElementById('tmr').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); },1000); })();
+
+function reveal(n,btn){ if(btn) btn.disabled=true; var el=document.getElementById('st'+n); el.classList.remove('locked');
+  requestAnimationFrame(function(){ el.classList.add('in'); }); el.scrollIntoView({behavior:'smooth',block:'start'});
+  reached=Math.max(reached,n); document.getElementById('pfill').style.width=Math.round((reached-1)/(TOTAL_STEPS-1)*100)+'%';
+  if(n===4) buildChips(); }
+function wcount(el,wcId,btnId){ var n=el.value.trim()?el.value.trim().split(/\s+/).length:0, min=+el.dataset.min;
+  document.getElementById(wcId).textContent = n + TR(' mots',' words') + (n<min?'  (min '+min+')':'  ✓');
+  document.getElementById(btnId).disabled = n<min; }
+
+/* generic classifier/quiz */
+function pick(el,val){ var box=el.closest('.flav'); if(box.dataset.done) return;
+  var correct=box.dataset.correct; box.dataset.done='1'; el.classList.add(val===correct?'correct':'wrong');
+  if(val!==correct){ box.querySelectorAll('.opt').forEach(function(o){ if(o.getAttribute('onclick').indexOf("'"+correct+"'")>=0) o.classList.add('correct'); }); }
+  box.querySelector('.flav-fb').classList.add('show');
+  var step=el.closest('.step'), btn=step.querySelector('.continue'), boxes=step.querySelectorAll('.flav'), done=0;
+  boxes.forEach(function(b){ if(b.dataset.done) done++; }); if(done===boxes.length && btn) btn.disabled=false; }
+
+/* case */
+function onCase(){ var v=document.getElementById('caseIn').value.trim();
+  try{ localStorage.setItem('fst-case', v); }catch(e){}
+  var e=document.getElementById('caseEcho'); if(v.length>=3){ e.style.display='block'; e.innerHTML=TR('Votre étude : <b>l\'avenir de '+esc(v)+' — horizon 2040</b>','Your study: <b>the future of '+esc(v)+' — toward 2040</b>'); } else e.style.display='none';
+  document.getElementById('c1').disabled = v.length<3; }
+function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* STEEPLED */
+var DIMNAME={S:'Social',T:'Tech',E1:'Economic',E2:'Environmental',P:'Political',L:'Legal',E3:'Ethical',D:'Demographic'};
+function scanInputs(){ var o={}; document.querySelectorAll('.dim-in').forEach(function(i){ var v=i.value.trim(); if(v) o[i.getAttribute('data-k')]=v; }); return o; }
+function scanCount(){ var o=scanInputs(), n=Object.keys(o).length;
+  document.getElementById('scanCount').textContent=n+' / 8'+(n<5?TR('  (min 5)','  (min 5)'):'  ✓');
+  document.getElementById('c2').disabled = n<5;
+  try{ localStorage.setItem('fst-scan', JSON.stringify(o)); }catch(e){} }
+
+/* prioritise chips */
+var selForces=[];
+function buildChips(){ var o={}; try{o=JSON.parse(localStorage.getItem('fst-scan')||'{}');}catch(e){}
+  var wrap=document.getElementById('forceChips'); wrap.innerHTML='';
+  Object.keys(o).forEach(function(k){ var d=document.createElement('div'); d.className='chip'; d.setAttribute('data-k',k);
+    d.innerHTML='<span class="cd">'+DIMNAME[k]+'</span>'+esc(o[k]); d.onclick=function(){ toggleChip(d,k,o[k]); }; wrap.appendChild(d); });
+  if(!Object.keys(o).length) wrap.innerHTML='<div class="pickcount">'+TR('Revenez à l\'étape 2 pour ajouter des forces.','Go back to step 2 to add forces.')+'</div>';
+  updatePick(); }
+function toggleChip(el,k,txt){ var i=selForces.findIndex(function(x){return x.k===k;});
+  if(i>=0){ selForces.splice(i,1); el.classList.remove('sel'); }
+  else { if(selForces.length>=3) return; selForces.push({k:k,t:txt}); el.classList.add('sel'); }
+  updatePick(); }
+function updatePick(){ document.getElementById('pickCount').textContent=selForces.length+' / 3'+(selForces.length<3?TR('  sélectionnez 3','  pick 3'):'  ✓');
+  document.getElementById('c4').disabled = selForces.length!==3;
+  try{ localStorage.setItem('fst-forces', JSON.stringify(selForces)); }catch(e){} }
+
+/* ===== identity + logging ===== */
+var FST_LAB='scan', BDF_T0=Date.now();
+function bdfSan(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+function bdfName(){ try{return localStorage.getItem('bdf-name')||'';}catch(e){return '';} }
+function bdfSid(){ var s=''; try{s=localStorage.getItem('bdf-sid')||'';}catch(e){} if(!s){ var n=bdfName(); s=(n?bdfSan(n):'anon')+'-'+Math.random().toString(36).slice(2,6); try{localStorage.setItem('bdf-sid',s);}catch(e){} } return s; }
+function bdfWho(){ var n=bdfName(), inp=document.getElementById('bdfname'), ok=document.getElementById('bdfok'); if(!inp) return;
+  if(n){ inp.style.display='none'; ok.style.display='inline'; ok.textContent='👤 '+n+' ✓'; } else { inp.style.display='inline-block'; ok.style.display='none'; } }
+function bdfSetName(){ var v=document.getElementById('bdfname').value.trim(); try{ localStorage.setItem('bdf-name',v); }catch(e){} if(v) bdfSid(); bdfWho(); }
+function bdfText(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+function quizScore(){ var boxes=document.querySelectorAll('#st7 .flav'), c=0; boxes.forEach(function(b){ if(b.dataset.done && !b.querySelector('.opt.wrong')) c++; }); return {score:c,total:boxes.length}; }
+function finishLab(){
+  var sid=bdfSid(), name=bdfName(), q=quizScore(), caseV=''; try{caseV=localStorage.getItem('fst-case')||'';}catch(e){}
+  var rec={ done:true, completedAt:Date.now(), activeSec:Math.round((Date.now()-BDF_T0)/1000), name:name, case:caseV,
+    data:{ steeple:scanInputs(), critical:selForces.map(function(f){return f.t;}) }, writeups:{ w1:bdfText('w1') }, quizScore:q.score, quizTotal:q.total };
+  try{ localStorage.setItem('fst-lab-'+FST_LAB, JSON.stringify(rec)); localStorage.setItem('fst-done-'+FST_LAB,'1'); }catch(e){}
+  if(window.__store){ window.__store.set('foresightpath/'+sid+'/labs/'+FST_LAB, rec); window.__store.set('foresightpath/'+sid+'/meta', {name:name,case:caseV,lastLab:FST_LAB,ts:Date.now()}); }
+  var co=document.getElementById('carryOut'); if(co) co.innerHTML=TR('➜ Reporté au Lab 2 : vos 3 incertitudes critiques.','➜ Carried to Lab 2: your 3 critical uncertainties.');
+  var s=document.getElementById('bdfLog'); if(s){ s.style.display='block';
+    s.textContent=(window.__store&&window.__store.ready)?TR('✓ Travail envoyé — ce lab se cochera dans le parcours.','✓ Work sent — this lab will tick itself in the path.'):TR('✓ Enregistré sur cet appareil.','✓ Saved on this device.'); }
+}
+(function(){ try{ var nm=localStorage.getItem('bdf-name'); if(nm){ document.getElementById('bdfname').value=nm; } var c=localStorage.getItem('fst-case'); if(c){ document.getElementById('caseIn').value=c; onCase(); } }catch(e){} bdfWho(); })();
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const firebaseConfig = { apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw", authDomain:"teaching-70f1c.firebaseapp.com", databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", projectId:"teaching-70f1c", storageBucket:"teaching-70f1c.firebasestorage.app", messagingSenderId:"1026356553251", appId:"1:1026356553251:web:d23a4c30af7e6983463396" };
+let _db=null; try{ _db=getDatabase(initializeApp(firebaseConfig)); }catch(e){ console.error("FB init",e); }
+window.__store={ ready:!!_db, async set(k,v){ if(!_db) return false; try{ await set(ref(_db,k),v); return true; }catch(e){ return false; } }, async get(k){ if(!_db) return null; try{ const s=await get(child(ref(_db),k)); return s.exists()?s.val():null; }catch(e){ return null; } } };
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
