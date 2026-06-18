@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Beyond DeFi — Instructor dashboard</title>
+<style>
+  :root{ --navy-deep:#0A1A3A; --navy-mid:#152A5E; --navy-light:#1E3470; --blue-glow:#4A90E2; --gold:#F0B33D; --gold-bright:#FFD24A; --white:#fff; --grey-muted:#B0BCD6; --red:#E5484D; --green:#2EA84A; --teal:#2DB6A8; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Calibri','Helvetica Neue',sans-serif;color:var(--white);line-height:1.5;background:linear-gradient(180deg,var(--navy-mid),var(--navy-deep) 80%);background-attachment:fixed;min-height:100vh;padding-bottom:60px;}
+  h1,h2{font-family:Georgia,serif;}
+  a{color:var(--gold-bright);}
+
+  /* gate */
+  .gate{position:fixed;inset:0;z-index:100;background:var(--navy-deep);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .gate.hidden{display:none;}
+  .gate-box{max-width:380px;width:100%;background:rgba(21,42,94,.6);border:1px solid var(--gold);border-radius:16px;padding:28px;text-align:center;}
+  .gate-box h1{font-size:1.4rem;color:var(--gold);margin-bottom:6px;}
+  .gate-box p{font-size:.85rem;color:var(--grey-muted);margin-bottom:16px;}
+  .gate-box input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(74,144,226,.4);color:#fff;border-radius:10px;padding:12px;font:inherit;}
+  .gate-box button{width:100%;margin-top:10px;background:var(--gold);color:var(--navy-deep);border:0;border-radius:10px;padding:12px;font:inherit;font-weight:700;cursor:pointer;}
+  .gate-err{color:var(--red);font-size:.82rem;margin-top:8px;min-height:18px;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 16px;}
+  .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
+  .top h1{font-size:1.5rem;color:var(--gold);}
+  .top .conn{font-size:.74rem;color:var(--grey-muted);} .top .conn .d{display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:4px;} .conn.ok .d{background:var(--green);} .conn.bad .d{background:var(--red);}
+  .spacer{flex:1;}
+  .btn{background:rgba(255,255,255,.07);border:1px solid rgba(74,144,226,.4);color:#cfe0ff;border-radius:9px;padding:8px 13px;font:inherit;font-size:.82rem;cursor:pointer;}
+  .btn:hover{border-color:var(--gold);}
+  .btn.gold{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);font-weight:700;}
+
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;}
+  .stat{background:rgba(30,52,112,.5);border:1px solid rgba(74,144,226,.3);border-radius:12px;padding:12px 16px;min-width:120px;}
+  .stat .k{font-size:.68rem;letter-spacing:1px;text-transform:uppercase;color:var(--grey-muted);}
+  .stat .v{font-family:Georgia,serif;font-size:1.7rem;color:var(--gold-bright);}
+
+  .sortbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--grey-muted);margin:8px 0;}
+  .sortbar .btn.active{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);}
+
+  table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:8px;}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid rgba(74,144,226,.18);}
+  th{font-size:.68rem;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:700;white-space:nowrap;}
+  tr.row{cursor:pointer;} tr.row:hover{background:rgba(74,144,226,.08);}
+  td.name{font-weight:700;}
+  .dots{display:inline-flex;gap:3px;} .dot{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.12);} .dot.on{background:var(--green);}
+  .num{font-variant-numeric:tabular-nums;text-align:right;}
+  .code{font-family:'Courier New',monospace;color:var(--teal);font-size:.8rem;}
+  .yes{color:var(--green);font-weight:700;} .no{color:var(--grey-muted);}
+  .flag{color:var(--red);font-weight:700;cursor:help;}
+  .detail{background:rgba(10,26,58,.6);}
+  .detail td{padding:0;}
+  .detail .inner{padding:14px 16px;}
+  .detail .lab{margin:10px 0;border-left:2px solid var(--blue-glow);padding-left:12px;}
+  .detail .lab h3{font-size:.95rem;color:var(--gold-bright);margin-bottom:3px;}
+  .detail .nums{font-family:'Courier New',monospace;font-size:.78rem;color:var(--teal);margin:3px 0;}
+  .detail .wu{font-size:.85rem;color:#dbe3f7;margin:4px 0;white-space:pre-wrap;}
+  .detail .wu b{color:var(--gold);}
+  .detail .syn{margin-top:10px;padding:10px;background:rgba(240,179,61,.08);border-radius:8px;font-size:.88rem;color:#e7edfb;white-space:pre-wrap;}
+  .detail .dupwarn{color:var(--red);font-size:.82rem;margin-top:6px;}
+  .empty{text-align:center;color:var(--grey-muted);padding:40px;font-size:.95rem;}
+  .hint{font-size:.78rem;color:var(--grey-muted);margin-top:18px;line-height:1.6;border-top:1px solid rgba(74,144,226,.2);padding-top:12px;}
+  .hint code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-size:.92em;}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <h1>🔒 Beyond DeFi</h1>
+    <p>Instructor dashboard — enter passphrase</p>
+    <input type="password" id="passIn" placeholder="Passphrase" autofocus>
+    <button onclick="tryUnlock()">Unlock</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none">
+  <div class="top">
+    <h1>Beyond DeFi — submissions</h1>
+    <span class="conn" id="conn"><span class="d"></span><span id="connTxt">…</span></span>
+    <div class="spacer"></div>
+    <button class="btn" onclick="load()">↻ Refresh</button>
+    <button class="btn gold" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="sortbar">
+    <span>Sort:</span>
+    <button class="btn active" data-sort="recent" onclick="setSort('recent')">Most recent</button>
+    <button class="btn" data-sort="name" onclick="setSort('name')">Name</button>
+    <button class="btn" data-sort="progress" onclick="setSort('progress')">Progress</button>
+    <button class="btn" data-sort="time" onclick="setSort('time')">Time</button>
+    <span class="spacer"></span>
+    <label style="font-size:.8rem"><input type="checkbox" id="onlyFlags" onchange="renderTable()"> only flagged ⚠</label>
+  </div>
+
+  <table id="tbl">
+    <thead><tr>
+      <th>#</th><th>Name</th><th>Labs</th><th class="num">Total</th>
+      <th class="num">MEV</th><th class="num">DAO</th><th class="num">ZK</th><th class="num">RWA</th>
+      <th class="num">Quiz</th><th>Code</th><th>Sent</th><th>⚠</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">No submissions yet. They appear here as students finish labs.</div>
+
+  <div class="hint">
+    Data lives in the <code>teaching-70f1c</code> Realtime DB under <code>beyonddefi/&lt;student&gt;</code> (also browsable in the Firebase console). Each student's <b>numbers</b> are auto-captured from their simulators — the ⚠ flag marks two students whose captured numbers for a lab are <i>identical</i> (likely copied). Times are active minutes; quiz is summed correct / 12. Click a row to see write-ups and numbers.
+    <br>To change the passphrase, replace <code>PASS_HASH</code> in this file with the SHA-256 of your new passphrase.
+  </div>
+</div>
+
+<script>
+"use strict";
+/* compact SHA-256 (for the passphrase gate) */
+function sha256(ascii){ function rr(v,a){return (v>>>a)|(v<<(32-a));} var mp=Math.pow,mw=mp(2,32),result='';var words=[],abl=ascii.length*8;var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pc=k.length,comp={};for(var c=2;pc<64;c++){if(!comp[c]){for(var i=0;i<313;i+=c){comp[i]=c;}hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0;}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return '';words[i>>2]|=j<<((3-i)%4)*8;}words[words.length]=((abl/mw)|0);words[words.length]=(abl);for(var j=0;j<words.length;){var w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;}for(var i=0;i<8;i++){hash[i]=(hash[i]+oh[i])|0;}}for(var i=0;i<8;i++){for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16);}}return result; }
+function h256(s){ return sha256(unescape(encodeURIComponent(s))); }
+
+/* default passphrase = "beyond-defi-2026" (change PASS_HASH to rotate) */
+var PASS_HASH="dc93b8c5b5e3d287f3e9c7fa88cb1dc6d0d5160579e8b561fa8a9d5bbe5330d2";
+var LABS=['mev','dao','zk','nft'], LAB_NAME={mev:'MEV / Dark Forest',dao:'DAO governance',zk:'ZK & privacy',nft:'NFTs & real assets'};
+var STUDENTS=[], SORT='recent', POLL=null;
+
+function tryUnlock(){
+  var v=document.getElementById('passIn').value;
+  if(h256(v)===PASS_HASH){ try{sessionStorage.setItem('bdf-dash','1');}catch(e){} unlock(); }
+  else { document.getElementById('gateErr').textContent='Wrong passphrase.'; }
+}
+function unlock(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('app').style.display='block';
+  setTimeout(setConn,1500); load(); if(!POLL) POLL=setInterval(load,20000); }
+document.getElementById('passIn').addEventListener('keydown',function(e){ if(e.key==='Enter') tryUnlock(); });
+try{ if(sessionStorage.getItem('bdf-dash')==='1') unlock(); }catch(e){}
+
+function setConn(){ var c=document.getElementById('conn'), ready=window.__store&&window.__store.ready;
+  c.className='conn '+(ready?'ok':'bad'); document.getElementById('connTxt').textContent=ready?'online':'offline'; }
+window.addEventListener('bdf-store-ready',setConn);
+
+function labName(labs){ for(var k in labs){ if(labs[k]&&labs[k].name) return labs[k].name; } return ''; }
+async function load(){
+  if(!window.__store){ return; }
+  setConn();
+  var root=await window.__store.get('beyonddefi'); STUDENTS=[];
+  if(root){ for(var sid in root){ if(!root.hasOwnProperty(sid)||sid.charAt(0)==='_') continue;
+    var node=root[sid]||{}, labs=node.labs||{};
+    var name=node.name||(node.meta&&node.meta.name)||labName(labs)||sid;
+    var done=0,quizSum=0,quizTot=0,perlab={},sumSec=0,lastTs=node.submittedAt||0;
+    LABS.forEach(function(k){ var r=labs[k]; if(r&&r.done){ done++; perlab[k]=r.activeSec||0; sumSec+=r.activeSec||0;
+      if(r.quizScore!=null){ quizSum+=r.quizScore; quizTot+=(r.quizTotal||3); } if(r.completedAt>lastTs) lastTs=r.completedAt; }
+      else perlab[k]=null; });
+    STUDENTS.push({ sid:sid, name:name, labs:labs, done:done, perlab:perlab, quizSum:quizSum, quizTot:quizTot,
+      code:node.code||'', submitted:!!node.submittedAt, total:(node.totalActiveMin||Math.round(sumSec/60)), synthesis:node.synthesis||'', lastTs:lastTs }); } }
+  computeDups(); renderStats(); renderTable();
+}
+function computeDups(){
+  var map={}; LABS.forEach(function(k){ map[k]={}; });
+  STUDENTS.forEach(function(s){ LABS.forEach(function(k){ var r=s.labs[k]; if(r&&r.numbers){ var sig=JSON.stringify(r.numbers); (map[k][sig]=map[k][sig]||[]).push(s.sid); } }); });
+  STUDENTS.forEach(function(s){ s.dupLabs=[]; LABS.forEach(function(k){ var r=s.labs[k]; if(r&&r.numbers){ var sig=JSON.stringify(r.numbers); if(map[k][sig].length>1) s.dupLabs.push(k); } }); });
+}
+function renderStats(){
+  var n=STUDENTS.length, complete=STUDENTS.filter(function(s){return s.done===4;}).length,
+      sent=STUDENTS.filter(function(s){return s.submitted;}).length,
+      avg=n?Math.round(STUDENTS.reduce(function(a,s){return a+s.total;},0)/n):0,
+      flagged=STUDENTS.filter(function(s){return s.dupLabs&&s.dupLabs.length;}).length;
+  document.getElementById('stats').innerHTML=
+    stat('Students',n)+stat('Completed 4/4',complete)+stat('Submitted',sent)+stat('Avg time',avg+'m')+stat('Flagged ⚠',flagged);
+}
+function stat(k,v){ return '<div class="stat"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+
+function setSort(s){ SORT=s; document.querySelectorAll('.sortbar .btn').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-sort')===s); }); renderTable(); }
+function sorted(){ var a=STUDENTS.slice();
+  if(SORT==='name') a.sort(function(x,y){return x.name.localeCompare(y.name);});
+  else if(SORT==='progress') a.sort(function(x,y){return y.done-x.done || y.lastTs-x.lastTs;});
+  else if(SORT==='time') a.sort(function(x,y){return y.total-x.total;});
+  else a.sort(function(x,y){return y.lastTs-x.lastTs;});
+  return a; }
+function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function mm(sec){ return sec==null?'—':Math.max(1,Math.round(sec/60)); }
+
+function renderTable(){
+  var tb=document.getElementById('tbody'), rows=sorted(), only=document.getElementById('onlyFlags').checked;
+  if(only) rows=rows.filter(function(s){return s.dupLabs&&s.dupLabs.length;});
+  document.getElementById('empty').style.display=rows.length?'none':'block';
+  var html='';
+  rows.forEach(function(s,i){
+    var dots=''; LABS.forEach(function(k){ dots+='<span class="dot'+(s.labs[k]&&s.labs[k].done?' on':'')+'" title="'+k+'"></span>'; });
+    var flag=(s.dupLabs&&s.dupLabs.length)?'<span class="flag" title="identical numbers with another student in: '+s.dupLabs.join(', ')+'">⚠</span>':'';
+    html+='<tr class="row" onclick="toggle(\''+s.sid+'\')">'+
+      '<td>'+(i+1)+'</td>'+
+      '<td class="name">'+esc(s.name)+'</td>'+
+      '<td><span class="dots">'+dots+'</span> '+s.done+'/4</td>'+
+      '<td class="num">'+(s.total||'—')+'m</td>'+
+      '<td class="num">'+mm(s.perlab.mev)+'</td><td class="num">'+mm(s.perlab.dao)+'</td><td class="num">'+mm(s.perlab.zk)+'</td><td class="num">'+mm(s.perlab.nft)+'</td>'+
+      '<td class="num">'+(s.quizTot?s.quizSum+'/'+s.quizTot:'—')+'</td>'+
+      '<td class="code">'+esc(s.code||'—')+'</td>'+
+      '<td>'+(s.submitted?'<span class="yes">✓</span>':'<span class="no">—</span>')+'</td>'+
+      '<td>'+flag+'</td></tr>'+
+      '<tr class="detail" id="d-'+s.sid+'" style="display:none"><td colspan="12"><div class="inner" id="di-'+s.sid+'"></div></td></tr>';
+  });
+  tb.innerHTML=html;
+}
+function toggle(sid){
+  var row=document.getElementById('d-'+sid); if(!row) return;
+  if(row.style.display!=='none'){ row.style.display='none'; return; }
+  var s=STUDENTS.filter(function(x){return x.sid===sid;})[0]; if(!s) return;
+  var h='';
+  LABS.forEach(function(k){ var r=s.labs[k]; if(!r){ return; }
+    h+='<div class="lab"><h3>'+LAB_NAME[k]+(r.done?' · '+mm(r.activeSec)+'m'+(r.quizScore!=null?' · quiz '+r.quizScore+'/'+(r.quizTotal||3):''):' · (incomplete)')+(s.dupLabs.indexOf(k)>=0?' <span class="flag">⚠ duplicate numbers</span>':'')+'</h3>';
+    if(r.numbers){ var ns=[]; for(var key in r.numbers){ if(r.numbers.hasOwnProperty(key)) ns.push(key+'='+r.numbers[key]); } h+='<div class="nums">'+esc(ns.join('  ·  '))+'</div>'; }
+    if(r.writeups){ ['w1','w2','w3'].forEach(function(w,wi){ if(r.writeups[w]) h+='<div class="wu"><b>Write-up '+(wi+1)+':</b> '+esc(r.writeups[w])+'</div>'; }); }
+    h+='</div>';
+  });
+  if(s.synthesis) h+='<div class="syn"><b>Final synthesis'+(s.code?' · '+esc(s.code):'')+':</b><br>'+esc(s.synthesis)+'</div>';
+  if(!h) h='<div style="color:var(--grey-muted)">No detail recorded yet.</div>';
+  document.getElementById('di-'+sid).innerHTML=h; row.style.display='table-row';
+}
+
+function exportCSV(){
+  var head=['name','student_id','labs_done','total_min','mev_min','dao_min','zk_min','nft_min','quiz','code','submitted','flagged_labs'];
+  var lines=[head.join(',')];
+  sorted().forEach(function(s){
+    var row=[s.name,s.sid,s.done,s.total,mm(s.perlab.mev),mm(s.perlab.dao),mm(s.perlab.zk),mm(s.perlab.nft),
+      (s.quizTot?s.quizSum+'/'+s.quizTot:''),s.code,(s.submitted?'yes':'no'),(s.dupLabs||[]).join('|')];
+    lines.push(row.map(function(v){ v=(v==null?'':String(v)); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'}); var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='beyond-defi-roster.csv'; a.click();
+}
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const firebaseConfig = { apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw", authDomain:"teaching-70f1c.firebaseapp.com", databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", projectId:"teaching-70f1c", storageBucket:"teaching-70f1c.firebasestorage.app", messagingSenderId:"1026356553251", appId:"1:1026356553251:web:d23a4c30af7e6983463396" };
+let _db=null; try{ _db=getDatabase(initializeApp(firebaseConfig)); }catch(e){ console.error("FB init",e); }
+window.__store={ ready:!!_db, async get(k){ if(!_db) return null; try{ const s=await get(child(ref(_db),k)); return s.exists()?s.val():null; }catch(e){ console.error(e); return null; } } };
+window.dispatchEvent(new Event('bdf-store-ready'));
+if(document.getElementById('app').style.display==='block' && window.load) window.load();
+</script>
+</body>
+</html>
