@@ -95,6 +95,11 @@
   .video{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(74,144,226,.35);background:#000;}
   .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
   .watch-link{display:inline-block;margin-top:7px;font-size:.78rem;color:var(--blue-glow);text-decoration:none;}
+  .bdfbar{max-width:820px;margin:10px auto -8px;padding:8px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.82rem;color:var(--grey-muted);}
+  .bdfbar input{background:rgba(255,255,255,.06);border:1px solid rgba(74,144,226,.4);color:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:.82rem;min-width:170px;}
+  .bdfbar #bdfok{color:var(--green);font-weight:700;}
+  .bdfhint{opacity:.65;}
+  .bdfbar .fr,.bdfbar .en,.bdfhint .fr,.bdfhint .en{display:inline;}
 </style>
 </head>
 <body>
@@ -105,6 +110,13 @@
   <div class="timer">⏱ <b id="tmr">0:00</b></div>
   <div class="langsw"><button type="button" data-l="fr">FR</button><button type="button" data-l="en">EN</button></div>
 </div></div>
+
+<div class="bdfbar" id="bdfbar">
+  <span class="fr">👤 Votre nom :</span><span class="en">👤 Your name:</span>
+  <input id="bdfname" oninput="bdfSetName()" placeholder="Prénom Nom" autocomplete="name">
+  <span id="bdfok" style="display:none"></span>
+  <span class="bdfhint"><span class="fr">— pour enregistrer votre travail au nom de l'enseignant</span><span class="en">— to log your work for the instructor</span></span>
+</div>
 
 <div class="wrap">
   <div class="kicker"><span class="fr">Lab · Le jeton et la chose</span><span class="en">Lab · The token and the thing</span></div>
@@ -166,6 +178,7 @@
     <h2><span class="fr">Que possédez-vous, au juste ?</span><span class="en">What do you actually own?</span></h2>
     <p><span class="fr">Vous détenez un jeton « 1/10 000 d'appartement ». En vos mots : qu'est-ce que cela vous garantit <b>on-chain</b> (par le code), et qu'est-ce qui dépend d'une promesse <b>hors-chaîne</b> (juridique) ?</span>
        <span class="en">You hold a "1/10,000 of an apartment" token. In your own words: what does it guarantee you <b>on-chain</b> (by code), and what depends on an <b>off-chain</b> (legal) promise?</span></p>
+    <p style="font-size:.82rem;color:var(--gold);margin-top:6px"><span class="fr">↳ Citez votre <b>part exacte</b> et le <b>prix par jeton</b> de votre simulation.</span><span class="en">↳ Quote your <b>exact share</b> and the <b>price per token</b> from your simulation.</span></p>
     <textarea id="w1" data-min="25" oninput="wcount(this,'wc1','c3')"></textarea><div class="wc" id="wc1"></div>
     <button class="continue" id="c3" disabled onclick="reveal(4,this)"><span class="fr">Continuer →</span><span class="en">Continue →</span></button>
   </div>
@@ -271,7 +284,7 @@
       <div class="flav-opts"><div class="opt" onclick="quiz(this,'a')"><span class="fr">Elles dépendaient du marché, pas du code</span><span class="en">They depended on the marketplace, not code</span></div><div class="opt" onclick="quiz(this,'b')"><span class="fr">Le gas a augmenté</span><span class="en">Gas got expensive</span></div><div class="opt" onclick="quiz(this,'c')"><span class="fr">Interdiction légale</span><span class="en">A legal ban</span></div></div>
       <div class="flav-fb"><span class="fr">✓ Pour les NFT standards, l'application des royalties était une politique de plateforme ; quand des marchés ont cessé, elles ont fondu.</span><span class="en">✓ For standard NFTs, enforcing royalties was a platform policy; when marketplaces stopped, they melted away.</span></div>
     </div>
-    <button class="continue" id="c9" disabled onclick="reveal(10,this)"><span class="fr">Voir la conclusion →</span><span class="en">See the takeaway →</span></button>
+    <button class="continue" id="c9" disabled onclick="reveal(10,this);finishLab();"><span class="fr">Voir la conclusion →</span><span class="en">See the takeaway →</span></button>
   </div>
 
   <!-- 10 insight -->
@@ -283,6 +296,7 @@
          <span class="en">The blockchain is unbeatable on the <b>on-chain</b> part: unique ownership, instant transfer, provenance, fractionalization, composability. But the moment an asset lives in the real world, the token is only worth what its <b>oracle</b> and <b>legal wrapper</b> are worth. RWAs that succeed (Treasuries) minimize that gap; those that struggle (complex real estate, art) maximize it. The right question is never "can we tokenize?" — almost anything can be — but "<b>does the link to the real world hold, and who guarantees it?</b>"</span></p>
     </div>
     <div class="done-badge">✓ <span class="fr">Lab terminé</span><span class="en">Lab complete</span></div>
+    <div id="bdfLog" style="display:none;text-align:center;font-size:.85rem;color:var(--green);font-weight:700;margin-top:10px"></div>
     <div class="pathnav"><a href="beyond-defi.html"><span class="fr">← Retour au parcours</span><span class="en">← Back to the path</span></a></div>
   </div>
 </div>
@@ -328,6 +342,7 @@ function runFrac(count){
   var v=document.getElementById('fracV');
   if(tokens<1){ v.className='verdict warn'; v.innerHTML=TR('Votre budget est <b>inférieur au prix d\'un seul jeton</b> ('+fmt2(price)+' CHF). Augmentez le nombre de fractions pour baisser le ticket.','Your budget is <b>below the price of a single token</b> ('+fmt2(price)+' CHF). Increase the number of fractions to lower the ticket.'); }
   else { v.className='verdict'; v.innerHTML=TR('Avec <b>'+fmt2(bud)+' CHF</b>, vous possédez '+fmt(tokens)+' fractions d\'un bien à '+fmt(val)+' CHF — inaccessible en entier. C\'est l\'ouverture de l\'accès.','With <b>'+fmt2(bud)+' CHF</b> you own '+fmt(tokens)+' fractions of a '+fmt(val)+' CHF asset — out of reach as a whole. That\'s the opening of access.'); }
+  window.__nftPrice=price; window.__nftShare=share*100; window.__nftRent=rent; window.__nftTokens=tokens;
   if(count){ fracRuns++; document.getElementById('fracRunc').textContent=TR('Essais : ','Runs: ')+fracRuns+(fracRuns<3?TR('  (au moins 3)','  (at least 3)'):'  ✓'); if(fracRuns>=3) document.getElementById('c2').disabled=false; }
 }
 ['rval','rfrac','rbud'].forEach(function(id){
@@ -346,6 +361,7 @@ function runRoy(count){
   document.getElementById('rSel').textContent='CHF '+fmt2(seller);
   document.getElementById('rCum').textContent='CHF '+fmt2(cum);
   document.getElementById('royV').innerHTML=TR('Sur '+n+' reventes à '+fmt(price)+' CHF, l\'artiste touche <b>'+fmt2(cum)+' CHF</b> sans rien vendre de neuf. <i>Mais</i> ce versement n\'est garanti que si la place de marché applique la royalty (voir étape 5).','Across '+n+' resales at '+fmt(price)+' CHF, the artist earns <b>'+fmt2(cum)+' CHF</b> without selling anything new. <i>But</i> this only pays out if the marketplace enforces the royalty (see step 5).');
+  window.__royCum=cum; window.__royCreator=creator; window.__royN=n;
   if(count){ royRuns++; document.getElementById('royRunc').textContent=TR('Essais : ','Runs: ')+royRuns+(royRuns<3?TR('  (au moins 3)','  (at least 3)'):'  ✓'); if(royRuns>=3) document.getElementById('c4').disabled=false; }
 }
 [['rsPrice',0],['rsRoy',1],['rsFee',1],['rsN',2]].forEach(function(p){
@@ -369,6 +385,37 @@ function checkAll(stId,btnId){ var boxes=document.querySelectorAll('#'+stId+' .f
   boxes.forEach(function(b){ if(b.dataset.done) done++; }); if(done===boxes.length) document.getElementById(btnId).disabled=false; }
 
 window.refreshSim=function(){ if(fracRuns>0) runFrac(false); if(royRuns>0) runRoy(false); };
+</script>
+
+<script>
+/* ===== Beyond DeFi — identity + auto-logging ===== */
+var BDF_LAB='nft', BDF_T0=Date.now();
+function bdfSan(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+function bdfName(){ try{return localStorage.getItem('bdf-name')||'';}catch(e){return '';} }
+function bdfSid(){ var s=''; try{s=localStorage.getItem('bdf-sid')||'';}catch(e){} if(!s){ var n=bdfName(); s=(n?bdfSan(n):'anon')+'-'+Math.random().toString(36).slice(2,6); try{localStorage.setItem('bdf-sid',s);}catch(e){} } return s; }
+function bdfWho(){ var n=bdfName(), inp=document.getElementById('bdfname'), ok=document.getElementById('bdfok'); if(!inp) return;
+  if(n){ inp.style.display='none'; ok.style.display='inline'; ok.textContent='👤 '+n+' ✓'; } else { inp.style.display='inline-block'; ok.style.display='none'; } }
+function bdfSetName(){ var v=document.getElementById('bdfname').value.trim(); try{ localStorage.setItem('bdf-name',v); }catch(e){} if(v) bdfSid(); bdfWho(); }
+function bdfText(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+function bdfQuiz(){ var boxes=document.querySelectorAll('#st9 .flav'), correct=0; boxes.forEach(function(b){ if(b.dataset.done && !b.querySelector('.opt.wrong')) correct++; }); return {score:correct,total:boxes.length}; }
+function captureNumbers(){ return { price_per_token_CHF:(window.__nftPrice!=null?Math.round(window.__nftPrice):'-'), your_share_pct:(window.__nftShare!=null?(+window.__nftShare).toFixed(2):'-'), your_rent_CHF:(window.__nftRent!=null?Math.round(window.__nftRent):'-'), royalty_cumulative_CHF:(window.__royCum!=null?Math.round(window.__royCum):'-'), resales:(window.__royN!=null?window.__royN:'-') }; }
+function finishLab(){
+  var sid=bdfSid(), name=bdfName(), q=bdfQuiz();
+  var rec={ done:true, completedAt:Date.now(), activeSec:Math.round((Date.now()-BDF_T0)/1000), name:name,
+    writeups:{ w1:bdfText('w1'), w2:bdfText('w2'), w3:bdfText('w3') }, numbers:captureNumbers(), quizScore:q.score, quizTotal:q.total };
+  try{ localStorage.setItem('bdf-lab-'+BDF_LAB, JSON.stringify(rec)); localStorage.setItem('bdf-done-'+BDF_LAB,'1'); }catch(e){}
+  if(window.__store){ window.__store.set('beyonddefi/'+sid+'/labs/'+BDF_LAB, rec); window.__store.set('beyonddefi/'+sid+'/meta', {name:name,lastLab:BDF_LAB,ts:Date.now()}); }
+  var s=document.getElementById('bdfLog'); if(s){ s.style.display='block';
+    s.textContent=(window.__store&&window.__store.ready)?TR('✓ Réponses et chiffres envoyés — ce lab se cochera dans le parcours.','✓ Answers and numbers sent — this lab will tick itself in the path.'):TR('✓ Enregistré sur cet appareil. Revenez au parcours pour la remise.','✓ Saved on this device. Return to the path to submit.'); }
+}
+bdfWho();
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const firebaseConfig = { apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw", authDomain:"teaching-70f1c.firebaseapp.com", databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", projectId:"teaching-70f1c", storageBucket:"teaching-70f1c.firebasestorage.app", messagingSenderId:"1026356553251", appId:"1:1026356553251:web:d23a4c30af7e6983463396" };
+let _db=null; try{ _db=getDatabase(initializeApp(firebaseConfig)); }catch(e){ console.error("FB init",e); }
+window.__store={ ready:!!_db, async set(k,v){ if(!_db) return false; try{ await set(ref(_db,k),v); return true; }catch(e){ return false; } }, async get(k){ if(!_db) return null; try{ const s=await get(child(ref(_db),k)); return s.exists()?s.val():null; }catch(e){ return null; } } };
 </script>
 </body>
 </html>
