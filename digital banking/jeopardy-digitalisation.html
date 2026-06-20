@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeopardy — Digitalisation bancaire</title>
+<style>
+  :root{
+    --navy:#1E2761; --dark:#151B3B; --mid:#2A3470; --card:#27306E;
+    --amber:#F4A03F; --amber-d:#d8852a; --ice:#E8EEFC; --muted:#AEB8D9;
+    --green:#3FBF8F; --red:#E06A6A; --white:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Calibri,system-ui,sans-serif;background:var(--navy);
+    color:var(--ice);padding:20px 14px 50px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:18px}
+  .kal{font-size:12px;letter-spacing:3px;font-weight:700;color:var(--white)}
+  .kal span{color:var(--amber)}
+  h1{font-size:30px;font-weight:800;color:var(--white);line-height:1.05}
+  h1 em{color:var(--amber);font-style:normal}
+  .sub{font-size:13px;color:var(--muted);margin-top:4px}
+
+  .board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .cat{background:var(--dark);border-radius:10px;padding:14px 8px;text-align:center;
+    font-weight:800;color:var(--amber);font-size:15px;text-transform:uppercase;letter-spacing:.5px;
+    display:flex;align-items:center;justify-content:center;min-height:64px}
+  .tile{background:var(--card);border-radius:10px;border:none;color:var(--white);
+    font-size:30px;font-weight:800;cursor:pointer;padding:22px 8px;transition:.15s;
+    font-variant-numeric:tabular-nums}
+  .tile:hover{background:var(--mid);transform:translateY(-2px)}
+  .tile.done{background:var(--dark);color:#3a4377;cursor:default;transform:none}
+  .tile.done:hover{transform:none}
+
+  /* scoreboard */
+  .scorebar{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0 8px}
+  .team{background:var(--mid);border-radius:12px;padding:12px 16px;min-width:150px;flex:1}
+  .team h4{font-size:13px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+  .team .pts{font-size:28px;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums}
+  .team input{background:transparent;border:none;color:var(--white);font-weight:700;font-size:14px;width:90px}
+  .team input:focus{outline:1px solid var(--amber);border-radius:4px}
+  .addteam{background:transparent;border:2px dashed var(--muted);color:var(--muted);border-radius:12px;
+    padding:0 16px;cursor:pointer;font-weight:700;font-size:24px;min-width:54px}
+  .addteam:hover{border-color:var(--amber);color:var(--amber)}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(10,14,35,.85);display:none;align-items:center;
+    justify-content:center;padding:20px;z-index:50}
+  .overlay.show{display:flex}
+  .modal{background:var(--navy);border:2px solid var(--amber);border-radius:18px;max-width:760px;width:100%;
+    padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal .tag{font-size:12px;letter-spacing:2px;font-weight:700;color:var(--amber);text-transform:uppercase}
+  .modal .val{float:right;font-size:22px;font-weight:800;color:var(--amber)}
+  .modal .q{font-size:24px;font-weight:700;color:var(--white);margin:16px 0 8px;line-height:1.3}
+  .modal .a{font-size:17px;color:var(--green);background:var(--dark);border-radius:12px;padding:16px;
+    margin-top:16px;display:none;line-height:1.45}
+  .modal .a b{color:var(--amber)}
+  .mbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .btn{background:var(--amber);color:var(--navy);border:none;font-weight:800;font-size:15px;
+    padding:12px 20px;border-radius:28px;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--amber-d)}
+  .btn.ghost{background:transparent;color:var(--amber);border:2px solid var(--amber)}
+  .award{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;display:none}
+  .award span{font-size:12px;color:var(--muted);width:100%}
+  .award button{background:var(--mid);color:var(--ice);border:none;border-radius:8px;padding:8px 12px;
+    cursor:pointer;font-weight:700;font-size:13px}
+  .award button:hover{background:#33408a}
+  .award button.minus{background:#3a2030;color:#f0a0a0}
+  .footer{font-size:12px;color:var(--muted);margin-top:26px;text-align:center}
+  .reset{background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700}
+  @media(max-width:640px){.board{grid-template-columns:repeat(2,1fr)}.tile{font-size:22px;padding:16px 4px}.cat{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="kal">KALAIDOS <span>•</span></div>
+      <h1>Jeopardy — <em>Digitalisation bancaire</em></h1>
+      <div class="sub">4 catégories × 5 valeurs · clique une case · réponds AVANT de révéler · attribue les points.</div>
+    </div>
+    <button class="reset" onclick="resetAll()">↻ Tout réinitialiser</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="scorebar" id="scorebar"></div>
+  <div style="font-size:12px;color:var(--muted)">Astuce : renomme les équipes en cliquant sur leur nom. Les points se cumulent toute la partie.</div>
+
+  <div class="footer">Dr. Jan Erik Meidell · Digitalisation bancaire · révision examen — Paiements · WealthTech · Lending · InsurTech</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div><span class="tag" id="mTag"></span><span class="val" id="mVal"></span></div>
+    <div class="q" id="mQ"></div>
+    <div class="a" id="mA"></div>
+    <div class="mbtns">
+      <button class="btn" id="revealBtn" onclick="reveal()">Révéler la réponse</button>
+      <button class="btn ghost" onclick="closeModal()">Fermer</button>
+    </div>
+    <div class="award" id="award"><span>Qui a trouvé ? Clique pour attribuer (ou retirer) les points :</span></div>
+  </div>
+</div>
+
+<script>
+/* ---- categories: question = "réponse à donner", answer = la solution attendue ---- */
+const DATA = {
+  "Paiements":[
+    {v:100,q:"Cette directive européenne a forcé les banques à ouvrir leurs données par API.",a:"Qu'est-ce que la <b>DSP2</b> (Open Banking) ?"},
+    {v:200,q:"Au-delà de ce montant, un paiement exige une authentification forte (deux facteurs).",a:"Qu'est-ce que <b>30 €</b> (seuil SCA) ?"},
+    {v:300,q:"Ce type de service tiers initie un virement directement, sans passer par une carte.",a:"Qu'est-ce qu'un <b>PISP</b> (initiation de paiement) ?"},
+    {v:400,q:"Émetteur, garantie, régulation : ces trois axes distinguent une CBDC de CECI.",a:"Qu'est-ce qu'un <b>stablecoin</b> (ex. USDT, USDC) ?"},
+    {v:500,q:"Ce règlement européen de 2024 encadre les crypto-actifs, dont les stablecoins.",a:"Qu'est-ce que <b>MiCA</b> ?"},
+  ],
+  "WealthTech":[
+    {v:100,q:"Plateforme qui construit et gère automatiquement un portefeuille selon ton profil de risque.",a:"Qu'est-ce qu'un <b>robo-advisor</b> ?"},
+    {v:200,q:"Cite un robo-advisor suisse.",a:"Qu'est-ce que <b>True Wealth, Selma ou Descartes Finance</b> ?"},
+    {v:300,q:"Type de fonds sur lequel un robo-advisor alloue, pour une gestion passive et peu chère.",a:"Qu'est-ce qu'un <b>ETF</b> ?"},
+    {v:400,q:"La théorie financière qui sous-tend l'allocation d'un robo-advisor.",a:"Qu'est-ce que la <b>Théorie Moderne du Portefeuille</b> ?"},
+    {v:500,q:"Fourchette typique de frais d'un robo (vs 1–2 % pour un conseiller humain).",a:"Qu'est-ce que <b>0,5 à 1 %</b> ?"},
+  ],
+  "Lending":[
+    {v:100,q:"Modèle de paiement fractionné en 3–4 fois, souvent sans intérêt pour le client.",a:"Qu'est-ce que le <b>BNPL</b> (Buy Now Pay Later) ?"},
+    {v:200,q:"Dans le BNPL, c'est lui qui paie une commission au fournisseur.",a:"Qui est le <b>commerçant</b> ?"},
+    {v:300,q:"Principal risque pour le consommateur quand les petites dettes BNPL s'accumulent.",a:"Qu'est-ce que le <b>surendettement</b> ?"},
+    {v:400,q:"Cite un acteur BNPL actif en Suisse.",a:"Qu'est-ce que <b>Cembra ou Swissbilling</b> ?"},
+    {v:500,q:"Tranche d'âge où le taux de défaut BNPL est le plus élevé.",a:"Qu'est-ce que les <b>18–25 ans</b> ?"},
+  ],
+  "InsurTech":[
+    {v:100,q:"Assurance qu'on active et désactive depuis une app, à l'heure ou au trajet.",a:"Qu'est-ce que l'<b>assurance à la demande</b> ?"},
+    {v:200,q:"Assurance qui indemnise automatiquement sur un déclencheur mesurable (retard de vol).",a:"Qu'est-ce que l'<b>assurance paramétrique</b> ?"},
+    {v:300,q:"Brique technique indispensable pour qu'un contrat paramétrique lise une donnée du monde réel.",a:"Qu'est-ce qu'un <b>oracle</b> (ex. Chainlink) ?"},
+    {v:400,q:"Principal risque éthique d'une prime calculée par capteurs et objets connectés.",a:"Qu'est-ce que la <b>discrimination / le biais</b> ?"},
+    {v:500,q:"Ce texte européen de 2024 classe le scoring de crédit en « haut risque ».",a:"Qu'est-ce que l'<b>AI Act</b> ?"},
+  ],
+};
+
+/* ---- build board ---- */
+const board = document.getElementById('board');
+const cats = Object.keys(DATA);
+cats.forEach(c=>{const d=document.createElement('div');d.className='cat';d.textContent=c;board.appendChild(d);});
+const rows = 5;
+for(let r=0;r<rows;r++){
+  cats.forEach(c=>{
+    const item=DATA[c][r];
+    const b=document.createElement('button');
+    b.className='tile';b.textContent=item.v;
+    b.onclick=()=>openTile(c,r,b);
+    board.appendChild(b);
+  });
+}
+
+/* ---- teams ---- */
+let teams=[{n:"Équipe 1",p:0},{n:"Équipe 2",p:0},{n:"Équipe 3",p:0}];
+function drawScores(){
+  const sb=document.getElementById('scorebar');sb.innerHTML='';
+  teams.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='team';
+    d.innerHTML=`<h4><input value="${t.n.replace(/"/g,'&quot;')}" onchange="teams[${i}].n=this.value;refreshAward()">${teams.length>1?`<span onclick="removeTeam(${i})" style="cursor:pointer;color:var(--red);font-weight:800">×</span>`:''}</h4><div class="pts">${t.p}</div>`;
+    sb.appendChild(d);
+  });
+  const add=document.createElement('button');add.className='addteam';add.textContent='+';
+  add.onclick=()=>{teams.push({n:"Équipe "+(teams.length+1),p:0});drawScores();};
+  sb.appendChild(add);
+}
+function removeTeam(i){teams.splice(i,1);drawScores();}
+drawScores();
+
+/* ---- modal ---- */
+let cur=null;
+function openTile(c,r,btn){
+  if(btn.classList.contains('done'))return;
+  cur={c,r,btn,item:DATA[c][r]};
+  document.getElementById('mTag').textContent=c;
+  document.getElementById('mVal').textContent=cur.item.v;
+  document.getElementById('mQ').textContent=cur.item.q;
+  const a=document.getElementById('mA');a.style.display='none';a.innerHTML=cur.item.a;
+  document.getElementById('revealBtn').style.display='inline-block';
+  document.getElementById('award').style.display='none';
+  document.getElementById('overlay').classList.add('show');
+}
+function reveal(){
+  document.getElementById('mA').style.display='block';
+  document.getElementById('revealBtn').style.display='none';
+  refreshAward();
+  document.getElementById('award').style.display='flex';
+}
+function refreshAward(){
+  const aw=document.getElementById('award');
+  aw.innerHTML='<span>Qui a trouvé ? Clique pour attribuer (ou retirer) les points :</span>';
+  if(!cur)return;
+  teams.forEach((t,i)=>{
+    const b=document.createElement('button');b.textContent='+'+cur.item.v+' '+t.n;
+    b.onclick=()=>{t.p+=cur.item.v;drawScores();markDone();};
+    aw.appendChild(b);
+  });
+  teams.forEach((t,i)=>{
+    const b=document.createElement('button');b.className='minus';b.textContent='−'+cur.item.v+' '+t.n;
+    b.onclick=()=>{t.p-=cur.item.v;drawScores();markDone();};
+    aw.appendChild(b);
+  });
+  const skip=document.createElement('button');skip.textContent='Personne';
+  skip.onclick=()=>{markDone();};aw.appendChild(skip);
+}
+function markDone(){if(cur){cur.btn.classList.add('done');cur.btn.textContent='✓';}closeModal();}
+function closeModal(){document.getElementById('overlay').classList.remove('show');cur=null;}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function resetAll(){
+  document.querySelectorAll('.tile').forEach((b,i)=>{
+    const r=Math.floor(i/4), c=i%4; b.classList.remove('done');b.textContent=DATA[cats[c]][r].v;
+  });
+  teams.forEach(t=>t.p=0);drawScores();
+}
+</script>
+</body>
+</html>

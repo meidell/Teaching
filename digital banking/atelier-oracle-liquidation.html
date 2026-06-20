@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atelier — Le bac à sable oracle</title>
+<style>
+  :root{
+    --navy:#1E2761; --dark:#151B3B; --mid:#2A3470; --card:#27306E;
+    --amber:#F4A03F; --amber-d:#d8852a; --ice:#E8EEFC; --muted:#AEB8D9;
+    --green:#3FBF8F; --yellow:#E8C547; --red:#E06A6A; --white:#fff;
+    --shadow:0 10px 30px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Calibri,system-ui,sans-serif;background:var(--navy);
+    color:var(--ice);line-height:1.5;padding:24px 16px 64px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto}
+  .kal{font-size:12px;letter-spacing:3px;font-weight:700;color:var(--white);margin-bottom:6px}
+  .kal span{color:var(--amber)}
+  h1{font-size:34px;font-weight:800;color:var(--white);line-height:1.1}
+  h1 em{color:var(--amber);font-style:normal}
+  .lede{font-size:16px;color:var(--muted);margin-top:10px;max-width:780px}
+  .eyebrow{font-size:12px;letter-spacing:2.5px;font-weight:700;color:var(--amber);
+    text-transform:uppercase;margin:32px 0 10px}
+  .panel{background:var(--card);border-radius:14px;padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+  .panel.dark{background:var(--dark)}
+  .grid{display:grid;gap:14px}
+  @media(min-width:820px){.cols-2{grid-template-columns:1fr 1fr}.sim{grid-template-columns:1.1fr 1fr}}
+  .sim{display:grid;gap:18px}
+  .role{background:var(--mid);border-radius:12px;padding:14px}
+  .role h3{color:var(--amber);font-size:14px;margin-bottom:3px}
+  .role p{font-size:12.5px;color:var(--ice)}
+  .chip{display:inline-block;background:var(--amber);color:var(--navy);font-weight:700;
+    font-size:11px;padding:3px 10px;border-radius:20px;margin-bottom:7px}
+
+  /* gauge */
+  .stat{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0}
+  .stat .k{font-size:13px;color:var(--muted)}
+  .stat .val{font-size:18px;font-weight:800;color:var(--white);font-variant-numeric:tabular-nums}
+  .hf-wrap{margin:14px 0 4px}
+  .hf-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .hf-num{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+  .bar{height:16px;border-radius:10px;background:var(--dark);overflow:hidden;position:relative}
+  .bar > i{position:absolute;top:0;left:0;height:100%;border-radius:10px;transition:width .25s,background .25s}
+  .marker{position:absolute;top:-4px;width:2px;height:24px;background:var(--white);opacity:.6}
+  .marker::after{content:'liquidation';position:absolute;top:-16px;left:-22px;font-size:9px;color:var(--white);opacity:.7;white-space:nowrap}
+
+  .priceblock{background:var(--dark);border-radius:14px;padding:20px;text-align:center}
+  .priceblock .lab{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .priceblock .p{font-size:46px;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums;margin:4px 0}
+  input[type=range]{width:100%;-webkit-appearance:none;height:8px;border-radius:6px;
+    background:linear-gradient(90deg,var(--red),var(--yellow),var(--green));outline:none;margin-top:8px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+    background:var(--white);border:3px solid var(--amber);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--white);border:3px solid var(--amber);cursor:pointer}
+  .pricerow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+  .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:center}
+  .quick button{background:var(--mid);color:var(--ice);border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700;font-size:12.5px}
+  .quick button:hover{background:#33408a}
+
+  .status{border-radius:12px;padding:16px;margin-top:14px;font-weight:700;font-size:16px;text-align:center;transition:.25s}
+  .status.safe{background:rgba(63,191,143,.16);color:var(--green);border:1px solid var(--green)}
+  .status.warn{background:rgba(232,197,71,.16);color:var(--yellow);border:1px solid var(--yellow)}
+  .status.liq{background:rgba(224,106,106,.18);color:var(--red);border:1px solid var(--red);animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  .ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .ctrl label{font-size:12.5px;color:var(--muted)}
+  .ctrl input[type=number]{background:var(--dark);border:1px solid rgba(255,255,255,.15);color:var(--ice);
+    border-radius:8px;padding:7px 9px;width:90px;font-family:inherit;font-size:14px;font-weight:700}
+  .steps{counter-reset:s}
+  .step{counter-increment:s;position:relative;padding-left:42px;margin-bottom:12px;font-size:14px}
+  .step::before{content:counter(s);position:absolute;left:0;top:-2px;width:30px;height:30px;
+    background:var(--amber);color:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .hl{color:var(--amber);font-weight:700}
+  label.q{display:block;font-size:13px;font-weight:700;color:var(--white);margin:12px 0 6px}
+  textarea{width:100%;background:var(--dark);border:1px solid rgba(255,255,255,.15);color:var(--ice);
+    border-radius:10px;padding:11px;font-family:inherit;font-size:14px;resize:vertical}
+  .btn{background:var(--amber);color:var(--navy);border:none;font-weight:800;font-size:15px;padding:13px 22px;border-radius:30px;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--amber-d)}
+  .btn.ghost{background:transparent;color:var(--amber);border:2px solid var(--amber)}
+  .btnrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+  .footer{font-size:12px;color:var(--muted);margin-top:30px;text-align:center}
+  .timerbox{display:flex;align-items:center;gap:14px;background:var(--dark);border-radius:12px;padding:12px 18px;flex-wrap:wrap}
+  .timer{font-variant-numeric:tabular-nums;font-weight:800;font-size:26px;color:var(--amber)}
+  .tbtn{background:var(--mid);color:var(--ice);border:none;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+  .pulse{animation:pulse 1.4s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kal">KALAIDOS <span>•</span></div>
+  <h1>Atelier — <em>Le bac à sable oracle</em></h1>
+  <p class="lede">Vous empruntez des stablecoins sur Aave en déposant de l'ETH en garantie. L'<span class="hl">oracle</span> donne le prix de l'ETH. Faites-le bouger : à quel moment le smart contract <span class="hl">liquide</span> automatiquement votre position ? Un seul groupe, un seul écran.</p>
+
+  <div class="eyebrow">⏱ 30 minutes</div>
+  <div class="timerbox">
+    <span class="timer" id="timer">30:00</span>
+    <button class="tbtn" onclick="tStart()">Démarrer</button>
+    <button class="tbtn" onclick="tPause()">Pause</button>
+    <button class="tbtn" onclick="tReset()">Réinitialiser</button>
+    <span style="font-size:12.5px;color:var(--muted)">Rôles (5') · Simulation (15') · Débrief (10')</span>
+  </div>
+
+  <div class="eyebrow">Répartissez les rôles</div>
+  <div class="panel">
+    <div class="grid cols-2" style="gap:12px">
+      <div class="role"><span class="chip">RÔLE 1</span><h3>L'emprunteur</h3><p>Tu fixes le dépôt et le montant emprunté. Tu veux emprunter le plus possible — sans te faire liquider.</p></div>
+      <div class="role"><span class="chip">RÔLE 2</span><h3>L'oracle</h3><p>Tu tiens le curseur de prix. Tu annonces chaque nouveau prix ETH à voix haute, comme Chainlink.</p></div>
+      <div class="role"><span class="chip">RÔLE 3</span><h3>Le protocole</h3><p>Tu lis le « health factor ». Tu cries « LIQUIDATION ! » dès qu'il passe sous 1,00.</p></div>
+      <div class="role"><span class="chip">RÔLE 4 (+5)</span><h3>Le sceptique</h3><p>Et si l'oracle est manipulé ? Et si le prix bouge en pleine nuit ? Tu notes les risques pour le débrief.</p></div>
+    </div>
+  </div>
+
+  <div class="eyebrow">La simulation</div>
+  <div class="panel sim">
+    <!-- left : position -->
+    <div>
+      <div class="ctrl">
+        <label>Dépôt ETH</label><input type="number" id="eth" value="1" min="0.1" step="0.1" oninput="recalc()">
+        <label>Emprunt (USDC)</label><input type="number" id="debt" value="1200" min="0" step="50" oninput="recalc()">
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Seuil de liquidation Aave pour l'ETH : <b class="hl">82,5 %</b> (LTV max). Au-delà, la position devient liquidable.</p>
+
+      <div class="stat"><span class="k">Valeur de la garantie (ETH × prix)</span><span class="val" id="collVal">—</span></div>
+      <div class="stat"><span class="k">Dette (USDC)</span><span class="val" id="debtVal">—</span></div>
+      <div class="stat"><span class="k">Ratio prêt/valeur (LTV)</span><span class="val" id="ltv">—</span></div>
+
+      <div class="hf-wrap">
+        <div class="hf-label"><span style="color:var(--muted)">Health factor</span><span class="hf-num" id="hfNum">—</span></div>
+        <div class="bar"><i id="hfBar"></i><span class="marker" style="left:50%"></span></div>
+      </div>
+      <div class="status safe" id="status">Position saine</div>
+    </div>
+
+    <!-- right : oracle -->
+    <div>
+      <div class="priceblock">
+        <div class="lab">Oracle — prix ETH</div>
+        <div class="p" id="priceDisp">$3000</div>
+        <input type="range" id="price" min="500" max="5000" step="50" value="3000" oninput="recalc()">
+        <div class="pricerow"><span>$500</span><span>$5000</span></div>
+        <div class="quick">
+          <button onclick="setPrice(3000)">Reset $3000</button>
+          <button onclick="setPrice(2200)">Krach −27 %</button>
+          <button onclick="setPrice(1500)">Krach −50 %</button>
+          <button onclick="crash()">⚡ Krach soudain</button>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:14px">L'oracle est la <b class="hl">seule</b> source de vérité du contrat sur le prix. Le smart contract ne « voit » rien d'autre. C'est tout l'enjeu : qui contrôle l'oracle contrôle les liquidations.</p>
+    </div>
+  </div>
+
+  <div class="eyebrow">Vos missions (15 min)</div>
+  <div class="panel dark">
+    <div class="steps">
+      <div class="step">Avec 1 ETH déposé et 1'200 USDC empruntés, à quel <span class="hl">prix de l'ETH</span> la position est-elle liquidée ? Trouvez-le au curseur.</div>
+      <div class="step">Augmentez l'emprunt à 2'000 USDC. La position est-elle liquidable <span class="hl">dès maintenant</span> à $3000 ? Pourquoi ?</div>
+      <div class="step">Cliquez « ⚡ Krach soudain ». Le contrat liquide <span class="hl">sans prévenir</span>. Comparez avec un appel de marge bancaire classique.</div>
+      <div class="step">Le sceptique : si quelqu'un manipulait l'oracle 10 secondes, que pourrait-il provoquer ?</div>
+    </div>
+  </div>
+
+  <div class="eyebrow">Débrief — vos réponses (10 min)</div>
+  <div class="panel">
+    <label class="q">Prix de liquidation trouvé (1 ETH / 1'200 USDC) :</label>
+    <textarea id="d1" rows="2" placeholder="Ex : autour de $… car la dette dépasse 82,5 % de la garantie."></textarea>
+    <label class="q">Différence entre une liquidation DeFi et un appel de marge bancaire :</label>
+    <textarea id="d2" rows="2" placeholder="Ex : automatique, instantanée, sans humain, sans délai de grâce…"></textarea>
+    <label class="q">Pourquoi l'oracle est-il le point de défaillance critique ? (le « oracle problem »)</label>
+    <textarea id="d3" rows="2" placeholder="Ex : un oracle unique manipulable peut déclencher des liquidations injustes ; solution = agréger les sources (Chainlink)."></textarea>
+    <div class="btnrow">
+      <button class="btn" onclick="exportTxt()">Exporter notre débrief</button>
+      <button class="btn ghost" onclick="window.print()">Imprimer / PDF</button>
+    </div>
+  </div>
+
+  <div class="footer">Dr. Jan Erik Meidell · Digitalisation bancaire · Atelier DeFi — valeurs illustratives, mécanique réelle (sur-collatéral + health factor)</div>
+</div>
+
+<script>
+const LIQ_THRESH = 0.825; // Aave-like liquidation threshold for ETH
+function recalc(){
+  const eth=parseFloat(document.getElementById('eth').value)||0;
+  const debt=parseFloat(document.getElementById('debt').value)||0;
+  const price=parseFloat(document.getElementById('price').value)||0;
+  document.getElementById('priceDisp').textContent='$'+price.toLocaleString('fr-CH');
+  const coll=eth*price;
+  document.getElementById('collVal').textContent='$'+coll.toLocaleString('fr-CH',{maximumFractionDigits:0});
+  document.getElementById('debtVal').textContent='$'+debt.toLocaleString('fr-CH');
+  const ltv = coll>0 ? debt/coll : 99;
+  document.getElementById('ltv').textContent=(ltv*100).toFixed(1)+' %';
+  // health factor = (collateral * liqThreshold) / debt
+  const hf = debt>0 ? (coll*LIQ_THRESH)/debt : 99;
+  const hfNum=document.getElementById('hfNum');
+  hfNum.textContent = debt>0 ? hf.toFixed(2) : '∞';
+  // bar: map hf 0..2 -> 0..100%, marker at hf=1 sits at 50%
+  const pct=Math.max(0,Math.min(100,(hf/2)*100));
+  const bar=document.getElementById('hfBar');
+  bar.style.width=pct+'%';
+  const st=document.getElementById('status');
+  let col;
+  if(debt===0){col=getCss('--green');st.className='status safe';st.textContent='Aucune dette — rien à liquider';hfNum.style.color=col;}
+  else if(hf>=1.5){col=getCss('--green');st.className='status safe';st.textContent='Position saine — marge confortable';hfNum.style.color=col;}
+  else if(hf>=1.0){col=getCss('--yellow');st.className='status warn';st.textContent='⚠ Zone de danger — un krach et c\'est la liquidation';hfNum.style.color=col;}
+  else{col=getCss('--red');st.className='status liq';st.textContent='💥 LIQUIDATION — le contrat vend ta garantie automatiquement';hfNum.style.color=col;}
+  bar.style.background=col;
+}
+function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function setPrice(v){document.getElementById('price').value=v;recalc();}
+function crash(){
+  // animate a sudden drop
+  let p=parseFloat(document.getElementById('price').value);
+  const target=Math.max(500,Math.round(p*0.55/50)*50);
+  const iv=setInterval(()=>{
+    p-=120; if(p<=target){p=target;clearInterval(iv);}
+    document.getElementById('price').value=p;recalc();
+  },40);
+}
+recalc();
+
+/* timer */
+let tSec=1800,tInt=null;
+function tDraw(){const m=String(Math.floor(tSec/60)).padStart(2,'0'),s=String(tSec%60).padStart(2,'0');
+  const el=document.getElementById('timer');el.textContent=m+':'+s;el.classList.toggle('pulse',tSec<=60&&tSec>0);}
+function tStart(){if(tInt)return;tInt=setInterval(()=>{if(tSec>0){tSec--;tDraw();}else{clearInterval(tInt);tInt=null;}},1000);}
+function tPause(){clearInterval(tInt);tInt=null;}
+function tReset(){tPause();tSec=1800;tDraw();}
+tDraw();
+
+function exportTxt(){
+  const eth=document.getElementById('eth').value,debt=document.getElementById('debt').value,price=document.getElementById('price').value;
+  const txt=
+`ATELIER — LE BAC À SABLE ORACLE
+Kalaidos · Digitalisation bancaire
+
+Position finale : ${eth} ETH déposé · ${debt} USDC emprunté · prix oracle $${price}
+
+1) Prix de liquidation trouvé (1 ETH / 1'200 USDC) :
+${document.getElementById('d1').value||'—'}
+
+2) Liquidation DeFi vs appel de marge bancaire :
+${document.getElementById('d2').value||'—'}
+
+3) Le "oracle problem" :
+${document.getElementById('d3').value||'—'}
+`;
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='debrief-oracle.txt';a.click();
+}
+</script>
+</body>
+</html>
