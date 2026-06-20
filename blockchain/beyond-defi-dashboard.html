@@ -105,6 +105,8 @@
   <div class="tabs">
     <button class="tab active" id="tab-subs" onclick="setTab('subs')">📥 Beyond DeFi</button>
     <button class="tab" id="tab-fst" onclick="setTab('foresight')">🔭 Foresight</button>
+    <button class="tab" id="tab-sammatin" onclick="setTab('sammatin')">🌅 Samedi matin</button>
+    <button class="tab" id="tab-samaprem" onclick="setTab('samaprem')">🌇 Samedi après-midi</button>
     <button class="tab" id="tab-stats" onclick="setTab('stats')">📊 Site analytics</button>
   </div>
 
@@ -177,6 +179,30 @@
       Foresight studies live under <code>foresightpath/&lt;student&gt;</code>. Each student picks their own case and the labs chain (scan → axes → scenarios → vision), so submissions are highly individual; the ⚠ flag marks two students whose case + scenarios are identical. Quiz is summed correct / 12. Click a row for the full study (STEEPLED, CLA, scenarios, backcast…).
     </div>
   </div>
+
+  <!-- ============ SAMEDI MATIN ============ -->
+  <div id="viewSamMatin" style="display:none">
+    <div class="stats" id="sammatinStats"></div>
+    <div class="sortbar"><span>Morning parcours · « L'argent bouge »</span><span class="spacer"></span><button class="btn gold" onclick="exportSamCSV('matin')">⬇ Roster CSV</button></div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Modules</th><th class="num">Time</th><th class="num">Quiz</th><th>Q?</th><th>Sent</th></tr></thead>
+      <tbody id="sammatinBody"></tbody>
+    </table>
+    <div class="empty" id="sammatinEmpty" style="display:none">No morning submissions yet. Students appear here as they open the path and enter their name.</div>
+    <div class="hint">Morning path data lives under <code>parcoursmatin/&lt;student&gt;</code>. Dots = the 7 modules + atelier; a module ticks when its quiz is fully answered. Quiz is summed correct / total. <b>✎</b> marks a student who left <b>questions for the discussion</b>. Click a row for their questions, per-module quiz and synthesis.</div>
+  </div>
+
+  <!-- ============ SAMEDI APRÈS-MIDI ============ -->
+  <div id="viewSamAprem" style="display:none">
+    <div class="stats" id="samapremStats"></div>
+    <div class="sortbar"><span>Afternoon parcours · « Sans intermédiaire &amp; sous contrôle »</span><span class="spacer"></span><button class="btn gold" onclick="exportSamCSV('aprem')">⬇ Roster CSV</button></div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Modules</th><th class="num">Time</th><th class="num">Quiz</th><th>Q?</th><th>Sent</th></tr></thead>
+      <tbody id="samapremBody"></tbody>
+    </table>
+    <div class="empty" id="samapremEmpty" style="display:none">No afternoon submissions yet.</div>
+    <div class="hint">Afternoon path data lives under <code>parcoursaprem/&lt;student&gt;</code>. Dots = the 8 modules + oracle atelier; same format as the morning. Click a row for questions, per-module quiz and synthesis.</div>
+  </div>
 </div>
 
 <script>
@@ -213,12 +239,19 @@ window.addEventListener('bdf-store-ready',onStoreReady);
 function setTab(t){ ACTIVE=t;
   document.getElementById('tab-subs').classList.toggle('active',t==='subs');
   document.getElementById('tab-fst').classList.toggle('active',t==='foresight');
+  document.getElementById('tab-sammatin').classList.toggle('active',t==='sammatin');
+  document.getElementById('tab-samaprem').classList.toggle('active',t==='samaprem');
   document.getElementById('tab-stats').classList.toggle('active',t==='stats');
   document.getElementById('viewSubs').style.display=t==='subs'?'block':'none';
   document.getElementById('viewFst').style.display=t==='foresight'?'block':'none';
+  document.getElementById('viewSamMatin').style.display=t==='sammatin'?'block':'none';
+  document.getElementById('viewSamAprem').style.display=t==='samaprem'?'block':'none';
   document.getElementById('viewStats').style.display=t==='stats'?'block':'none';
   refreshActive(); }
-function refreshActive(){ if(!window.__store) return; setConn(); if(ACTIVE==='subs') load(); else if(ACTIVE==='foresight') loadFst(); else loadStats(); }
+function refreshActive(){ if(!window.__store) return; setConn();
+  if(ACTIVE==='subs') load(); else if(ACTIVE==='foresight') loadFst();
+  else if(ACTIVE==='sammatin') loadSam('matin'); else if(ACTIVE==='samaprem') loadSam('aprem');
+  else loadStats(); }
 
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
@@ -238,7 +271,7 @@ async function load(){
       if(r.quizScore!=null){ quizSum+=r.quizScore; quizTot+=(r.quizTotal||3); } if(r.completedAt>lastTs) lastTs=r.completedAt; }
       else perlab[k]=null; });
     STUDENTS.push({ sid:sid, name:name, labs:labs, done:done, perlab:perlab, quizSum:quizSum, quizTot:quizTot,
-      code:node.code||'', submitted:!!node.submittedAt, total:(node.totalActiveMin||Math.round(sumSec/60)), synthesis:node.synthesis||'', lastTs:lastTs }); } }
+      code:node.code||'', submitted:!!node.submittedAt, total:Math.round(sumSec/60), synthesis:node.synthesis||'', lastTs:lastTs }); } }
   computeDups(); renderStats(); renderTable(); subsLoaded=true;
 }
 function computeDups(){ var map={}; LABS.forEach(function(k){ map[k]={}; });
@@ -337,7 +370,7 @@ async function loadFst(){ var root=await window.__store.get('foresightpath'); FS
     var name=node.name||(node.meta&&node.meta.name)||fstName(labs)||sid, caseV=node.case||(node.meta&&node.meta.case)||'';
     var done=0,quizSum=0,quizTot=0,perlab={},sumSec=0,lastTs=node.submittedAt||0;
     FST_LABS.forEach(function(k){ var r=labs[k]; if(r&&r.done){ done++; perlab[k]=r.activeSec||0; sumSec+=r.activeSec||0; if(r.quizScore!=null){quizSum+=r.quizScore;quizTot+=(r.quizTotal||3);} if(r.completedAt>lastTs)lastTs=r.completedAt; } else perlab[k]=null; });
-    FSTUD.push({sid:sid,name:name,case:caseV,labs:labs,done:done,perlab:perlab,quizSum:quizSum,quizTot:quizTot,code:node.code||'',submitted:!!node.submittedAt,total:(node.totalActiveMin||Math.round(sumSec/60)),synthesis:node.synthesis||'',lastTs:lastTs}); } }
+    FSTUD.push({sid:sid,name:name,case:caseV,labs:labs,done:done,perlab:perlab,quizSum:quizSum,quizTot:quizTot,code:node.code||'',submitted:!!node.submittedAt,total:Math.round(sumSec/60),synthesis:node.synthesis||'',lastTs:lastTs}); } }
   var map={}; FSTUD.forEach(function(s){ var sc=(s.labs.scenarios&&s.labs.scenarios.data&&s.labs.scenarios.data.scenarios)||[]; var sig=(s.case||'').toLowerCase().trim()+'|'+sc.map(function(x){return (x.name||'').toLowerCase();}).join(','); s._sig=sig; if((s.case||'').trim()){ (map[sig]=map[sig]||[]).push(s.sid); } });
   FSTUD.forEach(function(s){ s.dup = map[s._sig] && map[s._sig].length>1; });
   renderFstStats(); renderFstTable(); }
@@ -366,6 +399,54 @@ function exportFstCSV(){ var head=['name','student_id','case','labs_done','total
   var lines=[head.join(',')];
   FSTUD.slice().sort(function(a,b){return b.lastTs-a.lastTs;}).forEach(function(s){ lines.push([s.name,s.sid,s.case,s.done,s.total,mm(s.perlab.scan),mm(s.perlab.depth),mm(s.perlab.scenarios),mm(s.perlab.act),(s.quizTot?s.quizSum+'/'+s.quizTot:''),s.code,(s.submitted?'yes':'no'),(s.dup?'dup':'')].map(csv).join(',')); });
   download(lines.join('\n'),'foresight-roster.csv','text/csv'); }
+
+/* ============ samedi parcours (digitalisation bancaire) ============ */
+var SAM_CFG={
+  matin:{ root:'parcoursmatin', stats:'sammatinStats', body:'sammatinBody', empty:'sammatinEmpty',
+    mods:['m1','m2','a1','m3','m4','m5','m6','m7'],
+    names:{m1:'1 · 4 rails',m2:'2 · DSP2',a1:'3 · Atelier rail',m3:'4 · CBDC',m4:'5 · Stablecoins',m5:'6 · Robo',m6:'7 · BNPL',m7:'8 · InsurTech'},
+    quizKeys:['m1','m2','m3','m4','m5','m6','m7'] },
+  aprem:{ root:'parcoursaprem', stats:'samapremStats', body:'samapremBody', empty:'samapremEmpty',
+    mods:['d1','d2','d3','d4','a2','d5','d6','d7','d8'],
+    names:{d1:'1 · DeFi',d2:'2 · Aave',d3:'3 · Uniswap',d4:'4 · Oracles',a2:'5 · Atelier oracle',d5:'6 · Bitcoin',d6:'7 · Ethereum',d7:'8 · Régulation',d8:'9 · Éthique'},
+    quizKeys:['d1','d2','d3','d4','d5','d6','d7','d8'] }
+};
+var SAM={matin:[],aprem:[]};
+async function loadSam(block){ var cfg=SAM_CFG[block], root=await window.__store.get(cfg.root), arr=[];
+  if(root){ for(var sid in root){ if(!root.hasOwnProperty(sid)||sid.charAt(0)==='_') continue; var n=root[sid]||{}, done=n.done||{};
+    var dc=0; cfg.mods.forEach(function(k){ if(done[k]) dc++; });
+    arr.push({ sid:sid, name:n.name||sid, done:done, doneCount:(n.doneCount!=null?n.doneCount:dc), total:cfg.mods.length,
+      activeMin:n.activeMin||0, quizCorrect:n.quizCorrect||0, quizTotal:n.quizTotal||0, quiz:n.quiz||{},
+      synthesis:n.synthesis||'', questions:n.questions||'', submitted:!!n.submitted, ts:n.updatedAt||0 }); } }
+  SAM[block]=arr; renderSam(block); }
+function renderSam(block){ var cfg=SAM_CFG[block], rows=SAM[block].slice().sort(function(a,b){return b.ts-a.ts;});
+  var n=rows.length, complete=rows.filter(function(s){return s.doneCount>=s.total;}).length,
+    sent=rows.filter(function(s){return s.submitted;}).length,
+    avgQ=n?Math.round(rows.reduce(function(a,s){return a+(s.quizTotal?s.quizCorrect/s.quizTotal:0);},0)/n*100):0,
+    withQ=rows.filter(function(s){return (s.questions||'').trim();}).length;
+  document.getElementById(cfg.stats).innerHTML=stat('Students',n)+stat('Completed',complete+'/'+n)+stat('Submitted',sent)+stat('Avg quiz',avgQ+'%')+stat('With questions',withQ);
+  document.getElementById(cfg.empty).style.display=rows.length?'none':'block';
+  document.getElementById(cfg.body).innerHTML=rows.map(function(s,i){ var dots='';
+    cfg.mods.forEach(function(k){ dots+='<span class="dot'+(s.done[k]?' on':'')+'" title="'+escAttr(cfg.names[k])+'"></span>'; });
+    return '<tr class="row" onclick="toggleSam(\''+block+'\',\''+s.sid+'\')"><td>'+(i+1)+'</td><td class="name">'+esc(s.name)+'</td>'+
+      '<td><span class="dots">'+dots+'</span> '+s.doneCount+'/'+s.total+'</td>'+
+      '<td class="num">'+(s.activeMin||'—')+'m</td>'+
+      '<td class="num">'+(s.quizTotal?s.quizCorrect+'/'+s.quizTotal:'—')+'</td>'+
+      '<td>'+((s.questions||'').trim()?'<span class="flag" title="left questions for the discussion">✎</span>':'<span class="no">—</span>')+'</td>'+
+      '<td>'+(s.submitted?'<span class="yes">✓</span>':'<span class="no">—</span>')+'</td></tr>'+
+      '<tr class="detail" id="sd-'+block+'-'+s.sid+'" style="display:none"><td colspan="7"><div class="inner" id="sdi-'+block+'-'+s.sid+'"></div></td></tr>'; }).join(''); }
+function toggleSam(block,sid){ var row=document.getElementById('sd-'+block+'-'+sid); if(!row) return;
+  if(row.style.display!=='none'){ row.style.display='none'; return; }
+  var cfg=SAM_CFG[block], s=SAM[block].filter(function(x){return x.sid===sid;})[0]; if(!s) return; var h='';
+  if((s.questions||'').trim()) h+='<div class="syn"><b>Questions pour le prof :</b><br>'+esc(s.questions)+'</div>';
+  h+='<div class="lab"><h3>Quiz par module</h3>'; cfg.quizKeys.forEach(function(k){ var q=s.quiz[k]; if(q) h+='<div class="nums">'+esc(cfg.names[k])+' : '+q.correct+'/'+q.total+(q.answered!=null?'  ('+q.answered+' répondu)':'')+'</div>'; }); h+='</div>';
+  if((s.synthesis||'').trim()) h+='<div class="syn"><b>Synthèse :</b><br>'+esc(s.synthesis)+'</div>';
+  if(!h) h='<div style="color:var(--grey-muted)">No detail yet.</div>';
+  document.getElementById('sdi-'+block+'-'+sid).innerHTML=h; row.style.display='table-row'; }
+function exportSamCSV(block){ var cfg=SAM_CFG[block], head=['name','student_id','modules_done','total_modules','active_min','quiz_correct','quiz_total','submitted','questions','synthesis'];
+  var lines=[head.join(',')]; SAM[block].slice().sort(function(a,b){return b.ts-a.ts;}).forEach(function(s){
+    lines.push([s.name,s.sid,s.doneCount,s.total,s.activeMin,s.quizCorrect,s.quizTotal,(s.submitted?'yes':'no'),s.questions,s.synthesis].map(csv).join(',')); });
+  download(lines.join('\n'),'samedi-'+block+'-roster.csv','text/csv'); }
 </script>
 
 <script type="module">
