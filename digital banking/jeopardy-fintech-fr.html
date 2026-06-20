@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeopardy · Digitalisation bancaire</title>
+<style>
+:root{
+  --navy-deep:#1A1F3D; --navy-mid:#1E2761; --navy-light:#27306E;
+  --blue-bright:#3A4699; --blue-glow:#5A6BC8;
+  --gold:#F4A03F; --gold-bright:#FFB85C; --gold-dark:#9C6A24;
+  --white:#FFFFFF; --grey-muted:#AEB8D9; --ice:#E8EEFC;
+  --green-correct:#2EA84A; --green-soft:#1E6E33;
+  --red-wrong:#C8312B; --red-soft:#5E1F1C;
+  --purple:#7E5AE8; --teal:#2DB6A8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;font-family:'Calibri','Helvetica Neue',sans-serif;
+  background:radial-gradient(ellipse at 20% 0%,rgba(58,70,153,0.22) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(244,160,63,0.10) 0%,transparent 50%),radial-gradient(ellipse at center,var(--navy-mid) 0%,var(--navy-deep) 75%);
+  background-attachment:fixed;color:var(--white);}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(26,31,61,0.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(244,160,63,0.3);padding:12px 20px;}
+.topbar-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.topbar .title{font-family:Georgia,serif;font-style:italic;font-size:20px;background:linear-gradient(135deg,var(--white),var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar .sub{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:bold;}
+.container{max-width:1100px;margin:0 auto;padding:20px;}
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 22px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:8px;transition:all .2s;}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.ghost:hover{background:rgba(244,160,63,0.12);}
+.btn.small{padding:7px 14px;font-size:11px;}
+.btn.green{background:var(--green-correct);color:#fff;}
+.btn.red{background:var(--red-wrong);color:#fff;}
+
+#setup{max-width:560px;margin:30px auto;background:rgba(30,39,97,0.6);border:1px solid var(--blue-bright);border-radius:16px;padding:28px;}
+#setup h2{font-family:Georgia,serif;font-style:italic;font-size:24px;margin-bottom:8px;}
+#setup p{color:var(--grey-muted);font-size:14px;margin-bottom:18px;}
+.team-input{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.team-input input{flex:1;background:var(--navy-deep);border:1px solid var(--blue-bright);border-radius:8px;padding:10px 12px;color:#fff;font-family:inherit;font-size:14px;}
+.team-input .dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;}
+.team-input button{background:transparent;border:none;color:var(--red-wrong);cursor:pointer;font-size:18px;}
+.rules{background:var(--navy-deep);border-radius:10px;padding:14px;font-size:13px;color:var(--ice);margin:16px 0;}
+.rules b{color:var(--gold-bright);}
+.rules ul{margin:8px 0 0 18px;}
+.rules li{margin-bottom:5px;}
+
+.scoreboard{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+.team-score{background:var(--navy-mid);border:2px solid var(--blue-bright);border-radius:12px;padding:10px 18px;text-align:center;min-width:120px;transition:all .25s;}
+.team-score.active{border-color:var(--gold);box-shadow:0 0 16px rgba(244,160,63,.4);transform:translateY(-3px);}
+.team-score .tname{font-size:13px;font-weight:bold;display:flex;align-items:center;gap:6px;justify-content:center;}
+.team-score .tname .dot{width:12px;height:12px;border-radius:50%;}
+.team-score .tval{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:var(--gold-bright);}
+.turn-banner{text-align:center;font-size:14px;color:var(--grey-muted);margin-bottom:16px;}
+.turn-banner b{color:var(--gold-bright);font-family:Georgia,serif;font-size:16px;}
+
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+.cat-head{background:var(--navy-light);border:1px solid var(--gold-dark);border-radius:10px;padding:12px 6px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:12px;color:var(--gold-bright);min-height:64px;display:flex;align-items:center;justify-content:center;line-height:1.2;}
+.cell{background:linear-gradient(160deg,var(--navy-mid),var(--navy-light));border:1px solid var(--blue-bright);border-radius:10px;padding:18px 8px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:24px;color:var(--gold);cursor:pointer;transition:all .18s;min-height:62px;display:flex;align-items:center;justify-content:center;}
+.cell:hover{background:var(--blue-bright);transform:scale(1.04);color:#fff;}
+.cell.used{background:var(--navy-deep);color:transparent;cursor:default;border-color:rgba(174,184,217,.12);}
+.cell.used:hover{transform:none;}
+
+.modal-bg{position:fixed;inset:0;background:rgba(8,10,22,.88);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:linear-gradient(160deg,var(--navy-mid),var(--navy-deep));border:2px solid var(--gold);border-radius:20px;max-width:760px;width:100%;padding:32px;animation:pop .3s ease;}
+@keyframes pop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal .m-cat{font-size:12px;letter-spacing:2px;color:var(--gold);font-weight:bold;text-align:center;}
+.modal .m-val{font-family:Georgia,serif;font-size:34px;color:var(--gold-bright);text-align:center;margin:4px 0 20px;}
+.modal .m-q{font-size:22px;line-height:1.4;text-align:center;margin-bottom:24px;font-weight:600;}
+.modal .m-timer{height:6px;background:var(--navy-deep);border-radius:3px;overflow:hidden;margin-bottom:20px;}
+.modal .m-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));width:100%;transition:width 1s linear;}
+.m-answer{background:var(--green-soft);border:1px solid var(--green-correct);border-radius:12px;padding:16px;margin-bottom:20px;display:none;}
+.m-answer.show{display:block;}
+.m-answer .lbl{font-size:11px;letter-spacing:2px;color:#B6F0C2;font-weight:bold;}
+.m-answer .txt{font-size:17px;margin-top:6px;line-height:1.45;}
+.m-controls{display:flex;flex-direction:column;gap:12px;}
+.m-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;}
+.m-hint{text-align:center;font-size:13px;color:var(--grey-muted);font-style:italic;}
+.steal-box{background:var(--red-soft);border:1px solid var(--red-wrong);border-radius:12px;padding:14px;margin-top:6px;}
+.steal-box .lbl{font-size:12px;color:#FFC4C0;font-weight:bold;text-align:center;margin-bottom:10px;}
+.award-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.award-btn{border:1px solid;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:bold;background:var(--navy-mid);transition:all .2s;}
+.award-btn:hover{transform:translateY(-2px);}
+
+#winner{display:none;text-align:center;padding:40px 20px;}
+#winner.show{display:block;}
+#winner .crown{font-size:60px;}
+#winner h2{font-family:Georgia,serif;font-style:italic;font-size:34px;margin:10px 0;color:var(--gold-bright);}
+#winner .podium{display:flex;justify-content:center;align-items:flex-end;gap:12px;margin:24px 0;flex-wrap:wrap;}
+.pod{border-radius:10px 10px 0 0;padding:14px;min-width:110px;text-align:center;border:1px solid;}
+.pod .pn{font-weight:bold;font-size:14px;}
+.pod .pv{font-family:Georgia,serif;font-size:22px;color:var(--gold-bright);}
+
+.footer{max-width:1100px;margin:24px auto 0;text-align:center;font-size:11px;color:var(--grey-muted);letter-spacing:.5px;}
+.hidden{display:none!important;}
+@media(max-width:680px){
+  .board{grid-template-columns:repeat(6,1fr);gap:4px;}
+  .cell{font-size:16px;padding:12px 2px;min-height:46px;}
+  .cat-head{font-size:8px;padding:8px 3px;min-height:54px;}
+  .modal{padding:20px;}.modal .m-q{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="title">Jeopardy — Digitalisation bancaire</div>
+      <div class="sub">KALAIDOS · RÉVISION DU MODULE BMDB</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn ghost small hidden" id="btnRestart">↺ Recommencer</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div id="setup">
+    <h2>On prépare la partie</h2>
+    <p>Jeu en équipes, piloté depuis le tableau (Zoom / partage d'écran). Deux équipes de deux par défaut — tu peux en ajouter.</p>
+    <div id="teamInputs"></div>
+    <button class="btn ghost small" id="addTeam">+ Ajouter une équipe</button>
+    <div class="rules">
+      <b>Règles</b>
+      <ul>
+        <li>L'équipe dont c'est le tour choisit une case (catégorie + points).</li>
+        <li>On lit la question à voix haute. L'équipe répond avant la fin du chrono (30 s).</li>
+        <li>Clique <b>Révéler</b>, puis attribue les points : <b>Correct</b> (équipe active) ou ouvre le <b>vol</b> pour laisser l'autre équipe tenter.</li>
+        <li>Bonne réponse = +points. Un vol réussi = +points pour l'équipe qui vole.</li>
+        <li>La partie se termine quand toutes les cases sont jouées. Score le plus haut = gagnant.</li>
+      </ul>
+    </div>
+    <button class="btn" id="startGame" style="width:100%;">▶ Lancer la partie</button>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="turn-banner" id="turnBanner"></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div id="winner">
+    <div class="crown">👑</div>
+    <h2 id="winnerName"></h2>
+    <div class="podium" id="podium"></div>
+    <button class="btn" id="playAgain">↺ Nouvelle partie</button>
+  </div>
+
+  <div class="footer">Dr. Jan Erik Meidell · Digitalisation bancaire / Jeopardy de révision</div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="m-cat" id="mCat"></div>
+    <div class="m-val" id="mVal"></div>
+    <div class="m-q" id="mQ"></div>
+    <div class="m-timer"><i id="mTimerBar"></i></div>
+    <div class="m-answer" id="mAnswer"><div class="lbl">RÉPONSE</div><div class="txt" id="mAnswerTxt"></div></div>
+    <div class="m-controls">
+      <div class="m-hint" id="mHint">L'équipe active répond à voix haute. Clique « Révéler la réponse » à la fin du temps.</div>
+      <div class="m-row" id="mRowReveal">
+        <button class="btn" id="btnReveal">Révéler la réponse</button>
+      </div>
+      <div class="m-row hidden" id="mRowAward">
+        <button class="btn green" id="btnCorrect">✓ Correct (+points)</button>
+        <button class="btn ghost" id="btnSteal">↪ Personne / Ouvrir le vol</button>
+        <button class="btn red" id="btnWrong">✗ Aucune équipe — passer</button>
+      </div>
+      <div class="steal-box hidden" id="stealBox">
+        <div class="lbl">VOL — quelle équipe a donné la bonne réponse ?</div>
+        <div class="award-grid" id="stealGrid"></div>
+        <div class="m-row" style="margin-top:10px;"><button class="btn ghost small" id="btnNoSteal">Personne — passer</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DONNÉES — Révision du module BMDB (Digitalisation bancaire)
+// 6 catégories x 5 valeurs, tirées des Sessions 1-7 et des examens.
+// ============================================================
+const CATEGORIES=[
+  {name:'PYTHON, WEB & API',q:[
+    {v:100,q:"Excel plafonne vers 1 million de lignes. Pourquoi Python/Pandas s'impose-t-il en banque pour les données transactionnelles ?",a:"Pandas traite des centaines de millions de lignes — critique pour scoring, fraude, reporting réglementaire et backtests."},
+    {v:200,q:"Dans une app FinTech comme Neon, quelle est la différence entre front-end et back-end ? Donne un langage pour chaque.",a:"Front-end = interface visible (HTML/CSS/JavaScript, React). Back-end = logique métier, base de données, authentification (Python, Java, Node.js)."},
+    {v:300,q:"Une API, c'est quoi ? Sers-toi de l'image du restaurant.",a:"L'API est le serveur : tu commandes (la requête), il transmet à la cuisine (le back-end) et te ramène le plat (la réponse JSON). Tu n'entres jamais en cuisine."},
+    {v:400,q:"Pour tester un appel API financier (ex. exchangerate.host) en Python, quelles sont les trois informations minimales à mettre dans la requête ?",a:"L'URL/endpoint, la clé API (access_key=…) et les paramètres (ex. symbols=AAPL). On utilise la bibliothèque requests, puis on lit le JSON."},
+    {v:500,q:"En Pandas, quel est le pattern pour calculer un total par catégorie après avoir retiré les lignes vides ?",a:"df.dropna(), filtrer (df[df['amount']>0]), puis df.groupby('category')['amount'].sum(). Le trio dropna / filtrage / groupby.sum."},
+  ]},
+  {name:'BASES DE DONNÉES',q:[
+    {v:100,q:"SQL ou NoSQL : lequel tient le cœur d'une banque suisse, et grâce à quelle propriété ?",a:"SQL (relationnel). Grâce à ACID — « le sommeil tranquille du compliance officer ». 9 banques CH sur 10 tournent sur du relationnel (Oracle, MS SQL)."},
+    {v:200,q:"Donne un cas d'usage typique pour le relationnel (PostgreSQL) et un pour le NoSQL (MongoDB) en FinTech.",a:"Relationnel : registre des transactions / ledger / conformité. NoSQL : logs comportementaux anti-fraude, profils clients à attributs variables."},
+    {v:300,q:"À l'examen on te demande de LIRE une requête. Que fait : SELECT category, SUM(amount) FROM tx GROUP BY category ?",a:"Elle additionne les montants par catégorie — un total agrégé pour chaque catégorie de transaction."},
+    {v:400,q:"Comment Yahoo (ou n'importe quel service) sécurise-t-il les mots de passe ? Cite deux techniques.",a:"Jamais en clair : hachage (bcrypt, Argon2) + sel (salt) aléatoire unique qui bloque les rainbow tables. + TLS en transit, AES au repos."},
+    {v:500,q:"À quoi sert le « sel » (salt) ajouté avant le hachage d'un mot de passe ?",a:"Une chaîne aléatoire unique par utilisateur : deux mots de passe identiques donnent des empreintes différentes, ce qui neutralise les rainbow tables."},
+  ]},
+  {name:'BLOCKCHAIN & DeFi',q:[
+    {v:100,q:"Quel problème vieux de 50 ans la blockchain a-t-elle résolu en 2008 ?",a:"La double-dépense : empêcher d'envoyer la même pièce numérique deux fois, sans tiers de confiance. Solution : des milliers de nœuds tiennent le même registre."},
+    {v:200,q:"Dans Bitcoin, à quoi servent le nonce et la difficulté dans la Preuve de Travail ?",a:"Le mineur fait varier le nonce jusqu'à obtenir un hachage sous la cible (plusieurs zéros en tête). La difficulté fixe la hauteur de la barre. Seule la force brute marche."},
+    {v:300,q:"Tous les combien la difficulté Bitcoin s'ajuste-t-elle, et pour viser quel temps par bloc ?",a:"Tous les 2 016 blocs (~2 semaines), pour maintenir une cadence de ~10 minutes par bloc."},
+    {v:400,q:"Explique Uniswap : comment fixe-t-il un prix sans carnet d'ordres ?",a:"C'est un AMM (Automated Market Maker) : le prix sort de la formule x × y = k sur un pool de liquidité. Pas d'intermédiaire, smart contracts, open source, sans KYC."},
+    {v:500,q:"Qu'est-ce qu'un oracle, pourquoi est-il vital en DeFi, et nomme-en un. Quel risque s'il est unique ?",a:"Il achemine des données off-chain (prix, météo) vers la blockchain. Chainlink est le plus utilisé. Un oracle unique = point de défaillance / manipulation → on agrège plusieurs sources. Aave l'utilise pour déclencher les liquidations."},
+  ]},
+  {name:'PAIEMENTS & MONNAIES',q:[
+    {v:100,q:"CBDC vs stablecoin : qui émet l'e-CNY chinois, et qui émet l'USDC ?",a:"e-CNY : la banque centrale (Banque populaire de Chine) — monnaie légale. USDC : une entreprise privée (Circle) — adossée à des réserves."},
+    {v:200,q:"La DSP2 a lancé l'Open Banking. Cite deux conséquences concrètes pour l'utilisateur.",a:"Agrégation de comptes via API (une app affiche toutes tes banques) et initiation de paiement par un tiers (PISP), sans carte. + authentification forte (SCA)."},
+    {v:300,q:"Avec la DSP2, à partir de quel montant un paiement exige-t-il l'authentification forte (SCA) à deux facteurs ?",a:"Au-delà de 30 EUR : deux facteurs requis (mot de passe + SMS/biométrie). Plus de sécurité, mais plus de friction."},
+    {v:400,q:"Un néo-courant suisse : Yapeal, Neon, Yuh « recréent » quoi techniquement, et quelle est leur seule vraie différence avec ton mini-Yapeal en Colab ?",a:"Ils agrègent des comptes via API (standard Berlin Group) et catégorisent les dépenses. La seule différence : eux ont de vraies banques au bout du tuyau."},
+    {v:500,q:"Quel règlement européen encadre les stablecoins depuis 2024, et à quel statut une CBDC est-elle soumise ?",a:"MiCA encadre les stablecoins (zone auparavant grise). Une CBDC a un statut de monnaie légale, pleinement régulée et centralisée par construction."},
+  ]},
+  {name:'IA, WEALTH & ASSURANCE',q:[
+    {v:100,q:"Supervisé vs non-supervisé : quelle est la différence clé, et un exemple bancaire de chaque ?",a:"La présence (ou non) d'étiquettes / vérité terrain. Supervisé : prédire si un prêt sera remboursé. Non-supervisé : clustering de clients (k-means) ou détection d'anomalies/fraude."},
+    {v:200,q:"Cite trois features qu'un arbre de décision utiliserait pour flaguer une transaction frauduleuse.",a:"Le montant (> 5 000 CHF), l'heure/localisation (3h du matin depuis un pays inhabituel) et la fréquence récente (10 transactions en 5 minutes)."},
+    {v:300,q:"Qu'est-ce qu'un robo-advisor ? Donne un exemple suisse et son avantage de coût.",a:"Une plateforme qui construit/gère un portefeuille automatiquement (ETF + profil de risque). Exemples CH : True Wealth, Selma, Descartes. Frais 0,5–1 % vs 1–2 % pour un humain, ticket d'entrée bas."},
+    {v:400,q:"Le modèle BNPL (Buy Now Pay Later) : comment gagne-t-il de l'argent, et quel est le risque pour le consommateur ?",a:"Le commerçant paie une commission au fournisseur, qui porte le risque crédit. Risque conso : surendettement par accumulation de petites dettes invisibles + pénalités de retard. Acteurs CH : Cembra, Swissbilling."},
+    {v:500,q:"Donne un cas réel de biais algorithmique dans le scoring de crédit, et deux mesures d'atténuation.",a:"Apple Card (2019) : des femmes recevaient des limites plus basses. Atténuation : audit d'équité + debiasing ; explicabilité (SHAP, LIME). L'AI Act (2024) classe le scoring crédit en « haut risque »."},
+  ]},
+  {name:'BITCOIN, ETF & SUISSE',q:[
+    {v:100,q:"Le halving d'avril 2024 a fait passer la récompense de bloc de combien à combien ?",a:"De 6,25 à 3,125 BTC. L'émission journalière chute (~900 → ~450 BTC/jour) ; le plafond de 21 M reste, on s'en approche plus lentement."},
+    {v:200,q:"Pourquoi l'approbation des ETF Bitcoin spot (janvier 2024) est-elle un tournant institutionnel ?",a:"L'ETF détient du vrai Bitcoin et se négocie en bourse (NYSE/Nasdaq). La SEC l'a refusé ~10 ans. BlackRock (IBIT), Fidelity (FBTC) → crédibilité mainstream, >50 Mds USD de flux en 2024."},
+    {v:300,q:"À quoi servent les procédures KYC et AML ?",a:"KYC : vérifier l'identité du client (pièce, domicile, source des fonds). AML : détecter et signaler les flux suspects (blanchiment, financement du terrorisme). Cadres : LBA, OBA-FINMA, AMLD."},
+    {v:400,q:"Combien d'entreprises FinTech la Suisse comptait-elle fin 2024, et que révèle ce chiffre ?",a:"483 entreprises — identique à fin 2023 : signe de saturation du marché domestique. Financement en forte baisse (CHF 301 M en 2024 vs 605 M au pic de 2022)."},
+    {v:500,q:"Cite trois avantages compétitifs de la Suisse pour héberger des FinTechs.",a:"Cadre réglementaire technology-neutral (FINMA, loi DLT 2021) ; Crypto Valley à Zoug ; talents EPFL/ETHZ. Hubs Zurich + Zoug dans le top 3 mondial IFZ. Bascule vers le B2B (58 %) et la FinTech durable."},
+  ]},
+];
+
+const TEAM_COLORS=['#F4A03F','#5A6BC8','#2EA84A','#7E5AE8','#2DB6A8'];
+const QUESTION_TIME=30;
+
+let teams=[];
+let turn=0;
+let used={};
+let cellsTotal=CATEGORIES.length*5;
+let current=null;
+let timer=null;
+
+function renderTeamInputs(){
+  const wrap=document.getElementById('teamInputs');wrap.innerHTML='';
+  teams.forEach((t,i)=>{
+    const row=document.createElement('div');row.className='team-input';
+    row.innerHTML=`<span class="dot" style="background:${TEAM_COLORS[i]}"></span><input type="text" value="${t}" data-i="${i}" placeholder="Nom de l'équipe ${i+1}">${teams.length>2?`<button data-del="${i}">✕</button>`:''}`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{teams[+inp.dataset.i]=inp.value;});
+  wrap.querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>{teams.splice(+b.dataset.del,1);renderTeamInputs();});
+}
+document.getElementById('addTeam').onclick=()=>{if(teams.length<5){teams.push('Équipe '+(teams.length+1));renderTeamInputs();}};
+teams=['Équipe 1','Équipe 2'];renderTeamInputs();
+
+document.getElementById('startGame').onclick=()=>{
+  teams=teams.map((t,i)=>({name:t.trim()||('Équipe '+(i+1)),score:0,color:TEAM_COLORS[i]}));
+  turn=0;used={};current=null;
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  document.getElementById('btnRestart').classList.remove('hidden');
+  renderScore();renderBoard();
+};
+document.getElementById('btnRestart').onclick=()=>location.reload();
+document.getElementById('playAgain').onclick=()=>location.reload();
+
+function renderScore(){
+  const sb=document.getElementById('scoreboard');sb.innerHTML='';
+  teams.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='team-score'+(i===turn?' active':'');
+    d.innerHTML=`<div class="tname"><span class="dot" style="background:${t.color}"></span>${t.name}</div><div class="tval">${t.score}</div>`;
+    sb.appendChild(d);
+  });
+  document.getElementById('turnBanner').innerHTML=`Au tour de : <b style="color:${teams[turn].color}">${teams[turn].name}</b> — choisis une case`;
+}
+
+function renderBoard(){
+  const board=document.getElementById('board');board.innerHTML='';
+  CATEGORIES.forEach(c=>{const h=document.createElement('div');h.className='cat-head';h.textContent=c.name;board.appendChild(h);});
+  for(let r=0;r<5;r++){
+    CATEGORIES.forEach((c,ci)=>{
+      const key=ci+'-'+r;const cell=document.createElement('div');
+      const q=c.q[r];
+      if(used[key]){cell.className='cell used';cell.textContent='';}
+      else{cell.className='cell';cell.textContent=q.v;cell.onclick=()=>openQuestion(ci,r);}
+      board.appendChild(cell);
+    });
+  }
+}
+
+function openQuestion(ci,ri){
+  const cat=CATEGORIES[ci];const q=cat.q[ri];
+  current={ci,ri,val:q.v};
+  document.getElementById('mCat').textContent=cat.name;
+  document.getElementById('mVal').textContent=q.v+' pts';
+  document.getElementById('mQ').textContent=q.q;
+  document.getElementById('mAnswerTxt').textContent=q.a;
+  document.getElementById('mAnswer').classList.remove('show');
+  document.getElementById('mRowReveal').classList.remove('hidden');
+  document.getElementById('mRowAward').classList.add('hidden');
+  document.getElementById('stealBox').classList.add('hidden');
+  document.getElementById('mHint').textContent=`Au tour de « ${teams[turn].name} ». Lis la question à voix haute.`;
+  document.getElementById('modalBg').classList.add('show');
+  startTimer();
+}
+function startTimer(){
+  const bar=document.getElementById('mTimerBar');bar.style.transition='none';bar.style.width='100%';
+  let t=QUESTION_TIME;
+  void bar.offsetWidth;
+  bar.style.transition='width 1s linear';bar.style.width='0%';
+  clearInterval(timer);
+  timer=setInterval(()=>{t--;if(t<=0){clearInterval(timer);}},1000);
+}
+function stopTimer(){clearInterval(timer);document.getElementById('mTimerBar').style.width=getComputedStyle(document.getElementById('mTimerBar')).width;}
+
+document.getElementById('btnReveal').onclick=()=>{
+  stopTimer();
+  document.getElementById('mAnswer').classList.add('show');
+  document.getElementById('mRowReveal').classList.add('hidden');
+  document.getElementById('mRowAward').classList.remove('hidden');
+  document.getElementById('mHint').textContent='Attribue les points selon la réponse donnée à voix haute.';
+};
+
+document.getElementById('btnCorrect').onclick=()=>{
+  teams[turn].score+=current.val;
+  closeAndAdvance(true);
+};
+document.getElementById('btnWrong').onclick=()=>{
+  closeAndAdvance(true);
+};
+document.getElementById('btnSteal').onclick=()=>{
+  const grid=document.getElementById('stealGrid');grid.innerHTML='';
+  teams.forEach((t,i)=>{
+    if(i===turn)return;
+    const b=document.createElement('div');b.className='award-btn';b.style.borderColor=t.color;b.style.color=t.color;
+    b.textContent=t.name+' (+'+current.val+')';
+    b.onclick=()=>{teams[i].score+=current.val;closeAndAdvance(true);};
+    grid.appendChild(b);
+  });
+  document.getElementById('stealBox').classList.remove('hidden');
+  document.getElementById('mRowAward').classList.add('hidden');
+};
+document.getElementById('btnNoSteal').onclick=()=>{closeAndAdvance(true);};
+
+function closeAndAdvance(advance){
+  if(current){used[current.ci+'-'+current.ri]=true;}
+  document.getElementById('modalBg').classList.remove('show');
+  current=null;
+  if(advance)turn=(turn+1)%teams.length;
+  renderScore();renderBoard();
+  if(Object.keys(used).length>=cellsTotal)endGame();
+}
+
+function endGame(){
+  document.getElementById('game').classList.add('hidden');
+  const sorted=[...teams].sort((a,b)=>b.score-a.score);
+  const top=sorted[0];
+  const tied=sorted.filter(t=>t.score===top.score);
+  document.getElementById('winnerName').textContent=tied.length>1?('Égalité : '+tied.map(t=>t.name).join(' & ')+' !'):(top.name+' gagne !');
+  const pod=document.getElementById('podium');pod.innerHTML='';
+  const heights=[150,110,86,70,60];
+  sorted.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='pod';
+    d.style.height=heights[i]+'px';d.style.background=t.color+'22';d.style.borderColor=t.color;
+    d.innerHTML=`<div class="pn" style="color:${t.color}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''} ${t.name}</div><div class="pv">${t.score}</div>`;
+    pod.appendChild(d);
+  });
+  document.getElementById('winner').classList.add('show');
+  document.getElementById('btnRestart').classList.add('hidden');
+}
+</script>
+</body>
+</html>
