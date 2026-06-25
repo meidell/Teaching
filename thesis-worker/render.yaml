@@ -1,0 +1,22 @@
+# Render Blueprint for the Thesis Worker.
+# The Postgres database already exists (teaching_db, frankfurt) and is shared with
+# the Teaching site, so this blueprint does NOT create one — paste its connection
+# string into DATABASE_URL in the dashboard (kept out of git).
+services:
+  - type: web
+    name: thesis-worker
+    runtime: python
+    plan: free
+    region: frankfurt            # same region as the existing teaching_db
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY   # server-side only; set in the dashboard
+        sync: false
+      - key: DATABASE_URL        # existing teaching_db connection string; set in the dashboard
+        sync: false
+      - key: ALLOWED_ORIGINS     # comma-separated front-end origins (Thesis Web, Teaching)
+        sync: false
+      - key: COACH_MODEL
+        value: claude-opus-4-8
