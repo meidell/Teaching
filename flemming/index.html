@@ -231,7 +231,10 @@ var GATEKEY="flemming-unlocked";
 /* ---- PIN gate ---- */
 (function(){
   var gate=document.getElementById('gate'), app=document.getElementById('app');
-  function unlock(){ gate.style.display='none'; app.style.display='block'; try{localStorage.setItem(GATEKEY,'1');}catch(e){} initApp(); }
+  // Defer initApp to a macrotask so the rest of this script (WEEKENDS, lookup
+  // tables, etc.) finishes initialising first — otherwise an auto-unlock on
+  // reload would call buildGrid() before WEEKENDS is assigned, rendering nothing.
+  function unlock(){ gate.style.display='none'; app.style.display='block'; try{localStorage.setItem(GATEKEY,'1');}catch(e){} setTimeout(initApp,0); }
   var already=false; try{ already=localStorage.getItem(GATEKEY)==='1'; }catch(e){}
   if(already){ unlock(); return; }
   var inp=document.getElementById('pin'), btn=document.getElementById('pinbtn'), err=document.getElementById('pinerr');
@@ -429,15 +432,21 @@ function renderBest(all,ids){
 }
 
 /* ---- init ---- */
+var _watching=false;
+function attachWatch(){
+  if(_watching) return;
+  if(window.__store && window.__store.watch){ _watching=true; window.__store.watch(renderResults); }
+}
+window.addEventListener('store-ready',attachWatch);   // covers the case where Firebase loads after initApp
 function initApp(){
   loadMe();
   document.getElementById('name').value=ME.name;
   document.getElementById('comment').value=ME.comment;
-  buildGrid();
+  buildGrid();                                        // <-- lists every Thu–Sun weekend, Sep–Dec 2026
   setConn(); setTimeout(setConn,1500);
   document.getElementById('name').addEventListener('input',onChange);
   document.getElementById('comment').addEventListener('input',onChange);
-  if(window.__store && window.__store.watch) window.__store.watch(renderResults);
+  attachWatch();
 }
 </script>
 <script src="/track.js" defer></script>
