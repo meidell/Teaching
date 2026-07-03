@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Timetable Solver · The Real Board</title>
+<meta name="description" content="An interactive course-timetabling solver built on a real planning board: 9 named rooms, the real 5-slot day (08h15–20h30), 2-hour classes (2.5h when red), professor and student-cohort constraints. Greedy + simulated-annealing solver you can play with.">
+<meta name="theme-color" content="#0a1a3a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4C5;</text></svg>">
+<style>
+:root{
+  --navy-deep:#0a1a3a; --navy-mid:#152a5e; --navy-light:#1e3470; --blue:#1e5aa8;
+  --blue-glow:#4a90e2; --gold:#f0b33d; --gold-bright:#ffd24a; --white:#fff;
+  --grey:#b0bcd6; --grey-dim:#8593b5; --purple:#7e5ae8; --teal:#2db6a8;
+  --tomato:#e3553b; --basil:#5fae5f; --crust:#e0a85a; --cheese:#f4d06f;
+  --ok:#4ec98b; --no:#ff7a64; --red:#e23b32;
+  --line:rgba(74,144,226,0.28);
+  --card-grad:linear-gradient(160deg,rgba(30,52,112,0.55),rgba(10,26,58,0.55));
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{font-family:"Calibri","Helvetica Neue",Arial,sans-serif;color:#eef2fb;
+  background:radial-gradient(ellipse at 20% -10%,rgba(74,144,226,0.18) 0%,transparent 55%),
+             radial-gradient(ellipse at 90% 110%,rgba(227,85,59,0.12) 0%,transparent 55%),
+             radial-gradient(ellipse at top,var(--navy-mid) 0%,var(--navy-deep) 70%);
+  background-attachment:fixed;min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:80px;}
+h1,h2,h3,h4{font-family:Georgia,"Times New Roman",serif;}
+.topbar{position:sticky;top:0;z-index:60;background:rgba(10,26,58,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:9px 16px;}
+.topbar-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.topbar .course{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:bold;white-space:nowrap;}
+.topbar .course .em{font-size:16px;}
+.topbar .feas{margin-left:auto;font-size:10px;letter-spacing:1px;font-weight:bold;padding:4px 12px;border-radius:20px;border:1px solid var(--line);text-transform:uppercase;}
+.feas.good{background:rgba(78,201,139,0.16);color:var(--ok);border-color:rgba(78,201,139,0.5);}
+.feas.bad{background:rgba(255,122,100,0.16);color:var(--no);border-color:rgba(255,122,100,0.5);}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 18px;}
+.eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);font-weight:bold;text-align:center;}
+.hero{text-align:center;margin-bottom:8px;}
+.hero h1{font-family:Georgia,serif;font-size:clamp(28px,5vw,44px);font-style:italic;text-align:center;line-height:1.12;margin:14px 0 10px;
+  background:linear-gradient(135deg,#fff,var(--gold-bright));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero .sub{color:var(--grey);font-size:16px;max-width:72ch;margin:0 auto;text-align:center;}
+.hero .sub b{color:#fff;}
+.card{background:var(--card-grad);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:18px;}
+.card h3{font-family:Georgia,serif;font-size:20px;margin-bottom:10px;line-height:1.25;color:#fff;}
+.card p{color:var(--grey);margin-bottom:10px;font-size:14.5px;}
+.card p:last-child{margin-bottom:0;}
+.card strong{color:#fff;}
+.card em{color:var(--gold-bright);font-style:italic;}
+.label{display:inline-block;font-size:10px;letter-spacing:2px;font-weight:bold;padding:4px 12px;border-radius:20px;margin-bottom:12px;text-transform:uppercase;}
+.label.problem{background:rgba(227,85,59,0.16);color:#ff9b85;border:1px solid rgba(227,85,59,0.4);}
+.label.idea{background:rgba(74,144,226,0.16);color:var(--blue-glow);border:1px solid rgba(74,144,226,0.4);}
+.label.play{background:rgba(45,182,168,0.16);color:#5fd6c9;border:1px solid rgba(45,182,168,0.4);}
+.label.how{background:rgba(240,179,61,0.14);color:var(--gold-bright);border:1px solid rgba(240,179,61,0.4);}
+
+.grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;align-items:start;}
+@media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+
+.ctrlgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;}
+@media(max-width:520px){.ctrlgrid{grid-template-columns:1fr;}}
+.ctrl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--grey);margin-bottom:5px;}
+.ctrl label .val{color:var(--gold-bright);font-weight:bold;font-family:Georgia,serif;}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,0.14);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid #fff;box-shadow:0 0 8px rgba(240,179,61,.7);}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid #fff;}
+.subhead{font-size:10px;letter-spacing:2px;color:var(--grey-dim);text-transform:uppercase;margin:4px 0 2px;grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;}
+.subhead:first-child{border-top:none;padding-top:0;}
+
+.toggle-row{display:flex;gap:0;border:1px solid var(--line);border-radius:30px;overflow:hidden;margin:2px 0;}
+.toggle-row button{flex:1;min-width:60px;background:none;border:none;color:var(--grey);font-family:inherit;font-size:12px;font-weight:bold;padding:8px 8px;cursor:pointer;transition:.2s;}
+.toggle-row button.on{background:var(--gold);color:var(--navy-deep);}
+
+.btn{background:var(--gold);color:var(--navy-deep);border:none;padding:11px 20px;font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:.5px;cursor:pointer;border-radius:40px;transition:.2s;box-shadow:0 8px 20px -10px rgba(240,179,61,.7);}
+.btn:hover{background:var(--gold-bright);transform:translateY(-1px);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn.ghost{background:transparent;color:var(--gold-bright);border:1.5px solid var(--gold);box-shadow:none;}
+.btn.ghost:hover{background:rgba(240,179,61,0.12);}
+.btn.small{padding:8px 14px;font-size:12px;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+
+.statrow{display:flex;justify-content:space-around;gap:8px;flex-wrap:wrap;}
+.stat{text-align:center;flex:1;min-width:92px;background:rgba(10,20,46,0.5);border:1px solid var(--line);border-radius:12px;padding:11px 6px;}
+.stat .v{font-family:Georgia,serif;font-size:23px;font-weight:bold;color:var(--gold-bright);line-height:1;}
+.stat .v.zero{color:var(--ok);}
+.stat .v.bad{color:var(--no);}
+.stat .l{font-size:9.5px;letter-spacing:.5px;color:var(--grey-dim);text-transform:uppercase;margin-top:6px;line-height:1.25;}
+
+/* board grid: rooms (rows) x day·slot (cols) — matches the physical board */
+.bd-wrap{overflow-x:auto;padding-bottom:8px;margin-top:6px;}
+.bd-grid{display:grid;gap:3px;grid-template-columns:104px repeat(25,minmax(50px,1fr));min-width:1120px;}
+.bd-day{font-family:Georgia,serif;font-weight:bold;font-size:12px;color:var(--cheese);text-align:center;background:rgba(10,26,58,0.6);border-radius:6px;padding:4px 0;border:1px solid var(--line);}
+.bd-time{font-size:9px;color:var(--grey-dim);text-align:center;padding:3px 0;line-height:1.1;}
+.bd-room{font-size:10px;font-weight:bold;color:var(--grey);display:flex;align-items:center;justify-content:space-between;padding:0 8px;background:rgba(10,26,58,0.55);border:1px solid var(--line);border-radius:6px;}
+.bd-room .cap{color:var(--gold-bright);font-family:Georgia,serif;font-size:11px;}
+.bd-cell{min-height:34px;background:rgba(10,20,46,0.45);border:1px solid var(--line);border-radius:5px;position:relative;}
+.bd-cell.daystart{border-left:2px solid rgba(74,144,226,0.55);}
+.bd-cell.spill{background:rgba(226,59,50,0.07);}
+.bd-chip{position:absolute;inset:1px;border-radius:4px;font-size:8.5px;font-weight:bold;color:#06122b;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.04;padding:1px 2px;overflow:hidden;cursor:default;}
+.bd-chip.h25{border-right:5px solid var(--red);}
+.bd-chip.viol{outline:2px solid var(--no);outline-offset:-1px;z-index:2;}
+.bd-chip.dim{opacity:0.18;}
+.bd-chip.pick{box-shadow:0 0 0 2px #fff;z-index:3;}
+
+/* cohort mini grid: slots (rows) x days (cols) */
+.mini-grid{display:grid;gap:4px;grid-template-columns:78px repeat(5,1fr);min-width:430px;}
+.mini-cell{min-height:34px;background:rgba(10,20,46,0.5);border:1px solid var(--line);border-radius:6px;font-size:9px;font-weight:bold;color:#06122b;display:flex;align-items:center;justify-content:center;text-align:center;padding:2px;}
+.mini-cell.gap{background:rgba(240,179,61,0.18);border:1px dashed var(--gold);}
+.mini-cell.empty{background:rgba(10,20,46,0.3);}
+.mini-cell.clash{outline:2px solid var(--no);}
+.mini-cell.h25{border-right:5px solid var(--red);}
+.mini-head{font-size:10px;color:var(--cheese);text-align:center;font-family:Georgia,serif;}
+.mini-row{font-size:9px;color:var(--grey-dim);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;text-align:right;}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.legend .lg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--grey);}
+.legend .sw{width:13px;height:13px;border-radius:4px;}
+.legend .sw.r25{background:#fff;border-right:5px solid var(--red);}
+
+select.sel{background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:8px;color:#fff;font:14px Calibri,Arial;padding:8px 10px;width:100%;}
+select.sel:focus{outline:none;border-color:var(--gold);}
+
+.caption{text-align:center;font-size:13px;color:var(--grey-dim);margin-top:10px;font-style:italic;min-height:18px;}
+.caption b{color:var(--cheese);}
+.takeaway{background:rgba(95,174,95,0.10);border:1px solid rgba(95,174,95,0.4);border-radius:12px;padding:14px 18px;margin-top:12px;color:#d5efd9;font-size:14px;}
+.takeaway b{color:#fff;}
+.note{font-size:12px;color:var(--grey-dim);margin-top:8px;}
+.foot{text-align:center;color:var(--grey-dim);font-size:12px;margin-top:40px;}
+.foot a{color:var(--gold-bright);text-decoration:none;border:1px solid rgba(240,179,61,0.35);border-radius:20px;padding:6px 14px;display:inline-block;margin-top:8px;}
+.sparkbox{background:rgba(10,20,46,0.5);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:12px;}
+.sparkbox .t{font-size:10px;letter-spacing:1px;color:var(--grey-dim);text-transform:uppercase;}
+svg.spark{width:100%;height:54px;display:block;}
+.pill{display:inline-block;font-size:11px;color:var(--grey);background:rgba(255,255,255,0.05);border:1px solid var(--line);border-radius:20px;padding:3px 10px;margin:2px 3px;}
+.pill b{color:var(--gold-bright);font-family:Georgia,serif;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="course"><span class="em">📅</span> OPERATIONS · COURSE TIMETABLE SOLVER</span>
+    <span class="feas" id="feasBadge">—</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">DIGITISED FROM THE PLANNING BOARD</div>
+    <h1>Schedule the real board</h1>
+    <p class="sub">Your nine rooms — from <b>New Room 1 (10 seats)</b> to the <b>Auditorium (80)</b> — across the real day: <b>08h15, 11h30, 14h15, 16h30, 18h30</b>, Monday to Friday. Classes run <b>2 hours</b>, or <b>2.5 hours when flagged red</b>. The solver places every course so no <b>student cohort</b>, <b>professor</b>, or <b>room</b> is ever double-booked — and a 2.5h class that <b>overruns into the next slot</b> is caught too.</p>
+  </div>
+
+  <!-- ============== SETUP & CONTROLS ============== -->
+  <div class="grid2">
+    <div class="card">
+      <span class="label idea">The scenario</span>
+      <h3>1 · The teaching load</h3>
+      <p id="scenarioSummary" style="font-size:13.5px;">—</p>
+      <div id="pills" style="margin:6px 0 4px;"></div>
+      <div class="btn-row">
+        <button class="btn" id="genBtn">↻ Regenerate &amp; solve</button>
+        <span style="font-size:12px;color:var(--grey-dim);">Semester</span>
+        <div class="toggle-row" style="width:140px;margin:0;">
+          <button data-sem="0" class="on">S1</button>
+          <button data-sem="1">S2</button>
+        </div>
+      </div>
+      <p class="note">Rooms, times and the 2h / 2.5h rule are taken from the board. Which cohort takes which course isn't visible on a room×time board, so that layer is modelled — tune it below.</p>
+    </div>
+
+    <div class="card">
+      <span class="label play">Knobs</span>
+      <h3>Parameters</h3>
+      <div class="ctrlgrid" id="ctrlGrid">
+        <div class="subhead">Bachelor — 3 yr</div>
+        <div class="ctrl"><label>Programmes <span class="val" id="bProgV">3</span></label><input type="range" id="bProg" min="1" max="4" step="1" value="3"></div>
+        <div class="ctrl"><label>Shared core <span class="val" id="bOverV">60%</span></label><input type="range" id="bOver" min="0" max="100" step="20" value="60"></div>
+        <div class="subhead">Master — 2 yr</div>
+        <div class="ctrl"><label>Programmes <span class="val" id="mProgV">3</span></label><input type="range" id="mProg" min="1" max="4" step="1" value="3"></div>
+        <div class="ctrl"><label>Shared core <span class="val" id="mOverV">50%</span></label><input type="range" id="mOver" min="0" max="100" step="10" value="50"></div>
+        <div class="subhead">Cohorts &amp; load</div>
+        <div class="ctrl"><label>Students <span class="val" id="studV">300</span></label><input type="range" id="stud" min="60" max="600" step="20" value="300"></div>
+        <div class="ctrl"><label>Courses / sem <span class="val" id="cpsV">5</span></label><input type="range" id="cps" min="3" max="7" step="1" value="5"></div>
+        <div class="subhead">Sessions &amp; building</div>
+        <div class="ctrl"><label>2.5h classes (red) <span class="val" id="redV">20%</span></label><input type="range" id="red" min="0" max="60" step="5" value="20"></div>
+        <div class="ctrl"><label>Rooms in use <span class="val" id="roomsV">9</span></label><input type="range" id="rooms" min="4" max="9" step="1" value="9"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== SOLVER ============== -->
+  <div class="card">
+    <span class="label how">The solver</span>
+    <h3>2 · Solve, then optimise</h3>
+    <p style="font-size:13.5px;">A <strong>greedy graph-colouring</strong> pass seats the most-constrained courses first — big shared cores into the Auditorium, electives into seminar rooms — never clashing a student, professor or room. Then <strong>simulated annealing</strong> swaps courses between slots and rooms to cut student <em>gaps</em> and wasted seats.</p>
+    <div class="btn-row">
+      <button class="btn" id="greedyBtn">Greedy solve</button>
+      <button class="btn" id="optBtn">▶ Optimise</button>
+      <button class="btn ghost small" id="stepBtn">Step ×500</button>
+      <button class="btn ghost small" id="shuffleBtn">Scramble</button>
+      <span style="font-size:12px;color:var(--grey-dim);margin-left:4px;">Optimise for</span>
+      <div class="toggle-row" style="width:230px;margin:0;">
+        <button data-obj="compact" class="on">Compact days</button>
+        <button data-obj="balanced">Balanced</button>
+        <button data-obj="spread">Spread out</button>
+      </div>
+    </div>
+    <div class="caption" id="solveCap">Generate a scenario, then hit <b>Greedy solve</b>.</div>
+
+    <div class="statrow" style="margin-top:6px;">
+      <div class="stat"><div class="v" id="stClash">—</div><div class="l">student clashes</div></div>
+      <div class="stat"><div class="v" id="stProf">—</div><div class="l">professor clashes</div></div>
+      <div class="stat"><div class="v" id="stCap">—</div><div class="l">over-capacity</div></div>
+      <div class="stat"><div class="v" id="stDbl">—</div><div class="l">room conflicts</div></div>
+      <div class="stat"><div class="v" id="stGap">—</div><div class="l">student gap-slots</div></div>
+      <div class="stat"><div class="v" id="stFill">—</div><div class="l">avg room fill</div></div>
+    </div>
+
+    <div class="sparkbox">
+      <div class="t">Objective cost during annealing (lower = better)</div>
+      <svg class="spark" id="spark" viewBox="0 0 600 54" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <!-- ============== BOARD ============== -->
+  <div class="card">
+    <span class="label idea">The result</span>
+    <h3>3 · The board</h3>
+    <p style="font-size:13px;">Rooms down the side, the week across the top — exactly like the wall. Each chip is one class; <b style="color:var(--gold-bright)">gold</b> = shared core (all programmes of a year), other colours = programme electives. A <b style="color:var(--red)">red edge</b> marks a 2.5h class; the faint red cell to its right is the slot it overruns into. A red outline = a conflict.</p>
+    <div class="bd-wrap"><div class="bd-grid" id="board"></div></div>
+    <div class="legend" id="legend"></div>
+    <div class="caption" id="ttCap">Hover a chip for the course, professor and room. Click to trace its clashes.</div>
+  </div>
+
+  <!-- ============== COHORT INSPECTOR ============== -->
+  <div class="card">
+    <span class="label play">Inspect one group</span>
+    <h3>4 · A single cohort's week</h3>
+    <p style="font-size:13px;">Pick a programme-year and see only <em>their</em> courses. Amber dashed cells are <b style="color:var(--gold-bright)">gaps</b> — idle slots between classes. The optimiser squeezes these out.</p>
+    <select class="sel" id="cohortSel" style="margin:8px 0 14px;"></select>
+    <div class="bd-wrap"><div class="mini-grid" id="miniGrid"></div></div>
+    <div class="caption" id="miniCap"></div>
+  </div>
+
+  <div class="card">
+    <span class="label how">Why it's hard — and did the wall get it right?</span>
+    <h3>The tension you're playing with</h3>
+    <p>A shared core course can hold <strong>60–70 students</strong>, so it only fits the <strong>Auditorium</strong> — and there's just one. Every year's core competes for it, forcing them into different slots. Push <em>compactness</em> and courses collide on rooms or professors; <em>spread</em> them and students get gaps. The <strong>2.5h red classes</strong> make the 14h15 and 16h30 slots expensive, because they bleed into the next slot.</p>
+    <div class="takeaway" id="takeaway">A hand-built wall is usually <b>feasible but not optimal</b> — people stop once nothing clashes. Run <b>Optimise</b> from a feasible board and watch the gap-slots and wasted seats keep falling: that gap is the room a solver buys you. Try dropping <b>rooms in use</b> to 5, or pushing <b>2.5h classes</b> to 50%, to see it fight.</p>
+  </div>
+
+  <div class="foot">
+    Digitised from the planning board · greedy graph-colouring + simulated annealing, one file.<br>
+    <a href="../index.html">← Back to teaching tools</a>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Course timetabling on the real board
+   Rooms x (day x slot), 2h / 2.5h classes, student+professor+room constraints
+   ============================================================ */
+
+// ---------- the real building ----------
+const ROOMS_ALL = [
+  {name:'Auditorium', cap:80}, {name:'New York', cap:24}, {name:'Media Lab', cap:24},
+  {name:'London', cap:22}, {name:'Barcelona', cap:20}, {name:'Paris', cap:18},
+  {name:'Bangkok', cap:16}, {name:'New Room 2', cap:15}, {name:'New Room 1', cap:10}
+];
+// the real day: start time in minutes, 2h block; a 2.5h class adds 30 min
+const SLOTS = [
+  {label:'08h15', start:495}, {label:'11h30', start:690}, {label:'14h15', start:855},
+  {label:'16h30', start:990}, {label:'18h30', start:1110}
+];
+const SPD = SLOTS.length;                 // slots per day
+// does a 2.5h class starting in slot s overrun into slot s+1 (same day)?
+const SPILL = SLOTS.map((s,i)=> i<SPD-1 && (s.start+150) > SLOTS[i+1].start);
+const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
+const DUR2 = 120, DUR25 = 150;
+
+const COL = { core:'#f0b33d', B:['#4a90e2','#2db6a8','#7e5ae8','#56c0f0'], M:['#e3553b','#5fae5f','#e0a85a','#d98cc0'] };
+const BNAMES = ['Business','Economics','Info Systems','Finance'];
+const MNAMES = ['Management','Finance','Data & AI','Marketing'];
+const LETTERS = ['A','B','C','D'];
+
+// real professor surnames read off the board
+const PROFS = ['Cerchez','Jacquet','Tan','Coccoli','Weingard','Merrill','Vesseleva','Hassan',
+  'Laurent','Persyn','Aggarwal','Dias Neto','Kassanos','Ganzerli','Balyan','Massou','Guven',
+  'Shelley','Redfield','Derich','Handel','Debrancaz','Tsoukakis','Pallotta','La Kengada',
+  'Dymanowska','Levin','Redik','Taniz','Oliver','Rossetto','Rodrigue','Lo Sordo','Konstantinos'];
+// real-ish course titles read off the board, used as a flavour pool
+const TITLES = ['Multilateral Diplomacy','Financial Statement Analysis','AI Agents & Blockchain',
+  'Business Ethics','Corporate Risk Assessment','Globalization & Competition','Fundamentals of E-commerce',
+  'Negotiation & Arbitration','Principles of Management','US & Geneva Law','Sustainability & Development',
+  'Fundamentals of Marketing','Strategic Management','B2B Digital Marketing','Social Media UX',
+  'Foundations of Digital','360 Consulting','International Trade','NFT & Cybersecurity','Operations Management',
+  'Statistics & Probability','International Political Economy','Machine Learning with Python','Database Systems',
+  'Fundamentals of Finance','PR & Organization','Strategic Foresight','Climate Diplomacy',
+  'Essentials of Governance','Public-Private Partnerships','Data Science Foundations','Project Management',
+  'Video Production AI','Advanced Corporate Law','The Future of Geneva','Modern Languages','Workshop Diplomacy',
+  'HRM Capstone','The Future of Luxury','Negotiation Management','Identity & Leadership','International Relations',
+  'Behavioural Fundamentals','Public Speaking','Cultural Capital','Leadership in Management','Business Intelligence',
+  'Agile & Lean Marketing','Strategy for Brand Positioning','International Business','Capstone Project',
+  'Corporate Diplomacy','Conflict & Cooperation','Financial Markets & Operations','Foreign Languages II'];
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const sum = a => a.reduce((s,x)=>s+x,0);
+const clamp = (x,a,b)=> x<a?a:(x>b?b:x);
+const randInt = n => (Math.random()*n)|0;
+
+function readCfg(){
+  return {
+    bProg:+$('bProg').value, bYears:3, bOver:+$('bOver').value/100,
+    mProg:+$('mProg').value, mYears:2, mOver:+$('mOver').value/100,
+    students:+$('stud').value, cps:+$('cps').value,
+    red:+$('red').value/100, rooms:+$('rooms').value
+  };
+}
+
+const OBJ = { compact:{gap:1.0,waste:0.02,bal:0.0}, balanced:{gap:0.45,waste:0.05,bal:0.7}, spread:{gap:0.12,waste:0.05,bal:1.7} };
+let objMode = 'compact';
+const HARD = 100000;
+
+// ---------- state ----------
+let CFG, SEM = 0, S = null, A = null, scratch = null, flags = [];
+let anim = null, temp = 0, history = [], pickedCourse = -1;
+let bestE = Infinity, bestA = null;
+function copyA(src){ return src.map(a => a ? {slot:a.slot, room:a.room} : null); }
+function resetBest(){ bestE = evaluate(A).energy; bestA = copyA(A); }
+function snapBest(e){ if(e < bestE){ bestE = e; bestA = copyA(A); } }
+function applyBest(){ if(bestA) A = copyA(bestA); }
+
+// which global slots a placement physically occupies (incl. 2.5h spill into next slot)
+function occSlots(gi, dur){
+  const sidx = gi % SPD;
+  if(dur===DUR25 && SPILL[sidx]) return [gi, gi+1];
+  return [gi];
+}
+
+// ============================================================
+//  Build scenario
+// ============================================================
+function buildScenario(){
+  CFG = readCfg();
+  const rooms = ROOMS_ALL.slice(0, CFG.rooms).map((r,i)=>({...r, idx:i}));
+
+  // cohorts
+  const cohorts = []; let cid = 0;
+  function addLevel(level, programs, years){
+    for(let p=0;p<programs;p++) for(let y=1;y<=years;y++)
+      cohorts.push({id:cid++, level, prog:p, year:y, size:0,
+        name:(level==='B'?BNAMES:MNAMES)[p],
+        label:(level==='B'?'BSc ':'MSc ')+(level==='B'?BNAMES:MNAMES)[p]+' · Y'+y});
+  }
+  addLevel('B', CFG.bProg, CFG.bYears);
+  addLevel('M', CFG.mProg, CFG.mYears);
+  const w = cohorts.map(c => c.level==='B' ? 1 : 0.62);
+  const W = sum(w);
+  const flo = w.map(x => Math.floor(CFG.students*x/W));
+  let rem = CFG.students - sum(flo);
+  w.map((x,i)=>({i,f:(CFG.students*x/W)-Math.floor(CFG.students*x/W)})).sort((a,b)=>b.f-a.f).forEach((o,k)=>{ if(k<rem) flo[o.i]++; });
+  cohorts.forEach((c,i)=> c.size = Math.max(1, flo[i]));
+
+  // courses for the semester
+  const courses = []; let coid = 0;
+  let titleSeed = SEM*17;
+  const nextTitle = ()=> TITLES[(titleSeed++) % TITLES.length];
+  function addCourses(level, programs, years, overlap){
+    const core = clamp(Math.round(CFG.cps*overlap), 0, CFG.cps);
+    const spec = CFG.cps - core;
+    const tag = SEM===0 ? '' : "'";
+    for(let y=1;y<=years;y++){
+      const yc = cohorts.filter(c=>c.level===level && c.year===y);
+      for(let k=0;k<core;k++){
+        const ids = yc.map(c=>c.id);
+        courses.push({id:coid++, level, year:y, core:true, prog:-1, code:level+y+'·TC'+(k+1)+tag,
+          title:nextTitle(), cohorts:ids, color:COL.core, enroll:sum(ids.map(id=>cohorts[id].size))});
+      }
+      for(let p=0;p<programs;p++){
+        const ch = cohorts.find(c=>c.level===level && c.year===y && c.prog===p);
+        for(let k=0;k<spec;k++){
+          courses.push({id:coid++, level, year:y, core:false, prog:p, code:level+y+'·'+LETTERS[p]+(k+1)+tag,
+            title:nextTitle(), cohorts:[ch.id], color:(level==='B'?COL.B:COL.M)[p], enroll:ch.size});
+        }
+      }
+    }
+  }
+  addCourses('B', CFG.bProg, CFG.bYears, CFG.bOver);
+  addCourses('M', CFG.mProg, CFG.mYears, CFG.mOver);
+
+  // assign professors (load-balanced) and durations (red share)
+  const profLoad = new Array(PROFS.length).fill(0);
+  courses.forEach(c=>{
+    let bi=0,bl=Infinity;
+    for(let t=0;t<5;t++){ const p=randInt(PROFS.length); if(profLoad[p]<bl){bl=profLoad[p];bi=p;} }
+    c.prof=bi; profLoad[bi]++;
+    c.dur = DUR2;
+  });
+  const nRed = Math.round(CFG.red*courses.length);
+  const idx = courses.map((c,i)=>i);
+  for(let i=idx.length-1;i>0;i--){ const j=randInt(i+1); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  for(let k=0;k<nRed;k++) courses[idx[k]].dur = DUR25;
+
+  // conflict degree for greedy ordering
+  const byCohort = cohorts.map(()=>[]);
+  courses.forEach((c,ci)=> c.cohorts.forEach(co=>byCohort[co].push(ci)));
+  courses.forEach(c=>{ const nb=new Set(); c.cohorts.forEach(co=>byCohort[co].forEach(ci=>nb.add(ci))); c.degree=nb.size-1; });
+
+  const slots = SPD*DAYS.length;
+  S = {cohorts, courses, rooms, nrooms:rooms.length, slots, maxEnroll:Math.max(...courses.map(c=>c.enroll),10)};
+  scratch = {
+    cohortSlot: cohorts.map(()=>new Int16Array(slots)),
+    slotRoom:   Array.from({length:slots},()=>new Int16Array(rooms.length)),
+    profSlot:   PROFS.map(()=>new Int16Array(slots)),
+    cohortDay:  cohorts.map(()=>Array.from({length:DAYS.length},()=>[])),
+    perDay:     new Int16Array(DAYS.length)
+  };
+  A = new Array(courses.length).fill(null);
+  pickedCourse = -1;
+}
+
+// ============================================================
+//  Evaluate
+// ============================================================
+function evaluate(asg, withFlags){
+  const cs = scratch, courses = S.courses, cohorts = S.cohorts;
+  const SLn = S.slots, R = S.nrooms, ND = DAYS.length;
+  for(let i=0;i<cohorts.length;i++){ cs.cohortSlot[i].fill(0); for(let d=0;d<ND;d++) cs.cohortDay[i][d].length=0; }
+  for(let s=0;s<SLn;s++) cs.slotRoom[s].fill(0);
+  for(let p=0;p<PROFS.length;p++) cs.profSlot[p].fill(0);
+  cs.perDay.fill(0);
+
+  let cap=0, unplaced=0, waste=0, fillNum=0, fillDen=0;
+  for(let ci=0; ci<courses.length; ci++){
+    const a = asg[ci], c = courses[ci];
+    if(!a){ unplaced++; continue; }
+    const occ = occSlots(a.slot, c.dur);
+    const day = (a.slot / SPD)|0, sidx = a.slot % SPD;
+    const rc = S.rooms[a.room].cap;
+    if(rc < c.enroll) cap++;
+    waste += Math.max(0, rc - c.enroll);
+    fillNum += Math.min(c.enroll, rc); fillDen += rc;
+    cs.perDay[day]++;
+    for(const g of occ){
+      cs.slotRoom[g][a.room]++;
+      cs.profSlot[c.prof][g]++;
+      for(const co of c.cohorts) cs.cohortSlot[co][g]++;
+    }
+    for(const co of c.cohorts) cs.cohortDay[co][day].push(sidx);
+  }
+
+  let clash=0, clashW=0;
+  for(let co=0;co<cohorts.length;co++){ const row=cs.cohortSlot[co];
+    for(let s=0;s<SLn;s++) if(row[s]>1){ clash+=(row[s]-1); clashW+=(row[s]-1)*cohorts[co].size; } }
+  let dbl=0, peak=0;
+  for(let s=0;s<SLn;s++){ let used=0; const row=cs.slotRoom[s];
+    for(let r=0;r<R;r++){ if(row[r]>0)used++; if(row[r]>1)dbl+=row[r]-1; } if(used>peak)peak=used; }
+  let prof=0;
+  for(let p=0;p<PROFS.length;p++){ const row=cs.profSlot[p];
+    for(let s=0;s<SLn;s++) if(row[s]>1) prof+=row[s]-1; }
+  let gaps=0;
+  for(let co=0;co<cohorts.length;co++){ for(let d=0;d<ND;d++){
+    const ps=cs.cohortDay[co][d]; if(ps.length<2) continue;
+    let mn=99,mx=-1; for(const p of ps){ if(p<mn)mn=p; if(p>mx)mx=p; }
+    const g=(mx-mn+1)-ps.length; if(g>0) gaps += g*cohorts[co].size; } }
+  let mean=0; for(let d=0;d<ND;d++) mean+=cs.perDay[d]; mean/=ND;
+  let varr=0; for(let d=0;d<ND;d++){ const e=cs.perDay[d]-mean; varr+=e*e; } varr/=ND;
+
+  const w = OBJ[objMode];
+  const energy = HARD*(clash + cap + dbl + prof + 2*unplaced) + w.gap*gaps + w.waste*waste + w.bal*varr*30;
+
+  if(withFlags){
+    flags = courses.map((c,ci)=>{
+      const a=asg[ci]; if(!a) return {unplaced:true};
+      const occ=occSlots(a.slot,c.dur); let cl=false,db=false,pf=false;
+      for(const g of occ){
+        for(const co of c.cohorts) if(cs.cohortSlot[co][g]>1) cl=true;
+        if(cs.slotRoom[g][a.room]>1) db=true;
+        if(cs.profSlot[c.prof][g]>1) pf=true;
+      }
+      return {clash:cl, cap:S.rooms[a.room].cap<c.enroll, dbl:db, prof:pf};
+    });
+  }
+  return {energy, clash, clashW, cap, dbl, prof, unplaced, gaps, peak, waste,
+          fill: fillDen?fillNum/fillDen:0, feasible:(clash+cap+dbl+prof+unplaced)===0};
+}
+
+// ============================================================
+//  Room choice (spill-aware) + greedy + annealing
+// ============================================================
+function bestRoom(asg, ci, slot){
+  const R = S.nrooms, used = new Uint8Array(R);
+  const sidx = slot % SPD, spills = (S.courses[ci].dur===DUR25 && SPILL[sidx]);
+  for(let k=0;k<S.courses.length;k++){
+    const a=asg[k]; if(k===ci || !a) continue;
+    const occ = occSlots(a.slot, S.courses[k].dur);
+    if(occ.includes(slot)) used[a.room]=1;            // busy in our slot (incl. their spill-in)
+    if(spills && occ.includes(slot+1)) used[a.room]=1; // we'll spill into slot+1
+  }
+  const need = S.courses[ci].enroll;
+  let best=-1,bestCap=Infinity,fall=-1,fallCap=-1;
+  for(let r=0;r<R;r++){ if(used[r])continue; const cap=S.rooms[r].cap;
+    if(cap>=need && cap<bestCap){best=r;bestCap=cap;} if(cap>fallCap){fall=r;fallCap=cap;} }
+  return best>=0?best:(fall>=0?fall:randInt(R));
+}
+function greedy(){
+  A.fill(null);
+  const order = S.courses.map((c,i)=>i)
+    .sort((a,b)=>(S.courses[b].enroll-S.courses[a].enroll)||(S.courses[b].degree-S.courses[a].degree));
+  for(const ci of order){
+    let best=null,bestEn=Infinity;
+    for(let s=0;s<S.slots;s++){ const r=bestRoom(A,ci,s); A[ci]={slot:s,room:r};
+      const e=evaluate(A).energy; if(e<bestEn){bestEn=e;best={slot:s,room:r};} }
+    A[ci]=best;
+  }
+  resetBest(); history=[];
+  refresh('Greedy pass done — cores into the Auditorium, electives into seminar rooms.');
+}
+function neighbour(){
+  const ci=randInt(S.courses.length), prev=A[ci];
+  if(Math.random()<0.78 || !prev){ const slot=randInt(S.slots); A[ci]={slot,room:bestRoom(A,ci,slot)}; return ['move',ci,prev]; }
+  const cj=randInt(S.courses.length), pj=A[cj]; A[ci]=pj; A[cj]=prev; return ['swap',ci,cj,prev,pj];
+}
+function undo(mv){ if(mv[0]==='move') A[mv[1]]=mv[2]; else { A[mv[1]]=mv[3]; A[mv[2]]=mv[4]; } }
+function saBatch(iters){
+  let cur=evaluate(A).energy;
+  for(let i=0;i<iters;i++){
+    const mv=neighbour(); const e=evaluate(A).energy; const dE=e-cur;
+    if(dE<=0 || Math.random()<Math.exp(-dE/Math.max(0.001,temp))){ cur=e; snapBest(cur); } else undo(mv);
+    temp*=0.9997; if(temp<0.4) temp=0.4;
+  }
+  return cur;
+}
+function startTemp(){ return Math.max(60, evaluate(A).gaps*0.12 + 80); }
+function optimise(){
+  if(anim){ pauseOpt(); applyBest(); const m=evaluate(A); paint(m); drawSpark();
+    $('solveCap').innerHTML = m.feasible
+      ? 'Paused on the <b>best board</b> found · <b>'+m.gaps+'</b> student gap-slots.'
+      : 'Paused — still <b style="color:var(--no)">'+(m.clash+m.cap+m.dbl+m.prof)+' conflicts</b>.'; return; }
+  if(!A) return;
+  temp=startTemp(); history=[]; $('optBtn').textContent='⏸ Pause';
+  const loop=()=>{ saBatch(450); const m=evaluate(A); history.push(m.energy); if(history.length>600)history.shift();
+    paint(m); drawSpark();
+    $('solveCap').innerHTML = m.feasible
+      ? 'Annealing… <b>feasible</b> · cutting gaps & wasted seats · T='+temp.toFixed(1)
+      : 'Annealing… <b style="color:var(--no)">repairing conflicts</b> · T='+temp.toFixed(1);
+    anim=requestAnimationFrame(loop); };
+  anim=requestAnimationFrame(loop);
+}
+function pauseOpt(){ if(anim)cancelAnimationFrame(anim); anim=null; $('optBtn').textContent='▶ Optimise'; }
+
+// ============================================================
+//  Rendering
+// ============================================================
+function refresh(capMsg){ const m=evaluate(A,true); paint(m); buildLegend(); buildCohortSelect(); drawSpark(); if(capMsg)$('solveCap').textContent=capMsg; }
+function paint(m){
+  evaluate(A,true);
+  const fb=$('feasBadge'); fb.textContent=m.feasible?'✓ feasible':'✗ '+(m.clash+m.cap+m.dbl+m.prof+m.unplaced)+' conflicts';
+  fb.className='feas '+(m.feasible?'good':'bad');
+  setStat('stClash',m.clash); setStat('stProf',m.prof); setStat('stCap',m.cap); setStat('stDbl',m.dbl);
+  $('stGap').textContent=m.gaps; $('stGap').className='v'+(m.gaps===0?' zero':'');
+  $('stFill').textContent=Math.round(m.fill*100)+'%'; $('stFill').className='v';
+  drawBoard(); drawMini();
+}
+function setStat(id,val){ const el=$(id); el.textContent=val; el.className='v'+(val>0?' bad':' zero'); }
+
+function div(cls,txt){ const e=document.createElement('div'); e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+function shareCohort(a,b){ return S.courses[a].cohorts.some(x=>S.courses[b].cohorts.includes(x)); }
+
+function drawBoard(){
+  const g=$('board'); g.innerHTML='';
+  // header row 1: corner + day labels (span SPD)
+  g.appendChild(div('',''));
+  for(let d=0;d<DAYS.length;d++){ const e=div('bd-day',DAYS[d]); e.style.gridColumn='span '+SPD; g.appendChild(e); }
+  // header row 2: corner + slot times
+  g.appendChild(div('',''));
+  for(let gi=0;gi<S.slots;gi++){ g.appendChild(div('bd-time',SLOTS[gi%SPD].label)); }
+  // locate classes
+  const cell = Array.from({length:S.nrooms},()=>new Array(S.slots).fill(-1));
+  const spillInto = Array.from({length:S.nrooms},()=>new Array(S.slots).fill(false));
+  S.courses.forEach((c,ci)=>{ const a=A[ci]; if(!a)return; cell[a.room][a.slot]=ci;
+    const occ=occSlots(a.slot,c.dur); if(occ.length>1) spillInto[a.room][occ[1]]=true; });
+  for(let r=0;r<S.nrooms;r++){
+    const rl=div('bd-room',''); rl.innerHTML='<span>'+S.rooms[r].name+'</span><span class="cap">'+S.rooms[r].cap+'</span>'; g.appendChild(rl);
+    for(let gi=0;gi<S.slots;gi++){
+      const c=div('bd-cell',''); if(gi%SPD===0) c.classList.add('daystart');
+      if(spillInto[r][gi]) c.classList.add('spill');
+      const ci=cell[r][gi];
+      if(ci>=0){
+        const co=S.courses[ci], f=flags[ci]||{};
+        const chip=div('bd-chip',co.code); chip.style.background=co.color; chip.dataset.ci=ci;
+        if(co.dur===DUR25) chip.classList.add('h25');
+        if(f.cap||f.clash||f.dbl||f.prof) chip.classList.add('viol');
+        const day=DAYS[(gi/SPD)|0], t=SLOTS[gi%SPD].label, end=(co.dur===DUR25?'+2.5h':'+2h');
+        chip.title=co.code+' — '+co.title+'\nProf. '+PROFS[co.prof]+'\n'+co.enroll+' students · '+S.rooms[co_room(ci)].name+' (cap '+S.rooms[co_room(ci)].cap+')\n'+day+' '+t+' '+end
+          +(f.cap?'\n⚠ room too small':'')+(f.clash?'\n⚠ student clash':'')+(f.dbl?'\n⚠ room double-booked':'')+(f.prof?'\n⚠ professor clash':'');
+        if(pickedCourse>=0){ if(ci===pickedCourse)chip.classList.add('pick'); else if(!shareCohort(ci,pickedCourse))chip.classList.add('dim'); }
+        c.appendChild(chip);
+      }
+      g.appendChild(c);
+    }
+  }
+}
+function co_room(ci){ return A[ci].room; }
+
+function buildLegend(){
+  const L=$('legend'); L.innerHTML='';
+  const add=(c,t)=>{ const e=div('lg',''); e.innerHTML='<span class="sw" style="background:'+c+'"></span>'+t; L.appendChild(e); };
+  add(COL.core,'Shared core (all programmes)');
+  for(let p=0;p<CFG.bProg;p++) add(COL.B[p],'BSc '+BNAMES[p]);
+  for(let p=0;p<CFG.mProg;p++) add(COL.M[p],'MSc '+MNAMES[p]);
+  const e=div('lg',''); e.innerHTML='<span class="sw r25"></span>2.5h class (red)'; L.appendChild(e);
+}
+function buildCohortSelect(){
+  const sel=$('cohortSel'), keep=sel.value; sel.innerHTML='';
+  S.cohorts.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.label+'  ('+c.size+' students)'; sel.appendChild(o); });
+  if(keep && +keep<S.cohorts.length) sel.value=keep;
+}
+function drawMini(){
+  const co=+$('cohortSel').value||0, cohort=S.cohorts[co]; if(!cohort)return;
+  const g=$('miniGrid'); g.innerHTML='';
+  const mine=S.courses.map((c,ci)=>({c,ci})).filter(o=>o.c.cohorts.includes(co)&&A[o.ci]);
+  const place={}; mine.forEach(o=>{ (place[A[o.ci].slot]=place[A[o.ci].slot]||[]).push(o.ci); });
+  const dayPers=Array.from({length:DAYS.length},()=>[]);
+  mine.forEach(o=>{ dayPers[(A[o.ci].slot/SPD)|0].push(A[o.ci].slot%SPD); });
+  g.appendChild(div('mini-head','')); for(let d=0;d<DAYS.length;d++) g.appendChild(div('mini-head',DAYS[d]));
+  for(let p=0;p<SPD;p++){
+    g.appendChild(div('mini-row',SLOTS[p].label+'–'+slotEnd(p)));
+    for(let d=0;d<DAYS.length;d++){
+      const gi=d*SPD+p, here=place[gi], ps=dayPers[d];
+      if(here&&here.length){ const ci=here[0],c=S.courses[ci]; const cell=div('mini-cell',c.code); cell.style.background=c.color;
+        cell.title=c.title+' · Prof. '+PROFS[c.prof]+' · '+c.enroll+' students'; if(c.dur===DUR25)cell.classList.add('h25'); if(here.length>1)cell.classList.add('clash'); g.appendChild(cell); }
+      else { const mn=Math.min(...ps),mx=Math.max(...ps); const isGap=ps.length>0&&p>mn&&p<mx&&!ps.includes(p); g.appendChild(div('mini-cell '+(isGap?'gap':'empty'),'')); }
+    }
+  }
+  let gaps=0; for(let d=0;d<DAYS.length;d++){ const ps=dayPers[d]; if(ps.length<2)continue; const mn=Math.min(...ps),mx=Math.max(...ps); gaps+=Math.max(0,(mx-mn+1)-ps.length); }
+  $('miniCap').innerHTML=cohort.label+' takes <b>'+mine.length+'</b> courses · <b>'+gaps+'</b> gap slot'+(gaps===1?'':'s')+' this week'+(gaps===0?' — perfectly compact ✓':'');
+}
+function slotEnd(p){ const m=SLOTS[p].start+120; return (m/60|0)+'h'+String(m%60).padStart(2,'0'); }
+
+function drawSpark(){
+  const svg=$('spark'); svg.innerHTML=''; if(history.length<2)return;
+  const W=600,H=54,pad=3, mn=Math.min(...history),mx=Math.max(...history),rng=(mx-mn)||1; let d='';
+  history.forEach((v,i)=>{ const x=pad+i/(history.length-1)*(W-2*pad), y=pad+(1-(v-mn)/rng)*(H-2*pad); d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; });
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d',d); path.setAttribute('fill','none'); path.setAttribute('stroke','#ffd24a'); path.setAttribute('stroke-width','2'); svg.appendChild(path);
+}
+
+function updateSummary(){
+  const bCore=clamp(Math.round(CFG.cps*CFG.bOver),0,CFG.cps), mCore=clamp(Math.round(CFG.cps*CFG.mOver),0,CFG.cps);
+  const nRed=S.courses.filter(c=>c.dur===DUR25).length, nProf=new Set(S.courses.map(c=>c.prof)).size;
+  $('scenarioSummary').innerHTML='<strong>'+CFG.bProg+' bachelor</strong> ('+bCore+'/'+CFG.cps+' shared) + <strong>'+CFG.mProg+' master</strong> ('+mCore+'/'+CFG.cps+' shared) → <strong>'+S.cohorts.length+' cohorts</strong>, <strong>'+S.courses.length+' classes</strong> ('+nRed+' run 2.5h) taught by <strong>'+nProf+' professors</strong>, into <strong>'+S.nrooms+' rooms × '+SPD+' slots × 5 days</strong>.';
+  const pills=$('pills'); pills.innerHTML='';
+  [['Students',CFG.students],['Biggest class',S.maxEnroll+' seats'],['Auditorium',S.rooms[0].cap+' seats'],
+   ['Board cells',(S.slots*S.nrooms)+''],['Day','08h15 → 20h30']
+  ].forEach(([k,v])=>{ const e=div('pill',''); e.innerHTML=k+': <b>'+v+'</b>'; pills.appendChild(e); });
+}
+
+// ============================================================
+//  Wiring
+// ============================================================
+function regenerate(){ pauseOpt(); buildScenario(); updateSummary(); greedy(); }
+
+[['bProg','bProgV',v=>v],['mProg','mProgV',v=>v],['bOver','bOverV',v=>v+'%'],['mOver','mOverV',v=>v+'%'],
+ ['stud','studV',v=>v],['cps','cpsV',v=>v],['red','redV',v=>v+'%'],['rooms','roomsV',v=>v]
+].forEach(([id,lab,fmt])=>{ const inp=$(id); inp.addEventListener('input',()=>{$(lab).textContent=fmt(inp.value);}); inp.addEventListener('change',regenerate); });
+
+$('genBtn').addEventListener('click',regenerate);
+$('greedyBtn').addEventListener('click',()=>{ pauseOpt(); greedy(); });
+$('optBtn').addEventListener('click',optimise);
+$('stepBtn').addEventListener('click',()=>{ if(!A)return; if(temp<0.5)temp=startTemp(); saBatch(500); applyBest(); const m=evaluate(A); history.push(m.energy); paint(m); drawSpark(); });
+$('shuffleBtn').addEventListener('click',()=>{ pauseOpt(); for(let ci=0;ci<S.courses.length;ci++){ const s=randInt(S.slots); A[ci]={slot:s,room:randInt(S.nrooms)}; } resetBest(); history=[]; refresh('Scrambled — every class thrown at a random slot/room. Now optimise.'); });
+$('cohortSel').addEventListener('change',drawMini);
+
+document.querySelectorAll('[data-sem]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-sem]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); SEM=+b.dataset.sem; regenerate(); }));
+document.querySelectorAll('[data-obj]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-obj]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); objMode=b.dataset.obj; if(A){ const m=evaluate(A); paint(m); $('solveCap').textContent='Objective changed to "'+objMode+'". Hit Optimise to chase the new goal.'; } }));
+
+$('board').addEventListener('click',e=>{
+  const chip=e.target.closest('.bd-chip'); if(!chip)return;
+  const ci=+chip.dataset.ci;
+  pickedCourse=(pickedCourse===ci)?-1:ci; drawBoard();
+  $('ttCap').innerHTML=pickedCourse>=0
+    ? 'Showing <b>'+S.courses[ci].code+'</b> ('+S.courses[ci].title+') and every class sharing its students — these can never share a slot.'
+    : 'Hover a chip for the course, professor and room. Click to trace its clashes.';
+});
+
+// init
+CFG = readCfg();
+regenerate();
+</script>
+</body>
+</html>
