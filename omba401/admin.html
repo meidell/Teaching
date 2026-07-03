@@ -19,15 +19,20 @@ h1{font-family:Georgia,serif;}
 .gate{position:fixed;inset:0;background:var(--sand);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
 .gate.hidden{display:none;}
 .gate-box{background:var(--card);border:1px solid var(--sand-deep);border-radius:20px;padding:34px 30px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow);}
-.gate-brand{font-size:10px;letter-spacing:2px;color:var(--green);font-weight:bold;margin-bottom:14px;}
+.gate-logo{height:42px;width:auto;margin:0 auto 16px;display:block;}
+.gate-brand{font-size:10px;letter-spacing:2px;color:var(--green);font-weight:bold;margin-bottom:12px;}
 .gate-lock{font-size:30px;margin-bottom:10px;}
 .gate-box h1{font-size:22px;margin-bottom:8px;color:var(--ink);}
 .gate-box p{color:var(--grey);font-size:13px;margin-bottom:16px;}
+.gate-box input{width:100%;text-align:center;letter-spacing:10px;font:22px 'Helvetica Neue',Arial,sans-serif;color:var(--ink);
+  background:var(--sand);border:1px solid var(--sand-deep);border-radius:10px;padding:12px;margin-bottom:12px;}
+.gate-box input:focus{outline:none;border-color:var(--green);}
 .gate-box button{width:100%;background:var(--green);color:#fff;border:none;border-radius:30px;padding:12px;font:bold 14px 'Helvetica Neue',Arial,sans-serif;cursor:pointer;}
 .gate-box button:hover{background:var(--green-deep);}
 .gate-err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px;}
 .wrap{max-width:1100px;margin:0 auto;padding:24px 18px 70px;}
 .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.top .brand{height:26px;width:auto;flex:none;}
 .top h1{font-size:24px;color:var(--ink);}.top h1 span{color:var(--green);}
 .spacer{flex:1;}
 .conn{font-size:11px;color:var(--grey);display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;background:var(--card);}
@@ -67,17 +72,20 @@ a.back{color:var(--green-deep);text-decoration:none;font-size:12.5px;font-weight
 
 <div class="gate" id="gate">
   <div class="gate-box">
+    <img class="gate-logo" src="sumas-logo.png" alt="SUMAS — Sustainability Management School">
     <div class="gate-brand">OMBA401 · INSTRUCTOR</div>
     <div class="gate-lock">🔒</div>
     <h1>Dashboard access</h1>
-    <p>Sign in with your instructor Google account to view student progress.</p>
-    <button id="gBtn" onclick="googleLogin()">Sign in with Google</button>
+    <p>Enter the instructor PIN to view student progress.</p>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
+    <button id="gBtn" onclick="checkPin()">Unlock</button>
     <div class="gate-err" id="gateErr"></div>
   </div>
 </div>
 
 <div class="wrap" id="app" style="display:none">
   <div class="top">
+    <img class="brand" src="sumas-logo.png" alt="SUMAS">
     <h1>OMBA401 · <span>cohort progress</span></h1>
     <span class="conn" id="conn"><span class="d"></span><span id="connTxt">…</span></span>
     <div class="spacer"></div>
@@ -103,13 +111,14 @@ a.back{color:var(--green-deep);text-decoration:none;font-size:12.5px;font-weight
   <div class="empty" id="empty" style="display:none">No students yet. They appear here as soon as someone opens a week page and enters their name.</div>
 
   <div class="hint">
-    Data lives in <code>teaching-70f1c</code> under <code>omba401/&lt;student&gt;</code>. Each cell = sections completed / total for that week (or the self-check score, if one was submitted); click a row for detail (score + time + last active). Live read needs the Firebase rule for <code>omba401</code>: public write for students, authenticated read for the instructor — same shape as your other courses.
+    Data lives in <code>teaching-70f1c</code> under <code>omba401/&lt;student&gt;</code>. Each cell = sections completed / total for that week (or the self-check score, if one was submitted); click a row for detail (score + time + last active). This page is gated by a PIN only; live read requires the Firebase rule for <code>omba401</code> to allow public read.
     <br><br><a class="back" href="index.html">← course hub</a>
   </div>
 </div>
 
 <script>
 "use strict";
+var PIN="3011", SESS="omba401_admin_ok";
 var MODULES=[
   {id:'w1',label:'W1 · Lesson'},
   {id:'w1-hw',label:'W1 HW · Homework'},
@@ -131,25 +140,14 @@ function totalSecs(node){var t=0;MODULES.forEach(function(m){var c=node.mod&&nod
 function fmtDur(s){if(!s)return '—';s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);if(h)return h+'h '+m+'m';if(m)return m+'m';return s+'s';}
 function whenAgo(ts){if(!ts)return '—';var s=Math.round((Date.now()-ts)/1000);if(s<60)return 'just now';var m=Math.round(s/60);if(m<60)return m+'m ago';var h=Math.round(m/60);if(h<24)return h+'h ago';var d=Math.round(h/24);return d+'d ago';}
 
-function googleLogin(){var err=document.getElementById('gateErr');err.textContent='Opening Google sign-in…';
-  if(!window.__auth){err.textContent='Still loading — try again in a second.';return;}
-  window.__auth.login().then(function(r){
-    if(r===true){err.textContent='';return;}
-    if(r==='wrong'){err.textContent='That Google account is not the instructor account.';return;}
-    var hint={
-      'auth/operation-not-allowed':'Google sign-in is not enabled yet: Firebase → Authentication → Sign-in method → enable Google.',
-      'auth/configuration-not-found':'Google sign-in is not enabled yet: Firebase → Authentication → Sign-in method → enable Google.',
-      'auth/unauthorized-domain':'This page’s domain is not authorised: Firebase → Authentication → Settings → Authorized domains → add it.',
-      'auth/popup-blocked':'Your browser blocked the popup — allow popups for this site, then retry.',
-      'auth/popup-closed-by-user':'You closed the popup before finishing — click again and complete sign-in.',
-      'auth/cancelled-popup-request':'Click once and complete the popup.',
-      'auth/operation-not-supported-in-this-environment':'Open the page over http(s) (not a file:// path).'
-    }[r];
-    err.textContent=(hint||'Sign-in failed.')+'  ['+r+']';
-  });
+/* ---- PIN gate ---- */
+function checkPin(){
+  var inp=document.getElementById('pin'),err=document.getElementById('gateErr');
+  if((inp.value||'').trim()===PIN){ try{sessionStorage.setItem(SESS,'1');}catch(e){} err.textContent=''; unlock(); }
+  else { err.textContent='Incorrect PIN.'; inp.value=''; inp.focus(); }
 }
-function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').style.display='block';setTimeout(setConn,800);refreshActive();if(!POLL)POLL=setInterval(refreshActive,20000);}
-function logout(){ if(window.__auth)window.__auth.logout().then(function(){location.reload();});else location.reload(); }
+function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').style.display='block';setTimeout(setConn,600);refreshActive();if(!POLL)POLL=setInterval(refreshActive,20000);}
+function logout(){ try{sessionStorage.removeItem(SESS);}catch(e){} location.reload(); }
 
 function setConn(){var c=document.getElementById('conn'),ready=window.__store&&window.__store.ready;c.className='conn '+(ready?'ok':'bad');document.getElementById('connTxt').textContent=ready?'online':'offline';}
 function setSort(s){SORT=s;document.querySelectorAll('.sortbar .btn[data-sort]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-sort')===s);});render();}
@@ -206,22 +204,22 @@ function exportCSV(){var head=['name','student_id','total_done','total_time_min'
     MODULES.forEach(function(m){var c=s.mod[m.id];r.push(c?doneCount(c):0);r.push(c?(c.total||doneCount(c)):0);r.push(c&&c.score?c.score:'');});
     lines.push(r.map(csv).join(','));});
   var blob=new Blob([lines.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='omba401-progress.csv';a.click();}
+
+/* wire the PIN input */
+(function(){var inp=document.getElementById('pin');
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPin();});
+  setTimeout(function(){inp.focus();},60);
+})();
 </script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const firebaseConfig = { apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw", authDomain:"teaching-70f1c.firebaseapp.com", databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", projectId:"teaching-70f1c", storageBucket:"teaching-70f1c.firebasestorage.app", messagingSenderId:"1026356553251", appId:"1:1026356553251:web:d23a4c30af7e6983463396" };
-const ADMIN_EMAIL="janerik.meidell@gmail.com";
-let _db=null,_auth=null; try{ const app=initializeApp(firebaseConfig); _db=getDatabase(app); _auth=getAuth(app); }catch(e){ console.error("FB init",e); }
+let _db=null; try{ const app=initializeApp(firebaseConfig); _db=getDatabase(app); }catch(e){ console.error("FB init",e); }
 window.__store={ ready:!!_db, async get(k){ if(!_db) return null; try{ const s=await get(child(ref(_db),k)); return s.exists()?s.val():null; }catch(e){ console.error(e); return null; } } };
-window.__auth={ ready:!!_auth, email:ADMIN_EMAIL,
-  async login(){ if(!_auth) return 'no-auth'; try{ const p=new GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'}); const res=await signInWithPopup(_auth,p); if(res.user && res.user.email===ADMIN_EMAIL) return true; await signOut(_auth); return 'wrong'; }catch(e){ console.warn("auth:",e.code||e.message); return e.code||'error'; } },
-  async logout(){ if(_auth){ try{ await signOut(_auth); }catch(e){} } },
-  current(){ return _auth?_auth.currentUser:null; } };
-if(_auth) onAuthStateChanged(_auth,function(u){ if(u && u.email===ADMIN_EMAIL){ if(document.getElementById('app').style.display!=='block') unlock(); else refreshActive(); } else if(u){ signOut(_auth); } });
 setConn();
+try{ if(sessionStorage.getItem(SESS)==='1') unlock(); }catch(e){}
 </script>
 </body>
 </html>
