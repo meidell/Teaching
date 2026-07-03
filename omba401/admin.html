@@ -46,6 +46,25 @@ h1{font-family:Georgia,serif;}
 .stat{background:var(--card);border:1px solid var(--sand-deep);border-radius:14px;padding:14px 18px;min-width:120px;box-shadow:var(--shadow);}
 .stat .k{font-size:11px;letter-spacing:1px;color:var(--grey);text-transform:uppercase;}
 .stat .v{font-family:Georgia,serif;font-size:26px;color:var(--green-deep);font-weight:bold;}
+.attention{background:var(--card);border:1px solid var(--sand-deep);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+.attention h2{font-family:Georgia,serif;font-size:17px;color:var(--ink);margin-bottom:2px;}
+.attention .sub{font-size:12px;color:var(--grey);margin-bottom:12px;}
+.att-group{margin-bottom:11px;}
+.att-group:last-child{margin-bottom:0;}
+.att-lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;margin-bottom:7px;}
+.att-lbl.red{color:var(--red);}
+.att-lbl.amber{color:#8a6d14;}
+.att-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.att-chip{display:inline-flex;align-items:center;gap:6px;background:var(--sand);border:1px solid var(--sand-deep);border-radius:20px;padding:5px 12px;font-size:12.5px;color:var(--ink);cursor:pointer;}
+.att-chip:hover{border-color:var(--green);}
+.att-chip .meta{color:var(--grey);font-size:11px;}
+.att-ok{color:var(--green-deep);font-weight:bold;font-size:14px;}
+.compose{background:var(--card);border:1px solid var(--sand-deep);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+.compose h2{font-family:Georgia,serif;font-size:17px;color:var(--ink);margin-bottom:2px;}
+.compose .sub{font-size:12px;color:var(--grey);margin-bottom:12px;}
+.compose textarea{width:100%;min-height:62px;background:var(--sand);border:1px solid var(--sand-deep);border-radius:10px;color:var(--ink);font:14px 'Helvetica Neue',Arial,sans-serif;padding:11px 13px;resize:vertical;}
+.compose textarea:focus{outline:none;border-color:var(--green);}
+.compose .brow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
 .sortbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:13px;color:var(--grey);}
 table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);}
 th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);}
@@ -96,6 +115,19 @@ a.back{color:var(--green-deep);text-decoration:none;font-size:12.5px;font-weight
 
   <div class="stats" id="stats"></div>
 
+  <div class="attention" id="attention" style="display:none"></div>
+
+  <div class="compose">
+    <h2>Cohort announcement</h2>
+    <div class="sub">Posts a banner to the top of every student page for this course. Clear removes it. Dismissed by a student until you post a newer one.</div>
+    <textarea id="annText" placeholder="e.g. Reminder: Online Test 1 opens Monday — covers chapters 1–6."></textarea>
+    <div class="brow">
+      <button class="btn gold" onclick="postAnnounce()">Post / update</button>
+      <button class="btn" onclick="clearAnnounce()">Clear</button>
+      <span class="muted" id="annStatus"></span>
+    </div>
+  </div>
+
   <div class="sortbar">
     <span>Sort:</span>
     <button class="btn active" data-sort="recent" onclick="setSort('recent')">Most recent</button>
@@ -119,6 +151,7 @@ a.back{color:var(--green-deep);text-decoration:none;font-size:12.5px;font-weight
 <script>
 "use strict";
 var PIN="3011", SESS="omba401_admin_ok";
+var DB_URL="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", NS="omba401";
 var MODULES=[
   {id:'w1',label:'W1 · Lesson'},
   {id:'w1-hw',label:'W1 HW · Homework'},
@@ -146,8 +179,31 @@ function checkPin(){
   if((inp.value||'').trim()===PIN){ try{sessionStorage.setItem(SESS,'1');}catch(e){} err.textContent=''; unlock(); }
   else { err.textContent='Incorrect PIN.'; inp.value=''; inp.focus(); }
 }
-function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').style.display='block';setTimeout(setConn,600);refreshActive();if(!POLL)POLL=setInterval(refreshActive,20000);}
+function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').style.display='block';setTimeout(setConn,600);refreshActive();loadAnnounce();if(!POLL)POLL=setInterval(refreshActive,20000);}
 function logout(){ try{sessionStorage.removeItem(SESS);}catch(e){} location.reload(); }
+
+/* ---- cohort announcement (REST write; read is public) ---- */
+function annStatusMsg(m){var e=document.getElementById('annStatus');if(e)e.textContent=m;}
+function postAnnounce(){
+  var t=(document.getElementById('annText').value||'').trim();
+  if(!t){annStatusMsg('Type a message first, or press Clear.');return;}
+  annStatusMsg('Posting…');
+  fetch(DB_URL+'/'+NS+'/_announce.json',{method:'PUT',body:JSON.stringify({text:t,ts:Date.now(),on:true})})
+    .then(function(){annStatusMsg('Posted ✓ — live on student pages.');})
+    .catch(function(){annStatusMsg('Could not post — check your connection.');});
+}
+function clearAnnounce(){
+  annStatusMsg('Clearing…');
+  fetch(DB_URL+'/'+NS+'/_announce.json',{method:'PUT',body:JSON.stringify({text:'',ts:Date.now(),on:false})})
+    .then(function(){document.getElementById('annText').value='';annStatusMsg('Cleared — banner hidden.');})
+    .catch(function(){annStatusMsg('Could not clear — check your connection.');});
+}
+function loadAnnounce(){
+  fetch(DB_URL+'/'+NS+'/_announce.json').then(function(r){return r.json();}).then(function(a){
+    if(a&&a.on&&a.text){document.getElementById('annText').value=a.text;annStatusMsg('Currently live (posted '+whenAgo(a.ts)+').');}
+    else{annStatusMsg('No announcement live.');}
+  }).catch(function(){});
+}
 
 function setConn(){var c=document.getElementById('conn'),ready=window.__store&&window.__store.ready;c.className='conn '+(ready?'ok':'bad');document.getElementById('connTxt').textContent=ready?'online':'offline';}
 function setSort(s){SORT=s;document.querySelectorAll('.sortbar .btn[data-sort]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-sort')===s);});render();}
@@ -188,6 +244,31 @@ function render(){
       '<tr class="detail" id="d-'+s.sid+'" style="display:none"><td colspan="'+(MODULES.length+5)+'"><div class="inner" id="di-'+s.sid+'"></div></td></tr>';
   });
   document.getElementById('tbody').innerHTML=html;
+  renderAttention();
+}
+function pScore(str){if(!str||String(str).indexOf('/')<0)return null;var p=String(str).split('/');var a=parseFloat(p[0]),b=parseFloat(p[1]);if(!b||isNaN(a))return null;return a/b;}
+function moduleScores(node){var out=[];MODULES.forEach(function(m){var c=node.mod&&node.mod[m.id];if(c&&c.score){var f=pScore(c.score);if(f!=null)out.push({label:m.label.split(' · ')[0],score:c.score,f:f});}});return out;}
+function jumpTo(sid){var r=document.getElementById('d-'+sid);if(r&&r.style.display==='none')toggle(sid);r=document.getElementById('d-'+sid);if(r)r.scrollIntoView({behavior:'smooth',block:'center'});}
+function renderAttention(){
+  var el=document.getElementById('attention');if(!el)return;
+  if(!ROWS.length){el.style.display='none';return;}
+  var now=Date.now(),STALL=7*864e5,LOW=0.6;
+  var notStarted=[],quiet=[],low=[];
+  ROWS.forEach(function(s){
+    var td=totalDone(s.node);
+    if(td===0){notStarted.push(s);return;}
+    if(s.ts&&(now-s.ts)>STALL)quiet.push(s);
+    var ms=moduleScores(s.node).filter(function(x){return x.f<LOW;});
+    if(ms.length){ms.sort(function(a,b){return a.f-b.f;});low.push({s:s,w:ms[0]});}
+  });
+  function chip(sid,name,meta){return '<span class="att-chip" onclick="jumpTo(\''+sid+'\')">'+esc(name)+(meta?' <span class="meta">'+esc(meta)+'</span>':'')+'</span>';}
+  var g='';
+  if(notStarted.length)g+='<div class="att-group"><div class="att-lbl amber">🕓 Not started ('+notStarted.length+')</div><div class="att-chips">'+notStarted.map(function(s){return chip(s.sid,s.name,'joined '+whenAgo(s.ts));}).join('')+'</div></div>';
+  if(quiet.length)g+='<div class="att-group"><div class="att-lbl red">💤 Gone quiet · 7+ days ('+quiet.length+')</div><div class="att-chips">'+quiet.map(function(s){return chip(s.sid,s.name,'last '+whenAgo(s.ts));}).join('')+'</div></div>';
+  if(low.length)g+='<div class="att-group"><div class="att-lbl amber">📉 Low self-check · under 60% ('+low.length+')</div><div class="att-chips">'+low.map(function(o){return chip(o.s.sid,o.s.name,o.w.label+' '+o.w.score);}).join('')+'</div></div>';
+  if(!g)g='<div class="att-ok">✓ Everyone\x27s on track — no one flagged right now.</div>';
+  el.innerHTML='<h2>Needs attention</h2><div class="sub">Flagged automatically from activity and self-check scores — click a name to jump to their row.</div>'+g;
+  el.style.display='block';
 }
 function toggle(sid){var row=document.getElementById('d-'+sid);if(!row)return;if(row.style.display!=='none'){row.style.display='none';return;}
   var s=ROWS.filter(function(x){return x.sid===sid;})[0];if(!s)return;var h='';
