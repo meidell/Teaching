@@ -124,10 +124,36 @@
     renderPill();pushAll();
   }
 
+  /* ---- workbook: fillable exercise fields (data-work) ----
+     Any <input>/<textarea> with data-work="fieldId" auto-saves to localStorage
+     (so the student can resume) and to Firebase under <sid>/work/<fieldId>
+     (so the instructor can read the answers in admin.html). data-worklabel gives
+     a short human label for the dashboard. Reused across all 18 modules. */
+  function wireWorkbook(){
+    var els=document.querySelectorAll('[data-work]');
+    els.forEach(function(el){
+      var id=el.getAttribute('data-work'); if(!id)return;
+      var label=el.getAttribute('data-worklabel')||id;
+      try{var sv=localStorage.getItem('umef407_work_'+id); if(sv!=null)el.value=sv;}catch(e){}
+      var t;
+      el.addEventListener('input',function(){
+        try{localStorage.setItem('umef407_work_'+id,el.value);}catch(e){}
+        var st=document.getElementById('wbSave');
+        if(st)st.textContent=(lang()==='fr'?'Enregistrement…':'Saving…');
+        clearTimeout(t);
+        t=setTimeout(function(){
+          if(S.sid){ put(base()+'/work/'+id,{v:el.value,label:label,mod:S.mod,ts:now()}); put(base()+'/updatedAt',now()); }
+          if(st)st.textContent = S.sid ? (lang()==='fr'?'Enregistré ✓':'Saved ✓')
+                                       : (lang()==='fr'?'Entrez votre nom (en bas à droite) pour synchroniser':'Enter your name (bottom-right) to sync');
+        },700);
+      });
+    });
+  }
+
   window.StatsTrack={
     init:function(o){
       S.mod=o.module;S.title=o.title||o.module;S.total=o.total||0;
-      loadLocal();injectCSS();renderPill();
+      loadLocal();injectCSS();renderPill();wireWorkbook();
       if(S.sid)identify();
       startTimer();
       if(!S.name){ setTimeout(function(){ if(!S.name)openModal(); },1500); }
