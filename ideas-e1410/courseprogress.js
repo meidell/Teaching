@@ -16,7 +16,7 @@ window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var CHAPTERS=[
     {mod:'s1',short:'S1',name:'Session 1 · Foundations',total:7,live:true},
-    {mod:'s2',short:'S2',name:'Session 2 · Planning',total:7,live:false},
+    {mod:'s2',short:'S2',name:'Session 2 · Planning',total:7,live:true},
     {mod:'s3',short:'S3',name:'Session 3 · Resources',total:7,live:false},
     {mod:'s4',short:'S4',name:'Session 4 · Risk',total:7,live:false},
     {mod:'s5',short:'S5',name:'Session 5 · Agile & teams',total:7,live:false},
