@@ -99,6 +99,7 @@
 
   window.StatsTrack={
     init:function(o){
+      if(window.E1410_ACCESS===false)return; /* course access not granted — don't track */
       S.mod=o.module;S.title=o.title||o.module;S.total=o.total||0;
       loadLocal();wireWorkbook();
       if(S.sid)identify();
