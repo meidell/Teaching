@@ -120,6 +120,21 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
   </div>
 
   <div class="stats" id="stats"></div>
+
+  <div class="attention" id="onboard">
+    <h2>Student onboarding</h2>
+    <div class="sub">Students scan the QR (or open the link), register once with their full name, and get a personal 6-digit password. Their device then remembers them; the password is only needed on a second device. Forgotten passwords: look them up in the roster below.</div>
+    <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+      <img src="qr-e1410.png" alt="Course QR code" style="width:132px;height:132px;border:1px solid var(--line-2);border-radius:10px;">
+      <div style="font-size:13px;color:var(--ink-soft);line-height:1.7;">
+        <b style="color:var(--ink);">https://janerikmeidell.com/ideas-e1410/</b><br>
+        QR image for slides/email: <code>qr-e1410.png</code> (in the course folder)<br>
+        <span class="muted" id="rosterCount">Roster: …</span>
+      </div>
+    </div>
+    <div id="rosterBox" style="margin-top:12px;"></div>
+  </div>
+
   <div class="attention" id="attention" style="display:none"></div>
 
   <div class="compose">
@@ -213,7 +228,23 @@ function buildHead(){var h='<th>#</th><th>Name</th>';MODULES.forEach(function(m)
 async function load(){
   var root=await window.__store.get(NS);ROWS=[];
   if(root){for(var sid in root){if(!root.hasOwnProperty(sid)||sid.charAt(0)==='_')continue;var n=root[sid]||{};ROWS.push({sid:sid,name:n.name||sid,mod:n.mod||{},ts:n.updatedAt||0,node:n});}}
+  renderRoster(root&&root._roster||{});
   render();
+}
+
+/* ---- registration roster (join.html writes e1410/_roster/<sid>) ---- */
+function renderRoster(roster){
+  var ids=Object.keys(roster||{});
+  var cnt=document.getElementById('rosterCount'),box=document.getElementById('rosterBox');
+  if(!cnt||!box)return;
+  cnt.textContent='Roster: '+ids.length+' registered student'+(ids.length===1?'':'s');
+  if(!ids.length){box.innerHTML='';return;}
+  ids.sort(function(a,b){return (roster[a].name||a).localeCompare(roster[b].name||b);});
+  var h='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  ids.forEach(function(id){var r=roster[id]||{};
+    h+='<span class="att-chip" style="cursor:default;">'+esc(r.name||id)+' <span class="meta">pw '+esc(r.pass||'?')+' · '+whenAgo(r.ts)+'</span></span>';
+  });
+  box.innerHTML=h+'</div>';
 }
 function sorted(){var a=ROWS.slice();
   if(SORT==='name')a.sort(function(x,y){return x.name.localeCompare(y.name);});
