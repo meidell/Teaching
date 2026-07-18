@@ -244,7 +244,7 @@ h1,h2,h3,h4{font-weight:800;letter-spacing:-.3px;}
   </div>
 
   <div class="complete" style="text-align:center;margin:22px 0 4px;">
-    <button class="markbtn" id="markBtn">✓ Mark this reading complete</button>
+    <div id="readStatus" style="font-size:13.5px;font-weight:800;color:var(--red-deep);">Finish the exercise, the quiz and the reflection to complete this reading.</div>
   </div>
 
   <div class="foot">
@@ -291,7 +291,7 @@ var GLOSSARY={
     row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
       if(row.dataset.done)return;
       if(b.dataset.v===v.a){row.dataset.done='1';row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===b)x.classList.add('ok');});
-        var w=document.getElementById('dw'+i);w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);
+        var w=document.getElementById('dw'+i);w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);if(done===VARS.length)markTask('drv');
       }else{b.classList.add('no');b.disabled=true;}
     });});
     box.appendChild(row);
@@ -330,24 +330,31 @@ var GLOSSARY={
       answered++;if(ok)correct++;chip.textContent=answered+' / '+QUIZ.length+' answered';
       if(answered===QUIZ.length){scoreEl.textContent=correct+' / '+QUIZ.length;
         msgEl.textContent=correct>=5?'Excellent — you\'ve got the model cold.':correct>=3?'Good. Revisit the three drivers.':'Reread the research model section, then retry.';
-        res.classList.add('show');markComplete('quiz');if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
+        res.classList.add('show');markTask('quiz');if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
     });});
     box.appendChild(q);
   });
 })();
 
+/* completion is EARNED by doing the work: the exercise, the quiz and the
+   written reflection — not by scrolling or clicking a button. */
+var TASKS=['drv','quiz','work'];
 var DONE={};
-function markComplete(id){if(DONE[id])return;DONE[id]=true;if(window.StatsTrack)StatsTrack.complete(id);
-  var p=(DONE.read?1:0)+(DONE.quiz?1:0);document.getElementById('progf').style.width=(p/2*100)+'%';
-  var pe=document.getElementById('readPct');if(pe)pe.textContent=Math.round(p/2*100)+'%';
-  if(p>=2){var b=document.getElementById('markBtn');b.classList.add('done');b.textContent='✓ Reading complete';}}
-document.getElementById('markBtn').addEventListener('click',function(){markComplete('read');markComplete('quiz');
-  this.classList.add('done');this.textContent='✓ Reading complete';window.scrollTo({top:0,behavior:'smooth'});});
-setTimeout(function(){markComplete('read');},45000);
-window.addEventListener('scroll',function(){if((window.innerHeight+window.scrollY)>=document.body.offsetHeight-120)markComplete('read');});
+function refreshBars(){
+  var n=0;TASKS.forEach(function(t){if(DONE[t])n++;});var pctv=Math.round(n/TASKS.length*100);
+  var pf=document.getElementById('progf');if(pf)pf.style.width=pctv+'%';
+  var pe=document.getElementById('readPct');if(pe)pe.textContent=pctv+'%';
+  var st=document.getElementById('readStatus');
+  if(st)st.textContent=(n>=TASKS.length)?'✓ Reading complete — nicely done.':(n+' of '+TASKS.length+' done · finish the exercise, the quiz and the reflection to complete this reading.');
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+function markTask(id){if(DONE[id])return;DONE[id]=true;if(window.StatsTrack)StatsTrack.complete(id);refreshBars();}
 window.addEventListener('DOMContentLoaded',function(){
-  if(window.StatsTrack)StatsTrack.init({module:'r2',title:'Reading · AI & PM empirical study',total:2});
-  try{var sv=JSON.parse(localStorage.getItem('e1410_done_r2')||'{}');['read','quiz'].forEach(function(k){if(sv[k])markComplete(k);});}catch(e){}
+  if(window.StatsTrack)StatsTrack.init({module:'r2',title:'Reading · AI & PM empirical study',total:TASKS.length});
+  try{var sv=JSON.parse(localStorage.getItem('e1410_done_r2')||'{}');TASKS.forEach(function(k){if(sv[k])DONE[k]=true;});}catch(e){}
+  var wf=document.querySelector('[data-work]');
+  if(wf){var chk=function(){if((wf.value||'').trim())markTask('work');};wf.addEventListener('input',chk);setTimeout(chk,900);}
+  refreshBars();
 });
 </script>
 <script src="progress.js" defer></script>

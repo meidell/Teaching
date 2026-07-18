@@ -725,10 +725,19 @@ function updateBar(){
 function show(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var t=document.getElementById(id);if(t)t.classList.add('active');
-  if(id!=='home'){progress.done[id]=true;save();updateBar();renderList();if(window.StatsTrack)StatsTrack.complete(id);}
   if(id==='home'){renderList();}
   if(id==='s6'){renderGuessRecall();}
   window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
+}
+/* Completion is EARNED by finishing a section's interactions — locking the
+   estimate, getting every classify row right, answering every quiz question,
+   filling every workbook field — NOT by visiting a section or clicking Finish.
+   Each widget calls markSection() when its work is complete. */
+function markSection(id){
+  if(!id||progress.done[id])return;
+  progress.done[id]=true;save();updateBar();renderList();
+  if(window.StatsTrack)StatsTrack.complete(id);
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
 }
 document.addEventListener('click',function(e){
   var b=e.target.closest('[data-next],[data-prev],[data-home]');
@@ -813,6 +822,7 @@ var GLOSSARY={
   btn.addEventListener('click',function(){
     localStorage.setItem('e1410_s1_guess',sl.value);
     rev.classList.add('show');btn.innerHTML='🔒 Locked at '+sl.value+'%';
+    markSection('s1');
   });
 })();
 function renderGuessRecall(){
@@ -823,7 +833,7 @@ function renderGuessRecall(){
 }
 
 /* ---- shared classify builder ---- */
-function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg){
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
   var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;
   function capText(n,full){cap.textContent=n+' of '+VARS.length+' classified'+(full?' — '+doneMsg:'');}
   capText(0,false);
@@ -839,6 +849,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg){
         var w=document.getElementById(rowsId+'w'+i);
         w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');
         done++;capText(done,done===VARS.length);
+        if(done===VARS.length)markSection(secId);
       }else{b.classList.add('no');b.disabled=true;}
     });});
     box.appendChild(row);
@@ -856,7 +867,7 @@ buildClassify('aiRows','aiCap',
     {n:'Tax-rule update',s:'update the invoicing module for next year\'s VAT rules',a:'S',w:'The rules are known and written by hand — traditional software work.'},
     {n:'Daily payroll',s:'process salaries at the end of every month',a:'O',w:'Continuous, repetitive — an operation.'}
   ],
-  'if it learns patterns from data, it\'s AI; if the rules are written by hand, it\'s software; if it never ends, it\'s an operation.');
+  'if it learns patterns from data, it\'s AI; if the rules are written by hand, it\'s software; if it never ends, it\'s an operation.','s2');
 
 /* ---- 1.3 lifecycle stages ---- */
 buildClassify('lcRows','lcCap',
@@ -868,7 +879,7 @@ buildClassify('lcRows','lcCap',
     {s:'Measure how many real frauds the model catches — and how many honest customers it wrongly blocks.',a:'E',w:'Evaluation and testing: accuracy, reliability, and the cost of false alarms.'},
     {s:'Watch live performance weekly after go-live, retraining when fraudsters change tactics.',a:'Y',w:'Deployment and monitoring — where model drift is fought.'}
   ],
-  'Problem → Data → Model → Evaluation → Deployment, with loops backwards whenever a stage reveals a gap.');
+  'Problem → Data → Model → Evaluation → Deployment, with loops backwards whenever a stage reveals a gap.','s3');
 
 /* ---- 1.4 knowledge areas ---- */
 buildClassify('kaRows','kaCap',
@@ -881,7 +892,7 @@ buildClassify('kaRows','kaCap',
     {s:'"If the new AI regulation passes next year, this deployment might become illegal overnight."',a:'R',w:'Regulatory exposure is a classic AI-specific risk.'},
     {s:'"The consumer-protection agency and a customer-rights group both want to review how the model blocks accounts."',a:'K',w:'Regulators and affected people widen the stakeholder circle — stakeholder management.'}
   ],
-  'same six disciplines as any project — each one rewired by data, iteration and society\'s scrutiny.');
+  'same six disciplines as any project — each one rewired by data, iteration and society\'s scrutiny.','s4');
 
 /* ---- 1.5 success metrics ---- */
 buildClassify('smRows','smCap',
@@ -894,7 +905,7 @@ buildClassify('smRows','smCap',
     {s:'Predictions return in under 200 milliseconds at peak load.',a:'T',w:'Latency is a technical/deployment metric.'},
     {s:'Manual review time per flagged transaction fell from 20 minutes to 4.',a:'B',w:'An operational-efficiency gain — business value.'}
   ],
-  'a successful AI project scores on all four — a brilliant model that changes nothing is a failed project.');
+  'a successful AI project scores on all four — a brilliant model that changes nothing is a failed project.','s5');
 
 /* ---- 1.6 checkpoint quiz ---- */
 (function quizWidget(){
@@ -957,6 +968,7 @@ buildClassify('smRows','smCap',
       : correct>=6 ? 'Good. Reread the explanations you missed, then move on.'
       : 'Worth a second pass: reread sections 1.2–1.5, then reset and try again.';
     res.classList.add('show');
+    markSection('s6');
     if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);
   }
 })();
@@ -1090,6 +1102,14 @@ var SLIDES=[
 renderList();updateBar();
 window.addEventListener('DOMContentLoaded',function(){
   if(window.StatsTrack)StatsTrack.init({module:'s1',title:'Session 1 · Foundations of AI Project Management',total:SECTIONS.length});
+  /* section 1.7 counts as done only when EVERY workbook field is filled */
+  var s7=document.getElementById('s7');
+  if(s7){
+    var fields=s7.querySelectorAll('[data-work]');
+    var check=function(){var all=fields.length>0;fields.forEach(function(f){if(!(f.value||'').trim())all=false;});if(all)markSection('s7');};
+    fields.forEach(function(f){f.addEventListener('input',check);});
+    setTimeout(check,900); /* catch fields restored from a previous visit */
+  }
 });
 </script>
 <script src="courseprogress.js"></script>
