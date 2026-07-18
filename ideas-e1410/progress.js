@@ -102,6 +102,7 @@
       if(window.E1410_ACCESS===false)return; /* course access not granted — don't track */
       S.mod=o.module;S.title=o.title||o.module;S.total=o.total||0;
       loadLocal();wireWorkbook();
+      var w=document.getElementById('topWho'); if(w&&S.name){w.textContent='👤 '+S.name;w.classList.add('on');}
       if(S.sid)identify();
       startTimer();
     },
