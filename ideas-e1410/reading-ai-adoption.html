@@ -261,7 +261,7 @@ h1,h2,h3,h4{font-weight:800;letter-spacing:-.3px;}
   </div>
 
   <div class="complete" style="text-align:center;margin:22px 0 4px;">
-    <button class="markbtn" id="markBtn">✓ Mark this reading complete</button>
+    <div id="readStatus" style="font-size:13.5px;font-weight:800;color:var(--red-deep);">Finish the exercises, the quiz and the reflection to complete this reading.</div>
   </div>
 
   <div class="foot">
@@ -290,7 +290,7 @@ var GLOSSARY={
  });})();
 
 /* shared classify builder */
-function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg){
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,doneCb){
   var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;
   function capText(n,full){cap.textContent=n+' of '+VARS.length+' classified'+(full?' — '+doneMsg:'');}
   capText(0,false);
@@ -300,7 +300,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg){
     row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
       if(row.dataset.done)return;
       if(b.dataset.v===v.a){row.dataset.done='1';row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===b)x.classList.add('ok');});
-        var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);
+        var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);if(done===VARS.length&&doneCb)doneCb();
       }else{b.classList.add('no');b.disabled=true;}
     });});
     box.appendChild(row);
@@ -314,7 +314,7 @@ buildClassify('szRows','szCap',[['S','SME'],['L','Large firm']],[
   {s:'"The project is stuck in three committees and a six-month approval cycle."',a:'L',w:'Organisational inertia and slow decision-making — a large-firm weakness.'},
   {s:'"We picked AI mainly to automate invoicing and answer customer messages faster."',a:'S',w:'Immediate practical wins over large-scale optimisation — SME priorities.'},
   {s:'"Our compliance team already has the data-privacy controls AI needs."',a:'L',w:'Established compliance mechanisms — large firms are better positioned here.'}
-],'size shapes which barriers you hit — diagnose it before you plan.');
+],'size shapes which barriers you hit — diagnose it before you plan.',function(){markTask('size');});
 
 buildClassify('toeRows','toeCap',[['T','Technology'],['O','Organisation'],['E','Environment']],[
   {s:'The firm\'s IT infrastructure and digital maturity (technology readiness).',a:'T',w:'A property of the technology context — Technology.'},
@@ -323,7 +323,7 @@ buildClassify('toeRows','toeCap',[['T','Technology'],['O','Organisation'],['E','
   {s:'Access to enough good-quality data to train models (data requirements).',a:'T',w:'A technology-context factor — Technology.'},
   {s:'Data-privacy law and ethical-compliance obligations (regulatory compliance).',a:'E',w:'An external regulatory force — Environment.'},
   {s:'In-house staff skills and competencies to run AI (skills & competencies).',a:'O',w:'An internal organisational resource — Organisation.'}
-],'sorting factors by TOE bucket shows where a project is exposed.');
+],'sorting factors by TOE bucket shows where a project is exposed.',function(){markTask('toe');});
 
 (function(){
   var QUIZ=[
@@ -357,24 +357,31 @@ buildClassify('toeRows','toeCap',[['T','Technology'],['O','Organisation'],['E','
       answered++;if(ok)correct++;chip.textContent=answered+' / '+QUIZ.length+' answered';
       if(answered===QUIZ.length){scoreEl.textContent=correct+' / '+QUIZ.length;
         msgEl.textContent=correct>=5?'Excellent — you can diagnose adoption by size.':correct>=3?'Good. Revisit the TOE dimensions.':'Reread the comparison section, then retry.';
-        res.classList.add('show');markComplete('quiz');if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
+        res.classList.add('show');markTask('quiz');if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
     });});
     box.appendChild(q);
   });
 })();
 
+/* completion is EARNED by doing the work: both exercises, the quiz and the
+   written reflection — not by scrolling or clicking a button. */
+var TASKS=['size','toe','quiz','work'];
 var DONE={};
-function markComplete(id){if(DONE[id])return;DONE[id]=true;if(window.StatsTrack)StatsTrack.complete(id);
-  var p=(DONE.read?1:0)+(DONE.quiz?1:0);document.getElementById('progf').style.width=(p/2*100)+'%';
-  var pe=document.getElementById('readPct');if(pe)pe.textContent=Math.round(p/2*100)+'%';
-  if(p>=2){var b=document.getElementById('markBtn');b.classList.add('done');b.textContent='✓ Reading complete';}}
-document.getElementById('markBtn').addEventListener('click',function(){markComplete('read');markComplete('quiz');
-  this.classList.add('done');this.textContent='✓ Reading complete';window.scrollTo({top:0,behavior:'smooth'});});
-setTimeout(function(){markComplete('read');},45000);
-window.addEventListener('scroll',function(){if((window.innerHeight+window.scrollY)>=document.body.offsetHeight-120)markComplete('read');});
+function refreshBars(){
+  var n=0;TASKS.forEach(function(t){if(DONE[t])n++;});var pctv=Math.round(n/TASKS.length*100);
+  var pf=document.getElementById('progf');if(pf)pf.style.width=pctv+'%';
+  var pe=document.getElementById('readPct');if(pe)pe.textContent=pctv+'%';
+  var st=document.getElementById('readStatus');
+  if(st)st.textContent=(n>=TASKS.length)?'✓ Reading complete — nicely done.':(n+' of '+TASKS.length+' done · finish both exercises, the quiz and the reflection to complete this reading.');
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+function markTask(id){if(DONE[id])return;DONE[id]=true;if(window.StatsTrack)StatsTrack.complete(id);refreshBars();}
 window.addEventListener('DOMContentLoaded',function(){
-  if(window.StatsTrack)StatsTrack.init({module:'r4',title:'Reading · AI adoption in SMEs & large firms',total:2});
-  try{var sv=JSON.parse(localStorage.getItem('e1410_done_r4')||'{}');['read','quiz'].forEach(function(k){if(sv[k])markComplete(k);});}catch(e){}
+  if(window.StatsTrack)StatsTrack.init({module:'r4',title:'Reading · AI adoption in SMEs & large firms',total:TASKS.length});
+  try{var sv=JSON.parse(localStorage.getItem('e1410_done_r4')||'{}');TASKS.forEach(function(k){if(sv[k])DONE[k]=true;});}catch(e){}
+  var wf=document.querySelector('[data-work]');
+  if(wf){var chk=function(){if((wf.value||'').trim())markTask('work');};wf.addEventListener('input',chk);setTimeout(chk,900);}
+  refreshBars();
 });
 </script>
 <script src="progress.js" defer></script>

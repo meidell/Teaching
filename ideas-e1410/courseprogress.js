@@ -23,10 +23,10 @@ window.CourseProgress=(function(){
     {mod:'s6',short:'S6',name:'Session 6 · Monitoring & cases',total:7,live:false},
     {mod:'s7',short:'S7',name:'Session 7 · Case workshop',total:7,live:false},
     {mod:'s8',short:'S8',name:'Session 8 · Review',total:7,live:false},
-    {mod:'r1',short:'R1',name:'Reading · AI Superpowers',total:2,live:true},
-    {mod:'r2',short:'R2',name:'Reading · AI & PM study',total:2,live:true},
-    {mod:'r3',short:'R3',name:'Reading · PM2030',total:2,live:true},
-    {mod:'r4',short:'R4',name:'Reading · SME adoption',total:2,live:true},
+    {mod:'r1',short:'R1',name:'Reading · AI Superpowers',total:3,live:true},
+    {mod:'r2',short:'R2',name:'Reading · AI & PM study',total:3,live:true},
+    {mod:'r3',short:'R3',name:'Reading · PM2030',total:3,live:true},
+    {mod:'r4',short:'R4',name:'Reading · SME adoption',total:4,live:true},
     {mod:'forum',short:'Forum',name:'Discussion forum',total:1,live:false},
     {mod:'exam',short:'Exam',name:'Final assessment',total:1,live:false}
   ];
