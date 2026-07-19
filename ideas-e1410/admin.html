@@ -97,6 +97,9 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
 .cbar .cseg .cf{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--red);}
 .cbar .cseg.locked{opacity:.5;background:repeating-linear-gradient(45deg,#e5e9ef,#e5e9ef 3px,#d7dce3 3px,#d7dce3 6px);}
 .cpct{font-size:12.5px;font-weight:800;color:var(--red-deep);min-width:36px;text-align:right;}
+.rowc{display:flex;align-items:center;gap:8px;min-width:150px;}
+.rowc .cbar{min-width:88px;height:9px;}
+.rpct{font-size:12.5px;font-weight:800;color:var(--red-deep);min-width:36px;text-align:right;}
 #adIntro{position:fixed;inset:0;z-index:500;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:18px;}
 #adIntro.on{display:flex;}
 #adIntro .box{background:#fff;border-radius:20px;max-width:490px;width:100%;padding:28px 26px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55);max-height:92vh;overflow-y:auto;}
@@ -199,7 +202,7 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
   <div class="empty" id="empty" style="display:none">No students yet. They appear here as soon as someone opens a session and enters their name.</div>
 
   <div class="hint">
-    Data lives in <code>teaching-70f1c</code> under <code>e1410/&lt;student&gt;</code>. Each cell = sections completed / total for that session (or the self-check score). Click a row for detail, including workbook answers. This page is gated by a PIN only; live read requires the Firebase rule for <code>e1410</code> to allow public read.
+    Data lives in <code>teaching-70f1c</code> under <code>e1410/&lt;student&gt;</code>. Each session/reading cell shows the <b>% completed</b>; the <b>Course</b> column is the same segmented progress bar the student sees. Click a row for the student's password, course bar, per-section detail and workbook answers. This page is gated by a PIN only; live read requires the Firebase rule for <code>e1410</code> to allow public read.
     <br><br><a class="back" href="index.html">← course front page</a>
   </div>
 </div>
@@ -262,7 +265,7 @@ function setConn(){var c=document.getElementById('conn'),ready=window.__store&&w
 function setSort(s){SORT=s;document.querySelectorAll('.sortbar .btn[data-sort]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-sort')===s);});render();}
 function refreshActive(){if(!window.__store)return;setConn();load();}
 
-function buildHead(){var h='<th>#</th><th>Name</th>';MODULES.forEach(function(m){h+='<th class="ch" title="'+esc(m.label)+'">'+esc(m.label.split(' · ')[0]||m.label)+'</th>';});h+='<th class="ch">Total</th><th class="ch">Time</th><th>Active</th>';document.getElementById('head').innerHTML=h;}
+function buildHead(){var h='<th>#</th><th>Name</th>';MODULES.forEach(function(m){h+='<th class="ch" title="'+esc(m.label)+'">'+esc(m.label.split(' · ')[0]||m.label)+'</th>';});h+='<th class="ch">Course</th><th class="ch">Time</th><th>Active</th>';document.getElementById('head').innerHTML=h;}
 
 async function load(){
   var root=await window.__store.get(NS);ROWS=[];
@@ -305,15 +308,19 @@ function render(){
   var html='';
   rows.forEach(function(s,i){
     var cells='';
-    MODULES.forEach(function(m){var c=s.mod[m.id];if(!c){cells+='<td class="ch"><span class="cell">·</span></td>';return;}
-      var dc=doneCount(c),tot=c.total||dc,cls=dc>=tot&&tot>0?'done':(dc>0?'partial':'');
-      var lbl=c.score?c.score:(dc+'/'+tot);
-      cells+='<td class="ch"><span class="cell '+cls+'">'+esc(lbl)+'</span></td>';});
+    MODULES.forEach(function(m){var c=s.mod[m.id];
+      if(!c){cells+='<td class="ch"><span class="cell">·</span></td>';return;}
+      var dc=doneCount(c),tot=c.total||0,pct=tot>0?Math.round(dc/tot*100):0;
+      var cls=pct>=100?'done':(pct>0?'partial':'');
+      cells+='<td class="ch"><span class="cell '+cls+'"'+(c.score?' title="self-check '+esc(c.score)+'"':'')+'>'+(pct>0?pct+'%':'·')+'</span></td>';});
+    var cpct=window.CourseProgress?CourseProgress.pct(CourseProgress.dataFromMods(s.mod)):0;
     html+='<tr class="row" onclick="toggle(\''+s.sid+'\')"><td>'+(i+1)+'</td><td class="name">'+esc(s.name)+'</td>'+cells+
-      '<td class="ch tot">'+totalDone(s.node)+'</td><td class="ch muted">'+fmtDur(totalSecs(s.node))+'</td><td class="muted">'+whenAgo(s.ts)+'</td></tr>'+
+      '<td class="ch"><div class="rowc"><div class="cbar" id="rb-'+esc(s.sid)+'"></div><span class="rpct">'+cpct+'%</span></div></td>'+
+      '<td class="ch muted">'+fmtDur(totalSecs(s.node))+'</td><td class="muted">'+whenAgo(s.ts)+'</td></tr>'+
       '<tr class="detail" id="d-'+s.sid+'" style="display:none"><td colspan="'+(MODULES.length+5)+'"><div class="inner" id="di-'+s.sid+'"></div></td></tr>';
   });
   document.getElementById('tbody').innerHTML=html;
+  if(window.CourseProgress){rows.forEach(function(s){var el=document.getElementById('rb-'+s.sid);if(el)CourseProgress.paint(CourseProgress.dataFromMods(s.mod),{bar:el,compact:true});});}
   renderAttention();
 }
 function pScore(str){if(!str||String(str).indexOf('/')<0)return null;var p=String(str).split('/');var a=parseFloat(p[0]),b=parseFloat(p[1]);if(!b||isNaN(a))return null;return a/b;}
