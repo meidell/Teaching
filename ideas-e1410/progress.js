@@ -103,7 +103,7 @@
       S.mod=o.module;S.title=o.title||o.module;S.total=o.total||0;
       loadLocal();wireWorkbook();
       var w=document.getElementById('topWho'); if(w&&S.name){w.textContent='👤 '+S.name;w.classList.add('on');}
-      if(S.sid)identify();
+      if(S.sid)pushAll(); /* re-sync name + completed sections every load (recovers writes that failed earlier) */
       startTimer();
     },
     complete:function(id){
