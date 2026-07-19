@@ -100,6 +100,19 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
 .rowc{display:flex;align-items:center;gap:8px;min-width:150px;}
 .rowc .cbar{min-width:88px;height:9px;}
 .rpct{font-size:12.5px;font-weight:800;color:var(--red-deep);min-width:36px;text-align:right;}
+.analytics{background:var(--card);border:1px solid var(--line-2);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+.analytics h2{font-size:16px;color:var(--ink);margin-bottom:2px;}
+.analytics .sub{font-size:12px;color:var(--grey);margin-bottom:14px;}
+.ana-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:26px;}
+@media(max-width:760px){.ana-grid{grid-template-columns:1fr;gap:18px;}}
+.ana-h{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--red);font-weight:800;margin-bottom:11px;}
+.ana-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.ana-lab{font-size:11.5px;color:var(--ink-soft);font-weight:600;width:108px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ana-track{flex:1;height:14px;background:var(--paper);border:1px solid var(--line-2);border-radius:7px;overflow:hidden;min-width:40px;}
+.ana-fill{height:100%;background:var(--red);border-radius:7px;transition:width .5s ease;}
+.ana-val{font-size:11.5px;font-weight:800;color:var(--red-deep);width:32px;text-align:right;flex:none;}
+.ana-hero{font-size:14px;color:var(--ink-soft);margin-bottom:14px;}
+.ana-hero b{font-size:34px;font-weight:800;color:var(--red-deep);display:block;line-height:1;letter-spacing:-1px;}
 #adIntro{position:fixed;inset:0;z-index:500;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:18px;}
 #adIntro.on{display:flex;}
 #adIntro .box{background:#fff;border-radius:20px;max-width:490px;width:100%;padding:28px 26px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55);max-height:92vh;overflow-y:auto;}
@@ -156,6 +169,15 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
 
   <div class="stats" id="stats"></div>
 
+  <div class="analytics" id="analytics" style="display:none">
+    <h2>Cohort analytics</h2>
+    <div class="sub">Live snapshot across students who have started — updates on every refresh.</div>
+    <div class="ana-grid">
+      <div><div class="ana-h">Average progress by session &amp; reading</div><div id="anaModules"></div></div>
+      <div><div class="ana-h">Where the cohort is overall</div><div class="ana-hero" id="anaHero"></div><div id="anaDist"></div></div>
+    </div>
+  </div>
+
   <div class="attention" id="onboard">
     <h2>Student onboarding</h2>
     <div class="sub">Two layers. First the <b>course access password</b> (baked into the QR link) unlocks the site; then each student registers once with their full name and gets a personal 6-digit password. Their device remembers both, so nothing is asked again there. Forgotten student passwords: look them up in the roster below.</div>
@@ -203,7 +225,7 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
 
   <div class="hint">
     Data lives in <code>teaching-70f1c</code> under <code>e1410/&lt;student&gt;</code>. Each session/reading cell shows the <b>% completed</b>; the <b>Course</b> column is the same segmented progress bar the student sees. Click a row for the student's password, course bar, per-section detail and workbook answers. This page is gated by a PIN only; live read requires the Firebase rule for <code>e1410</code> to allow public read.
-    <br><br><a class="back" href="index.html">← course front page</a>
+    <br><br><a class="back" href="index.html">← course front page</a> &nbsp;·&nbsp; <a class="back" href="briefing.html">program briefing</a> &nbsp;·&nbsp; <a class="back" href="teaching-plan.html">teaching plan</a>
   </div>
 </div>
 
@@ -322,6 +344,31 @@ function render(){
   document.getElementById('tbody').innerHTML=html;
   if(window.CourseProgress){rows.forEach(function(s){var el=document.getElementById('rb-'+s.sid);if(el)CourseProgress.paint(CourseProgress.dataFromMods(s.mod),{bar:el,compact:true});});}
   renderAttention();
+  renderAnalytics();
+}
+/* ---- cohort analytics (single-series brand-red bars, direct value labels) ---- */
+function renderAnalytics(){
+  var el=document.getElementById('analytics');if(!el)return;
+  var started=ROWS.filter(function(s){return totalDone(s.node)>0;});
+  if(!started.length){el.style.display='none';return;}
+  el.style.display='block';
+  var mh='';
+  MODULES.forEach(function(m){
+    var sum=0;
+    started.forEach(function(s){var c=s.mod[m.id];var dc=c?doneCount(c):0;var tot=c&&c.total?c.total:0;sum+=(tot>0?dc/tot*100:0);});
+    var avg=Math.round(sum/started.length);
+    mh+='<div class="ana-row" title="'+esc(m.label)+' — '+avg+'% average"><div class="ana-lab">'+esc(m.label.split(' · ')[0])+'</div><div class="ana-track"><div class="ana-fill" style="width:'+avg+'%"></div></div><div class="ana-val">'+avg+'%</div></div>';
+  });
+  document.getElementById('anaModules').innerHTML=mh;
+  var pcts=started.map(function(s){return window.CourseProgress?CourseProgress.pct(CourseProgress.dataFromMods(s.mod)):0;});
+  var avgAll=Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length);
+  document.getElementById('anaHero').innerHTML='<b>'+avgAll+'%</b> average course completion · '+started.length+' active student'+(started.length===1?'':'s');
+  var buckets=[['0–20%',0,20],['21–40%',21,40],['41–60%',41,60],['61–80%',61,80],['81–99%',81,99],['100%',100,100]];
+  var counts=buckets.map(function(b){return pcts.filter(function(p){return p>=b[1]&&p<=b[2];}).length;});
+  var maxc=Math.max(1,Math.max.apply(null,counts));
+  var dh='';
+  buckets.forEach(function(b,i){var c=counts[i];dh+='<div class="ana-row" title="'+b[0]+' — '+c+' student'+(c===1?'':'s')+'"><div class="ana-lab">'+b[0]+'</div><div class="ana-track"><div class="ana-fill" style="width:'+Math.round(c/maxc*100)+'%"></div></div><div class="ana-val">'+c+'</div></div>';});
+  document.getElementById('anaDist').innerHTML=dh;
 }
 function pScore(str){if(!str||String(str).indexOf('/')<0)return null;var p=String(str).split('/');var a=parseFloat(p[0]),b=parseFloat(p[1]);if(!b||isNaN(a))return null;return a/b;}
 function moduleScores(node){var out=[];MODULES.forEach(function(m){var c=node.mod&&node.mod[m.id];if(c&&c.score){var f=pScore(c.score);if(f!=null)out.push({label:m.label.split(' · ')[0],score:c.score,f:f});}});return out;}
