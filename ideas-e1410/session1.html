@@ -712,7 +712,7 @@ var SECTIONS=[
 ];
 var KEY='e1410_s1_progress_v1';
 var progress=load();
-function load(){try{return JSON.parse(localStorage.getItem(KEY))||{done:{}};}catch(e){return{done:{}};}}
+function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};return p;}catch(e){return{done:{},steps:{}};}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch(e){}}
 
 function renderList(){
@@ -726,10 +726,22 @@ function renderList(){
     list.appendChild(c);
   });
 }
+/* Granular progress: the session % moves on EVERY interaction — locking the
+   estimate, each correct classify row, each quiz answer, each workbook field.
+   Total = 1 (estimate) + all classify rows + all quiz questions + all fields. */
+function totalSteps(){return 1+document.querySelectorAll('.cl-row').length+document.querySelectorAll('.q').length+document.querySelectorAll('[data-work]').length;}
+function doneSteps(){var n=0,s=progress.steps||{};for(var k in s){if(s[k])n++;}return n;}
+function markStep(id,on){
+  if(!id)return;
+  if(!progress.steps)progress.steps={};
+  if(on===false){if(!progress.steps[id])return;delete progress.steps[id];}
+  else{if(progress.steps[id])return;progress.steps[id]=true;}
+  save();updateBar();
+}
 function updateBar(){
-  var t=SECTIONS.length,d=SECTIONS.filter(function(s){return progress.done[s.id];}).length,p=Math.round(d/t*100);
-  document.getElementById('progFill').style.width=p+'%';
-  document.getElementById('progPct').textContent=p+'%';
+  var t=totalSteps()||1,d=Math.min(doneSteps(),t),p=Math.round(d/t*100);
+  var pf=document.getElementById('progFill'),pp=document.getElementById('progPct');
+  if(pf)pf.style.width=p+'%';if(pp)pp.textContent=p+'%';
 }
 function show(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
@@ -763,7 +775,7 @@ document.getElementById('resetLink').addEventListener('click',function(e){
     Object.keys(localStorage).forEach(function(k){if(k.indexOf('e1410_work_')===0)localStorage.removeItem(k);});
   }catch(err){}
   document.querySelectorAll('[data-work]').forEach(function(el){el.value='';});
-  progress={done:{}};save();updateBar();renderList();show('home');
+  progress={done:{},steps:{}};save();updateBar();renderList();show('home');
 });
 
 /* =====================================================================
@@ -831,7 +843,7 @@ var GLOSSARY={
   btn.addEventListener('click',function(){
     localStorage.setItem('e1410_s1_guess',sl.value);
     rev.classList.add('show');btn.innerHTML='🔒 Locked at '+sl.value+'%';
-    markSection('s1');
+    markStep('est');markSection('s1');
   });
 })();
 function renderGuessRecall(){
@@ -858,6 +870,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
         var w=document.getElementById(rowsId+'w'+i);
         w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');
         done++;capText(done,done===VARS.length);
+        markStep(rowsId+'-'+i);
         if(done===VARS.length)markSection(secId);
       }else{b.classList.add('no');b.disabled=true;}
     });});
@@ -966,6 +979,7 @@ buildClassify('smRows','smCap',
       document.getElementById('qw'+i).innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;
       document.getElementById('qw'+i).classList.add('show');
       answered++;if(ok)correct++;
+      markStep('q'+i);
       chip.textContent=answered+' / '+QUIZ.length+' answered';
       if(answered===QUIZ.length)finish();
     });});
@@ -1111,7 +1125,7 @@ window.addEventListener('DOMContentLoaded',function(){
   var s7=document.getElementById('s7');
   if(s7){
     var fields=s7.querySelectorAll('[data-work]');
-    var check=function(){var all=fields.length>0;fields.forEach(function(f){if(!(f.value||'').trim())all=false;});if(all)markSection('s7');};
+    var check=function(){var all=fields.length>0;fields.forEach(function(f){var filled=!!(f.value||'').trim();markStep('wb-'+f.getAttribute('data-work'),filled);if(!filled)all=false;});if(all)markSection('s7');};
     fields.forEach(function(f){f.addEventListener('input',check);});
     setTimeout(check,900); /* catch fields restored from a previous visit */
   }

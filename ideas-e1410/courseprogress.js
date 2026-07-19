@@ -31,6 +31,10 @@ window.CourseProgress=(function(){
     {mod:'exam',short:'Exam',name:'Final assessment',total:1,live:false}
   ];
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem('e1410_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
+  /* build the chapter data straight from a student's Firebase mod object
+     (e1410/<sid>/mod) — used by the instructor dashboard to draw each
+     student's course bar without touching localStorage. */
+  function dataFromMods(modObj){var data={};CHAPTERS.forEach(function(c){var n=0,node=modObj&&modObj[c.mod];if(node&&node.done){for(var k in node.done){if(node.done[k])n++;}}data[c.mod]={done:Math.min(c.total,n)};});return data;}
   function pctOf(data){var s=0;CHAPTERS.forEach(function(c){s+=c.total?Math.min(1,data[c.mod].done/c.total):0;});return Math.round(s/CHAPTERS.length*100);}
   function caption(data){
     var live=CHAPTERS.filter(function(c){return c.live;});
@@ -89,5 +93,5 @@ window.CourseProgress=(function(){
       }).catch(function(){});
     }
   }
-  return {CHAPTERS:CHAPTERS,render:render,pct:pctOf};
+  return {CHAPTERS:CHAPTERS,render:render,pct:pctOf,paint:paint,dataFromMods:dataFromMods};
 })();
