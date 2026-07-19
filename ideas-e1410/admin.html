@@ -90,9 +90,40 @@ th.ch,td.ch{text-align:center;}
 .hint{font-size:12px;color:var(--grey);margin-top:18px;line-height:1.6;}
 .hint code{background:var(--card);padding:1px 5px;border-radius:4px;color:var(--ink);border:1px solid var(--line-2);}
 a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:600;}
+.stub{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid var(--line-2);}
+.pw-badge{display:inline-flex;align-items:center;gap:5px;background:var(--red-pale);border:1px solid rgba(171,14,0,0.25);color:var(--red-deep);font-weight:800;font-size:13px;letter-spacing:1.5px;border-radius:20px;padding:5px 13px;}
+.cbar{flex:1;min-width:130px;display:flex;gap:2px;height:11px;}
+.cbar .cseg{flex:1;background:#e5e9ef;border-radius:2px;overflow:hidden;position:relative;min-width:2px;}
+.cbar .cseg .cf{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--red);}
+.cbar .cseg.locked{opacity:.5;background:repeating-linear-gradient(45deg,#e5e9ef,#e5e9ef 3px,#d7dce3 3px,#d7dce3 6px);}
+.cpct{font-size:12.5px;font-weight:800;color:var(--red-deep);min-width:36px;text-align:right;}
+#adIntro{position:fixed;inset:0;z-index:500;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:18px;}
+#adIntro.on{display:flex;}
+#adIntro .box{background:#fff;border-radius:20px;max-width:490px;width:100%;padding:28px 26px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55);max-height:92vh;overflow-y:auto;}
+#adIntro h2{font-size:20px;font-weight:800;color:var(--ink);margin-bottom:4px;text-align:center;}
+#adIntro .lead{font-size:13px;color:var(--grey);text-align:center;margin-bottom:18px;}
+#adIntro .pt{display:flex;gap:12px;margin-bottom:13px;}
+#adIntro .pt .ic{font-size:20px;flex:none;width:28px;text-align:center;line-height:1.35;}
+#adIntro .pt .tx{font-size:13px;color:var(--ink-soft);line-height:1.5;}
+#adIntro .pt .tx b{color:var(--ink);}
+#adIntro .go{width:100%;background:var(--red);color:#fff;border:none;border-radius:30px;padding:12px;font:800 14px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;margin-top:8px;}
+#adIntro .go:hover{background:var(--red-deep);}
 </style>
 </head>
 <body>
+<script src="courseprogress.js"></script>
+
+<div id="adIntro"><div class="box">
+  <h2>Your instructor dashboard — a quick tour</h2>
+  <p class="lead">Reopen this anytime with the 👁 Guide button, top-right.</p>
+  <div class="pt"><div class="ic">🔑</div><div class="tx"><b>Onboarding.</b> Share the QR / link in the panel below. The <b>roster lists every student's personal password</b> — for when they lose it.</div></div>
+  <div class="pt"><div class="ic">📊</div><div class="tx"><b>The table.</b> One row per student · a column per session (S1–S8) and reading (R1–R4). Each cell shows completion or the self-check score.</div></div>
+  <div class="pt"><div class="ic">👁</div><div class="tx"><b>Click any row</b> to expand it — you'll see their password, their <b>course-progress bar</b>, per-section detail, and their full <b>workbook answers</b> (the raw material for their final).</div></div>
+  <div class="pt"><div class="ic">🚩</div><div class="tx"><b>Needs attention</b> auto-flags who hasn't started, has gone quiet 7+ days, or scored under 60%.</div></div>
+  <div class="pt"><div class="ic">📣</div><div class="tx"><b>Announcements &amp; exports.</b> Post a banner to every student page; download progress or all answers as CSV.</div></div>
+  <div class="pt"><div class="ic">🔄</div><div class="tx"><b>Live.</b> Refreshes every 20 seconds while this tab is open — great for watching the room during class.</div></div>
+  <button class="go" id="adIntroGo">Got it</button>
+</div></div>
 
 <div class="gate" id="gate">
   <div class="gate-box">
@@ -116,6 +147,7 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
     <button class="btn" onclick="refreshActive()">↻ Refresh</button>
     <button class="btn gold" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn" onclick="exportAnswers()">⬇ Answers</button>
+    <button class="btn" onclick="openIntro()">👁 Guide</button>
     <button class="btn" onclick="logout()">Lock</button>
   </div>
 
@@ -183,7 +215,7 @@ var MODULES=[
   {id:'r1',label:'R1 · AI Superpowers'},{id:'r2',label:'R2 · AI&PM study'},
   {id:'r3',label:'R3 · PM2030'},{id:'r4',label:'R4 · SME adoption'}
 ];
-var SORT='recent', POLL=null, ROWS=[];
+var SORT='recent', POLL=null, ROWS=[], ROSTER={};
 
 function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function doneCount(c){var n=0,d=(c&&c.done)||{};for(var k in d){if(d[k])n++;}return n;}
@@ -197,7 +229,10 @@ function checkPin(){
   if((inp.value||'').trim()===PIN){ try{sessionStorage.setItem(SESS,'1');}catch(e){} err.textContent=''; unlock(); }
   else { err.textContent='Incorrect password.'; inp.value=''; inp.focus(); }
 }
-function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').style.display='block';setTimeout(setConn,600);refreshActive();loadAnnounce();if(!POLL)POLL=setInterval(refreshActive,20000);}
+function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').style.display='block';setTimeout(setConn,600);refreshActive();loadAnnounce();if(!POLL)POLL=setInterval(refreshActive,20000);
+  try{if(localStorage.getItem('e1410_admin_intro_seen')!=='1')setTimeout(openIntro,500);}catch(e){}}
+function openIntro(){var m=document.getElementById('adIntro');if(m)m.classList.add('on');}
+function closeIntro(){var m=document.getElementById('adIntro');if(m)m.classList.remove('on');try{localStorage.setItem('e1410_admin_intro_seen','1');}catch(e){}}
 function logout(){ try{sessionStorage.removeItem(SESS);}catch(e){} location.reload(); }
 
 /* ---- cohort announcement (REST write; read is public) ---- */
@@ -232,7 +267,8 @@ function buildHead(){var h='<th>#</th><th>Name</th>';MODULES.forEach(function(m)
 async function load(){
   var root=await window.__store.get(NS);ROWS=[];
   if(root){for(var sid in root){if(!root.hasOwnProperty(sid)||sid.charAt(0)==='_')continue;var n=root[sid]||{};ROWS.push({sid:sid,name:n.name||sid,mod:n.mod||{},ts:n.updatedAt||0,node:n});}}
-  renderRoster(root&&root._roster||{});
+  ROSTER=(root&&root._roster)||{};
+  renderRoster(ROSTER);
   render();
 }
 
@@ -306,6 +342,9 @@ function renderAttention(){
 }
 function toggle(sid){var row=document.getElementById('d-'+sid);if(!row)return;if(row.style.display!=='none'){row.style.display='none';return;}
   var s=ROWS.filter(function(x){return x.sid===sid;})[0];if(!s)return;var h='';
+  var pass=(ROSTER[sid]&&ROSTER[sid].pass)||'';
+  h+='<div class="stub"><span class="pw-badge">🔑 '+(pass?esc(pass):'no password on file')+'</span>'+
+     '<div class="cbar" id="cb-'+esc(sid)+'"></div><span class="cpct" id="cp-'+esc(sid)+'"></span></div>';
   MODULES.forEach(function(m){var c=s.mod[m.id];if(!c)return;var dc=doneCount(c),tot=c.total||dc;
     var secs=Object.keys(c.done||{}).filter(function(k){return c.done[k];});
     h+='<div class="ch-line"><b>'+esc(m.label)+'</b> — '+dc+'/'+tot+' done'+(c.score?' · self-check '+esc(c.score):'')+' · time '+fmtDur(c.secs)+' · last '+whenAgo(c.updatedAt)+(secs.length?'<br><span class="muted">items: '+esc(secs.join(', '))+'</span>':'')+'</div>';});
@@ -317,6 +356,8 @@ function toggle(sid){var row=document.getElementById('d-'+sid);if(!row)return;if
   }
   if(!h)h='<div class="muted">No activity yet.</div>';
   document.getElementById('di-'+sid).innerHTML=h;row.style.display='table-row';
+  if(window.CourseProgress){var cb=document.getElementById('cb-'+sid),cp=document.getElementById('cp-'+sid);
+    if(cb)CourseProgress.paint(CourseProgress.dataFromMods(s.mod),{bar:cb,pct:cp,compact:true});}
 }
 function csv(v){v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function exportCSV(){var head=['name','student_id','total_done','total_time_min','last_active'];MODULES.forEach(function(m){head.push(m.id+'_done');head.push(m.id+'_total');head.push(m.id+'_score');});
@@ -334,6 +375,8 @@ function exportAnswers(){var lines=[['name','student_id','field','label','sessio
 (function(){var inp=document.getElementById('pin');
   inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPin();});
   setTimeout(function(){inp.focus();},60);
+  var ig=document.getElementById('adIntroGo');if(ig)ig.addEventListener('click',closeIntro);
+  var am=document.getElementById('adIntro');if(am)am.addEventListener('click',function(e){if(e.target===am)closeIntro();});
 })();
 </script>
 
