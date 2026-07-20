@@ -876,8 +876,10 @@ function updateBar(){
   document.getElementById('progPct').textContent=p+'%';
 }
 function show(id){
+  document.querySelectorAll('.screen.active .video').forEach(function(v){if(v.querySelector('iframe'))resetVideo(v);});
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const t=document.getElementById(id);if(t)t.classList.add('active');
+  syncVideos(id);  /* keep only this screen's video nodes in the DOM — no ghost layers */
   if(id!=='home'){progress.done[id]=true;save();updateBar();renderList();if(window.StatsTrack)StatsTrack.complete(id);}
   if(id==='home'){renderList();}
   if(id==='s5'){renderGuessRecall();}
@@ -910,6 +912,28 @@ document.addEventListener('click',function(e){
   v.classList.remove('ytf');
   v.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&rel=0" title="'+title+'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
 });
+/* revert a played video back to its click-to-play facade (kills the iframe's GPU layer) */
+function resetVideo(v){
+  const id=v.getAttribute('data-yt');if(!id)return;
+  const t=(v.getAttribute('data-title')||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  v.classList.add('ytf');
+  v.innerHTML='<img class="ytposter" src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="ytlabel">'+t+'</span><button class="ytplay" aria-label="Play video">▶</button>';
+}
+/* ---- VIDEO LAYER MANAGER: only the active screen's <div class="video"> stays in the
+   DOM. A detached element cannot leave a WebKit "ghost" compositing layer — which
+   display:none alone could not guarantee. ---- */
+var VIDEOS=[];
+document.querySelectorAll('.screen .video').forEach(function(v){
+  var scr=v.closest('.screen');
+  VIDEOS.push({el:v, sid:scr?scr.id:'', slot:document.createComment('video'), inDom:true});
+});
+function syncVideos(activeId){
+  VIDEOS.forEach(function(o){
+    var want=(o.sid===activeId);
+    if(want && !o.inDom){ if(o.slot.parentNode){o.slot.parentNode.replaceChild(o.el,o.slot);o.inDom=true;} }
+    else if(!want && o.inDom){ if(o.el.parentNode){o.el.parentNode.replaceChild(o.slot,o.el);o.inDom=false;} }
+  });
+}
 
 /* =====================================================================
    GLOSSARY (tap dotted terms)
@@ -1241,7 +1265,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg){
 /* =====================================================================
    BOOT
    ===================================================================== */
-renderList();updateBar();
+renderList();updateBar();syncVideos('home');  /* park all section videos until their screen opens */
 window.addEventListener('DOMContentLoaded',function(){
   if(window.StatsTrack)StatsTrack.init({module:'w2',title:'Week 2 · Descriptive Statistics',total:SECTIONS.length});
 });
