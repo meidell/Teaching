@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/ideas-e1410/">
+<script src="gate.js"></script>
+<script>/* course gate: registered students only — see join.html */
+(function(){if(!window.E1410_ACCESS)return;function g(k){try{var m=document.cookie.match('(?:^|; )'+k+'=([^;]*)');return m?decodeURIComponent(m[1]):'';}catch(e){return'';}}
+var a=null;try{a=JSON.parse(localStorage.getItem('e1410_auth')||'null');}catch(e){}
+if(!a){var c=g('e1410_auth');if(c){try{a=JSON.parse(c);}catch(e){}}}
+if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Session 3 · Resource Management in AI Projects · E1410</title>
+<meta name="description" content="E1410 Session 3 — Resource Management in AI Projects. The team and its roles, technical infrastructure and tools, and budgeting under cost uncertainty — interactive lesson + live lecture mode.">
+<meta name="theme-color" content="#AB0E00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="session.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="logo-ideas.png" alt="IDEAS">
+    <span class="course">E1410 · SESSION 3</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <button class="lect-btn" id="lectOpen" title="Full-screen lecture deck — what your instructor presents live">▶ Lecture</button>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This session</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Session 3 · Advanced Project Management in AI</div>
+    <h1>Resourcing <em>AI projects</em></h1>
+    <p class="sub">You have a plan. Now you need the three things that make it real — and all three are scarce: <b>people</b>, <b>infrastructure</b>, and <b>money</b>. This session covers who belongs on an AI team and what each role actually does, the infrastructure a project manager must understand without configuring it, and how to budget work whose cost genuinely cannot be pinned down in advance. Plan ~45 min for the lesson and its self-check.</p>
+    <div class="liveinfo">
+      <span class="li">🎥 Live class: <b>Tue 11 Aug · 20:00 ICT / 15:00 CEST</b></span>
+      <span class="li">▶ The <b>Lecture</b> button (top-right) shows the deck we use in class</span>
+    </div>
+  </div>
+
+  <div class="objectives">
+    <h4>By the end of Session 3 you will be able to</h4>
+    <ul>
+      <li>Describe the <em>core roles</em> on an AI project team and what each one is accountable for.</li>
+      <li>Explain the project-management implications of <em>AI infrastructure</em> — cloud, compute, data pipelines, MLOps.</li>
+      <li>Name the <em>five major cost categories</em> of an AI project and identify your dominant cost driver.</li>
+      <li>Apply <em>cost-estimation techniques</em> — analogous, bottom-up, parametric, scenario-based — to experimental work.</li>
+      <li>Build <em>contingency</em> into a budget and defend it to a sponsor.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Resources — tick them off as you go</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Lecture deck</b> — the ▶ Lecture button above; presented live in class on Tue 11 Aug.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><a href="reading-ai-adoption.html">AI adoption in SMEs and large firms</a> — reading companion; why resource constraints decide who can adopt AI.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><a href="reading-ai-pm-empirical.html">AI &amp; project management: an empirical study</a> — reading companion; skills and capability gaps.</span></div>
+    <div class="note" style="font-size:12.5px;color:var(--grey);margin-top:8px;font-style:italic;">Section 3.5 links "Go deeper" resources on cloud pricing, MLOps tooling and estimation.</div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Course page</a>
+    <div style="margin-top:10px;color:var(--grey);">A reset link lives at the bottom of section 3.7.</div>
+  </div>
+</section>
+
+<!-- ============================ 3.1 ============================ -->
+<section class="screen" id="s1" data-num="1">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.1 · The hook</div><h2>"So we need five data scientists?"</h2></div>
+
+  <div class="card">
+    <span class="label problem">Your decision</span>
+    <h3>The COO approves a team of five. You have to say who they are.</h3>
+    <p class="lead">MekongPay's COO has signed off: <strong>six months, a team of five, cloud budget to be agreed.</strong> Your first instinct might be to hire five data scientists and let them build the fraud model. That instinct would sink the project — because the model is the small part.</p>
+    <p>Before you allocate anyone, an instinct check: <strong>in a real production machine-learning system, what share of the whole system is the actual machine-learning code</strong> — the model itself, as opposed to everything around it (data plumbing, serving, configuration, monitoring)?</p>
+
+    <div class="lab">
+      <div class="lab-title">Your estimate</div>
+      <div class="bignum"><span id="gutDisp">40</span><span class="suf">%</span></div>
+      <input type="range" id="gutSlider" min="0" max="100" step="5" value="40" style="margin-top:14px;">
+      <div class="caption" id="gutReact"></div>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn" id="gutLock">🔒 Lock in my estimate</button>
+      </div>
+      <div class="reveal" id="gutReveal">
+        <b>Locked.</b> In the classic study of production ML systems (<em>Hidden Technical Debt in Machine Learning Systems</em>, Sculley et al., 2015), the ML code is <b>only a tiny fraction</b> — commonly illustrated as around <b>5%</b> — of a real deployed system. The other ~95% is data collection and verification, feature extraction, configuration, serving infrastructure, resource management, process-management tools and monitoring. That single picture explains this whole session: <em>your people, your infrastructure and your money go mostly into the machinery around the model.</em> A team of five data scientists would build a beautiful model that never runs in production.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Why this session exists</span>
+    <p class="lead">Session 2 gave you a plan. A plan without resources is a wish. This session makes the plan executable along three axes — <strong>who</strong> does the work (human resources), <strong>what they work on</strong> (technical infrastructure), and <strong>what it costs</strong> (budgeting under genuine uncertainty).</p>
+    <p class="punch">Resource the system, not the model. The model is 5% of the machine — staff and fund the other 95% or it never ships.</p>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: the team &amp; its roles →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.2 ============================ -->
+<section class="screen" id="s2" data-num="2">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.2 · People</div><h2>The team and who owns what</h2></div>
+
+  <div class="card">
+    <span class="label idea">Five roles, one delivery chain</span>
+    <h3>AI projects are multidisciplinary by necessity, not by fashion</h3>
+    <p>An AI initiative fails the moment one link in this chain is missing. The standard team is:</p>
+    <div class="stages n5">
+      <div class="tside"><div class="th">Data engineer</div><div class="td">pipelines, storage, reliable access to data</div></div>
+      <div class="tside"><div class="th">Data scientist</div><div class="td">patterns, algorithms, train &amp; evaluate models</div></div>
+      <div class="tside"><div class="th">ML engineer</div><div class="td">deploy, scale, serve, automate retraining</div></div>
+      <div class="tside"><div class="th">Domain expert</div><div class="td">what the variables mean; validates outputs</div></div>
+      <div class="tside"><div class="th">PM / product owner</div><div class="td">objectives, constraints, stakeholders, vendors</div></div>
+    </div>
+    <p>Read that left to right and you have the delivery chain: data <em>arrives</em>, becomes a <em>model</em>, becomes a <em>running service</em>, is <em>judged useful</em> by someone who knows the business, and is <em>steered</em> by someone accountable for scope, time, cost and quality.</p>
+    <p class="punch">The commonest staffing mistake is hiring modellers and forgetting the two roles either side of them — the data engineer who feeds the model and the ML engineer who ships it.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">The project manager's own job</span>
+    <h3>You are the translation layer</h3>
+    <ul>
+      <li><strong>Translate</strong> business problems into structured, measurable objectives — <em>"predict the probability of customer churn within 30 days"</em>, not <em>"use AI to improve customer service"</em>.</li>
+      <li><strong>Coordinate</strong> across technical and business teams, who use the same words to mean different things.</li>
+      <li><strong>Manage experimentation</strong> and uncertainty rather than a deterministic build.</li>
+      <li><strong>Balance the four constraints</strong> — <span class="gloss" data-k="constraints">scope, time, cost, quality</span> — knowing that AI quality is a probability, not a pass/fail.</li>
+    </ul>
+    <p>And the business stakeholders have a real job too: they supply operational context, define the decision the model supports, flag regulatory constraints, and judge whether outputs are <em>actually useful</em>. <strong>A model can be technically accurate and operationally irrelevant</strong> — only the business side can catch that.</p>
+  </div>
+
+  <div class="card">
+    <span class="label trap">The trap</span>
+    <h3>Vendors, and who owns what you built</h3>
+    <p>Most AI projects lean on outsiders: <span class="gloss" data-k="vendor">AI consultancies, cloud providers, data providers, specialist development partners</span>. Before signing, a project manager must pin down four things — <strong>data ownership and usage rights</strong>, <strong>intellectual property in the models and algorithms</strong>, <strong>service-level expectations</strong>, and <strong>long-term maintenance responsibility</strong>. Get these wrong and you discover after go-live that your fraud model, or the labelled data it was trained on, is not legally yours to keep using.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Whose job is this?</h3>
+    <p>Six requests from MekongPay's first month. Which role owns each? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Data engineer · Data scientist · ML engineer · Domain expert</div>
+      <div id="roleRows"></div>
+      <div class="caption" id="roleCap"></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: infrastructure &amp; tools →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.3 ============================ -->
+<section class="screen" id="s3" data-num="3">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.3 · Infrastructure</div><h2>What a PM must understand — and needn't configure</h2></div>
+
+  <div class="card">
+    <span class="label idea">The stack, in project terms</span>
+    <h3>You will never set up the cluster. You will absolutely own its consequences.</h3>
+    <p>Nobody expects a project manager to configure a GPU cluster. But infrastructure decisions drive your <strong>timeline</strong>, your <strong>budget</strong> and your <strong>risk register</strong>, so you must understand what each layer is for:</p>
+    <ul>
+      <li><strong>Data storage &amp; <span class="gloss" data-k="pipeline">pipelines</span></strong> — ingestion, cleaning, feature engineering, <span class="gloss" data-k="lake">data lakes/warehouses</span>, and continuous updates for retraining.</li>
+      <li><strong>Compute</strong> — <span class="gloss" data-k="cpu">CPUs</span> for general processing and smaller models; <span class="gloss" data-k="gpu">GPUs</span> for training deep networks in parallel. Compute is usually your most volatile cost line.</li>
+      <li><strong>Frameworks &amp; development environments</strong> — TensorFlow, PyTorch, scikit-learn. Standardising them is what lets a team collaborate and reproduce each other's work.</li>
+      <li><strong>Deployment platforms &amp; <span class="gloss" data-k="mlops">MLOps</span></strong> — automated training pipelines, deployment workflows, experiment tracking, performance monitoring, retraining.</li>
+      <li><strong>Version control for models</strong> — model versions, the exact datasets used, parameter configurations, evaluation metrics. Without it you cannot reproduce, audit or defend a result.</li>
+    </ul>
+    <p>The three big cloud platforms — <strong>AWS</strong>, <strong>Microsoft Azure</strong>, <strong>Google Cloud</strong> — package most of this: scalable compute on demand, managed ML services, integrated storage, prebuilt AI APIs. That converts capital investment into operating expense, which changes how you have to budget.</p>
+  </div>
+
+  <div class="card">
+    <span class="label why">Why it lands on your desk</span>
+    <h3>Four project consequences of infrastructure choices</h3>
+    <ul>
+      <li><strong>Timelines &amp; iteration speed</strong> — slow training turnaround means fewer experiments per sprint, which means a later date to acceptable accuracy.</li>
+      <li><strong>Dependencies</strong> — data availability, compute capacity and tooling gate each other. An idle team waiting for GPU quota is a schedule risk, not a technical detail.</li>
+      <li><strong>Cost &amp; scalability</strong> — training costs scale with experimentation; serving costs scale with traffic. Two very different curves in your budget.</li>
+      <li><strong>Integration with existing IT</strong> — the classic killer. Models that work in a notebook fail against a fifteen-year-old core banking system.</li>
+    </ul>
+    <p class="punch">Infrastructure is not the technical team's private business. It is your schedule, your budget and your integration risk wearing a different hat.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which layer of the stack?</h3>
+    <p>Six infrastructure needs from the MekongPay build. Which layer does each belong to? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Data &amp; pipelines · Compute · Frameworks · MLOps &amp; lifecycle</div>
+      <div id="infraRows"></div>
+      <div class="caption" id="infraCap"></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: the five cost categories →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.4 ============================ -->
+<section class="screen" id="s4" data-num="4">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.4 · Budget</div><h2>Where the money actually goes</h2></div>
+
+  <div class="card">
+    <span class="label idea">Five cost categories</span>
+    <h3>AI budgets do not look like IT budgets</h3>
+    <p>Traditional IT estimation models routinely <em>underestimate</em> AI costs, because AI spending is driven by data, experimentation and scarce talent rather than by a fixed build. Every AI budget breaks into five areas, and they interact across the lifecycle:</p>
+    <ul>
+      <li><strong>Data acquisition &amp; preparation</strong> — buying external datasets, collection, <em>labelling and annotation</em>, cleaning, governance and compliance. Usually the most under-budgeted line, and often the largest.</li>
+      <li><strong>Infrastructure &amp; storage</strong> — cloud storage, ETL and pipelines, distributed environments, warehouses, security.</li>
+      <li><strong>Compute &amp; model training</strong> — GPU/TPU time, training runs, hyperparameter tuning, retraining during development. Scales with how many experiments you run.</li>
+      <li><strong>Personnel &amp; specialised talent</strong> — data scientists, ML and data engineers, domain experts, PMs. Because of <span class="gloss" data-k="scarcity">talent scarcity</span>, often the single biggest share of the budget.</li>
+      <li><strong>Deployment &amp; operations</strong> — production infrastructure, monitoring, retraining and updates, integration, and <em>user training and adoption support</em>. This one outlives the project.</li>
+    </ul>
+    <p class="punch">Two of the five — data preparation and post-deployment operations — are the ones sponsors forget. They are also the two that decide whether the model keeps working.</p>
+  </div>
+
+  <div class="card">
+    <span class="label trap">The trap</span>
+    <h3>Why the number moves after you commit to it</h3>
+    <p>AI cost uncertainty is structural, not sloppiness. It comes from <strong>data availability and quality surprises</strong>, <strong>model performance variability</strong>, <strong>experimentation cycles and failed models</strong> (you pay for the experiments that didn't work), <strong>changing business requirements</strong>, and <strong>regulatory constraints</strong> discovered late. A budget that admits none of this is not a confident budget — it is a fragile one.</p>
+    <p>So the discipline is: <em>estimate honestly, fund in phases, and track continuously.</em></p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which cost category?</h3>
+    <p>Six line items from MekongPay's draft budget. Classify each. A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Data · Infrastructure · Compute · People · Operations</div>
+      <div id="costRows"></div>
+      <div class="caption" id="costCap"></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: estimating &amp; contingency →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.5 ============================ -->
+<section class="screen" id="s5" data-num="5">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.5 · Estimation</div><h2>Estimating what you cannot yet know</h2></div>
+
+  <div class="card">
+    <span class="label idea">Four techniques, used together</span>
+    <h3>No single method survives an AI project. Combine them.</h3>
+    <ul>
+      <li><strong><span class="gloss" data-k="analogous">Analogous estimation</span></strong> — start from a comparable past project. Fast, cheap, and only as good as the analogy.</li>
+      <li><strong><span class="gloss" data-k="bottomup">Bottom-up estimation</span></strong> — cost each task in the WBS and sum. Most accurate, most effort, and needs a WBS you trust (you built one in Session 2).</li>
+      <li><strong><span class="gloss" data-k="parametric">Parametric estimation</span></strong> — drive cost from a measurable rate: GPU-hours × price, records labelled × cost per label, engineer-months × rate. Ideal for compute and labelling.</li>
+      <li><strong><span class="gloss" data-k="scenario">Scenario-based estimation</span></strong> — cost a best / expected / worst case for the experimental stages. The honest way to talk about the parts nobody can promise.</li>
+    </ul>
+    <p>Combining techniques improves reliability: parametric for compute and labelling, bottom-up for the engineering, analogous as a sanity check, scenarios for the modelling phase where the truth is a range.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Contingency you can defend</span>
+    <h3>Phase the funding, track the spend</h3>
+    <ul>
+      <li><strong>Experimentation buffers</strong> — explicit contingency on the phases whose duration is genuinely unknown, not a vague percentage smeared across the whole project.</li>
+      <li><strong>Phased funding milestones</strong> — release money at checkpoints (data ready → prototype validated → pilot live), so a failing project stops cheaply.</li>
+      <li><strong>Cost tracking dashboards</strong> — cloud compute in particular can escalate silently between monthly reports.</li>
+      <li><strong>Budget review at each checkpoint</strong> — re-forecast with what you have learned instead of defending the original number.</li>
+    </ul>
+    <p>And strategically: align spend with business value, prioritise high-impact use cases, evaluate cost–benefit trade-offs explicitly, and <strong>scale infrastructure gradually</strong> rather than buying for the end state on day one.</p>
+    <p class="punch">Phased funding is how you make an uncertain budget safe: the sponsor risks one phase at a time, and you earn the next one with evidence.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which estimation technique fits?</h3>
+    <p>Six estimating problems from the MekongPay budget. Which technique is the natural fit? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Analogous · Bottom-up · Parametric · Scenario-based</div>
+      <div id="estRows"></div>
+      <div class="caption" id="estCap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label read">Go deeper</span>
+    <h3>Resourcing an AI project — free references</h3>
+    <div class="rlist">
+      <a class="rd" href="https://research.google/pubs/hidden-technical-debt-in-machine-learning-systems/" target="_blank" rel="noopener">
+        <span class="ty">Paper · NeurIPS 2015</span><span class="rt">Hidden Technical Debt in Machine Learning Systems <span class="ext">↗</span></span>
+        <span class="rw">Sculley et al. — the paper behind section 3.1's "the model is the small box".</span>
+      </a>
+      <a class="rd" href="https://calculator.aws/" target="_blank" rel="noopener">
+        <span class="ty">Tool · AWS</span><span class="rt">AWS Pricing Calculator <span class="ext">↗</span></span>
+        <span class="rw">Put real numbers on storage, compute and serving for parametric estimates.</span>
+      </a>
+      <a class="rd" href="https://cloud.google.com/products/calculator" target="_blank" rel="noopener">
+        <span class="ty">Tool · Google Cloud</span><span class="rt">Google Cloud Pricing Calculator <span class="ext">↗</span></span>
+        <span class="rw">The same exercise on GCP — useful for a cloud comparison in your budget.</span>
+      </a>
+      <a class="rd" href="https://mlflow.org/docs/latest/index.html" target="_blank" rel="noopener">
+        <span class="ty">Docs · MLflow</span><span class="rt">MLflow — experiment tracking &amp; model registry <span class="ext">↗</span></span>
+        <span class="rw">What "model version control and reproducibility" looks like in practice.</span>
+      </a>
+      <a class="rd" href="https://ml-ops.org/" target="_blank" rel="noopener">
+        <span class="ty">Web · ml-ops.org</span><span class="rt">MLOps principles <span class="ext">↗</span></span>
+        <span class="rw">A vendor-neutral tour of the lifecycle-management layer.</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: checkpoint →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.6 ============================ -->
+<section class="screen" id="s6" data-num="6">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.6 · Checkpoint</div><h2>Prove it to yourself</h2></div>
+
+  <div class="card">
+    <span class="label play">Self-check · not graded</span>
+    <h3>Ten questions on this session</h3>
+    <p>One attempt per question, every answer explained. Your score syncs to your instructor's dashboard as a self-check but does <strong>not</strong> count toward your grade — the mid-term MCQ tests exactly this style.</p>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult">
+      <div class="big" id="quizScore">—</div>
+      <p id="quizMsg"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Where this goes next</span>
+    <div class="guess-recall" id="guessRecall"></div>
+    <p>In <strong>Session 4</strong> we turn to what can go wrong: the five risk categories unique to AI, how to analyse and prioritise them, and the governance and compliance frameworks — NIST AI RMF, the EU AI Act, GDPR — that increasingly decide whether a model may be deployed at all. Risk Management in AI Projects — Thu 13 Aug, live on Zoom.</p>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.7 ============================ -->
+<section class="screen" id="s7" data-num="7">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.7 · Workshop</div><h2>Resource your running project</h2></div>
+
+  <div class="card">
+    <span class="label problem">The course exercise</span>
+    <h3>Put people, infrastructure and money against the plan</h3>
+    <p class="lead">Take the project you planned in Session 2 and <strong>resource it</strong>: name the team, choose the infrastructure, and put honest numbers — with honest uncertainty — against the work. Everything saves automatically and reaches your instructor's dashboard — no "submit" button, just type.</p>
+    <p style="font-size:13px;color:var(--grey);">📎 This becomes <strong>§4 (resources &amp; budget)</strong> of your final assignment. See it come together in <a href="compile.html" style="color:var(--red-deep);font-weight:700;">Compile my project ↗</a>.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Session 3 · resource the project</span>
+    <h3>Six questions to resource the plan</h3>
+
+    <div class="wb">
+      <div class="wq"><span class="qn">1.</span>Your <em>team</em>: which roles do you need, how many of each, and for which phases?</div>
+      <textarea data-work="s3_team" data-worklabel="Team composition" placeholder="e.g. 1 data engineer (months 1–4), 2 data scientists (months 2–5), 1 ML engineer (months 3–6), 1 domain expert part-time throughout, PM throughout"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">2.</span>Your biggest <em>capability gap</em> — and how you close it (hire, train, or vendor)?</div>
+      <textarea data-work="s3_gap" data-worklabel="Capability gap & how it's closed"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">3.</span><em>Infrastructure</em>: cloud, on-premise or hybrid — and what decides it for your project?</div>
+      <div class="wb-grid">
+        <div><label>Choice</label><input type="text" data-work="s3_infra" data-worklabel="Infrastructure choice" placeholder="e.g. cloud (single provider), GPU on demand"></div>
+        <div><label>The deciding constraint</label><input type="text" data-work="s3_infra_why" data-worklabel="Why that infrastructure" placeholder="e.g. data-residency rules, no capex, 3-month ramp"></div>
+      </div>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">4.</span>Your dominant <em>cost driver</em>, which of the five categories it sits in, and a rough order of magnitude.</div>
+      <textarea data-work="s3_cost_driver" data-worklabel="Dominant cost driver & rough size"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">5.</span>Which <em>estimation technique(s)</em> you'd use, and for which parts of the budget?</div>
+      <textarea data-work="s3_estimation" data-worklabel="Estimation approach"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">6.</span>Your <em>contingency</em>: how much, on which phase, and what evidence would release the next tranche of funding?</div>
+      <textarea data-work="s3_contingency" data-worklabel="Contingency & phased funding"></textarea>
+    </div>
+    <div class="wb-save" id="wbSave"></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--red);">
+    <span class="label why">The workshop continues</span>
+    <p>In Session 4 you'll build the risk register for this resourced plan — including the risks your resourcing decisions have just created. Your answers follow you: the same project, session after session.</p>
+  </div>
+
+  <div class="complete-bar">
+    <div id="wbStatus" style="font-size:13.5px;font-weight:800;color:var(--red-deep);">Fill in all seven fields to complete this section.</div>
+  </div>
+  <div class="foot">
+    <a href="#" id="resetLink" style="color:var(--grey);">reset my progress and answers on this device</a>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <a class="btn" href="index.html" style="text-decoration:none;display:inline-block;">Course page →</a>
+  </div>
+</section>
+
+</div>
+
+<!-- ============================ LECTURE MODE ============================ -->
+<div id="lect" role="dialog" aria-label="Lecture deck">
+  <div class="lect-stage" id="lectStage">
+    <div class="lect-zone prev" title="Previous (←)"></div>
+    <div class="lect-zone next" title="Next (→ or space)"></div>
+  </div>
+  <div id="lectNotes"></div>
+  <div class="lect-foot">
+    <img src="logo-ideas.png" alt="IDEAS">
+    <span class="lf-t">E1410 · Session 3 · Resource Management in AI Projects · Dr. Jan Erik Meidell</span>
+    <button id="lectNotesBtn" title="Toggle speaker notes (N)">Notes</button>
+    <button onclick="window.print()" title="Print / save the deck as PDF">PDF</button>
+    <button id="lectClose" title="Exit (Esc)">✕ Exit</button>
+    <span class="lf-n" id="lectCount">1 / 1</span>
+  </div>
+</div>
+<div id="printDeck"></div>
+
+<script>
+/* =====================================================================
+   E1410 SESSION 3 — lesson engine + lecture deck. No dependencies.
+   Completion is EARNED per section by finishing its interaction.
+   ===================================================================== */
+var SECTIONS=[
+  {id:'s1',num:'3.1',name:'"So we need five data scientists?"', tag:'The resourcing problem — estimate the ML-code share', badge:'Hook'},
+  {id:'s2',num:'3.2',name:'People',        tag:'Five roles · the PM as translator · vendors & IP', badge:'Team'},
+  {id:'s3',num:'3.3',name:'Infrastructure',tag:'Data, compute, frameworks, MLOps — in project terms', badge:'Stack'},
+  {id:'s4',num:'3.4',name:'Budget',        tag:'The five cost categories · why the number moves', badge:'Cost'},
+  {id:'s5',num:'3.5',name:'Estimation',    tag:'Analogous · bottom-up · parametric · scenarios · contingency', badge:'Estimate'},
+  {id:'s6',num:'3.6',name:'Checkpoint',    tag:'Self-check quiz & where this goes next', badge:'Quiz'},
+  {id:'s7',num:'3.7',name:'Workshop',      tag:'Resource YOUR project — answers saved for your instructor', badge:'Exercise'}
+];
+var KEY='e1410_s3_progress_v1';
+var progress=load();
+function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};return p;}catch(e){return{done:{},steps:{}};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch(e){}}
+
+function renderList(){
+  var list=document.getElementById('sectionList');if(!list)return;list.innerHTML='';
+  SECTIONS.forEach(function(s){
+    var done=!!progress.done[s.id];
+    var c=document.createElement('div');
+    c.className='section-card'+(done?' done':'');
+    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+'</div><div class="tag">'+s.tag+'</div><span class="badge">'+s.badge+'</span></div><div class="status">'+(done?'✓':'▸')+'</div>';
+    c.onclick=function(){show(s.id);};
+    list.appendChild(c);
+  });
+}
+/* Granular progress: the session % moves on EVERY interaction — locking the
+   estimate, each correct classify row, each quiz answer, each workbook field.
+   Total = 1 (estimate) + all classify rows + all quiz questions + all fields. */
+function totalSteps(){return 1+document.querySelectorAll('.cl-row').length+document.querySelectorAll('.q').length+document.querySelectorAll('[data-work]').length;}
+function doneSteps(){var n=0,s=progress.steps||{};for(var k in s){if(s[k])n++;}return n;}
+function markStep(id,on){
+  if(!id)return;
+  if(!progress.steps)progress.steps={};
+  if(on===false){if(!progress.steps[id])return;delete progress.steps[id];}
+  else{if(progress.steps[id])return;progress.steps[id]=true;}
+  save();updateBar();
+}
+function updateBar(){
+  var t=totalSteps()||1,d=Math.min(doneSteps(),t),p=Math.round(d/t*100);
+  var pf=document.getElementById('progFill'),pp=document.getElementById('progPct');
+  if(pf)pf.style.width=p+'%';if(pp)pp.textContent=p+'%';
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var t=document.getElementById(id);if(t)t.classList.add('active');
+  if(id==='home'){renderList();}
+  if(id==='s6'){renderGuessRecall();}
+  window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
+}
+/* Completion is EARNED by finishing a section's interactions, not by
+   visiting it or clicking a Next/Finish button. Each widget calls this. */
+function markSection(id){
+  if(!id||progress.done[id])return;
+  progress.done[id]=true;save();updateBar();renderList();
+  if(window.StatsTrack)StatsTrack.complete(id);
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-next],[data-prev],[data-home]');
+  if(!b)return;
+  if(b.hasAttribute('data-home'))return show('home');
+  if(b.hasAttribute('data-prev'))return show(b.getAttribute('data-prev'));
+  var n=b.getAttribute('data-next');if(n)show(n);
+});
+document.getElementById('resetLink').addEventListener('click',function(e){
+  e.preventDefault();
+  if(!confirm('Reset your Session 3 progress on this device?'))return;
+  try{localStorage.removeItem(KEY);localStorage.removeItem('e1410_s3_guess');localStorage.removeItem('e1410_s3_reads');localStorage.removeItem('e1410_done_s3');
+    Object.keys(localStorage).forEach(function(k){if(k.indexOf('e1410_work_s3_')===0)localStorage.removeItem(k);});
+  }catch(err){}
+  document.querySelectorAll('[data-work]').forEach(function(el){el.value='';});
+  progress={done:{},steps:{}};save();updateBar();renderList();show('home');
+});
+
+/* ---- glossary ---- */
+var GLOSSARY={
+  constraints:['the four constraints','Scope, time, cost and quality — the trade-off space every project manager works in. In AI, "quality" is a performance probability, not a pass/fail test.'],
+  vendor:['vendor management','Managing external partners — consultancies, cloud and data providers. The four things to pin down: data ownership, IP in models, service levels, long-term maintenance.'],
+  pipeline:['data pipeline','The automated path data takes from source to model — ingestion, cleaning, transformation, feature engineering — plus the continuous updates needed for retraining.'],
+  lake:['data lake / warehouse','A lake stores raw data of any shape for later use; a warehouse stores cleaned, structured data for analysis. AI projects usually need both.'],
+  cpu:['CPU','General-purpose processor — fine for data processing and smaller models, slow for training deep networks.'],
+  gpu:['GPU','Graphics Processing Unit — massively parallel, which is what makes training deep neural networks feasible. Usually your most volatile cost line.'],
+  mlops:['MLOps','Machine-Learning Operations — extends DevOps to ML: automated training pipelines, deployment workflows, experiment tracking, monitoring and retraining.'],
+  scarcity:['talent scarcity','Specialised AI skills are in short supply, so personnel is often the single biggest budget line — and the hardest resource to add mid-project.'],
+  analogous:['analogous estimation','Estimating from a comparable past project. Fast and cheap; only as reliable as the similarity between the two projects.'],
+  bottomup:['bottom-up estimation','Costing every task in the WBS and summing upward. The most accurate method and the most work — and it needs a WBS you trust.'],
+  parametric:['parametric estimation','Cost driven by a measurable rate — GPU-hours × price, records × cost per label, engineer-months × rate. Ideal for compute and data labelling.'],
+  scenario:['scenario-based estimation','Costing a best / expected / worst case for stages whose outcome is genuinely unknown — the honest way to budget experimentation.']
+};
+(function gloss(){
+  var tip=document.createElement('div');tip.id='glossTip';document.body.appendChild(tip);
+  document.addEventListener('click',function(e){
+    if(e.target.classList&&e.target.classList.contains('x')){tip.style.display='none';return;}
+    var g=e.target.closest&&e.target.closest('.gloss');
+    if(g){var d=GLOSSARY[g.dataset.k];if(!d)return;
+      tip.innerHTML='<span class="x">×</span><b>'+d[0]+'</b>'+d[1];
+      var tw=Math.min(280,window.innerWidth-24);tip.style.width=tw+'px';tip.style.display='block';
+      var r=g.getBoundingClientRect();var left=r.left;if(left+tw>window.innerWidth-12)left=window.innerWidth-tw-12;if(left<12)left=12;
+      tip.style.left=left+'px';tip.style.top=(r.bottom+8)+'px';
+      e.stopPropagation();
+    } else if(!(e.target.closest&&e.target.closest('#glossTip'))){tip.style.display='none';}
+  });
+})();
+
+/* ---- materials checklist ---- */
+(function reads(){
+  var RK='e1410_s3_reads',st={};try{st=JSON.parse(localStorage.getItem(RK))||{};}catch(e){}
+  document.querySelectorAll('.mi[data-read]').forEach(function(mi){
+    var k=mi.dataset.read;if(st[k])mi.classList.add('on');
+    mi.addEventListener('click',function(e){
+      if(e.target.closest('a')){st[k]=true;mi.classList.add('on');try{localStorage.setItem(RK,JSON.stringify(st));}catch(err){}return;}
+      st[k]=!st[k];mi.classList.toggle('on',!!st[k]);
+      try{localStorage.setItem(RK,JSON.stringify(st));}catch(e){}
+    });
+  });
+})();
+
+/* ---- 3.1 gut estimate ---- */
+(function gutWidget(){
+  var sl=document.getElementById('gutSlider'),disp=document.getElementById('gutDisp'),
+      react=document.getElementById('gutReact'),btn=document.getElementById('gutLock'),rev=document.getElementById('gutReveal');
+  var saved=localStorage.getItem('e1410_s3_guess');if(saved)sl.value=saved;
+  function reactText(v){
+    if(v<10)return 'Bold — and closer than most people dare guess.';
+    if(v<35)return 'You already suspect the model is the small part.';
+    if(v<70)return 'A common answer. Lock it in.';
+    return 'High — that would make AI projects far easier than they are.';
+  }
+  function upd(){disp.textContent=sl.value;react.textContent=reactText(parseInt(sl.value,10));}
+  sl.addEventListener('input',upd);upd();
+  btn.addEventListener('click',function(){
+    localStorage.setItem('e1410_s3_guess',sl.value);
+    rev.classList.add('show');btn.innerHTML='🔒 Locked at '+sl.value+'%';
+    markStep('est');markSection('s1');
+  });
+})();
+function renderGuessRecall(){
+  var g=localStorage.getItem('e1410_s3_guess'),box=document.getElementById('guessRecall');
+  if(!box)return;
+  box.innerHTML = g ? 'In section 3.1 you guessed the ML code is <b>'+g+'%</b> of a production ML system. Sculley et al. put it at a <b>small fraction — around 5%</b>. Everything else is the machinery your people, infrastructure and budget actually go into.'
+                    : 'You didn\'t lock an estimate in 3.1 — no matter. The lesson holds: the ML code is a small fraction (~5%) of a production system, so resource the machinery around the model.';
+}
+
+/* ---- shared classify builder ---- */
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
+  var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;
+  function capText(n,full){cap.textContent=n+' of '+VARS.length+' classified'+(full?' — '+doneMsg:'');}
+  capText(0,false);
+  VARS.forEach(function(v,i){
+    var row=document.createElement('div');row.className='cl-row';
+    var label=(v.n?'<b>'+v.n+'</b> — ':'')+v.s;
+    row.innerHTML='<div class="st">'+label+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      if(row.dataset.done)return;
+      if(b.dataset.v===v.a){
+        row.dataset.done='1';
+        row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===b)x.classList.add('ok');});
+        var w=document.getElementById(rowsId+'w'+i);
+        w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');
+        done++;capText(done,done===VARS.length);
+        markStep(rowsId+'-'+i);
+        if(done===VARS.length)markSection(secId);
+      }else{b.classList.add('no');b.disabled=true;}
+    });});
+    box.appendChild(row);
+  });
+}
+
+/* ---- 3.2 roles ---- */
+buildClassify('roleRows','roleCap',
+  [['E','Data engineer'],['S','Data scientist'],['M','ML engineer'],['D','Domain expert']],
+  [
+    {s:'"Three years of transaction history sits in four systems that don\'t talk to each other — someone has to build the pipeline that unifies it."',a:'E',w:'Designing pipelines and guaranteeing reliable, consistent data access — the data engineer.'},
+    {s:'"Compare a gradient-boosting model against a neural network and tell us which detects more fraud."',a:'S',w:'Selecting algorithms, training and evaluating with statistical metrics — the data scientist.'},
+    {s:'"The model has to score a live transaction in under 200 ms, behind an API, at 3,000 transactions per second."',a:'M',w:'Deploying, optimising for scale and building real-time serving APIs — the ML engineer.'},
+    {s:'"Is a 4 a.m. top-up followed by three merchant payments actually suspicious, or normal for night-shift workers?"',a:'D',w:'Only someone who knows the business can say which variables are meaningful — the domain expert.'},
+    {s:'"Build the automated pipeline that retrains and redeploys the model each month."',a:'M',w:'Maintaining automated pipelines for model updates in production — the ML engineer.'},
+    {s:'"Our fraud analysts say half the flagged cases are obviously legitimate — validate whether these outputs are usable."',a:'D',w:'Validating AI recommendations against operational reality — the domain expert.'}
+  ],
+  'the chain only works whole: engineers feed and ship the model, scientists build it, domain experts judge whether it is useful.','s2');
+
+/* ---- 3.3 infrastructure ---- */
+buildClassify('infraRows','infraCap',
+  [['D','Data & pipelines'],['C','Compute'],['F','Frameworks'],['O','MLOps & lifecycle']],
+  [
+    {s:'"We need a data lake to hold three years of raw transactions plus a nightly ETL job."',a:'D',w:'Storage plus ingestion and transformation — the data and pipeline layer.'},
+    {s:'"Training the deep model overnight needs GPU capacity we don\'t currently have."',a:'C',w:'Specialised parallel hardware for training — the compute layer.'},
+    {s:'"Standardise the whole team on PyTorch so people can actually reproduce each other\'s experiments."',a:'F',w:'Standardised ML frameworks and development environments enable collaboration and reproducibility.'},
+    {s:'"Every experiment must be logged with its dataset version, parameters and metrics."',a:'O',w:'Experiment tracking and model version control — the MLOps and lifecycle layer.'},
+    {s:'"When live accuracy drops below the threshold, retraining should kick off automatically."',a:'O',w:'Automated monitoring and retraining pipelines — MLOps.'},
+    {s:'"Feature engineering has to run on the same transformed data used to train the model."',a:'D',w:'Feature engineering and consistent transformed data are part of the pipeline layer.'}
+  ],
+  'four layers, four different cost and risk profiles — and a PM owns the consequences of all four.','s3');
+
+/* ---- 3.4 cost categories ---- */
+buildClassify('costRows','costCap',
+  [['D','Data'],['I','Infrastructure'],['C','Compute'],['P','People'],['O','Operations']],
+  [
+    {s:'"Pay analysts to label two years of transactions with confirmed-fraud outcomes."',a:'D',w:'Labelling and annotation sit in data acquisition & preparation — often the most under-budgeted line.'},
+    {s:'"Salary for two data scientists and one ML engineer for six months."',a:'P',w:'Specialised talent — usually the single largest share of an AI budget.'},
+    {s:'"GPU hours for hyperparameter tuning across roughly forty training runs."',a:'C',w:'Training time and experimentation cycles — compute & model training.'},
+    {s:'"Cloud object storage and the data-warehouse service that holds the transaction history."',a:'I',w:'Storage, warehouses, pipelines and security — infrastructure & storage.'},
+    {s:'"Two days of training for the fraud-operations team so they trust and use the alerts."',a:'O',w:'User training and adoption support are deployment & operational costs — and they outlive the project.'},
+    {s:'"Monthly monitoring and quarterly retraining of the live model after go-live."',a:'O',w:'Monitoring, retraining and updates in production — operations, not development.'}
+  ],
+  'five categories: data, infrastructure, compute, people, operations. Sponsors forget the first and the last.','s4');
+
+/* ---- 3.5 estimation techniques ---- */
+buildClassify('estRows','estCap',
+  [['A','Analogous'],['B','Bottom-up'],['P','Parametric'],['S','Scenario-based']],
+  [
+    {s:'"Labelling costs about $0.08 per transaction and we need 250,000 labelled — so that line is roughly $20,000."',a:'P',w:'Cost driven by a measurable unit rate — parametric estimation.'},
+    {s:'"Our churn project last year cost about the same and took five months, so use that as the starting figure."',a:'A',w:'Estimating from a comparable past project — analogous estimation.'},
+    {s:'"Cost every task in the WBS — pipeline build, labelling, each experiment, integration — and add them up."',a:'B',w:'Task-level costing summed upward — bottom-up estimation, the most accurate and most effortful.'},
+    {s:'"If we hit 90% recall in three training rounds it costs X; if it takes ten rounds it costs 3X. Budget both."',a:'S',w:'Best / expected / worst cases for genuinely uncertain stages — scenario-based estimation.'},
+    {s:'"GPU instances cost $3.20 an hour and we expect around 900 training hours."',a:'P',w:'Resource usage × price — parametric again, the natural fit for compute.'},
+    {s:'"Nobody knows whether the regulator will demand a full explainability audit — price it with and without."',a:'S',w:'An unknown that changes cost discontinuously — model it as scenarios.'}
+  ],
+  'combine them: parametric for compute and labelling, bottom-up for engineering, analogous as a sanity check, scenarios for the experimental phases.','s5');
+
+/* ---- 3.6 checkpoint quiz ---- */
+(function quizWidget(){
+  var QUIZ=[
+    {q:'In a production machine-learning system, the actual ML code is typically…',
+     opts:['almost the whole system','roughly half the system','a small fraction — the rest is data, serving, configuration and monitoring','irrelevant to cost'],a:2,
+     w:'Sculley et al. (2015) — the ML code is a small box inside a much larger system, which is where your resources actually go.'},
+    {q:'Who is accountable for deploying a model behind an API and keeping it fast at peak load?',
+     opts:['the data scientist','the ML engineer','the domain expert','the sponsor'],a:1,
+     w:'ML engineers deploy, optimise for scale and build the serving and retraining pipelines.'},
+    {q:'A model is statistically accurate but its alerts are useless to the fraud team. Who is best placed to catch this?',
+     opts:['the data engineer','the domain expert / business stakeholder','the cloud provider','the ML engineer'],a:1,
+     w:'A model can be technically accurate and operationally irrelevant — only the business side can validate usefulness.'},
+    {q:'Before signing with an external AI vendor, a project manager must clarify…',
+     opts:['only the price','data ownership, IP in the models, service levels and long-term maintenance','the programming language','the office location'],a:1,
+     w:'Those four points are what stop you discovering post-launch that the model or data isn\'t yours to use.'},
+    {q:'GPUs matter in AI projects mainly because they…',
+     opts:['store more data','process in parallel, making deep-network training feasible','replace data engineers','reduce bias'],a:1,
+     w:'Parallel architecture is what makes large-scale training practical — and it is usually the most volatile cost line.'},
+    {q:'Which are the five major cost categories of an AI project?',
+     opts:['hardware, software, licences, travel, marketing','data, infrastructure & storage, compute & training, personnel, deployment & operations','salaries only','cloud and consultants'],a:1,
+     w:'Those five interact and evolve across the lifecycle; data preparation and operations are the two most often forgotten.'},
+    {q:'Why do traditional IT estimation models tend to underestimate AI project costs?',
+     opts:['AI is always cheap','data issues, experimentation cycles and failed models create spending traditional models don\'t anticipate','AI needs no people','licences are free'],a:1,
+     w:'You pay for the experiments that don\'t work — cost uncertainty in AI is structural, not sloppiness.'},
+    {q:'"GPU hours × hourly price" is an example of which estimation technique?',
+     opts:['analogous','parametric','bottom-up','scenario-based'],a:1,
+     w:'Parametric estimation derives cost from a measurable resource-usage rate.'},
+    {q:'Costing every task in the Work Breakdown Structure and summing upward is…',
+     opts:['analogous estimation','bottom-up estimation','parametric estimation','guessing'],a:1,
+     w:'Bottom-up estimation — the most accurate approach, and the one that needs a WBS you trust.'},
+    {q:'Phased funding milestones help an AI project mainly because they…',
+     opts:['hide the true cost','let the sponsor risk one phase at a time, with evidence required to release the next','remove the need for contingency','speed up training'],a:1,
+     w:'Releasing money at checkpoints means a failing project stops cheaply — and you earn the next tranche with results.'}
+  ];
+  var box=document.getElementById('quizBox'),chip=document.getElementById('scoreChip'),
+      res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
+  var answered=0,correct=0;
+  chip.textContent='0 / '+QUIZ.length+' answered';
+  QUIZ.forEach(function(item,i){
+    var q=document.createElement('div');q.className='q';
+    q.innerHTML='<div class="qt"><span class="qn">'+(i+1)+'.</span>'+item.q+'</div>'+
+      item.opts.map(function(o,j){return '<button class="opt" data-j="'+j+'">'+o+'</button>';}).join('')+
+      '<div class="why" id="qw'+i+'"></div>';
+    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){
+      if(q.dataset.done)return;q.dataset.done='1';
+      var j=parseInt(b.dataset.j,10),ok=j===item.a;
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(x===b)x.classList.add('wrong');});
+      document.getElementById('qw'+i).innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;
+      document.getElementById('qw'+i).classList.add('show');
+      answered++;if(ok)correct++;
+      markStep('q'+i);
+      chip.textContent=answered+' / '+QUIZ.length+' answered';
+      if(answered===QUIZ.length)finish();
+    });});
+    box.appendChild(q);
+  });
+  function finish(){
+    scoreEl.textContent=correct+' / '+QUIZ.length;
+    msgEl.textContent = correct>=9 ? 'Excellent — you could defend this budget. On to Session 4.'
+      : correct>=6 ? 'Good. Reread the explanations you missed, then move on.'
+      : 'Worth a second pass: reread sections 3.2–3.5, then try again.';
+    res.classList.add('show');
+    markSection('s6');
+    if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);
+  }
+})();
+
+/* =====================================================================
+   LECTURE DECK — presented live on Zoom (screen share this, cameras on).
+   Keys: → / space next · ← prev · N notes · Esc exit. Print → PDF.
+   ===================================================================== */
+var SLIDES=[
+  {cls:'dk',k:'IDEAS · E1410 · MSc AI',t:'Resource Management in AI Projects',
+   b:'<p style="font-size:1.15em"><b>Session 3</b></p><p>Dr. Jan Erik Meidell · Tuesday 11 August 2026 · 20:00 ICT</p><div class="onproj"><b>Our running case →</b> <b>MekongPay</b> has a plan. Tonight it gets a team, a stack and a budget — <span class="num-hi">6 months</span>, <span class="num-hi">5 people</span>, and a cloud bill nobody has priced yet.</div>',
+   logo:true,
+   n:'Cameras on. Recap ask: one line — why are AI schedules probabilistic (S2)? Then: a plan without resources is a wish.'},
+  {k:'Recap → today',t:'From plan to capacity',
+   b:'<ul><li>S2: lifecycle, requirements, methodology, a schedule that admits uncertainty.</li><li>Tonight: the three scarce inputs — <em>people</em>, <em>infrastructure</em>, <em>money</em>.</li><li>Keep the course site open — the checkpoint runs live.</li></ul><div class="onproj"><b>On MekongPay →</b> "a team of five" is a number, not a team. By the end of tonight you can say which five, on what stack, for what money.</div>',
+   n:'Bridge explicitly. New joiners: share the QR (access code ideas1410x7k2).'},
+  {cls:'dk',k:'Section 3.1',t:'"So we need five data scientists?"',
+   b:'<p>The COO approved five people. Your first instinct is five modellers. That instinct sinks the project.</p>',
+   n:'Role-play. Ask the room to staff it before the reveal. Most say 4–5 data scientists.'},
+  {k:'Poll',t:'How much of a production ML system IS the ML code?',
+   b:'<p>The model itself, versus everything around it — data plumbing, serving, configuration, monitoring. Type a % in the chat.</p>',
+   n:'Collect numbers. Most guess 30–60%. Hold the tension. Students can do it on the site: section 3.1.'},
+  {k:'The answer',t:'A small box in a very large system.',
+   b:'<div class="statline">~5%</div><p class="statsub">Sculley et al., <em>Hidden Technical Debt in Machine Learning Systems</em> (NeurIPS 2015)</p><p>The other ~95%: data collection and verification, feature extraction, configuration, serving infrastructure, resource and process management, monitoring.</p><div class="onproj"><b>On MekongPay →</b> so four of your five people are not modellers. You need someone to <em>unify</em> the data, someone to <em>ship</em> the model at <span class="num-hi">3,000 txns/sec</span>, and someone who knows what fraud actually looks like in Vietnam.</div>',
+   n:'THE slide of the session. Land it: resource the system, not the model.'},
+  {k:'The team',t:'Five roles, one delivery chain',
+   b:'<ul><li><b>Data engineer</b> — pipelines, storage, reliable access</li><li><b>Data scientist</b> — algorithms, training, evaluation</li><li><b>ML engineer</b> — deploy, scale, serve, automate retraining</li><li><b>Domain expert</b> — what the variables mean; validates outputs</li><li><b>PM / product owner</b> — objectives, constraints, stakeholders, vendors</li></ul><div class="onproj"><b>On MekongPay →</b> the domain expert is a <em>fraud analyst</em>, and they are not optional: without them you cannot tell a suspicious 4 a.m. top-up from normal night-shift behaviour.</div>',
+   n:'Read it as a chain: data arrives → becomes a model → becomes a service → judged useful → steered. Break one link, nothing ships.'},
+  {k:'Your own job',t:'The PM is the translation layer',
+   b:'<div class="cols"><div><div class="colh">You translate</div><ul><li>business problem → measurable objective</li><li>metrics → business meaning</li><li>uncertainty → decisions</li></ul></div><div><div class="colh">You balance</div><ul><li>scope · time · cost · quality</li><li>where "quality" is a probability</li></ul></div></div><div class="onproj"><b>On MekongPay →</b> not "use AI to reduce fraud" but <em>"≥90% of fraud caught, &lt;2% false alarms, &lt;200 ms, explainable to the State Bank of Vietnam."</em> That sentence is the whole project.</div>',
+   n:'Contrast the vague vs specific objective explicitly — deck example: churn within 30 days. This is the PM\'s highest-value act.'},
+  {k:'Vendors',t:'Four things to pin down before you sign',
+   b:'<ul><li><b>Data ownership</b> and usage rights</li><li><b>Intellectual property</b> in models and algorithms</li><li><b>Service-level</b> expectations</li><li><b>Long-term maintenance</b> responsibility</li></ul><div class="onproj"><b>On MekongPay →</b> if a consultancy trains the model on your labelled data, who owns the labels? Who owns the model? Answer it in the contract, not in a dispute after go-live.</div>',
+   badge:'disc',
+   n:'Discussion, 6–8 min: who has been burned by an unclear vendor contract? Vietnamese context — cloud data-residency rules.'},
+  {cls:'dk',k:'Section 3.2',t:'Infrastructure',
+   b:'<p>You will never configure the cluster. You will absolutely own its consequences.</p>',
+   n:'Reassure the non-technical students, then explain why they can\'t ignore it.'},
+  {k:'The stack',t:'Four layers, four cost curves',
+   b:'<ul><li><b>Data &amp; pipelines</b> — ingestion, cleaning, features, lake/warehouse</li><li><b>Compute</b> — CPU for processing, GPU for training</li><li><b>Frameworks</b> — TensorFlow, PyTorch, scikit-learn (standardise them)</li><li><b>MLOps</b> — tracking, deployment, monitoring, retraining, versioning</li></ul><p>AWS · Azure · GCP package most of it — capex becomes opex.</p><div class="onproj"><b>On MekongPay →</b> training cost scales with <em>experiments</em>; serving cost scales with <em>traffic</em>. At <span class="num-hi">3,000 txns/sec</span> the serving curve is the one that never stops.</div>',
+   n:'Don\'t teach the tech. Teach the four consequences: timeline, dependencies, cost, integration.'},
+  {k:'Why it lands on your desk',t:'Infrastructure IS schedule and risk',
+   b:'<ul><li>Slow training → fewer experiments per sprint → later date.</li><li>Data, compute and tooling <em>gate each other</em>.</li><li>Idle team waiting for GPU quota = schedule risk, not a technical detail.</li><li>Integration with legacy IT is the classic killer.</li></ul><div class="onproj"><b>On MekongPay →</b> the fraud model must call into a core banking system older than most of the team. Budget integration time as a first-class workstream.</div>',
+   n:'Ask: who has seen a project stall on infrastructure access rather than skill? Usually several hands.'},
+  {cls:'dk',k:'Section 3.3',t:'The budget',
+   b:'<p>AI budgets do not look like IT budgets. Five categories — and sponsors forget two of them.</p>',
+   n:'Set up the five. Ask them to guess which two get forgotten before revealing.'},
+  {k:'Five cost categories',t:'Where the money actually goes',
+   b:'<ul><li><b>Data</b> — purchase, collection, <em>labelling</em>, cleaning, governance</li><li><b>Infrastructure &amp; storage</b> — cloud, ETL, warehouses, security</li><li><b>Compute &amp; training</b> — GPU/TPU, tuning, retraining runs</li><li><b>People</b> — scarce specialists; often the biggest line</li><li><b>Deployment &amp; operations</b> — monitoring, retraining, integration, <em>user adoption</em></li></ul><div class="onproj"><b>On MekongPay →</b> labelling confirmed fraud across <span class="num-hi">~180M</span> transactions, and training <em>fraud analysts</em> to trust the alerts. Neither appeared in the COO\'s original number.</div>',
+   n:'The two forgotten: data preparation and post-deployment operations. They\'re also the two that decide whether the model keeps working.'},
+  {k:'Cost uncertainty',t:'Why the number moves after you commit',
+   b:'<ul><li>Data availability and quality surprises</li><li>Model performance variability</li><li><b>Experimentation cycles and failed models</b> — you pay for the ones that don\'t work</li><li>Changing requirements; late regulatory constraints</li></ul><p><em>A budget that admits none of this is fragile, not confident.</em></p><div class="onproj"><b>On MekongPay →</b> if the first three modelling rounds miss the <span class="num-hi">&lt;2%</span> false-alarm target, that is not failure — it is the cost of experimentation. Price it up front.</div>',
+   n:'Key reframe for sponsors: uncertainty declared is credibility; uncertainty hidden is a future crisis.'},
+  {k:'Estimation',t:'Four techniques, used together',
+   b:'<div class="cols"><div><div class="colh">Analogous</div><p style="font-size:.8em">from a comparable past project — fast, only as good as the analogy</p><div class="colh" style="margin-top:1.2vh">Bottom-up</div><p style="font-size:.8em">cost every WBS task and sum — most accurate, most work</p></div><div><div class="colh">Parametric</div><p style="font-size:.8em">rate × usage: GPU-hours, cost per label, engineer-months</p><div class="colh" style="margin-top:1.2vh">Scenario-based</div><p style="font-size:.8em">best / expected / worst for the experimental stages</p></div></div><div class="onproj"><b>On MekongPay →</b> parametric for GPU hours and labelling, bottom-up for the pipeline build, scenarios for "how many training rounds to hit 90% recall".</div>',
+   n:'Emphasise: combine, don\'t choose. Different parts of the budget have different knowability.'},
+  {k:'Contingency',t:'Phase the funding, track the spend',
+   b:'<ul><li><b>Experimentation buffers</b> — on the phases that are genuinely unknown</li><li><b>Phased funding</b> — data ready → prototype validated → pilot live</li><li><b>Cost dashboards</b> — cloud spend escalates silently</li><li><b>Re-forecast</b> at each checkpoint instead of defending the old number</li></ul><div class="onproj"><b>On MekongPay →</b> tranche 2 releases only when labelled data passes quality checks. The COO risks one phase at a time; you earn the next with evidence.</div>',
+   n:'This is the slide that makes an uncertain budget acceptable to a sponsor. Say that out loud.'},
+  {k:'Your turn',t:'Checkpoint — live, now',
+   b:'<p>Open the site → <b>Session 3 → section 3.6</b>.</p><ul><li>10 questions · ~5 min · instant explanations</li><li>Not graded — but the mid-term asks this style</li></ul>',
+   badge:'act',
+   n:'5–6 min. Watch scores arrive on admin.html (second screen). Review the 2 worst-answered together.'},
+  {k:'Takeaways',t:'Four things from tonight',
+   b:'<ul><li>The model is <b>~5%</b> — resource the system around it.</li><li>Five roles, <b>one chain</b>: break a link, nothing ships.</li><li>Infrastructure is <b>schedule, cost and integration risk</b> in disguise.</li><li>Budget in <b>five categories</b>, estimate with <b>four techniques</b>, fund in <b>phases</b>.</li></ul>',
+   n:'Ask the class to give you the four before revealing. Energy up.'},
+  {cls:'dk',k:'Before Thursday',t:'Homework',
+   b:'<ul><li><b>Workshop</b> — section 3.7: resource YOUR project. This becomes <em>§4</em> of your final assignment.</li><li><b>Read</b> — the SME/large-firm adoption companion (why resources decide who can adopt AI).</li><li><b>Next</b> — Session 4 · Risk Management in AI Projects · Thu 13 Aug, 20:00 ICT.</li></ul><p>Questions → see you Thursday. 🙏</p>',
+   n:'Point at the workshop — it feeds the final. Close warmly, stay 5 min for questions.'}
+];
+(function lecture(){
+  var idx=0,open=false;
+  var lect=document.getElementById('lect'),stage=document.getElementById('lectStage'),
+      count=document.getElementById('lectCount'),notes=document.getElementById('lectNotes');
+  var cur=null;
+  function slideHTML(s){
+    var badge=s.badge?'<span class="lect-badge '+s.badge+'">'+(s.badge==='disc'?'💬 Discussion':s.badge==='act'?'✋ Your turn':'Case')+'</span>':'';
+    var logo=s.logo?'<img class="lect-logo-big" src="logo-ideas.png" alt="IDEAS">':'';
+    return logo+badge+'<div class="lect-kicker">'+s.k+'</div><h2>'+s.t+'</h2><div class="lect-body">'+s.b+'</div>';
+  }
+  function render(){
+    var s=SLIDES[idx];
+    if(cur)cur.remove();
+    cur=document.createElement('div');
+    cur.className='lect-slide'+(s.cls?' '+s.cls:'');
+    cur.innerHTML=slideHTML(s);
+    stage.appendChild(cur);
+    lect.classList.toggle('dkbg',s.cls==='dk');
+    count.textContent=(idx+1)+' / '+SLIDES.length;
+    notes.innerHTML='<span class="nt">Speaker notes · slide '+(idx+1)+'</span>'+(s.n||'—');
+  }
+  function go(d){idx=Math.max(0,Math.min(SLIDES.length-1,idx+d));render();}
+  function openLect(){open=true;lect.classList.add('on');render();
+    if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(function(){});}}
+  function closeLect(){open=false;lect.classList.remove('on');
+    if(document.fullscreenElement&&document.exitFullscreen){document.exitFullscreen().catch(function(){});}}
+  document.getElementById('lectOpen').addEventListener('click',openLect);
+  document.getElementById('lectClose').addEventListener('click',closeLect);
+  document.getElementById('lectNotesBtn').addEventListener('click',function(){notes.classList.toggle('on');});
+  stage.querySelector('.lect-zone.next').addEventListener('click',function(){go(1);});
+  stage.querySelector('.lect-zone.prev').addEventListener('click',function(){go(-1);});
+  document.addEventListener('keydown',function(e){
+    if(!open)return;
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(-1);}
+    else if(e.key==='Escape'){closeLect();}
+    else if(e.key==='n'||e.key==='N'){notes.classList.toggle('on');}
+    else if(e.key==='Home'){idx=0;render();}
+    else if(e.key==='End'){idx=SLIDES.length-1;render();}
+  });
+  if(location.hash==='#lecture')setTimeout(openLect,150);
+  var pd=document.getElementById('printDeck');
+  pd.innerHTML=SLIDES.map(function(s,i){
+    return '<div class="p-slide'+(s.cls?' '+s.cls:'')+'">'+slideHTML(s)+'<span class="pnum">E1410 · Session 3 · '+(i+1)+'/'+SLIDES.length+'</span></div>';
+  }).join('');
+})();
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+renderList();updateBar();
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack)StatsTrack.init({module:'s3',title:'Session 3 · Resource Management in AI Projects',total:SECTIONS.length});
+  /* section 3.7 counts as done only when EVERY workbook field is filled */
+  var s7=document.getElementById('s7');
+  if(s7){
+    var fields=s7.querySelectorAll('[data-work]');
+    var st=document.getElementById('wbStatus');
+    var check=function(){
+      var n=0;fields.forEach(function(f){var filled=!!(f.value||'').trim();markStep('wb-'+f.getAttribute('data-work'),filled);if(filled)n++;});
+      if(st)st.textContent=(n>=fields.length&&fields.length>0)?'✓ Section complete — your resourcing is saved.':(n+' of '+fields.length+' fields filled · complete all to finish this section.');
+      if(n>=fields.length&&fields.length>0)markSection('s7');
+    };
+    fields.forEach(function(f){f.addEventListener('input',check);});
+    setTimeout(check,900);
+  }
+});
+</script>
+<script src="progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="announce.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
