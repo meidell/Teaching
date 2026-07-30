@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/ideas-e1410/">
+<script src="gate.js"></script>
+<script>/* course gate: registered students only — see join.html */
+(function(){if(!window.E1410_ACCESS)return;function g(k){try{var m=document.cookie.match('(?:^|; )'+k+'=([^;]*)');return m?decodeURIComponent(m[1]):'';}catch(e){return'';}}
+var a=null;try{a=JSON.parse(localStorage.getItem('e1410_auth')||'null');}catch(e){}
+if(!a){var c=g('e1410_auth');if(c){try{a=JSON.parse(c);}catch(e){}}}
+if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Session 6 · Monitoring, Quality Assurance &amp; Case Studies · E1410</title>
+<meta name="description" content="E1410 Session 6 — Monitoring, Quality Assurance and Case Studies. KPIs for live AI systems, the three types of drift and how to detect them, validation and A/B testing, reproducibility and documentation, and real corporate implementations.">
+<meta name="theme-color" content="#AB0E00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="session.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="logo-ideas.png" alt="IDEAS">
+    <span class="course">E1410 · SESSION 6</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <button class="lect-btn" id="lectOpen" title="Full-screen lecture deck — what your instructor presents live">▶ Lecture</button>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This session</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Session 6 · Advanced Project Management in AI</div>
+    <h1>Keeping it <em>alive</em></h1>
+    <p class="sub">Every previous session led to a launch. This one is about the part nobody budgets for: <b>the operational life of the system</b>. Traditional software is static after deployment; an AI system is not. We cover the KPIs that tell you whether it still works, the <b>three kinds of drift</b> and how to detect them, quality assurance as a continuous governance function rather than a testing phase, and a set of <b>real corporate implementations</b> — what they did, and what a project manager should take from each. Plan ~50 min for the lesson and its self-check.</p>
+    <div class="liveinfo">
+      <span class="li">🎥 Live class: <b>Thu 20 Aug · 20:00 ICT / 15:00 CEST</b></span>
+      <span class="li">▶ The <b>Lecture</b> button (top-right) shows the deck we use in class</span>
+    </div>
+  </div>
+
+  <div class="objectives">
+    <h4>By the end of Session 6 you will be able to</h4>
+    <ul>
+      <li>Explain why AI systems require <em>monitoring after deployment</em> and what a PM is accountable for once the project "ends".</li>
+      <li>Define KPIs across the three categories — <em>model performance</em>, <em>operational</em>, and <em>business outcome</em>.</li>
+      <li>Distinguish <em>data drift</em>, <em>concept drift</em> and <em>prediction drift</em>, and name a detection technique for each.</li>
+      <li>Run a <em>continuous improvement loop</em>: monitor → detect → collect → retrain → validate → redeploy.</li>
+      <li>Apply AI-specific <em>quality assurance</em> — validation strategies, K-fold cross-validation, A/B testing, reproducibility, documentation.</li>
+      <li>Draw project-management lessons from <em>real implementations</em> at Colgate-Palmolive, Sanofi, Liberty Mutual, Toyota, BMW and others.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Resources — tick them off as you go</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Lecture deck</b> — the ▶ Lecture button above; presented live in class on Thu 20 Aug.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><a href="reading-ai-adoption.html">AI adoption in SMEs and large firms</a> — reading companion; what separates the firms that sustain AI from those that stall.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><a href="reading-ai-pm-impact.html">The impact of AI on project management</a> — reading companion; AI applied to the PM discipline itself (section 6.5).</span></div>
+    <div class="note" style="font-size:12.5px;color:var(--grey);margin-top:8px;font-style:italic;">Section 6.5 links "Go deeper" resources on the ML Test Score rubric, Google's Rules of ML and MLflow.</div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Course page</a>
+    <div style="margin-top:10px;color:var(--grey);">A reset link lives at the bottom of section 6.7.</div>
+  </div>
+</section>
+
+<!-- ============================ 6.1 ============================ -->
+<section class="screen" id="s1" data-num="1">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.1 · The hook</div><h2>Who built Toyota's models?</h2></div>
+
+  <div class="card">
+    <span class="label problem">Your decision</span>
+    <h3>Not the data-science team. The factory staff.</h3>
+    <p class="lead">At Toyota, factory-floor employees — not a central AI unit — were enabled to build their own machine-learning models for problems they understood better than anyone else. It is a small, unglamorous intervention: give the people closest to the process the tools and the training, then integrate the output into their existing workflow.</p>
+    <p>Before we go further, put a number on it: <strong>roughly how many staff-hours per year did Toyota report saving from this?</strong></p>
+
+    <div class="lab">
+      <div class="lab-title">Your estimate</div>
+      <div class="bignum"><span id="gutDisp">2000</span><span class="suf">hrs / yr</span></div>
+      <input type="range" id="gutSlider" min="0" max="30000" step="500" value="2000" style="margin-top:14px;">
+      <div class="caption" id="gutReact"></div>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn" id="gutLock">🔒 Lock in my estimate</button>
+      </div>
+      <div class="reveal" id="gutReveal">
+        <b>Locked. The reported figure is more than 10,000 staff-hours a year</b> (Google Cloud, 2024). Notice what produced it. Not a more sophisticated model, not a bigger GPU budget — but <b>the right people, an integrated workflow, and a system that kept working</b>. That is the argument of this entire session. The technical achievement of the previous five sessions gets you a model that works on the day it launches. What determines whether it still delivers value in month eighteen is <em>monitoring, quality assurance, documentation and ownership</em> — the least glamorous chapter in project management, and the one that decides whether any of the rest mattered.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Why this session exists</span>
+    <p class="lead">Traditional software systems are <strong>static after deployment</strong>. AI systems are <strong>dynamic and continuously evolving</strong> — because the data they depend on keeps moving. That single difference creates four problems that land on a project manager's desk after everyone else has declared victory:</p>
+    <ul>
+      <li><strong>Data patterns change</strong> over time.</li>
+      <li><strong>Model performance degrades</strong> in production.</li>
+      <li><strong>Business conditions shift</strong>, so the objective itself moves.</li>
+      <li><strong>Ethical and regulatory risks emerge post-deployment</strong>, not before it.</li>
+    </ul>
+    <p class="punch">Monitoring is what turns AI from a one-time project outcome into a managed operational system. Without it you have not delivered a capability — you have delivered a moment.</p>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: monitoring &amp; KPIs →</button>
+  </div>
+</section>
+
+<!-- ============================ 6.2 ============================ -->
+<section class="screen" id="s2" data-num="2">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.2 · Monitoring</div><h2>What you watch, and who is accountable</h2></div>
+
+  <div class="card">
+    <span class="label idea">The activities</span>
+    <h3>Monitoring starts at deployment and never stops</h3>
+    <p>It is not a phase; it runs for the operational life of the system. Five activities make it up:</p>
+    <ul>
+      <li><strong>Track model accuracy and performance metrics</strong> against the thresholds you committed to.</li>
+      <li><strong>Observe data inputs and distribution patterns</strong> — often the earliest warning you get.</li>
+      <li><strong>Monitor system reliability and response times.</strong></li>
+      <li><strong>Identify anomalies and unexpected outcomes.</strong></li>
+      <li><strong>Initiate retraining</strong> when the evidence says it is time.</li>
+    </ul>
+    <p>From a project-management perspective, all of this exists to ensure one thing: <strong>continued alignment between how the model behaves and what the organisation is trying to achieve.</strong> Those two can drift apart even when the model's accuracy is stable, because the business objective moved.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Three KPI categories</span>
+    <h3>A monitoring plan needs all three, or it will mislead you</h3>
+    <div class="stages n3">
+      <div class="tside"><div class="th">Model performance</div><div class="td">accuracy · precision / recall · F1 · ROC-AUC</div></div>
+      <div class="tside"><div class="th">Operational</div><div class="td">response time · system uptime · prediction latency</div></div>
+      <div class="tside"><div class="th">Business outcome</div><div class="td">revenue impact · cost reduction · user adoption · decision improvement</div></div>
+    </div>
+    <p>Most teams instrument the first category thoroughly, the second adequately and the third not at all — which is how you end up with a technically healthy model that nobody uses. <strong>User adoption is a monitoring metric</strong>, and if you are not watching it you will discover the problem from a budget review rather than from a dashboard.</p>
+    <p>The project manager's specific obligation here is translation, again: <strong>ensuring technical metrics connect to business value.</strong> A 3-point recall improvement means nothing to a board until it is expressed as fraud losses prevented.</p>
+  </div>
+
+  <div class="card">
+    <span class="label trap">The trap</span>
+    <h3>Silent failure</h3>
+    <p>The dangerous case is not a model that crashes — you find out about that immediately. It is a model that <strong>keeps returning confident, plausible, wrong answers</strong>. Nothing alerts. Latency is fine. Uptime is 100%. And the decisions being made on its output are quietly getting worse.</p>
+    <p>Which is why monitoring compares <strong>training performance against production performance</strong>, watches for <strong>differences between test datasets and live data</strong>, looks for <strong>unexpected prediction behaviour</strong>, and tracks <strong>confidence scores</strong> over time. A model that performed well in testing can fail silently in production, and silence is not evidence of health.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Your role</span>
+    <h3>Five things the PM owns after go-live</h3>
+    <ul>
+      <li><strong>Define monitoring KPIs</strong> jointly with the technical team — not delegated, not inherited.</li>
+      <li><strong>Establish monitoring schedules and review checkpoints</strong> with dates in a calendar.</li>
+      <li><strong>Coordinate data science and operations</strong>, who now share a system and rarely a vocabulary.</li>
+      <li><strong>Escalate</strong> when performance deteriorates — with a pre-agreed threshold, so escalation is not a judgment call made under pressure.</li>
+      <li><strong>Ensure continued compliance</strong> with the ethical and regulatory standards from Session 4.</li>
+    </ul>
+    <p>The tooling is mature and worth knowing by name: <strong>MLflow</strong>, <strong>Amazon SageMaker Model Monitor</strong>, <strong>Azure Machine Learning monitoring</strong>, <strong>Google Vertex AI monitoring</strong> — offering automated performance tracking, data-drift alerts, experiment tracking and model version control. Tools are cheap. The decision about what constitutes "bad enough to act on" is yours.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which KPI category?</h3>
+    <p>Six things MekongPay decided to measure after launch. Which category does each belong to? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Model performance · Operational · Business outcome</div>
+      <div id="kpiRows"></div>
+      <div class="caption" id="kpiCap"></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: drift &amp; the improvement loop →</button>
+  </div>
+</section>
+
+<!-- ============================ 6.3 ============================ -->
+<section class="screen" id="s3" data-num="3">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.3 · Drift</div><h2>Three ways a working model stops working</h2></div>
+
+  <div class="card">
+    <span class="label idea">The three types</span>
+    <h3>Different causes, different detection, different fixes</h3>
+    <p>Model drift is performance degrading over time — driven by changing customer behaviour, economic or environmental shifts, changes in data distribution, and new patterns absent from the training data. It comes in three distinguishable forms, and confusing them leads to the wrong remedy:</p>
+    <ul>
+      <li><strong>Data drift</strong> — the <em>input distribution</em> changes. Example: your customer demographics shift as you expand into a new region. The relationship you learned may still hold; you are simply seeing inputs you were not trained on.</li>
+      <li><strong>Concept drift</strong> — the <em>relationship between inputs and outcomes</em> changes. Example: consumer behaviour during an economic downturn, so the same inputs now imply a different outcome. Retraining on new data is the only real answer.</li>
+      <li><strong>Prediction drift</strong> — the <em>outputs</em> shift even though the inputs look stable. Often the first symptom you can actually see, and a reason to investigate rather than a diagnosis in itself.</li>
+    </ul>
+    <p>MekongPay's case is the textbook illustration of the second: a fraud model trained on past transaction patterns becomes less effective as <em>new fraud strategies emerge</em>. Nothing about the model degraded. The world adapted to it.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Detection</span>
+    <h3>Statistical and operational, used together</h3>
+    <ul>
+      <li><strong>Distribution comparison tests</strong> — compare the live input distribution against the training distribution.</li>
+      <li><strong><span class="gloss" data-k="psi">Population Stability Index</span> (PSI)</strong> — a standard, widely used single-number measure of how far a distribution has moved. Common in financial services, which makes it a natural fit for MekongPay.</li>
+      <li><strong><span class="gloss" data-k="kl">Kullback–Leibler divergence</span></strong> — an information-theoretic measure of the difference between two distributions.</li>
+      <li><strong>Performance-degradation alerts and threshold monitoring</strong> — the operational layer: if recall drops below an agreed floor, something happens automatically.</li>
+    </ul>
+    <p>Advanced setups run <strong>automated drift-detection pipelines</strong>. The project-management point is simpler than the statistics: <strong>early detection is what makes retraining a scheduled task rather than a crisis.</strong> You do not need to compute a PSI yourself. You do need to have decided, in advance and in writing, what number triggers what action and who is woken up.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">The continuous improvement loop</span>
+    <h3>Six steps, running forever</h3>
+    <div class="stages n6">
+      <div class="tside"><div class="th">1 · Monitor</div><div class="td">performance in production</div></div>
+      <div class="tside"><div class="th">2 · Detect</div><div class="td">drift or anomalies</div></div>
+      <div class="tside"><div class="th">3 · Collect</div><div class="td">new labelled data</div></div>
+      <div class="tside"><div class="th">4 · Retrain</div><div class="td">on the current world</div></div>
+      <div class="tside"><div class="th">5 · Validate</div><div class="td">the updated model</div></div>
+      <div class="tside"><div class="th">6 · Redeploy</div><div class="td">and return to step 1</div></div>
+    </div>
+    <p>This is normally implemented through <strong>MLOps pipelines</strong>, and step 5 is the one teams skip under pressure. A retrained model is a <em>new</em> model: it needs the same validation as the original, and it can be worse. "We retrained it" is not a quality claim.</p>
+    <p class="punch">Budget the loop, staff the loop, schedule the loop. An AI system without a funded improvement loop has a shelf life nobody has told the sponsor about.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which kind of drift?</h3>
+    <p>Six things observed on live AI systems. Which type of drift does each describe? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Data drift · Concept drift · Prediction drift</div>
+      <div id="driftRows"></div>
+      <div class="caption" id="driftCap"></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: quality assurance →</button>
+  </div>
+</section>
+
+<!-- ============================ 6.4 ============================ -->
+<section class="screen" id="s4" data-num="4">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.4 · Quality assurance</div><h2>QA as governance, not as a testing phase</h2></div>
+
+  <div class="card">
+    <span class="label idea">Why AI QA is different</span>
+    <h3>Everything traditional QA relies on is missing</h3>
+    <div class="stages">
+      <div class="tside"><div class="th">Traditional software QA</div><div class="td">deterministic outputs · rule-based logic · stable behaviour after release</div></div>
+      <div class="tside"><div class="th">AI system QA</div><div class="td">probabilistic outputs · performance depends on training data · behaviour changes with new data · models degrade</div></div>
+      <div class="tside"><div class="th">The implication</div><div class="td">quality must be monitored across the lifecycle, not verified once before deployment</div></div>
+      <div class="tside"><div class="th">So QA becomes</div><div class="td">a continuous project-governance function — planning, risk, governance, post-deployment monitoring</div></div>
+    </div>
+    <p>What QA is protecting is broader than accuracy: <strong>reliable and stable performance</strong>, <strong>consistent outputs across datasets and environments</strong>, <strong>traceability and accountability</strong>, <strong>regulatory and ethical compliance</strong>, and <strong>reduced risk of deployment failure and reputational damage</strong>. Quality in AI therefore has four dimensions, and a project that measures only the first is not measuring quality:</p>
+    <ul>
+      <li><strong>Technical</strong> — accuracy, precision/recall, model robustness.</li>
+      <li><strong>Data</strong> — completeness, bias detection, consistency.</li>
+      <li><strong>Operational</strong> — latency, scalability, reliability.</li>
+      <li><strong>Governance</strong> — transparency, explainability, auditability.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Validation</span>
+    <h3>Four strategies, and one that deserves its own paragraph</h3>
+    <ul>
+      <li><strong>Train–test split</strong> — divide the dataset, train on one part, test on the other. The baseline.</li>
+      <li><strong>Holdout validation</strong> — an independent dataset reserved for final evaluation and touched once.</li>
+      <li><strong>Cross-validation</strong> — multiple training and testing cycles for a more reliable estimate.</li>
+      <li><strong>External validation</strong> — testing on a completely new dataset, which is the closest thing to an honest preview of production.</li>
+    </ul>
+    <p><strong><span class="gloss" data-k="kfold">K-fold cross-validation</span></strong> is the workhorse: split the data into K subsets, train on K−1 of them, test on the one left out, repeat K times, average the results. It gives you a <strong>more reliable performance estimate</strong>, <strong>better use of limited data</strong> and <strong>lower variance in evaluation</strong> — which matters enormously when your labelled dataset is small, as it usually is.</p>
+    <p>It is also your main defence against the two classic failure modes: <strong>overfitting</strong> (the model memorises the training data and fails on new data) and <strong>underfitting</strong> (the model is too simple to capture the pattern). The other defences — regularisation, larger and more diverse datasets, feature selection — all cost time or money, which is exactly why these are <em>project</em> risks and not just modelling choices.</p>
+    <p class="punch">Plan validation during project design, not after model development. Retro-fitting a holdout set is impossible once the team has already looked at the data.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">A/B testing</span>
+    <h3>Validated on data is not the same as valuable in production</h3>
+    <p>Once a model passes validation, real-world testing begins. An <span class="gloss" data-k="ab">A/B test</span> runs <strong>version A (the existing system)</strong> against <strong>version B (the new AI model)</strong> with users randomly assigned, and measures what actually changed: conversion rates, prediction accuracy in the wild, customer engagement, operational efficiency.</p>
+    <p>This is how you evaluate <em>business impact before full deployment</em> — and it is the honest test, because it compares against the thing you are actually replacing. A model that beats a held-out test set but loses to the existing rules engine has answered the wrong question. For MekongPay, the comparison is the legacy rules engine, run in parallel, on live traffic.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Reproducibility &amp; documentation</span>
+    <h3>The part that makes an audit survivable</h3>
+    <p>A model should produce the same result when retrained under identical conditions. That requires tracking <strong>training datasets, preprocessing steps, model parameters, random seeds, software versions and hardware environments</strong>. Without reproducibility, quality verification and auditing are simply not possible — you cannot verify a result you cannot recreate.</p>
+    <p>Since an AI project may run hundreds of experiments, this needs systematic <strong>experiment tracking and model versioning</strong>: model versions, dataset versions, hyperparameters, performance metrics, training logs. Industry tools: <strong>MLflow</strong>, <strong>Weights &amp; Biases</strong>, <strong>DVC</strong>, <strong>Kubeflow</strong>. And three documentation artefacts to require by default:</p>
+    <ul>
+      <li><strong>Model documentation</strong> — purpose, training methodology, performance metrics.</li>
+      <li><strong>Dataset documentation</strong> — sources, collection methods, potential biases.</li>
+      <li><strong>System documentation</strong> — deployment architecture, monitoring procedures, maintenance plans.</li>
+    </ul>
+    <p>The structured QA sequence that ties this section together: <strong>1 · data validation → 2 · model validation → 3 · deployment testing → 4 · real-world performance evaluation → 5 · continuous monitoring</strong> — integrated into project planning, risk management, governance and post-deployment monitoring rather than bolted on at the end.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which QA technique is needed?</h3>
+    <p>Six quality problems from the MekongPay build. Which technique addresses each? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">K-fold cross-validation · External / holdout validation · A/B testing · Reproducibility tracking</div>
+      <div id="qaRows"></div>
+      <div class="caption" id="qaCap"></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: real case studies →</button>
+  </div>
+</section>
+
+<!-- ============================ 6.5 ============================ -->
+<section class="screen" id="s5" data-num="5">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.5 · Case studies</div><h2>What real implementations actually did</h2></div>
+
+  <div class="card">
+    <span class="label case">Case · Colgate-Palmolive</span>
+    <h3>Generative AI for product concept development</h3>
+    <p><strong>Scope.</strong> Generative AI used for product concept development and market research — employees query data, generate copy and imagery, and test concepts digitally.</p>
+    <p><strong>Approach.</strong> The AI was hosted in an internal hub with <em>mandatory training</em>, and framed explicitly as augmenting employee creativity rather than automating it.</p>
+    <p><strong>Outcomes.</strong> Faster, higher-quality concept testing; improved employee productivity and creativity.</p>
+    <p><strong>Through a PM lens.</strong> <em>Scope</em> — a targeted deployment in R&amp;D that deliberately avoided broad automation. <em>Stakeholders</em> — R&amp;D scientists, AI and data teams, leadership. <em>Risks</em> — misuse of AI outputs, adoption resistance. <em>Timeline and budget</em> — a pilot in selected teams, with real investment in tools <em>and training</em>. <em>Lessons</em> — small high-impact pilots, workflow augmentation, and employee engagement as a first-class deliverable.</p>
+    <p style="font-size:12.5px;color:var(--grey);font-style:italic;">Source: MIT Sloan Management Review, 2025.</p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Case · Sanofi</span>
+    <h3>AI-guided investment and project decisions</h3>
+    <p><strong>Scope.</strong> AI guides managers in optimising investment and project decisions — supporting decision-making rather than replacing the decision-maker.</p>
+    <p><strong>Approach.</strong> Combines generative and predictive AI for decision support, and — the interesting part — <em>adjusts the hierarchy of decision rights</em> to maximise impact.</p>
+    <p><strong>Outcomes.</strong> Better-informed investment choices and reduced <span class="gloss" data-k="sunkcost">sunk-cost bias</span>.</p>
+    <p><strong>Through a PM lens.</strong> <em>Scope</em> — high-value financial and project decisions. <em>Risks</em> — over-reliance on the AI, and model misalignment with actual objectives. <em>Approach</em> — phased deployment with investment in infrastructure and training. <em>Lessons</em> — human–AI collaboration is the design goal; governance is what makes the output trusted; pilots reduce risk. Note what Sanofi changed beyond the technology: <strong>who is allowed to decide what</strong>. Most AI projects change a tool and expect an organisational outcome; this one changed the organisation.</p>
+    <p style="font-size:12.5px;color:var(--grey);font-style:italic;">Source: MIT Sloan Management Review, 2025.</p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Case · Liberty Mutual</span>
+    <h3>AI assistance for claims adjusters</h3>
+    <p><strong>Scope.</strong> AI assists claims adjusters in triaging calls and resolving inquiries — and rather than issuing a single recommendation, it generates multiple <strong>"choice sets"</strong>.</p>
+    <p><strong>Approach.</strong> The AI informs human decisions and reduces cognitive load; the adjuster still decides.</p>
+    <p><strong>Outcomes.</strong> Improved call-resolution efficiency and reduced employee cognitive load.</p>
+    <p><strong>Through a PM lens.</strong> <em>Scope</em> — operationally focused on claims handling. <em>Risks</em> — employee resistance, systems integration. <em>Approach</em> — pilot with selected teams, then gradual rollout. <em>Lessons</em> — AI should enhance human decision-making, and pilots validate impact before scaling. The design choice worth stealing is the choice set: presenting options rather than an answer keeps the human genuinely in the loop instead of nominally supervising a recommendation they always accept.</p>
+    <p style="font-size:12.5px;color:var(--grey);font-style:italic;">Source: MIT Sloan Management Review, 2025.</p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Case roster</span>
+    <h3>The same pattern, across industries</h3>
+    <p>A wider set of reported implementations, useful as a menu of what AI is actually being deployed to do:</p>
+    <ul>
+      <li><strong>Employee productivity &amp; workflow</strong> — <em>Toyota</em>: factory staff build ML models, saving 10,000+ staff-hours a year. <em>Uber</em>: summarising communications and surfacing context. <em>Rivian</em>: centralising answers to reduce repetitive internal queries.</li>
+      <li><strong>Data, search &amp; operational intelligence</strong> — <em>BMW Group</em>: fleet optimisation and transportation analytics. <em>Domina</em> (Colombia): predicting package returns, improving delivery access by 80%. <em>Teradata</em>: categorising text and voice feedback to extract trends.</li>
+      <li><strong>Customer experience</strong> — <em>LUXGEN</em>: an AI agent reducing service workload by around 30%. <em>Alaska Airlines</em>: conversational search for travel planning. <em>Volkswagen of America</em>: the myVW assistant with multimodal guidance. <em>NoBroker</em>: multilingual support handling 25–40% of calls.</li>
+      <li><strong>Creative, marketing &amp; media</strong> — <em>Virgin Voyages</em>, <em>Figma</em>, <em>Square Enix</em>, <em>VideoShow</em>: personalised campaigns, brand-approved asset generation, and video from prompts.</li>
+    </ul>
+    <p style="font-size:12.5px;color:var(--grey);font-style:italic;">Source: Google Cloud, 2024.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">AI applied to project management itself</span>
+    <h3>Five places it is already changing your own job</h3>
+    <ul>
+      <li><strong>Planning &amp; scheduling</strong> — predicting task durations, optimising resource allocation.</li>
+      <li><strong>Risk management</strong> — flagging potential risks, simulating what-if scenarios.</li>
+      <li><strong>Stakeholder &amp; communication support</strong> — generating status reports and dashboards.</li>
+      <li><strong>Knowledge management</strong> — summarising meeting notes, maintaining the project repository.</li>
+      <li><strong>Decision support</strong> — prioritising tasks and projects, aiding resource trade-offs.</li>
+    </ul>
+    <p>Claimed impact: time saved, fewer human errors, better data-driven decisions. Apply this session's own scepticism — these are tools whose output needs the same validation, monitoring and accountability as any other model. A generated status report is a prediction about your project, not a record of it.</p>
+  </div>
+
+  <div class="card">
+    <span class="label why">Closing insight</span>
+    <h3>Four lessons that hold across every case above</h3>
+    <ul>
+      <li><strong>Start small, scale smart</strong> — high-impact pilots first, enterprise ambition second.</li>
+      <li><strong>Augment, don't replace</strong> — every successful case above kept a human deciding.</li>
+      <li><strong>Governance matters</strong> — it is what produces adoption, trust and compliance.</li>
+      <li><strong>Measurable outcomes</strong> — ROI, efficiency and productivity are the ultimate success metrics, not model accuracy.</li>
+    </ul>
+    <p class="punch">AI success is not about technology. It is about people, processes and governance — and data quality, workflow integration and governance are what determine whether the impact lasts.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Try it</span>
+    <h3>Which lesson does this illustrate?</h3>
+    <p>Six observations from the cases above. Which of the four lessons does each one demonstrate? A wrong pick stays amber.</p>
+    <div class="lab">
+      <div class="lab-title">Start small, scale smart · Augment, don't replace · Governance matters · Measurable outcomes</div>
+      <div id="caseRows"></div>
+      <div class="caption" id="caseCap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label read">Go deeper</span>
+    <h3>Monitoring, QA &amp; production readiness — free references</h3>
+    <div class="rlist">
+      <a class="rd" href="https://research.google/pubs/the-ml-test-score-a-rubric-for-ml-production-readiness-and-technical-debt-reduction/" target="_blank" rel="noopener">
+        <span class="ty">Paper · Google Research</span><span class="rt">The ML Test Score — a rubric for production readiness <span class="ext">↗</span></span>
+        <span class="rw">Breck et al. (2017). A scored checklist for "is this model actually ready?" — the most directly usable QA artefact in this list.</span>
+      </a>
+      <a class="rd" href="https://developers.google.com/machine-learning/guides/rules-of-ml" target="_blank" rel="noopener">
+        <span class="ty">Guide · Google</span><span class="rt">Rules of Machine Learning — best practices for ML engineering <span class="ext">↗</span></span>
+        <span class="rw">43 rules from hard experience. Rules 1–10 are readable by any project manager and worth the hour.</span>
+      </a>
+      <a class="rd" href="https://mlflow.org/docs/latest/index.html" target="_blank" rel="noopener">
+        <span class="ty">Docs · MLflow</span><span class="rt">MLflow — experiment tracking, model registry, versioning <span class="ext">↗</span></span>
+        <span class="rw">What reproducibility and experiment tracking look like in practice, in an open-source tool.</span>
+      </a>
+      <a class="rd" href="https://www.nist.gov/itl/ai-risk-management-framework" target="_blank" rel="noopener">
+        <span class="ty">Framework · NIST</span><span class="rt">NIST AI Risk Management Framework <span class="ext">↗</span></span>
+        <span class="rw">Its "Measure" and "Manage" functions are exactly this session — worth rereading now that you have the vocabulary.</span>
+      </a>
+      <a class="rd" href="https://sloanreview.mit.edu/big-ideas/artificial-intelligence-business-strategy/" target="_blank" rel="noopener">
+        <span class="ty">Research · MIT SMR</span><span class="rt">MIT Sloan Management Review — AI &amp; business strategy <span class="ext">↗</span></span>
+        <span class="rw">Where the Colgate, Sanofi and Liberty Mutual cases come from. Good source for your final assignment's research marks.</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: checkpoint →</button>
+  </div>
+</section>
+
+<!-- ============================ 6.6 ============================ -->
+<section class="screen" id="s6" data-num="6">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.6 · Checkpoint</div><h2>Prove it to yourself</h2></div>
+
+  <div class="card">
+    <span class="label play">Self-check · not graded</span>
+    <h3>Ten questions on this session</h3>
+    <p>One attempt per question, every answer explained. Your score syncs to your instructor's dashboard as a self-check but does <strong>not</strong> count toward your grade.</p>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult">
+      <div class="big" id="quizScore">—</div>
+      <p id="quizMsg"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Where this goes next</span>
+    <div class="guess-recall" id="guessRecall"></div>
+    <p>That completes the taught syllabus — Sessions 1–6 cover the full lifecycle from problem definition to sustained operation. The last two sessions are about <em>applying</em> it.</p>
+    <p>In <strong>Session 7</strong> you work a full case study end to end, in teams, against the clock — the same analysis your final assignment asks for, rehearsed with feedback. Case-Study Workshop — Tue 25 Aug. <strong>Session 8</strong> then reviews the course and prepares the final assignment directly — Thu 27 Aug.</p>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 6.7 ============================ -->
+<section class="screen" id="s7" data-num="7">
+  <button class="crumb" data-home>← Session menu</button>
+  <div class="sec-head"><div class="kicker">Section 6.7 · Workshop</div><h2>Keep your project alive after launch</h2></div>
+
+  <div class="card">
+    <span class="label problem">The course exercise</span>
+    <h3>The operating plan nobody writes — write it</h3>
+    <p class="lead">Your project has launched. Now define <strong>how you would know it is still working</strong>, what happens when it isn't, and who is responsible. Everything saves automatically and reaches your instructor's dashboard — no "submit" button, just type.</p>
+    <p style="font-size:13px;color:var(--grey);">📎 This completes <strong>§6 (delivery, adoption &amp; monitoring)</strong> and feeds <strong>§8 (success criteria &amp; reflection)</strong> of your final assignment. See it come together in <a href="compile.html" style="color:var(--red-deep);font-weight:700;">Compile my project ↗</a>.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Session 6 · build the operating plan</span>
+    <h3>Nine questions to make it survivable</h3>
+
+    <div class="wb">
+      <div class="wq"><span class="qn">1.</span>Your <em>three KPIs</em> — one model-performance, one operational, one business-outcome.</div>
+      <textarea data-work="s6_kpis" data-worklabel="Three monitoring KPIs (one per category)" placeholder="e.g. MODEL: recall on confirmed fraud, monthly · OPERATIONAL: p99 scoring latency · BUSINESS: fraud losses prevented vs baseline"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">2.</span>Which <em>type of drift</em> is your biggest threat, why, and how would you detect it?</div>
+      <textarea data-work="s6_drift" data-worklabel="Biggest drift threat & detection method"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">3.</span>Your <em>alert threshold</em> — the number that trips, and what happens automatically when it does.</div>
+      <div class="wb-grid">
+        <div><label>The threshold</label><input type="text" data-work="s6_threshold" data-worklabel="Alert threshold" placeholder="e.g. recall below 85% on a rolling 30-day window"></div>
+        <div><label>What happens</label><input type="text" data-work="s6_action" data-worklabel="Action when threshold trips" placeholder="e.g. page the ML engineer, revert to rules engine, convene review in 48h"></div>
+      </div>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">4.</span>Your <em>retraining plan</em>: what triggers a retrain, how often, and who validates the new model before it goes live?</div>
+      <textarea data-work="s6_retrain" data-worklabel="Retraining trigger, cadence & validation gate"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">5.</span>Your <em>validation strategy</em> before first deployment — and how you'll keep an honest holdout set.</div>
+      <textarea data-work="s6_validation" data-worklabel="Validation strategy"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">6.</span>Your <em>A/B test</em>: what is version A (what you're replacing), and which business metric decides the winner?</div>
+      <textarea data-work="s6_abtest" data-worklabel="A/B test design & deciding metric"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">7.</span><em>Reproducibility &amp; documentation</em>: what will you require to be tracked so a result can be recreated and audited?</div>
+      <textarea data-work="s6_repro" data-worklabel="Reproducibility & documentation requirements"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">8.</span><em>Ownership</em>: who owns this model in month eighteen, and what is the annual operating budget for monitoring and retraining?</div>
+      <textarea data-work="s6_owner" data-worklabel="Post-launch ownership & operating budget"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">9.</span>Which <em>case study</em> from section 6.5 is closest to your project — and what specifically would you copy from it?</div>
+      <textarea data-work="s6_case" data-worklabel="Closest case study & what to copy"></textarea>
+    </div>
+    <div class="wb-save" id="wbSave"></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--red);">
+    <span class="label why">The workshop continues</span>
+    <p>Your project is now specified end to end — problem, plan, resources, risk, delivery and operation. In Session 7 you'll pressure-test a case study against exactly this structure, and in Session 8 you'll turn your workbook into the final assignment. Open <a href="compile.html" style="color:var(--red-deep);font-weight:700;">Compile my project ↗</a> to see the whole thing assembled.</p>
+  </div>
+
+  <div class="complete-bar">
+    <div id="wbStatus" style="font-size:13.5px;font-weight:800;color:var(--red-deep);">Fill in all ten fields to complete this section.</div>
+  </div>
+  <div class="foot">
+    <a href="#" id="resetLink" style="color:var(--grey);">reset my progress and answers on this device</a>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <a class="btn" href="index.html" style="text-decoration:none;display:inline-block;">Course page →</a>
+  </div>
+</section>
+
+</div>
+
+<!-- ============================ LECTURE MODE ============================ -->
+<div id="lect" role="dialog" aria-label="Lecture deck">
+  <div class="lect-stage" id="lectStage">
+    <div class="lect-zone prev" title="Previous (←)"></div>
+    <div class="lect-zone next" title="Next (→ or space)"></div>
+  </div>
+  <div id="lectNotes"></div>
+  <div class="lect-foot">
+    <img src="logo-ideas.png" alt="IDEAS">
+    <span class="lf-t">E1410 · Session 6 · Monitoring, QA &amp; Case Studies · Dr. Jan Erik Meidell</span>
+    <button id="lectNotesBtn" title="Toggle speaker notes (N)">Notes</button>
+    <button onclick="window.print()" title="Print / save the deck as PDF">PDF</button>
+    <button id="lectClose" title="Exit (Esc)">✕ Exit</button>
+    <span class="lf-n" id="lectCount">1 / 1</span>
+  </div>
+</div>
+<div id="printDeck"></div>
+
+<script>
+/* =====================================================================
+   E1410 SESSION 6 — lesson engine + lecture deck. No dependencies.
+   Completion is EARNED per section by finishing its interaction.
+   ===================================================================== */
+var SECTIONS=[
+  {id:'s1',num:'6.1',name:'Who built Toyota\'s models?', tag:'Where AI value actually comes from — estimate the hours saved', badge:'Hook'},
+  {id:'s2',num:'6.2',name:'Monitoring',   tag:'Three KPI categories · silent failure · the PM\'s five duties', badge:'Monitor'},
+  {id:'s3',num:'6.3',name:'Drift',        tag:'Data · concept · prediction · PSI, KL · the improvement loop', badge:'Drift'},
+  {id:'s4',num:'6.4',name:'Quality assurance', tag:'Four quality dimensions · K-fold · A/B · reproducibility', badge:'QA'},
+  {id:'s5',num:'6.5',name:'Case studies', tag:'Colgate · Sanofi · Liberty Mutual · Toyota · BMW · four lessons', badge:'Cases'},
+  {id:'s6',num:'6.6',name:'Checkpoint',   tag:'Self-check quiz & where this goes next', badge:'Quiz'},
+  {id:'s7',num:'6.7',name:'Workshop',     tag:'Build YOUR operating plan — answers saved for your instructor', badge:'Exercise'}
+];
+var KEY='e1410_s6_progress_v1';
+var progress=load();
+function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};return p;}catch(e){return{done:{},steps:{}};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch(e){}}
+
+function renderList(){
+  var list=document.getElementById('sectionList');if(!list)return;list.innerHTML='';
+  SECTIONS.forEach(function(s){
+    var done=!!progress.done[s.id];
+    var c=document.createElement('div');
+    c.className='section-card'+(done?' done':'');
+    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+'</div><div class="tag">'+s.tag+'</div><span class="badge">'+s.badge+'</span></div><div class="status">'+(done?'✓':'▸')+'</div>';
+    c.onclick=function(){show(s.id);};
+    list.appendChild(c);
+  });
+}
+/* Granular progress: the session % moves on EVERY interaction — locking the
+   estimate, each correct classify row, each quiz answer, each workbook field.
+   Total = 1 (estimate) + all classify rows + all quiz questions + all fields. */
+function totalSteps(){return 1+document.querySelectorAll('.cl-row').length+document.querySelectorAll('.q').length+document.querySelectorAll('[data-work]').length;}
+function doneSteps(){var n=0,s=progress.steps||{};for(var k in s){if(s[k])n++;}return n;}
+function markStep(id,on){
+  if(!id)return;
+  if(!progress.steps)progress.steps={};
+  if(on===false){if(!progress.steps[id])return;delete progress.steps[id];}
+  else{if(progress.steps[id])return;progress.steps[id]=true;}
+  save();updateBar();
+}
+function updateBar(){
+  var t=totalSteps()||1,d=Math.min(doneSteps(),t),p=Math.round(d/t*100);
+  var pf=document.getElementById('progFill'),pp=document.getElementById('progPct');
+  if(pf)pf.style.width=p+'%';if(pp)pp.textContent=p+'%';
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var t=document.getElementById(id);if(t)t.classList.add('active');
+  if(id==='home'){renderList();}
+  if(id==='s6'){renderGuessRecall();}
+  window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
+}
+/* Completion is EARNED by finishing a section's interactions, not by
+   visiting it or clicking a Next/Finish button. Each widget calls this. */
+function markSection(id){
+  if(!id||progress.done[id])return;
+  progress.done[id]=true;save();updateBar();renderList();
+  if(window.StatsTrack)StatsTrack.complete(id);
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-next],[data-prev],[data-home]');
+  if(!b)return;
+  if(b.hasAttribute('data-home'))return show('home');
+  if(b.hasAttribute('data-prev'))return show(b.getAttribute('data-prev'));
+  var n=b.getAttribute('data-next');if(n)show(n);
+});
+document.getElementById('resetLink').addEventListener('click',function(e){
+  e.preventDefault();
+  if(!confirm('Reset your Session 6 progress on this device?'))return;
+  try{localStorage.removeItem(KEY);localStorage.removeItem('e1410_s6_guess');localStorage.removeItem('e1410_s6_reads');localStorage.removeItem('e1410_done_s6');
+    Object.keys(localStorage).forEach(function(k){if(k.indexOf('e1410_work_s6_')===0)localStorage.removeItem(k);});
+  }catch(err){}
+  document.querySelectorAll('[data-work]').forEach(function(el){el.value='';});
+  progress={done:{},steps:{}};save();updateBar();renderList();show('home');
+});
+
+/* ---- glossary ---- */
+var GLOSSARY={
+  psi:['Population Stability Index','A single-number measure of how far a variable\'s distribution has shifted between two periods. Widely used in financial services as a standard drift alarm.'],
+  kl:['Kullback–Leibler divergence','An information-theoretic measure of how much one probability distribution differs from another — used to quantify how far live data has moved from training data.'],
+  kfold:['K-fold cross-validation','Split the data into K subsets; train on K−1 and test on the remaining one; repeat K times and average. Gives a more reliable performance estimate and makes better use of a small dataset.'],
+  ab:['A/B testing','Randomly assigning users between the existing system (A) and the new model (B) and comparing business metrics — the honest test, because it compares against what you are actually replacing.'],
+  sunkcost:['sunk-cost bias','Continuing to invest in a failing course of action because of what has already been spent. One of the biases AI-assisted decision support at Sanofi was reported to reduce.']
+};
+(function gloss(){
+  var tip=document.createElement('div');tip.id='glossTip';document.body.appendChild(tip);
+  document.addEventListener('click',function(e){
+    if(e.target.classList&&e.target.classList.contains('x')){tip.style.display='none';return;}
+    var g=e.target.closest&&e.target.closest('.gloss');
+    if(g){var d=GLOSSARY[g.dataset.k];if(!d)return;
+      tip.innerHTML='<span class="x">×</span><b>'+d[0]+'</b>'+d[1];
+      var tw=Math.min(280,window.innerWidth-24);tip.style.width=tw+'px';tip.style.display='block';
+      var r=g.getBoundingClientRect();var left=r.left;if(left+tw>window.innerWidth-12)left=window.innerWidth-tw-12;if(left<12)left=12;
+      tip.style.left=left+'px';tip.style.top=(r.bottom+8)+'px';
+      e.stopPropagation();
+    } else if(!(e.target.closest&&e.target.closest('#glossTip'))){tip.style.display='none';}
+  });
+})();
+
+/* ---- materials checklist ---- */
+(function reads(){
+  var RK='e1410_s6_reads',st={};try{st=JSON.parse(localStorage.getItem(RK))||{};}catch(e){}
+  document.querySelectorAll('.mi[data-read]').forEach(function(mi){
+    var k=mi.dataset.read;if(st[k])mi.classList.add('on');
+    mi.addEventListener('click',function(e){
+      if(e.target.closest('a')){st[k]=true;mi.classList.add('on');try{localStorage.setItem(RK,JSON.stringify(st));}catch(err){}return;}
+      st[k]=!st[k];mi.classList.toggle('on',!!st[k]);
+      try{localStorage.setItem(RK,JSON.stringify(st));}catch(e){}
+    });
+  });
+})();
+
+/* ---- 6.1 gut estimate ---- */
+(function gutWidget(){
+  var sl=document.getElementById('gutSlider'),disp=document.getElementById('gutDisp'),
+      react=document.getElementById('gutReact'),btn=document.getElementById('gutLock'),rev=document.getElementById('gutReveal');
+  var saved=localStorage.getItem('e1410_s6_guess');if(saved)sl.value=saved;
+  function reactText(v){
+    if(v<1000)return 'Modest — which is what most people expect from "let staff build models".';
+    if(v<8000)return 'A reasonable guess for a workflow improvement.';
+    if(v<20000)return 'You are expecting real scale from this. Lock it in.';
+    return 'Ambitious — that would be a transformation, not a pilot.';
+  }
+  function upd(){disp.textContent=Number(sl.value).toLocaleString('en-US');react.textContent=reactText(parseInt(sl.value,10));}
+  sl.addEventListener('input',upd);upd();
+  btn.addEventListener('click',function(){
+    localStorage.setItem('e1410_s6_guess',sl.value);
+    rev.classList.add('show');btn.innerHTML='🔒 Locked at '+Number(sl.value).toLocaleString('en-US')+' hrs';
+    markStep('est');markSection('s1');
+  });
+})();
+function renderGuessRecall(){
+  var g=localStorage.getItem('e1410_s6_guess'),box=document.getElementById('guessRecall');
+  if(!box)return;
+  var gs=g?Number(g).toLocaleString('en-US'):'';
+  box.innerHTML = g ? 'In section 6.1 you estimated Toyota\'s saving at <b>'+gs+' staff-hours a year</b>. The reported figure is <b>more than 10,000</b> — produced not by a better model but by the right people, an integrated workflow, and a system that kept working. Monitoring, QA and ownership are what made it last.'
+                    : 'You didn\'t lock an estimate in 6.1 — no matter. Toyota reported saving <b>more than 10,000 staff-hours a year</b> by letting factory staff build their own models. The value came from people, workflow and governance — not from model sophistication.';
+}
+
+/* ---- shared classify builder ---- */
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
+  var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;
+  function capText(n,full){cap.textContent=n+' of '+VARS.length+' classified'+(full?' — '+doneMsg:'');}
+  capText(0,false);
+  VARS.forEach(function(v,i){
+    var row=document.createElement('div');row.className='cl-row';
+    var label=(v.n?'<b>'+v.n+'</b> — ':'')+v.s;
+    row.innerHTML='<div class="st">'+label+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      if(row.dataset.done)return;
+      if(b.dataset.v===v.a){
+        row.dataset.done='1';
+        row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===b)x.classList.add('ok');});
+        var w=document.getElementById(rowsId+'w'+i);
+        w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');
+        done++;capText(done,done===VARS.length);
+        markStep(rowsId+'-'+i);
+        if(done===VARS.length)markSection(secId);
+      }else{b.classList.add('no');b.disabled=true;}
+    });});
+    box.appendChild(row);
+  });
+}
+
+/* ---- 6.2 KPI categories ---- */
+buildClassify('kpiRows','kpiCap',
+  [['M','Model performance'],['O','Operational'],['B','Business outcome']],
+  [
+    {s:'"Recall on confirmed fraud, measured monthly against the 90% commitment."',a:'M',w:'A direct measure of how well the model predicts — model performance.'},
+    {s:'"99th-percentile scoring latency during the evening payment peak."',a:'O',w:'Response time and prediction latency are operational metrics — they decide whether the system is usable, not whether it is accurate.'},
+    {s:'"Fraud losses prevented in dong, compared with the same quarter last year."',a:'B',w:'Revenue and cost impact — a business-outcome metric, and the one the board actually asked for.'},
+    {s:'"Share of flagged cases the fraud team actually opens rather than dismissing unread."',a:'B',w:'User adoption is a business-outcome metric — and the one most teams forget to instrument at all.'},
+    {s:'"Uptime of the scoring service, excluding planned maintenance."',a:'O',w:'System reliability — operational.'},
+    {s:'"Precision on the last 30 days of live traffic, tracked as a trend rather than a single figure."',a:'M',w:'Precision is a model-performance metric; tracking it as a trend is how you see drift arriving.'}
+  ],
+  'all three categories or none: model health, system health, and whether any of it created value.','s2');
+
+/* ---- 6.3 drift types ---- */
+buildClassify('driftRows','driftCap',
+  [['D','Data drift'],['C','Concept drift'],['P','Prediction drift']],
+  [
+    {s:'"We expanded into three northern provinces and the customer profile now looks nothing like our training data."',a:'D',w:'The input distribution changed — data drift. The learned relationship may still hold, but you are seeing unfamiliar inputs.'},
+    {s:'"Fraud rings switched technique after we blocked the old one, so the same signals no longer indicate fraud."',a:'C',w:'The relationship between inputs and outcomes changed — concept drift. Retraining on new data is the only real remedy.'},
+    {s:'"Input data looks statistically unchanged, but the model is flagging 40% more transactions this week."',a:'P',w:'Outputs shifted while inputs appear stable — prediction drift. Treat it as a signal to investigate, not a diagnosis.'},
+    {s:'"During the economic slowdown, spending behaviour changed and our old risk indicators stopped predicting default."',a:'C',w:'An economic shift altering the input–outcome relationship — concept drift, exactly as in the recession example.'},
+    {s:'"Most customers moved from desktop to a new mobile app, so the device and session fields have completely different values."',a:'D',w:'A change in the distribution of the inputs themselves — data drift.'},
+    {s:'"Average predicted fraud probability has crept up every week for two months with no change upstream."',a:'P',w:'A drifting output distribution with stable inputs — prediction drift, and a good candidate for an automated alert.'}
+  ],
+  'three drifts, three responses. Naming the right one is what stops you retraining a model that did not need it.','s3');
+
+/* ---- 6.4 QA techniques ---- */
+buildClassify('qaRows','qaCap',
+  [['K','K-fold cross-validation'],['E','External / holdout validation'],['A','A/B testing'],['R','Reproducibility tracking']],
+  [
+    {s:'"We only have 14 months of labelled fraud and need a performance estimate we can trust."',a:'K',w:'K-fold makes better use of a limited dataset and reduces variance in the estimate — exactly the small-data case.'},
+    {s:'"Before we commit, test it on last quarter\'s transactions, which nobody on the team has ever looked at."',a:'E',w:'An independent dataset touched once for final evaluation — holdout / external validation, the closest honest preview of production.'},
+    {s:'"Run the new model and the legacy rules engine side by side on live traffic and compare fraud losses."',a:'A',w:'Comparing the new system against what it replaces, on real users — an A/B test. It measures business impact, not just accuracy.'},
+    {s:'"The auditor wants to know which dataset version and random seed produced the model now in production."',a:'R',w:'Datasets, parameters, seeds, software and hardware versions — reproducibility tracking. Without it, verification is impossible.'},
+    {s:'"Our accuracy estimate swings by six points depending on how we happen to split the data."',a:'K',w:'High variance in evaluation across splits is the classic symptom cross-validation exists to fix.'},
+    {s:'"Two engineers retrained the same configuration and got materially different results."',a:'R',w:'Identical conditions must give identical results. This is a reproducibility failure — usually unpinned seeds, versions or preprocessing.'}
+  ],
+  'validation proves it generalises; A/B proves it is valuable; reproducibility proves it is auditable. You need all three.','s4');
+
+/* ---- 6.5 case lessons ---- */
+buildClassify('caseRows','caseCap',
+  [['S','Start small, scale smart'],['A','Augment, don\'t replace'],['G','Governance matters'],['M','Measurable outcomes']],
+  [
+    {s:'"Liberty Mutual\'s AI generates several choice sets for the claims adjuster instead of one recommendation."',a:'A',w:'Presenting options keeps the human genuinely deciding — augmentation by design, not nominal supervision.'},
+    {s:'"Colgate-Palmolive deployed into selected R&D teams first, deliberately avoiding broad automation."',a:'S',w:'A targeted, high-impact pilot before any enterprise ambition — start small, scale smart.'},
+    {s:'"Toyota reported saving over 10,000 staff-hours a year, and could state the figure."',a:'M',w:'ROI, efficiency and productivity are the ultimate success metrics — and being able to quantify them is what funds the next phase.'},
+    {s:'"Sanofi adjusted the hierarchy of decision rights so AI-supported decisions would be trusted and used."',a:'G',w:'Changing who may decide what — governance is what turns a capable model into an adopted one.'},
+    {s:'"Colgate hosted the tool in an internal hub with mandatory training before anyone could use it."',a:'G',w:'Controlled access plus required training is a governance control, and it is what made adoption safe.'},
+    {s:'"Domina reported an 80% improvement in delivery access after predicting package returns."',a:'M',w:'A specific, measured operational outcome — the kind of number that makes a pilot scale.'}
+  ],
+  'four lessons across every case: start small, augment humans, govern it, and measure something a board recognises.','s5');
+
+/* ---- 6.6 checkpoint quiz ---- */
+(function quizWidget(){
+  var QUIZ=[
+    {q:'The fundamental reason AI systems need monitoring that traditional software does not is that…',
+     opts:['AI code has more bugs','AI systems are dynamic — they depend on data that keeps changing, so performance degrades in production','monitoring tools are cheaper now','regulators require it'],a:1,
+     w:'Traditional software is static after deployment. A learning system\'s performance depends on data that keeps moving.'},
+    {q:'The three categories of AI project KPI are…',
+     opts:['accuracy, precision, recall','model performance, operational, business outcome','cost, schedule, scope','technical, ethical, legal'],a:1,
+     w:'Model performance (accuracy, F1, ROC-AUC), operational (latency, uptime) and business outcome (revenue, cost, adoption).'},
+    {q:'"The input data distribution has changed" describes…',
+     opts:['concept drift','data drift','prediction drift','overfitting'],a:1,
+     w:'Data drift is a change in the inputs. Concept drift is a change in the input–outcome relationship; prediction drift is a shift in outputs with stable inputs.'},
+    {q:'A fraud model becomes less effective because criminals adopt new techniques. This is…',
+     opts:['data drift','concept drift','underfitting','a latency problem'],a:1,
+     w:'The relationship between the inputs and the outcome has changed — concept drift. Retraining on current data is the only real remedy.'},
+    {q:'The Population Stability Index and Kullback–Leibler divergence are used to…',
+     opts:['tune hyperparameters','detect that a distribution has shifted','explain individual predictions','measure latency'],a:1,
+     w:'Both quantify how far a live distribution has moved from a reference — standard statistical drift detection.'},
+    {q:'The step most often skipped in the continuous improvement loop, and the most dangerous to skip, is…',
+     opts:['monitoring performance','collecting new data','validating the retrained model before redeploying it','redeployment'],a:2,
+     w:'A retrained model is a new model and can be worse. "We retrained it" is not a quality claim.'},
+    {q:'K-fold cross-validation is particularly valuable when…',
+     opts:['the dataset is very large','the labelled dataset is limited and you need a reliable, low-variance performance estimate','latency is critical','the model is a black box'],a:1,
+     w:'It makes better use of limited data and reduces the variance that comes from a single arbitrary split.'},
+    {q:'A/B testing an AI system means…',
+     opts:['testing two datasets','comparing the existing system against the new model with randomly assigned users, on business metrics','running the model twice','validating with a holdout set'],a:1,
+     w:'It measures real business impact against what you are actually replacing — a model can beat a test set and lose to the current process.'},
+    {q:'Reproducibility in AI projects requires tracking…',
+     opts:['only the model parameters','datasets, preprocessing steps, parameters, random seeds, software versions and hardware environments','only the final accuracy','the sponsor\'s approvals'],a:1,
+     w:'Without all of it you cannot recreate a result — and a result you cannot recreate cannot be verified or audited.'},
+    {q:'The common lesson across the Colgate, Sanofi and Liberty Mutual cases is that…',
+     opts:['bigger models produce better returns','targeted pilots that augment human decisions, with governance and measurable outcomes, are what scale','AI should replace human decision-makers','technology choice is the main success factor'],a:1,
+     w:'Start small, augment rather than replace, govern it, and measure something a board recognises. AI success is about people, processes and governance.'}
+  ];
+  var box=document.getElementById('quizBox'),chip=document.getElementById('scoreChip'),
+      res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
+  var answered=0,correct=0;
+  chip.textContent='0 / '+QUIZ.length+' answered';
+  QUIZ.forEach(function(item,i){
+    var q=document.createElement('div');q.className='q';
+    q.innerHTML='<div class="qt"><span class="qn">'+(i+1)+'.</span>'+item.q+'</div>'+
+      item.opts.map(function(o,j){return '<button class="opt" data-j="'+j+'">'+o+'</button>';}).join('')+
+      '<div class="why" id="qw'+i+'"></div>';
+    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){
+      if(q.dataset.done)return;q.dataset.done='1';
+      var j=parseInt(b.dataset.j,10),ok=j===item.a;
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(x===b)x.classList.add('wrong');});
+      document.getElementById('qw'+i).innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;
+      document.getElementById('qw'+i).classList.add('show');
+      answered++;if(ok)correct++;
+      markStep('q'+i);
+      chip.textContent=answered+' / '+QUIZ.length+' answered';
+      if(answered===QUIZ.length)finish();
+    });});
+    box.appendChild(q);
+  });
+  function finish(){
+    scoreEl.textContent=correct+' / '+QUIZ.length;
+    msgEl.textContent = correct>=9 ? 'Excellent — that is the full lifecycle. On to the case workshop.'
+      : correct>=6 ? 'Good. Reread the explanations you missed, then move on.'
+      : 'Worth a second pass: reread sections 6.2–6.5, then try again.';
+    res.classList.add('show');
+    markSection('s6');
+    if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);
+  }
+})();
+
+/* =====================================================================
+   LECTURE DECK — presented live on Zoom (screen share this, cameras on).
+   Keys: → / space next · ← prev · N notes · Esc exit. Print → PDF.
+   ===================================================================== */
+var SLIDES=[
+  {cls:'dk',k:'IDEAS · E1410 · MSc AI',t:'Monitoring, Quality Assurance &amp; Case Studies',
+   b:'<p style="font-size:1.15em"><b>Session 6</b></p><p>Dr. Jan Erik Meidell · Thursday 20 August 2026 · 20:00 ICT</p><div class="onproj"><b>Our running case →</b> <b>MekongPay</b> goes live tonight. Everything from here is about the eighteen months <em>after</em> the launch party — the part no plan budgets for.</div>',
+   logo:true,
+   n:'Cameras on. Recap ask: what does an AI sprint deliver? (validated learning). Then: tonight is the last taught session — S7 and S8 are application.'},
+  {k:'Recap → today',t:'The project ends. The system does not.',
+   b:'<ul><li>S5: how the work runs, and how you talk about it.</li><li>Tonight: <em>monitoring</em> → <em>drift</em> → <em>quality assurance</em> → <em>real cases</em>.</li><li>Last taught session. S7 = case workshop, S8 = review &amp; final prep.</li></ul><div class="onproj"><b>On MekongPay →</b> the model hits every target on launch day. Whether it still does in month 18 is decided by tonight\'s material.</div>',
+   n:'Flag the course arc clearly — students orient well when they know where they are.'},
+  {cls:'dk',k:'Section 6.1',t:'Who built Toyota\'s models?',
+   b:'<p>Not the data-science team. <em>The factory staff.</em></p><p>Given the tools and the training, on problems they already understood.</p>',
+   n:'Let it land. Ask why that might work better than a central AI team. Answers: domain knowledge, workflow fit, ownership.'},
+  {k:'Poll',t:'How many staff-hours a year did that save?',
+   b:'<p>Type a number in the chat.</p>',
+   n:'Most guess low — a few thousand. Site: section 6.1.'},
+  {k:'The answer',t:'More than 10,000 hours a year.',
+   b:'<div class="statline">10,000+</div><p class="statsub">staff-hours saved per year · Google Cloud, 2024</p><p>Produced by <em>the right people, an integrated workflow, and a system that kept working</em> — not by a better model.</p><div class="onproj"><b>On MekongPay →</b> the previous five sessions get you a model that works on day one. Tonight decides whether it still works — and still gets used — in month 18.</div>',
+   n:'This is the thesis of the session. Say it explicitly: the unglamorous chapter is the one that decides whether the rest mattered.'},
+  {k:'The difference',t:'Static software, dynamic AI',
+   b:'<div class="cols"><div><div class="colh">Traditional software</div><ul><li>static after deployment</li><li>behaves as released</li></ul></div><div><div class="colh">AI systems</div><ul><li>data patterns change</li><li>performance degrades</li><li>business conditions shift</li><li>new ethical/regulatory risk appears</li></ul></div></div><p><em>Monitoring turns AI from a one-time outcome into a managed operational system.</em></p><div class="onproj"><b>On MekongPay →</b> without monitoring you have not delivered a capability. You have delivered a moment.</div>',
+   n:'That last line is the one they will remember. Pause after it.'},
+  {cls:'dk',k:'Section 6.2',t:'Monitoring &amp; KPIs',
+   b:'<p>What you watch — and who is accountable once the project is "finished".</p>',
+   n:'Transition. Emphasise this is a governance question, not a tooling question.'},
+  {k:'Three KPI categories',t:'All three, or it will mislead you',
+   b:'<ul><li><b>Model performance</b> — accuracy · precision/recall · F1 · ROC-AUC</li><li><b>Operational</b> — response time · uptime · prediction latency</li><li><b>Business outcome</b> — revenue · cost reduction · <em>user adoption</em> · decision improvement</li></ul><p>Teams instrument the first thoroughly, the second adequately, the third not at all.</p><div class="onproj"><b>On MekongPay →</b> "share of alerts the fraud team actually opens" is a KPI. If nobody watches adoption, you learn about it from a budget review.</div>',
+   n:'Ask: who has ever measured adoption of a system they delivered? Very few hands. That IS the point.'},
+  {k:'The dangerous case',t:'Silent failure',
+   b:'<ul><li>A model that crashes tells you immediately.</li><li>A model that returns <b>confident, plausible, wrong</b> answers tells you nothing.</li><li>Latency fine. Uptime 100%. Decisions quietly getting worse.</li></ul><p>So compare <em>training vs production</em> performance, test vs live data, watch prediction behaviour and confidence trends.</p><div class="onproj"><b>On MekongPay →</b> silence is not evidence of health. Somebody has to be paid to look.</div>',
+   n:'This is the slide that justifies the operating budget. Use it when a sponsor resists funding monitoring.'},
+  {k:'Your role',t:'Five things the PM owns after go-live',
+   b:'<ul><li>Define monitoring <b>KPIs</b> with the technical team</li><li>Establish <b>schedules and review checkpoints</b></li><li><b>Coordinate</b> data science and operations</li><li><b>Escalate</b> on a pre-agreed threshold</li><li>Ensure continued <b>compliance</b></li></ul><p>Tools: MLflow · SageMaker Model Monitor · Azure ML · Vertex AI.</p><div class="onproj"><b>On MekongPay →</b> tools are cheap. Deciding what counts as "bad enough to act on" — before the pressure — is your job.</div>',
+   n:'Pre-agreed thresholds mean escalation is not a judgment call made at 2am under pressure. Stress that.'},
+  {cls:'dk',k:'Section 6.3',t:'Drift',
+   b:'<p>Three ways a working model stops working — with three different fixes.</p>',
+   n:'Students confuse these constantly and the mid-term will test the distinction.'},
+  {k:'Three types',t:'Name it before you fix it',
+   b:'<ul><li><b>Data drift</b> — the <em>inputs</em> change (new demographics, new region)</li><li><b>Concept drift</b> — the <em>input→outcome relationship</em> changes (recession, new fraud tactics)</li><li><b>Prediction drift</b> — <em>outputs</em> move while inputs look stable</li></ul><div class="onproj"><b>On MekongPay →</b> ours is concept drift, and it is adversarial. Block one technique and criminals move to another. Nothing degraded — the world adapted to us.</div>',
+   n:'The adversarial framing is what makes fraud the perfect example. Concept drift here is not a risk, it is a certainty.'},
+  {k:'Detection',t:'Statistical + operational',
+   b:'<div class="cols"><div><div class="colh">Statistical</div><ul><li>distribution comparison tests</li><li><b>PSI</b> — population stability index</li><li><b>KL divergence</b></li></ul></div><div><div class="colh">Operational</div><ul><li>performance-degradation alerts</li><li>threshold monitoring</li><li>automated drift pipelines</li></ul></div></div><p><em>Early detection makes retraining a scheduled task rather than a crisis.</em></p><div class="onproj"><b>On MekongPay →</b> PSI is standard in financial services — your risk team probably already uses it. You do not need to compute it. You need to decide what number triggers what, and who gets woken.</div>',
+   n:'Do not teach the maths. Teach that the threshold decision is a management decision.'},
+  {k:'The loop',t:'Six steps, running forever',
+   b:'<ul><li>1 monitor → 2 detect → 3 collect new data → 4 retrain → 5 <b>validate</b> → 6 redeploy → 1…</li><li>Usually implemented as an <b>MLOps pipeline</b>.</li><li>Step 5 is the one teams skip under pressure.</li></ul><p><em>A retrained model is a NEW model. It can be worse. "We retrained it" is not a quality claim.</em></p><div class="onproj"><b>On MekongPay →</b> budget the loop, staff the loop, schedule the loop. Otherwise the system has a shelf life nobody has told the COO about.</div>',
+   badge:'disc',
+   n:'Discussion 5–6 min: who in the room has a production model with NO funded retraining plan? Usually most of them.'},
+  {cls:'dk',k:'Section 6.4',t:'Quality assurance',
+   b:'<p>Not a testing phase before launch. A continuous governance function.</p>',
+   n:'Reframe QA hard here — most of the class thinks of QA as a gate.'},
+  {k:'Why AI QA differs',t:'Everything traditional QA relies on is missing',
+   b:'<div class="cols"><div><div class="colh">Software QA</div><ul><li>deterministic outputs</li><li>rule-based logic</li><li>stable after release</li></ul></div><div><div class="colh">AI QA</div><ul><li>probabilistic outputs</li><li>depends on training data</li><li>changes with new data</li><li>degrades over time</li></ul></div></div><p>Four quality dimensions: <b>technical · data · operational · governance</b>.</p><div class="onproj"><b>On MekongPay →</b> a project that measures only accuracy is not measuring quality. Bias detection and auditability are quality too.</div>',
+   n:'The four dimensions are examinable. Say them slowly.'},
+  {k:'Validation',t:'Plan it during design, not after',
+   b:'<ul><li><b>Train–test split</b> — the baseline</li><li><b>Holdout</b> — independent set, touched once</li><li><b>Cross-validation</b> — repeated cycles, averaged</li><li><b>External</b> — a genuinely new dataset</li></ul><p><b>K-fold</b>: split into K, train on K−1, test on 1, repeat, average → reliable estimate, better use of small data, lower variance.</p><div class="onproj"><b>On MekongPay →</b> with only 14 months of labels, K-fold is not optional. And you cannot retro-fit a holdout set after the team has seen the data.</div>',
+   n:'That last point is practical and often missed. Once they have looked, it is contaminated.'},
+  {k:'A/B testing',t:'Validated is not the same as valuable',
+   b:'<ul><li><b>A</b> = the existing system · <b>B</b> = the new model</li><li>Users randomly assigned · compare business metrics</li><li>Conversion · accuracy in the wild · engagement · efficiency</li></ul><p><em>A model that beats a held-out test set but loses to the current rules engine has answered the wrong question.</em></p><div class="onproj"><b>On MekongPay →</b> version A is the legacy rules engine, run in parallel on live traffic for four weeks. That is the honest comparison.</div>',
+   n:'Strong slide for the sceptics in the room. The comparison must be against what you replace.'},
+  {k:'Reproducibility',t:'What makes an audit survivable',
+   b:'<ul><li>Track: <b>datasets · preprocessing · parameters · random seeds · software versions · hardware</b></li><li>Hundreds of experiments → systematic <b>experiment tracking &amp; model versioning</b></li><li>Tools: MLflow · Weights &amp; Biases · DVC · Kubeflow</li><li>Document the <b>model</b>, the <b>dataset</b>, the <b>system</b></li></ul><div class="onproj"><b>On MekongPay →</b> "which dataset version and seed produced the model in production?" is a question the State Bank can ask. There is only one acceptable answer.</div>',
+   n:'Connect to S4 audit trails. Same discipline, different chapter.'},
+  {cls:'dk',k:'Section 6.5',t:'What real implementations did',
+   b:'<p>Colgate-Palmolive · Sanofi · Liberty Mutual · Toyota · BMW · and a long tail.</p>',
+   n:'Shift energy — this is the part students enjoy most. Keep it brisk, one PM lesson each.'},
+  {k:'Case · Colgate-Palmolive',t:'Generative AI for concept development',
+   b:'<ul><li><b>Scope</b> — GenAI for product concepts and market research; employees generate copy, imagery, test digitally</li><li><b>Approach</b> — internal hub, <em>mandatory training</em>, augment creativity</li><li><b>Outcome</b> — faster, higher-quality concept testing</li></ul><p><b>PM lesson</b> — small high-impact pilot in R&amp;D · workflow augmentation · employee engagement as a deliverable.</p>',
+   badge:'case',
+   n:'MIT SMR 2025. Note they invested in TRAINING, not just tools. That is a budget line students forget.'},
+  {k:'Case · Sanofi',t:'AI-guided investment decisions',
+   b:'<ul><li><b>Scope</b> — guides managers on investment/project decisions; supports, does not replace</li><li><b>Approach</b> — generative + predictive AI; <em>adjusted the hierarchy of decision rights</em></li><li><b>Outcome</b> — better-informed choices, reduced sunk-cost bias</li></ul><p><b>PM lesson</b> — human–AI collaboration by design · governance produces trust · phased deployment.</p>',
+   badge:'case',
+   n:'The killer detail: they changed WHO MAY DECIDE, not just the tool. Most projects change a tool and expect an organisational outcome.'},
+  {k:'Case · Liberty Mutual',t:'Choice sets, not recommendations',
+   b:'<ul><li><b>Scope</b> — AI helps claims adjusters triage calls and resolve inquiries</li><li><b>Approach</b> — generates multiple <em>choice sets</em> rather than one answer; reduces cognitive load</li><li><b>Outcome</b> — better call resolution, less adjuster overload</li></ul><p><b>PM lesson</b> — options keep the human genuinely deciding; pilots validate before scaling.</p>',
+   badge:'case',
+   n:'Contrast with a single recommendation, which humans rubber-stamp. Design choice worth stealing.'},
+  {k:'The wider roster',t:'Same pattern, every industry',
+   b:'<div class="cols"><div><div class="colh">Productivity</div><ul><li>Toyota — 10,000+ hrs/yr</li><li>Uber · Rivian</li></ul><div class="colh" style="margin-top:1vh">Operations</div><ul><li>BMW — fleet analytics</li><li>Domina — +80% delivery access</li></ul></div><div><div class="colh">Customer experience</div><ul><li>LUXGEN — ~30% less workload</li><li>Alaska Airlines · VW · NoBroker</li></ul><div class="colh" style="margin-top:1vh">Creative</div><ul><li>Virgin Voyages · Figma · Square Enix</li></ul></div></div><p style="font-size:.72em;color:#94A3B8">Source: Google Cloud, 2024</p>',
+   n:'Go fast. Ask which industry is closest to theirs and let two people answer.'},
+  {k:'AI in PM itself',t:'It is coming for your job description',
+   b:'<ul><li><b>Planning</b> — predict durations, optimise allocation</li><li><b>Risk</b> — flag risks, simulate what-ifs</li><li><b>Communication</b> — auto-generate reports and dashboards</li><li><b>Knowledge</b> — summarise notes, maintain the repository</li><li><b>Decision support</b> — prioritise, aid trade-offs</li></ul><p><em>Apply tonight\'s scepticism: a generated status report is a prediction about your project, not a record of it.</em></p><div class="onproj"><b>On MekongPay →</b> these tools need the same validation, monitoring and accountability as any other model. No exceptions for the PM\'s own tooling.</div>',
+   n:'Good discussion hook if time allows. Students are usually already using some of this.'},
+  {k:'Closing insight',t:'Four lessons that hold across every case',
+   b:'<ul><li><b>Start small, scale smart</b> — high-impact pilots first</li><li><b>Augment, don\'t replace</b> — every success kept a human deciding</li><li><b>Governance matters</b> — it produces adoption, trust, compliance</li><li><b>Measurable outcomes</b> — ROI and efficiency, not model accuracy</li></ul><p><em>AI success is not about technology. It is about people, processes and governance.</em></p>',
+   n:'Land the thesis. This also answers "what should my final assignment argue?" — point that out.'},
+  {k:'Your turn',t:'Checkpoint — live, now',
+   b:'<p>Open the site → <b>Session 6 → section 6.6</b>.</p><ul><li>10 questions · ~5 min · instant explanations</li><li>The three drift types catch almost everyone once</li></ul>',
+   badge:'act',
+   n:'5–6 min. Watch scores arrive on admin.html. Review the drift questions together.'},
+  {cls:'dk',k:'Before Tuesday',t:'Homework',
+   b:'<ul><li><b>Workshop</b> — section 6.7: build YOUR operating plan. Completes <em>§6</em> and feeds <em>§8</em>.</li><li><b>Compile</b> — open <em>Compile my project</em> and read your case study end to end. Bring it Tuesday.</li><li><b>Next</b> — Session 7 · Case-Study Workshop · Tue 25 Aug, 20:00 ICT. Come ready to work in teams.</li></ul><p>Questions → see you Tuesday. 🙏</p>',
+   n:'Ask them to actually open compile.html before Tuesday — S7 works much better if they have read their own draft.'}
+];
+(function lecture(){
+  var idx=0,open=false;
+  var lect=document.getElementById('lect'),stage=document.getElementById('lectStage'),
+      count=document.getElementById('lectCount'),notes=document.getElementById('lectNotes');
+  var cur=null;
+  function slideHTML(s){
+    var badge=s.badge?'<span class="lect-badge '+s.badge+'">'+(s.badge==='disc'?'💬 Discussion':s.badge==='act'?'✋ Your turn':'Case')+'</span>':'';
+    var logo=s.logo?'<img class="lect-logo-big" src="logo-ideas.png" alt="IDEAS">':'';
+    return logo+badge+'<div class="lect-kicker">'+s.k+'</div><h2>'+s.t+'</h2><div class="lect-body">'+s.b+'</div>';
+  }
+  function render(){
+    var s=SLIDES[idx];
+    if(cur)cur.remove();
+    cur=document.createElement('div');
+    cur.className='lect-slide'+(s.cls?' '+s.cls:'');
+    cur.innerHTML=slideHTML(s);
+    stage.appendChild(cur);
+    lect.classList.toggle('dkbg',s.cls==='dk');
+    count.textContent=(idx+1)+' / '+SLIDES.length;
+    notes.innerHTML='<span class="nt">Speaker notes · slide '+(idx+1)+'</span>'+(s.n||'—');
+  }
+  function go(d){idx=Math.max(0,Math.min(SLIDES.length-1,idx+d));render();}
+  function openLect(){open=true;lect.classList.add('on');render();
+    if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(function(){});}}
+  function closeLect(){open=false;lect.classList.remove('on');
+    if(document.fullscreenElement&&document.exitFullscreen){document.exitFullscreen().catch(function(){});}}
+  document.getElementById('lectOpen').addEventListener('click',openLect);
+  document.getElementById('lectClose').addEventListener('click',closeLect);
+  document.getElementById('lectNotesBtn').addEventListener('click',function(){notes.classList.toggle('on');});
+  stage.querySelector('.lect-zone.next').addEventListener('click',function(){go(1);});
+  stage.querySelector('.lect-zone.prev').addEventListener('click',function(){go(-1);});
+  document.addEventListener('keydown',function(e){
+    if(!open)return;
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(-1);}
+    else if(e.key==='Escape'){closeLect();}
+    else if(e.key==='n'||e.key==='N'){notes.classList.toggle('on');}
+    else if(e.key==='Home'){idx=0;render();}
+    else if(e.key==='End'){idx=SLIDES.length-1;render();}
+  });
+  if(location.hash==='#lecture')setTimeout(openLect,150);
+  var pd=document.getElementById('printDeck');
+  pd.innerHTML=SLIDES.map(function(s,i){
+    return '<div class="p-slide'+(s.cls?' '+s.cls:'')+'">'+slideHTML(s)+'<span class="pnum">E1410 · Session 6 · '+(i+1)+'/'+SLIDES.length+'</span></div>';
+  }).join('');
+})();
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+renderList();updateBar();
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack)StatsTrack.init({module:'s6',title:'Session 6 · Monitoring, QA & Case Studies',total:SECTIONS.length});
+  /* section 6.7 counts as done only when EVERY workbook field is filled */
+  var s7=document.getElementById('s7');
+  if(s7){
+    var fields=s7.querySelectorAll('[data-work]');
+    var st=document.getElementById('wbStatus');
+    var check=function(){
+      var n=0;fields.forEach(function(f){var filled=!!(f.value||'').trim();markStep('wb-'+f.getAttribute('data-work'),filled);if(filled)n++;});
+      if(st)st.textContent=(n>=fields.length&&fields.length>0)?'✓ Section complete — your operating plan is saved.':(n+' of '+fields.length+' fields filled · complete all to finish this section.');
+      if(n>=fields.length&&fields.length>0)markSection('s7');
+    };
+    fields.forEach(function(f){f.addEventListener('input',check);});
+    setTimeout(check,900);
+  }
+});
+</script>
+<script src="progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="announce.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
