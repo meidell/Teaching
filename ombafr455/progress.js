@@ -19,10 +19,13 @@
 
   function san(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);}
   function put(path,val){try{fetch(DB+'/'+path+'.json',{method:'PUT',keepalive:true,body:JSON.stringify(val)});}catch(e){}}
+  /* PATCH merges, and slash-paths as keys let one request write a whole module */
+  function patch(path,obj){try{fetch(DB+'/'+path+'.json',{method:'PATCH',keepalive:true,body:JSON.stringify(obj)});}catch(e){}}
   function now(){return Date.now();}
   function base(){return NS+'/'+S.sid;}
   function mbase(){return base()+'/mod/'+S.mod;}
   function lk(k){return 'ombafr455_'+k+'_'+S.mod;}
+  function mk(k,mod){return 'ombafr455_'+k+'_'+mod;}
 
   /* cookies are best-effort only (blocked inside some LMS iframes);
      localStorage is the source of truth */
@@ -39,24 +42,57 @@
       S.done=JSON.parse(localStorage.getItem(lk('done'))||'{}')||{};
     }catch(e){}
   }
-  function saveSecs(){try{localStorage.setItem(lk('secs'),String(S.secs));}catch(e){}}
-  function saveDone(){try{localStorage.setItem(lk('done'),JSON.stringify(S.done));}catch(e){}}
+  function saveSecs(){if(!S.mod)return;try{localStorage.setItem(lk('secs'),String(S.secs));}catch(e){}}
+  function saveDone(){if(!S.mod)return;try{localStorage.setItem(lk('done'),JSON.stringify(S.done));}catch(e){}}
+  /* remembered so a student who names themselves later can be given a labelled
+     module rather than a bare id */
+  function saveMeta(){if(!S.mod)return;try{localStorage.setItem(lk('meta'),JSON.stringify({title:S.title,total:S.total}));}catch(e){}}
 
   function identify(){
     if(!S.sid)return;
     put(base()+'/name',S.name);
     put(base()+'/sid',S.sid);
     put(base()+'/updatedAt',now());
+    if(!S.mod)return;                 /* pages that only offer the name box (dashboard) */
     put(mbase()+'/title',S.title);
     put(mbase()+'/total',S.total);
     put(mbase()+'/updatedAt',now());
     if(!S.started){S.started=true;put(mbase()+'/firstSeen',now());}
   }
-  function pushAll(){
+  /* ---- backfill ----
+     Sections, scores and time are always written to localStorage, named or not.
+     So when a student finally enters their name — even weeks later, even on a
+     different page — everything they have already done on this device is pushed,
+     one PATCH per module. This is what makes "I skipped the name box on the first
+     two homeworks" recoverable instead of lost. */
+  function backfillAll(){
     if(!S.sid)return;
-    identify();
-    Object.keys(S.done).forEach(function(k){if(S.done[k])put(mbase()+'/done/'+k,true);});
-    put(mbase()+'/secs',S.secs);
+    saveSecs();saveMeta();
+    var mods={},i,k,m;
+    try{
+      for(i=0;i<localStorage.length;i++){
+        k=localStorage.key(i);
+        m=k&&k.match(/^ombafr455_(?:done|secs|score|meta)_(.+)$/);
+        if(m)mods[m[1]]=true;
+      }
+    }catch(e){}
+    Object.keys(mods).forEach(function(mod){
+      var obj={},meta={},done={},secs,score;
+      try{meta=JSON.parse(localStorage.getItem(mk('meta',mod))||'{}')||{};}catch(e){}
+      try{done=JSON.parse(localStorage.getItem(mk('done',mod))||'{}')||{};}catch(e){}
+      secs =parseInt(localStorage.getItem(mk('secs',mod))||'0',10)||0;
+      score=localStorage.getItem(mk('score',mod));
+      if(meta.title)obj.title=meta.title;
+      if(meta.total)obj.total=meta.total;
+      if(secs)obj.secs=secs;
+      if(score)obj.score=score;
+      Object.keys(done).forEach(function(id){if(done[id])obj['done/'+id]=true;});
+      obj.updatedAt=now();
+      patch(base()+'/mod/'+mod,obj);
+    });
+    put(base()+'/name',S.name);
+    put(base()+'/sid',S.sid);
+    put(base()+'/updatedAt',now());
   }
 
   /* ---- active-time tracking ---- */
@@ -68,7 +104,7 @@
     document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush();});
     window.addEventListener('pagehide',flush);
   }
-  function flush(){saveSecs();if(S.sid){put(mbase()+'/secs',S.secs);put(mbase()+'/updatedAt',now());put(base()+'/updatedAt',now());}}
+  function flush(){saveSecs();if(S.sid&&S.mod){put(mbase()+'/secs',S.secs);put(mbase()+'/updatedAt',now());put(base()+'/updatedAt',now());}}
 
   /* ---- identity UI (light green/sand theme) ---- */
   function injectCSS(){
@@ -85,6 +121,7 @@
     '#st-box{background:#fff;border:1px solid rgba(44,85,48,.25);border-radius:20px;padding:26px 24px;max-width:360px;width:100%;text-align:center;color:#1A2B1C;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;box-shadow:0 18px 50px -20px rgba(44,85,48,0.5);}'+
     '#st-box h3{font-family:Georgia,serif;font-size:20px;margin-bottom:8px;color:#2C5530;}'+
     '#st-box p{font-size:13px;color:#3D4F3E;margin-bottom:14px;line-height:1.5;}'+
+    '#st-box p.st-back{background:#E8F2E2;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#2C5530;text-align:left;}'+
     '#st-box input{width:100%;background:#F4EDE0;border:1px solid rgba(44,85,48,.3);border-radius:10px;color:#1A2B1C;font:15px "Helvetica Neue",Arial,sans-serif;padding:11px 13px;margin-bottom:12px;}'+
     '#st-box input:focus{outline:none;border-color:#4A8B3A;}'+
     '#st-box button{background:#4A8B3A;color:#fff;border:none;border-radius:30px;padding:11px 22px;font:bold 13px "Helvetica Neue",Arial,sans-serif;cursor:pointer;}'+
@@ -102,7 +139,7 @@
     var m=document.getElementById('st-modal');
     if(!m){
       m=document.createElement('div');m.id='st-modal';
-      m.innerHTML='<div id="st-box"><h3>Save your progress</h3><p>Enter your name so your professor can see your progress (who, when, time spent, what you completed). It saves on this device and syncs automatically.</p><input id="st-name" placeholder="First and last name" autocomplete="name"><br><button id="st-save">Save &amp; continue</button><button class="skip" id="st-skip">continue without saving</button></div>';
+      m.innerHTML='<div id="st-box"><h3>Save your progress</h3><p>Enter your name so your professor can see your progress (who, when, time spent, what you completed). It saves on this device and syncs automatically.</p><p class="st-back"><b>Left it blank earlier?</b> No work is lost — everything you have already done in this browser is recorded locally and will be sent the moment you enter your name here.</p><input id="st-name" placeholder="First and last name" autocomplete="name"><br><button id="st-save">Save &amp; continue</button><button class="skip" id="st-skip">continue without saving</button></div>';
       document.body.appendChild(m);
       m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('on');});
       document.getElementById('st-save').addEventListener('click',saveName);
@@ -118,14 +155,17 @@
     try{localStorage.setItem('ombafr455_name',v);localStorage.setItem('ombafr455_sid',S.sid);}catch(e){}
     setCookie('ombafr455_name',v);setCookie('ombafr455_sid',S.sid);
     document.getElementById('st-modal').classList.remove('on');
-    renderPill();pushAll();
+    renderPill();
+    identify();          /* this page, with firstSeen */
+    backfillAll();       /* and everything already done on this device */
+    try{window.dispatchEvent(new CustomEvent('statstrack:named',{detail:{name:S.name,sid:S.sid}}));}catch(e){}
   }
 
   /* ---- public API ---- */
   window.StatsTrack={
     init:function(o){
       S.mod=o.module;S.title=o.title||o.module;S.total=o.total||0;
-      loadLocal();injectCSS();renderPill();
+      loadLocal();saveMeta();injectCSS();renderPill();
       if(S.sid)identify();
       startTimer();
       if(!S.name){ setTimeout(function(){ if(!S.name)openModal(); },1500); }
@@ -135,10 +175,19 @@
       if(S.sid){put(mbase()+'/done/'+id,true);put(mbase()+'/updatedAt',now());put(base()+'/updatedAt',now());}
     },
     setScore:function(done,total){
-      if(S.sid){put(mbase()+'/score',done+'/'+total);put(mbase()+'/updatedAt',now());put(base()+'/updatedAt',now());}
       try{localStorage.setItem(lk('score'),done+'/'+total);}catch(e){}
+      if(S.sid){put(mbase()+'/score',done+'/'+total);put(mbase()+'/updatedAt',now());put(base()+'/updatedAt',now());}
+      /* submitting is the moment it matters — ask now rather than lose the score */
+      else openModal();
+    },
+    /* for pages that show progress rather than make it: no module, no timer,
+       just the identity pill and a working name box */
+    attach:function(){
+      loadLocal();injectCSS();renderPill();
+      if(S.sid)identify();
     },
     askName:openModal,
+    identified:function(){return !!S.sid;},
     name:function(){return S.name;}
   };
 })();

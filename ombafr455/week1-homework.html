@@ -22,6 +22,9 @@ h1,h2,h3{font-family:Georgia,'Times New Roman',serif;}
 .topbar{position:sticky;top:0;z-index:60;background:rgba(244,237,224,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:9px 16px;}
 .topbar-inner{max-width:820px;margin:0 auto;display:flex;align-items:center;gap:12px;}
 .topbar .course{font-size:10px;letter-spacing:2px;color:var(--green);font-weight:700;white-space:nowrap;}
+.filterbtn{font-size:12px;font-weight:bold;color:var(--green-deep);background:transparent;border:1px solid rgba(74,139,58,0.45);border-radius:20px;padding:5px 12px;cursor:pointer;flex:none;}
+.filterbtn:hover{background:var(--green-pale);}
+body.hide-solved .prob.solved{display:none;}
 .scorechip{margin-left:auto;font-size:12px;color:var(--green-deep);font-weight:bold;background:var(--green-pale);border:1px solid rgba(74,139,58,0.35);border-radius:20px;padding:5px 12px;}
 .pop{font-size:13px;color:var(--green-deep);text-decoration:none;font-weight:700;opacity:.7;}
 .pop:hover{opacity:1;}
@@ -95,6 +98,7 @@ h1,h2,h3{font-family:Georgia,'Times New Roman',serif;}
   <img src="sumas-logo.png" alt="SUMAS" style="height:20px;width:auto;flex:none;">
   <span class="course">OMBAFR455 · WEEK 1 · HOMEWORK</span>
   <span class="scorechip" id="scoreChip">0 / 0 solved</span>
+  <button class="filterbtn" id="hideSolved" hidden>Hide solved</button>
   <a class="pop" href="week1-homework.html" target="_blank" rel="noopener" title="Open in a new tab">↗</a>
 </div></div>
 
@@ -253,6 +257,10 @@ const PROBLEMS=[
 
 const TOTAL=PROBLEMS.filter(p=>!p.isHead).length;
 const solved={};
+/* what this browser already recorded as solved. Restored below so a returning
+   student never has to work out which problems they had already done. */
+let PRIOR={};
+try{PRIOR=JSON.parse(localStorage.getItem('ombafr455_done_'+MODULE)||'{}')||{};}catch(e){}
 const root=document.getElementById('problems');
 let pcount=0;
 
@@ -277,12 +285,17 @@ PROBLEMS.forEach(p=>{
   card.innerHTML=body;
   root.appendChild(card);
   wire(card,p);
+  if(PRIOR[p.id]){
+    solved[p.id]=true;card.classList.add('solved');
+    show(card.querySelector('[data-fb]'),'good','\u2705 <b>Solved on an earlier visit.</b> Nothing to redo here \u2014 open the solution if you want the reasoning again.');
+  }
 });
 
 function wire(card,p){
   const fb=card.querySelector('[data-fb]');
   const solBtn=card.querySelector('[data-act="sol"]');
-  let chosen=null, attempted=false;
+  let chosen=null, attempted=!!PRIOR[p.id];
+  if(attempted)solBtn.classList.remove('locked');
   if(p.type==='choice'){
     card.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
       card.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
@@ -339,11 +352,26 @@ function updateScore(){
 }
 updateScore();
 
+(function(){
+  const btn=document.getElementById('hideSolved');
+  if(!Object.keys(solved).length)return;          /* nothing solved yet — no need for it */
+  btn.hidden=false;
+  btn.addEventListener('click',function(){
+    const on=document.body.classList.toggle('hide-solved');
+    btn.textContent=on?'Show all':'Hide solved';
+  });
+})();
+
 document.getElementById('finishBtn').addEventListener('click',()=>{
   const n=Object.keys(solved).length;
   const pct=Math.round(n/TOTAL*100);
-  document.getElementById('finalRes').textContent=`You solved ${n} of ${TOTAL} problems (${pct}%). Score recorded for your professor.`;
   if(window.StatsTrack){StatsTrack.setScore(n,TOTAL);StatsTrack.complete('submitted');}
+  /* only claim it reached the professor if it actually did — an unnamed student
+     is saved locally and syncs the moment they fill the name box in */
+  const named=window.StatsTrack&&StatsTrack.identified();
+  document.getElementById('finalRes').textContent=`You solved ${n} of ${TOTAL} problems (${pct}%). `+(named
+    ? `Score recorded for your professor under ${StatsTrack.name()}.`
+    : `Your score is saved in this browser. Add your name in the box that has just opened — or the button at the bottom right — and this score, plus everything else you have already done on this device, is sent to your professor.`);
 });
 
 window.addEventListener('DOMContentLoaded',function(){
