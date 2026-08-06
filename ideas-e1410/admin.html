@@ -113,6 +113,28 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
 .ana-val{font-size:11.5px;font-weight:800;color:var(--red-deep);width:32px;text-align:right;flex:none;}
 .ana-hero{font-size:14px;color:var(--ink-soft);margin-bottom:14px;}
 .ana-hero b{font-size:34px;font-weight:800;color:var(--red-deep);display:block;line-height:1;letter-spacing:-1px;}
+/* ---- checkpoint-quiz breakdown: which questions the cohort got wrong ---- */
+.quizpanel{background:var(--card);border:1px solid var(--line-2);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+.quizpanel h2{font-size:16px;color:var(--ink);margin-bottom:2px;}
+.quizpanel .sub{font-size:12px;color:var(--grey);margin-bottom:12px;}
+.qtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.qtab{font:600 12px 'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif;background:var(--paper);border:1px solid var(--line-2);color:var(--ink-soft);border-radius:8px;padding:5px 11px;cursor:pointer;}
+.qtab:hover{border-color:var(--red);color:var(--red-deep);}
+.qtab.active{background:var(--red);border-color:var(--red);color:#fff;}
+.qq{display:flex;gap:11px;align-items:flex-start;padding:10px 11px;border:1px solid var(--line-2);border-radius:10px;margin-bottom:7px;background:var(--paper);}
+.qq.worst{border-color:var(--red);background:rgba(190,30,45,.05);}
+.qq .rank{flex:none;width:22px;height:22px;border-radius:6px;background:var(--line-2);color:var(--ink-soft);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.qq.worst .rank{background:var(--red);color:#fff;}
+.qq .body{flex:1;min-width:0;}
+.qq .qtxt{font-size:13px;color:var(--ink);line-height:1.45;font-weight:600;}
+.qq .qmeta{font-size:11.5px;color:var(--grey);line-height:1.6;margin-top:4px;}
+.qq .qmeta b{color:var(--ink-soft);}
+.qq .qmeta .miss{color:var(--red-deep);font-weight:700;}
+.qq .pct{flex:none;text-align:right;width:60px;}
+.qq .pct b{display:block;font-size:19px;font-weight:800;color:var(--red-deep);line-height:1.1;letter-spacing:-.5px;}
+.qq .pct span{font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;}
+.qq.ok .pct b{color:#1f7a3d;}
+.qnote{font-size:11.5px;color:var(--grey);margin-top:10px;line-height:1.6;}
 #adIntro{position:fixed;inset:0;z-index:500;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:18px;}
 #adIntro.on{display:flex;}
 #adIntro .box{background:#fff;border-radius:20px;max-width:490px;width:100%;padding:28px 26px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55);max-height:92vh;overflow-y:auto;}
@@ -136,6 +158,7 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
   <div class="pt"><div class="ic">📊</div><div class="tx"><b>The table.</b> One row per student · a column per session (S1–S8) and reading (R1–R4). Each cell shows completion or the self-check score.</div></div>
   <div class="pt"><div class="ic">👁</div><div class="tx"><b>Click any row</b> to expand it — you'll see their password, their <b>course-progress bar</b>, per-section detail, and their full <b>workbook answers</b> (the raw material for their final).</div></div>
   <div class="pt"><div class="ic">🚩</div><div class="tx"><b>Needs attention</b> auto-flags who hasn't started, has gone quiet 7+ days, or scored under 60%.</div></div>
+  <div class="pt"><div class="ic">❓</div><div class="tx"><b>Checkpoint quiz, question by question.</b> Every question ranked worst-answered first, with the wrong option the class picked most. The top two are flagged — those are the ones you clear up in 60 seconds at the start of the next session.</div></div>
   <div class="pt"><div class="ic">📣</div><div class="tx"><b>Announcements &amp; exports.</b> Post a banner to every student page; download progress or all answers as CSV.</div></div>
   <div class="pt"><div class="ic">🔄</div><div class="tx"><b>Live.</b> Refreshes every 20 seconds while this tab is open — great for watching the room during class.</div></div>
   <button class="go" id="adIntroGo">Got it</button>
@@ -163,6 +186,7 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
     <button class="btn" onclick="refreshActive()">↻ Refresh</button>
     <button class="btn gold" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn" onclick="exportAnswers()">⬇ Answers</button>
+    <button class="btn" onclick="exportQuiz()">⬇ Quiz</button>
     <button class="btn" onclick="openIntro()">👁 Guide</button>
     <button class="btn" onclick="logout()">Lock</button>
   </div>
@@ -176,6 +200,14 @@ a.back{color:var(--red-deep);text-decoration:none;font-size:12.5px;font-weight:6
       <div><div class="ana-h">Average progress by session &amp; reading</div><div id="anaModules"></div></div>
       <div><div class="ana-h">Where the cohort is overall</div><div class="ana-hero" id="anaHero"></div><div id="anaDist"></div></div>
     </div>
+  </div>
+
+  <div class="quizpanel" id="quizpanel" style="display:none">
+    <h2>Checkpoint quiz — question by question</h2>
+    <div class="sub">Every answer the cohort clicked, worst-answered first. The <b>top two are flagged</b> — those are the ones you clear up in 60 seconds at the start of the next session.</div>
+    <div class="qtabs" id="quizTabs"></div>
+    <div id="quizList"></div>
+    <div class="qnote" id="quizNote"></div>
   </div>
 
   <div class="attention" id="onboard">
@@ -240,7 +272,7 @@ var MODULES=[
   {id:'r1',label:'R1 · AI Superpowers'},{id:'r2',label:'R2 · AI&PM study'},
   {id:'r3',label:'R3 · PM2030'},{id:'r4',label:'R4 · SME adoption'}
 ];
-var SORT='recent', POLL=null, ROWS=[], ROSTER={};
+var SORT='recent', POLL=null, ROWS=[], ROSTER={}, QUIZMETA={}, QUIZMOD=null;
 
 function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function doneCount(c){var n=0,d=(c&&c.done)||{};for(var k in d){if(d[k])n++;}return n;}
@@ -293,6 +325,7 @@ async function load(){
   var root=await window.__store.get(NS);ROWS=[];
   if(root){for(var sid in root){if(!root.hasOwnProperty(sid)||sid.charAt(0)==='_')continue;var n=root[sid]||{};ROWS.push({sid:sid,name:n.name||sid,mod:n.mod||{},ts:n.updatedAt||0,node:n});}}
   ROSTER=(root&&root._roster)||{};
+  QUIZMETA=(root&&root._quizmeta)||{}; /* question text per session, written by progress.js */
   renderRoster(ROSTER);
   render();
 }
@@ -345,6 +378,71 @@ function render(){
   if(window.CourseProgress){rows.forEach(function(s){var el=document.getElementById('rb-'+s.sid);if(el)CourseProgress.paint(CourseProgress.dataFromMods(s.mod),{bar:el,compact:true});});}
   renderAttention();
   renderAnalytics();
+  renderQuiz();
+}
+
+/* =====================================================================
+   CHECKPOINT-QUIZ BREAKDOWN
+   Each session page records every click as e1410/<sid>/mod/<m>/quiz/q<i>
+   = {p:pickedOption, c:1|0}; the question text lives once in
+   e1410/_quizmeta/<m>. We aggregate across the cohort here so you can see
+   which questions the class actually got wrong — the two worst are what
+   you clear up at the top of the next session.
+   ===================================================================== */
+function quizStats(mid){
+  var meta=QUIZMETA[mid], qs=(meta&&meta.qs)||[], agg={}, students=0;
+  ROWS.forEach(function(s){
+    var q=s.mod[mid]&&s.mod[mid].quiz; if(!q)return;
+    var touched=false;
+    for(var k in q){
+      if(!q.hasOwnProperty(k)||k.charAt(0)!=='q')continue;
+      var i=parseInt(k.slice(1),10); if(isNaN(i))continue;
+      var r=q[k]||{}; var a=agg[i]||(agg[i]={n:0,right:0,picks:{}});
+      a.n++; if(r.c)a.right++;
+      if(!r.c&&r.p!=null)a.picks[r.p]=(a.picks[r.p]||0)+1;
+      touched=true;
+    }
+    if(touched)students++;
+  });
+  var out=[];
+  Object.keys(agg).forEach(function(k){
+    var i=parseInt(k,10),a=agg[k],m=qs[i]||{};
+    var wrongIdx=null,wrongN=0;
+    for(var p in a.picks){if(a.picks[p]>wrongN){wrongN=a.picks[p];wrongIdx=parseInt(p,10);}}
+    out.push({i:i,n:a.n,right:a.right,pct:Math.round(a.right/a.n*100),
+      q:m.q||('Question '+(i+1)+' — text not yet synced'),
+      answer:(m.opts&&m.a>=0)?m.opts[m.a]:'',
+      wrong:(wrongIdx!=null&&m.opts)?m.opts[wrongIdx]:'', wrongN:wrongN});
+  });
+  out.sort(function(a,b){return a.pct-b.pct||a.i-b.i;}); /* worst answered first */
+  return {rows:out,students:students,title:(meta&&meta.title)||''};
+}
+function quizModules(){return MODULES.filter(function(m){return quizStats(m.id).rows.length>0;});}
+function setQuizMod(id){QUIZMOD=id;renderQuiz();}
+function renderQuiz(){
+  var el=document.getElementById('quizpanel');if(!el)return;
+  var mods=quizModules();
+  if(!mods.length){el.style.display='none';return;}
+  el.style.display='block';
+  if(!QUIZMOD||!mods.some(function(m){return m.id===QUIZMOD;}))QUIZMOD=mods[mods.length-1].id; /* default: the most recent session with data */
+  document.getElementById('quizTabs').innerHTML=mods.map(function(m){
+    return '<button class="qtab'+(m.id===QUIZMOD?' active':'')+'" onclick="setQuizMod(\''+m.id+'\')">'+esc(m.label.split(' · ')[0])+'</button>';
+  }).join('');
+  var st=quizStats(QUIZMOD),h='';
+  st.rows.forEach(function(r,rank){
+    var worst=rank<2&&r.pct<100, cls='qq'+(worst?' worst':(r.pct>=80?' ok':''));
+    h+='<div class="'+cls+'"><div class="rank">'+(r.i+1)+'</div><div class="body">'+
+      '<div class="qtxt">'+esc(r.q)+'</div><div class="qmeta">'+
+      '<b>'+r.right+' of '+r.n+'</b> correct'+
+      (r.answer?' · answer: <b>'+esc(r.answer)+'</b>':'')+
+      (r.wrong?' · most-picked miss: <span class="miss">'+esc(r.wrong)+'</span> ('+r.wrongN+')':'')+
+      '</div></div><div class="pct"><b>'+r.pct+'%</b><span>correct</span></div></div>';
+  });
+  document.getElementById('quizList').innerHTML=h;
+  var worst=st.rows.filter(function(r){return r.pct<100;}).slice(0,2);
+  document.getElementById('quizNote').innerHTML=st.students+' student'+(st.students===1?'':'s')+
+    ' answered at least one question'+(st.title?' · '+esc(st.title):'')+'.'+
+    (worst.length?' <b>Open the next session with Q'+worst.map(function(r){return r.i+1;}).join(' and Q')+'.</b>':' Nothing to clear up — the cohort is clean on this one.');
 }
 /* ---- cohort analytics (single-series brand-red bars, direct value labels) ---- */
 function renderAnalytics(){
@@ -425,6 +523,11 @@ function exportAnswers(){var lines=[['name','student_id','field','label','sessio
     Object.keys(w).forEach(function(id){var an=w[id]||{};
       lines.push([s.name,s.sid,id,an.label||'',an.mod||'',an.v||'',an.ts?new Date(an.ts).toISOString():''].map(csv).join(','));});});
   var blob=new Blob([lines.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='e1410-answers.csv';a.click();}
+/* every session's quiz, worst question first — the pre-class prep sheet */
+function exportQuiz(){var lines=[['session','q_number','question','correct_answer','n_answered','n_correct','pct_correct','most_picked_wrong','n_picked_wrong'].map(csv).join(',')];
+  quizModules().forEach(function(m){var st=quizStats(m.id);
+    st.rows.forEach(function(r){lines.push([m.label,r.i+1,r.q,r.answer,r.n,r.right,r.pct,r.wrong,r.wrongN||''].map(csv).join(','));});});
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='e1410-quiz-questions.csv';a.click();}
 
 (function(){var inp=document.getElementById('pin');
   inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPin();});
