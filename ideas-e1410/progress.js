@@ -97,14 +97,40 @@
     });
   }
 
+  /* ---- checkpoint quiz: per-question results ----
+     The quiz widget on each session page exposes its question array as
+     window.E1410_QUIZ and calls quizAnswer() on every click. Two writes:
+       e1410/_quizmeta/<mod>                  — question text + options (once per student)
+       e1410/<sid>/mod/<mod>/quiz/q<i>        — {p:pickedIndex, c:1|0, ts}
+     admin.html aggregates these across the cohort into the per-question
+     "hardest questions" table you open the next session with. */
+  function quizStamp(Q){return S.mod+'|'+Q.length+'|'+String(Q[0]&&Q[0].q||'').length;}
+  function pushQuizMeta(){
+    var Q=window.E1410_QUIZ;
+    if(!S.sid||!S.mod||!Q||!Q.length)return;
+    var stamp=quizStamp(Q); /* re-writes itself if the questions are ever edited */
+    try{if(localStorage.getItem('e1410_qmeta')===stamp)return;}catch(e){}
+    put(NS+'/_quizmeta/'+S.mod,{title:S.title,ts:now(),qs:Q.map(function(it){
+      return {q:it.q,opts:it.opts||[],a:(it.a==null?-1:it.a)};
+    })});
+    try{localStorage.setItem('e1410_qmeta',stamp);}catch(e){}
+  }
+
   window.StatsTrack={
     init:function(o){
       if(window.E1410_ACCESS===false)return; /* course access not granted — don't track */
       S.mod=o.module;S.title=o.title||o.module;S.total=o.total||0;
       loadLocal();wireWorkbook();
       var w=document.getElementById('topWho'); if(w&&S.name){w.textContent='👤 '+S.name;w.classList.add('on');}
-      if(S.sid)pushAll(); /* re-sync name + completed sections every load (recovers writes that failed earlier) */
+      if(S.sid){pushAll();pushQuizMeta();} /* re-sync name + completed sections every load (recovers writes that failed earlier) */
       startTimer();
+    },
+    quizAnswer:function(i,picked,ok){
+      if(S.sid&&S.mod){
+        put(mbase()+'/quiz/q'+i,{p:picked,c:ok?1:0,ts:now()});
+        put(mbase()+'/updatedAt',now());put(base()+'/updatedAt',now());
+      }
+      try{localStorage.setItem(lk('q'+i),(ok?1:0)+':'+picked);}catch(e){}
     },
     complete:function(id){
       if(!id||S.done[id])return;S.done[id]=true;saveDone();
