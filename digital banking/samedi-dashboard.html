@@ -77,23 +77,11 @@
 </head>
 <body>
 
-<div class="gate" id="gate">
-  <div class="gate-box">
-    <div class="gate-brand">KALAIDOS <span>•</span> ESPACE FORMATEUR</div>
-    <div class="gate-lock">🔒</div>
-    <h1>Accès réservé</h1>
-    <p>Tableau de bord enseignant. Entre le mot de passe pour continuer.</p>
-    <input type="password" id="passIn" placeholder="Mot de passe" autocomplete="current-password" autofocus>
-    <button onclick="tryUnlock()">Déverrouiller</button>
-    <div class="gate-err" id="gateErr"></div>
-  </div>
-</div>
-
 <div class="wrap" id="app" style="display:none">
   <div class="top">
     <h1>Parcours du <span>samedi</span></h1>
     <span class="conn" id="conn"><span class="d"></span><span id="connTxt">…</span></span>
-    <span class="conn" id="authBadge"><span class="d"></span><span id="authTxt">—</span></span>
+    <span class="conn" id="authBadge" style="cursor:pointer"><span class="d"></span><span id="authTxt">—</span></span>
     <div class="spacer"></div>
     <button class="btn" onclick="refreshActive()">↻ Rafraîchir</button>
     <button class="btn" onclick="logout()">Verrouiller</button>
@@ -133,9 +121,6 @@
 
 <script>
 "use strict";
-function sha256(ascii){ function rr(v,a){return (v>>>a)|(v<<(32-a));} var mp=Math.pow,mw=mp(2,32),result='';var words=[],abl=ascii.length*8;var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pc=k.length,comp={};for(var c=2;pc<64;c++){if(!comp[c]){for(var i=0;i<313;i+=c){comp[i]=c;}hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0;}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return '';words[i>>2]|=j<<((3-i)%4)*8;}words[words.length]=((abl/mw)|0);words[words.length]=(abl);for(var j=0;j<words.length;){var w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;}for(var i=0;i<8;i++){hash[i]=(hash[i]+oh[i])|0;}}for(var i=0;i<8;i++){for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16);}}return result; }
-function h256(s){ return sha256(unescape(encodeURIComponent(s))); }
-var PASS_HASH="ee4ea7f21d6781e4bfce5ada6618e848a2417f4fb70419b47700023e80d4b514";
 
 var CFG={
   matin:{ root:'parcoursmatin', mods:['m1','m2','a1','m3','m4','m5','m6','m7'],
@@ -147,21 +132,16 @@ var CFG={
 };
 var ACTIVE='matin', SORT='recent', POLL=null, ROWS=[];
 
-function tryUnlock(){ var v=document.getElementById('passIn').value||'';
-  if(h256(v)===PASS_HASH){ try{sessionStorage.setItem('kal-formateur','1');sessionStorage.setItem('kal-formateur-pw',v);}catch(e){} unlock();
-    if(window.__auth) window.__auth.login(v).then(function(ok){ if(ok) refreshActive(); }); }
-  else document.getElementById('gateErr').textContent='Mot de passe incorrect.'; }
-function unlock(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('app').style.display='block';
-  setTimeout(setConn,1500); refreshActive(); if(!POLL) POLL=setInterval(refreshActive,20000); }
-function logout(){ try{sessionStorage.removeItem('kal-formateur');sessionStorage.removeItem('kal-formateur-pw');}catch(e){} if(window.__auth) window.__auth.logout().then(function(){location.reload();}); else location.reload(); }
-document.getElementById('passIn').addEventListener('keydown',function(e){ if(e.key==='Enter') tryUnlock(); });
-try{ if(sessionStorage.getItem('kal-formateur')==='1') unlock(); }catch(e){}
+function unlock(){ document.getElementById('app').style.display='block';
+  setTimeout(setConn,1200); refreshActive(); if(!POLL) POLL=setInterval(refreshActive,20000); }
+function logout(){ AdminGate.lock(); if(window.__auth) window.__auth.logout().then(function(){location.reload();}); else location.reload(); }
+function signIn(){ if(window.__auth) window.__auth.login().then(function(ok){ if(ok) refreshActive(); }); }
 
 function setConn(){ var c=document.getElementById('conn'),ready=window.__store&&window.__store.ready; c.className='conn '+(ready?'ok':'bad'); document.getElementById('connTxt').textContent=ready?'en ligne':'hors-ligne'; }
 function updateAuth(u){ var b=document.getElementById('authBadge'); if(!b) return; var ok=u&&window.__auth&&u.email===window.__auth.email; b.className='conn '+(ok?'ok':'bad'); document.getElementById('authTxt').textContent=ok?'connecté':'non connecté'; }
 function onStoreReady(){ setConn(); if(window.__auth){ updateAuth(window.__auth.current());
   window.__auth.onChange(function(u){ updateAuth(u); if(u&&u.email===window.__auth.email){ if(document.getElementById('app').style.display!=='block') unlock(); else refreshActive(); } });
-  try{ var pw=sessionStorage.getItem('kal-formateur-pw'); if(pw && !window.__auth.current()) window.__auth.login(pw).then(function(ok){ if(ok) refreshActive(); }); }catch(e){} } }
+  var ab=document.getElementById('authBadge'); if(ab) ab.addEventListener('click',signIn); } }
 window.addEventListener('parc-store-ready',onStoreReady);
 
 function setTab(t){ ACTIVE=t;
@@ -238,18 +218,32 @@ function exportCSV(){ var cfg=CFG[ACTIVE]; var head=['name','student_id','module
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const firebaseConfig = { apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw", authDomain:"teaching-70f1c.firebaseapp.com", databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", projectId:"teaching-70f1c", storageBucket:"teaching-70f1c.firebasestorage.app", messagingSenderId:"1026356553251", appId:"1:1026356553251:web:d23a4c30af7e6983463396" };
 const ADMIN_EMAIL="janerik.meidell@gmail.com";
 let _db=null,_auth=null; try{ const app=initializeApp(firebaseConfig); _db=getDatabase(app); _auth=getAuth(app); }catch(e){ console.error("FB init",e); }
 window.__store={ ready:!!_db, async get(k){ if(!_db) return null; try{ const s=await get(child(ref(_db),k)); return s.exists()?s.val():null; }catch(e){ console.error(e); return null; } } };
 window.__auth={ ready:!!_auth, email:ADMIN_EMAIL,
-  async login(pw){ if(!_auth) return false; try{ await signInWithEmailAndPassword(_auth,ADMIN_EMAIL,pw); return true; }catch(e){ console.warn("auth:",e.code||e.message); return false; } },
+  /* Google popup — the instructor's account password is never typed into
+     this page, and nothing is stored. AdminGate handles hiding the UI. */
+  async login(){ if(!_auth) return false;
+    try{ const p=new GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
+         const r=await signInWithPopup(_auth,p);
+         if(r.user && r.user.email===ADMIN_EMAIL) return true;
+         await signOut(_auth); return false;
+    }catch(e){ console.warn("auth:",e.code||e.message); return false; } },
   async logout(){ if(_auth){ try{ await signOut(_auth); }catch(e){} } },
   onChange(cb){ if(_auth) onAuthStateChanged(_auth,cb); else cb(null); },
   current(){ return _auth?_auth.currentUser:null; } };
 window.dispatchEvent(new Event('parc-store-ready'));
 if(document.getElementById('app').style.display==='block' && window.refreshActive) window.refreshActive();
+</script>
+<script src="/shared/admin-gate.js"></script>
+<script>
+AdminGate.mount({ brand:"PARCOURS SAMEDI · FORMATEUR", title:"Accès au tableau de bord",
+  blurb:"Entrez le mot de passe formateur. Cet appareil s’en souviendra.",
+  theme:{surface:'#0B1230',main:'#F4A03F',deep:'#212C60',ink:'#FFFFFF',grey:'#9AA6C8'},
+  onUnlock:unlock });
 </script>
 </body>
 </html>

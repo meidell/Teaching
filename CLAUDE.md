@@ -225,10 +225,33 @@ trusts. The two are not the same thing and one cannot replace the other.
 - `*.source.html`, `norvege-2026/build.js` — plaintext sources behind encrypted gates.
 - `.env` anywhere.
 
-**Client-side gates are soft gates.** The instructor PIN is stored as a SHA-256 hash in
-`/shared/admin-gate.js`, and the course access token in `ideas-e1410/gate.js` is visible
-in source. They keep material off the open web; they are not authentication. Anything
-that must genuinely stay private (grades, banks) must not be in the repo at all.
+**Client-side gates are soft gates.** The instructor password is stored as a SHA-256
+hash in [shared/admin-gate.js](shared/admin-gate.js), and the course access token in
+`ideas-e1410/gate.js` is visible in source. They keep material off the open web; they are
+not authentication. Anything that must genuinely stay private (grades, banks) must not be
+in the repo at all.
+
+### The instructor gate
+
+One password, one implementation, remembered per device. `AdminGate.mount({…})` hides a
+page until it is given, then stores it in `localStorage.jem_admin_pw` — so the next visit
+in that browser opens straight through, and unlocking any one instructor page unlocks
+them all. `AdminGate.lock()` forgets it. Changing `PASS_HASH` invalidates every
+remembered device automatically, because the stored value stops hashing to a match.
+
+Pages behind it: `/shared/admin.html` (all course dashboards), `beyond-defi-dashboard`,
+`samedi-dashboard`, `samedi-tutorat`, `gauntlet-host`.
+
+**Instructor gates and student PINs are deliberately different passwords.** Several
+student-facing pages — the Jeopardy games, the millionaire games, the wind course — have
+their own PIN that gets read out in class. Those must *never* be set to the instructor
+password: a PIN you tell thirty students is not a password that can also protect the
+dashboards. If you rotate the instructor password, only `PASS_HASH` changes.
+
+**Never let a gate double as a real credential.** Two dashboards used to replay their
+gate password into `signInWithEmailAndPassword()` and keep it in `localStorage` in
+plaintext. They now use a Google popup instead: the gate hides the UI, Google proves who
+you are, and no account password is ever typed into a page or stored.
 
 ## 8. Working on this repo
 
