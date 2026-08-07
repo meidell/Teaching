@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Instructor dashboard</title>
+<!--
+  SHARED · one instructor dashboard for every course.
+      /shared/admin.html?course=omba401
+
+  Replaces the six near-identical admin pages that used to live in each
+  course folder. Everything that differed between them — course name,
+  namespace, module columns, branding, theme — now comes from
+  /courses.json. Everything that was the same is here, once.
+
+  Reads the cohort over the REST API (public read on the course
+  namespaces). If a namespace requires an authenticated read, it offers
+  Google sign-in and retries through the Firebase SDK.
+-->
+<style>
+:root{
+  --deep:#152a5e; --bar:#152a5e; --main:#1e5aa8; --glow:#f0b33d;
+  --pale:#E8EEF8; --surface:#F4F6FA; --ink:#0a1a3a; --grey:#5A6B87;
+  --card:#fff; --line:rgba(0,0,0,.12); --sand-deep:rgba(0,0,0,.10);
+  --ok:#4A8B3A; --amber:#C9A227; --red:#B3402A;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.30);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);line-height:1.5;
+  -webkit-font-smoothing:antialiased;background:var(--surface);min-height:100vh;}
+h1,h2{font-family:Georgia,serif;}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 18px 70px;}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.top .brand{height:26px;width:auto;flex:none;}
+.top h1{font-size:24px;color:var(--ink);}.top h1 span{color:var(--main);}
+.spacer{flex:1;}
+.conn{font-size:11px;color:var(--grey);display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;background:var(--card);}
+.conn .d{width:8px;height:8px;border-radius:50%;background:var(--grey);}
+.conn.ok .d{background:var(--ok);}.conn.bad .d{background:var(--red);}
+select.pick{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:30px;
+  padding:8px 14px;font:13px 'Helvetica Neue',Arial,sans-serif;cursor:pointer;}
+.btn{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:30px;padding:8px 14px;font:13px 'Helvetica Neue',Arial,sans-serif;cursor:pointer;}
+.btn:hover{border-color:var(--main);}
+.btn.active{border-color:var(--main);color:var(--deep);font-weight:bold;background:var(--pale);}
+.btn.gold{background:var(--main);color:#fff;border-color:var(--main);font-weight:bold;}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.stat{background:var(--card);border:1px solid var(--sand-deep);border-radius:14px;padding:14px 18px;min-width:120px;box-shadow:var(--shadow);}
+.stat .k{font-size:11px;letter-spacing:1px;color:var(--grey);text-transform:uppercase;}
+.stat .v{font-family:Georgia,serif;font-size:26px;color:var(--deep);font-weight:bold;}
+.panel{background:var(--card);border:1px solid var(--sand-deep);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+.panel h2{font-size:17px;color:var(--ink);margin-bottom:2px;}
+.panel .sub{font-size:12px;color:var(--grey);margin-bottom:12px;}
+.att-group{margin-bottom:11px;}.att-group:last-child{margin-bottom:0;}
+.att-lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;margin-bottom:7px;}
+.att-lbl.red{color:var(--red);}.att-lbl.amber{color:#8a6d14;}
+.att-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.att-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sand-deep);border-radius:20px;padding:5px 12px;font-size:12.5px;color:var(--ink);cursor:pointer;}
+.att-chip:hover{border-color:var(--main);}
+.att-chip .meta{color:var(--grey);font-size:11px;}
+.att-ok{color:var(--deep);font-weight:bold;font-size:14px;}
+.panel textarea{width:100%;min-height:62px;background:var(--surface);border:1px solid var(--sand-deep);border-radius:10px;color:var(--ink);font:14px 'Helvetica Neue',Arial,sans-serif;padding:11px 13px;resize:vertical;}
+.panel textarea:focus{outline:none;border-color:var(--main);}
+.brow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+.sortbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:13px;color:var(--grey);}
+.tablewrap{overflow-x:auto;border-radius:14px;box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);background:var(--pale);}
+th.ch,td.ch{text-align:center;}
+.row{cursor:pointer;}.row:hover{background:var(--pale);}
+.name{font-weight:bold;font-family:Georgia,serif;color:var(--ink);}
+.cell{display:inline-block;min-width:38px;text-align:center;border-radius:6px;padding:3px 6px;font-size:11px;font-weight:bold;background:var(--surface);color:var(--grey);border:1px solid var(--sand-deep);}
+.cell.partial{background:rgba(201,162,39,.12);color:#8a6d14;border-color:rgba(201,162,39,.5);}
+.cell.done{background:rgba(74,139,58,.14);color:#2C5530;border-color:var(--ok);}
+.tot{font-family:Georgia,serif;color:var(--deep);font-weight:bold;}
+.muted{color:var(--grey);}
+.pw{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:bold;letter-spacing:2px;color:var(--deep);}
+.detail .inner{background:var(--surface);border:1px solid var(--sand-deep);border-radius:10px;padding:14px 16px;margin:6px 0;white-space:normal;}
+.detail .ch-line{font-size:13px;margin-bottom:6px;color:var(--ink);}
+.detail .ch-line b{color:var(--deep);}
+.work{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;}
+.work .wq{font-size:12px;font-weight:bold;color:var(--deep);margin-top:8px;}
+.work .wa{font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--sand-deep);border-radius:8px;padding:8px 10px;margin-top:3px;white-space:pre-wrap;}
+.qrow{border-bottom:1px solid var(--line);padding:9px 0;}
+.qrow:last-child{border-bottom:none;}
+.qrow .qq{font-size:13px;color:var(--ink);}
+.qrow .qm{font-size:12px;color:var(--grey);margin-top:3px;}
+.qbar{height:6px;border-radius:4px;background:var(--pale);margin-top:5px;overflow:hidden;}
+.qbar i{display:block;height:100%;background:var(--ok);}
+.qrow.hard .qbar i{background:var(--red);}
+.empty{text-align:center;color:var(--grey);padding:40px 16px;background:var(--card);}
+.hint{font-size:12px;color:var(--grey);margin-top:18px;line-height:1.6;}
+.hint code{background:var(--card);padding:1px 5px;border-radius:4px;color:var(--ink);border:1px solid var(--sand-deep);}
+a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
+.warn{background:#fff6e8;border:1px solid rgba(201,162,39,.5);color:#7a5f10;border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app" style="display:none">
+  <div class="top">
+    <img class="brand" id="brandLogo" alt="" style="display:none">
+    <h1 id="title">· <span>cohort progress</span></h1>
+    <span class="conn" id="conn"><span class="d"></span><span id="connTxt">…</span></span>
+    <div class="spacer"></div>
+    <select class="pick" id="pick" title="Switch course"></select>
+    <button class="btn" id="bRefresh">↻ Refresh</button>
+    <button class="btn gold" id="bCsv">⬇ CSV</button>
+    <button class="btn" id="bLock">Lock</button>
+  </div>
+
+  <div class="warn" id="warn" style="display:none"></div>
+  <div class="stats" id="stats"></div>
+  <div class="panel" id="attention" style="display:none"></div>
+
+  <div class="panel">
+    <h2>Cohort announcement</h2>
+    <div class="sub">Posts a banner to the top of every student page for this course. Clear removes it. A student can dismiss it until you post a newer one.</div>
+    <textarea id="annText" placeholder="e.g. Reminder: Online Test 1 opens Monday — covers chapters 1–6."></textarea>
+    <div class="brow">
+      <button class="btn gold" id="bPost">Post / update</button>
+      <button class="btn" id="bClear">Clear</button>
+      <span class="muted" id="annStatus"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="quizPanel" style="display:none"></div>
+
+  <div class="sortbar">
+    <span>Sort:</span>
+    <button class="btn active" data-sort="recent">Most recent</button>
+    <button class="btn" data-sort="name">Name</button>
+    <button class="btn" data-sort="progress">Total progress</button>
+    <button class="btn" data-sort="time">Time spent</button>
+  </div>
+
+  <div class="tablewrap">
+    <table><thead><tr id="head"></tr></thead><tbody id="tbody"></tbody></table>
+  </div>
+  <div class="empty" id="empty" style="display:none">No students yet. They appear here as soon as someone opens a page and identifies themselves.</div>
+
+  <div class="hint" id="hint"></div>
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script>
+"use strict";
+
+var DB=window.CourseConfig.DB;
+var REG=null, COURSE=null, MODULES=[], NS='', ROOT=null, ROWS=[], SORT='recent', POLL=null, AUTHED=false;
+
+/* ---------- helpers ---------- */
+function $(id){return document.getElementById(id);}
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function doneCount(c){var n=0,d=(c&&c.done)||{};for(var k in d){if(d[k])n++;}return n;}
+function totalDone(node){var t=0;MODULES.forEach(function(m){var c=node.mod&&node.mod[m.id];if(c)t+=doneCount(c);});return t;}
+function totalSecs(node){var t=0;MODULES.forEach(function(m){var c=node.mod&&node.mod[m.id];if(c&&c.secs)t+=c.secs;});return t;}
+function fmtDur(s){if(!s)return '—';s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);if(h)return h+'h '+m+'m';if(m)return m+'m';return s+'s';}
+function whenAgo(ts){if(!ts)return '—';var s=Math.round((Date.now()-ts)/1000);if(s<60)return 'just now';var m=Math.round(s/60);if(m<60)return m+'m ago';var h=Math.round(m/60);if(h<24)return h+'h ago';var d=Math.round(h/24);return d+'d ago';}
+function pScore(str){if(!str||String(str).indexOf('/')<0)return null;var p=String(str).split('/');var a=parseFloat(p[0]),b=parseFloat(p[1]);if(!b||isNaN(a))return null;return a/b;}
+
+/* Overall course progress. A module's size is whatever the largest `total`
+   seen across the cohort is — so it needs no hand-maintained chapter table
+   and works for any course, while still counting modules nobody has opened
+   yet as outstanding once one student has reached them. */
+var EXPECT={};
+function computeExpected(){
+  EXPECT={};
+  MODULES.forEach(function(m){
+    var mx=0;
+    ROWS.forEach(function(s){var c=s.mod[m.id];if(c&&c.total>mx)mx=c.total;});
+    EXPECT[m.id]=mx;
+  });
+}
+function coursePct(node){
+  var done=0,tot=0;
+  MODULES.forEach(function(m){
+    var e=EXPECT[m.id]||0; if(!e)return;
+    tot+=e;
+    var c=node.mod&&node.mod[m.id];
+    if(c)done+=Math.min(e,doneCount(c));
+  });
+  return tot?Math.round(done/tot*100):0;
+}
+
+/* ---------- which course ---------- */
+function wantedId(){
+  var m=(location.search||'').match(/[?&]course=([^&#]+)/);
+  return m?decodeURIComponent(m[1]):(localStorage.getItem('jem_admin_last')||'');
+}
+function applyTheme(t){
+  if(!t)return;
+  var r=document.documentElement.style;
+  ['deep','bar','main','glow','pale','surface','ink','grey'].forEach(function(k){
+    if(t[k])r.setProperty('--'+k,t[k]);
+  });
+}
+
+/* ---------- data ---------- */
+function setConn(ok,txt){var c=$('conn');c.className='conn '+(ok?'ok':'bad');$('connTxt').textContent=txt||(ok?'online':'offline');}
+
+async function fetchRoot(){
+  /* public read first — no SDK, no CDN */
+  try{
+    var r=await fetch(DB+'/'+NS+'.json'+(AUTHED&&window.__idToken?('?auth='+window.__idToken):''));
+    var j=await r.json();
+    if(j&&j.error) throw new Error(j.error);
+    return j;
+  }catch(e){
+    throw e;
+  }
+}
+
+/* Google sign-in, loaded only if a namespace refuses an anonymous read */
+async function signIn(){
+  var app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  var auth=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  var cfg={apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
+           databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
+           messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
+  var a=auth.getAuth(app.initializeApp(cfg));
+  var p=new auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
+  var res=await auth.signInWithPopup(a,p);
+  window.__idToken=await res.user.getIdToken();
+  AUTHED=true;
+  $('warn').style.display='none';
+  load();
+}
+
+async function load(){
+  try{
+    ROOT=await fetchRoot();
+    setConn(true);
+    $('warn').style.display='none';
+  }catch(e){
+    setConn(false,'read blocked');
+    $('warn').style.display='block';
+    $('warn').innerHTML='This course’s database rules require a signed-in instructor to read student data. '+
+      '<button class="btn" id="bSignIn" style="margin-left:8px">Sign in with Google</button>';
+    var b=$('bSignIn'); if(b)b.addEventListener('click',function(){signIn().catch(function(err){
+      $('warn').innerHTML='Sign-in failed: '+esc(err&&err.message||err);
+    });});
+    ROOT=null;
+  }
+  ROWS=[];
+  if(ROOT){
+    for(var sid in ROOT){
+      if(!ROOT.hasOwnProperty(sid)||sid.charAt(0)==='_')continue;
+      var n=ROOT[sid]||{};
+      ROWS.push({sid:sid,name:n.name||sid,mod:n.mod||{},ts:n.updatedAt||0,node:n});
+    }
+  }
+  render();
+  renderQuiz();
+}
+
+/* ---------- announcement ---------- */
+function annMsg(m){$('annStatus').textContent=m;}
+function postAnnounce(){
+  var t=($('annText').value||'').trim();
+  if(!t){annMsg('Type a message first, or press Clear.');return;}
+  annMsg('Posting…');
+  fetch(DB+'/'+NS+'/_announce.json',{method:'PUT',body:JSON.stringify({text:t,ts:Date.now(),on:true})})
+    .then(function(){annMsg('Posted ✓ — live on student pages.');})
+    .catch(function(){annMsg('Could not post — check your connection.');});
+}
+function clearAnnounce(){
+  annMsg('Clearing…');
+  fetch(DB+'/'+NS+'/_announce.json',{method:'PUT',body:JSON.stringify({text:'',ts:Date.now(),on:false})})
+    .then(function(){$('annText').value='';annMsg('Cleared — banner hidden.');})
+    .catch(function(){annMsg('Could not clear — check your connection.');});
+}
+function loadAnnounce(){
+  fetch(DB+'/'+NS+'/_announce.json').then(function(r){return r.json();}).then(function(a){
+    if(a&&a.on&&a.text){$('annText').value=a.text;annMsg('Currently live (posted '+whenAgo(a.ts)+').');}
+    else annMsg('No announcement live.');
+  }).catch(function(){});
+}
+
+/* ---------- table ---------- */
+function buildHead(){
+  var h='<th>#</th><th>Name</th>';
+  if(hasRoster())h+='<th>Code</th>';
+  MODULES.forEach(function(m){h+='<th class="ch" title="'+esc(m.label)+'">'+esc((m.label||'').split(' · ')[0]||m.label)+'</th>';});
+  h+='<th class="ch">Course</th><th class="ch">Total</th><th class="ch">Time</th><th>Active</th>';
+  $('head').innerHTML=h;
+}
+function hasRoster(){return !!(ROOT&&ROOT._roster);}
+function rosterOf(sid){var r=ROOT&&ROOT._roster&&ROOT._roster[sid];return r||null;}
+
+function sorted(){
+  var a=ROWS.slice();
+  if(SORT==='name')a.sort(function(x,y){return x.name.localeCompare(y.name);});
+  else if(SORT==='progress')a.sort(function(x,y){return totalDone(y.node)-totalDone(x.node)||y.ts-x.ts;});
+  else if(SORT==='time')a.sort(function(x,y){return totalSecs(y.node)-totalSecs(x.node)||y.ts-x.ts;});
+  else a.sort(function(x,y){return y.ts-x.ts;});
+  return a;
+}
+function render(){
+  computeExpected();
+  buildHead();
+  var n=ROWS.length;
+  var started=ROWS.filter(function(s){return totalDone(s.node)>0;}).length;
+  var active24=ROWS.filter(function(s){return s.ts>Date.now()-864e5;}).length;
+  $('stats').innerHTML=
+    '<div class="stat"><div class="k">Students</div><div class="v">'+n+'</div></div>'+
+    '<div class="stat"><div class="k">Started</div><div class="v">'+started+'</div></div>'+
+    '<div class="stat"><div class="k">Active 24h</div><div class="v">'+active24+'</div></div>';
+  var rows=sorted();
+  $('empty').style.display=rows.length?'none':'block';
+  var extra=hasRoster()?1:0, html='';
+  rows.forEach(function(s,i){
+    var cells='';
+    MODULES.forEach(function(m){
+      var c=s.mod[m.id];
+      if(!c){cells+='<td class="ch"><span class="cell">·</span></td>';return;}
+      var dc=doneCount(c),tot=c.total||dc,cls=dc>=tot&&tot>0?'done':(dc>0?'partial':'');
+      var lbl=c.score?c.score:(dc+'/'+tot);
+      cells+='<td class="ch"><span class="cell '+cls+'">'+esc(lbl)+'</span></td>';
+    });
+    var r=rosterOf(s.sid);
+    html+='<tr class="row" data-sid="'+esc(s.sid)+'"><td>'+(i+1)+'</td><td class="name">'+esc(s.name)+'</td>'+
+      (extra?'<td class="pw">'+esc(r&&r.pass?r.pass:'—')+'</td>':'')+cells+
+      '<td class="ch tot">'+coursePct(s.node)+'%</td>'+
+      '<td class="ch tot">'+totalDone(s.node)+'</td><td class="ch muted">'+fmtDur(totalSecs(s.node))+'</td><td class="muted">'+whenAgo(s.ts)+'</td></tr>'+
+      '<tr class="detail" id="d-'+esc(s.sid)+'" style="display:none"><td colspan="'+(MODULES.length+6+extra)+'"><div class="inner" id="di-'+esc(s.sid)+'"></div></td></tr>';
+  });
+  $('tbody').innerHTML=html;
+  Array.prototype.forEach.call(document.querySelectorAll('#tbody .row'),function(tr){
+    tr.addEventListener('click',function(){toggle(tr.getAttribute('data-sid'));});
+  });
+  renderAttention();
+}
+function moduleScores(node){
+  var out=[];
+  MODULES.forEach(function(m){
+    var c=node.mod&&node.mod[m.id];
+    if(c&&c.score){var f=pScore(c.score);if(f!=null)out.push({label:(m.label||'').split(' · ')[0],score:c.score,f:f});}
+  });
+  return out;
+}
+function jumpTo(sid){var r=$('d-'+sid);if(r&&r.style.display==='none')toggle(sid);r=$('d-'+sid);if(r)r.scrollIntoView({behavior:'smooth',block:'center'});}
+function renderAttention(){
+  var el=$('attention');
+  if(!ROWS.length){el.style.display='none';return;}
+  var now=Date.now(),STALL=7*864e5,LOW=0.6;
+  var notStarted=[],quiet=[],low=[];
+  ROWS.forEach(function(s){
+    var td=totalDone(s.node);
+    if(td===0){notStarted.push(s);return;}
+    if(s.ts&&(now-s.ts)>STALL)quiet.push(s);
+    var ms=moduleScores(s.node).filter(function(x){return x.f<LOW;});
+    if(ms.length){ms.sort(function(a,b){return a.f-b.f;});low.push({s:s,w:ms[0]});}
+  });
+  function chip(sid,name,meta){return '<span class="att-chip" data-jump="'+esc(sid)+'">'+esc(name)+(meta?' <span class="meta">'+esc(meta)+'</span>':'')+'</span>';}
+  var g='';
+  if(notStarted.length)g+='<div class="att-group"><div class="att-lbl amber">🕓 Not started ('+notStarted.length+')</div><div class="att-chips">'+notStarted.map(function(s){return chip(s.sid,s.name,'joined '+whenAgo(s.ts));}).join('')+'</div></div>';
+  if(quiet.length)g+='<div class="att-group"><div class="att-lbl red">💤 Gone quiet · 7+ days ('+quiet.length+')</div><div class="att-chips">'+quiet.map(function(s){return chip(s.sid,s.name,'last '+whenAgo(s.ts));}).join('')+'</div></div>';
+  if(low.length)g+='<div class="att-group"><div class="att-lbl amber">📉 Low self-check · under 60% ('+low.length+')</div><div class="att-chips">'+low.map(function(o){return chip(o.s.sid,o.s.name,o.w.label+' '+o.w.score);}).join('')+'</div></div>';
+  if(!g)g='<div class="att-ok">✓ Everyone’s on track — no one flagged right now.</div>';
+  el.innerHTML='<h2>Needs attention</h2><div class="sub">Flagged automatically from activity and self-check scores — click a name to jump to their row.</div>'+g;
+  el.style.display='block';
+  Array.prototype.forEach.call(el.querySelectorAll('[data-jump]'),function(c){
+    c.addEventListener('click',function(){jumpTo(c.getAttribute('data-jump'));});
+  });
+}
+function toggle(sid){
+  var row=$('d-'+sid);if(!row)return;
+  if(row.style.display!=='none'){row.style.display='none';return;}
+  var s=ROWS.filter(function(x){return x.sid===sid;})[0];if(!s)return;
+  var h='';
+  MODULES.forEach(function(m){
+    var c=s.mod[m.id];if(!c)return;
+    var dc=doneCount(c),tot=c.total||dc;
+    var secs=Object.keys(c.done||{}).filter(function(k){return c.done[k];});
+    h+='<div class="ch-line"><b>'+esc(m.label)+'</b> — '+dc+'/'+tot+' done'+(c.score?' · self-check '+esc(c.score):'')+
+       ' · time '+fmtDur(c.secs)+' · last '+whenAgo(c.updatedAt)+
+       (secs.length?'<br><span class="muted">items: '+esc(secs.join(', '))+'</span>':'')+'</div>';
+  });
+  /* workbook answers, where the course collects them */
+  var work=s.node.work;
+  if(work){
+    var w='<div class="work"><div class="att-lbl">✍️ Workbook answers</div>';
+    Object.keys(work).forEach(function(k){
+      var it=work[k]||{};
+      if(!it.v)return;
+      w+='<div class="wq">'+esc(it.label||k)+(it.mod?' <span class="muted">('+esc(it.mod)+')</span>':'')+'</div><div class="wa">'+esc(it.v)+'</div>';
+    });
+    h+=w+'</div>';
+  }
+  if(!h)h='<div class="muted">No activity yet.</div>';
+  $('di-'+sid).innerHTML=h;
+  row.style.display='table-row';
+}
+
+/* ---------- per-question cohort stats ---------- */
+function renderQuiz(){
+  var el=$('quizPanel');
+  var meta=ROOT&&ROOT._quizmeta;
+  if(!meta||!ROWS.length){el.style.display='none';return;}
+  var out='';
+  Object.keys(meta).forEach(function(mod){
+    var m=meta[mod]; if(!m||!m.qs||!m.qs.length)return;
+    var agg=m.qs.map(function(q){return {q:q.q,opts:q.opts||[],a:q.a,n:0,ok:0,picks:{}};});
+    ROWS.forEach(function(s){
+      var qz=s.mod[mod]&&s.mod[mod].quiz; if(!qz)return;
+      Object.keys(qz).forEach(function(key){
+        var i=parseInt(String(key).replace(/^q/,''),10);
+        if(isNaN(i)||!agg[i])return;
+        var r=qz[key]||{};
+        agg[i].n++; if(r.c)agg[i].ok++;
+        if(!r.c&&r.p!=null)agg[i].picks[r.p]=(agg[i].picks[r.p]||0)+1;
+      });
+    });
+    var answered=agg.filter(function(a){return a.n>0;});
+    if(!answered.length)return;
+    answered.sort(function(a,b){return (a.ok/a.n)-(b.ok/b.n);});
+    out+='<div class="att-lbl" style="margin-top:14px">'+esc(m.title||mod)+'</div>';
+    answered.forEach(function(a,idx){
+      var pct=Math.round(a.ok/a.n*100);
+      var worst=null,wn=0;
+      Object.keys(a.picks).forEach(function(p){if(a.picks[p]>wn){wn=a.picks[p];worst=p;}});
+      out+='<div class="qrow'+(idx<2&&pct<70?' hard':'')+'">'+
+        '<div class="qq">'+(idx<2&&pct<70?'⚠️ ':'')+esc(a.q)+'</div>'+
+        '<div class="qbar"><i style="width:'+pct+'%"></i></div>'+
+        '<div class="qm">'+pct+'% correct · '+a.n+' answered'+
+        (worst!=null&&a.opts[worst]?' · most-picked wrong answer: “'+esc(a.opts[worst])+'” ('+wn+')':'')+'</div></div>';
+    });
+  });
+  if(!out){el.style.display='none';return;}
+  el.innerHTML='<h2>Checkpoint quiz · question by question</h2>'+
+    '<div class="sub">Ranked worst-answered first across the cohort. The flagged ones are what to clear up in 60 seconds at the start of the next session.</div>'+out;
+  el.style.display='block';
+}
+
+/* ---------- CSV ---------- */
+function csv(v){v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function exportCSV(){
+  var head=['name','student_id','total_done','total_time_min','last_active'];
+  MODULES.forEach(function(m){head.push(m.id+'_done');head.push(m.id+'_total');head.push(m.id+'_score');});
+  var lines=[head.join(',')];
+  sorted().forEach(function(s){
+    var r=[s.name,s.sid,totalDone(s.node),Math.round(totalSecs(s.node)/60),s.ts?new Date(s.ts).toISOString():''];
+    MODULES.forEach(function(m){var c=s.mod[m.id];r.push(c?doneCount(c):0);r.push(c?(c.total||doneCount(c)):0);r.push(c&&c.score?c.score:'');});
+    lines.push(r.map(csv).join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=COURSE.id+'-progress.csv';a.click();
+}
+
+/* ---------- boot ---------- */
+function selectCourse(id){
+  COURSE=REG.courses.filter(function(c){return c.id===id;})[0];
+  if(!COURSE)return;
+  NS=COURSE.ns; MODULES=COURSE.modules||[];
+  try{localStorage.setItem('jem_admin_last',id);}catch(e){}
+  var t=REG.themes[COURSE.theme];
+  applyTheme(t);
+  var logo=t&&t.logo?('/'+COURSE.dir+'/'+t.logo):null;
+  var img=$('brandLogo');
+  if(logo){img.src=logo;img.style.display='';img.onerror=function(){img.style.display='none';};}
+  else img.style.display='none';
+  document.title=(COURSE.code||COURSE.title.en)+' · Instructor dashboard';
+  $('title').innerHTML=esc(COURSE.code||COURSE.title.en)+' · <span>cohort progress</span>';
+  $('hint').innerHTML='Data lives in <code>teaching-70f1c</code> under <code>'+esc(NS)+'/&lt;student&gt;</code>. '+
+    'Each cell = sections completed / total for that module, or the self-check score if one was submitted; click a row for detail. '+
+    'This page is gated by a password only — the database rules are what actually protect the data.'+
+    '<br><br><a class="back" href="/'+encodeURI(COURSE.dir)+'/index.html">← course hub</a>';
+  var url=location.pathname+'?course='+encodeURIComponent(id);
+  history.replaceState(null,'',url);
+  ROOT=null;ROWS=[];render();
+  load();loadAnnounce();
+}
+
+function start(){
+  $('app').style.display='block';
+  window.CourseConfig.load().then(function(reg){
+    REG=reg;
+    var withData=reg.courses.filter(function(c){return c.ns;});
+    var sel=$('pick');
+    sel.innerHTML=withData.map(function(c){
+      return '<option value="'+esc(c.id)+'">'+esc(c.code||c.title.en)+(c.status==='archived'?' (archived)':'')+'</option>';
+    }).join('');
+    var want=wantedId();
+    if(!withData.some(function(c){return c.id===want;}))want=withData[0].id;
+    sel.value=want;
+    sel.addEventListener('change',function(){selectCourse(sel.value);});
+    selectCourse(want);
+    if(!POLL)POLL=setInterval(function(){load();},20000);
+  }).catch(function(e){
+    $('app').innerHTML='<div class="warn" style="display:block">Could not load <code>/courses.json</code>: '+esc(e.message||e)+'</div>';
+  });
+
+  $('bRefresh').addEventListener('click',function(){load();});
+  $('bCsv').addEventListener('click',exportCSV);
+  $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
+  $('bPost').addEventListener('click',postAnnounce);
+  $('bClear').addEventListener('click',clearAnnounce);
+  Array.prototype.forEach.call(document.querySelectorAll('.sortbar .btn[data-sort]'),function(b){
+    b.addEventListener('click',function(){
+      SORT=b.getAttribute('data-sort');
+      document.querySelectorAll('.sortbar .btn[data-sort]').forEach(function(x){x.classList.toggle('active',x===b);});
+      render();
+    });
+  });
+}
+
+AdminGate.mount({ brand:'INSTRUCTOR DASHBOARD', title:'Dashboard access',
+                  blurb:'Enter the instructor password. This device will remember it.',
+                  onUnlock:start });
+</script>
+</body>
+</html>

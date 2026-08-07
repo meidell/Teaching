@@ -93,6 +93,10 @@ StatsTrack.setScore(6, 8);     // quiz / homework pages
   _private/           NEVER COMMITTED — answer keys, question banks, run sheets
 ```
 
+The dashboard's columns come from the course's `modules` array in courses.json — that
+array *is* the dashboard. Adding a week means adding a module entry there, not editing
+an admin page.
+
 Cohort courses also carry: `glossary.html` or `notation.html` (a reference page that
 **grows every week** — updating it is part of shipping a week), and a logo image.
 
@@ -126,7 +130,9 @@ everything already done on that device is backfilled to the DB. Do not break tha
   `/shared/themes/<theme>.css`. Do not paste a 240-line `:root` block into a new page.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
-  needs a library, inline it.
+  needs a library, inline it. The one exception is the Firebase SDK, which
+  `/shared/admin.html` `import()`s lazily *only* if a namespace refuses an anonymous
+  read and the instructor has to sign in with Google.
 - **French courses are French throughout** — UI strings, error messages, the identity
   modal. Check `lang` in courses.json.
 - **Videos:** real runtimes only. Never invent a duration.
