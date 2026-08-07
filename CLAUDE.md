@@ -58,8 +58,19 @@ same from `/omba401/week3.html` and `/ideas-e1410/session1.html`.
 | `announce.js` | cohort announcement banner (instructor posts it from admin) |
 | `admin-gate.js` | the shared instructor gate (hashed PIN, remembered per device) |
 | `admin.html` | one dashboard for every course: `/shared/admin.html?course=omba401` |
-| `course.css` | the ~190 layout selectors every week page shares |
-| `themes/*.css` | per-course colour variables only |
+| `lesson.css` | the 128 layout rules every `weekN.html` shares |
+| `homework.css` | the 70 rules every `weekN-homework.html` shares |
+| `themes/*.css` | colour variables only — `sumas`, `ideas`, `umef`, `navy` |
+
+**`lesson.css` and `homework.css` must never be merged.** The two archetypes give the
+same selectors different values (`body` line-height 1.65 vs 1.6, `h1` 44px vs 38px,
+`.wrap` padding 20px vs 18px). Combining them makes one silently overwrite the other —
+this was caught by a computed-style diff, not by eye.
+
+Themes expose two naming layers: neutral names (`--accent`, `--surface`, `--ink`) are
+the API for new work; legacy names (`--green`, `--sand`) alias onto them because the
+existing pages and the shared stylesheets still reference those. Don't write new rules
+against the legacy names.
 
 ### Wiring a page into it
 
@@ -126,8 +137,10 @@ everything already done on that device is backfilled to the DB. Do not break tha
   course-local ones. The `digital banking` folder has a space in it — always URL-encode
   it as `digital%20banking` in hrefs.
 - **Theme via CSS variables.** A page's `<style>` should contain layout that is genuinely
-  unique to it. Shared layout belongs in `/shared/course.css`; colours belong in
-  `/shared/themes/<theme>.css`. Do not paste a 240-line `:root` block into a new page.
+  unique to it. Shared layout belongs in `/shared/lesson.css` or `/shared/homework.css`;
+  colours belong in `/shared/themes/<theme>.css`. A new week page links a theme plus its
+  archetype stylesheet and adds only what is its own — never paste a `:root` palette or
+  the standard chrome into it again.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
