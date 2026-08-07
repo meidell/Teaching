@@ -45,6 +45,24 @@ theming. Key fields:
 **Cohort courses are unlisted by design.** OMBA401, OMBAFR455, E1410 and UMEF407 are
 reached by direct link or QR from the LMS, not from the public catalogue.
 
+### Course lifecycle
+
+`status` is `live` (a cohort is running), `evergreen` (open, no cohort) or `archived`.
+
+When a course ends and a new edition replaces it, **don't delete the old folder** —
+students have the links bookmarked and the LMS points at them. Set `status:"archived"`,
+add `supersededBy:"<new-id>"`, set `listed:false`, and add to its pages:
+
+```html
+<script>window.COURSE_STATUS_ID="sustainable-finance";</script>
+<script src="/shared/status.js" defer></script>
+```
+
+[shared/status.js](shared/status.js) then puts a banner at the top pointing to the
+replacement, in the course's own language. On the root catalogue it badges archived
+cards, and on localhost it warns in the console if a `listed` course has no card —
+the closest thing to a build-time check this repo has.
+
 ## 3. The shared runtime — `/shared/`
 
 Always loaded by **absolute** path (`/shared/x.js`), never relative, so it resolves the
