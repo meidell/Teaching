@@ -131,6 +131,34 @@ analytics/<YYYY-MM-DD>/<id>   pageviews from track.js (coarse geo only, never ra
 `localStorage` first, named or not — so when a student finally identifies themselves,
 everything already done on that device is backfilled to the DB. Do not break that.
 
+### Rules — [firebase-database-rules.json](firebase-database-rules.json)
+
+⚠️ **This file is a copy. Editing it changes nothing until you deploy it** — paste it
+into Firebase Console → Realtime Database → Rules → Publish (or `firebase deploy
+--only database`).
+
+What the current version enforces, and why it changed:
+
+| | Before | Now |
+|---|---|---|
+| Listing the cohort | anyone could `GET /omba401.json` and download every student | instructor sign-in only |
+| Writing | anyone could `PUT` anything, including `null` over the whole course | a write must leave the node existing, so no one can wipe a student or a course |
+| Announcements | anyone could post a banner to every student page | public read, instructor-only write |
+| Roster codes | n/a | create-once — a code cannot be overwritten, so nobody can hijack another student's login |
+| Analytics | anyone could overwrite past hits | create-only, instructor read |
+
+**Residual risk, stated plainly:** `<ns>/<sid>` is still world-readable, because an
+unauthenticated student device has to be able to fetch its own progress for cross-device
+sync, and the database cannot tell one anonymous caller from another. `sid` is a
+slugified name, so someone who guesses a classmate's name can read that classmate's node
+(including workbook answers). They cannot enumerate the cohort, and they cannot write to
+it. Closing this properly needs real student authentication — that is a separate project,
+not a rules tweak.
+
+Because reads are now instructor-only, **the dashboard needs Google sign-in** (the 🔑
+button). The password gate is the UI lock; the sign-in is what the database actually
+trusts. The two are not the same thing and one cannot replace the other.
+
 ## 6. Conventions that matter
 
 - **Absolute paths for shared assets** (`/shared/…`, `/track.js`), relative for

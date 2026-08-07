@@ -105,6 +105,7 @@ a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
     <span class="conn" id="conn"><span class="d"></span><span id="connTxt">…</span></span>
     <div class="spacer"></div>
     <select class="pick" id="pick" title="Switch course"></select>
+    <button class="btn" id="bAuth" title="Needed to read student data and post announcements once the tightened rules are live">🔑 Sign in</button>
     <button class="btn" id="bRefresh">↻ Refresh</button>
     <button class="btn gold" id="bCsv">⬇ CSV</button>
     <button class="btn" id="bLock">Lock</button>
@@ -201,16 +202,21 @@ function applyTheme(t){
 /* ---------- data ---------- */
 function setConn(ok,txt){var c=$('conn');c.className='conn '+(ok?'ok':'bad');$('connTxt').textContent=txt||(ok?'online':'offline');}
 
+/* A fresh ID token, or '' if nobody has signed in. Tokens last an hour, so
+   this re-mints rather than caching — the dashboard is often left open. */
+async function authQ(){
+  if(!window.__fbUser) return '';
+  try{ return '?auth='+await window.__fbUser.getIdToken(); }catch(e){ return ''; }
+}
+
 async function fetchRoot(){
-  /* public read first — no SDK, no CDN */
-  try{
-    var r=await fetch(DB+'/'+NS+'.json'+(AUTHED&&window.__idToken?('?auth='+window.__idToken):''));
-    var j=await r.json();
-    if(j&&j.error) throw new Error(j.error);
-    return j;
-  }catch(e){
-    throw e;
-  }
+  /* Anonymous read first: it works while a namespace is still world-readable
+     and costs nothing. Once the tightened rules are deployed this throws and
+     we fall through to Google sign-in. */
+  var r=await fetch(DB+'/'+NS+'.json'+(await authQ()));
+  var j=await r.json();
+  if(j&&j.error) throw new Error(j.error);
+  return j;
 }
 
 /* Google sign-in, loaded only if a namespace refuses an anonymous read */
@@ -223,10 +229,11 @@ async function signIn(){
   var a=auth.getAuth(app.initializeApp(cfg));
   var p=new auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
   var res=await auth.signInWithPopup(a,p);
-  window.__idToken=await res.user.getIdToken();
+  window.__fbUser=res.user;
   AUTHED=true;
   $('warn').style.display='none';
   load();
+  loadAnnounce();
 }
 
 async function load(){
@@ -258,19 +265,28 @@ async function load(){
 
 /* ---------- announcement ---------- */
 function annMsg(m){$('annStatus').textContent=m;}
+async function putAnnounce(payload,okMsg){
+  try{
+    var r=await fetch(DB+'/'+NS+'/_announce.json'+(await authQ()),
+                      {method:'PUT',body:JSON.stringify(payload)});
+    var j=await r.json();
+    if(j&&j.error)throw new Error(j.error);
+    annMsg(okMsg);
+  }catch(e){
+    annMsg('Could not post — posting an announcement needs the instructor sign-in. Use the button above.');
+  }
+}
 function postAnnounce(){
   var t=($('annText').value||'').trim();
   if(!t){annMsg('Type a message first, or press Clear.');return;}
   annMsg('Posting…');
-  fetch(DB+'/'+NS+'/_announce.json',{method:'PUT',body:JSON.stringify({text:t,ts:Date.now(),on:true})})
-    .then(function(){annMsg('Posted ✓ — live on student pages.');})
-    .catch(function(){annMsg('Could not post — check your connection.');});
+  putAnnounce({text:t,ts:Date.now(),on:true},'Posted ✓ — live on student pages.');
 }
 function clearAnnounce(){
   annMsg('Clearing…');
-  fetch(DB+'/'+NS+'/_announce.json',{method:'PUT',body:JSON.stringify({text:'',ts:Date.now(),on:false})})
-    .then(function(){$('annText').value='';annMsg('Cleared — banner hidden.');})
-    .catch(function(){annMsg('Could not clear — check your connection.');});
+  putAnnounce({text:'',ts:Date.now(),on:false},'Cleared — banner hidden.').then(function(){
+    $('annText').value='';
+  });
 }
 function loadAnnounce(){
   fetch(DB+'/'+NS+'/_announce.json').then(function(r){return r.json();}).then(function(a){
@@ -493,6 +509,12 @@ function start(){
     $('app').innerHTML='<div class="warn" style="display:block">Could not load <code>/courses.json</code>: '+esc(e.message||e)+'</div>';
   });
 
+  $('bAuth').addEventListener('click',function(){
+    signIn().then(function(){
+      $('bAuth').textContent='🔓 '+(window.__fbUser&&window.__fbUser.email||'signed in');
+      $('bAuth').classList.add('active');
+    }).catch(function(e){ alert('Sign-in failed: '+(e&&e.message||e)); });
+  });
   $('bRefresh').addEventListener('click',function(){load();});
   $('bCsv').addEventListener('click',exportCSV);
   $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
