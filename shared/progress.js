@@ -172,6 +172,8 @@
     /* pages with their own identity chip in the header use that instead */
     var w=document.getElementById('topWho');
     if(w){ if(S.name){w.textContent='👤 '+S.name;w.classList.add('on');} return; }
+    /* on roster courses login.js owns the pill — don't draw a second one */
+    if(C.login&&window.CourseLogin)return;
     var t=L();
     var p=document.getElementById('st-pill');
     if(!p){p=document.createElement('div');p.id='st-pill';document.body.appendChild(p);p.addEventListener('click',openModal);}

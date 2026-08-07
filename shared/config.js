@@ -40,15 +40,15 @@ window.CourseConfig = (function () {
              student resumes on any device). false = the older name-box
              identity, where progress lives on one device only. */
   var COURSES = {
-    "omba401":   { ns:"omba401",   theme:"sumas", lang:"en", login:false,
+    "omba401":   { ns:"omba401",   theme:"sumas", lang:"en", login:true,
                    label:"OMBA401 · Quantitative Methods" },
-    "ombafr455": { ns:"ombafr455", theme:"sumas", lang:"fr", login:false,
+    "ombafr455": { ns:"ombafr455", theme:"sumas", lang:"fr", login:true,
                    label:"OMBAFR455 · Marchés financiers durables" },
     "e1410":     { ns:"e1410",     theme:"ideas", lang:"en", login:true,
                    label:"E1410 · Advanced Project Management in AI" },
-    "umef407":   { ns:"umef407",   theme:"umef",  lang:"en", login:false,
+    "umef407":   { ns:"umef407",   theme:"umef",  lang:"en", login:true,
                    label:"UMEF407 · Digital Innovation" },
-    "statistics":{ ns:"statistics",theme:"navy",  lang:"en", login:false, key:"stats",
+    "statistics":{ ns:"statistics",theme:"navy",  lang:"en", login:true, key:"stats",
                    label:"Statistics & Data" }
   };
 

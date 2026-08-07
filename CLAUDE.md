@@ -135,15 +135,35 @@ One Firebase Realtime DB, one top-level key per course namespace:
 
 ```
 <ns>/
-  _announce/            { on, text, ts }        instructor → students
+  _announce/            { on, text, ts }          instructor → students
+  _roster/<sid>/        { name, pass, ts }        pass = the 6-digit course code
+  _quizmeta/<moduleId>/ { title, ts, qs[] }       question text, for cohort stats
   <sid>/
-    name, sid, pw       identity (pw = personal code, for cross-device login)
-    createdAt, updatedAt
+    name, sid, createdAt, updatedAt
     mod/<moduleId>/
       title, total, secs, score, firstSeen, updatedAt
       done/<sectionId>: true
+      quiz/q<i>:        { p: pickedIndex, c: 1|0, ts }
+    work/<fieldId>/     { v, label, mod, ts }     workbook answers
 analytics/<YYYY-MM-DD>/<id>   pageviews from track.js (coarse geo only, never raw IP)
 ```
+
+### Cross-device login
+
+[shared/login.js](shared/login.js) gives each student a name plus a six-digit code, so
+progress follows them from laptop to phone instead of being trapped in one browser's
+localStorage. Signing in **pulls remote progress and merges it into localStorage**
+(union of completed sections, max of time spent, remote fills empty scores and workbook
+fields), then hands identity to `StatsTrack`, which pushes the merged result back. Neither
+device's work is lost and it does not matter which one is ahead.
+
+The storage shape is deliberately identical to the one E1410's `join.html` already
+used — `<key>_auth = {sid, name, pass}` and `_roster/<sid> = {name, pass, ts}` — so that
+course's existing roster kept working with no migration.
+
+Turn it on for a course by setting `login:true` in [shared/config.js](shared/config.js)
+and loading `login.js` **before** `progress.js`. When it is on, `login.js` owns the
+identity pill and `progress.js` deliberately does not draw its own.
 
 `sid` is the slugified name (`jan-erik-meidell`). Progress is **always** written to
 `localStorage` first, named or not — so when a student finally identifies themselves,
