@@ -42,7 +42,7 @@ window.CourseConfig = (function () {
   var COURSES = {
     "omba401":   { ns:"omba401",   theme:"sumas", lang:"en", login:true,
                    label:"OMBA401 · Quantitative Methods" },
-    "ombafr455": { ns:"ombafr455", theme:"sumas", lang:"fr", login:true,
+    "ombafr455": { ns:"ombafr455", theme:"sumas", lang:"en", login:true,
                    label:"OMBAFR455 · Marchés financiers durables" },
     "e1410":     { ns:"e1410",     theme:"ideas", lang:"en", login:true,
                    label:"E1410 · Advanced Project Management in AI" },
