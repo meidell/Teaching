@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Week 8 · Homework · OMBA401</title>
+<meta name="description" content="OMBA401 Week 8 homework — 23 problems on the four components of a time series, centred moving averages, building and normalising seasonal indices, deseasonalising, fitting a trend that means something, reseasonalising a forecast, and MAD, MSE and MAPE against a naive benchmark. Answers checked online; solutions unlock after you try.">
+<meta name="theme-color" content="#2C5530">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4DD;</text></svg>">
+<link rel="stylesheet" href="/shared/themes/sumas.css">
+<link rel="stylesheet" href="/shared/homework.css">
+<style>
+.databox .nums{font-family:Georgia,serif;font-size:15px;color:var(--ink);line-height:1.7;}
+.databox .nums b{color:var(--green-deep);}
+.field input{width:150px;background:var(--sand);border:1px solid var(--sand-deep);border-radius:8px;color:var(--ink);font:15px 'Helvetica Neue',Arial,sans-serif;padding:9px 11px;}
+.fb code{background:var(--sand);padding:1px 6px;border-radius:4px;color:var(--ink);font-family:Georgia,serif;border:1px solid var(--sand-deep);}
+table.mini{border-collapse:collapse;margin:10px 0;font-size:13.5px;background:var(--white);border-radius:10px;overflow:hidden;width:100%;}
+table.mini th,table.mini td{border:1px solid var(--sand-deep);padding:5px 8px;text-align:center;color:var(--ink-soft);}
+table.mini th{background:var(--green-pale);color:var(--green-deep);font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;}
+table.mini td.l,table.mini th.l{text-align:left;}
+table.mini td b{color:var(--ink);}
+table.mini tr.tot td{background:var(--green-pale);font-weight:bold;color:var(--green-deep);}
+.tablewrap{overflow-x:auto;}
+</style>
+</head>
+<body data-course="omba401">
+
+<div class="topbar"><div class="topbar-inner">
+  <img src="sumas-logo.png" alt="SUMAS" style="height:20px;width:auto;flex:none;">
+  <span class="course">OMBA401 · WEEK 8 · HOMEWORK</span>
+  <span class="scorechip" id="scoreChip">0 / 0 solved</span>
+  <button class="filterbtn" id="hideSolved" hidden>Hide solved</button>
+  <a class="pop" href="week8-homework.html" target="_blank" rel="noopener" title="Open in a new tab">↗</a>
+</div></div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Homework · ~2–3 hours · Calculator or Excel</div>
+    <h1>Trend, season <em>and how wrong you are</em></h1>
+    <p>Twenty-three problems on everything Week 8 taught: reading a seasonal series without being fooled by it, building a centred moving average, turning ratios into normalised seasonal indices, deseasonalising and fitting a trend that means something, reseasonalising a forecast, and scoring it against a benchmark. All on the <b>Nyon</b> café's three years of monthly revenue.</p>
+  </div>
+
+  <div class="rules">
+    <b>How this works:</b> work each problem by hand or in Excel, type your answer, then <b>Check</b>. Stuck? Take a <b>hint</b> — no penalty. The full worked <b>solution unlocks only after your first check</b>. Numeric answers: round as instructed; comma or dot decimals both work. Give money in <b>CHF</b> without the symbol or thousands separators, percentages as numbers (e.g. −20.1 for a 20.1% fall, keeping the sign), and seasonal indices to <b>4 decimals</b>. Your progress, score and time sync to your professor's dashboard once you've signed in.
+  </div>
+
+  <div class="databox">
+    <h4>📋 Dataset — Nyon monthly revenue, CHF, 36 months</h4>
+    <div class="tablewrap"><table class="mini">
+      <tr><th class="l">t</th><th class="l">Month</th><th>Revenue</th><th class="l">t</th><th class="l">Month</th><th>Revenue</th><th class="l">t</th><th class="l">Month</th><th>Revenue</th></tr>
+      <tr><td class="l">1</td><td class="l">Sep 2023</td><td>171,600</td><td class="l">13</td><td class="l">Sep 2024</td><td>181,300</td><td class="l">25</td><td class="l">Sep 2025</td><td>193,500</td></tr>
+      <tr><td class="l">2</td><td class="l">Oct 2023</td><td>175,700</td><td class="l">14</td><td class="l">Oct 2024</td><td>189,200</td><td class="l">26</td><td class="l">Oct 2025</td><td>198,900</td></tr>
+      <tr><td class="l">3</td><td class="l">Nov 2023</td><td>175,600</td><td class="l">15</td><td class="l">Nov 2024</td><td>184,300</td><td class="l">27</td><td class="l">Nov 2025</td><td>197,900</td></tr>
+      <tr><td class="l">4</td><td class="l">Dec 2023</td><td>181,400</td><td class="l">16</td><td class="l">Dec 2024</td><td>195,300</td><td class="l">28</td><td class="l">Dec 2025</td><td>204,200</td></tr>
+      <tr><td class="l">5</td><td class="l">Jan 2024</td><td>156,400</td><td class="l">17</td><td class="l">Jan 2025</td><td>165,400</td><td class="l">29</td><td class="l">Jan 2026</td><td>177,000</td></tr>
+      <tr><td class="l">6</td><td class="l">Feb 2024</td><td>158,700</td><td class="l">18</td><td class="l">Feb 2025</td><td>171,000</td><td class="l">30</td><td class="l">Feb 2026</td><td>180,100</td></tr>
+      <tr><td class="l">7</td><td class="l">Mar 2024</td><td>172,700</td><td class="l">19</td><td class="l">Mar 2025</td><td>180,600</td><td class="l">31</td><td class="l">Mar 2026</td><td>193,500</td></tr>
+      <tr><td class="l">8</td><td class="l">Apr 2024</td><td>180,300</td><td class="l">20</td><td class="l">Apr 2025</td><td>193,300</td><td class="l">32</td><td class="l">Apr 2026</td><td>201,900</td></tr>
+      <tr><td class="l">9</td><td class="l">May 2024</td><td>187,300</td><td class="l">21</td><td class="l">May 2025</td><td>198,200</td><td class="l">33</td><td class="l">May 2026</td><td>211,500</td></tr>
+      <tr><td class="l">10</td><td class="l">Jun 2024</td><td>179,700</td><td class="l">22</td><td class="l">Jun 2025</td><td>192,800</td><td class="l">34</td><td class="l">Jun 2026</td><td>203,200</td></tr>
+      <tr><td class="l">11</td><td class="l">Jul 2024</td><td>158,400</td><td class="l">23</td><td class="l">Jul 2025</td><td>166,300</td><td class="l">35</td><td class="l">Jul 2026</td><td>177,600</td></tr>
+      <tr><td class="l">12</td><td class="l">Aug 2024</td><td>151,000</td><td class="l">24</td><td class="l">Aug 2025</td><td>161,600</td><td class="l">36</td><td class="l">Aug 2026</td><td>168,900</td></tr>
+    </table></div>
+    <div class="nums">Results carried forward from the lesson, so you do not have to rebuild the whole decomposition for every problem:<br>
+      normalised seasonal indices — <b>Jan 0.9209 · Feb 0.9406 · Mar 1.0002 · Apr 1.0516 · May 1.0796 · Jun 1.0375 · Jul 0.9001 · Aug 0.8621 · Sep 1.0287 · Oct 1.0603 · Nov 1.0384 · Dec 1.0800</b><br>
+      deseasonalised trend — <b>d̂<sub>t</sub> = 165,036.5 + 898.9 t</b> &nbsp;·&nbsp; raw-series trend — <b>ŷ<sub>t</sub> = 168,632.7 + 699.0 t</b></div>
+    <p style="font-size:13px;">All figures are illustrative numbers built for the Week 8 exercises. This is a <b>different series from the one in the final essay</b> — do not carry these indices across.</p>
+  </div>
+
+  <div id="problems"></div>
+
+  <div class="finish">
+    <div class="res" id="finalRes"></div>
+    <button class="btn" id="finishBtn">✓ Submit homework &amp; record my score</button>
+  </div>
+
+  <div class="foot">
+    <a class="backlink" href="week8.html">← Week 8 lesson</a> &nbsp;
+    <a class="backlink" href="index.html">Course hub</a>
+    &nbsp;
+    <a class="backlink" href="dashboard.html">📊 My progress</a>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   HOMEWORK ENGINE — data-driven; solutions gated behind a first attempt.
+   ===================================================================== */
+const MODULE='w8-hw', TITLE='Week 8 · Homework';
+
+const PROBLEMS=[
+ /* ---- PART A : read the series without being fooled ---- */
+ {part:'A', head:'Read the series without being fooled', sub:'The comparison you choose decides the answer you get.', isHead:true},
+ {id:'a1', type:'num', pts:2, q:'Revenue went from <b>211,500</b> in May 2026 to <b>168,900</b> in August 2026. What is the percentage change? (1 decimal, keep the sign)',
+   fields:[{label:'%',ans:-20.1,tol:0.2}],
+   hint:'(168,900 − 211,500) ÷ 211,500 × 100.',
+   sol:'(168,900 − 211,500) ÷ 211,500 = −0.2014, so <b>−20.1%</b>. This is the number the Nyon manager sent you, and it is arithmetically correct. It is also almost meaningless, because it compares a seasonal peak with a seasonal trough.'},
+ {id:'a2', type:'num', pts:2, q:'Now compare <b>the same month a year apart</b>: August 2025 was 161,600 and August 2026 was 168,900. Percentage change? (1 decimal)',
+   fields:[{label:'%',ans:4.5,tol:0.2}],
+   hint:'(168,900 − 161,600) ÷ 161,600 × 100.',
+   sol:'<b>+4.5%.</b> Comparing like with like removes the season entirely, because both months carry the same seasonal index. A year-on-year comparison is the cheapest possible seasonal adjustment and it is available to anyone with a spreadsheet — which is why the first response to "we are down 20%" should always be "on what?"'},
+ {id:'a3', type:'choice', pts:1, q:'Nyon empties every July and August and fills every May and December. Which component is that?',
+   options:['trend','seasonal','cyclical','irregular'], correct:1,
+   hint:'Does it repeat on a fixed, known period?',
+   sol:'<b>Seasonal.</b> The period is fixed and known in advance — twelve months — which is exactly what makes it removable. A cyclical component swings over several years with no fixed length, and with three years of data you cannot separate it from the trend.'},
+ {id:'a4', type:'choice', pts:2, q:'Nyon\'s August shortfall was about CHF 25,000 in 2024 and about CHF 31,000 in 2026 — but roughly 14% below trend in both years. The appropriate model is…',
+   options:['additive, because the shortfall is growing','multiplicative, because the shortfall is a constant proportion of the level','either — they give the same answer','neither; the data is unusable'], correct:1,
+   hint:'Is the swing constant in francs, or constant in percent?',
+   sol:'<b>Multiplicative.</b> A seasonal effect that is a constant <i>proportion</i> of a growing level is precisely what y = T × S × C × I describes. The visual test is the fan: plot the series and the peaks and troughs spread apart as the level rises. Additive is right when the swing is a fixed number of units regardless of level, which is common in physical processes and rare in revenue.'},
+
+ /* ---- PART B : the centred moving average ---- */
+ {part:'B', head:'The centred moving average', sub:'Averaging exactly one cycle, and why 12 has to be centred.', isHead:true},
+ {id:'b1', type:'num', pts:2, q:'Add the first twelve months, Sep 2023 to Aug 2024. (whole number)',
+   fields:[{label:'CHF',ans:2048800,tol:2000}],
+   hint:'171,600 + 175,700 + 175,600 + 181,400 + 156,400 + 158,700 + 172,700 + 180,300 + 187,300 + 179,700 + 158,400 + 151,000.',
+   sol:'<b>2,048,800.</b> Because the window covers one of every month, the seasonal effects inside it cancel: whatever August takes away, May puts back. That is the entire mechanism of the moving average.'},
+ {id:'b2', type:'num', pts:1, q:'What is that twelve-month average? (2 decimals)',
+   fields:[{label:'CHF',ans:170733.33,tol:12}],
+   hint:'2,048,800 ÷ 12.',
+   sol:'<b>170,733.33.</b> This is a seasonally neutral estimate of the level — but of the level <i>in the middle</i> of that window, which falls between February and March 2024, not on either of them. Hence the next problem.'},
+ {id:'b3', type:'num', pts:3, q:'The next twelve-month average, Oct 2023 to Sep 2024, is <b>171,541.67</b>. Compute the <b>centred moving average for March 2024</b>. (2 decimals)',
+   fields:[{label:'CMA',ans:171137.50,tol:12}],
+   hint:'Average the two consecutive twelve-month averages.',
+   sol:'(170,733.33 + 171,541.67) ÷ 2 = <b>171,137.50</b>. Averaging two windows that straddle March recentres the estimate onto March itself. This is only necessary because 12 is even; with an odd window — 7 days, 5 quarters — the average already sits on an observation.'},
+ {id:'b4', type:'num', pts:2, q:'March 2024 actual revenue was <b>172,700</b>. What is the <b>ratio to moving average</b>? (4 decimals)',
+   fields:[{label:'ratio',ans:1.0091,tol:0.0025}],
+   hint:'actual ÷ CMA.',
+   sol:'172,700 ÷ 171,137.50 = <b>1.0091</b>. March in this year ran about 0.9% above the underlying level. Collect one of these for every usable month, average them by calendar month, and you have the raw seasonal profile.'},
+ {id:'b5', type:'choice', pts:1, q:'A 36-month series yields how many usable centred moving averages?',
+   options:['36','30','24','12'], correct:2,
+   hint:'You lose six months at each end.',
+   sol:'<b>24.</b> The first CMA needs six months before it and the last needs six after, so you lose six at each end: 36 − 12 = 24. With three years of monthly data that leaves exactly two ratios per calendar month — the practical minimum, and a reason to want four or five years rather than three.'},
+
+ /* ---- PART C : seasonal indices ---- */
+ {part:'C', head:'Building the seasonal indices', sub:'From ratios to a normalised profile that averages exactly 1.', isHead:true},
+ {id:'c1', type:'num', pts:2, q:'The two August ratios average to <b>0.8623</b>, and the twelve raw monthly averages sum to <b>12.0029</b>. Compute the <b>normalised August index</b>. (4 decimals)',
+   fields:[{label:'SI Aug',ans:0.8621,tol:0.0006}],
+   hint:'raw index × 12 ÷ sum of the raw indices.',
+   sol:'0.8623 × 12 ÷ 12.0029 = <b>0.8621</b>. A tiny adjustment here, but it must be made: normalising forces the twelve indices to average exactly 1, so the seasonal component redistributes revenue across the year without creating or destroying any.'},
+ {id:'c2', type:'choice', pts:2, q:'Why must the twelve indices be normalised to sum to 12?',
+   options:['to make the arithmetic easier','so that the seasonal component is neutral over a full year and does not bias the annual total','because Excel requires it','to remove outliers'], correct:1,
+   hint:'What would happen to a twelve-month forecast if they summed to 11.7?',
+   sol:'<b>So the season is neutral over a year.</b> If the indices summed to 11.7, every annual forecast built from them would be about 2.5% too low, every year, forever. The normalisation is one line of arithmetic and it is the step most often skipped.'},
+ {id:'c3', type:'num', pts:1, q:'Nyon\'s August index is 0.8621. By what percentage does a typical August run <b>below</b> the underlying level? (2 decimals)',
+   fields:[{label:'%',ans:13.79,tol:0.15}],
+   hint:'(1 − 0.8621) × 100.',
+   sol:'<b>13.79%.</b> Note what this is relative to: the deseasonalised level at that moment in the trend, not the previous month and not the annual average. That is what lets you quote an index without saying how big the business has become.'},
+ {id:'c4', type:'num', pts:2, q:'May\'s index is 1.0796 and August\'s is 0.8621. By what percentage does a typical May exceed a typical August, on seasonality alone? (1 decimal)',
+   fields:[{label:'%',ans:25.2,tol:0.4}],
+   hint:'(1.0796 ÷ 0.8621 − 1) × 100.',
+   sol:'<b>25.2%.</b> Compare that with the "20% collapse" in the manager\'s email. Pure seasonality accounts for more than the entire drop she reported — the business actually grew slightly between those two months once the calendar is removed.'},
+ {id:'c5', type:'choice', pts:1, q:'A colleague computes indices from only the last twelve months of data. The problem is…',
+   options:['twelve months is plenty','each month has only one ratio, so the "average" carries all of that month\'s noise with no way to separate it','the arithmetic will not work','indices need at least ten years'], correct:1,
+   hint:'How many ratios per calendar month does one year give you?',
+   sol:'<b>One ratio per month means no averaging at all.</b> A single hot August or a single road closure becomes a permanent feature of your seasonal profile. Two years is the practical minimum and three or more is much better — and even then, recompute annually, because seasonal patterns drift.'},
+
+ /* ---- PART D : deseasonalise, fit, forecast ---- */
+ {part:'D', head:'Deseasonalise, fit, forecast', sub:'The three steps, in the only order that works.', isHead:true},
+ {id:'d1', type:'num', pts:2, q:'<b>Deseasonalise</b> August 2026: actual 168,900, index 0.8621. (nearest whole number)',
+   fields:[{label:'CHF',ans:195914,tol:250}],
+   hint:'Divide by the index — the model is multiplicative.',
+   sol:'168,900 ÷ 0.8621 = <b>195,914</b>. Read that as: "if August had been an average month, the café would have taken about CHF 195,900." That is the number to compare with other months, and it is what the manager should have been looking at all along.'},
+ {id:'d2', type:'choice', pts:2, q:'Fitting a trend to the <b>raw</b> series gives R² = 0.236 and a slope of 699. Fitting it to the <b>deseasonalised</b> series gives R² = 0.989 and a slope of 899. Why?',
+   options:['the deseasonalised data has been smoothed, so it fits better artificially','seasonality is large, structured variation that a straight line cannot capture, so it lands in the residuals — depressing R² and dragging the slope','there is an error in the raw series','the two slopes should be identical and one is wrong'], correct:1,
+   hint:'Where does the seasonal variation go if the model has no way to represent it?',
+   sol:'<b>It lands in the residuals.</b> The line has no term for the season, so all of that real, systematic variation is treated as error — which crushes R² and, because the series does not start and end at the same point in the cycle, biases the slope as well. Here the raw fit understates growth by <b>22%</b>. This is the most valuable single idea in the week.'},
+ {id:'d3', type:'num', pts:2, q:'Using d̂<sub>t</sub> = 165,036.5 + 898.9t, compute the <b>trend value at t = 37</b> (September 2026). (nearest whole number)',
+   fields:[{label:'CHF',ans:198295,tol:120}],
+   hint:'165,036.5 + 898.9 × 37.',
+   sol:'898.9 × 37 = 33,259.3; + 165,036.5 = <b>198,295</b>. This is the deseasonalised level — what September would take if it were an average month. One step to go.'},
+ {id:'d4', type:'num', pts:2, q:'<b>Reseasonalise</b> it. September\'s index is 1.0287. What is the forecast for September 2026? (nearest whole number)',
+   fields:[{label:'CHF',ans:203987,tol:280}],
+   hint:'Multiply the trend value by the index.',
+   sol:'198,295 × 1.0287 = <b>203,987</b>. Multiply, never add — the model is multiplicative. Dividing here instead of multiplying is the other common slip, and it produces a September forecast <i>below</i> the trend, which should immediately look wrong.'},
+ {id:'d5', type:'num', pts:3, q:'Now forecast <b>December 2026</b>, which is t = 40. December\'s index is 1.0800. (nearest whole number)',
+   fields:[{label:'CHF',ans:217075,tol:350}],
+   hint:'Trend first: 165,036.5 + 898.9 × 40. Then multiply by 1.0800.',
+   sol:'Trend = 165,036.5 + 35,956 = 200,992; × 1.0800 = <b>217,075</b>. Notice that December\'s forecast is much higher than September\'s even though the trend has only risen by CHF 2,700 — the season is doing almost all of the work. That is the shape a budget needs and the shape a straight-line forecast would completely miss.'},
+
+ /* ---- PART E : how wrong are you ---- */
+ {part:'E', head:'How wrong are you?', sub:'Scoring the forecast against a benchmark anyone could produce.', isHead:true},
+ {id:'e1', type:'num', pts:2, q:'Over the final twelve months the decomposition model\'s absolute errors average out to what MAD? Using the model forecasts against actuals, MAD = <b>966</b> — confirm the interpretation by computing MAPE from a MAD of 966 against a mean actual of about 193,900. (2 decimals)',
+   fields:[{label:'%',ans:0.50,tol:0.06}],
+   hint:'966 ÷ 193,900 × 100. (This approximates MAPE; the exact per-month calculation gives the same answer to two decimals here.)',
+   sol:'966 ÷ 193,900 = 0.00498, so about <b>0.50%</b>. Computing MAPE properly — averaging |e|/y month by month — also gives 0.50%. The two agree closely whenever the errors are not concentrated in the smallest months.'},
+ {id:'e2', type:'num', pts:2, q:'The naive benchmark — "next August = last August" — gives MAD = 10,742 on the same twelve months. How many times better is the decomposition model on MAD? (1 decimal)',
+   fields:[{label:'times',ans:11.1,tol:0.3}],
+   hint:'10,742 ÷ 966.',
+   sol:'<b>11.1× better.</b> This comparison is the point. An absolute error figure means nothing on its own — the question is always whether your model beats something trivially cheap. The naive seasonal forecast gets the <i>shape</i> right, because the season repeats, but sits a whole year of growth too low.'},
+ {id:'e3', type:'choice', pts:2, q:'Your model achieves a MAPE of 0.50% on monthly revenue. The right reaction is…',
+   options:['deploy it — this is an excellent forecast','be pleased about beating the benchmark, but treat a MAPE that low as a warning sign worth investigating','discard it; the model is overfitted','switch to MAD, which will be more realistic'], correct:1,
+   hint:'What does real monthly revenue forecasting typically achieve?',
+   sol:'<b>Be suspicious.</b> Real monthly revenue MAPEs of 5–15% are respectable; under 3% usually means the series is unusually clean, or that test data has leaked into the fitting. Here it is the former — this is a teaching series built with very little noise. What <i>is</i> realistic is the 11× margin over the benchmark.'},
+ {id:'e4', type:'choice', pts:2, q:'Which is the most serious limitation of a decomposition forecast?',
+   options:['it cannot handle monthly data','it assumes the future continues the past and gives no warning of a turning point','it requires a computer','MAPE is undefined for zero values'], correct:1,
+   hint:'What happened to every trend line ever fitted before a recession?',
+   sol:'<b>It cannot see a turning point coming.</b> The arithmetic is exactly as confident whether the world is about to change or not. It also assumes the seasonal pattern is stable, which is why indices should be recomputed yearly. The honest way to express the uncertainty is to hold data out, measure the error you actually made, and quote that alongside the forecast.'},
+];
+
+const TOTAL=PROBLEMS.filter(p=>!p.isHead).length;
+
+let solved={};
+const PRIOR=(function(){
+  try{return JSON.parse(localStorage.getItem('omba401_done_'+MODULE)||'{}')||{};}catch(e){return{};}
+})();
+
+const host=document.getElementById('problems');
+let num=0;
+PROBLEMS.forEach(p=>{
+  if(p.isHead){
+    const h=document.createElement('div');h.className='parthead';
+    h.innerHTML=`<div class="pl">Part ${p.part}</div><h2>${p.head}</h2><p>${p.sub}</p>`;
+    host.appendChild(h);return;
+  }
+  num++;
+  const card=document.createElement('div');card.className='prob';card.id='p-'+p.id;
+  let body='';
+  if(p.type==='num'){
+    body='<div class="fields">'+p.fields.map((f,i)=>
+      `<label class="field"><span>${f.label}${f.unit?' <i>('+f.unit+')</i>':''}</span><input type="text" inputmode="decimal" data-f="${i}" autocomplete="off"><span class="mark" data-m="${i}"></span></label>`
+    ).join('')+'</div>';
+  }else{
+    body='<div class="opts">'+p.options.map((o,i)=>`<button class="opt" data-o="${i}">${o}</button>`).join('')+'</div>';
+  }
+  card.innerHTML=
+    `<div class="ph"><span class="pn">${num}</span><span class="pts">${p.pts} ${p.pts===1?'point':'points'}</span></div>`+
+    `<div class="q">${p.q}</div>`+body+
+    `<div class="acts"><button class="btn small" data-act="check">Check</button>`+
+    `<button class="btn small ghost" data-act="hint">💡 Hint</button>`+
+    `<button class="btn small ghost locked" data-act="sol">📘 Solution</button></div>`+
+    `<div class="fb" id="fb-${p.id}"></div>`;
+  host.appendChild(card);
+
+  const fb=card.querySelector('.fb');
+  const solBtn=card.querySelector('[data-act="sol"]');
+  let attempted=false, chosen=null;
+
+  if(PRIOR[p.id]){
+    solved[p.id]=true;card.classList.add('solved');attempted=true;solBtn.classList.remove('locked');
+  }
+
+  if(p.type==='choice'){
+    card.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
+      card.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');chosen=parseInt(b.dataset.o,10);
+    }));
+  }
+  card.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',()=>{
+    const act=btn.dataset.act;
+    if(act==='hint'){show(fb,'hint','💡 <b>Hint.</b> '+p.hint);return;}
+    if(act==='sol'){
+      if(!attempted){show(fb,'hint','🔒 The solution unlocks after your first check — give the problem an honest try first.');return;}
+      show(fb,'sol','📘 <b>Solution.</b> '+p.sol);return;
+    }
+    if(p.type==='num'){
+      const empty=p.fields.every((f,i)=>!(card.querySelector(`input[data-f="${i}"]`).value||'').trim());
+      if(empty){show(fb,'hint','✍️ Type your answer first — then check it.');return;}
+      attempted=true;solBtn.classList.remove('locked');
+      let allok=true;
+      p.fields.forEach((f,i)=>{
+        const inp=card.querySelector(`input[data-f="${i}"]`);
+        const mk=card.querySelector(`[data-m="${i}"]`);
+        const v=parseFloat((inp.value||'').replace(',','.'));
+        const ok=!isNaN(v)&&Math.abs(v-f.ans)<=f.tol;
+        inp.classList.toggle('ok',ok);inp.classList.toggle('no',!ok);
+        mk.textContent=ok?'✓':'✗';mk.style.color=ok?'var(--ok)':'var(--no)';
+        if(!ok)allok=false;
+      });
+      finishCheck(allok,fb,card,p);
+    }else{
+      if(chosen===null){show(fb,'hint','✍️ Select an option first — then check it.');return;}
+      attempted=true;solBtn.classList.remove('locked');
+      card.querySelectorAll('.opt').forEach((b,i)=>{
+        b.classList.remove('ok','no');
+        if(i===p.correct)b.classList.add('ok');
+        if(i===chosen&&chosen!==p.correct)b.classList.add('no');
+      });
+      finishCheck(chosen===p.correct,fb,card,p);
+    }
+  }));
+});
+function finishCheck(ok,fb,card,p){
+  if(ok){
+    show(fb,'good','✅ <b>Correct.</b> Well done — the full solution is now open if you want the reasoning.');
+    if(!solved[p.id]){solved[p.id]=true;card.classList.add('solved');updateScore();if(window.StatsTrack)StatsTrack.complete(p.id);}
+  }else{
+    show(fb,'bad','❌ Not yet. Re-check your reasoning or arithmetic, take a hint — or open the solution and study it.');
+  }
+}
+function show(fb,cls,html){fb.className='fb show '+cls;fb.innerHTML=html;}
+function updateScore(){
+  const n=Object.keys(solved).length;
+  document.getElementById('scoreChip').textContent=n+' / '+TOTAL+' solved';
+}
+updateScore();
+
+(function(){
+  const btn=document.getElementById('hideSolved');
+  if(!Object.keys(solved).length)return;          /* nothing solved yet — no need for it */
+  btn.hidden=false;
+  btn.addEventListener('click',function(){
+    const on=document.body.classList.toggle('hide-solved');
+    btn.textContent=on?'Show all':'Hide solved';
+  });
+})();
+
+document.getElementById('finishBtn').addEventListener('click',()=>{
+  const n=Object.keys(solved).length;
+  const pct=Math.round(n/TOTAL*100);
+  if(window.StatsTrack){StatsTrack.setScore(n,TOTAL);StatsTrack.complete('submitted');}
+  /* only claim it reached the professor if it actually did — an unsigned-in student
+     is saved locally and syncs the moment they sign in */
+  const named=window.StatsTrack&&StatsTrack.identified();
+  document.getElementById('finalRes').textContent=`You solved ${n} of ${TOTAL} problems (${pct}%). `+(named
+    ? `Score recorded for your professor under ${StatsTrack.name()}.`
+    : `Your score is saved in this browser. Sign in with the box that has just opened — or the button at the bottom right — and this score, plus everything else you have already done on this device, is sent to your professor.`);
+});
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack)StatsTrack.init({module:MODULE,title:TITLE,total:TOTAL});
+});
+</script>
+<script src="/shared/config.js" defer></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
