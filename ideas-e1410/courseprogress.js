@@ -27,6 +27,21 @@ window.CourseProgress=(function(){
     {mod:'r2',short:'R2',name:'Reading · AI & PM study',total:3,live:true},
     {mod:'r3',short:'R3',name:'Reading · PM2030',total:3,live:true},
     {mod:'r4',short:'R4',name:'Reading · SME adoption',total:4,live:true},
+    /* The five primers. No modelling background is assumed anywhere in this
+       course, but Sessions 3, 4 and 6 lean hard on modelling vocabulary, and
+       until Aug 2026 these pages existed without appearing here at all — so a
+       student who needed them had no signal they existed.
+       `opt:true` = optional: listed (and ticked once done) but NOT part of the
+       percentage or the bar. That is deliberate twice over. A student who
+       already knows this material is told to skip it, so it must not count
+       against them — and adding five required chapters mid-cohort would have
+       silently dropped everyone's displayed progress by about eight points.
+       Totals are each page's TASKS array (watch + quiz; v3 also has the dial). */
+    {mod:'v1',short:'P1',name:'Primer · What a model actually learns',total:2,live:true,opt:true,href:'video-intro-ml.html'},
+    {mod:'v2',short:'P2',name:'Primer · Cross validation',total:2,live:true,opt:true,href:'video-cross-validation.html'},
+    {mod:'v3',short:'P3',name:'Primer · Accuracy, precision & recall',total:3,live:true,opt:true,href:'video-confusion-matrix.html'},
+    {mod:'v4',short:'P4',name:'Primer · Sensitivity & specificity',total:2,live:true,opt:true,href:'video-sensitivity-specificity.html'},
+    {mod:'v5',short:'P5',name:'Primer · The sing-a-long',total:2,live:true,opt:true,href:'video-precision-recall.html'},
     {mod:'forum',short:'Forum',name:'Discussion forum',total:1,live:false},
     {mod:'exam',short:'Exam',name:'Final assessment',total:1,live:false}
   ];
@@ -35,13 +50,20 @@ window.CourseProgress=(function(){
      (e1410/<sid>/mod) — used by the instructor dashboard to draw each
      student's course bar without touching localStorage. */
   function dataFromMods(modObj){var data={};CHAPTERS.forEach(function(c){var n=0,node=modObj&&modObj[c.mod];if(node&&node.done){for(var k in node.done){if(node.done[k])n++;}}data[c.mod]={done:Math.min(c.total,n)};});return data;}
-  function pctOf(data){var s=0;CHAPTERS.forEach(function(c){s+=c.total?Math.min(1,data[c.mod].done/c.total):0;});return Math.round(s/CHAPTERS.length*100);}
+  /* Optional chapters (the primers) are excluded everywhere a number is
+     produced: they are support material, not coursework. */
+  function counted(){return CHAPTERS.filter(function(c){return !c.opt;});}
+  function pctOf(data){var u=counted(),s=0;u.forEach(function(c){s+=c.total?Math.min(1,data[c.mod].done/c.total):0;});return Math.round(s/u.length*100);}
   function caption(data){
-    var live=CHAPTERS.filter(function(c){return c.live;});
+    var live=counted().filter(function(c){return c.live;});
     var done=live.filter(function(c){return data[c.mod].done>=c.total;}).length;
-    return done===live.length
+    var prim=CHAPTERS.filter(function(c){return c.opt;});
+    var pdone=prim.filter(function(c){return data[c.mod].done>=c.total;}).length;
+    var ptail=prim.length?' '+(pdone?'You’ve also done '+pdone+' of the '+prim.length+' optional primers.'
+                                    :'The '+prim.length+' primers below are optional — short explainers if the modelling vocabulary is new to you.'):'';
+    return (done===live.length
       ? '✓ You’re up to date — everything available is done. Sessions 2–8, the forum and the final assessment unlock through August.'
-      : 'You’ve completed '+done+' of '+live.length+' available chapters. The bar fills as you finish each session, reading and quiz — and grows as new chapters unlock.';
+      : 'You’ve completed '+done+' of '+live.length+' available chapters. The bar fills as you finish each session, reading and quiz — and grows as new chapters unlock.')+ptail;
   }
   function buildList(data,el){
     el.innerHTML='';
@@ -50,17 +72,24 @@ window.CourseProgress=(function(){
       if(!c.live){st='Upcoming';cls='up';}
       else if(d>=c.total){st='Done ✓';cls='done';}
       else if(d>0){st=d+'/'+c.total;cls='prog';}
+      else if(c.opt){st='Optional';cls='up';}
       else{st='Not started';cls='prog';}
-      var ci=document.createElement('div');ci.className='ci';
+      var ci=document.createElement('div');ci.className='ci'+(c.opt?' opt':'');
       ci.innerHTML='<span></span><span class="st '+cls+'"></span>';
-      ci.children[0].textContent=c.name;ci.children[1].textContent=st;
+      /* primers are the one chapter type a student can act on from here */
+      if(c.href){
+        var a=document.createElement('a');a.href=c.href;a.textContent=c.name;
+        a.style.cssText='color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;';
+        ci.children[0].appendChild(a);
+      } else ci.children[0].textContent=c.name;
+      ci.children[1].textContent=st;
       el.appendChild(ci);
     });
   }
   function paint(data,opts){
     if(opts.bar){
       opts.bar.innerHTML='';
-      CHAPTERS.forEach(function(c){
+      counted().forEach(function(c){
         var frac=c.total?Math.min(1,data[c.mod].done/c.total):0;
         if(opts.compact){
           var seg=document.createElement('div');seg.className='cseg'+(!c.live?' locked':'');

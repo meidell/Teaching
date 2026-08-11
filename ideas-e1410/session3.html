@@ -96,7 +96,12 @@ if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</s
         <button class="btn" id="gutLock">🔒 Lock in my estimate</button>
       </div>
       <div class="reveal" id="gutReveal">
-        <b>Locked.</b> In the classic study of production ML systems (<em>Hidden Technical Debt in Machine Learning Systems</em>, Sculley et al., 2015), the ML code is <b>only a tiny fraction</b> — commonly illustrated as around <b>5%</b> — of a real deployed system. The other ~95% is data collection and verification, feature extraction, configuration, serving infrastructure, resource management, process-management tools and monitoring. That single picture explains this whole session: <em>your people, your infrastructure and your money go mostly into the machinery around the model.</em> A team of five data scientists would build a beautiful model that never runs in production.
+        <b>Locked.</b> In the classic study of production ML systems (<em>Hidden Technical Debt in Machine Learning Systems</em>, Sculley et al., 2015), the ML code is <b>only a tiny fraction</b> — commonly illustrated as around <b>5%</b> — of a real deployed system. The other ~95% is data collection and verification, feature extraction, configuration, serving infrastructure, resource management, process-management tools and monitoring.
+        <figure class="figure">
+          <img src="ml-system-figure.svg" alt="Diagram of a production machine-learning system. A tiny black box labelled ML Code sits among much larger boxes: configuration, data collection, feature extraction, data verification, machine resource management, analysis tools, process management tools, serving infrastructure and monitoring.">
+          <figcaption><b>Find the model.</b> Every box here is real work that someone has to be paid to do. The black one in the middle is the machine learning. <span style="white-space:nowrap;">— after Sculley et al. (2015),</span> <em>Hidden Technical Debt in Machine Learning Systems</em>, NeurIPS. Redrawn; box sizes are illustrative, not measured.</figcaption>
+        </figure>
+        That single picture explains this whole session: <em>your people, your infrastructure and your money go mostly into the machinery around the model.</em> A team of five data scientists would build a beautiful model that never runs in production.
       </div>
     </div>
   </div>
@@ -149,6 +154,12 @@ if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</s
     <span class="label trap">The trap</span>
     <h3>Vendors, and who owns what you built</h3>
     <p>Most AI projects lean on outsiders: <span class="gloss" data-k="vendor">AI consultancies, cloud providers, data providers, specialist development partners</span>. Before signing, a project manager must pin down four things — <strong>data ownership and usage rights</strong>, <strong>intellectual property in the models and algorithms</strong>, <strong>service-level expectations</strong>, and <strong>long-term maintenance responsibility</strong>. Get these wrong and you discover after go-live that your fraud model, or the labelled data it was trained on, is not legally yours to keep using.</p>
+    <p>Two words, used precisely, because the contract turns on the difference between them. A <span class="gloss" data-k="label">label</span> is a human verdict attached to a past example — <em>an analyst decided this transaction was fraud</em>. The <span class="gloss" data-k="weights">weights</span> are the internal numbers the model adjusts during training until it reproduces those verdicts. <strong>They are two separate assets</strong>, and they can end up owned by two different companies: your analysts produced the labels, the vendor's training run produced the weights. Say which of the two you are buying, in writing, before anyone starts.</p>
+    <div class="primer">
+      <span class="pk">No modelling background? You don't need one — but these help</span>
+      <a href="video-intro-ml.html">Primer 1 · What a model actually learns ↗</a>
+      <span class="pw">Ten minutes, plain language: labels, training, weights and what "the model learned it" actually means. Nothing in this course assumes you have built a model — but Sessions 4 and 6 use this vocabulary constantly.</span>
+    </div>
   </div>
 
   <div class="card">
@@ -192,11 +203,81 @@ if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</s
     <h3>Four project consequences of infrastructure choices</h3>
     <ul>
       <li><strong>Timelines &amp; iteration speed</strong> — slow training turnaround means fewer experiments per sprint, which means a later date to acceptable accuracy.</li>
-      <li><strong>Dependencies</strong> — data availability, compute capacity and tooling gate each other. An idle team waiting for GPU quota is a schedule risk, not a technical detail.</li>
-      <li><strong>Cost &amp; scalability</strong> — training costs scale with experimentation; serving costs scale with traffic. Two very different curves in your budget.</li>
+      <li><strong>Dependencies</strong> — data availability, compute capacity and tooling gate each other. An idle team waiting for <span class="gloss" data-k="quota">GPU quota</span> is a schedule risk, not a technical detail.</li>
+      <li><strong>Cost &amp; scalability</strong> — training costs scale with experimentation; <span class="gloss" data-k="inference">serving (inference) costs</span> scale with traffic. Two very different curves in your budget.</li>
       <li><strong>Integration with existing IT</strong> — the classic killer. Models that work in a notebook fail against a fifteen-year-old core banking system.</li>
     </ul>
     <p class="punch">Infrastructure is not the technical team's private business. It is your schedule, your budget and your integration risk wearing a different hat.</p>
+
+    <div class="card" style="border-left:3px solid var(--red);margin-top:14px;">
+      <span class="label trap">Worth knowing in detail</span>
+      <h3>“Waiting for GPU quota” — what that sentence actually means</h3>
+      <p>It sounds like an IT chore. It is the most common way an AI project loses three weeks without anyone doing anything wrong, so it is worth understanding properly.</p>
+      <p>When you rent compute from AWS, Azure or Google Cloud, your account carries a <strong>quota</strong> — a cap on how many machines of each type you are allowed to run in each region. The default cap for GPU machines is frequently <strong>zero</strong>. Not "low". Zero. Your company has an account, the budget is approved, the engineers are hired, and the platform will simply refuse to start the machine.</p>
+      <p>Raising it is a request to the provider — a support ticket that a human reviews. It may take hours; it may take a fortnight; it may come back granted in part ("you asked for eight, you may have two") or refused. <strong>You do not control the timing and you cannot escalate your way past it.</strong></p>
+      <p>And quota is only permission. Even with it, popular GPU types run out in a region — you will see <em>insufficient capacity</em>, which means the machines are physically busy serving somebody else. That is not a bug you can fix; it is a queue you are in.</p>
+      <p><strong>So what does a project manager actually do?</strong> Three things, all of them cheap, all of them only cheap if done early:</p>
+      <ul>
+        <li><strong>Request the quota in week one</strong>, in the regions you will really use, for more than you think you need — before anyone needs it. It is free to hold and it takes the dependency off the critical path.</li>
+        <li><strong>Put it on the plan as a dependency with an owner and a date</strong>, exactly like a legal sign-off or a data-sharing agreement. It behaves like one: a third party decides, on their schedule.</li>
+        <li><strong>Name a fallback</strong> — a second instance type, a second region, or a smaller model for early experiments. Teams that have one lose a day; teams that don't lose a sprint.</li>
+      </ul>
+      <p>This is the same shape as the data-access problem from Session 2, and it fails the same way. Nobody sends you an email saying <em>“we cannot get the machines.”</em> You get a status report where a green task turned amber, and by the time you ask why, the month is gone.</p>
+      <p class="punch">Compute you have budgeted for is not compute you can use. Between the money and the machine sits somebody else's approval queue — put it on the plan in week one.</p>
+    </div>
+
+    <div class="card">
+      <span class="label read">Watch — if the server side is a black box to you</span>
+      <h3>What the infrastructure actually is</h3>
+      <p>Optional and ungraded. These are made for engineers rather than project managers, so watch them for the <em>vocabulary</em> — instance types, regions, quotas, spot pricing, training versus serving — and ignore the command lines. The card above is the project-management version; these are what your team is looking at.</p>
+      <div class="rlist">
+        <a class="rd" href="https://www.youtube.com/watch?v=4lzE3Dan6vs" target="_blank" rel="noopener">
+          <span class="ty">Video · 14 min 50 s · Dheeraj Choudhary</span><span class="rt">Amazon EC2 GPU Instances for ML Training — setup, P3/G4, spot pricing <span class="ext">↗</span></span>
+          <span class="rw">The closest thing to what this session describes: what an "instance type" is, what the GPU machines actually cost per hour, and what spot pricing is — cheaper capacity that can be taken away from you mid-run, which is a schedule risk with a discount attached.</span>
+        </a>
+        <a class="rd" href="https://www.youtube.com/watch?v=id0_4kSeeqQ" target="_blank" rel="noopener">
+          <span class="ty">Video · 14 min 18 s · Saujan Bohara</span><span class="rt">Which GPU cloud is best for AI/ML? — an SRE's comparison <span class="ext">↗</span></span>
+          <span class="rw">Watch this one for the <em>availability</em> problem rather than the verdict: why teams end up spread across several providers, and why "we'll just add more GPUs" is not a decision you get to make alone.</span>
+        </a>
+        <a class="rd" href="https://www.youtube.com/watch?v=80COH4fWisY" target="_blank" rel="noopener">
+          <span class="ty">Video · 1 h 58 min · ExamPro</span><span class="rt">NVIDIA AI infrastructure for beginners — GPUs, CUDA, containers, Triton <span class="ext">↗</span></span>
+          <span class="rw">Long, and genuinely technical. Only if you want to understand the stack properly — the first twenty minutes on what a GPU is and why it suits training are the part that pays off for a PM.</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="viz" id="curvesViz">
+      <div class="vz-h">Experiment · the two cost curves</div>
+      <div class="vz-s">Training cost is driven by <b>experiments</b>, and experiments stop when the model is good enough. Serving cost is driven by <b>traffic</b>, and traffic never stops. Both are plotted as <b>cumulative spend in dollars</b>, so they share one axis and can be compared honestly. Move the assumptions and watch where the lines cross.</div>
+      <div class="vz-ctl">
+        <div><label>Build length <span class="vv" id="cvBuildV">6</span> months</label>
+          <input type="range" id="cvBuild" min="3" max="12" step="1" value="6"></div>
+        <div><label>GPU hours in the build <span class="vv" id="cvHoursV">900</span></label>
+          <input type="range" id="cvHours" min="200" max="3000" step="50" value="900"></div>
+        <div><label>Sustained load <span class="vv" id="cvTpsV">1,000</span> txn/sec</label>
+          <input type="range" id="cvTps" min="100" max="3000" step="100" value="1000"></div>
+        <div><label>Serving cost <span class="vv" id="cvUnitV">$0.60</span> / million</label>
+          <input type="range" id="cvUnit" min="5" max="500" step="5" value="60"></div>
+        <div><label>Retraining after launch</label>
+          <select id="cvRetrain">
+            <option value="0">never (the mistake)</option>
+            <option value="12">annually</option>
+            <option value="4" selected>quarterly</option>
+            <option value="1">monthly</option>
+          </select></div>
+      </div>
+      <div class="vz-legend">
+        <span><i style="background:#1E5AA8"></i>Training &amp; experimentation</span>
+        <span><i style="background:#AB0E00"></i>Serving (inference)</span>
+      </div>
+      <div id="cvChart"></div>
+      <div class="vz-read" id="cvRead"></div>
+      <details>
+        <summary>Show the numbers as a table</summary>
+        <div id="cvTable"></div>
+      </details>
+      <div class="vz-s" style="margin:8px 0 0;">GPU time is priced at <b>$3.20/hour</b> and the build at <b>900 GPU hours</b> — the same figures you will use in the estimation exercise in 3.5. MekongPay's <b>3,000 txn/sec</b> is a <em>peak</em>; sustained load is lower, which is why it is a slider. These are assumptions you are setting, not measurements: the <b>shape</b> is the lesson, not the totals.</div>
+    </div>
   </div>
 
   <div class="card">
@@ -226,7 +307,7 @@ if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</s
     <h3>AI budgets do not look like IT budgets</h3>
     <p>Traditional IT estimation models routinely <em>underestimate</em> AI costs, because AI spending is driven by data, experimentation and scarce talent rather than by a fixed build. Every AI budget breaks into five areas, and they interact across the lifecycle:</p>
     <ul>
-      <li><strong>Data acquisition &amp; preparation</strong> — buying external datasets, collection, <em>labelling and annotation</em>, cleaning, governance and compliance. Usually the most under-budgeted line, and often the largest.</li>
+      <li><strong>Data acquisition &amp; preparation</strong> — buying external datasets, collection, <em><span class="gloss" data-k="label">labelling and annotation</span></em>, cleaning, governance and compliance. Usually the most under-budgeted line, and often the largest.</li>
       <li><strong>Infrastructure &amp; storage</strong> — cloud storage, ETL and pipelines, distributed environments, warehouses, security.</li>
       <li><strong>Compute &amp; model training</strong> — GPU/TPU time, training runs, hyperparameter tuning, retraining during development. Scales with how many experiments you run.</li>
       <li><strong>Personnel &amp; specialised talent</strong> — data scientists, ML and data engineers, domain experts, PMs. Because of <span class="gloss" data-k="scarcity">talent scarcity</span>, often the single biggest share of the budget.</li>
@@ -287,6 +368,25 @@ if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</s
     </ul>
     <p>And strategically: align spend with business value, prioritise high-impact use cases, evaluate cost–benefit trade-offs explicitly, and <strong>scale infrastructure gradually</strong> rather than buying for the end state on day one.</p>
     <p class="punch">Phased funding is how you make an uncertain budget safe: the sponsor risks one phase at a time, and you earn the next one with evidence.</p>
+
+    <div class="viz" id="scenViz">
+      <div class="vz-h">Experiment · what contingency should you actually ask for?</div>
+      <div class="vz-s">Nobody can tell you how many training rounds it takes to reach the target — that <em>is</em> the uncertainty. So you cost three worlds instead of one. The gap between <b>expected</b> and <b>worst</b> is not padding; it is the price of the experiment, and this is the number you defend in the budget meeting.</div>
+      <div class="vz-ctl">
+        <div><label>Goes well <span class="vv" id="scBestV">3</span> rounds</label>
+          <input type="range" id="scBest" min="1" max="10" step="1" value="3"></div>
+        <div><label>Expected <span class="vv" id="scExpV">6</span> rounds</label>
+          <input type="range" id="scExp" min="1" max="20" step="1" value="6"></div>
+        <div><label>Goes badly <span class="vv" id="scWorstV">15</span> rounds</label>
+          <input type="range" id="scWorst" min="1" max="40" step="1" value="15"></div>
+        <div><label>GPU hours per round <span class="vv" id="scHrV">150</span></label>
+          <input type="range" id="scHr" min="20" max="600" step="10" value="150"></div>
+      </div>
+      <div id="scChart"></div>
+      <div class="vz-read" id="scRead"></div>
+      <details><summary>Show the numbers as a table</summary><div id="scTable"></div></details>
+      <div class="vz-s" style="margin:8px 0 0;">Priced at <b>$3.20</b> per GPU hour. Drag <em>goes badly</em> upward and watch the contingency figure move — that is the conversation you are going to have with a sponsor who wants one number.</div>
+    </div>
   </div>
 
   <div class="card">
@@ -527,6 +627,11 @@ document.getElementById('resetLink').addEventListener('click',function(e){
 
 /* ---- glossary ---- */
 var GLOSSARY={
+  quota:['GPU quota','A cap set by your cloud provider on how many machines of a given type your account may run in a region — often <b>zero</b> for GPUs by default. Raising it is a request a human at the provider reviews, and it can take days and come back partially granted. Even once granted, a busy region can still refuse you capacity. It behaves like a legal sign-off, not like a technical setting: a third party decides, on their schedule.'],
+  label:['label','A human verdict attached to a past example — "an analyst decided this transaction was fraud". The model learns to reproduce these verdicts, so the labels <em>are</em> the definition of what you are predicting. A person has to make each one, which is why labelling is a budget line and a schedule risk, not a technical detail.'],
+  weights:['weights','The internal numbers a model adjusts during training, over and over, until its answers match the labels as closely as it can. The trained weights are the finished product — literally the thing you paid for — and a separate asset from the data used to produce them.'],
+  feature:['feature','One input the model reads: transaction amount, hour of day, merchant category. "Feature engineering" is building these from raw data, and it is where a large share of the data work actually goes.'],
+  inference:['inference','Using an already-trained model to score a new case. Training happens occasionally and costs a lot at once; inference happens on every single transaction, for the life of the system — which is why the two appear as very different lines in a budget.'],
   constraints:['the four constraints','Scope, time, cost and quality — the trade-off space every project manager works in. In AI, "quality" is a performance probability, not a pass/fail test.'],
   vendor:['vendor management','Managing external partners — consultancies, cloud and data providers. The four things to pin down: data ownership, IP in models, service levels, long-term maintenance.'],
   pipeline:['data pipeline','The automated path data takes from source to model — ingestion, cleaning, transformation, feature engineering — plus the continuous updates needed for retraining.'],
@@ -741,6 +846,196 @@ buildClassify('estRows','estCap',
 })();
 
 /* =====================================================================
+   VIZ · the two cost curves (section 3.3)
+   Both series are CUMULATIVE DOLLARS against project month — one unit,
+   one y-axis. (Plotting "experiments" and "traffic" on two scales would
+   be a dual-axis chart, which is the classic way to make two unrelated
+   curves look comparable. They are comparable here because they are both
+   money.) Returns a complete <svg> string so the same renderer draws the
+   interactive version on the page AND the static version on the slide.
+   ===================================================================== */
+var GPU_RATE=3.20;              /* $/hour — the figure used in section 3.5 */
+var CV_DEF={build:6,hours:900,tps:1000,unit:0.60,retrain:4,months:36};
+function cvSeries(o){
+  var train=[],serve=[],ct=0,cs=0;
+  var buildPerMonth=(o.hours*GPU_RATE)/o.build;         /* experiments during the build */
+  var retrainCost=o.retrain?(o.hours/6)*GPU_RATE:0;     /* one retrain ≈ a sixth of the build's compute */
+  var perMonthServe=o.tps*60*60*24*30.44/1e6*o.unit;    /* every prediction, every month, forever */
+  for(var m=0;m<=o.months;m++){
+    if(m>0){
+      if(m<=o.build)ct+=buildPerMonth;
+      else{
+        if(o.retrain&&((m-o.build)%o.retrain===0))ct+=retrainCost;
+        cs+=perMonthServe;
+      }
+    }
+    train.push(ct);serve.push(cs);
+  }
+  return {train:train,serve:serve};
+}
+function cvMoney(v){
+  if(v>=1e6)return '$'+(v/1e6).toFixed(v>=1e7?0:1)+'m';
+  if(v>=1e3)return '$'+Math.round(v/1e3)+'k';
+  return '$'+Math.round(v);
+}
+function costCurvesSVG(o){
+  var s=cvSeries(o),W=760,H=290,L=64,R=118,T=14,B=34;
+  var iw=W-L-R,ih=H-T-B;
+  var max=Math.max(s.train[o.months],s.serve[o.months],1);
+  /* clean axis ticks — 1/2/2.5/5/10 × 10^n, never 13k/38k */
+  var raw=max/5,pw=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/pw;
+  var step=(n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*pw, nice=step*Math.ceil(max/step);
+  var X=function(m){return L+m/o.months*iw;},Y=function(v){return T+ih-v/nice*ih;};
+  var g='',i,ticks=Math.round(nice/step);
+  for(i=0;i<=ticks;i++){                               /* hairline, solid, recessive */
+    var gv=step*i,gy=Y(gv);
+    g+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(L+iw)+'" y2="'+gy.toFixed(1)+'" stroke="#E2E8F0" stroke-width="1"/>'+
+       '<text x="'+(L-9)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#64748B">'+cvMoney(gv)+'</text>';
+  }
+  for(i=0;i<=o.months;i+=6)
+    g+='<text x="'+X(i).toFixed(1)+'" y="'+(T+ih+20)+'" text-anchor="middle" font-size="11" fill="#64748B">'+(i===0?'start':'m'+i)+'</text>';
+  function path(a){var d='';for(var m=0;m<=o.months;m++)d+=(m?'L':'M')+X(m).toFixed(1)+' '+Y(a[m]).toFixed(1);return d;}
+  /* crossover: first month serving passes training */
+  var cross=-1;
+  for(i=0;i<=o.months;i++){if(s.serve[i]>s.train[i]){cross=i;break;}}
+  var xo='';
+  if(cross>0){
+    xo='<line x1="'+X(cross).toFixed(1)+'" y1="'+T+'" x2="'+X(cross).toFixed(1)+'" y2="'+(T+ih)+'" stroke="#94A3B8" stroke-width="1"/>'+
+       '<text x="'+(X(cross)+5).toFixed(1)+'" y="'+(T+11)+'" font-size="10.5" fill="#64748B">serving overtakes · m'+cross+'</text>';
+  }
+  function endLab(a,col,name){
+    var y=Y(a[o.months]);
+    return '<circle cx="'+X(o.months).toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4.5" fill="'+col+'" stroke="#fff" stroke-width="2"/>'+
+      '<line x1="'+(X(o.months)+8)+'" y1="'+y.toFixed(1)+'" x2="'+(X(o.months)+20)+'" y2="'+y.toFixed(1)+'" stroke="'+col+'" stroke-width="2" stroke-linecap="round"/>'+
+      '<text x="'+(X(o.months)+25)+'" y="'+(y-2).toFixed(1)+'" font-size="12" font-weight="700" fill="#0F172A">'+cvMoney(a[o.months])+'</text>'+
+      '<text x="'+(X(o.months)+25)+'" y="'+(y+11).toFixed(1)+'" font-size="10.5" fill="#64748B">'+name+'</text>';
+  }
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Cumulative cost over '+o.months+
+    ' months. Training and experimentation flattens once the build ends; serving cost keeps rising with traffic'+
+    (cross>0?' and overtakes training in month '+cross:'')+'.">'+
+    g+xo+
+    '<path d="'+path(s.train)+'" fill="none" stroke="#1E5AA8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<path d="'+path(s.serve)+'" fill="none" stroke="#AB0E00" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+
+    endLab(s.train,'#1E5AA8','training')+endLab(s.serve,'#AB0E00','serving')+
+    '<rect id="cvHit" x="'+L+'" y="'+T+'" width="'+iw+'" height="'+ih+'" fill="transparent"/>'+
+    '<line id="cvCross" x1="0" y1="'+T+'" x2="0" y2="'+(T+ih)+'" stroke="#0F172A" stroke-width="1" opacity="0"/>'+
+    '</svg>';
+}
+(function curves(){
+  var box=document.getElementById('curvesViz'); if(!box)return;
+  var ids=['cvBuild','cvHours','cvTps','cvUnit','cvRetrain'];
+  var tip=document.createElement('div');tip.className='vz-tip';document.body.appendChild(tip);
+  function opts(){return {build:+cvBuild.value,hours:+cvHours.value,tps:+cvTps.value,
+                          unit:(+cvUnit.value)/100,retrain:+cvRetrain.value,months:36};}
+  function draw(){
+    var o=opts(),s=cvSeries(o);
+    document.getElementById('cvBuildV').textContent=o.build;
+    document.getElementById('cvHoursV').textContent=o.hours.toLocaleString('en-US');
+    document.getElementById('cvTpsV').textContent=o.tps.toLocaleString('en-US');
+    document.getElementById('cvUnitV').textContent='$'+o.unit.toFixed(2);
+    document.getElementById('cvChart').innerHTML=costCurvesSVG(o);
+    var cross=-1;for(var i=0;i<=o.months;i++){if(s.serve[i]>s.train[i]){cross=i;break;}}
+    var t=s.train[36],v=s.serve[36];
+    document.getElementById('cvRead').innerHTML=cross>0
+      ? '<span class="hero">Month '+cross+'</span> is when the bill you never budgeted for overtakes the one you argued about. '+
+        'By month 36 the build has cost <b>'+cvMoney(t)+'</b> and serving it has cost <b>'+cvMoney(v)+'</b>'+
+        (t>0?' — <b>'+(v/t).toFixed(1)+'×</b> more':'')+'. The sponsor approved the first number.'
+      : '<span class="hero">Never</span> — on these assumptions serving stays cheaper than the build for three years. '+
+        'That happens at low traffic, and it is worth knowing when it is true: it means your cost risk is the <b>experimentation</b>, not the running.';
+    var rows='<table><thead><tr><th>Month</th><th>Training (cumulative)</th><th>Serving (cumulative)</th></tr></thead><tbody>';
+    for(var m=0;m<=36;m+=6)rows+='<tr><td>'+(m===0?'start':'m'+m)+'</td><td>'+cvMoney(s.train[m])+'</td><td>'+cvMoney(s.serve[m])+'</td></tr>';
+    document.getElementById('cvTable').innerHTML=rows+'</tbody></table>';
+    wireHover(o,s);
+  }
+  function wireHover(o,s){
+    var svg=box.querySelector('svg'),hit=box.querySelector('#cvHit'),cl=box.querySelector('#cvCross');
+    if(!svg||!hit)return;
+    var L=64,iw=760-64-118;
+    function move(e){
+      var r=svg.getBoundingClientRect(),sc=760/r.width;
+      var px=(e.clientX-r.left)*sc, m=Math.round((px-L)/iw*o.months);
+      if(m<0)m=0; if(m>o.months)m=o.months;
+      var x=L+m/o.months*iw;
+      cl.setAttribute('x1',x);cl.setAttribute('x2',x);cl.setAttribute('opacity','0.25');
+      tip.innerHTML='';
+      var h=document.createElement('div');h.className='tt';
+      h.textContent=(m===0?'At the start':'Month '+m);tip.appendChild(h);
+      [['#1E5AA8','Training',s.train[m]],['#AB0E00','Serving',s.serve[m]]].forEach(function(row){
+        var d=document.createElement('div');d.className='tr';
+        var i=document.createElement('i');i.style.background=row[0];
+        var b=document.createElement('b');b.textContent=cvMoney(row[2]);
+        var sp=document.createElement('span');sp.textContent=row[1];
+        d.appendChild(i);d.appendChild(b);d.appendChild(sp);tip.appendChild(d);
+      });
+      tip.style.display='block';
+      tip.style.left=Math.min(window.innerWidth-tip.offsetWidth-12,e.clientX+16)+'px';
+      tip.style.top=Math.max(8,e.clientY-tip.offsetHeight-12)+'px';
+    }
+    hit.addEventListener('pointermove',move);
+    hit.addEventListener('pointerleave',function(){tip.style.display='none';cl.setAttribute('opacity','0');});
+  }
+  ids.forEach(function(id){document.getElementById(id).addEventListener('input',draw);});
+  draw();
+})();
+
+/* =====================================================================
+   VIZ · scenario range + the contingency it implies (section 3.5)
+   One measure (dollars) on one axis, three scenarios — so this is a range,
+   not three competing series, and it needs no legend: the title says what
+   is plotted and each point is directly labelled.
+   ===================================================================== */
+function scenarioSVG(o){
+  var W=760,H=132,L=20,R=20,T=40,iw=W-L-R;
+  var best=o.best*o.hr*GPU_RATE, exp=o.exp*o.hr*GPU_RATE, worst=o.worst*o.hr*GPU_RATE;
+  var lo=Math.min(best,exp,worst), hi=Math.max(best,exp,worst), span=(hi-lo)||1;
+  var pad=span*0.12, min=Math.max(0,lo-pad), max=hi+pad;
+  var X=function(v){return L+(v-min)/(max-min)*iw;};
+  var y=T+26;
+  function tick(v,lab,col,above){
+    var x=X(v);
+    return '<line x1="'+x.toFixed(1)+'" y1="'+(y-13)+'" x2="'+x.toFixed(1)+'" y2="'+(y+13)+'" stroke="'+col+'" stroke-width="2" stroke-linecap="round"/>'+
+      '<text x="'+x.toFixed(1)+'" y="'+(above?y-21:y+30)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#0F172A">'+cvMoney(v)+'</text>'+
+      '<text x="'+x.toFixed(1)+'" y="'+(above?y-34:y+43)+'" text-anchor="middle" font-size="10.5" fill="#64748B">'+lab+'</text>';
+  }
+  /* the buffer band: expected → worst, the part you must argue for */
+  var bx=X(Math.min(exp,worst)),bw=Math.abs(X(worst)-X(exp));
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Cost range for the modelling phase: '+
+    cvMoney(best)+' if it goes well, '+cvMoney(exp)+' expected, '+cvMoney(worst)+' if it goes badly.">'+
+    '<rect x="'+X(Math.min(best,worst)).toFixed(1)+'" y="'+(y-4)+'" width="'+Math.abs(X(worst)-X(best)).toFixed(1)+'" height="8" rx="4" fill="#1E5AA8" opacity="0.16"/>'+
+    '<rect x="'+bx.toFixed(1)+'" y="'+(y-4)+'" width="'+bw.toFixed(1)+'" height="8" rx="4" fill="#AB0E00" opacity="0.20"/>'+
+    '<text x="'+(bx+bw/2).toFixed(1)+'" y="'+(y+57)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#AB0E00">'+
+      (bw>150?'the buffer you have to defend':'')+'</text>'+
+    tick(best,'goes well','#1E5AA8',true)+tick(exp,'expected','#0F172A',true)+tick(worst,'goes badly','#AB0E00',false)+
+    '</svg>';
+}
+(function scen(){
+  var box=document.getElementById('scenViz'); if(!box)return;
+  function o(){return {best:+scBest.value,exp:+scExp.value,worst:+scWorst.value,hr:+scHr.value};}
+  function draw(){
+    var v=o();
+    if(v.exp<v.best){v.exp=v.best;scExp.value=v.exp;}
+    if(v.worst<v.exp){v.worst=v.exp;scWorst.value=v.worst;}
+    scBestV.textContent=v.best;scExpV.textContent=v.exp;scWorstV.textContent=v.worst;
+    scHrV.textContent=v.hr;
+    document.getElementById('scChart').innerHTML=scenarioSVG(v);
+    var exp=v.exp*v.hr*GPU_RATE, worst=v.worst*v.hr*GPU_RATE;
+    var pct=exp>0?Math.round((worst-exp)/exp*100):0;
+    document.getElementById('scRead').innerHTML=
+      '<span class="hero">'+pct+'% contingency</span>'+
+      'on the modelling phase — that is <b>'+cvMoney(worst-exp)+'</b> on top of the <b>'+cvMoney(exp)+'</b> you expect to spend. '+
+      'Note what you have <em>not</em> done: you have not smeared ten per cent across the whole project. You have put a named number on the one phase whose duration nobody can promise, and you can say exactly what would consume it. '+
+      (pct>=100?'A buffer this large is a signal in itself — it means the modelling risk deserves a phased funding gate before you commit the rest.':'');
+    var rows='<table><thead><tr><th>Scenario</th><th>Rounds</th><th>GPU hours</th><th>Cost</th></tr></thead><tbody>';
+    [['Goes well',v.best],['Expected',v.exp],['Goes badly',v.worst]].forEach(function(r){
+      rows+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+(r[1]*v.hr).toLocaleString('en-US')+'</td><td>'+cvMoney(r[1]*v.hr*GPU_RATE)+'</td></tr>';
+    });
+    document.getElementById('scTable').innerHTML=rows+'</tbody></table>';
+  }
+  ['scBest','scExp','scWorst','scHr'].forEach(function(id){document.getElementById(id).addEventListener('input',draw);});
+  draw();
+})();
+
+/* =====================================================================
    LECTURE DECK — presented live on Zoom (screen share this, cameras on).
    Keys: → / space next · ← prev · N notes · Esc exit. Print → PDF.
    ===================================================================== */
@@ -758,9 +1053,9 @@ var SLIDES=[
   {k:'Poll',t:'How much of a production ML system IS the ML code?',
    b:'<p>The model itself, versus everything around it — data plumbing, serving, configuration, monitoring. Type a % in the chat.</p>',
    n:'Collect numbers. Most guess 30–60%. Hold the tension. Students can do it on the site: section 3.1.'},
-  {k:'The answer',t:'A small box in a very large system.',
-   b:'<div class="statline">~5%</div><p class="statsub">Sculley et al., <em>Hidden Technical Debt in Machine Learning Systems</em> (NeurIPS 2015)</p><p>The other ~95%: data collection and verification, feature extraction, configuration, serving infrastructure, resource and process management, monitoring.</p><div class="onproj"><b>On MekongPay →</b> so four of your five people are not modellers. You need someone to <em>unify</em> the data, someone to <em>ship</em> the model at <span class="num-hi">3,000 txns/sec</span>, and someone who knows what fraud actually looks like in Vietnam.</div>',
-   n:'THE slide of the session. Land it: resource the system, not the model.'},
+  {k:'The answer',t:'A small box in a very large system.',cls:'wide',
+   b:'<figure class="figure"><img src="ml-system-figure.svg" alt="Diagram of a production machine-learning system: a tiny black ML Code box surrounded by much larger boxes for configuration, data collection, feature extraction, data verification, machine resource management, analysis tools, process management tools, serving infrastructure and monitoring."><figcaption>Sculley et al., <em>Hidden Technical Debt in Machine Learning Systems</em> (NeurIPS 2015). Redrawn; box sizes illustrative.</figcaption></figure><p>Find the model. It is the black box in the middle — <b>~5%</b>. The other ~95% is data collection and verification, feature extraction, configuration, serving infrastructure, resource and process management, monitoring.</p><div class="onproj"><b>On MekongPay →</b> so four of your five people are not modellers. You need someone to <em>unify</em> the data, someone to <em>ship</em> the model at <span class="num-hi">3,000 txns/sec</span>, and someone who knows what fraud actually looks like in Vietnam.</div>',
+   n:'THE slide of the session. Put the picture up and say NOTHING for five seconds — let them hunt for the model. Then: resource the system, not the model.'},
   {k:'The team',t:'Five roles, one delivery chain',
    b:'<ul><li><b>Data engineer</b> — pipelines, storage, reliable access</li><li><b>Data scientist</b> — algorithms, training, evaluation</li><li><b>ML engineer</b> — deploy, scale, serve, automate retraining</li><li><b>Domain expert</b> — what the variables mean; validates outputs</li><li><b>PM / product owner</b> — objectives, constraints, stakeholders, vendors</li></ul><div class="onproj"><b>On MekongPay →</b> the domain expert is a <em>fraud analyst</em>, and they are not optional: without them you cannot tell a suspicious 4 a.m. top-up from normal night-shift behaviour.</div>',
    n:'Read it as a chain: data arrives → becomes a model → becomes a service → judged useful → steered. Break one link, nothing ships.'},
@@ -777,6 +1072,14 @@ var SLIDES=[
   {k:'The stack',t:'Four layers, four cost curves',
    b:'<ul><li><b>Data &amp; pipelines</b> — ingestion, cleaning, features, lake/warehouse</li><li><b>Compute</b> — CPU for processing, GPU for training</li><li><b>Frameworks</b> — TensorFlow, PyTorch, scikit-learn (standardise them)</li><li><b>MLOps</b> — tracking, deployment, monitoring, retraining, versioning</li></ul><p>AWS · Azure · GCP package most of it — capex becomes opex.</p><div class="onproj"><b>On MekongPay →</b> training cost scales with <em>experiments</em>; serving cost scales with <em>traffic</em>. At <span class="num-hi">3,000 txns/sec</span> the serving curve is the one that never stops.</div>',
    n:'Don\'t teach the tech. Teach the four consequences: timeline, dependencies, cost, integration.'},
+  {k:'The two curves',t:'One of these stops. The other never does.',cls:'wide',
+   b:'<div class="viz"><div class="vz-legend"><span><i style="background:#1E5AA8"></i>Training &amp; experimentation</span>'+
+     '<span><i style="background:#AB0E00"></i>Serving (inference)</span></div>'+
+     costCurvesSVG(CV_DEF)+
+     '<div class="vz-read"><span class="hero">Month '+(function(){var s=cvSeries(CV_DEF);for(var i=0;i<=36;i++){if(s.serve[i]>s.train[i])return i;}return '—';})()+
+     '</span>Cumulative dollars, same axis. Training flattens when the model is good enough; serving climbs for the life of the system.</div></div>'+
+     '<div class="onproj"><b>On MekongPay →</b> the COO approved the <em>build</em>. Nobody has approved month <span class="num-hi">18</span> — and by then it is the larger number. Students can move the assumptions themselves in <b>section 3.3</b>.</div>',
+   n:'Do not read the axes. Point at the two shapes: one plateaus, one does not. Ask "which one did the sponsor approve?" — the answer is always the flat one. Then tell them the sliders are on the site.'},
   {k:'Why it lands on your desk',t:'Infrastructure IS schedule and risk',
    b:'<ul><li>Slow training → fewer experiments per sprint → later date.</li><li>Data, compute and tooling <em>gate each other</em>.</li><li>Idle team waiting for GPU quota = schedule risk, not a technical detail.</li><li>Integration with legacy IT is the classic killer.</li></ul><div class="onproj"><b>On MekongPay →</b> the fraud model must call into a core banking system older than most of the team. Budget integration time as a first-class workstream.</div>',
    n:'Ask: who has seen a project stall on infrastructure access rather than skill? Usually several hands.'},
@@ -792,6 +1095,12 @@ var SLIDES=[
   {k:'Estimation',t:'Four techniques, used together',
    b:'<div class="cols"><div><div class="colh">Analogous</div><p style="font-size:.8em">from a comparable past project — fast, only as good as the analogy</p><div class="colh" style="margin-top:1.2vh">Bottom-up</div><p style="font-size:.8em">cost every WBS task and sum — most accurate, most work</p></div><div><div class="colh">Parametric</div><p style="font-size:.8em">rate × usage: GPU-hours, cost per label, engineer-months</p><div class="colh" style="margin-top:1.2vh">Scenario-based</div><p style="font-size:.8em">best / expected / worst for the experimental stages</p></div></div><div class="onproj"><b>On MekongPay →</b> parametric for GPU hours and labelling, bottom-up for the pipeline build, scenarios for "how many training rounds to hit 90% recall".</div>',
    n:'Emphasise: combine, don\'t choose. Different parts of the budget have different knowability.'},
+  {k:'Scenario estimation',t:'Three worlds, and the buffer between two of them',cls:'wide',
+   b:'<div class="viz">'+scenarioSVG({best:3,exp:6,worst:15,hr:150})+
+     '<div class="vz-read"><span class="hero">'+Math.round((15-6)/6*100)+'% contingency</span>'+
+     'on the modelling phase — a named number on the one stage nobody can promise, not ten per cent smeared across the project.</div></div>'+
+     '<div class="onproj"><b>On MekongPay →</b> “how many rounds to reach <span class="num-hi">90%</span> recall?” has no answer on day one. So you cost three answers. Students set their own three in <b>section 3.5</b>.</div>',
+   n:'Ask the room for the worst case BEFORE showing the slide — they always understate it. Then show that the buffer is arithmetic, not pessimism.'},
   {k:'Contingency',t:'Phase the funding, track the spend',
    b:'<ul><li><b>Experimentation buffers</b> — on the phases that are genuinely unknown</li><li><b>Phased funding</b> — data ready → prototype validated → pilot live</li><li><b>Cost dashboards</b> — cloud spend escalates silently</li><li><b>Re-forecast</b> at each checkpoint instead of defending the old number</li></ul><div class="onproj"><b>On MekongPay →</b> tranche 2 releases only when labelled data passes quality checks. The COO risks one phase at a time; you earn the next with evidence.</div>',
    n:'This is the slide that makes an uncertain budget acceptable to a sponsor. Say that out loud.'},
@@ -803,8 +1112,8 @@ var SLIDES=[
    b:'<ul><li>The model is <b>~5%</b> — resource the system around it.</li><li>Five roles, <b>one chain</b>: break a link, nothing ships.</li><li>Infrastructure is <b>schedule, cost and integration risk</b> in disguise.</li><li>Budget in <b>five categories</b>, estimate with <b>four techniques</b>, fund in <b>phases</b>.</li></ul>',
    n:'Ask the class to give you the four before revealing. Energy up.'},
   {cls:'dk',k:'Before Thursday',t:'Homework',
-   b:'<ul><li><b>Workshop</b> — section 3.7: resource YOUR project. This becomes <em>§4</em> of your final assignment.</li><li><b>Read</b> — the SME/large-firm adoption companion (why resources decide who can adopt AI).</li><li><b>Next</b> — Session 4 · Risk Management in AI Projects · Thu 13 Aug, 20:00 ICT.</li></ul><p>Questions → see you Thursday. 🙏</p>',
-   n:'Point at the workshop — it feeds the final. Close warmly, stay 5 min for questions.'}
+   b:'<ul><li><b>Workshop</b> — section 3.7: resource YOUR project. This becomes <em>§4</em> of your final assignment.</li><li><b>Read</b> — the SME/large-firm adoption companion (why resources decide who can adopt AI).</li><li><b>Before Thursday, if modelling vocabulary is new</b> — <em>Primer 1 · What a model actually learns</em> and <em>Primer 3 · Accuracy, precision &amp; recall</em>. 20 min for the pair, optional, not graded. Thursday is half modelling vocabulary.</li><li><b>Next</b> — Session 4 · Risk Management in AI Projects · Thu 13 Aug, 20:00 ICT.</li></ul><p>Questions → see you Thursday. 🙏</p>',
+   n:'Point at the workshop — it feeds the final. Say the primers are OPTIONAL and ungraded — nobody should have to admit they need them. Close warmly, stay 5 min for questions.'}
 ];
 (function lecture(){
   var idx=0,open=false;
