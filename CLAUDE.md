@@ -75,7 +75,22 @@ same from `/omba401/week3.html` and `/ideas-e1410/session1.html`.
 | `login.js` | name + personal code, so a student resumes on any device |
 | `announce.js` | cohort announcement banner (instructor posts it from admin) |
 | `admin-gate.js` | the shared instructor gate (hashed PIN, remembered per device) |
-| `admin.html` | one dashboard for every course: `/shared/admin.html?course=omba401` |
+| `admin.html` | the original dashboard for every course: `/shared/admin.html?course=omba401` |
+| `admin2.html` | the **redesigned** dashboard — same data and namespace, reorganised as Today → The cohort → The roster. Runs alongside `admin.html` until one is chosen; the two link to each other |
+| `insights.html` | the other instructor view: **where the cohort gets stuck** — section-level stall points, module drop-off, workbook fill rates. Same gate, same read path. Per-question quiz stats stay in the dashboards; don't duplicate them |
+
+### The three instructor views, and what each is for
+
+| | Question it answers |
+|---|---|
+| `admin2.html` | *What do I do before the next session?* Ranked actions, cohort shape, then one roster table with a per-student drawer |
+| `admin.html` | *What is every student's state on every module?* The original wide table; kept while the redesign is on trial |
+| `insights.html` | *Where is the course failing them?* Section-level stall points and workbook fill rates, across any course |
+
+Two things worth knowing before editing any of them:
+
+- **Flags in `admin2.html` are relative, not absolute.** "Behind" means well under *this cohort's* median at *this point* in the course. The original used fixed thresholds (under 60%, under 50%), which mid-term flagged 13 of 18 students — a flag on two thirds of the cohort is not a flag. Don't reintroduce a constant here.
+- **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. `applyTheme()` in `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. Both dashboards now map the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
 | `homework.css` | the 70 rules every `weekN-homework.html` shares |
 | `themes/*.css` | colour variables only — `sumas`, `ideas`, `umef`, `navy` |
@@ -128,6 +143,37 @@ an admin page.
 
 Cohort courses also carry: `glossary.html` or `notation.html` (a reference page that
 **grows every week** — updating it is part of shipping a week), and a logo image.
+
+### E1410's tool pages
+
+E1410 has a second layer on top of the sessions: pages that *do something with* what a
+student wrote, rather than teaching more. They share one rule — **read the workbook,
+write back to the workbook**, so nothing is typed twice.
+
+| Page | Reads | Writes back to |
+|---|---|---|
+| `cost-model.html` | — | `s3_cost_driver` (appends, never overwrites) |
+| `wbs-check.html` | `s2_wbs` | `s2_wbs` |
+| `risk-matrix.html` | own register | `s4_risks`, `s4_top`, `s4_top_pi`, `s4_mitigation` |
+| `simulator.html` | — | `s6_threshold`, `s6_retrain` |
+| `board-pack.html` | everything | `bp_ask`, `bp_amount`, `bp_by` |
+| `defence.html` | everything | — |
+| `followup.html` | everything | `fu_w1`…`fu_w6` |
+
+They write the same shape `/shared/progress.js` writes (`localStorage e1410_work_<id>`
+plus `<sid>/work/<id> = {v,label,mod,ts}`), so the dashboard picks them up with no
+change — but they do it themselves rather than loading `progress.js`, because they are
+standalone like `compile.html` and must not depend on its init order.
+
+**`project-map.js` is the single client-side definition of the project's field list.**
+`compile.html` and `board-pack.html` both consume it. Adding a workbook field means
+editing it in **two** places: `project-map.js` (`SECTIONS`) and `courses.json`
+(`project.sections`, which drives the dashboard). Nowhere else.
+
+`followup.html` has a `COURSE_END` constant at the top of its script — set it to the
+last session's date to turn on the weekly unlock; left `null`, all six weeks are open.
+`showcase.html` is public and un-gated, and its `CASES` array is empty until real
+student work is published (consent form: `_private/showcase-consent.html`).
 
 ## 5. Data model
 
