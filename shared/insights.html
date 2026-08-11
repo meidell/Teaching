@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Course insights</title>
+<!--
+  SHARED · where the cohort gets stuck.
+      /shared/insights.html?course=e1410
+
+  The dashboard (/shared/admin.html) answers "how is each student doing".
+  This answers the other question: "where is the COURSE failing them".
+
+  Nothing here is new data — it is the same nodes /shared/progress.js
+  already writes, read across the cohort instead of down one student:
+
+      <ns>/<sid>/mod/<mod>/secs          time on the page
+      <ns>/<sid>/mod/<mod>/done/<sec>    which sections were completed
+      <ns>/<sid>/work/<field>            workbook answers
+
+  Per-QUESTION quiz analysis is deliberately not duplicated here — it is
+  already in admin.html and one place is enough. This page ranks stall
+  points, module drop-off and workbook fields nobody answers.
+
+  Works for any course with a namespace. Requires the instructor gate,
+  and (once the tightened database rules are deployed) Google sign-in,
+  exactly like admin.html.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--main:#152a5e;--deep:#0a1a3a;--glow:#f0b33d;--pale:#eef2f9;--ink:#0F172A;--ink2:#334155;--grey:#64748B;--paper:#fff;--wash:#F6F8FB;--line:#E2E8F0;
+--good:#15803D;--good-l:#DCFCE7;--warn:#B45309;--warn-l:#FEF3C7;--bad:#B91C1C;--bad-l:#FEE2E2;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);background:var(--wash);line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:70px;}
+h1,h2,h3{font-weight:800;letter-spacing:-.3px;}
+header{background:var(--deep);color:#fff;padding:22px 0 20px;}
+header .in{max-width:1040px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+header .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--glow);font-weight:800;}
+header h1{font-size:24px;margin-top:3px;}
+header .sp{flex:1;}
+header select{font:700 13px 'Plus Jakarta Sans',Arial,sans-serif;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 10px;}
+header select option{color:#111;}
+.hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:6px 13px;font:800 12px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;}
+.hbtn:hover{background:rgba(255,255,255,.2);}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+.warn{background:var(--warn-l);border:1px solid rgba(180,83,9,.3);border-radius:12px;padding:14px 16px;font-size:13.5px;color:#78350F;margin-top:18px;display:none;}
+.btn{background:var(--main);color:#fff;border:none;border-radius:20px;padding:7px 14px;font:800 12.5px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;}
+.btn:hover{background:var(--deep);}
+section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:18px;}
+section > h2{font-size:18px;color:var(--main);margin-bottom:3px;}
+section > .sub{font-size:13px;color:var(--grey);margin-bottom:16px;max-width:80ch;}
+@media(max-width:640px){section{padding:16px 15px;}}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:6px;}
+.stat{background:var(--wash);border:1px solid var(--line);border-radius:11px;padding:11px 13px;}
+.stat .k{font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:var(--grey);}
+.stat .v{font-size:22px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+.stat .n{font-size:11px;color:var(--grey);}
+
+/* action list */
+.actions{list-style:none;counter-reset:a;}
+.actions li{display:grid;grid-template-columns:30px 1fr;gap:12px;padding:13px 0;border-top:1px solid var(--line);font-size:14.5px;color:var(--ink2);line-height:1.55;}
+.actions li:first-child{border-top:none;}
+.actions li::before{counter-increment:a;content:counter(a);display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--main);color:#fff;font-size:13px;font-weight:800;}
+.actions li b{color:var(--ink);}
+.actions li .why{display:block;font-size:12.5px;color:var(--grey);margin-top:3px;}
+
+/* bar rows */
+.rows{margin-top:4px;}
+.row{display:grid;grid-template-columns:minmax(120px,1.4fr) 1fr auto;gap:12px;align-items:center;padding:7px 0;font-size:13px;}
+.row .lab{font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.row .lab small{display:block;font-weight:600;color:var(--grey);font-size:11px;}
+.row .track{background:var(--wash);border-radius:5px;height:18px;overflow:hidden;position:relative;}
+.row .fill{height:100%;border-radius:0 4px 4px 0;transition:width .4s;}
+.row .fill.g{background:var(--good);} .row .fill.w{background:var(--warn);} .row .fill.b{background:var(--bad);}
+.row .val{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;font-size:12.5px;}
+@media(max-width:560px){.row{grid-template-columns:minmax(90px,1fr) 1fr auto;font-size:12px;}}
+
+.modblock{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--wash);}
+.modblock h3{font-size:14px;margin-bottom:2px;}
+.modblock .m{font-size:11.5px;color:var(--grey);margin-bottom:8px;}
+.flagged{background:var(--bad-l);border-color:rgba(185,28,28,.3);}
+.flagged h3{color:var(--bad);}
+
+table.fields{width:100%;border-collapse:collapse;font-size:13px;}
+table.fields th{text-align:left;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey);font-weight:800;padding:0 8px 7px;}
+table.fields th.r,table.fields td.r{text-align:right;}
+table.fields td{padding:7px 8px;border-top:1px solid var(--line);color:var(--ink2);font-variant-numeric:tabular-nums;}
+table.fields td.n{font-weight:700;color:var(--ink);font-variant-numeric:normal;}
+table.fields tr.low td{background:var(--bad-l);}
+
+.empty{color:var(--grey);font-size:13.5px;font-style:italic;padding:8px 0;}
+.foot{text-align:center;color:var(--grey);font-size:12px;margin-top:26px;}
+.foot a{color:var(--main);font-weight:700;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<header><div class="in">
+  <div>
+    <div class="eyebrow">Instructor · course insights</div>
+    <h1 id="hTitle">Where the cohort gets stuck</h1>
+  </div>
+  <span class="sp"></span>
+  <select id="picker"></select>
+  <button class="hbtn" id="bRefresh">↻ Refresh</button>
+  <button class="hbtn" id="bCopy">⧉ Copy report</button>
+  <button class="hbtn" id="bLock">Lock</button>
+</div></header>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+
+  <section>
+    <h2>The cohort</h2>
+    <div class="stats" id="topStats"></div>
+    <p class="sub" style="margin:12px 0 0;">Counts everyone who has recorded any activity in this namespace. Students working without signing in are recorded locally and appear here only once they identify themselves.</p>
+  </section>
+
+  <section>
+    <h2>Do these three things before the next session</h2>
+    <div class="sub">Generated from the data below, ranked by how many students each affects. If nothing appears, the cohort is not stuck anywhere the data can see.</div>
+    <ul class="actions" id="actions"></ul>
+  </section>
+
+  <section>
+    <h2>Module drop-off</h2>
+    <div class="sub">How many started, how many finished, and how long it took the median student. A module with high time and low completion is not hard — it is unclear.</div>
+    <div class="rows" id="funnel"></div>
+  </section>
+
+  <section>
+    <h2>Stall points — the section where people stop</h2>
+    <div class="sub">Within each module, the share of students who started it and completed each section. The first sharp drop is where the page loses them. Section ids are as recorded by the page itself.</div>
+    <div id="stalls"></div>
+  </section>
+
+  <section>
+    <h2>Workbook fields nobody answers</h2>
+    <div class="sub">Fill rate across the cohort, worst first. A field left empty by most students is usually a badly-worded question or one that needs something the session never gave them — not laziness.</div>
+    <div id="fields"></div>
+  </section>
+
+  <div class="foot">
+    <a href="admin.html" id="dashLink">← Full dashboard</a> ·
+    per-question quiz analysis lives there
+  </div>
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script>
+/* =====================================================================
+   Cohort insights. Same read path as admin.html: anonymous REST first,
+   Google sign-in only if the rules refuse.
+   ===================================================================== */
+var DB=window.CourseConfig.DB;
+var REG=null, COURSE=null, NS='', MODULES=[], PROJECT=null, ROOT=null, STUDENTS=[];
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+async function authQ(){
+  if(!window.__fbUser) return '';
+  try{ return '?auth='+await window.__fbUser.getIdToken(); }catch(e){ return ''; }
+}
+async function signIn(){
+  var app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  var auth=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  var cfg={apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
+           databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
+           messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
+  var a=auth.getAuth(app.initializeApp(cfg));
+  var p=new auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
+  window.__fbUser=(await auth.signInWithPopup(a,p)).user;
+  $('warn').style.display='none';
+  load();
+}
+
+/* ---------------------------------------------------------------- */
+/* maths                                                             */
+/* ---------------------------------------------------------------- */
+function median(a){
+  if(!a.length) return 0;
+  var b=a.slice().sort(function(x,y){return x-y;}), m=Math.floor(b.length/2);
+  return b.length%2 ? b[m] : (b[m-1]+b[m])/2;
+}
+function doneCount(node){ var n=0,d=node&&node.done; for(var k in d){ if(d[k]) n++; } return n; }
+function cls(p){ return p>=0.7?'g':p>=0.4?'w':'b'; }
+function pc(x){ return Math.round(x*100)+'%'; }
+
+/* ---------------------------------------------------------------- */
+/* analysis                                                          */
+/* ---------------------------------------------------------------- */
+function analyseModules(){
+  var out=[];
+  MODULES.forEach(function(m){
+    var started=[], completed=0, times=[], totals=[];
+    STUDENTS.forEach(function(s){
+      var n=s.mod&&s.mod[m.id];
+      if(!n) return;
+      var dc=doneCount(n), secs=+n.secs||0;
+      if(dc===0 && secs<30) return;          /* opened and bounced — not started */
+      started.push(s);
+      times.push(secs/60);
+      if(n.total) totals.push(+n.total);
+      if(n.total && dc>=n.total) completed++;
+    });
+    var total=totals.length?Math.max.apply(null,totals):0;
+    out.push({m:m, started:started, nStarted:started.length, completed:completed,
+              medMin:median(times), total:total});
+  });
+  return out;
+}
+
+function analyseSections(modStats){
+  return modStats.filter(function(x){ return x.nStarted>=3; }).map(function(x){
+    var counts={}, order=[];
+    x.started.forEach(function(s){
+      var d=(s.mod[x.m.id]||{}).done||{};
+      for(var k in d){ if(!counts.hasOwnProperty(k)){ counts[k]=0; order.push(k); } if(d[k]) counts[k]++; }
+    });
+    order.sort();
+    var secs=order.map(function(k){ return {id:k, n:counts[k], p:counts[k]/x.nStarted}; });
+    /* the biggest fall between consecutive sections is the stall point */
+    var worst=null;
+    for(var i=1;i<secs.length;i++){
+      var drop=secs[i-1].p-secs[i].p;
+      if(drop>0.15 && (!worst || drop>worst.drop)) worst={from:secs[i-1], to:secs[i], drop:drop};
+    }
+    return {mod:x, secs:secs, worst:worst};
+  }).filter(function(x){ return x.secs.length>1; });
+}
+
+function analyseFields(){
+  if(!PROJECT||!PROJECT.sections) return null;
+  var all=[];
+  PROJECT.sections.forEach(function(sec){
+    (sec.fields||[]).forEach(function(f){ all.push({id:f.id, label:f.label, sec:sec.label}); });
+  });
+  /* only count students who have answered SOMETHING — otherwise a cohort
+     that has not reached the workbook yet reads as a wall of zeros */
+  var active=STUDENTS.filter(function(s){ return s.work && Object.keys(s.work).length; });
+  if(!active.length) return {rows:[], active:0};
+  var rows=all.map(function(f){
+    var n=0, lens=[];
+    active.forEach(function(s){
+      var node=s.work[f.id];
+      var v=node&&node.v!=null?String(node.v).trim():'';
+      if(v){ n++; lens.push(v.split(/\s+/).length); }
+    });
+    return {f:f, n:n, p:n/active.length, medWords:median(lens)};
+  });
+  rows.sort(function(a,b){ return a.p-b.p; });
+  return {rows:rows, active:active.length};
+}
+
+/* ---------------------------------------------------------------- */
+/* render                                                            */
+/* ---------------------------------------------------------------- */
+function render(){
+  var modStats=analyseModules();
+  var stalls=analyseSections(modStats);
+  var fields=analyseFields();
+
+  var everStarted=STUDENTS.filter(function(s){ return s.mod && Object.keys(s.mod).length; });
+  var totMin=STUDENTS.reduce(function(a,s){
+    var t=0; for(var k in (s.mod||{})) t+=(+s.mod[k].secs||0); return a+t/60;
+  },0);
+
+  $('topStats').innerHTML=[
+    ['Students', STUDENTS.length, 'with a record in this namespace'],
+    ['Active', everStarted.length, 'have opened at least one module'],
+    ['Median time', Math.round(median(everStarted.map(function(s){
+        var t=0; for(var k in s.mod) t+=(+s.mod[k].secs||0); return t/60;
+      })))+' min', 'across the whole course'],
+    ['Total recorded', Math.round(totMin/60)+' h', 'of student time']
+  ].map(function(s){ return '<div class="stat"><div class="k">'+s[0]+'</div><div class="v">'+s[1]+'</div><div class="n">'+s[2]+'</div></div>'; }).join('');
+
+  /* ---- funnel ---- */
+  $('funnel').innerHTML = modStats.filter(function(x){ return x.nStarted>0; }).map(function(x){
+    var p=x.total? x.completed/x.nStarted : 0;
+    return '<div class="row"><span class="lab">'+esc(x.m.label||x.m.id)+
+      '<small>'+x.nStarted+' started · median '+Math.round(x.medMin)+' min</small></span>'+
+      '<span class="track"><span class="fill '+cls(p)+'" style="width:'+(p*100)+'%"></span></span>'+
+      '<span class="val">'+(x.total?pc(p)+' finished':'—')+'</span></div>';
+  }).join('') || '<div class="empty">No module activity recorded yet.</div>';
+
+  /* ---- stalls ---- */
+  $('stalls').innerHTML = stalls.length ? stalls.map(function(st){
+    var flagged=!!st.worst;
+    return '<div class="modblock'+(flagged?' flagged':'')+'">'+
+      '<h3>'+esc(st.mod.m.label||st.mod.m.id)+'</h3>'+
+      '<div class="m">'+(flagged
+        ? 'Sharpest fall: <b>'+esc(st.worst.from.id)+' → '+esc(st.worst.to.id)+'</b>, losing '+Math.round(st.worst.drop*100)+' points of the cohort.'
+        : 'No sharp fall — students who start this module work through it evenly.')+'</div>'+
+      st.secs.map(function(s){
+        return '<div class="row"><span class="lab">'+esc(s.id)+'</span>'+
+          '<span class="track"><span class="fill '+cls(s.p)+'" style="width:'+(s.p*100)+'%"></span></span>'+
+          '<span class="val">'+s.n+'/'+st.mod.nStarted+'</span></div>';
+      }).join('')+'</div>';
+  }).join('') : '<div class="empty">Not enough data yet — a module needs at least three students who started it.</div>';
+
+  /* ---- fields ---- */
+  if(!fields) $('fields').innerHTML='<div class="empty">This course has no workbook (no <code>project</code> block in courses.json).</div>';
+  else if(!fields.active) $('fields').innerHTML='<div class="empty">No workbook answers recorded yet.</div>';
+  else {
+    $('fields').innerHTML='<table class="fields"><thead><tr><th>Field</th><th>Section</th><th class="r">Answered</th><th class="r">Fill rate</th><th class="r">Median words</th></tr></thead><tbody>'+
+      fields.rows.slice(0,18).map(function(r){
+        return '<tr'+(r.p<0.35?' class="low"':'')+'><td class="n">'+esc(r.f.label)+'</td><td>'+esc(r.f.sec)+'</td>'+
+          '<td class="r">'+r.n+' / '+fields.active+'</td><td class="r">'+pc(r.p)+'</td><td class="r">'+(r.medWords||'—')+'</td></tr>';
+      }).join('')+'</tbody></table>'+
+      '<p class="sub" style="margin-top:10px;">Of '+fields.active+' students who have answered anything at all. Showing the 18 least-answered fields.</p>';
+  }
+
+  renderActions(modStats,stalls,fields);
+}
+
+function renderActions(modStats,stalls,fields){
+  var A=[];
+
+  var worstStall=null;
+  stalls.forEach(function(st){ if(st.worst && (!worstStall || st.worst.drop>worstStall.worst.drop)) worstStall=st; });
+  if(worstStall) A.push('<b>Look at '+esc(worstStall.mod.m.label||worstStall.mod.m.id)+', section '+esc(worstStall.worst.to.id)+'.</b> '+
+    Math.round(worstStall.worst.from.p*100)+'% of the students who started that module finished '+esc(worstStall.worst.from.id)+
+    ', and only '+Math.round(worstStall.worst.to.p*100)+'% finished the next one. Open the page and read that section as if you had not written it.'+
+    '<span class="why">A fall this sharp is almost always one of three things: an instruction that is ambiguous, an exercise that needs something the page never gave them, or a wall of text.</span>');
+
+  var confusing=modStats.filter(function(x){ return x.nStarted>=3 && x.total && x.medMin>12 && (x.completed/x.nStarted)<0.5; })
+                        .sort(function(a,b){ return b.medMin-a.medMin; })[0];
+  if(confusing) A.push('<b>'+esc(confusing.m.label||confusing.m.id)+' is taking '+Math.round(confusing.medMin)+
+    ' minutes and only '+pc(confusing.completed/confusing.nStarted)+' finish it.</b> Long and unfinished is the signature of confusion, not difficulty — students who find something hard but clear tend to finish it slowly.'+
+    '<span class="why">Compare it against a module with similar length that people do finish, and look for what is structurally different.</span>');
+
+  if(fields && fields.active>=3){
+    var dead=fields.rows.filter(function(r){ return r.p<0.35; });
+    if(dead.length) A.push('<b>'+dead.length+' workbook field'+(dead.length>1?'s are':' is')+' answered by under a third of active students</b> — starting with “'+esc(dead[0].f.label)+'” at '+pc(dead[0].p)+'.'+
+      '<span class="why">Before assuming they skipped it, check the session actually gives them what the question needs. A field nobody can answer is usually a question asked one session too early.</span>');
+    var thin=fields.rows.filter(function(r){ return r.p>=0.5 && r.medWords && r.medWords<8; });
+    if(thin.length) A.push('<b>“'+esc(thin[0].f.label)+'” gets answered but in '+thin[0].medWords+' words.</b> People are filling it in to clear the progress bar rather than to think.'+
+      '<span class="why">Either the prompt does not signal how much is wanted, or the example next to it is too short and they are copying its length.</span>');
+  }
+
+  var never=modStats.filter(function(x){ return x.nStarted===0; });
+  if(never.length && never.length<MODULES.length) A.push('<b>'+never.length+' module'+(never.length>1?'s have':' has')+' no activity at all:</b> '+
+    never.slice(0,4).map(function(x){ return esc(x.m.label||x.m.id); }).join(', ')+(never.length>4?'…':'')+'.'+
+    '<span class="why">Either not released yet, or released and never linked from anywhere students actually look.</span>');
+
+  $('actions').innerHTML = A.length
+    ? A.slice(0,4).map(function(t){ return '<li><span>'+t+'</span></li>'; }).join('')
+    : '<li><span><b>Nothing is flagged.</b><span class="why">Either the cohort is moving through cleanly, or there is not yet enough data — this needs a handful of students to have worked through at least one module.</span></span></li>';
+}
+
+/* ---------------------------------------------------------------- */
+/* report export                                                     */
+/* ---------------------------------------------------------------- */
+function report(){
+  var L=['# Course insights — '+(COURSE&&COURSE.code||NS),'',
+         new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),'',
+         '## Do these before the next session',''];
+  document.querySelectorAll('#actions li').forEach(function(li,i){
+    L.push((i+1)+'. '+li.textContent.replace(/\s+/g,' ').trim());
+  });
+  L.push('','## Module drop-off','');
+  document.querySelectorAll('#funnel .row').forEach(function(r){
+    L.push('- '+r.querySelector('.lab').textContent.replace(/\s+/g,' ').trim()+' — '+r.querySelector('.val').textContent);
+  });
+  return L.join('\n');
+}
+
+/* ---------------------------------------------------------------- */
+/* load                                                              */
+/* ---------------------------------------------------------------- */
+async function load(){
+  if(!NS){ $('warn').style.display='block'; $('warn').textContent='This course stores no student data (no namespace), so there is nothing to analyse.'; return; }
+  try{
+    var r=await fetch(DB+'/'+NS+'.json'+(await authQ()));
+    var j=await r.json();
+    if(j&&j.error) throw new Error(j.error);
+    ROOT=j||{};
+  }catch(e){
+    $('warn').style.display='block';
+    $('warn').innerHTML='Reading this cohort needs a signed-in instructor. '+
+      '<button class="btn" id="bSignIn" style="margin-left:8px">Sign in with Google</button>';
+    var b=$('bSignIn'); if(b) b.addEventListener('click',function(){ signIn().catch(function(err){
+      $('warn').innerHTML='Sign-in failed: '+esc(err&&err.message||err);
+    }); });
+    return;
+  }
+  STUDENTS=[];
+  for(var sid in ROOT){
+    if(!ROOT.hasOwnProperty(sid) || sid.charAt(0)==='_') continue;
+    var n=ROOT[sid]||{};
+    STUDENTS.push({sid:sid, name:n.name||sid, mod:n.mod||{}, work:n.work||{}});
+  }
+  render();
+}
+
+function pickCourse(id){
+  COURSE=REG.courses.filter(function(c){ return c.id===id; })[0];
+  if(!COURSE) return;
+  NS=COURSE.ns||''; MODULES=COURSE.modules||[]; PROJECT=COURSE.project||null;
+  var t=REG.themes&&REG.themes[COURSE.theme];
+  if(t){ document.documentElement.style.setProperty('--main',t.accent);
+         document.documentElement.style.setProperty('--deep',t.accent);
+         document.documentElement.style.setProperty('--glow',t.glow||t.accentBright); }
+  $('hTitle').textContent='Where '+(COURSE.code||COURSE.id)+' gets stuck';
+  $('dashLink').href='admin.html?course='+encodeURIComponent(id);
+  try{ history.replaceState(null,'','?course='+encodeURIComponent(id)); }catch(e){}
+  $('warn').style.display='none';
+  load();
+}
+
+function start(){
+  window.CourseConfig.load().then(function(reg){
+    REG=reg;
+    var withNs=reg.courses.filter(function(c){ return c.ns; });
+    $('picker').innerHTML=withNs.map(function(c){
+      return '<option value="'+esc(c.id)+'">'+esc(c.code||c.id)+' · '+esc((c.title&&(c.title.en||c.title.fr))||c.id)+'</option>';
+    }).join('');
+    var q=(location.search.match(/[?&]course=([^&]+)/)||[])[1];
+    var id=q?decodeURIComponent(q):(withNs[0]&&withNs[0].id);
+    $('picker').value=id;
+    $('picker').addEventListener('change',function(){ pickCourse($('picker').value); });
+    pickCourse(id);
+  });
+
+  $('bRefresh').addEventListener('click',function(){ load(); });
+  $('bLock').addEventListener('click',function(){ AdminGate.lock(); location.reload(); });
+  $('bCopy').addEventListener('click',function(){
+    var btn=this, txt=report();
+    function ok(){ btn.textContent='✓ Copied'; setTimeout(function(){btn.textContent='⧉ Copy report';},1600); }
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok).catch(ok);
+    else ok();
+  });
+}
+
+AdminGate.mount({ brand:'COURSE INSIGHTS', title:'Instructor access',
+                  blurb:'Enter the instructor password. This device will remember it.',
+                  onUnlock:start });
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
