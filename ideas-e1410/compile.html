@@ -97,6 +97,8 @@ h1,h2,h3,h4{font-weight:800;letter-spacing:-.3px;}
     <button class="btn" onclick="window.print()">⬇ Save as PDF</button>
   </div>
 
+  <div class="note" style="margin-top:10px;"><b>Writing for a board, not a marker?</b> The same answers, packaged as a proposal someone could actually act on — one-page executive summary, one-page canvas, the full case behind them. <a href="board-pack.html" style="color:var(--red-deep);font-weight:800;">Open the board pack →</a></div>
+
   <div class="doc" id="doc"><div class="title" id="docTitle">Your AI project</div><div class="byline" id="docBy"></div><div id="docSecs"></div></div>
 
   <div class="note"><b>Tip.</b> This is a <b>draft skeleton</b>, not the finished assignment. The final wants an in-depth written case study with real research and critical analysis — use these answers as the structure, then flesh each section out. All eight sections now draw on your workbooks — Session 8 walks you through turning this draft into the submitted assignment.</div>
@@ -107,86 +109,21 @@ h1,h2,h3,h4{font-weight:800;letter-spacing:-.3px;}
   </div>
 </div>
 
+<script src="project-map.js"></script>
 <script>
 /* =====================================================================
    Compile my project — assembles workbook answers into the final's
    section order. Reads localStorage e1410_work_<id> instantly, then
-   refines from Firebase e1410/<sid>/work. Extend by adding items to
-   MAP as later sessions add workbook fields (same data-work ids).
+   refines from Firebase e1410/<sid>/work.
+
+   The field list lives in project-map.js, shared with board-pack.html —
+   ADD NEW WORKBOOK FIELDS THERE (and in courses.json), not here.
    ===================================================================== */
-var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
-var MAP=[
-  {sec:'§1 · Context & the business problem', from:'Session 1', items:[
-    {id:'proj_name',label:'Project'},
-    {id:'s1_problem',label:'The business problem (no AI jargon)'},
-    {id:'s1_stakeholders',label:'Key stakeholders'}
-  ]},
-  {sec:'§2 · Why AI, and the data reality', from:'Session 1', items:[
-    {id:'s1_why_ai',label:'Why AI, not traditional software'},
-    {id:'s1_data',label:'The data it needs — and its reality'}
-  ]},
-  {sec:'§3 · The plan', from:'Session 2', items:[
-    {id:'s2_wbs',label:'Work Breakdown Structure'},
-    {id:'s2_func',label:'Functional requirement'},
-    {id:'s2_nonfunc',label:'Non-functional requirement'},
-    {id:'s2_data',label:'Data requirement'},
-    {id:'s2_method',label:'Methodology — and why it fits'},
-    {id:'s2_change',label:'An evolving requirement & how you control it'}
-  ]},
-  {sec:'§4 · Resources & budget', from:'Session 3', items:[
-    {id:'s3_team',label:'Team composition'},
-    {id:'s3_gap',label:'Capability gap & how it is closed'},
-    {id:'s3_infra',label:'Infrastructure choice'},
-    {id:'s3_infra_why',label:'Why that infrastructure'},
-    {id:'s3_cost_driver',label:'Dominant cost driver & rough size'},
-    {id:'s3_estimation',label:'Estimation approach'},
-    {id:'s3_contingency',label:'Contingency & phased funding'}
-  ]},
-  {sec:'§5 · Risk', from:'Sessions 2 & 4', items:[
-    {id:'s1_risk',label:'Top risk to the project'},
-    {id:'s2_sched_risk',label:'Scheduling risk & where you buffer it'},
-    {id:'s4_risks',label:'Top three risks (by category)'},
-    {id:'s4_top',label:'Highest-priority risk'},
-    {id:'s4_top_pi',label:'Probability × impact rating'},
-    {id:'s4_mitigation',label:'Mitigation strategy & first action'}
-  ]},
-  {sec:'§6 · Delivery, adoption & monitoring', from:'Sessions 5–6', items:[
-    {id:'s5_sprint_len',label:'Sprint length'},
-    {id:'s5_sprint_out',label:'What a sprint delivers'},
-    {id:'s5_hybrid',label:'Hybrid approach — where each style applies'},
-    {id:'s5_mvm',label:'Minimum viable model'},
-    {id:'s5_backlog',label:'Backlog items with success criteria'},
-    {id:'s5_metric',label:'Key metric translated for stakeholders'},
-    {id:'s5_tradeoff',label:'The precision/recall trade-off & who decides'},
-    {id:'s5_expectation',label:'Expectation to reset & how'},
-    {id:'s5_conflict',label:'Likely conflict & resolution approach'},
-    {id:'s6_kpis',label:'Monitoring KPIs (model / operational / business)'},
-    {id:'s6_drift',label:'Biggest drift threat & detection method'},
-    {id:'s6_threshold',label:'Alert threshold'},
-    {id:'s6_action',label:'Action when the threshold trips'},
-    {id:'s6_retrain',label:'Retraining trigger, cadence & validation gate'},
-    {id:'s6_validation',label:'Validation strategy'},
-    {id:'s6_abtest',label:'A/B test design & deciding metric'},
-    {id:'s6_repro',label:'Reproducibility & documentation requirements'},
-    {id:'s6_owner',label:'Post-launch ownership & operating budget'}
-  ]},
-  {sec:'§7 · Responsible AI & governance', from:'Sessions 4 & 7', items:[
-    {id:'s4_bias',label:'Bias exposure, detection & mitigation stage'},
-    {id:'s4_compliance',label:'Regulatory & compliance constraints'},
-    {id:'s4_xai',label:'Explainability requirement & approach'},
-    {id:'s4_governance',label:'Risk ownership & governance checkpoints'},
-    {id:'s7_ethics',label:'Fairness & explainability (case workshop)'}
-  ]},
-  {sec:'§8 · Success criteria & reflection', from:'Sessions 1, 6, 7 & 8', items:[
-    {id:'s1_metric_tech',label:'Technical success metric'},
-    {id:'s1_metric_biz',label:'Business success metric'},
-    {id:'s6_case',label:'Closest case study & what to copy'},
-    {id:'s7_learned',label:'What the case workshop changed'},
-    {id:'s8_thesis',label:'The central argument'},
-    {id:'s8_critical',label:'Counter-argument & response'},
-    {id:'s8_reflection',label:'Course reflection'}
-  ]}
-];
+var P=window.E1410_PROJECT;
+var DB=P.DB;
+var MAP=P.SECTIONS.map(function(s){
+  return {sec:'§'+s.n+' · '+s.sec, from:s.from, items:s.items};
+});
 
 var vals={};
 function localVal(id){try{return localStorage.getItem('e1410_work_'+id)||'';}catch(e){return '';}}

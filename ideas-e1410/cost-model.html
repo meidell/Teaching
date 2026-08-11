@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/ideas-e1410/">
+<script src="gate.js"></script>
+<script>/* course gate: registered students only — see join.html */
+(function(){if(!window.E1410_ACCESS)return;function g(k){try{var m=document.cookie.match('(?:^|; )'+k+'=([^;]*)');return m?decodeURIComponent(m[1]):'';}catch(e){return'';}}
+var a=null;try{a=JSON.parse(localStorage.getItem('e1410_auth')||'null');}catch(e){}
+if(!a){var c=g('e1410_auth');if(c){try{a=JSON.parse(c);}catch(e){}}}
+if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What will it cost? · the AI project cost model · E1410</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#AB0E00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#AB0E00;--red-deep:#7C0A00;--red-bright:#FF4133;--red-pale:#FBEAE8;
+  --ink:#0F172A;--ink-soft:#334155;--grey:#64748B;--white:#FFFFFF;--paper:#F8FAFC;--line:#E2E8F0;
+  --shadow:0 18px 50px -24px rgba(171,14,0,0.35);
+  --amber:#B45309;--amber-pale:#FEF3C7;--green:#15803D;--green-pale:#DCFCE7;
+  /* categorical series — validated set (light surface), assigned in fixed order.
+     Contingency is deliberately NOT a hue: it is not a cost category, it is a
+     statement about uncertainty, so it renders as neutral hatch. */
+  --s1:#2a78d6;  /* people            */
+  --s2:#eb6834;  /* training compute  */
+  --s3:#1baf7a;  /* serving / inference */
+  --s4:#eda100;  /* data & storage    */
+  --s5:#e87ba4;  /* tooling & licences */
+  --s6:#94A3B8;  /* contingency (neutral) */
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:70px;}
+h1,h2,h3,h4{font-weight:800;letter-spacing:-.3px;}
+
+.topbar{position:sticky;top:0;z-index:60;background:rgba(255,255,255,0.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:8px 14px;}
+.topbar-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:10px;}
+.topbar img.brand{height:26px;width:auto;flex:none;}
+.topbar .course{font-size:10px;letter-spacing:1.5px;color:var(--red);font-weight:800;white-space:nowrap;}
+.topbar .who{display:none;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:var(--red-deep);background:var(--red-pale);border:1px solid rgba(171,14,0,0.2);border-radius:20px;padding:3px 9px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar .who.on{display:inline-flex;}
+.topbar .sp{flex:1;}
+.topbar a.home{font-size:12px;font-weight:700;color:var(--red-deep);text-decoration:none;white-space:nowrap;}
+@media(max-width:560px){.topbar .course{display:none;}}
+
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px;}
+.kd{font-size:11px;letter-spacing:3px;color:var(--red);font-weight:800;text-transform:uppercase;}
+.hero h1{font-size:clamp(26px,4.4vw,38px);line-height:1.12;margin:10px 0 8px;}
+.hero h1 em{font-style:normal;color:var(--red);}
+.hero .sub{color:var(--ink-soft);font-size:15.5px;max-width:70ch;}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-top:16px;box-shadow:var(--shadow);}
+.card > h2{font-size:17px;color:var(--red-deep);margin-bottom:3px;}
+.card > .lede{font-size:13px;color:var(--grey);margin-bottom:14px;max-width:78ch;}
+@media(max-width:640px){.card{padding:16px 15px;}}
+
+.warn{background:var(--amber-pale);border:1px solid rgba(180,83,9,.25);border-radius:12px;padding:12px 15px;font-size:13px;color:#78350F;margin-top:14px;}
+.warn b{color:#7C2D12;}
+
+/* ---------- inputs ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
+.f label{display:block;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;font-weight:800;color:var(--red);margin-bottom:4px;}
+.f .hint{display:block;font-size:11px;color:var(--grey);font-weight:600;text-transform:none;letter-spacing:0;margin-top:2px;}
+.f input,.f select{width:100%;font:600 14px 'Plus Jakarta Sans',Arial,sans-serif;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;}
+.f input:focus,.f select:focus{outline:none;border-color:var(--red);background:#fff;}
+.f input[type=range]{padding:0;border:none;background:transparent;}
+
+table.people{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.people th{text-align:left;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--red);padding:0 6px 6px;font-weight:800;}
+table.people td{padding:3px 6px;border-top:1px solid var(--line);}
+table.people td:first-child{font-weight:700;color:var(--ink-soft);}
+table.people input{width:100%;font:600 13.5px 'Plus Jakarta Sans',Arial,sans-serif;background:var(--paper);border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink);}
+table.people input:focus{outline:none;border-color:var(--red);background:#fff;}
+table.people td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--ink);white-space:nowrap;}
+@media(max-width:700px){table.people th:nth-child(4),table.people td:nth-child(4){display:none;}}
+
+/* ---------- results ---------- */
+.heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+.stat{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;}
+.stat.big{background:var(--red-pale);border-color:rgba(171,14,0,.25);}
+.stat .k{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:800;color:var(--grey);}
+.stat.big .k{color:var(--red-deep);}
+.stat .v{font-size:clamp(20px,3.4vw,27px);font-weight:800;letter-spacing:-.7px;margin-top:3px;font-variant-numeric:tabular-nums;}
+.stat.big .v{color:var(--red-deep);}
+.stat .n{font-size:11.5px;color:var(--grey);margin-top:2px;line-height:1.35;}
+
+/* stacked bar */
+.stack{display:flex;width:100%;height:38px;border-radius:6px;overflow:hidden;background:var(--line);margin:6px 0 4px;}
+.stack .seg{height:100%;box-shadow:inset -2px 0 0 var(--white);cursor:default;transition:filter .12s;}
+.stack .seg:last-child{box-shadow:none;}
+.stack .seg:hover{filter:brightness(1.08);}
+.stack .seg.hatch{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 4px,transparent 4px 8px);}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);font-variant-numeric:tabular-nums;}
+
+/* breakdown table = the relief for low-contrast series colors */
+table.bd{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:12px;}
+table.bd th{text-align:left;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey);padding:0 8px 6px;font-weight:800;}
+table.bd th.r,table.bd td.r{text-align:right;}
+table.bd td{padding:7px 8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;}
+table.bd td.name{font-weight:700;color:var(--ink-soft);display:flex;align-items:center;gap:8px;}
+table.bd .sw{width:11px;height:11px;border-radius:3px;flex:none;}
+table.bd .sw.hatch{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.6) 0 3px,transparent 3px 6px);}
+table.bd tr.total td{border-top:2px solid var(--ink);font-weight:800;color:var(--ink);}
+
+/* comparison bars — single series, direct labels, no legend */
+.cmp{margin-top:6px;}
+.cmp .row{display:grid;grid-template-columns:130px 1fr auto;gap:10px;align-items:center;margin-bottom:8px;font-size:13px;}
+.cmp .lab{color:var(--ink-soft);font-weight:700;}
+.cmp .track{background:var(--paper);border-radius:5px;height:20px;overflow:hidden;}
+.cmp .fill{height:100%;background:var(--s2);border-radius:0 4px 4px 0;transition:width .4s ease;}
+.cmp .fill.best{background:var(--s3);}
+.cmp .val{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;}
+@media(max-width:560px){.cmp .row{grid-template-columns:96px 1fr auto;font-size:12px;}}
+
+/* reality checks */
+.checks{list-style:none;}
+.checks li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-soft);padding:11px 0;border-top:1px solid var(--line);line-height:1.5;}
+.checks li:first-child{border-top:none;}
+.checks li .ic{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:800;}
+.checks li.ok  .ic{background:var(--green-pale);color:var(--green);}
+.checks li.warn2 .ic{background:var(--amber-pale);color:var(--amber);}
+.checks li.bad .ic{background:var(--red-pale);color:var(--red-deep);}
+.checks li b{color:var(--ink);}
+
+/* sensitivity */
+table.sens{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.sens th{text-align:left;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey);padding:0 8px 6px;font-weight:800;}
+table.sens th.r,table.sens td.r{text-align:right;}
+table.sens td{padding:8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;}
+table.sens td.name{font-weight:700;color:var(--ink-soft);font-variant-numeric:normal;}
+.delta{font-weight:800;}
+.delta.up{color:var(--red-deep);}
+.delta.down{color:var(--green);}
+
+.btn{background:var(--red);color:#fff;border:none;border-radius:30px;padding:10px 18px;font:800 13px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;transition:.15s;}
+.btn:hover{background:var(--red-deep);}
+.btn.ghost{background:transparent;color:var(--red-deep);border:1.5px solid var(--red);}
+.btn.ghost:hover{background:var(--red-pale);}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.summary{background:var(--paper);border:1.5px dashed var(--line);border-radius:12px;padding:13px 15px;font-size:13.5px;color:var(--ink-soft);white-space:pre-wrap;margin-top:12px;line-height:1.55;}
+.note{background:var(--red-pale);border:1px solid rgba(171,14,0,0.2);border-radius:12px;padding:13px 16px;font-size:13px;color:var(--ink-soft);margin-top:16px;}
+.note b{color:var(--red-deep);}
+.foot{text-align:center;color:var(--grey);font-size:12.5px;margin-top:28px;}
+.backlink{display:inline-block;margin:12px 6px 0;font-size:12.5px;color:var(--red-deep);text-decoration:none;border:1.5px solid var(--red);border-radius:30px;padding:7px 16px;font-weight:700;}
+.backlink:hover{background:var(--red-pale);}
+
+#tip{position:fixed;pointer-events:none;z-index:99;background:var(--ink);color:#fff;font-size:12px;font-weight:600;padding:6px 9px;border-radius:7px;opacity:0;transition:opacity .12s;white-space:nowrap;}
+#tip.on{opacity:1;}
+@media print{.topbar,.btnrow,#tip{display:none!important;}body{background:#fff;}.card{box-shadow:none;break-inside:avoid;}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="topbar-inner">
+  <img class="brand" src="logo-ideas.png" alt="IDEAS">
+  <span class="course">E1410 · COST MODEL</span>
+  <span class="who" id="topWho"></span>
+  <span class="sp"></span>
+  <a class="home" href="index.html">✕ Course</a>
+</div></div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kd">Session 3 · resources & budget</div>
+    <h1>What will it <em>actually cost?</em></h1>
+    <p class="sub">Session 3 says the dominant cost driver is rarely the GPU. This is where you find out whether that is true of <b>your</b> project. Put your own numbers in; the model does the arithmetic, shows you where the money goes, and tells you which of your assumptions is doing the most work. The output is a budget you can defend — which is a different thing from a budget you can guess.</p>
+  </div>
+
+  <div class="warn">
+    <b>About the default rates.</b> Every rate below is an <b>editable, order-of-magnitude teaching default</b>, not a quote. Cloud list prices move constantly, vary by region and are heavily discounted in practice; salaries vary by market. Before this budget goes anywhere real, replace each rate with a number you can source. <b>The model does no currency conversion</b> — cloud prices are usually quoted in USD and salaries in your local currency, so pick one currency and set every rate in it.
+  </div>
+
+  <!-- ======================== SETUP ======================== -->
+  <div class="card">
+    <h2>1 · The shape of the project</h2>
+    <p class="lede">How long, and in what currency. Everything else is scaled by this.</p>
+    <div class="grid">
+      <div class="f"><label for="ccy">Currency <span class="hint">label only — no conversion</span></label>
+        <select id="ccy"><option>CHF</option><option>EUR</option><option>USD</option><option>GBP</option></select></div>
+      <div class="f"><label for="months">Project length <span class="hint">months to first production release</span></label>
+        <input id="months" type="number" min="1" max="60" step="1" value="9"></div>
+      <div class="f"><label for="liveMonths">Live in year 1 <span class="hint">months the model serves traffic</span></label>
+        <input id="liveMonths" type="number" min="0" max="12" step="1" value="3"></div>
+      <div class="f"><label for="conting">Contingency <span class="hint">% on top of everything</span></label>
+        <input id="conting" type="number" min="0" max="100" step="1" value="20"></div>
+    </div>
+  </div>
+
+  <!-- ======================== PEOPLE ======================== -->
+  <div class="card">
+    <h2>2 · People</h2>
+    <p class="lede">Fully loaded monthly cost — salary plus employer charges, not the gross salary. Part-time is a fraction: a domain expert one day a week is 0.2.</p>
+    <table class="people">
+      <thead><tr><th>Role</th><th>People (FTE)</th><th>Months</th><th>Cost / month</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody id="peopleBody"></tbody>
+    </table>
+    <div class="grid" style="margin-top:14px;">
+      <div class="f"><label for="runFte">Run team after launch <span class="hint">FTEs keeping it alive, year 2+</span></label>
+        <input id="runFte" type="number" min="0" max="20" step="0.1" value="0.6"></div>
+      <div class="f"><label for="runRate">Run team cost / month <span class="hint">per FTE, fully loaded</span></label>
+        <input id="runRate" type="number" min="0" step="100" value="12000"></div>
+    </div>
+  </div>
+
+  <!-- ==================== TRAINING COMPUTE ==================== -->
+  <div class="card">
+    <h2>3 · Training compute</h2>
+    <p class="lede">Accelerators are billed by wall-clock hour, whether or not they are computing. That is why utilisation belongs in a budget and not just in an engineering retro.</p>
+    <div class="grid">
+      <div class="f"><label for="accel">Accelerator</label>
+        <select id="accel">
+          <option value="0.19" data-k="cpu">CPU only (no accelerator)</option>
+          <option value="0.60" data-k="t4">Entry GPU · T4 / L4 class</option>
+          <option value="1.30" data-k="a10">Mid GPU · A10G / L40S class</option>
+          <option value="3.70" data-k="a100" selected>A100 80GB class</option>
+          <option value="9.80" data-k="h100">H100 class</option>
+          <option value="1.40" data-k="tpu">TPU v5e class (per chip)</option>
+        </select></div>
+      <div class="f"><label for="accelRate">Rate / hour <span class="hint">on-demand list — edit it</span></label>
+        <input id="accelRate" type="number" min="0" step="0.01" value="3.70"></div>
+      <div class="f"><label for="accelN">How many, in parallel</label>
+        <input id="accelN" type="number" min="0" step="1" value="4"></div>
+      <div class="f"><label for="runHrs">Hours per training run</label>
+        <input id="runHrs" type="number" min="0" step="0.5" value="14"></div>
+      <div class="f"><label for="runsMo">Training runs / month <span class="hint">including the failed ones</span></label>
+        <input id="runsMo" type="number" min="0" step="1" value="12"></div>
+      <div class="f"><label for="trMonths">Months of training <span class="hint">usually fewer than the project</span></label>
+        <input id="trMonths" type="number" min="0" step="1" value="5"></div>
+      <div class="f"><label for="util">Accelerator utilisation: <b id="utilV">45</b>% <span class="hint">at 45%, the same work needs 2.2× the billed hours</span></label>
+        <input id="util" type="range" min="10" max="100" step="5" value="45"></div>
+      <div class="f"><label for="mode">Pricing model</label>
+        <select id="mode">
+          <option value="ondemand" selected>On-demand</option>
+          <option value="spot">Spot / preemptible</option>
+          <option value="reserved">Reserved · 1-year commit</option>
+        </select></div>
+      <div class="f"><label for="spotOff">Spot discount % <span class="hint">indicative</span></label>
+        <input id="spotOff" type="number" min="0" max="95" step="5" value="70"></div>
+      <div class="f"><label for="resOff">Reserved discount % <span class="hint">indicative</span></label>
+        <input id="resOff" type="number" min="0" max="95" step="5" value="40"></div>
+    </div>
+  </div>
+
+  <!-- ==================== DATA & STORAGE ==================== -->
+  <div class="card">
+    <h2>4 · Data & storage</h2>
+    <p class="lede">Storage is cheap and almost never the problem. Egress — moving data <em>out</em> — is the line that surprises people, and the pipeline that feeds the accelerator is usually where the real engineering cost hides.</p>
+    <div class="grid">
+      <div class="f"><label for="tb">Data stored (TB)</label>
+        <input id="tb" type="number" min="0" step="0.5" value="6"></div>
+      <div class="f"><label for="tier">Storage tier</label>
+        <select id="tier">
+          <option value="0.023" selected>Hot / standard object storage</option>
+          <option value="0.010">Infrequent access</option>
+          <option value="0.002">Archive</option>
+        </select></div>
+      <div class="f"><label for="tierRate">Rate / GB / month</label>
+        <input id="tierRate" type="number" min="0" step="0.001" value="0.023"></div>
+      <div class="f"><label for="egress">Egress / month (GB) <span class="hint">out of the cloud, or across regions</span></label>
+        <input id="egress" type="number" min="0" step="10" value="400"></div>
+      <div class="f"><label for="egressRate">Egress rate / GB</label>
+        <input id="egressRate" type="number" min="0" step="0.01" value="0.09"></div>
+      <div class="f"><label for="pipeline">Pipeline & tooling / month <span class="hint">ETL, orchestration, warehouse compute</span></label>
+        <input id="pipeline" type="number" min="0" step="100" value="1800"></div>
+    </div>
+  </div>
+
+  <!-- ==================== INFERENCE ==================== -->
+  <div class="card">
+    <h2>5 · Serving the model</h2>
+    <p class="lede">Training is a bounded cost. Serving is a small number multiplied by an unbounded one, forever — which is why it usually dominates over a model's life, and why boards that approve a build budget are surprised a year later.</p>
+    <div class="grid">
+      <div class="f"><label for="reqDay">Predictions / day</label>
+        <input id="reqDay" type="number" min="0" step="100" value="40000"></div>
+      <div class="f"><label for="peak">Peak factor <span class="hint">peak rate ÷ average rate</span></label>
+        <input id="peak" type="number" min="1" step="0.5" value="4"></div>
+      <div class="f"><label for="tput">Throughput / instance <span class="hint">predictions per second</span></label>
+        <input id="tput" type="number" min="0.1" step="1" value="40"></div>
+      <div class="f"><label for="minInst">Minimum instances <span class="hint">redundancy — 2 if it must not go down</span></label>
+        <input id="minInst" type="number" min="0" step="1" value="2"></div>
+      <div class="f"><label for="servRate">Serving rate / instance-hour</label>
+        <input id="servRate" type="number" min="0" step="0.01" value="0.60"></div>
+      <div class="f"><label for="retrainMo">Retraining runs / month <span class="hint">after launch, year 2+</span></label>
+        <input id="retrainMo" type="number" min="0" step="1" value="2"></div>
+    </div>
+  </div>
+
+  <!-- ==================== TOOLING ==================== -->
+  <div class="card">
+    <h2>6 · Tooling, licences & the rest</h2>
+    <div class="grid">
+      <div class="f"><label for="toolMo">Licences & SaaS / month <span class="hint">experiment tracking, labelling, monitoring</span></label>
+        <input id="toolMo" type="number" min="0" step="100" value="900"></div>
+      <div class="f"><label for="labelOne">Data labelling <span class="hint">one-off — often the sleeper cost</span></label>
+        <input id="labelOne" type="number" min="0" step="1000" value="25000"></div>
+      <div class="f"><label for="oneOff">Other one-off <span class="hint">audit, legal, procurement, security review</span></label>
+        <input id="oneOff" type="number" min="0" step="1000" value="15000"></div>
+    </div>
+  </div>
+
+  <!-- ==================== RESULTS ==================== -->
+  <div class="card" id="results">
+    <h2>The number</h2>
+    <p class="lede">Year 1 is what you ask for. The run rate is what you are committing the organisation to forever — state both, or the second one becomes someone else's unpleasant surprise.</p>
+    <div class="heroes">
+      <div class="stat big"><div class="k">Year-1 cost</div><div class="v" id="oY1">—</div><div class="n" id="oY1n">build + contingency</div></div>
+      <div class="stat"><div class="k">Run rate · year 2+</div><div class="v" id="oRun">—</div><div class="n">every year, in perpetuity</div></div>
+      <div class="stat"><div class="k">Three-year total</div><div class="v" id="oTco">—</div><div class="n">what the board is really approving</div></div>
+      <div class="stat"><div class="k">Cost per 1,000 predictions</div><div class="v" id="oUnit">—</div><div class="n" id="oUnitN">serving only, at your volume</div></div>
+    </div>
+
+    <h3 style="font-size:14px;margin:22px 0 2px;color:var(--red-deep);">Where the year-1 money goes</h3>
+    <div class="stack" id="stack"></div>
+    <div class="axis"><span>0</span><span id="axMax">—</span></div>
+    <table class="bd">
+      <thead><tr><th>Cost line</th><th class="r">Year 1</th><th class="r">Share</th><th class="r">Year 2+ / yr</th></tr></thead>
+      <tbody id="bdBody"></tbody>
+    </table>
+
+    <h3 style="font-size:14px;margin:24px 0 6px;color:var(--red-deep);">The same training, bought three ways</h3>
+    <div class="cmp" id="cmp"></div>
+    <p style="font-size:12.5px;color:var(--grey);margin-top:4px;">Spot capacity can be reclaimed at a few seconds' notice. The discount is real, and the price of it is checkpointing discipline — if you can restart from five minutes ago, you can buy the cheap row.</p>
+  </div>
+
+  <div class="card">
+    <h2>What your numbers are telling you</h2>
+    <p class="lede">These fire off your inputs, not off a template. They are the questions a sceptical CFO asks.</p>
+    <ul class="checks" id="checks"></ul>
+  </div>
+
+  <div class="card">
+    <h2>If you are wrong about one thing</h2>
+    <p class="lede">Every budget is wrong. The useful question is which assumption breaks it — that is the one to buy information about first.</p>
+    <table class="sens">
+      <thead><tr><th>If this turns out to be true…</th><th class="r">Year-1 cost</th><th class="r">Change</th></tr></thead>
+      <tbody id="sensBody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Take it to your assignment</h2>
+    <p class="lede">Session 3's workbook asks for your dominant cost driver and its rough size. Here it is, written for you — check it says what you mean before you save it.</p>
+    <div class="summary" id="summary">—</div>
+    <div class="btnrow">
+      <button class="btn ghost" id="copyBtn">⧉ Copy</button>
+      <button class="btn" id="saveBtn">💾 Save to my workbook</button>
+      <button class="btn ghost" id="resetBtn">↺ Reset to defaults</button>
+    </div>
+    <p style="font-size:12px;color:var(--grey);margin-top:10px;">Saving appends to your Session 3 answer for <b>“Dominant cost driver &amp; rough size”</b> — it never overwrites what you already wrote. Your inputs on this page are saved on this device automatically.</p>
+  </div>
+
+  <div class="note"><b>The point of this page.</b> Not the total — your total is wrong, everyone's is. The point is that you now know <b>which line dominates</b>, <b>which assumption it rests on</b>, and <b>what it costs to be wrong</b>. That is what separates an estimate from a guess, and it is what Session 3 is assessing.</div>
+
+  <div class="foot">
+    <a class="backlink" href="session3.html">← Session 3</a>
+    <a class="backlink" href="board-pack.html">📋 Board pack</a>
+    <a class="backlink" href="index.html">Course home</a>
+    <div style="margin-top:12px;">E1410 · Advanced Project Management in AI · IDEAS</div>
+  </div>
+</div>
+
+<div id="tip"></div>
+
+<script>
+/* =====================================================================
+   E1410 · AI project cost model.
+
+   Pure arithmetic, no dependencies, no server. Every rate is an input so
+   the student can replace teaching defaults with sourced numbers — the
+   defaults exist to make the first render meaningful, not to be trusted.
+
+   Design note: utilisation inflates BILLED hours rather than reducing
+   delivered work. That is the whole teaching point of the page — an idle
+   accelerator bills identically to a busy one, so a pipeline problem
+   arrives on the finance report as a compute problem.
+   ===================================================================== */
+var AUTH = window.E1410_AUTH || {};
+var DB   = "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
+var LSK  = 'e1410_cost_';
+
+var ROLES = [
+  {k:'de',  name:'Data engineer',        n:1,   m:5, r:12000},
+  {k:'ds',  name:'Data scientist',       n:1.5, m:5, r:13000},
+  {k:'mle', name:'ML engineer',          n:1,   m:4, r:13500},
+  {k:'dom', name:'Domain expert',        n:0.2, m:9, r:11000},
+  {k:'pm',  name:'Project manager',      n:0.5, m:9, r:11500},
+  {k:'oth', name:'Other (legal, UX, …)', n:0.2, m:6, r:10000}
+];
+
+/* the six cost lines, in stacking order. Colours are assigned in fixed
+   order and never cycled; contingency is neutral + hatched because it is
+   not a category of spend, it is an admission of uncertainty. */
+var LINES = [
+  {k:'people',  name:'People',              css:'--s1'},
+  {k:'train',   name:'Training compute',    css:'--s2'},
+  {k:'serve',   name:'Serving / inference', css:'--s3'},
+  {k:'data',    name:'Data & storage',      css:'--s4'},
+  {k:'tools',   name:'Tooling & one-offs',  css:'--s5'},
+  {k:'cont',    name:'Contingency',         css:'--s6', hatch:true}
+];
+
+var $ = function(id){ return document.getElementById(id); };
+function num(id){ var el=$(id); var v=parseFloat(el&&el.value); return isFinite(v)?v:0; }
+function ccy(){ return $('ccy').value; }
+
+function fmt(n){
+  n = Math.round(n);
+  if(Math.abs(n)>=1000000) return ccy()+' '+(n/1000000).toFixed(2)+'M';
+  if(Math.abs(n)>=10000)   return ccy()+' '+Math.round(n/1000)+'k';
+  return ccy()+' '+n.toLocaleString('en-CH');
+}
+function fmtFull(n){ return ccy()+' '+Math.round(n).toLocaleString('en-CH'); }
+function pct(x){ return (x*100).toFixed(0)+'%'; }
+
+/* ---------------------------------------------------------------- */
+/* people table                                                      */
+/* ---------------------------------------------------------------- */
+function buildPeople(){
+  var b=$('peopleBody'); b.innerHTML='';
+  ROLES.forEach(function(r){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+r.name+'</td>'+
+      '<td><input id="p_'+r.k+'_n" type="number" min="0" step="0.1" value="'+r.n+'"></td>'+
+      '<td><input id="p_'+r.k+'_m" type="number" min="0" step="1" value="'+r.m+'"></td>'+
+      '<td><input id="p_'+r.k+'_r" type="number" min="0" step="500" value="'+r.r+'"></td>'+
+      '<td class="num" id="p_'+r.k+'_t">—</td>';
+    b.appendChild(tr);
+  });
+}
+buildPeople();
+
+function peopleCost(mult){
+  mult = mult||1;
+  var total=0;
+  ROLES.forEach(function(r){
+    var t = num('p_'+r.k+'_n') * num('p_'+r.k+'_m') * mult * num('p_'+r.k+'_r');
+    var cell=$('p_'+r.k+'_t'); if(cell && mult===1) cell.textContent=fmt(t);
+    total += t;
+  });
+  return total;
+}
+
+/* ---------------------------------------------------------------- */
+/* the model                                                         */
+/* ---------------------------------------------------------------- */
+function trainingRate(mode){
+  var base = num('accelRate');
+  if(mode==='spot')     return base * (1 - num('spotOff')/100);
+  if(mode==='reserved') return base * (1 - num('resOff')/100);
+  return base;
+}
+
+function trainingCost(o){
+  o = o || {};
+  var util  = (o.util!=null?o.util:num('util'))/100;
+  var mode  = o.mode || $('mode').value;
+  if(util<=0) util=0.01;
+  var workHours = num('accelN') * num('runHrs') * num('runsMo') * num('trMonths');
+  var billed    = workHours / util;
+  return { hours:billed, cost:billed * trainingRate(mode) };
+}
+
+function servingInstances(volMult){
+  volMult = volMult||1;
+  var avgRps  = (num('reqDay')*volMult)/86400;
+  var peakRps = avgRps * Math.max(1,num('peak'));
+  var need    = num('tput')>0 ? Math.ceil(peakRps/num('tput')) : 0;
+  return Math.max(num('minInst'), need);
+}
+
+function model(o){
+  o = o || {};
+  var peopleMult = o.peopleMult||1, volMult = o.volMult||1;
+  var live   = Math.min(num('liveMonths'), 12);
+  var HRS_MO = 730;
+
+  var people = peopleCost(peopleMult);
+  var train  = trainingCost({util:o.util, mode:o.mode}).cost;
+
+  var inst   = servingInstances(volMult);
+  var serve  = inst * HRS_MO * live * num('servRate');
+
+  var gb      = num('tb')*1000;
+  var months  = num('months');
+  var storage = gb*num('tierRate')*months;
+  var egress  = num('egress')*num('egressRate')*months;
+  var pipe    = num('pipeline')*months;
+  var data    = storage+egress+pipe;
+
+  var tools = num('toolMo')*months + num('labelOne') + num('oneOff');
+
+  var sub  = people+train+serve+data+tools;
+  var cont = sub * num('conting')/100;
+
+  /* year 2+: it is live all year, retrained on a cadence, and someone owns it */
+  var runServe = inst * HRS_MO * 12 * num('servRate');
+  var runTrain = num('accelN')*num('runHrs')*num('retrainMo')*12 /
+                 Math.max(0.01,(o.util!=null?o.util:num('util'))/100) * trainingRate(o.mode||$('mode').value);
+  var runData  = gb*num('tierRate')*12 + num('egress')*num('egressRate')*12 + num('pipeline')*12;
+  var runTools = num('toolMo')*12;
+  var runTeam  = num('runFte')*num('runRate')*12;
+  var runTotal = runServe+runTrain+runData+runTools+runTeam;
+
+  return {
+    lines:{people:people, train:train, serve:serve, data:data, tools:tools, cont:cont},
+    run:{people:runTeam, train:runTrain, serve:runServe, data:runData, tools:runTools},
+    sub:sub, y1:sub+cont, runTotal:runTotal, tco:sub+cont+2*runTotal,
+    instances:inst, live:live,
+    predictions: num('reqDay')*volMult*30.4*live,
+    trainHours: trainingCost({util:o.util,mode:o.mode}).hours
+  };
+}
+
+/* ---------------------------------------------------------------- */
+/* render                                                            */
+/* ---------------------------------------------------------------- */
+function render(){
+  var m = model();
+
+  $('utilV').textContent = num('util');
+  $('oY1').textContent   = fmt(m.y1);
+  $('oY1n').textContent  = fmtFull(m.sub)+' + '+num('conting')+'% contingency';
+  $('oRun').textContent  = fmt(m.runTotal);
+  $('oTco').textContent  = fmt(m.tco);
+
+  var unit = m.predictions>0 ? m.lines.serve/m.predictions*1000 : 0;
+  $('oUnit').textContent = m.predictions>0 ? (ccy()+' '+unit.toFixed(unit<0.1?3:2)) : '—';
+  $('oUnitN').textContent = m.predictions>0
+    ? Math.round(m.predictions).toLocaleString('en-CH')+' predictions in year 1'
+    : 'no serving volume entered';
+
+  /* stacked bar + breakdown table (the table is the relief for the
+     lower-contrast series colours — every segment is also a labelled row) */
+  var stack=$('stack'); stack.innerHTML='';
+  var bd=$('bdBody');   bd.innerHTML='';
+  var total = m.y1 || 1;
+  LINES.forEach(function(L){
+    var v = m.lines[L.k]||0;
+    if(v>0){
+      var seg=document.createElement('div');
+      seg.className='seg'+(L.hatch?' hatch':'');
+      seg.style.width=(v/total*100)+'%';
+      seg.style.background='var('+L.css+')';
+      seg.setAttribute('data-tip', L.name+' · '+fmtFull(v)+' · '+pct(v/total));
+      stack.appendChild(seg);
+    }
+    var runV = L.k==='cont' ? 0 : (m.run[L.k]||0);
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td class="name"><span class="sw'+(L.hatch?' hatch':'')+'" style="background:var('+L.css+')"></span>'+L.name+'</td>'+
+                 '<td class="r">'+fmtFull(v)+'</td>'+
+                 '<td class="r">'+pct(v/total)+'</td>'+
+                 '<td class="r">'+(L.k==='cont'?'—':fmtFull(runV))+'</td>';
+    bd.appendChild(tr);
+  });
+  var trt=document.createElement('tr'); trt.className='total';
+  trt.innerHTML='<td class="name">Total</td><td class="r">'+fmtFull(m.y1)+'</td><td class="r">100%</td><td class="r">'+fmtFull(m.runTotal)+'</td>';
+  bd.appendChild(trt);
+  $('axMax').textContent = fmtFull(m.y1);
+
+  /* pricing comparison — single series, direct labels, no legend */
+  var modes=[{k:'ondemand',n:'On-demand'},{k:'spot',n:'Spot / preemptible'},{k:'reserved',n:'Reserved 1yr'}];
+  var costs=modes.map(function(x){ return trainingCost({mode:x.k}).cost; });
+  var mx=Math.max.apply(null,costs)||1, mn=Math.min.apply(null,costs);
+  $('cmp').innerHTML = modes.map(function(x,i){
+    var c=costs[i], best=(c===mn && mx!==mn);
+    return '<div class="row"><span class="lab">'+x.n+'</span>'+
+           '<span class="track"><span class="fill'+(best?' best':'')+'" style="width:'+(mx?c/mx*100:0)+'%"></span></span>'+
+           '<span class="val">'+fmtFull(c)+'</span></div>';
+  }).join('');
+
+  renderChecks(m);
+  renderSens(m);
+  renderSummary(m);
+  save();
+}
+
+/* ---------------------------------------------------------------- */
+/* reality checks — the sceptical CFO                                */
+/* ---------------------------------------------------------------- */
+function renderChecks(m){
+  var out=[], t=m.y1||1;
+  var shr=function(k){ return (m.lines[k]||0)/t; };
+
+  if(shr('people')>=0.5) out.push(['ok','✓','<b>People are your dominant cost — '+pct(shr('people'))+' of year 1.</b> That is the normal shape of an AI project, and it is why “use cheaper GPUs” is not a cost strategy. If you need to move this number, you move scope or duration, not hardware.']);
+  else if(shr('train')>=0.4) out.push(['warn2','!','<b>Compute is '+pct(shr('train'))+' of your budget.</b> Outside frontier-scale training that is unusual. Check three things before you defend it: is the accelerator class oversized, is utilisation realistic, and are you paying on-demand for work that could run on spot?']);
+  else out.push(['ok','✓','<b>No single line dominates.</b> Unusual and worth stating explicitly — it means no one assumption can wreck the budget on its own.']);
+
+  var u=num('util');
+  if(u>=75) out.push(['bad','!','<b>You have assumed '+u+'% accelerator utilisation.</b> Teams routinely measure 30–50%, because the chip waits on the data pipeline, on gradient sync, on checkpointing. At 40% your training line becomes '+fmtFull(trainingCost({util:40}).cost)+'. Budget for the utilisation you will actually get, then treat improving it as an engineering win.']);
+  else if(u<=30) out.push(['warn2','!','<b>'+u+'% utilisation is pessimistic but safe.</b> You are buying '+Math.round(100/u*10)/10+'× the wall-clock hours of the underlying work. If your data loading is in good shape, this is money you can hand back.']);
+  else out.push(['ok','✓','<b>'+u+'% utilisation is a defensible planning assumption.</b> Say so out loud in the budget — an unstated utilisation assumption is the most common reason compute budgets are wrong.']);
+
+  if(m.lines.serve>m.lines.train && m.lines.train>0)
+    out.push(['ok','✓','<b>Serving costs more than training, even in year 1.</b> That is the correct shape for a system that is actually used — and it is the line that keeps growing after the project closes. Make sure it is in the run rate you quote, not just the build budget.']);
+  else if(m.lines.train>0 && m.lines.serve>0)
+    out.push(['warn2','!','<b>Training still outweighs serving.</b> Fine in year 1 with only '+m.live+' month(s) live — but check the run rate: over three years serving is '+fmtFull(m.run.serve*3)+' against a one-off training spend.']);
+
+  var c=num('conting');
+  if(c<15) out.push(['bad','!','<b>'+c+'% contingency.</b> On a project whose data quality has not been proven yet, that is optimistic. The standard failure is data preparation taking twice as long as planned — see the sensitivity table below for what that does to you.']);
+  else if(c>40) out.push(['warn2','!','<b>'+c+'% contingency reads as “we do not understand this project”.</b> That may be honest — if so, propose a small paid feasibility phase instead and come back with a real number. Boards fund cheap uncertainty-reduction more readily than expensive padding.']);
+  else out.push(['ok','✓','<b>'+c+'% contingency is a defensible band</b> for a project with known unknowns. Be ready to say what it is <em>for</em>: contingency without a named risk is padding.']);
+
+  if($('mode').value==='ondemand' && m.lines.train>10000){
+    var sp=trainingCost({mode:'spot'}).cost;
+    out.push(['warn2','!','<b>You are paying on-demand for training.</b> Spot capacity would put that line at '+fmtFull(sp)+' — a saving of '+fmtFull(m.lines.train-sp)+'. The price is checkpointing discipline and a tolerance for restarts. For training, that is usually a trade worth making.']);
+  }
+
+  if(m.runTotal*3 > m.y1)
+    out.push(['warn2','!','<b>Three years of running costs '+fmtFull(m.runTotal*3)+' — more than the build.</b> Boards approve build budgets and inherit run rates. Put the run rate on the front page of your proposal, or someone will discover it in year two and it will be your name on it.']);
+
+  if(num('labelOne')===0 && num('tb')>0)
+    out.push(['warn2','!','<b>You have budgeted nothing for labelling.</b> If your data arrives labelled and clean, say so explicitly — it is a strong claim and a reviewer will test it. If it does not, this is often the largest single line nobody planned for.']);
+
+  if(m.lines.data>0 && (m.lines.data/t)<0.05 && num('egress')>0)
+    out.push(['ok','✓','<b>Storage and pipeline are '+pct(m.lines.data/t)+' of the budget.</b> Typical — storage is cheap. Keep an eye on egress specifically: it is the one line here that scales with how many other systems want your data.']);
+
+  $('checks').innerHTML = out.map(function(x){
+    return '<li class="'+x[0]+'"><span class="ic">'+x[1]+'</span><span>'+x[2]+'</span></li>';
+  }).join('');
+}
+
+/* ---------------------------------------------------------------- */
+/* sensitivity                                                       */
+/* ---------------------------------------------------------------- */
+function renderSens(m){
+  var base=m.y1;
+  var halfUtil=Math.max(10,Math.round(num('util')/2));
+  var vol5=model({volMult:5});
+  var rows=[
+    ['Data preparation takes twice as long (engineering months ×1.5)', model({peopleMult:1.5}).y1, ''],
+    ['Accelerator utilisation is half what you assumed ('+halfUtil+'%)', model({util:halfUtil}).y1, ''],
+    ['Prediction volume is 5× your estimate', vol5.y1,
+      vol5.instances===m.instances ? 'your minimum of '+m.instances+' instance(s) already absorbs it' : 'serving grows to '+vol5.instances+' instances'],
+    ['You move training to spot capacity', model({mode:'spot'}).y1, '']
+  ];
+  $('sensBody').innerHTML = rows.map(function(r){
+    var d=r[1]-base, up=d>0, flat=Math.abs(d)<1;
+    var pctD = base? Math.round(Math.abs(d)/base*100):0;
+    var note = r[2] ? '<span style="display:block;font-weight:600;font-size:11.5px;color:var(--grey);">'+r[2]+'</span>' : '';
+    var delta = flat
+      ? '<span class="delta" style="color:var(--grey)">no change</span>'
+      : '<span class="delta '+(up?'up':'down')+'">'+(up?'+':'−')+fmtFull(Math.abs(d)).replace(/^[A-Z]{3} /,'')+' · '+(up?'+':'−')+pctD+'%</span>';
+    return '<tr><td class="name">'+r[0]+note+'</td><td class="r">'+fmtFull(r[1])+'</td><td class="r">'+delta+'</td></tr>';
+  }).join('');
+}
+
+/* ---------------------------------------------------------------- */
+/* the sentence for the workbook                                     */
+/* ---------------------------------------------------------------- */
+function renderSummary(m){
+  var t=m.y1||1, top=null, topV=-1;
+  LINES.forEach(function(L){
+    if(L.k==='cont') return;
+    var v=m.lines[L.k]||0; if(v>topV){ topV=v; top=L; }
+  });
+  var s='Dominant cost driver: '+(top?top.name.toLowerCase():'—')+' — '+fmtFull(topV)+', '+pct(topV/t)+' of year-1 spend.\n'+
+    'Year 1: '+fmtFull(m.y1)+' (including '+num('conting')+'% contingency). '+
+    'Run rate from year 2: '+fmtFull(m.runTotal)+'/yr. Three-year total: '+fmtFull(m.tco)+'.\n'+
+    'Key assumptions: '+num('util')+'% accelerator utilisation, '+$('mode').options[$('mode').selectedIndex].text.toLowerCase()+
+    ' pricing, '+m.instances+' serving instance(s) at '+Number(num('reqDay')).toLocaleString('en-CH')+' predictions/day, '+
+    num('months')+' months to release.\n'+
+    'Most dangerous assumption: '+dangerLine(m)+'.';
+  $('summary').textContent=s;
+  return s;
+}
+function dangerLine(m){
+  var cands=[
+    {t:'data preparation duration — a 50% overrun adds '+fmtFull(model({peopleMult:1.5}).y1-m.y1), d:model({peopleMult:1.5}).y1-m.y1},
+    {t:'accelerator utilisation — at 40% the budget moves by '+fmtFull(Math.abs(model({util:40}).y1-m.y1)), d:Math.abs(model({util:40}).y1-m.y1)},
+    {t:'prediction volume — 5× traffic adds '+fmtFull(model({volMult:5}).y1-m.y1), d:model({volMult:5}).y1-m.y1}
+  ];
+  cands.sort(function(a,b){ return b.d-a.d; });
+  return cands[0].t;
+}
+
+/* ---------------------------------------------------------------- */
+/* persistence — this device only; the summary is what reaches the DB */
+/* ---------------------------------------------------------------- */
+function allInputs(){ return document.querySelectorAll('input,select'); }
+function save(){
+  try{
+    var o={};
+    allInputs().forEach(function(el){ if(el.id) o[el.id]=el.value; });
+    localStorage.setItem(LSK+'inputs',JSON.stringify(o));
+  }catch(e){}
+}
+function restore(){
+  try{
+    var o=JSON.parse(localStorage.getItem(LSK+'inputs')||'null');
+    if(!o) return;
+    allInputs().forEach(function(el){ if(el.id && o[el.id]!=null) el.value=o[el.id]; });
+  }catch(e){}
+}
+
+/* ---------------------------------------------------------------- */
+/* wiring                                                            */
+/* ---------------------------------------------------------------- */
+document.addEventListener('input',function(e){
+  if(e.target.matches('input,select')) render();
+});
+document.addEventListener('change',function(e){
+  if(e.target.id==='accel') $('accelRate').value=$('accel').value;
+  if(e.target.id==='tier')  $('tierRate').value=$('tier').value;
+  render();
+});
+
+/* tooltip on the stacked bar */
+(function(){
+  var tip=$('tip');
+  document.addEventListener('mousemove',function(e){
+    var t=e.target.closest ? e.target.closest('[data-tip]') : null;
+    if(t){
+      tip.textContent=t.getAttribute('data-tip');
+      tip.classList.add('on');
+      var x=Math.min(e.clientX+14, window.innerWidth-tip.offsetWidth-8);
+      tip.style.left=x+'px'; tip.style.top=(e.clientY-34)+'px';
+    } else tip.classList.remove('on');
+  });
+})();
+
+$('copyBtn').addEventListener('click',function(){
+  var btn=this, text=$('summary').textContent;
+  function ok(){ btn.textContent='✓ Copied'; setTimeout(function(){btn.textContent='⧉ Copy';},1600); }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok).catch(function(){});
+  else ok();
+});
+
+/* append — never overwrite. The student's own words come first. */
+$('saveBtn').addEventListener('click',function(){
+  var btn=this, id='s3_cost_driver', add=$('summary').textContent;
+  var cur='';
+  try{ cur=localStorage.getItem('e1410_work_'+id)||''; }catch(e){}
+  var next = cur.trim() ? cur.trim()+'\n\n'+add : add;
+  try{ localStorage.setItem('e1410_work_'+id,next); }catch(e){}
+  if(AUTH.sid){
+    try{
+      fetch(DB+'/e1410/'+AUTH.sid+'/work/'+id+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({v:next,label:'Dominant cost driver & rough size',mod:'s3',ts:Date.now()})}).catch(function(){});
+    }catch(e){}
+  }
+  btn.textContent='✓ Saved to Session 3';
+  setTimeout(function(){ btn.textContent='💾 Save to my workbook'; },2200);
+});
+
+$('resetBtn').addEventListener('click',function(){
+  try{ localStorage.removeItem(LSK+'inputs'); }catch(e){}
+  location.reload();
+});
+
+/* name chip */
+(function(){ if(AUTH.name){ var el=$('topWho'); if(el){ el.textContent='👤 '+AUTH.name; el.classList.add('on'); } } })();
+
+restore();
+render();
+</script>
+<script src="/shared/config.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
