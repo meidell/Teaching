@@ -165,6 +165,29 @@ plus `<sid>/work/<id> = {v,label,mod,ts}`), so the dashboard picks them up with 
 change — but they do it themselves rather than loading `progress.js`, because they are
 standalone like `compile.html` and must not depend on its init order.
 
+### Exercises inside the sessions — `exercises.js`
+
+Two widgets, added to the live session pages: a **retrieval opener** (two
+questions about the *previous* session, on the home screen — sessions 2–8;
+Session 1 has nothing to retrieve) and **diagnose the artefact** (a plausible
+piece of work with planted faults — Session 2 s3 · WBS, Session 4 s4 · risk
+register, Session 6 s2 · monitoring plan).
+
+⚠️ **They must never touch what counts.** Each session page computes its bar as
+`totalSteps() = 1 + .cl-row + .q + [data-work]`, and reports completion to the
+DB as `SECTIONS.length`. So anything added to a live page using `.q`,
+`.cl-row`, `data-work`, `markSection()` or `StatsTrack.complete()` **silently
+lowers every enrolled student's displayed progress** — the same trap
+`courseprogress.js` documents for the five primers. The widgets therefore use
+their own class names (`.rc-*`, `.sp-*`), call none of those functions, and
+keep state under `e1410_ex_*`. They write one summary line to
+`work/rec_<session>` and `work/spot_<id>` so engagement is visible in the
+dashboard, with prefixes that cannot collide with real field ids.
+
+Their CSS is **injected by `exercises.js`, not added to `session.css`** —
+sessions 1 and 2 predate the stylesheet extraction and still carry inline
+`<style>`, so a rule in `session.css` would apply to six pages out of eight.
+
 **`project-map.js` is the single client-side definition of the project's field list.**
 `compile.html` and `board-pack.html` both consume it. Adding a workbook field means
 editing it in **two** places: `project-map.js` (`SECTIONS`) and `courses.json`
