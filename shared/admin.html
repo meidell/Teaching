@@ -17,6 +17,23 @@
   Reads the cohort over the REST API (public read on the course
   namespaces). If a namespace requires an authenticated read, it offers
   Google sign-in and retries through the Firebase SDK.
+
+  THE RUNNING-PROJECT PANEL is opt-in per course. Give a course a
+  `project` block in /courses.json and it appears; leave it out and
+  nothing changes for that course:
+
+    "project": {
+      "label":  "Final assignment · the running project",
+      "blurb":  "one line under the heading",
+      "compile":"ideas-e1410/compile.html",     // optional link
+      "sections":[ { "id":"1", "label":"Context", "from":"Session 1",
+                     "fields":[ {"id":"s1_problem","label":"The problem"} ] } ]
+    }
+
+  The field ids are the `data-work` attributes the session pages already
+  write to <ns>/<sid>/work. Grouping them is all the panel needs: it then
+  shows per-section cohort completion, a per-student §-grid, and a reader
+  for one question across the whole cohort.
 -->
 <style>
 :root{
@@ -82,6 +99,45 @@ th.ch,td.ch{text-align:center;}
 .work{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;}
 .work .wq{font-size:12px;font-weight:bold;color:var(--deep);margin-top:8px;}
 .work .wa{font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--sand-deep);border-radius:8px;padding:8px 10px;margin-top:3px;white-space:pre-wrap;}
+.work .wsec{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;color:var(--main);
+  margin-top:14px;padding-top:9px;border-top:1px dashed var(--line);}
+.work .wsec:first-of-type{border-top:none;padding-top:0;margin-top:6px;}
+.work .wsec .muted{letter-spacing:0;text-transform:none;font-weight:normal;}
+.work .wmiss{font-size:12px;color:var(--grey);font-style:italic;margin-top:4px;}
+/* final-project panel */
+.pj-sec{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(74px,.5fr) minmax(90px,1fr) auto;
+  gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+.pj-sec:last-child{border-bottom:none;}
+.pj-sec .s{font-weight:bold;color:var(--deep);}
+.pj-sec .from{color:var(--grey);font-size:11px;}
+.pj-bar{height:7px;border-radius:4px;background:var(--pale);overflow:hidden;}
+.pj-bar i{display:block;height:100%;background:var(--ok);}
+.pj-sec.idle .s{color:var(--grey);font-weight:normal;}
+.pj-sec.idle .pj-bar i{background:var(--grey);opacity:.3;}
+.pj-n{font-size:11.5px;color:var(--grey);white-space:nowrap;text-align:right;}
+.pj-n b{color:var(--deep);}
+.pj-tbl{margin-top:16px;overflow-x:auto;}
+.pj-tbl table{font-size:12.5px;}
+.pj-tbl th,.pj-tbl td{padding:7px 8px;}
+.pj-tbl .nm{cursor:pointer;}
+.pj-tbl .nm:hover{color:var(--main);text-decoration:underline;}
+.pj-cell{display:inline-block;min-width:36px;text-align:center;border-radius:6px;padding:2px 5px;
+  font-size:11px;font-weight:bold;background:var(--surface);color:var(--grey);border:1px solid var(--sand-deep);}
+.pj-cell.partial{background:rgba(201,162,39,.12);color:#8a6d14;border-color:rgba(201,162,39,.5);}
+.pj-cell.done{background:rgba(74,139,58,.14);color:#2C5530;border-color:var(--ok);}
+.pj-cell.idle{opacity:.4;}
+.pj-foot{font-size:12px;color:var(--grey);margin-top:12px;line-height:1.6;}
+.pj-foot a{color:var(--deep);font-weight:600;}
+.pj-read{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;}
+.pj-read select.pick{max-width:100%;}
+.pj-ans{margin-top:10px;}
+.pj-who{font-size:12.5px;font-weight:bold;font-family:Georgia,serif;color:var(--deep);margin-bottom:3px;cursor:pointer;}
+.pj-who:hover{color:var(--main);text-decoration:underline;}
+.pj-ans .wa{font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--sand-deep);
+  border-radius:8px;padding:8px 10px;white-space:pre-wrap;}
+.pj-miss{font-size:12px;color:var(--grey);margin-top:12px;padding-top:9px;border-top:1px dashed var(--line);}
+.pj-miss b{color:#8a6d14;}
+.pj-miss span{cursor:pointer;}.pj-miss span:hover{color:var(--main);text-decoration:underline;}
 .qrow{border-bottom:1px solid var(--line);padding:9px 0;}
 .qrow:last-child{border-bottom:none;}
 .qrow .qq{font-size:13px;color:var(--ink);}
@@ -127,6 +183,7 @@ a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
   </div>
 
   <div class="panel" id="quizPanel" style="display:none"></div>
+  <div class="panel" id="projectPanel" style="display:none"></div>
 
   <div class="sortbar">
     <span>Sort:</span>
@@ -134,6 +191,7 @@ a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
     <button class="btn" data-sort="name">Name</button>
     <button class="btn" data-sort="progress">Total progress</button>
     <button class="btn" data-sort="time">Time spent</button>
+    <button class="btn" data-sort="project" id="bSortProject" style="display:none">Final project</button>
   </div>
 
   <div class="tablewrap">
@@ -184,6 +242,50 @@ function coursePct(node){
     if(c)done+=Math.min(e,doneCount(c));
   });
   return tot?Math.round(done/tot*100):0;
+}
+
+/* ---------- the running project ----------
+   Sessions record workbook answers under <ns>/<sid>/work/<fieldId>. That is
+   a flat bag of fields; what the instructor actually wants to see is the
+   assignment those fields add up to. A course opts in by giving courses.json
+   a `project` block that groups the field ids into sections — no project
+   block, no panel, and every other course behaves exactly as before. */
+var PROJECT=null;
+function projSections(){return (PROJECT&&PROJECT.sections)||[];}
+function projTotal(){var n=0;projSections().forEach(function(s){n+=(s.fields||[]).length;});return n;}
+function workOf(node){return (node&&node.work)||{};}
+function hasVal(w,id){var it=w[id];return !!(it&&it.v&&String(it.v).trim());}
+/* [{sec, filled, total}] in section order */
+function projCounts(node){
+  var w=workOf(node);
+  return projSections().map(function(s){
+    var f=0;(s.fields||[]).forEach(function(x){if(hasVal(w,x.id))f++;});
+    return {sec:s,filled:f,total:(s.fields||[]).length};
+  });
+}
+function projFilled(node){var n=0;projCounts(node).forEach(function(c){n+=c.filled;});return n;}
+function projPct(node){var t=projTotal();return t?Math.round(projFilled(node)/t*100):0;}
+
+/* A section is "in play" once anybody in the cohort has written in it — the
+   same self-calibrating trick as EXPECT above. Without it, §6 (which needs
+   Sessions 5–6) would drag every student's score down for a fortnight and
+   the panel would say nothing useful. */
+function projLive(){
+  var live={};
+  projSections().forEach(function(s){
+    live[s.id]=ROWS.some(function(r){
+      var w=workOf(r.node);
+      return (s.fields||[]).some(function(x){return hasVal(w,x.id);});
+    });
+  });
+  return live;
+}
+/* Progress against only the sections the course has actually reached, or
+   null when nothing is in play yet. This is the "keeping up?" number. */
+function projLivePct(node,live){
+  var d=0,t=0;
+  projCounts(node).forEach(function(c){if(!live[c.sec.id])return;t+=c.total;d+=c.filled;});
+  return t?Math.round(d/t*100):null;
 }
 
 /* ---------- which course ---------- */
@@ -311,6 +413,7 @@ function sorted(){
   if(SORT==='name')a.sort(function(x,y){return x.name.localeCompare(y.name);});
   else if(SORT==='progress')a.sort(function(x,y){return totalDone(y.node)-totalDone(x.node)||y.ts-x.ts;});
   else if(SORT==='time')a.sort(function(x,y){return totalSecs(y.node)-totalSecs(x.node)||y.ts-x.ts;});
+  else if(SORT==='project')a.sort(function(x,y){return projFilled(y.node)-projFilled(x.node)||y.ts-x.ts;});
   else a.sort(function(x,y){return y.ts-x.ts;});
   return a;
 }
@@ -348,6 +451,120 @@ function render(){
     tr.addEventListener('click',function(){toggle(tr.getAttribute('data-sid'));});
   });
   renderAttention();
+  renderProject();
+}
+
+/* ---------- final project · section by section ---------- */
+function renderProject(){
+  var el=$('projectPanel');
+  if(!PROJECT||!ROWS.length||!projTotal()){el.style.display='none';return;}
+  var live=projLive(), n=ROWS.length;
+  /* one pass per student, reused by both halves of the panel */
+  var per=sorted().map(function(r){return {r:r,c:projCounts(r.node)};});
+
+  var secs='';
+  projSections().forEach(function(s,i){
+    var filled=0,complete=0,started=0,tot=(s.fields||[]).length;
+    per.forEach(function(p){
+      filled+=p.c[i].filled;
+      if(p.c[i].filled>=tot&&tot)complete++;
+      if(p.c[i].filled>0)started++;
+    });
+    var pct=(tot&&n)?Math.round(filled/(tot*n)*100):0;
+    secs+='<div class="pj-sec'+(live[s.id]?'':' idle')+'">'+
+      '<div><span class="s">§'+esc(s.id)+' · '+esc(s.label)+'</span></div>'+
+      '<div class="from">'+esc(s.from||'')+'</div>'+
+      '<div class="pj-bar"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="pj-n">'+(live[s.id]
+         ? '<b>'+complete+'</b>/'+n+' complete'+(started>complete?' · '+(started-complete)+' partial':'')
+         : 'not opened yet')+
+      ' <span class="muted">· '+tot+' field'+(tot===1?'':'s')+'</span></div>'+
+      '</div>';
+  });
+
+  var head='<tr><th>Student</th>';
+  projSections().forEach(function(s){head+='<th class="ch" title="'+esc(s.label)+'">§'+esc(s.id)+'</th>';});
+  head+='<th class="ch">Written</th><th class="ch" title="Against only the sections the course has reached so far">Keeping up</th></tr>';
+
+  var body='';
+  per.forEach(function(p){
+    var cells='';
+    p.c.forEach(function(c){
+      var cls=(c.total&&c.filled>=c.total)?'done':(c.filled>0?'partial':'');
+      if(!live[c.sec.id])cls+=' idle';
+      cells+='<td class="ch"><span class="pj-cell '+cls+'">'+(c.filled?c.filled+'/'+c.total:'·')+'</span></td>';
+    });
+    var lp=projLivePct(p.r.node,live);
+    body+='<tr><td class="name nm" data-jump="'+esc(p.r.sid)+'">'+esc(p.r.name)+'</td>'+cells+
+      '<td class="ch tot">'+projPct(p.r.node)+'%</td>'+
+      '<td class="ch tot">'+(lp==null?'—':lp+'%')+'</td></tr>';
+  });
+
+  /* Read one question across the whole cohort. This is the view you want the
+     night before a session: "what did all of them write for the WBS?" — which
+     is impossible if the only way in is student by student. */
+  var opts='';
+  projSections().forEach(function(s){
+    opts+='<optgroup label="§'+esc(s.id)+' · '+esc(s.label)+'">';
+    (s.fields||[]).forEach(function(f){
+      var cnt=ROWS.filter(function(r){return hasVal(workOf(r.node),f.id);}).length;
+      opts+='<option value="'+esc(f.id)+'">'+esc(f.label)+' — '+cnt+'/'+n+'</option>';
+    });
+    opts+='</optgroup>';
+  });
+  var reader='<div class="pj-read"><div class="att-lbl">📖 Read one question across the cohort</div>'+
+    '<div class="brow"><select class="pick" id="pjField">'+opts+'</select>'+
+    '<span class="muted" id="pjCount"></span></div><div id="pjAnswers"></div></div>';
+
+  var comp=PROJECT.compile?' Students assemble it themselves at <a href="/'+encodeURI(PROJECT.compile)+'">compile.html</a>.':'';
+  el.innerHTML='<h2>'+esc(PROJECT.label||'The running project')+'</h2>'+
+    '<div class="sub">'+esc(PROJECT.blurb||'')+'</div>'+secs+
+    '<div class="pj-tbl"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
+    '<div class="pj-foot"><b>Written</b> = fields filled out of all '+projTotal()+
+    ', so it only reaches 100% at the end of the course. <b>Keeping up</b> ignores sections nobody has reached yet, '+
+    'so it is the number to read today. Click a name to open that student’s answers.'+comp+'</div>'+
+    reader;
+  el.style.display='block';
+  Array.prototype.forEach.call(el.querySelectorAll('[data-jump]'),function(c){
+    c.addEventListener('click',function(){jumpTo(c.getAttribute('data-jump'));});
+  });
+  var sel=$('pjField');
+  if(sel){
+    if(PJ_FIELD&&sel.querySelector('option[value="'+PJ_FIELD.replace(/"/g,'')+'"]'))sel.value=PJ_FIELD;
+    sel.addEventListener('change',function(){PJ_FIELD=sel.value;renderFieldAnswers();});
+    PJ_FIELD=sel.value;
+    renderFieldAnswers();
+  }
+}
+
+/* every student's answer to one field, longest first — the ones with
+   something to say are the ones worth reading aloud */
+var PJ_FIELD='';
+function renderFieldAnswers(){
+  var box=$('pjAnswers'); if(!box)return;
+  var label='';
+  projSections().forEach(function(s){(s.fields||[]).forEach(function(f){if(f.id===PJ_FIELD)label=f.label;});});
+  var got=[],missing=[];
+  sorted().forEach(function(r){
+    var it=workOf(r.node)[PJ_FIELD];
+    if(it&&it.v&&String(it.v).trim())got.push({r:r,v:String(it.v).trim(),ts:it.ts||0});
+    else missing.push(r);
+  });
+  var out='';
+  got.forEach(function(g){
+    out+='<div class="pj-ans"><div class="pj-who" data-jump="'+esc(g.r.sid)+'">'+esc(g.r.name)+
+      (g.ts?' <span class="muted">· '+esc(whenAgo(g.ts))+'</span>':'')+'</div>'+
+      '<div class="wa">'+esc(g.v)+'</div></div>';
+  });
+  if(!got.length)out='<div class="wmiss">Nobody has answered this one yet.</div>';
+  if(missing.length)out+='<div class="pj-miss"><b>No answer ('+missing.length+'):</b> '+
+    missing.map(function(r){return '<span data-jump="'+esc(r.sid)+'">'+esc(r.name)+'</span>';}).join(', ')+'</div>';
+  $('pjCount').textContent=got.length+' of '+ROWS.length+' answered';
+  box.innerHTML=out;
+  Array.prototype.forEach.call(box.querySelectorAll('[data-jump]'),function(c){
+    c.style.cursor='pointer';
+    c.addEventListener('click',function(){jumpTo(c.getAttribute('data-jump'));});
+  });
 }
 function moduleScores(node){
   var out=[];
@@ -361,20 +578,27 @@ function jumpTo(sid){var r=$('d-'+sid);if(r&&r.style.display==='none')toggle(sid
 function renderAttention(){
   var el=$('attention');
   if(!ROWS.length){el.style.display='none';return;}
-  var now=Date.now(),STALL=7*864e5,LOW=0.6;
-  var notStarted=[],quiet=[],low=[];
+  var now=Date.now(),STALL=7*864e5,LOW=0.6,BEHIND=50;
+  var notStarted=[],quiet=[],low=[],behind=[];
+  var live=PROJECT?projLive():null;
   ROWS.forEach(function(s){
     var td=totalDone(s.node);
     if(td===0){notStarted.push(s);return;}
     if(s.ts&&(now-s.ts)>STALL)quiet.push(s);
     var ms=moduleScores(s.node).filter(function(x){return x.f<LOW;});
     if(ms.length){ms.sort(function(a,b){return a.f-b.f;});low.push({s:s,w:ms[0]});}
+    if(live){
+      var lp=projLivePct(s.node,live);
+      if(lp!=null&&lp<BEHIND)behind.push({s:s,p:lp});
+    }
   });
+  behind.sort(function(a,b){return a.p-b.p;});
   function chip(sid,name,meta){return '<span class="att-chip" data-jump="'+esc(sid)+'">'+esc(name)+(meta?' <span class="meta">'+esc(meta)+'</span>':'')+'</span>';}
   var g='';
   if(notStarted.length)g+='<div class="att-group"><div class="att-lbl amber">🕓 Not started ('+notStarted.length+')</div><div class="att-chips">'+notStarted.map(function(s){return chip(s.sid,s.name,'joined '+whenAgo(s.ts));}).join('')+'</div></div>';
   if(quiet.length)g+='<div class="att-group"><div class="att-lbl red">💤 Gone quiet · 7+ days ('+quiet.length+')</div><div class="att-chips">'+quiet.map(function(s){return chip(s.sid,s.name,'last '+whenAgo(s.ts));}).join('')+'</div></div>';
   if(low.length)g+='<div class="att-group"><div class="att-lbl amber">📉 Low self-check · under 60% ('+low.length+')</div><div class="att-chips">'+low.map(function(o){return chip(o.s.sid,o.s.name,o.w.label+' '+o.w.score);}).join('')+'</div></div>';
+  if(behind.length)g+='<div class="att-group"><div class="att-lbl red">📝 Final project behind · under 50% of the sections we have reached ('+behind.length+')</div><div class="att-chips">'+behind.map(function(o){return chip(o.s.sid,o.s.name,o.p+'%');}).join('')+'</div></div>';
   if(!g)g='<div class="att-ok">✓ Everyone’s on track — no one flagged right now.</div>';
   el.innerHTML='<h2>Needs attention</h2><div class="sub">Flagged automatically from activity and self-check scores — click a name to jump to their row.</div>'+g;
   el.style.display='block';
@@ -395,15 +619,36 @@ function toggle(sid){
        ' · time '+fmtDur(c.secs)+' · last '+whenAgo(c.updatedAt)+
        (secs.length?'<br><span class="muted">items: '+esc(secs.join(', '))+'</span>':'')+'</div>';
   });
-  /* workbook answers, where the course collects them */
+  /* workbook answers, where the course collects them. With a project map they
+     are grouped into the assignment's sections — which is the order the
+     instructor reads them in — and gaps are shown rather than silently absent. */
   var work=s.node.work;
   if(work){
-    var w='<div class="work"><div class="att-lbl">✍️ Workbook answers</div>';
-    Object.keys(work).forEach(function(k){
-      var it=work[k]||{};
-      if(!it.v)return;
-      w+='<div class="wq">'+esc(it.label||k)+(it.mod?' <span class="muted">('+esc(it.mod)+')</span>':'')+'</div><div class="wa">'+esc(it.v)+'</div>';
-    });
+    var w='<div class="work"><div class="att-lbl">✍️ '+(PROJECT?'Final project · answers by section':'Workbook answers')+'</div>';
+    var seen={};
+    if(PROJECT){
+      projCounts(s.node).forEach(function(c){
+        var sec=c.sec, any=false;
+        w+='<div class="wsec">§'+esc(sec.id)+' · '+esc(sec.label)+
+           ' <span class="muted">— '+c.filled+'/'+c.total+(sec.from?' · '+esc(sec.from):'')+'</span></div>';
+        (sec.fields||[]).forEach(function(f){
+          seen[f.id]=1;
+          var it=work[f.id];
+          if(!it||!it.v||!String(it.v).trim())return;
+          any=true;
+          w+='<div class="wq">'+esc(f.label)+'</div><div class="wa">'+esc(it.v)+'</div>';
+        });
+        if(!any)w+='<div class="wmiss">nothing written yet</div>';
+      });
+    }
+    var rest=Object.keys(work).filter(function(k){return !seen[k]&&work[k]&&work[k].v;});
+    if(rest.length){
+      if(PROJECT)w+='<div class="wsec">Not part of the assignment</div>';
+      rest.forEach(function(k){
+        var it=work[k]||{};
+        w+='<div class="wq">'+esc(it.label||k)+(it.mod?' <span class="muted">('+esc(it.mod)+')</span>':'')+'</div><div class="wa">'+esc(it.v)+'</div>';
+      });
+    }
     h+=w+'</div>';
   }
   if(!h)h='<div class="muted">No activity yet.</div>';
@@ -456,10 +701,20 @@ function csv(v){v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/
 function exportCSV(){
   var head=['name','student_id','total_done','total_time_min','last_active'];
   MODULES.forEach(function(m){head.push(m.id+'_done');head.push(m.id+'_total');head.push(m.id+'_score');});
+  var live=PROJECT?projLive():null;
+  if(PROJECT){
+    head.push('project_pct','project_keeping_up_pct','project_fields_filled','project_fields_total');
+    projSections().forEach(function(s){head.push('sec'+s.id+'_filled');head.push('sec'+s.id+'_total');});
+  }
   var lines=[head.join(',')];
   sorted().forEach(function(s){
     var r=[s.name,s.sid,totalDone(s.node),Math.round(totalSecs(s.node)/60),s.ts?new Date(s.ts).toISOString():''];
     MODULES.forEach(function(m){var c=s.mod[m.id];r.push(c?doneCount(c):0);r.push(c?(c.total||doneCount(c)):0);r.push(c&&c.score?c.score:'');});
+    if(PROJECT){
+      var lp=projLivePct(s.node,live);
+      r.push(projPct(s.node),lp==null?'':lp,projFilled(s.node),projTotal());
+      projCounts(s.node).forEach(function(c){r.push(c.filled);r.push(c.total);});
+    }
     lines.push(r.map(csv).join(','));
   });
   var blob=new Blob([lines.join('\n')],{type:'text/csv'});
@@ -471,6 +726,13 @@ function selectCourse(id){
   COURSE=REG.courses.filter(function(c){return c.id===id;})[0];
   if(!COURSE)return;
   NS=COURSE.ns; MODULES=COURSE.modules||[];
+  PROJECT=(COURSE.project&&COURSE.project.sections&&COURSE.project.sections.length)?COURSE.project:null;
+  PJ_FIELD='';
+  $('bSortProject').style.display=PROJECT?'':'none';
+  if(SORT==='project'&&!PROJECT){
+    SORT='recent';
+    document.querySelectorAll('.sortbar .btn[data-sort]').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-sort')==='recent');});
+  }
   try{localStorage.setItem('jem_admin_last',id);}catch(e){}
   var t=REG.themes[COURSE.theme];
   applyTheme(t);
@@ -482,6 +744,7 @@ function selectCourse(id){
   $('title').innerHTML=esc(COURSE.code||COURSE.title.en)+' · <span>cohort progress</span>';
   $('hint').innerHTML='Data lives in <code>teaching-70f1c</code> under <code>'+esc(NS)+'/&lt;student&gt;</code>. '+
     'Each cell = sections completed / total for that module, or the self-check score if one was submitted; click a row for detail. '+
+    (PROJECT?'Workbook answers live under <code>'+esc(NS)+'/&lt;student&gt;/work</code> and are grouped into the assignment’s sections by the <code>project</code> block in <code>/courses.json</code>. ':'')+
     'This page is gated by a password only — the database rules are what actually protect the data.'+
     '<br><br><a class="back" href="/'+encodeURI(COURSE.dir)+'/index.html">← course hub</a>';
   var url=location.pathname+'?course='+encodeURIComponent(id);
