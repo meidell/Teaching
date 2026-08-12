@@ -58,11 +58,11 @@ window.E1410Ex = (function () {
 ".rc-opt{display:block;width:100%;text-align:left;font:600 13.5px/1.45 'Plus Jakarta Sans',Arial,sans-serif;color:#334155;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 13px;cursor:pointer;transition:.12s;}",
 ".rc-opt:hover:not(:disabled){border-color:#AB0E00;color:#0F172A;}",
 ".rc-opt:disabled{cursor:default;}",
-".rc-opt.ok{background:#DCFCE7;border-color:rgba(21,128,61,.45);color:#14532D;font-weight:800;}",
-".rc-opt.no{background:#FBEAE8;border-color:rgba(171,14,0,.4);color:#7C0A00;font-weight:800;}",
+".rc-opt.rc-ok{background:#DCFCE7;border-color:rgba(21,128,61,.45);color:#14532D;font-weight:800;}",
+".rc-opt.rc-no{background:#FBEAE8;border-color:rgba(171,14,0,.4);color:#7C0A00;font-weight:800;}",
 ".rc-opt.dim{opacity:.5;}",
 ".rc-why{font-size:13px;color:#78350F;background:#FEF3C7;border-radius:9px;padding:9px 12px;margin-top:8px;line-height:1.5;}",
-".rc-why.good{color:#14532D;background:#DCFCE7;}",
+".rc-why.rc-good{color:#14532D;background:#DCFCE7;}",
 ".rc-foot{font-size:12.5px;color:#64748B;margin-top:14px;padding-top:12px;border-top:1px solid #E2E8F0;font-style:italic;}",
 ".rc-done{display:flex;align-items:center;gap:10px;font-size:13.5px;color:#334155;padding:13px 18px;}",
 ".rc-done b{color:#0F172A;}",
@@ -85,7 +85,7 @@ window.E1410Ex = (function () {
 ".sp-line:disabled{cursor:default;}",
 ".sp-t{flex:1;}",
 ".sp-flag{flex:none;font:800 9.5px 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:.6px;text-transform:uppercase;background:#B91C1C;color:#fff;border-radius:4px;padding:2px 6px;}",
-".sp-flag.ok{background:#15803D;}",
+".sp-flag.sp-ok{background:#15803D;}",
 ".sp-why{font-size:13px;color:#334155;line-height:1.55;padding:8px 16px 12px 34px;background:#F1F5F9;}",
 ".sp-why b{color:#0F172A;}",
 ".sp-why.fine{color:#14532D;background:#F0FDF4;}",
@@ -99,7 +99,21 @@ window.E1410Ex = (function () {
 ".sp-after{font-size:13.5px;color:#334155;background:#FBEAE8;border:1px solid rgba(171,14,0,.2);border-radius:12px;padding:13px 16px;margin-top:14px;line-height:1.55;}",
 ".sp-after b{color:#7C0A00;}",
 ".sp-after a{color:#7C0A00;font-weight:800;}",
-"@media(max-width:560px){.sp{padding:16px 14px;}.sp-line{font-size:11.5px;}.sp-why{padding-left:20px;}}"
+"@media(max-width:560px){.sp{padding:16px 14px;}.sp-line{font-size:11.5px;}.sp-why{padding-left:20px;}}",
+
+/* the "take it further" strip — tools and primers, at the point in the
+   session where they are actually useful */
+".tkit{border:1px solid #E2E8F0;border-left:4px solid #AB0E00;border-radius:0 14px 14px 0;background:#F8FAFC;padding:14px 16px;margin:0 0 18px;}",
+".tkit-h{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:#AB0E00;margin-bottom:9px;}",
+".tkit-a{display:flex;gap:11px;align-items:flex-start;text-decoration:none;padding:8px 0;border-top:1px solid #E2E8F0;}",
+".tkit-a:first-of-type{border-top:none;padding-top:0;}",
+".tkit-a:last-of-type{padding-bottom:0;}",
+".tkit-i{flex:none;font-size:19px;line-height:1.2;}",
+".tkit-t{flex:1;}",
+".tkit-n{display:block;font:800 14px 'Plus Jakarta Sans',Arial,sans-serif;color:#7C0A00;letter-spacing:-.2px;}",
+".tk-a:hover .tkit-n{text-decoration:underline;}",
+".tkit-w{display:block;font:400 12.5px/1.5 'Plus Jakarta Sans',Arial,sans-serif;color:#334155;margin-top:1px;}",
+".tkit-go{flex:none;font:800 15px 'Plus Jakarta Sans',Arial,sans-serif;color:#AB0E00;align-self:center;}"
   ].join('\n');
 
   function injectCSS(){
@@ -158,15 +172,15 @@ window.E1410Ex = (function () {
         it.opts.forEach(function(o,j){
           var cls='';
           if(picked!=null){
-            if(j===it.a)cls=' ok';
-            else if(j===picked)cls=' no';
+            if(j===it.a)cls=' rc-ok';
+            else if(j===picked)cls=' rc-no';
             else cls=' dim';
           }
           h+='<button type="button" class="rc-opt'+cls+'" data-i="'+i+'" data-j="'+j+'"'+
              (picked!=null?' disabled':'')+'>'+esc(o)+'</button>';
         });
         h+='</div>';
-        if(picked!=null)h+='<div class="rc-why'+(picked===it.a?' good':'')+'">'+
+        if(picked!=null)h+='<div class="rc-why'+(picked===it.a?' rc-good':'')+'">'+
           (picked===it.a?'✓ ':'✗ ')+esc(it.why)+'</div>';
         h+='</div>';
       });
@@ -238,7 +252,7 @@ window.E1410Ex = (function () {
            ' style="padding-left:'+(14+(l.indent||0)*18)+'px">'+
            '<span class="sp-t">'+esc(l.t)+'</span>'+
            (revealed&&l.fault?'<span class="sp-flag">fault</span>':'')+
-           (revealed&&picked[i]&&!l.fault?'<span class="sp-flag ok">fine</span>':'')+
+           (revealed&&picked[i]&&!l.fault?'<span class="sp-flag sp-ok">fine</span>':'')+
            '</button>';
         if(revealed&&(l.fault||picked[i]))
           h+='<div class="sp-why'+(l.fault?'':' fine')+'">'+l.why+'</div>';
@@ -290,5 +304,25 @@ window.E1410Ex = (function () {
     paint();
   }
 
-  return { recall:recall, spot:spot };
+  /* =================================================================
+     TAKE IT FURTHER — the tool or primer that belongs to THIS section.
+
+     Pure links: no .q, no .cl-row, no data-work, no markSection. Adding
+     these to live pages cannot move anybody's progress.
+     ================================================================= */
+  function tools(cfg){
+    var host=document.getElementById(cfg.slot);
+    if(!host||!cfg.items||!cfg.items.length)return;
+    injectCSS();
+    host.innerHTML='<div class="tkit"><div class="tkit-h">'+esc(cfg.title||'Take it further')+'</div>'+
+      cfg.items.map(function(it){
+        return '<a class="tkit-a" href="'+esc(it.href)+'">'+
+          '<span class="tkit-i">'+(it.icon||'→')+'</span>'+
+          '<span class="tkit-t"><span class="tkit-n">'+esc(it.name)+'</span>'+
+          '<span class="tkit-w">'+esc(it.why)+'</span></span>'+
+          '<span class="tkit-go">›</span></a>';
+      }).join('')+'</div>';
+  }
+
+  return { recall:recall, spot:spot, tools:tools };
 })();
