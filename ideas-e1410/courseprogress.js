@@ -42,6 +42,11 @@ window.CourseProgress=(function(){
     {mod:'v3',short:'P3',name:'Primer · Accuracy, precision & recall',total:3,live:true,opt:true,href:'video-confusion-matrix.html'},
     {mod:'v4',short:'P4',name:'Primer · Sensitivity & specificity',total:2,live:true,opt:true,href:'video-sensitivity-specificity.html'},
     {mod:'v5',short:'P5',name:'Primer · The sing-a-long',total:2,live:true,opt:true,href:'video-precision-recall.html'},
+    /* The infrastructure primer is a reading primer, not a video, but it obeys
+       the same rule and for the same reason: opt:true, so it is listed and
+       ticked without entering the percentage. Its three tasks are read + find
+       the faults + self-check. */
+    {mod:'inf',short:'P6',name:'Primer · Cloud infrastructure (Azure)',total:3,live:true,opt:true,href:'primer-infrastructure.html'},
     {mod:'forum',short:'Forum',name:'Discussion forum',total:1,live:false},
     {mod:'exam',short:'Exam',name:'Final assessment',total:1,live:false}
   ];
