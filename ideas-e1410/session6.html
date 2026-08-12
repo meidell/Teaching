@@ -18,6 +18,7 @@ if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</s
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="session.css">
+<script src="answers.js"></script>
 </head>
 <body data-course="e1410">
 
@@ -737,24 +738,59 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
   var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;
   function capText(n,full){cap.textContent=n+' of '+VARS.length+' classified'+(full?' — '+doneMsg:'');}
   capText(0,false);
+  /* Every attempt is remembered — including the wrong ones, which are the
+     whole point: a wrong pick here is a named misconception, and it used to
+     be thrown away. Replaying restores the row exactly as the student left
+     it, and nothing re-records during replay. */
+  var replaying=false;
   VARS.forEach(function(v,i){
     var row=document.createElement('div');row.className='cl-row';
     var label=(v.n?'<b>'+v.n+'</b> — ':'')+v.s;
     row.innerHTML='<div class="st">'+label+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
-    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+    var pid=rowsId+'-'+i;
+    function attempt(val,btn){
       if(row.dataset.done)return;
-      if(b.dataset.v===v.a){
+      if(val===v.a){
         row.dataset.done='1';
-        row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===b)x.classList.add('ok');});
+        row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});
         var w=document.getElementById(rowsId+'w'+i);
         w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');
         done++;capText(done,done===VARS.length);
-        markStep(rowsId+'-'+i);
-        if(done===VARS.length)markSection(secId);
-      }else{b.classList.add('no');b.disabled=true;}
+        if(!replaying){markStep(pid);if(window.E1410Ans)E1410Ans.push(progress,save,pid,val);}
+        if(done===VARS.length){if(!replaying)report();markSection(secId);}
+      }else{
+        btn.classList.add('no');btn.disabled=true;
+        if(!replaying&&window.E1410Ans)E1410Ans.push(progress,save,pid,val);
+      }
+    }
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      attempt(b.dataset.v,b);
     });});
     box.appendChild(row);
+    var hist=window.E1410Ans?E1410Ans.get(progress,pid):null;
+    if(hist&&hist.length){
+      replaying=true;
+      hist.forEach(function(val){
+        var btn=null;
+        row.querySelectorAll('button').forEach(function(x){if(x.getAttribute('data-v')===val)btn=x;});
+        if(btn)attempt(val,btn);
+      });
+      replaying=false;
+    }
   });
+  /* Which items misled people, with the scenario text, so the instructor
+     view can show what tripped them rather than an index. */
+  function report(){
+    if(!window.E1410Ans)return;
+    var byItem={},wrong=0;
+    VARS.forEach(function(v,i){
+      var h=E1410Ans.get(progress,rowsId+'-'+i)||[];
+      var n=0;
+      h.forEach(function(x){if(x!==v.a)n++;});
+      if(n){wrong+=n;byItem[i]={n:n,s:String(v.s||'').replace(/<[^>]*>/g,'').slice(0,120)};}
+    });
+    E1410Ans.cls(KEY.split('_')[1],rowsId,{n:VARS.length,wrong:wrong,byItem:byItem,cap:capId});
+  }
 }
 
 /* ---- 6.2 KPI categories ---- */
@@ -851,25 +887,41 @@ buildClassify('caseRows','caseCap',
       res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
   var answered=0,correct=0;
   chip.textContent='0 / '+QUIZ.length+' answered';
+  /* Answers are remembered and replayed on the next visit — the unlocked
+     explanations are the revision material, and losing them on reload was
+     the wrong behaviour before an exam. Picks live in progress.picks,
+     additive to the same blob as progress.steps, so the bar is unchanged.
+     A replayed answer never re-sends: the FIRST attempt is the one the
+     dashboards see. */
+  var replaying=false, replayQ=[];
   QUIZ.forEach(function(item,i){
     var q=document.createElement('div');q.className='q';
     q.innerHTML='<div class="qt"><span class="qn">'+(i+1)+'.</span>'+item.q+'</div>'+
       item.opts.map(function(o,j){return '<button class="opt" data-j="'+j+'">'+o+'</button>';}).join('')+
       '<div class="why" id="qw'+i+'"></div>';
-    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){
+    function apply(j){
       if(q.dataset.done)return;q.dataset.done='1';
-      var j=parseInt(b.dataset.j,10),ok=j===item.a;
-      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(x===b)x.classList.add('wrong');});
+      var ok=j===item.a;
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(xj===j)x.classList.add('wrong');});
       document.getElementById('qw'+i).innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;
       document.getElementById('qw'+i).classList.add('show');
       answered++;if(ok)correct++;
-      if(window.StatsTrack&&StatsTrack.quizAnswer)StatsTrack.quizAnswer(i,j,ok);
-      markStep('q'+i);
+      if(!replaying){
+        if(window.E1410Ans)E1410Ans.set(progress,save,'q'+i,j);
+        if(window.StatsTrack&&StatsTrack.quizAnswer)StatsTrack.quizAnswer(i,j,ok);
+        markStep('q'+i);
+      }
       chip.textContent=answered+' / '+QUIZ.length+' answered';
       if(answered===QUIZ.length)finish();
+    }
+    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){
+      apply(parseInt(b.dataset.j,10));
     });});
     box.appendChild(q);
+    var saved=window.E1410Ans?E1410Ans.get(progress,'q'+i):null;
+    if(saved!=null)replayQ.push(function(){apply(saved);});
   });
+  replaying=true;replayQ.forEach(function(fn){fn();});replaying=false;
   function finish(){
     scoreEl.textContent=correct+' / '+QUIZ.length;
     msgEl.textContent = correct>=9 ? 'Excellent — that is the full lifecycle. On to the case workshop.'
@@ -877,7 +929,7 @@ buildClassify('caseRows','caseCap',
       : 'Worth a second pass: reread sections 6.2–6.5, then try again.';
     res.classList.add('show');
     markSection('s6');
-    if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);
+    if(!replaying&&window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);
   }
 })();
 

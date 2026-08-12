@@ -74,7 +74,10 @@ section > .sub{font-size:13px;color:var(--grey);margin-bottom:16px;max-width:80c
 .row .lab{font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .row .lab small{display:block;font-weight:600;color:var(--grey);font-size:11px;}
 .row .track{background:var(--wash);border-radius:5px;height:18px;overflow:hidden;position:relative;}
-.row .fill{height:100%;border-radius:0 4px 4px 0;transition:width .4s;}
+/* display:block matters — .fill is a span inside .track, so it is NOT a grid
+   item and stays inline unless told otherwise, which silently discards its
+   width and height and leaves every bar empty. */
+.row .fill{display:block;height:100%;border-radius:0 4px 4px 0;transition:width .4s;}
 .row .fill.g{background:var(--good);} .row .fill.w{background:var(--warn);} .row .fill.b{background:var(--bad);}
 .row .val{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;font-size:12.5px;}
 @media(max-width:560px){.row{grid-template-columns:minmax(90px,1fr) 1fr auto;font-size:12px;}}
@@ -136,6 +139,12 @@ table.fields tr.low td{background:var(--bad-l);}
     <h2>Stall points — the section where people stop</h2>
     <div class="sub">Within each module, the share of students who started it and completed each section. The first sharp drop is where the page loses them. Section ids are as recorded by the page itself.</div>
     <div id="stalls"></div>
+  </section>
+
+  <section id="clsSection" style="display:none;">
+    <h2>Exercises that mislead people</h2>
+    <div class="sub">From the in-session “try it” classifiers. A wrong pick here is a named misconception, not a score — these are the items where students reached for the wrong answer first, ranked by how many of them did.</div>
+    <div id="clsList"></div>
   </section>
 
   <section>
@@ -234,6 +243,39 @@ function analyseSections(modStats){
   }).filter(function(x){ return x.secs.length>1; });
 }
 
+/* In-session classifier attempts, written by ideas-e1410/answers.js to
+   mod/<m>/cls/<group> = {n, wrong, byItem:{i:{n,s}}, cap}. Only items a
+   student got wrong appear, each carrying its own scenario text — so this
+   can show what actually misled them rather than an index. Any course whose
+   pages do not write cls simply produces nothing and the panel hides. */
+function analyseClassify(){
+  var item={}, groupDone={};
+  STUDENTS.forEach(function(s){
+    for(var m in s.mod){
+      var cls=s.mod[m]&&s.mod[m].cls; if(!cls)continue;
+      for(var g in cls){
+        var node=cls[g]; if(!node)continue;
+        groupDone[m+'|'+g]=(groupDone[m+'|'+g]||0)+1;
+        var by=node.byItem||{};
+        for(var i in by){
+          var it=by[i]||{}, k=m+'|'+g+'|'+i;
+          if(!item[k])item[k]={mod:m,group:g,i:i,text:'',students:0,attempts:0};
+          item[k].students++;
+          item[k].attempts+=(+it.n||1);
+          if(it.s&&!item[k].text)item[k].text=it.s;
+        }
+      }
+    }
+  });
+  var rows=Object.keys(item).map(function(k){
+    var r=item[k]; r.of=groupDone[r.mod+'|'+r.group]||0;
+    r.rate=r.of?r.students/r.of:0;
+    return r;
+  });
+  rows.sort(function(a,b){ return b.students-a.students || b.attempts-a.attempts; });
+  return rows;
+}
+
 function analyseFields(){
   if(!PROJECT||!PROJECT.sections) return null;
   var all=[];
@@ -264,6 +306,7 @@ function render(){
   var modStats=analyseModules();
   var stalls=analyseSections(modStats);
   var fields=analyseFields();
+  var mislead=analyseClassify();
 
   var everStarted=STUDENTS.filter(function(s){ return s.mod && Object.keys(s.mod).length; });
   var totMin=STUDENTS.reduce(function(a,s){
@@ -315,11 +358,28 @@ function render(){
       '<p class="sub" style="margin-top:10px;">Of '+fields.active+' students who have answered anything at all. Showing the 18 least-answered fields.</p>';
   }
 
-  renderActions(modStats,stalls,fields);
+  /* ---- exercises that mislead ---- */
+  if(!mislead.length) $('clsSection').style.display='none';
+  else{
+    $('clsSection').style.display='';
+    $('clsList').innerHTML=mislead.slice(0,10).map(function(r){
+      return '<div class="row"><span class="lab">'+esc(r.text||(r.group+' · item '+r.i))+
+        '<small>'+esc(r.mod)+' · '+esc(r.group)+'</small></span>'+
+        '<span class="track"><span class="fill '+(r.rate>=.5?'b':r.rate>=.25?'w':'g')+'" style="width:'+Math.round(r.rate*100)+'%"></span></span>'+
+        '<span class="val">'+r.students+'/'+r.of+' got it wrong</span></div>';
+    }).join('');
+  }
+
+  renderActions(modStats,stalls,fields,mislead);
 }
 
-function renderActions(modStats,stalls,fields){
+function renderActions(modStats,stalls,fields,mislead){
   var A=[];
+
+  if(mislead&&mislead.length&&mislead[0].of>=3&&mislead[0].rate>=0.5)
+    A.push('<b>'+mislead[0].students+' of '+mislead[0].of+' reached for the wrong answer on this one:</b> “'+
+      esc(String(mislead[0].text).slice(0,130))+'”'+
+      '<span class="why">In '+esc(mislead[0].mod)+'. When half the cohort picks wrong first, the item is either genuinely counter-intuitive — worth 60 seconds live — or the wording is doing it.</span>');
 
   var worstStall=null;
   stalls.forEach(function(st){ if(st.worst && (!worstStall || st.worst.drop>worstStall.worst.drop)) worstStall=st; });

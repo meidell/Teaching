@@ -165,6 +165,31 @@ plus `<sid>/work/<id> = {v,label,mod,ts}`), so the dashboard picks them up with 
 change — but they do it themselves rather than loading `progress.js`, because they are
 standalone like `compile.html` and must not depend on its init order.
 
+### Remembering what students chose — `answers.js`
+
+Three different things used to happen to an answer. Workbook fields were saved
+and restored. The **quiz** sent the pick to `mod/<m>/quiz/q<i>` (which is what
+feeds the dashboards' per-question stats) but stored only a boolean locally, so
+a reload showed a blank quiz and every unlocked explanation was gone. The
+**"try it" classifiers** saved *nothing* — a wrong pick disabled one button and
+the attempt was discarded.
+
+`answers.js` adds the missing half: picks are kept in **`progress.picks`**, a
+new key inside the same localStorage blob, and replayed on the next visit.
+`progress.steps` is untouched, no DOM is added and `SECTIONS` is unchanged, so
+`totalSteps()` / `doneSteps()` and both progress bars behave exactly as before —
+verified at runtime (session 3: `.q`=10, `.cl-row`=24, `data-work`=7, bar 7%).
+
+Two rules worth keeping:
+
+- **First attempt wins.** A replayed answer never re-sends to the database.
+  Before this, a reload let a student answer again and overwrite their own
+  record, so the dashboards showed the *latest* attempt.
+- **Classifier attempts go to `mod/<m>/cls/<group>`, not to `work/`.** They are
+  not assignment work and must not land in the graded workbook. Each wrong item
+  carries its own scenario text, so `/shared/insights.html` can show what
+  actually misled people instead of an index.
+
 ### Exercises inside the sessions — `exercises.js`
 
 Two widgets, added to the live session pages: a **retrieval opener** (two
