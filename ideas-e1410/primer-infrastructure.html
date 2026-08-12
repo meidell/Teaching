@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/ideas-e1410/">
+<script src="gate.js"></script>
+<script>/* course gate: registered students only — see join.html */
+(function(){if(!window.E1410_ACCESS)return;function g(k){try{var m=document.cookie.match('(?:^|; )'+k+'=([^;]*)');return m?decodeURIComponent(m[1]):'';}catch(e){return'';}}
+var a=null;try{a=JSON.parse(localStorage.getItem('e1410_auth')||'null');}catch(e){}
+if(!a){var c=g('e1410_auth');if(c){try{a=JSON.parse(c);}catch(e){}}}
+if(!a||!a.sid){location.replace('join.html');}else{window.E1410_AUTH=a;}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Primer · Cloud infrastructure, in Azure terms · E1410</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#AB0E00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☁️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="research.css">
+<style>
+/* Page-local: the layouts that are genuinely unique to this primer —
+   the service tables, the layer stack and the architecture flow. */
+.dtbl{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0 4px;}
+.dtbl th{text-align:left;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--red);
+  font-weight:800;padding:0 10px 8px;border-bottom:1px solid var(--line);}
+.dtbl td{padding:10px;border-bottom:1px solid var(--line);color:var(--ink-soft);vertical-align:top;line-height:1.5;}
+.dtbl td:first-child{font-weight:700;color:var(--ink);white-space:nowrap;}
+.dtbl tr:last-child td{border-bottom:none;}
+.dtblwrap{overflow-x:auto;}
+@media(max-width:640px){.dtbl{min-width:560px;}}
+
+.svc{border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px;background:var(--paper);}
+.svc h4{font-size:15.5px;margin-bottom:3px;color:var(--ink);}
+.svc .what{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;font-weight:800;color:var(--red);margin-bottom:7px;}
+.svc p{font-size:13.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.6;}
+.svc p:last-child{margin-bottom:0;}
+.svc .ask{font-size:13px;color:var(--ink);background:var(--white);border-left:3px solid var(--red);
+  border-radius:0 8px 8px 0;padding:9px 12px;margin-top:9px;}
+.svc .ask b{color:var(--red-deep);}
+
+.stack{display:flex;flex-direction:column;gap:6px;margin:12px 0;}
+.stack .lyr{display:grid;grid-template-columns:132px 1fr;gap:12px;align-items:center;
+  border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:var(--paper);font-size:13px;}
+.stack .lyr b{color:var(--red-deep);font-size:12px;letter-spacing:.4px;text-transform:uppercase;}
+.stack .lyr span{color:var(--ink-soft);line-height:1.5;}
+@media(max-width:560px){.stack .lyr{grid-template-columns:1fr;gap:3px;}}
+
+.flow{counter-reset:fl;margin:12px 0;}
+.flow .st{display:grid;grid-template-columns:26px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line);}
+.flow .st:first-child{border-top:none;}
+.flow .st::before{counter-increment:fl;content:counter(fl);width:22px;height:22px;border-radius:7px;
+  background:var(--red-pale);color:var(--red-deep);font-size:11.5px;font-weight:800;display:grid;place-items:center;margin-top:2px;}
+.flow .st h5{font-size:14px;margin-bottom:2px;color:var(--ink);}
+.flow .st p{font-size:13px;color:var(--ink-soft);line-height:1.55;}
+.flow .st code{background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px;}
+
+.warnbox{background:#FEF3C7;border:1px solid rgba(180,83,9,.28);border-radius:12px;padding:14px 16px;
+  font-size:13.5px;color:#78350F;margin:14px 0;line-height:1.6;}
+.warnbox b{color:#7C2D12;}
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;}
+.gloss div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper);font-size:13px;color:var(--ink-soft);line-height:1.5;}
+.gloss b{color:var(--ink);display:block;font-size:13px;}
+.readbtn{background:var(--red);color:#fff;border:none;border-radius:30px;padding:11px 22px;
+  font:800 14px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;}
+.readbtn:hover{background:var(--red-deep);}
+.readbtn:disabled{background:#94A3B8;cursor:default;}
+</style>
+</head>
+<body data-course="e1410">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="logo-ideas.png" alt="IDEAS">
+    <span class="course">E1410 · INFRASTRUCTURE PRIMER</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">✕ Course</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This primer</span><div class="prog"><div class="progf" id="progf"></div></div><span class="tp" id="vidPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kd">Foundations · infrastructure primer</div>
+    <h1>Where the model actually <em>runs</em></h1>
+    <p class="sub">Session 3 asks you to choose an infrastructure and say why. This is the detail behind that answer — what the cloud actually is, which services an AI project genuinely touches, what each one costs you, and the five decisions that are yours rather than your engineers'. Written against <b>Microsoft Azure</b>, because it is what most of your organisations run; the last section maps every concept onto AWS and Google Cloud.</p>
+  </div>
+
+  <div class="meta">
+    <div class="mrow"><b>Format</b><span>Reading primer — no video. About 25 minutes.</span></div>
+    <div class="mrow"><b>Assumes</b><span>Nothing technical. If you have never opened a cloud console, start here.</span></div>
+    <div class="mrow"><b>Lands in</b><span>Session 3 · infrastructure &amp; budget · Session 4 · compliance · Session 6 · monitoring</span></div>
+    <div class="mrow"><b>Counts?</b><span>Optional. Ticked when done, never counted against you.</span></div>
+  </div>
+
+  <div class="warnbox">
+    <b>Read this first.</b> Cloud vendors rename things and re-price them constantly — Azure Active Directory became <b>Microsoft Entra ID</b>, the ML tooling has been folded into <b>Azure AI Foundry</b>, and every price below is deliberately expressed as a <em>relationship</em> rather than a number. The concepts here are stable and will outlast the names. <b>Never quote a figure from a course page in a real business case</b> — get it from the current Azure pricing calculator, in your region, on the day.
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">1 · What "the cloud" actually is</div>
+
+  <div class="card">
+    <h3>Someone else's datacentre, rented by the second, with an API in front of it</h3>
+    <p>That is the whole idea. What makes it different from renting a server in 2005 is that the unit is small and the wait is gone: you ask for eight GPUs at 09:14 and they exist at 09:15, and when you release them the billing stops. Everything else — the service names, the portal, the certifications — is packaging around that.</p>
+    <p>Three words do most of the work, and getting them wrong is what puts projects in front of a legal team:</p>
+    <div class="stack">
+      <div class="lyr"><b>Region</b><span>A cluster of datacentres in one geography — <em>West Europe</em>, <em>Sweden Central</em>, <em>Southeast Asia</em>. <b>This is where your data physically sits, and therefore whose law applies to it.</b> Not every service exists in every region, and GPU capacity in particular is regional and often scarce.</span></div>
+      <div class="lyr"><b>Availability zone</b><span>Physically separate buildings within one region, with independent power, cooling and network. Spreading across zones survives a building failure. It costs a little more and is invisible until the day it isn't.</span></div>
+      <div class="lyr"><b>Region pair</b><span>Azure pairs each region with another for disaster recovery, usually in the same geography. Relevant when someone asks what happens if West Europe goes down.</span></div>
+    </div>
+    <p>And four words describe how everything is organised — this hierarchy is the one thing a project manager should genuinely memorise, because it is the map of who can spend money and who can see data:</p>
+    <div class="stack">
+      <div class="lyr"><b>Tenant</b><span>Your organisation's identity boundary, run by Microsoft Entra ID. One tenant, everyone's logins.</span></div>
+      <div class="lyr"><b>Management group</b><span>A folder of subscriptions, used to apply policy centrally ("no resource may be created outside the EU").</span></div>
+      <div class="lyr"><b>Subscription</b><span><b>The billing boundary.</b> One invoice, one set of quotas. Ask early whether your project gets its own — sharing one with three other teams is how cost attribution dies.</span></div>
+      <div class="lyr"><b>Resource group</b><span><b>The lifecycle boundary.</b> A container for things that live and die together. Delete the group, everything in it goes. This is your exit plan, and it should exist on day one.</span></div>
+    </div>
+    <div class="onproj"><b>On your project →</b> If you take one action from this section: find out which subscription your project bills to, whether it is shared, and what tag identifies your spend on it. If nobody can answer, your budget is not being tracked — it is being averaged.</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">2 · The services an AI project actually touches</div>
+
+  <div class="card">
+    <p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:4px;">Azure has several hundred services. An AI project of the kind you are planning touches roughly ten. Here they are in the order the data moves, each with what it does, what it replaces, and <b>the question you should ask about it</b> — which is a different question from the one your engineers are asking.</p>
+  </div>
+
+  <div class="svc">
+    <div class="what">Store it</div>
+    <h4>Azure Blob Storage &amp; Data Lake Storage Gen2</h4>
+    <p>Object storage: a effectively unlimited bucket you put files in, priced per gigabyte-month plus a small charge per operation. <b>Data Lake Storage Gen2</b> is the same service with a <em>hierarchical namespace</em> turned on — real folders rather than a flat list of names — which makes analytics engines dramatically faster and is what you want for a data lake.</p>
+    <p>Storage has <b>access tiers</b>: hot (frequent reads, highest storage price, cheapest access), cool, cold, and archive (pennies to store, hours to retrieve and a per-gigabyte retrieval charge). Lifecycle rules move data down the tiers automatically as it ages.</p>
+    <p>The convention worth adopting is a <b>medallion layout</b>: a <em>raw</em> zone that is never edited, a <em>curated</em> zone of cleaned and conformed data, and a <em>serving</em> zone of the specific tables consumers read. Keeping raw immutable is what lets you re-derive everything when a business rule turns out to be wrong.</p>
+    <div class="ask"><b>Ask:</b> which tier is our training data in, and does anything move it to archive automatically? A retrieval charge on a lake somebody tiered down is a classic surprise invoice.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Move and shape it</div>
+    <h4>Azure Data Factory · Event Hubs · Databricks</h4>
+    <p><b>Data Factory</b> is the orchestrator: pipelines that copy from a source, transform, and land the result on a schedule or a trigger, with a large library of pre-built connectors to databases and SaaS systems. It is the ETL/ELT workhorse and the thing that breaks when an upstream schema changes.</p>
+    <p><b>Event Hubs</b> is the streaming front door — a large, ordered buffer that accepts millions of events and lets consumers read at their own pace. It speaks the Kafka protocol, so a team with Kafka experience is not starting over. Use it when the decision is genuinely real-time; a nightly batch is simpler and adequate far more often than people admit.</p>
+    <p><b>Azure Databricks</b> is managed Spark: distributed transformation and feature engineering over data too large for one machine, plus notebooks your data scientists will probably want anyway. It is a first-party service on Azure but a separate product with its own billing unit on top of the VMs.</p>
+    <div class="ask"><b>Ask:</b> what happens to the pipeline when a source system changes a column? If the answer is "it fails and someone notices", you have found the risk for your register — and its early-warning trigger.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Analyse it</div>
+    <h4>Synapse Analytics · Microsoft Fabric</h4>
+    <p>The warehouse layer, where modelled data is queried with SQL by analysts and BI tools. <b>Synapse</b> is the established product; <b>Microsoft Fabric</b> is the newer consolidation — one storage foundation called <b>OneLake</b> with warehousing, engineering, real-time and Power BI on top, sold as capacity units rather than per-service.</p>
+    <p>For most AI projects this layer matters less than people expect. Models usually train from files in the lake, not from the warehouse. Where it does matter is the <em>business</em> side of monitoring: the KPI that proves the model was worth building normally lives here, not in the ML tooling.</p>
+    <div class="ask"><b>Ask:</b> where will the business metric be computed, and by whom? If the answer is "the data team, eventually", your Session 6 monitoring plan has no business KPI in it.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Train the model</div>
+    <h4>Azure Machine Learning</h4>
+    <p>The workbench. An AzureML <b>workspace</b> holds your datasets, experiments, models and endpoints. Two kinds of compute matter and confusing them is expensive:</p>
+    <p><b>Compute instance</b> — a single personal VM for development, attached to one person's notebook. It bills whenever it is running, including overnight, including while its owner is on holiday. Auto-shutdown is a setting, not a default habit.<br>
+    <b>Compute cluster</b> — a pool for training jobs that autoscales between a minimum and a maximum node count. <b>Set the minimum to zero.</b> The cluster then spins up for a job and disappears afterwards, and the difference between a minimum of zero and a minimum of four is the single largest avoidable line in most AI infrastructure budgets.</p>
+    <p>GPU families are named by purpose: <b>NC</b>-series for general compute and training, <b>ND</b>-series for large distributed deep learning with the fast interconnect that multi-node training needs, <b>NV</b>-series for visualisation and inference. Bigger is not automatically better — a model that fits comfortably on a mid-range GPU trains no faster on a flagship one, it just costs more per hour.</p>
+    <p><b>Spot (low-priority) capacity</b> gives a steep discount on the same hardware in exchange for the right to reclaim it at short notice. For training with checkpointing it is close to free money; for serving a live endpoint it is unusable. Experiment tracking is <b>MLflow</b>-compatible, so runs, parameters and metrics are recorded in a standard format rather than a proprietary one.</p>
+    <div class="ask"><b>Ask:</b> what is the minimum node count on the training cluster, and is auto-shutdown on for every compute instance? Two settings, and together they are frequently a five-figure annual difference.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Serve the predictions</div>
+    <h4>Managed endpoints · AKS · Container Apps</h4>
+    <p>A trained model is a file. Serving is what turns it into something a business system can call. AzureML offers <b>managed online endpoints</b> — an HTTPS address, autoscaling, authentication and logging handled for you — and <b>batch endpoints</b> for scoring large files on a schedule, which is what most projects actually need and far cheaper than a live endpoint nobody calls at night.</p>
+    <p>Online endpoints support a <b>traffic split</b> across deployments: send 10% of live requests to the new model, watch it, then shift the rest. That is a canary release, and it is the concrete implementation of the validation gate from Session 6 — the thing whose absence makes roughly one retrain in five ship a worse model into production.</p>
+    <p><b>Azure Kubernetes Service</b> gives full control and full operational burden. It is the right answer for a platform team running many models with hard latency requirements, and the wrong answer for a first project scoring forty thousand claims a day — that is a managed endpoint, and choosing Kubernetes for it buys months of work and an on-call rota you did not budget.</p>
+    <div class="ask"><b>Ask:</b> does this decision need to be real-time at all? Batch scoring overnight is cheaper, simpler and enough for a surprising share of the projects that are specified as real-time.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">If you are using foundation models</div>
+    <h4>Azure OpenAI Service &amp; Azure AI Foundry</h4>
+    <p>Access to large language and multimodal models inside your own Azure tenant, with your network and compliance boundary around them, rather than through a public consumer API. Two purchasing shapes: <b>pay-as-you-go per token</b>, which is elastic and unpredictable, and <b>provisioned throughput</b>, where you reserve dedicated capacity for a fixed monthly price and get consistent latency. Pilots want the first; anything with a latency commitment eventually wants the second.</p>
+    <p>Most enterprise use is <b>retrieval-augmented generation</b>: your documents are indexed — commonly in <b>Azure AI Search</b> — and relevant passages are passed to the model with the question, so answers are grounded in your content rather than the model's memory. The hard part is almost never the model; it is the quality and permissions of what you retrieve. If a document is in the index, everyone who can query the index can effectively read it.</p>
+    <div class="ask"><b>Ask:</b> whose documents are in the index, and does the retrieval respect the same permissions as the source system? This is the most common serious finding in enterprise GenAI reviews.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Ship it repeatably</div>
+    <h4>MLOps — pipelines, registry, infrastructure as code</h4>
+    <p>AzureML <b>pipelines</b> chain the steps — prepare, train, evaluate, register — so a retrain is one reproducible run rather than someone's afternoon. The <b>model registry</b> versions models with the data and code that produced them, which is what makes "why did it decide that in March?" answerable. <b>Azure DevOps</b> or <b>GitHub Actions</b> automate the promotion from test to production, and <b>Bicep</b> or <b>Terraform</b> define the infrastructure itself as files in a repository.</p>
+    <p>The project-management point: infrastructure as code is what makes a second environment cheap. If building a staging environment is a two-week manual exercise, nobody will build one, and every test will happen in production.</p>
+    <div class="ask"><b>Ask:</b> can we rebuild this whole environment from a repository? The answer determines whether your disaster recovery plan is real or aspirational.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Control who sees what</div>
+    <h4>Entra ID · managed identities · Key Vault · Private Link</h4>
+    <p><b>Microsoft Entra ID</b> (the service formerly called Azure Active Directory) is identity. <b>RBAC</b> grants roles on a scope — this group can read this storage account. A <b>managed identity</b> gives a service its own identity so that code authenticates as itself, with <b>no password or key anywhere in the source</b>. <b>Key Vault</b> holds the secrets that genuinely must exist. <b>Private Endpoints</b> put a service on your private network so it is unreachable from the public internet at all.</p>
+    <p>This is the section that arrives late and hurts. Security review typically appears in month five of a six-month project, discovers that everything talks over public endpoints with shared keys, and the remediation is not a configuration change but an architecture change. Put it in the WBS in week one, as a work package, with the security team named as its owner.</p>
+    <div class="ask"><b>Ask:</b> are we using managed identities or access keys? "Keys, for now" is a real answer, and it is also a dated commitment you should hold someone to.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Know when it breaks</div>
+    <h4>Azure Monitor · Log Analytics · Application Insights</h4>
+    <p><b>Azure Monitor</b> collects metrics and logs from everything; <b>Log Analytics</b> is where you query them; <b>Application Insights</b> instruments the application itself — latency percentiles, failure rates, dependency calls. Alert rules fire on thresholds and route to a person, a ticket or a channel. AzureML adds model-specific monitoring for data drift and prediction drift on top.</p>
+    <p>Two things to insist on, both from Session 6: an alert must have <b>a named recipient and a required action</b>, or it is a notification; and the metrics must be computed <b>per segment</b>, not only in aggregate, or a model failing badly for one customer group stays invisible behind a healthy average.</p>
+    <div class="ask"><b>Ask:</b> who is paged at 02:00, and what are they expected to do? If nobody can answer, monitoring exists on paper only.</div>
+  </div>
+
+  <div class="svc">
+    <div class="what">Keep the bill honest</div>
+    <h4>Tags · budgets · reservations · Azure Policy</h4>
+    <p><b>Tags</b> are key-value labels on every resource, and they are the only reason anyone can later answer "what did this project cost?". Agree the tag scheme before the first resource exists. <b>Budgets</b> in Cost Management raise an alert at a threshold — they do not stop spending, which surprises people. <b>Azure Policy</b> does enforce: it can refuse to create a resource outside an approved region or without required tags.</p>
+    <p>On purchasing: pay-as-you-go is the flexible default; <b>reservations</b> and <b>savings plans</b> trade a one- or three-year commitment for a substantial discount on predictable baseline load; <b>spot</b> capacity is the deep discount for interruptible work. A sensible shape is spot for training, pay-as-you-go while the load is unknown, and a reservation once a year of production has shown you the floor.</p>
+    <div class="ask"><b>Ask:</b> what tag identifies our project, and is there a budget alert on it? Both take ten minutes at the start and are effectively impossible to retrofit.</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">3 · The five decisions that are actually yours</div>
+  <div class="card">
+    <p>Your engineers will choose the SKUs. These five are project decisions with legal, financial and schedule consequences, and they are routinely made by default because nobody realised they were decisions.</p>
+    <div class="dtblwrap"><table class="dtbl">
+      <thead><tr><th>Decision</th><th>Why it is yours</th><th>What goes wrong</th></tr></thead>
+      <tbody>
+        <tr><td>Region</td><td>Determines whose law governs the data, what latency users see, and whether the GPUs you need even exist there.</td><td>Chosen for GPU availability, discovered by legal in month five. Moving a populated data lake between regions is a project, not a task.</td></tr>
+        <tr><td>Network isolation</td><td>Public endpoints with keys, or private networking with managed identities. It is an architecture choice, not a setting.</td><td>Deferred to "hardening later". Security review then rejects it and the remediation lands on the critical path.</td></tr>
+        <tr><td>Environments</td><td>How many, and can they be rebuilt from code. Determines whether testing is real.</td><td>One environment. Every change is tested in production, and the first bad retrain is discovered by users.</td></tr>
+        <tr><td>Purchasing model</td><td>Spot, pay-as-you-go, reservation. A commercial commitment, so it is signed by someone in your governance chain.</td><td>Three-year reservation bought before the workload is understood, or on-demand pricing for training that could have run on spot.</td></tr>
+        <tr><td>Exit</td><td>What happens to data, models and pipelines if this stops — and what it costs to take them elsewhere.</td><td>Never considered. Egress charges and re-platforming turn a cancellation into a second project.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="onproj"><b>On your project →</b> Session 3's workbook asks for your infrastructure choice and the deciding constraint. The deciding constraint is almost always one of these five — and naming which one is what turns "cloud, single provider" into an answer that survives a challenge.</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">4 · How the money actually works</div>
+  <div class="card">
+    <h3>Six meters, and which one dominates</h3>
+    <p>Every Azure charge is one of a small number of shapes. Knowing which shape a service bills in tells you what makes the bill move.</p>
+    <div class="dtblwrap"><table class="dtbl">
+      <thead><tr><th>Meter</th><th>Applies to</th><th>What makes it move</th></tr></thead>
+      <tbody>
+        <tr><td>Per GB-month</td><td>Storage</td><td>Volume × tier. Almost always small, and almost always the thing people worry about.</td></tr>
+        <tr><td>Per operation</td><td>Storage reads/writes, API calls</td><td>Millions of tiny files. A badly-shaped lake can cost more in transactions than in storage.</td></tr>
+        <tr><td>Per vCPU / GPU-hour</td><td>VMs, clusters, endpoints</td><td><b>Wall-clock time, not useful work.</b> An idle GPU bills identically to a busy one.</td></tr>
+        <tr><td>Per GB egress</td><td>Data leaving the region or the cloud</td><td>Other teams wanting copies. Ingress is free; leaving is not.</td></tr>
+        <tr><td>Per token</td><td>Foundation models</td><td>Prompt length × traffic. Long retrieved context multiplies quietly.</td></tr>
+        <tr><td>Per capacity unit</td><td>Fabric, provisioned throughput</td><td>A fixed monthly floor whether or not anyone uses it.</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:12px;">The pattern from Session 3 holds on every real budget I have seen: <b>people dominate, compute is second, storage is a rounding error</b>, and the line nobody planned for is either labelling or egress. The counter-intuitive one is utilisation — because you pay for wall-clock hours, a data pipeline too slow to keep the GPU fed arrives on the finance report as a compute problem, and gets "solved" by buying a bigger GPU that then idles more expensively.</p>
+    <div class="onproj"><b>Put numbers on it →</b> The <a href="cost-model.html">cost model</a> implements exactly this. Set the accelerator, the utilisation and the pricing mode, and it shows which line dominates <em>your</em> project and what it costs to be wrong about it.</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">5 · A worked architecture</div>
+  <div class="card">
+    <h3>MekongPay fraud triage, end to end</h3>
+    <p>The case from the sessions, as it would actually be built. Nothing here is exotic; this shape covers a large share of enterprise AI projects.</p>
+    <div class="flow">
+      <div class="st"><div><h5>Transactions arrive</h5><p>The core banking system publishes to <code>Event Hubs</code>. Ordered, buffered, replayable — if the downstream breaks for an hour, nothing is lost.</p></div></div>
+      <div class="st"><div><h5>Land raw, immutably</h5><p>A stream job writes to the <code>raw</code> zone of <code>Data Lake Storage Gen2</code>, partitioned by date, never edited. A lifecycle rule tiers anything over 180 days to cool.</p></div></div>
+      <div class="st"><div><h5>Clean and conform</h5><p><code>Data Factory</code> orchestrates; <code>Databricks</code> does the heavy joins and feature engineering, writing the <code>curated</code> zone. Data quality tests run here and fail the pipeline loudly rather than passing bad data on.</p></div></div>
+      <div class="st"><div><h5>Train</h5><p>An <code>AzureML</code> pipeline pulls a versioned dataset onto a GPU <b>compute cluster with minimum nodes zero, on spot capacity</b>, tracks runs in MLflow, and registers the winning model with the exact data version that produced it.</p></div></div>
+      <div class="st"><div><h5>Gate</h5><p>Offline evaluation against a held-out period, then deployment to a <b>managed online endpoint taking 10% of traffic</b>. Promotion to 100% is a decision, not an automatic consequence of a better offline score.</p></div></div>
+      <div class="st"><div><h5>Serve and integrate</h5><p>The case-management system calls the endpoint through <code>API Management</code>. Authentication by managed identity; no keys in application code.</p></div></div>
+      <div class="st"><div><h5>Watch</h5><p><code>Application Insights</code> for latency and errors, AzureML monitoring for data and prediction drift, <b>segmented by region and merchant category</b>. Alerts route to a named on-call engineer with a documented action.</p></div></div>
+      <div class="st"><div><h5>Contain and account</h5><p>Everything in one resource group, tagged to the project, inside a subscription with a budget alert. Private endpoints throughout. The exit plan is: delete the resource group.</p></div></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">6 · Find what is wrong with this one</div>
+  <div class="card">
+    <p style="font-size:13.5px;color:var(--ink-soft);">A real architecture review, in miniature. Four of these lines would fail a security or finance review — and each maps to something above.</p>
+  </div>
+  <div id="spotSlot"></div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">7 · The same ideas on the other two clouds</div>
+  <div class="card">
+    <p>Most of your students' organisations are on Azure; some are not, and several are on more than one. The vocabulary changes, the concepts do not — so if your project runs on AWS or Google Cloud, read the row, not the column.</p>
+    <div class="dtblwrap"><table class="dtbl">
+      <thead><tr><th>The job</th><th>Azure</th><th>AWS</th><th>Google Cloud</th></tr></thead>
+      <tbody>
+        <tr><td>Object storage</td><td>Blob / ADLS Gen2</td><td>S3</td><td>Cloud Storage</td></tr>
+        <tr><td>Pipeline orchestration</td><td>Data Factory</td><td>Glue, Step Functions</td><td>Dataflow, Cloud Composer</td></tr>
+        <tr><td>Streaming</td><td>Event Hubs</td><td>Kinesis, MSK</td><td>Pub/Sub</td></tr>
+        <tr><td>Warehouse</td><td>Synapse, Fabric</td><td>Redshift</td><td>BigQuery</td></tr>
+        <tr><td>ML platform</td><td>Azure Machine Learning</td><td>SageMaker</td><td>Vertex AI</td></tr>
+        <tr><td>Managed Kubernetes</td><td>AKS</td><td>EKS</td><td>GKE</td></tr>
+        <tr><td>Identity &amp; access</td><td>Entra ID + RBAC</td><td>IAM</td><td>Cloud IAM</td></tr>
+        <tr><td>Secrets</td><td>Key Vault</td><td>Secrets Manager, KMS</td><td>Secret Manager</td></tr>
+        <tr><td>Monitoring</td><td>Azure Monitor</td><td>CloudWatch</td><td>Cloud Monitoring</td></tr>
+        <tr><td>Discounted interruptible compute</td><td>Spot / low-priority</td><td>Spot Instances</td><td>Spot VMs</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:10px;font-size:13.5px;color:var(--ink-soft);">The genuine differences are commercial and organisational rather than technical: what your enterprise agreement already covers, which cloud your identity system lives in, and which one your people have actually operated. For a project manager those three outrank any feature comparison.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">8 · Glossary</div>
+  <div class="card">
+    <div class="gloss">
+      <div><b>Region</b>A geography where your resources physically live. Determines applicable law.</div>
+      <div><b>Availability zone</b>Independent building within a region. Survives one datacentre failing.</div>
+      <div><b>Subscription</b>The billing boundary. One invoice, one quota set.</div>
+      <div><b>Resource group</b>The lifecycle boundary. Delete it and everything inside goes.</div>
+      <div><b>Tag</b>A label on a resource. The only way to attribute cost later.</div>
+      <div><b>SKU</b>The specific size and grade of a resource — and therefore its price.</div>
+      <div><b>Blob / object storage</b>Files in a bucket, priced per GB-month plus operations.</div>
+      <div><b>Access tier</b>Hot, cool, cold, archive. Cheaper to store, more expensive and slower to read.</div>
+      <div><b>Hierarchical namespace</b>Real folders on a lake. Makes analytics engines much faster.</div>
+      <div><b>Medallion</b>Raw → curated → serving zones. Raw stays immutable so you can re-derive.</div>
+      <div><b>Compute instance</b>One person's development VM. Bills while running, including overnight.</div>
+      <div><b>Compute cluster</b>Autoscaling pool for jobs. Set the minimum node count to zero.</div>
+      <div><b>Spot / low-priority</b>Deep discount, can be reclaimed. Fine for training, useless for serving.</div>
+      <div><b>Reservation</b>1- or 3-year commitment for a discount on predictable load.</div>
+      <div><b>Managed identity</b>A service's own identity, so no key ever appears in code.</div>
+      <div><b>Private endpoint</b>Puts a service on your private network, unreachable from the internet.</div>
+      <div><b>RBAC</b>Role-based access control — who may do what, on which scope.</div>
+      <div><b>Online vs batch endpoint</b>Live HTTPS scoring versus scheduled scoring of files.</div>
+      <div><b>Traffic split</b>Sending a fraction of live requests to a new model. A canary release.</div>
+      <div><b>Model registry</b>Versioned models with the data and code that produced them.</div>
+      <div><b>Egress</b>Data leaving the region or the cloud. Charged per GB; ingress is free.</div>
+      <div><b>Token</b>The billing unit for foundation models. Prompt length is a cost driver.</div>
+      <div><b>RAG</b>Retrieval-augmented generation — grounding answers in your own documents.</div>
+      <div><b>Infrastructure as code</b>The environment defined in files, so it can be rebuilt.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="section-k">Self-check</div>
+  <div class="card">
+    <span class="label play">5 questions · instant feedback</span>
+    <h3>Check it landed</h3>
+    <span class="scorechip" id="scoreChip"></span>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="sc" id="quizScore"></div><div class="ms" id="quizMsg"></div></div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Take it to your project</span>
+    <h3>Two fields in Session 3</h3>
+    <p style="font-size:14px;color:var(--ink-soft);">Your workbook asks for an <b>infrastructure choice</b> and <b>the deciding constraint</b>. After this primer the second one should be specific: not "cost" but "data residency — customer records cannot leave the EU, which rules out the region with the GPU quota we wanted". That sentence is worth more than a page of architecture.</p>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="readbtn" id="readBtn">✓ I have read this primer</button>
+    </div>
+  </div>
+
+  <div class="status" id="vidStatus"></div>
+
+  <div class="nav-foot">
+    <a class="ghost" href="session3.html">← Session 3</a>
+    <a href="cost-model.html">Put numbers on it → the cost model</a>
+  </div>
+
+  <div class="foot">
+    IDEAS · E1410 Advanced Project Management in AI<br>
+    <span style="font-size:12px;">Service names and prices change — verify against current Azure documentation before quoting any of it. · <a href="index.html">back to the course</a></span>
+  </div>
+
+</div>
+
+<script src="exercises.js"></script>
+<script>
+E1410Ex.spot({
+  id:'infra', title:'Four of these will fail a review',
+  lede:'An architecture as it was actually proposed for a payments fraud project. Click the lines you think are wrong, then check.',
+  docTitle:'Proposed architecture · fraud triage',
+  recordLabel:'Diagnose · a faulty cloud architecture (infrastructure primer)',
+  onCheck:function(){ markTask('spot'); },
+  lines:[
+    {indent:0,head:true,fault:false,t:'Fraud triage — target architecture, v2',why:''},
+    {indent:0,head:false,fault:false,t:'Region: Southeast Asia, matching where the customer data must stay',why:'Residency decided first, then everything else fitted around it. This is the right order.'},
+    {indent:0,head:false,fault:true,t:'Storage account: public network access enabled; access keys shared in the team wiki',why:'<b>Two failures in one line.</b> A public endpoint means the storage is reachable from the internet, and a shared key in a wiki is a credential with no owner, no rotation and no audit trail. Private endpoint plus managed identities — and this has to be designed in, not hardened later.'},
+    {indent:0,head:false,fault:false,t:'Raw zone in ADLS Gen2, immutable; lifecycle rule tiers to cool after 180 days',why:'Raw kept immutable so everything can be re-derived, and aged data moved down a tier automatically. Fine.'},
+    {indent:0,head:false,fault:true,t:'Training cluster: 4 × GPU nodes, minimum nodes 4, always on',why:'<b>You are renting four GPUs 24 hours a day to run jobs for a few hours a week.</b> Minimum nodes zero lets the cluster scale to nothing between jobs. On most projects this single setting is the largest avoidable line in the infrastructure budget.'},
+    {indent:0,head:false,fault:false,t:'Training runs on spot capacity, checkpointing every 10 minutes',why:'The discount is real and the price of it — tolerating restarts — has been paid for with checkpointing. Correct trade.'},
+    {indent:0,head:false,fault:true,t:'Deployment: new model replaces the live endpoint at 100% traffic once offline evaluation improves',why:'<b>No canary, no gate.</b> Offline improvement does not guarantee production improvement. A traffic split — 10% first, watch, then promote — is the concrete form of the Session 6 validation gate, and without it a worse model reaches every user at once.'},
+    {indent:0,head:false,fault:false,t:'Model registered with the dataset version and training code that produced it',why:'This is what makes "why did it decide that in March?" answerable. Fine.'},
+    {indent:0,head:false,fault:true,t:'Monitoring: aggregate precision and latency, alerting to a shared mailbox',why:'<b>Aggregate hides the failure and nobody owns the alert.</b> Segmented metrics are what reveal a model collapsing for one region or merchant type behind a healthy average, and an alert without a named recipient and a required action is a notification, not a control.'},
+    {indent:0,head:false,fault:false,t:'One resource group, tagged project=fraud-triage, with a budget alert on the subscription',why:'Cost is attributable and the exit plan exists: delete the resource group. Fine.'}
+  ],
+  after:'<b>All four map to something above.</b> Public endpoints and shared keys → section 2, identity. Minimum node count → the training cluster. No traffic split → serving. Aggregate, unowned alerts → monitoring. None of them are exotic mistakes; all four are what a proposal looks like when infrastructure is treated as an engineering detail rather than a project decision.'
+});
+</script>
+<script>
+var QUIZ=[
+ {q:"Your project must keep customer data inside the EU. Which Azure concept decides whether that is satisfied?",
+  opts:["The subscription","The region the resources are created in","The resource group","The pricing tier"],a:1,
+  w:"The region is where data physically sits, and therefore whose law applies. Subscriptions are billing, resource groups are lifecycle."},
+ {q:"A training cluster is configured with minimum nodes 4 and maximum nodes 4. What is the consequence?",
+  opts:["Training runs four times faster","You pay for four nodes continuously, including when no job is running","Jobs queue and never start","Nothing — clusters only bill during jobs"],a:1,
+  w:"Compute bills on wall-clock time. A minimum of zero lets the cluster scale to nothing between jobs; a minimum of four rents them permanently."},
+ {q:"What does a traffic split on an online endpoint let you do?",
+  opts:["Serve two different products from one endpoint","Send a small share of live requests to a new model before promoting it","Reduce the token cost of a language model","Split the bill between two departments"],a:1,
+  w:"It is a canary release — the practical implementation of the validation gate, so a worse model does not reach every user at once."},
+ {q:"Which of these is the strongest reason to prefer a managed identity over an access key?",
+  opts:["It is cheaper","No credential exists in the code to leak, rotate or lose ownership of","It is faster at runtime","It removes the need for network controls"],a:1,
+  w:"The service authenticates as itself. Nothing is stored in source, nothing to rotate manually, and access is auditable against a named identity."},
+ {q:"On a typical enterprise AI project, which cost line usually dominates?",
+  opts:["Object storage","GPU compute","People","Data egress"],a:2,
+  w:"People, normally by a wide margin. That is why “use cheaper GPUs” is not a cost strategy — to move the number you move scope or duration."}
+];
+(function(){
+  var box=document.getElementById('quizBox'),chip=document.getElementById('scoreChip'),
+      res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
+  var answered=0,correct=0;chip.textContent='0 / '+QUIZ.length+' answered';
+  QUIZ.forEach(function(item,i){
+    var q=document.createElement('div');q.className='q';
+    q.innerHTML='<div class="qt"><span class="qn">'+(i+1)+'.</span>'+item.q+'</div>'+
+      item.opts.map(function(o,j){return '<button class="opt" data-j="'+j+'">'+o+'</button>';}).join('')+'<div class="whyq" id="qw'+i+'"></div>';
+    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){
+      if(q.dataset.done)return;q.dataset.done='1';var j=parseInt(b.dataset.j,10),ok=j===item.a;
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(x===b)x.classList.add('wrong');});
+      var wq=document.getElementById('qw'+i);
+      wq.innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;wq.classList.add('show');
+      if(window.StatsTrack)StatsTrack.quizAnswer(i,j,ok);
+      answered++;if(ok)correct++;chip.textContent=answered+' / '+QUIZ.length+' answered';
+      if(answered===QUIZ.length){scoreEl.textContent=correct+' / '+QUIZ.length;
+        msgEl.textContent=correct===QUIZ.length?'All five — you can hold your own in an architecture review.':correct>=3?'Good. Reread the section behind the ones you missed.':'Worth a second pass — sections 2 and 3 carry most of it.';
+        res.classList.add('show');markTask('quiz');if(window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
+    });});
+    box.appendChild(q);
+  });
+})();
+
+/* completion is EARNED by doing the work, not by scrolling */
+var TASKS=["read","spot","quiz"];
+var DONE={};
+function refreshBars(){
+  var n=0;TASKS.forEach(function(t){if(DONE[t])n++;});var pctv=Math.round(n/TASKS.length*100);
+  var pf=document.getElementById('progf');if(pf)pf.style.width=pctv+'%';
+  var pe=document.getElementById('vidPct');if(pe)pe.textContent=pctv+'%';
+  var st=document.getElementById('vidStatus');
+  if(st)st.textContent=(n>=TASKS.length)?'✓ Primer complete.':(n+' of '+TASKS.length+' done · read it, find the four faults, answer the self-check.');
+  var rb=document.getElementById('readBtn');
+  if(rb&&DONE.read){rb.disabled=true;rb.textContent='✓ Read';}
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+function markTask(id){if(DONE[id])return;DONE[id]=true;if(window.StatsTrack)StatsTrack.complete(id);refreshBars();}
+document.getElementById('readBtn').addEventListener('click',function(){markTask('read');});
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack)StatsTrack.init({module:'inf',title:'Primer · Cloud infrastructure, in Azure terms',total:TASKS.length});
+  try{var sv=JSON.parse(localStorage.getItem('e1410_done_inf')||'{}');TASKS.forEach(function(k){if(sv[k])DONE[k]=true;});}catch(e){}
+  refreshBars();
+});
+</script>
+<script src="/shared/config.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

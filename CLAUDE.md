@@ -165,6 +165,20 @@ plus `<sid>/work/<id> = {v,label,mod,ts}`), so the dashboard picks them up with 
 change — but they do it themselves rather than loading `progress.js`, because they are
 standalone like `compile.html` and must not depend on its init order.
 
+### Primers — and the `opt:true` rule
+
+Six primers now: five StatQuest video pages (`v1`…`v5`) and one long reading
+primer, `primer-infrastructure.html` (`inf`) — cloud infrastructure in Azure
+terms, for Session 3's infrastructure and budget questions.
+
+**Every primer is registered in `courseprogress.js` with `opt:true`.** That flag
+means it is listed and ticked but excluded from the course percentage, and it is
+deliberate twice over: a student who already knows the material is told to skip
+it, so it must not count against them — and adding required chapters mid-cohort
+would silently drop everyone's displayed progress. The percentage denominator is
+`counted()`, currently 14 chapters; adding a primer must never change it. Add a
+new primer's tasks to its `TASKS` array and set `total` to match.
+
 ### Remembering what students chose — `answers.js`
 
 Three different things used to happen to an answer. Workbook fields were saved

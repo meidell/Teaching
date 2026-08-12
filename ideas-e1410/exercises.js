@@ -273,11 +273,19 @@ window.E1410Ex = (function () {
         record('spot_'+cfg.id, cfg.recordLabel||('Diagnose · '+cfg.title),
                'Found '+f+' of '+faults+' planted faults'+(w?', '+w+' false positive'+(w>1?'s':''):'')+'.');
         paint();
+        /* optional hook — the primer pages use it to tick a TASKS item.
+           Session pages pass nothing, so their progress is untouched. */
+        if(typeof cfg.onCheck==='function')cfg.onCheck(f,faults,w);
       });
       var again=host.querySelector('.sp-again');
-      if(again)again.addEventListener('click',function(){
-        picked={};revealed=false;save();paint();
-      });
+      if(again){
+        again.addEventListener('click',function(){ picked={};revealed=false;save();paint(); });
+        /* already checked on a previous visit — the hook still has to fire,
+           or a returning student's task would silently un-tick */
+        if(typeof cfg.onCheck==='function'&&!cfg._fired){
+          cfg._fired=true;cfg.onCheck(found,faults,wrong);
+        }
+      }
     }
     paint();
   }
