@@ -15,3 +15,10 @@ Use these for the `width`/`height` attributes.
 | `philippe-le-bon-jardin.jpg` | 1800 | 1215 | 491 KB |
 | `voie-des-vignes-cyclists.jpg` | 640 | 640 | 124 KB |
 | `voie-des-vignes-map.jpg` | 1786 | 1406 | 638 KB |
+
+## Ajouts
+
+| Fichier | Largeur | Hauteur | Placement |
+|---|---|---|---|
+| `musee2.jpeg` | 1200 | 630 | Dimanche 11:00 — vue d'ensemble du site, pleine largeur |
+| `musee1.jpg` | 688 | 691 | Dimanche 11:00 — après la liste, colonne contrainte (344 px max) |
