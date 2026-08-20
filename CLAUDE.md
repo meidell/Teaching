@@ -74,18 +74,21 @@ same from `/omba401/week3.html` and `/ideas-e1410/session1.html`.
 | `progress.js` | student identity, active-time, per-section completion, scores → DB |
 | `login.js` | name + personal code, so a student resumes on any device |
 | `announce.js` | cohort announcement banner (instructor posts it from admin) |
+| `chat.js` | the student's message panel — instructor, group and cohort threads |
 | `admin-gate.js` | the shared instructor gate (hashed PIN, remembered per device) |
 | `admin.html` | the original dashboard for every course: `/shared/admin.html?course=omba401` |
 | `admin2.html` | the **redesigned** dashboard — same data and namespace, reorganised as Today → The cohort → The roster. Runs alongside `admin.html` until one is chosen; the two link to each other |
 | `insights.html` | the other instructor view: **where the cohort gets stuck** — section-level stall points, module drop-off, workbook fill rates. Same gate, same read path. Per-question quiz stats stay in the dashboards; don't duplicate them |
+| `chat.html` | the instructor's end of `chat.js`: read what came in and answer it — one student, a group, or the whole cohort |
 
-### The three instructor views, and what each is for
+### The four instructor views, and what each is for
 
 | | Question it answers |
 |---|---|
 | `admin2.html` | *What do I do before the next session?* Ranked actions, cohort shape, then one roster table with a per-student drawer |
 | `admin.html` | *What is every student's state on every module?* The original wide table; kept while the redesign is on trial |
 | `insights.html` | *Where is the course failing them?* Section-level stall points and workbook fill rates, across any course |
+| `chat.html` | *What are they asking me?* Threads with one student, a group or the cohort. All four link to each other in the header |
 
 Two things worth knowing before editing any of them:
 
@@ -246,6 +249,9 @@ One Firebase Realtime DB, one top-level key per course namespace:
   _announce/            { on, text, ts }          instructor → students
   _roster/<sid>/        { name, pass, ts }        pass = the 6-digit course code
   _quizmeta/<moduleId>/ { title, ts, qs[] }       question text, for cohort stats
+  _chat/<tid>/
+    meta/               { kind, title, ro, members, ts }   instructor-written
+    msgs/<pushId>/      { by:'i'|'s', sid, name, txt, ts }
   <sid>/
     name, sid, createdAt, updatedAt
     mod/<moduleId>/
@@ -253,6 +259,7 @@ One Firebase Realtime DB, one top-level key per course namespace:
       done/<sectionId>: true
       quiz/q<i>:        { p: pickedIndex, c: 1|0, ts }
     work/<fieldId>/     { v, label, mod, ts }     workbook answers
+    chats/<tid>/        { t, k, ro, ts }          the student's index of group threads
 analytics/<YYYY-MM-DD>/<id>   pageviews from track.js (coarse geo only, never raw IP)
 ```
 
@@ -277,11 +284,50 @@ identity pill and `progress.js` deliberately does not draw its own.
 `localStorage` first, named or not — so when a student finally identifies themselves,
 everything already done on that device is backfilled to the DB. Do not break that.
 
+### Messages — [shared/chat.js](shared/chat.js) + [shared/chat.html](shared/chat.html)
+
+A course page gets a message panel by adding one script tag after `config.js`:
+
+```html
+<script src="/shared/config.js" defer></script>
+<script src="/shared/chat.js"   defer></script>
+```
+
+That is the whole opt-in — namespace, colours and language come from `config.js`, so
+the same file serves every course. E1410's `index.html` is the first page wired up.
+The instructor's end is `/shared/chat.html?course=<id>`, linked from all three
+dashboards, and `admin2.html`'s student drawer deep-links straight to that student's
+thread (`chat.html?course=e1410&t=dm-<sid>`).
+
+Three kinds of thread, and the id says which:
+
+| `tid` | Who is in it |
+|---|---|
+| `dm-<sid>` | the instructor and that one student |
+| `g-<slug>` | a group the instructor assembled |
+| `all` | the whole cohort |
+
+**A student never lists `_chat`** — the rules do not allow it, so nobody can download
+the cohort's conversations in one request. `dm-<their own sid>` and `all` are implicit,
+and the *groups* they were added to are discovered from `<ns>/<sid>/chats/<tid>`, an
+index the instructor writes into the student's own node. That is why creating a group
+writes in two places, and why removing one sets `off:true` rather than deleting (the
+`$sid` rule refuses a write that removes data).
+
+`meta.ro` makes a thread announcements-only: students read it, the composer is hidden
+and `send()` refuses. It is a *client-side* flag — see below for what is actually
+enforced.
+
+Both ends poll REST (no Firebase SDK on student pages, per §6): the open thread every
+6s, the rest every 30s for the unread badge, paused while the tab is hidden.
+
 ### Rules — [firebase-database-rules.json](firebase-database-rules.json)
 
 ⚠️ **This file is a copy. Editing it changes nothing until you deploy it** — paste it
 into Firebase Console → Realtime Database → Rules → Publish (or `firebase deploy
---only database`).
+--only database`). **As of Aug 2026 it has never been deployed** — the live rules are
+still the original `{".read": true, ".write": true}` per namespace. Everything below
+describes what this file *would* enforce, not what the database does today.
 
 What the current version enforces, and why it changed:
 
@@ -292,6 +338,7 @@ What the current version enforces, and why it changed:
 | Announcements | anyone could post a banner to every student page | public read, instructor-only write |
 | Roster codes | n/a | create-once — a code cannot be overwritten, so nobody can hijack another student's login |
 | Analytics | anyone could overwrite past hits | create-only, instructor read |
+| Messages | n/a | `_chat` is not listable; a thread's `meta` is instructor-only; a message is create-once, capped at 2000 chars, and `by:'i'` is refused without the instructor's token |
 
 **Residual risk, stated plainly:** `<ns>/<sid>` is still world-readable, because an
 unauthenticated student device has to be able to fetch its own progress for cross-device
@@ -300,6 +347,19 @@ slugified name, so someone who guesses a classmate's name can read that classmat
 (including workbook answers). They cannot enumerate the cohort, and they cannot write to
 it. Closing this properly needs real student authentication — that is a separate project,
 not a rules tweak.
+
+The chat sits inside that same boundary and adds one guarantee and two gaps. The
+guarantee is real: **nobody can post as the instructor**, because `by:'i'` only
+validates against a signed-in `janerik.meidell@gmail.com` token, and nobody can edit or
+delete someone else's message — only the instructor can, which is what makes moderation
+possible. The gaps are that a student who guesses a classmate's `sid` can read
+`_chat/dm-<sid>` the same way they could already read that classmate's workbook, and
+that a student could post to a group thread they were never added to, or under another
+name. Announcements-only (`ro`) is a UI flag for the same reason. So: chat is a
+convenience for coursework, not a confidential channel. The student-facing copy is
+worded to match — a DM is "between you and your instructor, not the rest of the class",
+never "private" — and grades, codes and anything else that must stay secret do not go
+through it.
 
 Because reads are now instructor-only, **the dashboard needs Google sign-in** (the 🔑
 button). The password gate is the UI lock; the sign-in is what the database actually
