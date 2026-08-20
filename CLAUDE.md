@@ -86,12 +86,27 @@ same from `/omba401/week3.html` and `/ideas-e1410/session1.html`.
 | | Question it answers |
 |---|---|
 | `admin2.html` | *What do I do before the next session?* Ranked actions, cohort shape, then one roster table with a per-student drawer |
-| `admin.html` | *What is every student's state on every module?* The original wide table; kept while the redesign is on trial |
+| `admin.html` | *What is every student's state on every module and on the assignment?* One wide table carrying both; kept while the redesign is on trial |
 | `insights.html` | *Where is the course failing them?* Section-level stall points and workbook fill rates, across any course |
 | `chat.html` | *What are they asking me?* Threads with one student, a group or the cohort. All four link to each other in the header |
 
-Two things worth knowing before editing any of them:
+Five things worth knowing before editing any of them:
 
+- **`admin.html` has one student table, not two.** The sessions and the final
+  assignment used to be separate tables in separate panels, which meant scrolling
+  between them to answer "is this student behind on both?". They are now two labelled
+  column blocks (`th.grp.g1` / `th.grp.g2`) in a single table, with `#` and `Name`
+  `position:sticky` — at eighteen module columns plus eight section columns the name
+  has to survive the horizontal scroll. `colCount()` is the single source of the column
+  total; the detail row's `colspan` reads it, so don't hand-count it again.
+- **The checkpoint quiz is a two-level accordion**, panel ▸ session ▸ questions. Flat, it
+  printed eighty rows. Closed, each session shows its score and its weakest question,
+  which is the line you actually act on. Open/closed state lives in `QOPEN` / `QPANEL`
+  outside the render, so a refresh does not slam it shut.
+- **The assignment reader is per-student, not per-question.** It used to show one field
+  across the whole cohort; you mark a person, not a field, so it now takes a student and
+  prints their whole assignment with the gaps spelled out. `assignmentHTML(s, showGaps)`
+  is shared with the row drawer — one renderer, two entry points.
 - **Flags in `admin2.html` are relative, not absolute.** "Behind" means well under *this cohort's* median at *this point* in the course. The original used fixed thresholds (under 60%, under 50%), which mid-term flagged 13 of 18 students — a flag on two thirds of the cohort is not a flag. Don't reintroduce a constant here.
 - **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. `applyTheme()` in `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. Both dashboards now map the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
@@ -146,6 +161,23 @@ an admin page.
 
 Cohort courses also carry: `glossary.html` or `notation.html` (a reference page that
 **grows every week** — updating it is part of shipping a week), and a logo image.
+
+### Getting back up: the top-bar link
+
+Every session and tool page carries a link home in its existing `.topbar`, because
+the only way back used to be the browser button or a link in the page footer:
+
+- `session1…8.html` — `← Course`, after the `.tb-spacer`, next to `▶ Lecture`.
+- a tool page that belongs to one session — `← Session N` (class `home up`) before
+  the `✕ Course` it already had: `wbs-check`→2, `cost-model`→3,
+  `primer-infrastructure`→3, `risk-matrix`→4, `simulator`→6, `defence`→7.
+- everything else keeps `✕ Course` alone, because it belongs to the course rather
+  than to a session: `board-pack`, `compile`, `followup`, `mekong-data`, the four
+  readings and the five video primers.
+
+The `.home` rule lives in `session.css` and `research.css` — except sessions 1 and
+2, which predate the stylesheet extraction and carry it inline. Same trap as
+`exercises.js`: a rule added only to `session.css` reaches six pages out of eight.
 
 ### E1410's tool pages
 
@@ -299,13 +331,30 @@ The instructor's end is `/shared/chat.html?course=<id>`, linked from all three
 dashboards, and `admin2.html`'s student drawer deep-links straight to that student's
 thread (`chat.html?course=e1410&t=dm-<sid>`).
 
-Three kinds of thread, and the id says which:
+Five kinds of thread, and the id prefix says which:
 
-| `tid` | Who is in it |
-|---|---|
-| `dm-<sid>` | the instructor and that one student |
-| `g-<slug>` | a group the instructor assembled |
-| `all` | the whole cohort |
+| `tid` | Who is in it | Who can create it |
+|---|---|---|
+| `dm-<sid>` | the instructor and that one student | either, implicitly |
+| `all` | the whole cohort | instructor |
+| `g-<slug>` | a group the instructor assembled | instructor |
+| `p-<a>--<b>` | two students — the two sids **sorted**, so either side derives the same id | either student |
+| `sg-<id>` | a group the students made themselves | any student |
+
+**A student cannot message a classmate until the instructor publishes the class
+list.** Students cannot list the cohort — that is deliberate — so the directory
+`_chat/_people` (`{<sid>:{n:name}}`, names and nothing else) has to be written
+before the panel can offer anyone. It is a button in `chat.html`, off by default,
+and withdrawable. Without it the ＋ sheet offers the instructor and says why.
+
+Peer and student-group threads write into the *other* student's node
+(`<ns>/<their sid>/chats/<tid>`), because neither side can list `_chat` to find
+a thread they were added to. The `$sid` rule already allows that write; it is the
+same door progress writes go through.
+
+**Nothing here is private from the instructor**, who reads the whole namespace —
+so the student panel says so, in a standing line above the composer on every
+thread that is not their own DM. Do not soften that copy.
 
 **A student never lists `_chat`** — the rules do not allow it, so nobody can download
 the cohort's conversations in one request. `dm-<their own sid>` and `all` are implicit,
@@ -320,6 +369,19 @@ enforced.
 
 Both ends poll REST (no Firebase SDK on student pages, per §6): the open thread every
 6s, the rest every 30s for the unread badge, paused while the tab is hidden.
+
+**`chat.html` has no password box.** It opens only on a device where a dashboard
+has already been unlocked (`AdminGate.isUnlocked()`); otherwise it renders a dead
+end pointing at the dashboard. A student handed the link therefore has nothing to
+type into. That is a UI lock on a localStorage flag, not authentication — what
+actually keeps them out is the database: reading `_chat` whole needs the Google
+token, and `by:'i'` is refused without it. Do not "helpfully" re-add
+`AdminGate.mount()` here.
+
+The chat is on **every** E1410 student page, not just the home page — 32 of them.
+A page joins by carrying `data-course` on `<body>` plus `config.js` and `chat.js`
+before `/track.js`; nothing else. The launcher stays bottom-right and steps up to
+`bottom:62px` when `login.js` has drawn its pill there.
 
 ### Rules — [firebase-database-rules.json](firebase-database-rules.json)
 
