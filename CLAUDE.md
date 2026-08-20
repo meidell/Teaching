@@ -375,6 +375,15 @@ Five kinds of thread, and the id prefix says which:
 | `p-<a>--<b>` | two students — the two sids **sorted**, so either side derives the same id | either student |
 | `sg-<id>` | a group the students made themselves | any student |
 
+**Starting a conversation is one screen, and it is always reachable.** The
+`＋ New` button in the panel header opens the class as a checkbox list, with the
+instructor as a row above it: tick one classmate and the button reads *Message
+Bo Tran*, tick several and it asks for a group name. An earlier version put this
+two taps down **and hid the entrance entirely when the directory was empty** —
+which is precisely when a student is first hunting for it. The list, the search
+box and the section heading now render whether or not anyone is in them; an
+empty class explains itself rather than disappearing.
+
 **The class directory fills itself.** Students cannot list `_roster` — it holds
 the six-digit sign-in codes — so messaging a classmate needs a separate list.
 `_chat/_people` is `{<sid>:{n:name}}`, names and nothing else, and **each student
