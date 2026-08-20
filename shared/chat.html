@@ -80,6 +80,7 @@ padding:11px 13px;cursor:pointer;font-family:inherit;}
 .th .pv{font-size:12px;color:var(--grey);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .th .kind{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--main);
 background:var(--pale);border-radius:20px;padding:1px 7px;flex:none;}
+.th .kind.theirs{color:#78350F;background:#FEF3C7;}
 .th.unread .nm::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
 background:var(--glow);margin-left:6px;vertical-align:middle;}
 .th.unread .pv{color:var(--ink);font-weight:600;}
@@ -120,6 +121,14 @@ padding:10px 12px;font:13.5px/1.5 'Plus Jakarta Sans',Arial,sans-serif;backgroun
 .fnote.ok{color:var(--good);}
 
 /* ---- new-thread modal ---- */
+#locked{position:fixed;inset:0;background:var(--wash);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+#locked .lk{background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px 30px;max-width:420px;text-align:center;
+  box-shadow:0 18px 50px -20px rgba(0,0,0,.3);}
+#locked .ico{font-size:30px;margin-bottom:10px;}
+#locked h2{font-size:20px;margin-bottom:8px;}
+#locked p{font-size:13.5px;color:var(--grey);margin-bottom:12px;line-height:1.6;}
+#locked p.sm{font-size:12.5px;border-top:1px solid var(--line);padding-top:12px;}
+#locked .btn{display:inline-block;text-decoration:none;margin-top:4px;}
 #scrim{position:fixed;inset:0;background:rgba(10,26,58,.55);z-index:400;display:none;align-items:center;
 justify-content:center;padding:18px;}
 #scrim.on{display:flex;}
@@ -157,6 +166,7 @@ line-height:1.55;margin-top:14px;}
   <span class="sp"></span>
   <select id="picker"></select>
   <button class="hbtn" id="bAuth" style="display:none">🔑 Sign in</button>
+  <button class="hbtn" id="bPeople" title="Students can only start a conversation with a classmate if the class list is published">Class list …</button>
   <button class="hbtn" id="bRefresh">↻ Refresh</button>
   <a class="hbtn" id="dashLink" href="admin2.html">Dashboard</a>
   <button class="hbtn" id="bLock">Lock</button>
@@ -190,6 +200,18 @@ line-height:1.55;margin-top:14px;}
         <div class="fnote" id="fnote"></div>
       </div>
     </main>
+  </div>
+</div>
+
+<div id="locked">
+  <div class="lk">
+    <div class="ico">🔒</div>
+    <h2>Instructor messages</h2>
+    <p>This page opens from the instructor dashboard, on a device that has already
+       been unlocked there. It has no password box of its own.</p>
+    <p class="sm">If you are a student: your messages are on the course pages
+       themselves — the <b>Messages</b> button at the bottom right of any page.</p>
+    <a class="btn" href="admin.html">Go to the dashboard</a>
   </div>
 </div>
 
@@ -293,6 +315,7 @@ async function load(){
   ROSTER.sort(function(a,b){return a.name.localeCompare(b.name);});
   build();
   renderThreads();
+  renderPeople();
   if(CUR)renderStream(true);
 }
 
@@ -304,7 +327,7 @@ async function poll(){
     var j=await r.json();
     if(j&&j.error)return;
     CHAT=j||{};
-    build();renderThreads();
+    build();renderThreads();renderPeople();
     if(CUR)renderStream(false);
   }catch(e){}
 }
@@ -333,11 +356,22 @@ function nameOf(sid){
 function build(){
   var seen={},out=[];
   Object.keys(CHAT).forEach(function(tid){
+    if(tid==='_people')return;                       /* the directory, not a thread */
     var meta=(CHAT[tid]&&CHAT[tid].meta)||{};
     if(meta.off)return;
     var list=msgsOf(tid),last=list[list.length-1]||null;
-    var kind=meta.kind||(tid==='all'?'all':tid.indexOf('dm-')===0?'dm':'group');
-    var title=meta.title||(kind==='dm'?nameOf(tid.slice(3)):kind==='all'?'Everyone':tid.replace(/^g-/,''));
+    var kind=tid==='all'?'all'
+            :tid.indexOf('dm-')===0?'dm'
+            :tid.indexOf('p-')===0?'peer'
+            :tid.indexOf('sg-')===0?'sgroup'
+            :(meta.kind||'group');
+    var title;
+    if(kind==='peer'){
+      var two=tid.slice(2).split('--');
+      title=nameOf(two[0])+' ↔ '+nameOf(two[1]);
+    }else{
+      title=meta.title||(kind==='dm'?nameOf(tid.slice(3)):kind==='all'?'Everyone':tid.replace(/^s?g-/,''));
+    }
     seen[tid]=1;
     out.push({tid:tid,kind:kind,title:title,ro:!!meta.ro,members:meta.members||null,
               n:list.length,last:last,ts:last?(last.ts||0):(meta.ts||0)});
@@ -348,7 +382,7 @@ function build(){
     if(seen[tid])return;
     out.push({tid:tid,kind:'dm',title:s.name,ro:false,n:0,last:null,ts:0,latent:true});
   });
-  var rank={all:0,group:1,dm:2};
+  var rank={all:0,group:1,sgroup:1,dm:2,peer:3};
   out.sort(function(a,b){
     if(a.ts!==b.ts)return b.ts-a.ts;
     if(rank[a.kind]!==rank[b.kind])return rank[a.kind]-rank[b.kind];
@@ -366,7 +400,8 @@ function renderThreads(){
     var pv=t.last?((t.last.by==='i'?'You: ':(t.kind!=='dm'?(t.last.name||'')+': ':''))+String(t.last.txt).replace(/\s+/g,' ')):'—';
     return '<button class="th'+(t.tid===CUR?' on':'')+(un?' unread':'')+'" data-t="'+esc(t.tid)+'" type="button">'+
       '<div class="r1"><span class="nm">'+esc(t.title)+'</span>'+
-      (t.kind!=='dm'?'<span class="kind">'+esc(t.kind==='all'?'cohort':'group')+'</span>':'')+
+      (t.kind!=='dm'?'<span class="kind'+(t.kind==='peer'||t.kind==='sgroup'?' theirs':'')+'">'+
+        esc(t.kind==='all'?'cohort':t.kind==='peer'?'student ↔ student':t.kind==='sgroup'?'their group':'group')+'</span>':'')+
       '<span class="ago">'+esc(whenAgo(t.ts))+'</span></div>'+
       '<div class="pv">'+esc(pv)+'</div></button>';
   }
@@ -394,6 +429,9 @@ function select(tid){
   if(t){
     if(t.kind==='dm')who='Just you and '+t.title+' — the rest of the cohort does not see it.';
     else if(t.kind==='all')who='Everyone in the cohort'+(t.ro?' · announcements only':'')+'.';
+    else if(t.kind==='peer')who='Between two students. You can read it and moderate it; they are told so. Post only if you mean to join in.';
+    else if(t.kind==='sgroup')who='A group the students made themselves'+
+      (t.members?' — '+Object.keys(t.members).length+' of them':'')+'.';
     else who=(t.members?Object.keys(t.members).length:0)+' students'+(t.ro?' · announcements only':'')+'.';
   }
   $('cWho').textContent=who;
@@ -471,6 +509,33 @@ async function del(id){
     if(!r.ok)throw new Error('refused');
     await poll();
   }catch(e){ note('Could not delete — '+(e&&e.message||e),'bad'); }
+}
+
+/* Students cannot list the cohort — the rules do not allow it, and that is on
+   purpose. So messaging a classmate is impossible until the instructor puts a
+   names-only directory where students can read it. Deliberately a decision, not
+   a default: names only, no codes, no progress, and it can be withdrawn. */
+function peopleLive(){ return !!(CHAT&&CHAT._people&&Object.keys(CHAT._people).length); }
+function renderPeople(){
+  var b=$('bPeople'); if(!b)return;
+  var on=peopleLive();
+  b.textContent=on?'👥 Class list: on':'👥 Class list: off';
+  b.title=on
+    ? 'Students can start a conversation with a classmate. Click to withdraw the list.'
+    : 'Students can only message you. Click to publish the class list so they can also message each other.';
+}
+async function togglePeople(){
+  var on=peopleLive();
+  if(on&&!confirm('Withdraw the class list? Students keep the conversations they already have, but cannot start a new one with a classmate.'))return;
+  if(!on&&!confirm('Publish the class list?\n\nStudents will see every classmate\'s NAME so they can message each other. Nothing else is published — no codes, no progress, no answers.'))return;
+  var val=null;
+  if(!on){ val={}; ROSTER.forEach(function(r){ val[r.sid]={n:r.name}; }); }
+  try{
+    var res=await fetch(DB+'/'+NS+'/_chat/_people.json'+(await authQ()),
+      {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+    if(!res.ok)throw new Error('write refused');
+    await poll(); renderPeople();
+  }catch(e){ alert('Could not change that — '+(e&&e.message||e)+'. Sign in with Google first.'); }
 }
 
 async function writeMeta(tid,meta){
@@ -600,6 +665,7 @@ function start(){
   $('bAuth').addEventListener('click',function(){signIn().catch(function(e){
     $('warn').style.display='block';$('warn').textContent='Sign-in failed: '+(e&&e.message||e);});});
   $('bNew').addEventListener('click',openDlg);
+  $('bPeople').addEventListener('click',togglePeople);
   $('bRo').addEventListener('click',toggleRo);
   $('dCancel').addEventListener('click',function(){$('scrim').classList.remove('on');});
   $('scrim').addEventListener('click',function(e){if(e.target===$('scrim'))$('scrim').classList.remove('on');});
@@ -617,9 +683,19 @@ function start(){
   TIMER=setInterval(poll,8000);
 }
 
-AdminGate.mount({ brand:'COURSE MESSAGES', title:'Instructor access',
-                  blurb:'Enter the instructor password. This device will remember it.',
-                  onUnlock:start });
+/* This page deliberately does NOT offer the password prompt. A dashboard does
+   that; this one only opens on a device where a dashboard has already been
+   unlocked. So a student who is handed the link gets a dead end rather than a
+   box to guess at — there is nothing here to attack.
+
+   Be clear about what that is and is not: it is a UI lock on a localStorage
+   flag, exactly like the rest of AdminGate, not authentication. What actually
+   keeps a student out of the instructor's side is the database — reading
+   `_chat` whole needs the Google token, and `by:'i'` is refused without it. */
+(function(){
+  if(AdminGate.isUnlocked()){ start(); return; }
+  document.getElementById('locked').style.display='flex';
+})();
 </script>
 <script src="/track.js" defer></script>
 </body>

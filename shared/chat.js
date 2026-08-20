@@ -21,8 +21,18 @@
      <ns>/_chat/<tid>/msgs/<pushId>   { by:'i'|'s', sid, name, txt, ts }
      <ns>/<sid>/chats/<tid>           { t, k, ts }   ← the student's index
 
-   Thread ids are readable on purpose: `all` (whole cohort), `dm-<sid>`
-   (instructor ↔ that one student), `g-<slug>` (a group).
+   Thread ids are readable on purpose, and the prefix says who is in it:
+
+     all            the whole cohort
+     dm-<sid>       the instructor and that one student
+     g-<slug>       a group the instructor assembled
+     p-<a>--<b>     two students (the two sids, sorted, so either can derive it)
+     sg-<id>        a group the students made themselves
+
+   A student cannot list the cohort, so messaging a classmate is impossible
+   until the instructor publishes `_chat/_people` — a names-only directory,
+   toggled from chat.html. Without it the panel offers the instructor and
+   nothing else, which is the safe default.
 
    A student never needs the index to find their own two threads — `all`
    and `dm-<their sid>` are implicit. The index exists only so a student
@@ -63,8 +73,20 @@ window.CourseChat = (function () {
       launch:"Messages", title:"Messages",
       dm:"Your instructor", all:"Everyone",
       ph:"Write a message…", send:"Send",
+      newT:"New conversation", newBtn:"＋",
+      pickProf:"Your instructor", pickProfSub:"Ask a question about the course",
+      pickMates:"A classmate", pickGroup:"A group of classmates",
+      searchPh:"Find a classmate…",
+      noList:"Your instructor has not published the class list, so you can only message them for now.",
+      noMates:"Nobody else is on the class list yet.",
+      gName:"Name the group", gNamePh:"e.g. Case-study team B",
+      gPick:"Who is in it", gGo:"Create the group",
+      gNeedName:"Give the group a name.", gNeedTwo:"Pick at least one classmate.",
+      back:"Cancel",
+      seen:"Your instructor can read every conversation in this course.",
       empty:"No messages yet. Say hello — this thread is between you and your instructor, not the rest of the class.",
       emptyG:"No messages in this group yet.",
+      emptyP:"No messages yet. Say hello.",
       ro:"Announcements only — you cannot reply here.",
       needName:"Sign in with your name first, so I know who is writing.",
       signin:"Sign in",
@@ -77,8 +99,20 @@ window.CourseChat = (function () {
       launch:"Messages", title:"Messages",
       dm:"Votre professeur", all:"Tout le monde",
       ph:"Écrivez un message…", send:"Envoyer",
+      newT:"Nouvelle conversation", newBtn:"＋",
+      pickProf:"Votre professeur", pickProfSub:"Poser une question sur le cours",
+      pickMates:"Un camarade", pickGroup:"Un groupe de camarades",
+      searchPh:"Chercher un camarade…",
+      noList:"Votre professeur n'a pas publié la liste de la classe : vous ne pouvez écrire qu'à lui pour l'instant.",
+      noMates:"Personne d'autre ne figure encore sur la liste.",
+      gName:"Nom du groupe", gNamePh:"ex. Équipe étude de cas B",
+      gPick:"Qui en fait partie", gGo:"Créer le groupe",
+      gNeedName:"Donnez un nom au groupe.", gNeedTwo:"Choisissez au moins un camarade.",
+      back:"Annuler",
+      seen:"Votre professeur peut lire toutes les conversations de ce cours.",
       empty:"Aucun message. Dites bonjour — cette conversation est entre vous et votre professeur, pas le reste de la classe.",
       emptyG:"Aucun message dans ce groupe.",
+      emptyP:"Aucun message. Dites bonjour.",
       ro:"Annonces uniquement — vous ne pouvez pas répondre ici.",
       needName:"Connectez-vous d'abord, pour que je sache qui écrit.",
       signin:"Se connecter",
@@ -176,7 +210,36 @@ window.CourseChat = (function () {
     '.jc-tab.on{background:'+T.main+';border-color:'+T.main+';color:#fff;}'+
     '.jc-tab.unread::after{content:"";position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;'+
       'background:'+T.glow+';border:1.5px solid #fff;}'+
+    '#jc-plus{background:none;border:none;color:rgba(255,255,255,.85);font-size:19px;line-height:1;'+
+      'cursor:pointer;padding:0 4px;flex:none;}#jc-plus:hover{color:#fff;}'+
+    '#jc-body{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;}'+
     '#jc-list{flex:1;overflow-y:auto;padding:14px 13px 6px;background:'+T.surface+';}'+
+    '#jc-new{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;overflow-y:auto;padding:14px 13px 16px;}'+
+    '#jc-new.on{display:flex;}'+
+    '#jc-new h4{font-size:13px;color:'+T.deep+';margin:0 0 10px;}'+
+    '.jc-opt{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:'+T.surface+';'+
+      'border:1px solid '+T.main+'26;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-family:inherit;}'+
+    '.jc-opt:hover{border-color:'+T.main+';}'+
+    '.jc-opt .ic{font-size:17px;flex:none;}'+
+    '.jc-opt .tx{flex:1;}'+
+    '.jc-opt .t1{font-size:13.5px;font-weight:800;color:'+T.ink+';}'+
+    '.jc-opt .t2{font-size:11.5px;color:'+T.grey+';}'+
+    '#jc-search{width:100%;background:'+T.surface+';border:1px solid '+T.main+'33;border-radius:10px;'+
+      'padding:8px 11px;font:13px "Helvetica Neue",Arial,sans-serif;margin-bottom:8px;color:'+T.ink+';}'+
+    '#jc-search:focus{outline:none;border-color:'+T.main+';}'+
+    '.jc-mate{display:flex;gap:9px;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13.5px;color:'+T.ink+';}'+
+    '.jc-mate:hover{background:'+T.pale+';}'+
+    '.jc-mate input{margin:0;}'+
+    '#jc-gname{width:100%;background:'+T.surface+';border:1px solid '+T.main+'33;border-radius:10px;'+
+      'padding:9px 11px;font:13.5px "Helvetica Neue",Arial,sans-serif;margin-bottom:10px;color:'+T.ink+';}'+
+    '#jc-new .act{display:flex;gap:8px;margin-top:10px;}'+
+    '#jc-new .act button{flex:1;border:none;border-radius:20px;padding:10px;cursor:pointer;'+
+      'font:800 12.5px "Helvetica Neue",Arial,sans-serif;}'+
+    '#jc-new .go{background:'+T.main+';color:#fff;}#jc-new .go:hover{background:'+T.deep+';}'+
+    '#jc-new .no{background:'+T.surface+';color:'+T.grey+';border:1px solid '+T.main+'26!important;}'+
+    '#jc-new .warn{font-size:12px;color:'+T.grey+';line-height:1.5;background:'+T.pale+';border-radius:10px;padding:9px 11px;margin-bottom:10px;}'+
+    '#jc-new .err{color:#B3402A;font-size:12.5px;min-height:15px;margin-top:6px;}'+
+    '#jc-hint{font-size:11px;color:'+T.grey+';padding:0 3px 5px;line-height:1.4;}'+
     '.jc-day{text-align:center;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:800;'+
       'color:'+T.grey+';margin:8px 0 10px;}'+
     '.jc-m{margin-bottom:11px;max-width:86%;}'+
@@ -227,16 +290,21 @@ window.CourseChat = (function () {
     var p=document.createElement('div');
     p.id='jc-panel';
     p.innerHTML=
-      '<div id="jc-head"><b>'+esc(t.title)+'</b><button id="jc-x" type="button" aria-label="'+esc(t.close)+'">×</button></div>'+
+      '<div id="jc-head"><b>'+esc(t.title)+'</b>'+
+        '<button id="jc-plus" type="button" title="'+esc(t.newT)+'" aria-label="'+esc(t.newT)+'">＋</button>'+
+        '<button id="jc-x" type="button" aria-label="'+esc(t.close)+'">×</button></div>'+
       '<div id="jc-tabs"></div>'+
-      '<div id="jc-list"></div>'+
-      '<div id="jc-foot"><div id="jc-row">'+
+      '<div id="jc-body"><div id="jc-list"></div><div id="jc-new"></div></div>'+
+      '<div id="jc-foot"><div id="jc-hint"></div><div id="jc-row">'+
         '<textarea id="jc-in" rows="1" placeholder="'+esc(t.ph)+'"></textarea>'+
         '<button id="jc-send" type="button">'+esc(t.send)+'</button>'+
       '</div><div id="jc-note"></div></div>';
     document.body.appendChild(p);
 
     document.getElementById('jc-x').addEventListener('click',close);
+    document.getElementById('jc-plus').addEventListener('click',function(){
+      if(document.getElementById('jc-new').classList.contains('on'))closeNew();else openNew();
+    });
     document.getElementById('jc-send').addEventListener('click',send);
     var ta=document.getElementById('jc-in');
     ta.addEventListener('input',function(){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,110)+'px';});
@@ -254,7 +322,17 @@ window.CourseChat = (function () {
     var t=L();
     if(tid==='all')return (meta&&meta.title)||t.all;
     if(tid==='dm-'+(ME&&ME.sid))return t.dm;
-    return (meta&&meta.title)||tid.replace(/^g-/,'');
+    return (meta&&meta.title)||tid.replace(/^s?g-/,'');
+  }
+  /* both students derive the same id from the two sids, sorted — so neither
+     has to be told what the thread is called */
+  function peerId(a,b){ return 'p-'+[a,b].sort().join('--'); }
+  function kindOf(tid){
+    return tid==='all'?'all'
+         : tid.indexOf('dm-')===0?'dm'
+         : tid.indexOf('p-')===0?'peer'
+         : tid.indexOf('sg-')===0?'group'
+         : 'group';
   }
 
   /* The student's own two threads are implicit; groups come from the
@@ -271,9 +349,24 @@ window.CourseChat = (function () {
         if(tid===dm||tid==='all')return;
         var it=idx[tid]||{};
         if(it.off)return;                       /* archived by the instructor */
-        out.push({tid:tid,title:it.t||tid.replace(/^g-/,''),kind:it.k||'group',ro:!!it.ro});
+        out.push({tid:tid,title:it.t||tid.replace(/^s?g-/,''),kind:it.k||kindOf(tid),ro:!!it.ro});
       });
       return out;
+    });
+  }
+
+  /* the names-only directory the instructor publishes; absent by default */
+  var PEOPLE=null;
+  function loadPeople(){
+    if(PEOPLE)return Promise.resolve(PEOPLE);
+    return get('_chat/_people').then(function(o){
+      PEOPLE=[];
+      Object.keys(o||{}).forEach(function(sid){
+        if(!ME||sid===ME.sid)return;            /* you are not your own classmate */
+        PEOPLE.push({sid:sid,name:(o[sid]&&o[sid].n)||sid});
+      });
+      PEOPLE.sort(function(a,b){return a.name.localeCompare(b.name);});
+      return PEOPLE;
     });
   }
 
@@ -324,7 +417,7 @@ window.CourseChat = (function () {
 
     if(list===undefined){ el.innerHTML='<div id="jc-empty">…</div>'; return; }
     if(!list.length){
-      el.innerHTML='<div id="jc-empty">'+esc(th.kind==='dm'?t.empty:t.emptyG)+'</div>';
+      el.innerHTML='<div id="jc-empty">'+esc(th.kind==='dm'?t.empty:th.kind==='peer'?t.emptyP:t.emptyG)+'</div>';
       return;
     }
 
@@ -352,6 +445,10 @@ window.CourseChat = (function () {
     var t=L(), th=THREADS.filter(function(x){return x.tid===CUR;})[0]||{};
     var row=document.getElementById('jc-row'), note=document.getElementById('jc-note');
     if(!row)return;
+    /* Say it where it is read, not in a policy page nobody opens: a thread with
+       a classmate is not private from the instructor, and the panel says so. */
+    var hint=document.getElementById('jc-hint');
+    if(hint)hint.textContent=(th.kind&&th.kind!=='dm')?t.seen:'';
     note.className='';
     if(!ME){
       row.style.display='none';
@@ -362,6 +459,131 @@ window.CourseChat = (function () {
     }
     if(th.ro){ row.style.display='none'; note.textContent=t.ro; return; }
     row.style.display='flex'; note.textContent='';
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* starting a conversation                                           */
+  /* ---------------------------------------------------------------- */
+  var NEWMODE='pick';                            /* pick | mates | group */
+
+  function openNew(){
+    NEWMODE='pick';
+    document.getElementById('jc-new').classList.add('on');
+    document.getElementById('jc-foot').style.display='none';
+    loadPeople().then(renderNew);
+    renderNew();
+  }
+  function closeNew(){
+    document.getElementById('jc-new').classList.remove('on');
+    document.getElementById('jc-foot').style.display='';
+    renderFoot();
+  }
+
+  function mateRows(check){
+    var q=(document.getElementById('jc-search')||{}).value||'';
+    q=q.trim().toLowerCase();
+    var list=(PEOPLE||[]).filter(function(p){return !q||p.name.toLowerCase().indexOf(q)>=0;});
+    if(!list.length)return '<div class="warn">'+esc(L().noMates)+'</div>';
+    return list.map(function(p){
+      return '<label class="jc-mate">'+
+        (check?'<input type="checkbox" value="'+esc(p.sid)+'">':'')+
+        '<span data-sid="'+esc(p.sid)+'" data-name="'+esc(p.name)+'">'+esc(p.name)+'</span></label>';
+    }).join('');
+  }
+
+  function renderNew(){
+    var t=L(), el=document.getElementById('jc-new');
+    if(!el)return;
+    var has=PEOPLE&&PEOPLE.length;
+
+    if(NEWMODE==='pick'){
+      el.innerHTML='<h4>'+esc(t.newT)+'</h4>'+
+        '<div class="warn">'+esc(t.seen)+'</div>'+
+        '<button class="jc-opt" data-go="prof"><span class="ic">🎓</span><span class="tx">'+
+          '<span class="t1">'+esc(t.pickProf)+'</span><span class="t2">'+esc(t.pickProfSub)+'</span></span></button>'+
+        (has
+          ? '<button class="jc-opt" data-go="mates"><span class="ic">💬</span><span class="tx">'+
+              '<span class="t1">'+esc(t.pickMates)+'</span><span class="t2">'+PEOPLE.length+'</span></span></button>'+
+            '<button class="jc-opt" data-go="group"><span class="ic">👥</span><span class="tx">'+
+              '<span class="t1">'+esc(t.pickGroup)+'</span><span class="t2">'+esc(t.gPick)+'</span></span></button>'
+          : '<div class="warn">'+esc(t.noList)+'</div>')+
+        '<div class="act"><button class="no" data-go="back">'+esc(t.back)+'</button></div>';
+    }
+    else if(NEWMODE==='mates'){
+      el.innerHTML='<h4>'+esc(t.pickMates)+'</h4>'+
+        '<input id="jc-search" placeholder="'+esc(t.searchPh)+'">'+
+        '<div id="jc-mates">'+mateRows(false)+'</div>'+
+        '<div class="act"><button class="no" data-go="pick">'+esc(t.back)+'</button></div>';
+    }
+    else {
+      el.innerHTML='<h4>'+esc(t.pickGroup)+'</h4>'+
+        '<input id="jc-gname" placeholder="'+esc(t.gNamePh)+'">'+
+        '<input id="jc-search" placeholder="'+esc(t.searchPh)+'">'+
+        '<div id="jc-mates">'+mateRows(true)+'</div>'+
+        '<div class="err" id="jc-gerr"></div>'+
+        '<div class="act"><button class="no" data-go="pick">'+esc(t.back)+'</button>'+
+        '<button class="go" data-go="make">'+esc(t.gGo)+'</button></div>';
+    }
+
+    Array.prototype.forEach.call(el.querySelectorAll('[data-go]'),function(b){
+      b.addEventListener('click',function(){
+        var g=b.getAttribute('data-go');
+        if(g==='back'){closeNew();return;}
+        if(g==='prof'){closeNew();select('dm-'+ME.sid);return;}
+        if(g==='make'){makeGroup();return;}
+        NEWMODE=g; renderNew();
+      });
+    });
+    var sr=document.getElementById('jc-search');
+    if(sr)sr.addEventListener('input',function(){
+      document.getElementById('jc-mates').innerHTML=mateRows(NEWMODE==='group');
+      wireMates();
+    });
+    wireMates();
+  }
+
+  function wireMates(){
+    if(NEWMODE!=='mates')return;
+    Array.prototype.forEach.call(document.querySelectorAll('#jc-mates span[data-sid]'),function(el){
+      el.addEventListener('click',function(){
+        startPeer(el.getAttribute('data-sid'),el.getAttribute('data-name'));
+      });
+    });
+  }
+
+  /* Both sides need the thread in their own index, because neither can list
+     `_chat` — so opening a conversation writes into the classmate's node too.
+     That is the same door the rules already leave open for progress writes. */
+  function startPeer(sid,name){
+    var tid=peerId(ME.sid,sid), now=Date.now();
+    put(ME.sid+'/chats/'+tid,{t:name,k:'peer',ts:now});
+    put(sid+'/chats/'+tid,{t:ME.name||ME.sid,k:'peer',ts:now});
+    if(!THREADS.some(function(x){return x.tid===tid;}))
+      THREADS.push({tid:tid,title:name,kind:'peer',ro:false});
+    closeNew();
+    select(tid);
+  }
+
+  function makeGroup(){
+    var t=L();
+    var title=(document.getElementById('jc-gname').value||'').trim();
+    var err=document.getElementById('jc-gerr');
+    if(!title){err.textContent=t.gNeedName;return;}
+    var picked=[];
+    Array.prototype.forEach.call(document.querySelectorAll('#jc-mates input:checked'),function(i){picked.push(i.value);});
+    if(!picked.length){err.textContent=t.gNeedTwo;return;}
+    var slug=san(title)||String(Date.now()).slice(-6);
+    var tid='sg-'+slug+'-'+Math.random().toString(36).slice(2,6);
+    var mem={}; mem[ME.sid]=true; picked.forEach(function(x){mem[x]=true;});
+    var now=Date.now();
+    /* meta is create-once for an sg- thread, so this is the one chance to set it */
+    fetch(DB+'/'+NS+'/_chat/'+encodeURIComponent(tid)+'/meta.json',
+      {method:'PUT',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({kind:'group',title:title,members:mem,by:'s',ts:now})}).catch(function(){});
+    Object.keys(mem).forEach(function(x){ put(x+'/chats/'+tid,{t:title,k:'group',ts:now}); });
+    THREADS.push({tid:tid,title:title,kind:'group',ro:false});
+    closeNew();
+    select(tid);
   }
 
   function select(tid){
@@ -452,6 +674,8 @@ window.CourseChat = (function () {
     setTimeout(function(){var i=document.getElementById('jc-in');if(i&&i.offsetParent)i.focus();},80);
   }
   function close(){
+    var sheet=document.getElementById('jc-new');
+    if(sheet&&sheet.classList.contains('on'))closeNew();
     OPEN=false;
     document.getElementById('jc-panel').classList.remove('on');
     document.getElementById('jc-btn').style.display='';
@@ -470,13 +694,14 @@ window.CourseChat = (function () {
       CUR=THREADS[0].tid;
       renderTabs();
       refresh(true); beat();
+      loadPeople().catch(function(){});
     });
     document.addEventListener('visibilitychange',function(){ if(!document.hidden)refresh(); });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 
   return {
-    open:open, close:close, refresh:refresh,
+    open:open, close:close, refresh:refresh, newConversation:openNew,
     threads:function(){return THREADS.slice();},
     me:function(){return ME;}
   };
