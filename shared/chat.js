@@ -73,15 +73,17 @@ window.CourseChat = (function () {
       launch:"Messages", title:"Messages",
       dm:"Your instructor", all:"Everyone",
       ph:"Write a message…", send:"Send",
-      newT:"New conversation", newBtn:"＋",
+      newT:"New conversation", newBtn:"＋ New",
       pickProf:"Your instructor", pickProfSub:"Ask a question about the course",
-      pickMates:"A classmate", pickGroup:"A group of classmates",
+      yourClass:"Your class",
       searchPh:"Find a classmate…",
-      noList:"Nobody else has opened their messages yet. Classmates appear here as soon as they do.",
-      noMates:"Nobody else is on the class list yet.",
-      gName:"Name the group", gNamePh:"e.g. Case-study team B",
-      gPick:"Who is in it", gGo:"Create the group",
-      gNeedName:"Give the group a name.", gNeedTwo:"Pick at least one classmate.",
+      tickHint:"Tick one classmate to message them, or several to start a group.",
+      msgOne:function(n){return "Message "+n;},
+      mkGroup:function(n){return "Create a group · "+n+" people";},
+      noMatch:"No classmate by that name.",
+      noList:"No classmates are listed yet. Everyone appears here the first time they open their messages — or ask your instructor to add the whole class at once.",
+      gNamePh:"Name the group — e.g. Case-study team B",
+      gNeedName:"Give the group a name.",
       back:"Cancel",
       peerOnly:"Between the two of you — your instructor is not in this thread.",
       groupOnly:function(n){return "A group you and your classmates made"+(n?" · "+n+" people":"")+" — your instructor is not in it.";},
@@ -102,15 +104,17 @@ window.CourseChat = (function () {
       launch:"Messages", title:"Messages",
       dm:"Votre professeur", all:"Tout le monde",
       ph:"Écrivez un message…", send:"Envoyer",
-      newT:"Nouvelle conversation", newBtn:"＋",
+      newT:"Nouvelle conversation", newBtn:"＋ Nouveau",
       pickProf:"Votre professeur", pickProfSub:"Poser une question sur le cours",
-      pickMates:"Un camarade", pickGroup:"Un groupe de camarades",
+      yourClass:"Votre classe",
       searchPh:"Chercher un camarade…",
-      noList:"Personne d'autre n'a encore ouvert sa messagerie. Vos camarades apparaîtront dès qu'ils le feront.",
-      noMates:"Personne d'autre ne figure encore sur la liste.",
-      gName:"Nom du groupe", gNamePh:"ex. Équipe étude de cas B",
-      gPick:"Qui en fait partie", gGo:"Créer le groupe",
-      gNeedName:"Donnez un nom au groupe.", gNeedTwo:"Choisissez au moins un camarade.",
+      tickHint:"Cochez un camarade pour lui écrire, ou plusieurs pour créer un groupe.",
+      msgOne:function(n){return "Écrire à "+n;},
+      mkGroup:function(n){return "Créer un groupe · "+n+" personnes";},
+      noMatch:"Aucun camarade de ce nom.",
+      noList:"Aucun camarade pour l'instant. Chacun apparaît ici dès qu'il ouvre sa messagerie — ou demandez à votre professeur d'ajouter toute la classe.",
+      gNamePh:"Nom du groupe — ex. Équipe étude de cas B",
+      gNeedName:"Donnez un nom au groupe.",
       back:"Annuler",
       peerOnly:"Entre vous deux — votre professeur n'est pas dans cette conversation.",
       groupOnly:function(n){return "Un groupe créé entre étudiants"+(n?" · "+n+" personnes":"")+" — votre professeur n'en fait pas partie.";},
@@ -250,8 +254,9 @@ window.CourseChat = (function () {
     '.jc-tab.on{background:'+T.main+';border-color:'+T.main+';color:#fff;}'+
     '.jc-tab.unread::after{content:"";position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;'+
       'background:'+T.glow+';border:1.5px solid #fff;}'+
-    '#jc-plus{background:none;border:none;color:rgba(255,255,255,.85);font-size:19px;line-height:1;'+
-      'cursor:pointer;padding:0 4px;flex:none;}#jc-plus:hover{color:#fff;}'+
+    '#jc-plus{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;'+
+      'font:800 11.5px "Helvetica Neue",Arial,sans-serif;border-radius:20px;padding:5px 11px;'+
+      'cursor:pointer;flex:none;white-space:nowrap;}#jc-plus:hover{background:rgba(255,255,255,.3);}'+
     '#jc-body{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;}'+
     '#jc-list{flex:1;overflow-y:auto;padding:14px 13px 6px;background:'+T.surface+';}'+
     '#jc-new{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;overflow-y:auto;padding:14px 13px 16px;}'+
@@ -261,15 +266,25 @@ window.CourseChat = (function () {
       'border:1px solid '+T.main+'26;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-family:inherit;}'+
     '.jc-opt:hover{border-color:'+T.main+';}'+
     '.jc-opt .ic{font-size:17px;flex:none;}'+
-    '.jc-opt .tx{flex:1;}'+
-    '.jc-opt .t1{font-size:13.5px;font-weight:800;color:'+T.ink+';}'+
-    '.jc-opt .t2{font-size:11.5px;color:'+T.grey+';}'+
+    '.jc-opt .tx{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0;}'+
+    '.jc-opt .t1{display:block;font-size:13.5px;font-weight:800;color:'+T.ink+';}'+
+    '.jc-opt .t2{display:block;font-size:11.5px;color:'+T.grey+';line-height:1.35;}'+
     '#jc-search{width:100%;background:'+T.surface+';border:1px solid '+T.main+'33;border-radius:10px;'+
       'padding:8px 11px;font:13px "Helvetica Neue",Arial,sans-serif;margin-bottom:8px;color:'+T.ink+';}'+
     '#jc-search:focus{outline:none;border-color:'+T.main+';}'+
-    '.jc-mate{display:flex;gap:9px;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13.5px;color:'+T.ink+';}'+
+    '.jc-mate{display:flex;gap:10px;align-items:center;padding:9px 11px;border-radius:10px;cursor:pointer;'+
+      'font-size:13.5px;color:'+T.ink+';border:1px solid transparent;}'+
     '.jc-mate:hover{background:'+T.pale+';}'+
-    '.jc-mate input{margin:0;}'+
+    '.jc-mate.sel{background:'+T.pale+';border-color:'+T.main+'55;font-weight:700;}'+
+    '.jc-mate input{margin:0;width:16px;height:16px;flex:none;accent-color:'+T.main+';}'+
+    '.jc-mate .nm{flex:1;}'+
+    '.jc-mate i.live{width:8px;height:8px;border-radius:50%;background:#22c55e;flex:none;}'+
+    '.jc-sec{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:'+T.grey+';'+
+      'margin:14px 0 8px;}'+
+    '#jc-mates{flex:1;min-height:40px;}'+
+    '.jc-sticky{position:sticky;bottom:0;background:#fff;padding-top:10px;margin-top:6px;'+
+      'box-shadow:0 -10px 14px -8px rgba(0,0,0,.12);}'+
+    '.jc-sticky .tip{font-size:12px;color:'+T.grey+';line-height:1.45;margin-bottom:8px;}'+
     '#jc-gname{width:100%;background:'+T.surface+';border:1px solid '+T.main+'33;border-radius:10px;'+
       'padding:9px 11px;font:13.5px "Helvetica Neue",Arial,sans-serif;margin-bottom:10px;color:'+T.ink+';}'+
     '#jc-new .act{display:flex;gap:8px;margin-top:10px;}'+
@@ -331,7 +346,7 @@ window.CourseChat = (function () {
     p.id='jc-panel';
     p.innerHTML=
       '<div id="jc-head"><b id="jc-title">'+esc(t.title)+'</b><span id="jc-pres"></span>'+
-        '<button id="jc-plus" type="button" title="'+esc(t.newT)+'" aria-label="'+esc(t.newT)+'">＋</button>'+
+        '<button id="jc-plus" type="button" title="'+esc(t.newT)+'">'+esc(t.newBtn)+'</button>'+
         '<button id="jc-x" type="button" aria-label="'+esc(t.close)+'">×</button></div>'+
       '<div id="jc-tabs"></div>'+
       '<div id="jc-body"><div id="jc-list"></div><div id="jc-new"></div></div>'+
@@ -409,6 +424,9 @@ window.CourseChat = (function () {
     if(seen)return;
     put('_chat/_people/'+ME.sid,{n:ME.name||ME.sid});
     try{localStorage.setItem(K+'_in_directory','1');}catch(e){}
+  }
+  function loadPresence(){
+    return get('_chat/_presence').then(function(o){ PRES=o||{}; return PRES; });
   }
   function loadPeople(force){
     if(PEOPLE&&!force)return Promise.resolve(PEOPLE);
@@ -538,14 +556,19 @@ window.CourseChat = (function () {
   /* ---------------------------------------------------------------- */
   /* starting a conversation                                           */
   /* ---------------------------------------------------------------- */
-  var NEWMODE='pick';                            /* pick | mates | group */
+  /* ONE screen: the class, always visible, with a checkbox each. Tick one and
+     the button says "Message Bo Tran"; tick several and it asks for a group
+     name. The earlier version buried this two taps down and — worse — hid the
+     entrance entirely when the directory happened to be empty, which is exactly
+     when a student is first looking for it. */
+  var SEL={};
 
   function openNew(){
-    NEWMODE='pick';
+    SEL={};
     document.getElementById('jc-new').classList.add('on');
     document.getElementById('jc-foot').style.display='none';
-    loadPeople(true).then(renderNew);
     renderNew();
+    Promise.all([loadPeople(true),loadPresence()]).then(function(){ renderNew(); });
   }
   function closeNew(){
     document.getElementById('jc-new').classList.remove('on');
@@ -553,73 +576,77 @@ window.CourseChat = (function () {
     renderFoot();
   }
 
-  function mateRows(check){
-    var q=(document.getElementById('jc-search')||{}).value||'';
-    q=q.trim().toLowerCase();
+  function selCount(){ return Object.keys(SEL).filter(function(k){return SEL[k];}).length; }
+  function selList(){ return Object.keys(SEL).filter(function(k){return SEL[k];}); }
+  function nameFor(sid){
+    var p=(PEOPLE||[]).filter(function(x){return x.sid===sid;})[0];
+    return p?p.name:sid;
+  }
+
+  function mateRows(){
+    var q=((document.getElementById('jc-search')||{}).value||'').trim().toLowerCase();
     var list=(PEOPLE||[]).filter(function(p){return !q||p.name.toLowerCase().indexOf(q)>=0;});
-    if(!list.length)return '<div class="warn">'+esc(L().noMates)+'</div>';
+    if(!list.length)return '<div class="warn">'+esc(q?L().noMatch:L().noList)+'</div>';
     return list.map(function(p){
-      return '<label class="jc-mate">'+
-        (check?'<input type="checkbox" value="'+esc(p.sid)+'">':'')+
-        '<span data-sid="'+esc(p.sid)+'" data-name="'+esc(p.name)+'">'+esc(p.name)+'</span></label>';
+      var o=PRES[p.sid], live=o&&o.t&&(Date.now()-o.t)<FRESH;
+      return '<label class="jc-mate'+(SEL[p.sid]?' sel':'')+'">'+
+        '<input type="checkbox" value="'+esc(p.sid)+'"'+(SEL[p.sid]?' checked':'')+'>'+
+        '<span class="nm">'+esc(p.name)+'</span>'+
+        (live?'<i class="live" title="online"></i>':'')+
+      '</label>';
     }).join('');
   }
 
   function renderNew(){
     var t=L(), el=document.getElementById('jc-new');
     if(!el)return;
-    var has=PEOPLE&&PEOPLE.length;
+    var n=selCount(), total=(PEOPLE||[]).length;
 
-    if(NEWMODE==='pick'){
-      el.innerHTML='<h4>'+esc(t.newT)+'</h4>'+
-        '<button class="jc-opt" data-go="prof"><span class="ic">🎓</span><span class="tx">'+
-          '<span class="t1">'+esc(t.pickProf)+'</span><span class="t2">'+esc(t.pickProfSub)+'</span></span></button>'+
-        (has
-          ? '<button class="jc-opt" data-go="mates"><span class="ic">💬</span><span class="tx">'+
-              '<span class="t1">'+esc(t.pickMates)+'</span><span class="t2">'+PEOPLE.length+'</span></span></button>'+
-            '<button class="jc-opt" data-go="group"><span class="ic">👥</span><span class="tx">'+
-              '<span class="t1">'+esc(t.pickGroup)+'</span><span class="t2">'+esc(t.gPick)+'</span></span></button>'
-          : '<div class="warn">'+esc(t.noList)+'</div>')+
-        '<div class="act"><button class="no" data-go="back">'+esc(t.back)+'</button></div>';
-    }
-    else if(NEWMODE==='mates'){
-      el.innerHTML='<h4>'+esc(t.pickMates)+'</h4>'+
-        '<input id="jc-search" placeholder="'+esc(t.searchPh)+'">'+
-        '<div id="jc-mates">'+mateRows(false)+'</div>'+
-        '<div class="act"><button class="no" data-go="pick">'+esc(t.back)+'</button></div>';
-    }
-    else {
-      el.innerHTML='<h4>'+esc(t.pickGroup)+'</h4>'+
-        '<input id="jc-gname" placeholder="'+esc(t.gNamePh)+'">'+
-        '<input id="jc-search" placeholder="'+esc(t.searchPh)+'">'+
-        '<div id="jc-mates">'+mateRows(true)+'</div>'+
+    el.innerHTML=
+      '<h4>'+esc(t.newT)+'</h4>'+
+      '<button class="jc-opt" data-go="prof"><span class="ic">🎓</span><span class="tx">'+
+        '<span class="t1">'+esc(t.pickProf)+'</span><span class="t2">'+esc(t.pickProfSub)+'</span></span></button>'+
+      '<div class="jc-sec">'+esc(t.yourClass)+(total?' · '+total:'')+'</div>'+
+      '<input id="jc-search" placeholder="'+esc(t.searchPh)+'">'+
+      '<div id="jc-mates">'+mateRows()+'</div>'+
+      '<div class="jc-sticky">'+
+        (n>1?'<input id="jc-gname" placeholder="'+esc(t.gNamePh)+'">':'')+
         '<div class="err" id="jc-gerr"></div>'+
-        '<div class="act"><button class="no" data-go="pick">'+esc(t.back)+'</button>'+
-        '<button class="go" data-go="make">'+esc(t.gGo)+'</button></div>';
-    }
+        (n===0?'<div class="tip">'+esc(t.tickHint)+'</div>':'')+
+        '<div class="act">'+
+          '<button class="no" data-go="back">'+esc(t.back)+'</button>'+
+          (n===1?'<button class="go" data-go="one">'+esc(t.msgOne(nameFor(selList()[0])))+'</button>':'')+
+          (n>1 ?'<button class="go" data-go="make">'+esc(t.mkGroup(n+1))+'</button>':'')+
+        '</div>'+
+      '</div>';
 
     Array.prototype.forEach.call(el.querySelectorAll('[data-go]'),function(b){
       b.addEventListener('click',function(){
         var g=b.getAttribute('data-go');
         if(g==='back'){closeNew();return;}
         if(g==='prof'){closeNew();select('dm-'+ME.sid);return;}
+        if(g==='one'){var sid=selList()[0];startPeer(sid,nameFor(sid));return;}
         if(g==='make'){makeGroup();return;}
-        NEWMODE=g; renderNew();
       });
     });
     var sr=document.getElementById('jc-search');
-    if(sr)sr.addEventListener('input',function(){
-      document.getElementById('jc-mates').innerHTML=mateRows(NEWMODE==='group');
-      wireMates();
-    });
+    if(sr){
+      sr.addEventListener('input',function(){
+        document.getElementById('jc-mates').innerHTML=mateRows();
+        wireMates();
+      });
+    }
     wireMates();
   }
 
   function wireMates(){
-    if(NEWMODE!=='mates')return;
-    Array.prototype.forEach.call(document.querySelectorAll('#jc-mates span[data-sid]'),function(el){
-      el.addEventListener('click',function(){
-        startPeer(el.getAttribute('data-sid'),el.getAttribute('data-name'));
+    Array.prototype.forEach.call(document.querySelectorAll('#jc-mates input[type=checkbox]'),function(cb){
+      cb.addEventListener('change',function(){
+        SEL[cb.value]=cb.checked;
+        var q=(document.getElementById('jc-search')||{}).value||'';
+        renderNew();
+        var sr=document.getElementById('jc-search');
+        if(sr&&q){sr.value=q;document.getElementById('jc-mates').innerHTML=mateRows();wireMates();}
       });
     });
   }
@@ -642,9 +669,7 @@ window.CourseChat = (function () {
     var title=(document.getElementById('jc-gname').value||'').trim();
     var err=document.getElementById('jc-gerr');
     if(!title){err.textContent=t.gNeedName;return;}
-    var picked=[];
-    Array.prototype.forEach.call(document.querySelectorAll('#jc-mates input:checked'),function(i){picked.push(i.value);});
-    if(!picked.length){err.textContent=t.gNeedTwo;return;}
+    var picked=selList();
     var slug=san(title)||String(Date.now()).slice(-6);
     var tid='sg-'+slug+'-'+Math.random().toString(36).slice(2,6);
     var mem={}; mem[ME.sid]=true; picked.forEach(function(x){mem[x]=true;});
@@ -654,7 +679,7 @@ window.CourseChat = (function () {
       {method:'PUT',headers:{'Content-Type':'application/json'},
        body:JSON.stringify({kind:'group',title:title,members:mem,by:'s',ts:now})}).catch(function(){});
     Object.keys(mem).forEach(function(x){ put(x+'/chats/'+tid,{t:title,k:'group',ts:now}); });
-    THREADS.push({tid:tid,title:title,kind:'group',ro:false});
+    THREADS.push({tid:tid,title:title,kind:'group',ro:false,members:mem});
     closeNew();
     select(tid);
   }
@@ -685,15 +710,12 @@ window.CourseChat = (function () {
         }
       });
     });
-    /* Presence for every 1:1 thread, not just the open one — the dot on a tab
-       is the whole point ("is Bo around?"), and it would never light if we only
-       looked at the conversation already in front of us. A handful of threads,
-       one small read each. Receipts are only needed for the thread on screen. */
-    THREADS.forEach(function(th){
-      var o=otherOf(th.tid);
-      if(!o)return;
-      jobs.push(get('_chat/_presence/'+o).then(function(x){ PRES[o]=x||null; }));
-    });
+    /* One read covers everybody's presence — the tab dots, the class list and
+       the header line all draw from it. Fetching per thread was one request per
+       conversation every six seconds, which is a lot of requests to answer the
+       question "is Bo around". Receipts are still per-thread: only the open one
+       matters. */
+    jobs.push(loadPresence());
     var other=OPEN?otherOf(CUR):null;
     if(other){
       jobs.push(get('_chat/'+encodeURIComponent(CUR)+'/rcpt/'+other).then(function(o){ RCPT[CUR]=o||null; }));
