@@ -200,6 +200,40 @@ plus `<sid>/work/<id> = {v,label,mod,ts}`), so the dashboard picks them up with 
 change — but they do it themselves rather than loading `progress.js`, because they are
 standalone like `compile.html` and must not depend on its init order.
 
+### The final-quiz trainer — `exam-trainer.html`
+
+The eight session self-checks pooled into one deck of **81 cards**, with three
+things the session banks do not have:
+
+- **Options re-ordered.** In the session banks the correct answer sat in slot B
+  **69 times out of 81** — trainable in exactly the wrong way. The deck is
+  21/20/20/20 across A–D, no session dominated by one slot, and never more than
+  three cards in a row on the same slot. The shuffle is baked in at build time
+  (seeded), not randomised per load, so it stays testable.
+- **A hint per card** — a nudge that narrows the field without naming the answer.
+  Written per question; reusing the explanation would give it away. Taking the
+  hint costs half the points (10 → 5), which is what makes it a real choice.
+- **Clickable concepts.** `CONCEPTS` is ~90 terms of the course's own vocabulary,
+  defined in the course's own words. `mark()` underlines them in the question,
+  the options, the hint and the explanation — longest term first, so
+  *concept drift* wins over *drift*, and once per card, or a card about drift
+  becomes a field of dotted underlines. 70 of the 81 cards surface at least one;
+  the rest genuinely contain no term and are left alone rather than padded.
+
+Exam mode adds 20 seconds a card and removes the Back button; a card the clock
+runs out on scores nothing. Practice mode has neither.
+
+⚠️ **It must never be added to `courseprogress.js` CHAPTERS.** The course
+percentage divides by `counted()`, so a new chapter mid-cohort silently drops
+every enrolled student's displayed progress — the same trap the primers document.
+It writes one summary line to `work/quiz_trainer` instead, the way the tool pages
+and `exercises.js` do, so engagement reaches the dashboard without touching a
+grade or a bar. `mod/exam` is likewise off limits: it is already in CHAPTERS as
+the real final assessment.
+
+The bank is generated, not hand-maintained: if a session's `QUIZ` array changes,
+re-extract rather than editing the deck by hand, or the two drift apart.
+
 ### Primers — and the `opt:true` rule
 
 Six primers now: five StatQuest video pages (`v1`…`v5`) and one long reading
