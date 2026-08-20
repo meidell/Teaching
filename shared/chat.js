@@ -77,13 +77,14 @@ window.CourseChat = (function () {
       pickProf:"Your instructor", pickProfSub:"Ask a question about the course",
       pickMates:"A classmate", pickGroup:"A group of classmates",
       searchPh:"Find a classmate…",
-      noList:"Your instructor has not published the class list, so you can only message them for now.",
+      noList:"Nobody else has opened their messages yet. Classmates appear here as soon as they do.",
       noMates:"Nobody else is on the class list yet.",
       gName:"Name the group", gNamePh:"e.g. Case-study team B",
       gPick:"Who is in it", gGo:"Create the group",
       gNeedName:"Give the group a name.", gNeedTwo:"Pick at least one classmate.",
       back:"Cancel",
-      seen:"Your instructor can read every conversation in this course.",
+      peerOnly:"Between the two of you — your instructor is not in this thread.",
+      groupOnly:function(n){return "A group you and your classmates made"+(n?" · "+n+" people":"")+" — your instructor is not in it.";},
       empty:"No messages yet. Say hello — this thread is between you and your instructor, not the rest of the class.",
       emptyG:"No messages in this group yet.",
       emptyP:"No messages yet. Say hello.",
@@ -93,7 +94,9 @@ window.CourseChat = (function () {
       failed:"Message not sent. Check your connection and try again.",
       you:"You", instr:"Instructor",
       today:"Today", yesterday:"Yesterday",
-      close:"Close", members:function(n){return n+" people";}
+      close:"Close", members:function(n){return n+" people";},
+      here:"in this chat", online:"online", seenAgo:function(a){return "last seen "+a;},
+      tipSent:"Sent", tipDeliv:"Delivered", tipRead:"Read"
     },
     fr: {
       launch:"Messages", title:"Messages",
@@ -103,13 +106,14 @@ window.CourseChat = (function () {
       pickProf:"Votre professeur", pickProfSub:"Poser une question sur le cours",
       pickMates:"Un camarade", pickGroup:"Un groupe de camarades",
       searchPh:"Chercher un camarade…",
-      noList:"Votre professeur n'a pas publié la liste de la classe : vous ne pouvez écrire qu'à lui pour l'instant.",
+      noList:"Personne d'autre n'a encore ouvert sa messagerie. Vos camarades apparaîtront dès qu'ils le feront.",
       noMates:"Personne d'autre ne figure encore sur la liste.",
       gName:"Nom du groupe", gNamePh:"ex. Équipe étude de cas B",
       gPick:"Qui en fait partie", gGo:"Créer le groupe",
       gNeedName:"Donnez un nom au groupe.", gNeedTwo:"Choisissez au moins un camarade.",
       back:"Annuler",
-      seen:"Votre professeur peut lire toutes les conversations de ce cours.",
+      peerOnly:"Entre vous deux — votre professeur n'est pas dans cette conversation.",
+      groupOnly:function(n){return "Un groupe créé entre étudiants"+(n?" · "+n+" personnes":"")+" — votre professeur n'en fait pas partie.";},
       empty:"Aucun message. Dites bonjour — cette conversation est entre vous et votre professeur, pas le reste de la classe.",
       emptyG:"Aucun message dans ce groupe.",
       emptyP:"Aucun message. Dites bonjour.",
@@ -119,7 +123,9 @@ window.CourseChat = (function () {
       failed:"Message non envoyé. Vérifiez votre connexion et réessayez.",
       you:"Vous", instr:"Professeur",
       today:"Aujourd'hui", yesterday:"Hier",
-      close:"Fermer", members:function(n){return n+" personnes";}
+      close:"Fermer", members:function(n){return n+" personnes";},
+      here:"dans cette conversation", online:"en ligne", seenAgo:function(a){return "vu "+a;},
+      tipSent:"Envoyé", tipDeliv:"Remis", tipRead:"Lu"
     }
   };
   function L(){ var l=document.documentElement.getAttribute('data-lang');
@@ -178,6 +184,31 @@ window.CourseChat = (function () {
   var MSGS={};                 /* tid -> [msg] */
   var LAST={};                 /* tid -> ts of newest message seen */
   var OPEN=false, TIMER=null, SENDING=false;
+  var PRES={}, RCPT={}, HEART=null;      /* other party's presence · their receipts */
+
+  /* Who is on the other end. Only 1:1 threads have one, which is why ticks and
+     the online dot appear there and nowhere else — "read by" on a group is a
+     different feature and a misleading one if you fake it with a single tick. */
+  function otherOf(tid){
+    if(!ME)return null;
+    if(tid.indexOf('dm-')===0)return 'i';                       /* the instructor */
+    if(tid.indexOf('p-')===0){
+      var two=tid.slice(2).split('--');
+      return two[0]===ME.sid?two[1]:two[0];
+    }
+    return null;                                                /* group or cohort */
+  }
+
+  /* A heartbeat while the panel is open, and only while it is open — the point
+     of the dot is "they are looking at this now", so it must go stale quickly.
+     45s of silence reads as away. */
+  var FRESH=45000;
+  function beat2(){
+    if(!ME||!OPEN)return;
+    put('_chat/_presence/'+ME.sid,{t:Date.now(),at:CUR||''});
+  }
+  function startHeart(){ clearInterval(HEART); beat2(); HEART=setInterval(beat2,20000); }
+  function stopHeart(){ clearInterval(HEART); HEART=null; }
 
   /* ---------------------------------------------------------------- */
   /* chrome                                                            */
@@ -199,7 +230,16 @@ window.CourseChat = (function () {
       'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:'+T.ink+';}'+
     '#jc-panel.on{display:flex;}'+
     '#jc-head{background:'+T.deep+';color:#fff;padding:13px 14px;display:flex;align-items:center;gap:10px;flex:none;}'+
-    '#jc-head b{font-size:14.5px;flex:1;}'+
+    '#jc-head b{font-size:14.5px;}'+
+    '#jc-pres{flex:1;font-size:11px;opacity:.85;display:flex;align-items:center;gap:5px;min-width:0;}'+
+    '#jc-pres i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);flex:none;font-style:normal;}'+
+    '#jc-pres i.on{background:#4ade80;}'+
+    '#jc-pres i.here{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.3);}'+
+    '#jc-pres span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'+
+    '.jc-tick{font-size:11px;margin-left:5px;letter-spacing:-2px;opacity:.75;}'+
+    '.jc-m.me .jc-t{display:flex;justify-content:flex-end;align-items:center;gap:0;}'+
+    '.jc-tick.read{color:#7dd3fc;opacity:1;}'+
+    '.jc-tab i.on{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:5px;}'+
     '#jc-x{background:none;border:none;color:rgba(255,255,255,.8);font-size:22px;line-height:1;cursor:pointer;padding:0 2px;}'+
     '#jc-x:hover{color:#fff;}'+
     '#jc-tabs{display:none;gap:6px;padding:9px 12px;background:'+T.pale+';overflow-x:auto;flex:none;'+
@@ -290,7 +330,7 @@ window.CourseChat = (function () {
     var p=document.createElement('div');
     p.id='jc-panel';
     p.innerHTML=
-      '<div id="jc-head"><b>'+esc(t.title)+'</b>'+
+      '<div id="jc-head"><b id="jc-title">'+esc(t.title)+'</b><span id="jc-pres"></span>'+
         '<button id="jc-plus" type="button" title="'+esc(t.newT)+'" aria-label="'+esc(t.newT)+'">＋</button>'+
         '<button id="jc-x" type="button" aria-label="'+esc(t.close)+'">×</button></div>'+
       '<div id="jc-tabs"></div>'+
@@ -355,10 +395,23 @@ window.CourseChat = (function () {
     });
   }
 
-  /* the names-only directory the instructor publishes; absent by default */
+  /* The class directory. Students cannot list `_roster` — it holds the
+     six-digit sign-in codes — so messaging a classmate needs a separate,
+     names-only list. Every student adds their own name to it when they open
+     the panel, so the list fills itself and nobody has to switch it on. The
+     rules let a client write one entry with one string field and nothing
+     else, so the worst it can carry is a name. */
   var PEOPLE=null;
-  function loadPeople(){
-    if(PEOPLE)return Promise.resolve(PEOPLE);
+  function joinDirectory(){
+    if(!ME||!ME.sid)return;
+    var seen=false;
+    try{seen=localStorage.getItem(K+'_in_directory')==='1';}catch(e){}
+    if(seen)return;
+    put('_chat/_people/'+ME.sid,{n:ME.name||ME.sid});
+    try{localStorage.setItem(K+'_in_directory','1');}catch(e){}
+  }
+  function loadPeople(force){
+    if(PEOPLE&&!force)return Promise.resolve(PEOPLE);
     return get('_chat/_people').then(function(o){
       PEOPLE=[];
       Object.keys(o||{}).forEach(function(sid){
@@ -402,8 +455,10 @@ window.CourseChat = (function () {
     w.classList.toggle('on',THREADS.length>1);
     if(THREADS.length<2){w.innerHTML='';return;}
     w.innerHTML=THREADS.map(function(th){
+      var o=otherOf(th.tid), p=o?PRES[o]:null;
+      var live=p&&p.t&&(Date.now()-p.t)<FRESH;
       return '<button class="jc-tab'+(th.tid===CUR?' on':'')+(unread(th.tid)&&th.tid!==CUR?' unread':'')+
-             '" data-t="'+esc(th.tid)+'" type="button">'+esc(th.title)+'</button>';
+             '" data-t="'+esc(th.tid)+'" type="button">'+(live?'<i class="on"></i>':'')+esc(th.title)+'</button>';
     }).join('');
     Array.prototype.forEach.call(w.querySelectorAll('.jc-tab'),function(b){
       b.addEventListener('click',function(){ select(b.getAttribute('data-t')); });
@@ -434,11 +489,22 @@ window.CourseChat = (function () {
       h+='<div class="jc-m '+cls+'">'+
            (showName?'<div class="jc-w">'+esc(name)+'</div>':'')+
            '<div class="jc-b">'+body(m.txt)+'</div>'+
-           '<div class="jc-t">'+esc(clock(m.ts||0))+'</div>'+
+           '<div class="jc-t">'+esc(clock(m.ts||0))+tick(m,mine)+'</div>'+
          '</div>';
     });
     el.innerHTML=h;
     if(!keepScroll||atBottom) el.scrollTop=el.scrollHeight;
+  }
+
+  /* ✓ sent · ✓✓ delivered · ✓✓ blue read. Only on 1:1 threads, and only on
+     messages I sent — the receipt is the other person's, not mine. */
+  function tick(m,mine){
+    if(!mine)return '';
+    if(!otherOf(CUR))return '';
+    var t=L(), r=RCPT[CUR]||{}, ts=m.ts||0;
+    if(r.r&&ts<=r.r)  return '<span class="jc-tick read" title="'+esc(t.tipRead)+'">✓✓</span>';
+    if(r.d&&ts<=r.d)  return '<span class="jc-tick" title="'+esc(t.tipDeliv)+'">✓✓</span>';
+    return '<span class="jc-tick" title="'+esc(t.tipSent)+'">✓</span>';
   }
 
   function renderFoot(){
@@ -447,8 +513,16 @@ window.CourseChat = (function () {
     if(!row)return;
     /* Say it where it is read, not in a policy page nobody opens: a thread with
        a classmate is not private from the instructor, and the panel says so. */
+    /* Say who is in the thread, which is checkable, rather than making a
+       promise about privacy that an unauthenticated course site cannot keep.
+       Threads the instructor IS in need no line — that is obvious from the
+       name of the thread. */
     var hint=document.getElementById('jc-hint');
-    if(hint)hint.textContent=(th.kind&&th.kind!=='dm')?t.seen:'';
+    if(hint){
+      hint.textContent = th.kind==='peer' ? t.peerOnly
+        : (th.tid&&th.tid.indexOf('sg-')===0) ? t.groupOnly(th.members?Object.keys(th.members).length:0)
+        : '';
+    }
     note.className='';
     if(!ME){
       row.style.display='none';
@@ -470,7 +544,7 @@ window.CourseChat = (function () {
     NEWMODE='pick';
     document.getElementById('jc-new').classList.add('on');
     document.getElementById('jc-foot').style.display='none';
-    loadPeople().then(renderNew);
+    loadPeople(true).then(renderNew);
     renderNew();
   }
   function closeNew(){
@@ -498,7 +572,6 @@ window.CourseChat = (function () {
 
     if(NEWMODE==='pick'){
       el.innerHTML='<h4>'+esc(t.newT)+'</h4>'+
-        '<div class="warn">'+esc(t.seen)+'</div>'+
         '<button class="jc-opt" data-go="prof"><span class="ic">🎓</span><span class="tx">'+
           '<span class="t1">'+esc(t.pickProf)+'</span><span class="t2">'+esc(t.pickProfSub)+'</span></span></button>'+
         (has
@@ -588,7 +661,8 @@ window.CourseChat = (function () {
 
   function select(tid){
     CUR=tid;
-    renderTabs(); renderFoot(); renderMsgs(false);
+    renderTabs(); renderFoot(); renderMsgs(false); renderPresence();
+    beat2();                       /* tell them which thread I am looking at */
     refresh(true);
   }
 
@@ -611,10 +685,67 @@ window.CourseChat = (function () {
         }
       });
     });
-    return Promise.all(jobs).then(function(){
-      if(OPEN)renderMsgs(true);
-      renderTabs(); badge();
+    /* Presence for every 1:1 thread, not just the open one — the dot on a tab
+       is the whole point ("is Bo around?"), and it would never light if we only
+       looked at the conversation already in front of us. A handful of threads,
+       one small read each. Receipts are only needed for the thread on screen. */
+    THREADS.forEach(function(th){
+      var o=otherOf(th.tid);
+      if(!o)return;
+      jobs.push(get('_chat/_presence/'+o).then(function(x){ PRES[o]=x||null; }));
     });
+    var other=OPEN?otherOf(CUR):null;
+    if(other){
+      jobs.push(get('_chat/'+encodeURIComponent(CUR)+'/rcpt/'+other).then(function(o){ RCPT[CUR]=o||null; }));
+    }
+    return Promise.all(jobs).then(function(){
+      sendReceipt();
+      if(OPEN)renderMsgs(true);
+      renderTabs(); badge(); renderPresence();
+    });
+  }
+
+  /* Delivered = my client has fetched it. Read = it was on screen, which means
+     the panel was open on this thread. Two different facts, so two fields. */
+  function sendReceipt(){
+    if(!ME||!CUR)return;
+    if(!otherOf(CUR))return;                       /* 1:1 only */
+    var list=MSGS[CUR]||[];
+    var newest=0;
+    list.forEach(function(m){ if(m.by!=='s'||m.sid!==ME.sid){ if((m.ts||0)>newest)newest=m.ts||0; } });
+    if(!newest&&LAST[CUR])newest=LAST[CUR];
+    if(!newest)return;
+    var key=K+'_rcpt_'+CUR, prev=null;
+    try{prev=JSON.parse(localStorage.getItem(key)||'null');}catch(e){}
+    var mine={d:newest, r:(OPEN&&document.getElementById('jc-panel').classList.contains('on'))?newest:((prev&&prev.r)||0)};
+    if(prev&&prev.d>=mine.d&&prev.r>=mine.r)return;              /* nothing new to say */
+    mine.d=Math.max(mine.d,(prev&&prev.d)||0);
+    mine.r=Math.max(mine.r,(prev&&prev.r)||0);
+    try{localStorage.setItem(key,JSON.stringify(mine));}catch(e){}
+    put('_chat/'+encodeURIComponent(CUR)+'/rcpt/'+ME.sid,mine);
+  }
+
+  function renderPresence(){
+    var el=document.getElementById('jc-pres'); if(!el)return;
+    var t=L(), th=THREADS.filter(function(x){return x.tid===CUR;})[0]||{};
+    var ttl=document.getElementById('jc-title');
+    if(ttl)ttl.textContent=th.title||t.title;
+    var other=otherOf(CUR), p=other?PRES[other]:null;
+    if(!other||!p||!p.t){ el.innerHTML=''; return; }
+    var age=Date.now()-p.t;
+    if(age<FRESH){
+      var here=p.at===CUR;
+      el.innerHTML='<i class="'+(here?'here':'on')+'"></i><span>'+esc(here?t.here:t.online)+'</span>';
+    }else{
+      el.innerHTML='<i></i><span>'+esc(t.seenAgo(ago(p.t)))+'</span>';
+    }
+  }
+  function ago(ts){
+    var s=Math.round((Date.now()-ts)/1000);
+    if(s<90)return 'just now';
+    var m=Math.round(s/60); if(m<60)return m+'m ago';
+    var h=Math.round(m/60); if(h<24)return h+'h ago';
+    return Math.round(h/24)+'d ago';
   }
 
   function beat(){
@@ -669,8 +800,8 @@ window.CourseChat = (function () {
     document.getElementById('jc-btn').style.display='none';
     if(typeof tid==='string'&&THREADS.some(function(x){return x.tid===tid;}))CUR=tid;
     if(!CUR&&THREADS.length)CUR=THREADS[0].tid;
-    renderTabs(); renderFoot(); renderMsgs(false);
-    refresh(true); beat();
+    renderTabs(); renderFoot(); renderMsgs(false); renderPresence();
+    refresh(true); beat(); startHeart();
     setTimeout(function(){var i=document.getElementById('jc-in');if(i&&i.offsetParent)i.focus();},80);
   }
   function close(){
@@ -679,7 +810,7 @@ window.CourseChat = (function () {
     OPEN=false;
     document.getElementById('jc-panel').classList.remove('on');
     document.getElementById('jc-btn').style.display='';
-    place(); beat();
+    place(); beat(); stopHeart();
   }
 
   /* ---------------------------------------------------------------- */
@@ -694,6 +825,7 @@ window.CourseChat = (function () {
       CUR=THREADS[0].tid;
       renderTabs();
       refresh(true); beat();
+      joinDirectory();
       loadPeople().catch(function(){});
     });
     document.addEventListener('visibilitychange',function(){ if(!document.hidden)refresh(); });

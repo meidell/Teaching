@@ -169,7 +169,8 @@ line-height:1.55;margin-top:14px;}
   <span class="sp"></span>
   <select id="picker"></select>
   <button class="hbtn" id="bAuth" style="display:none">🔑 Sign in</button>
-  <button class="hbtn" id="bPeople" title="Students can only start a conversation with a classmate if the class list is published">Class list …</button>
+  <button class="hbtn" id="bPeer" title="Conversations between students, which you are not part of. Hidden by default.">🙈 Student threads</button>
+  <button class="hbtn" id="bPeople" title="Students add themselves as they open their messages. Use this to add everyone on the roster at once, so nobody is missing.">Class list …</button>
   <button class="hbtn" id="bRefresh">↻ Refresh</button>
   <a class="hbtn" id="dashLink" href="admin2.html">Dashboard</a>
   <button class="hbtn" id="bLock">Lock</button>
@@ -249,6 +250,7 @@ line-height:1.55;margin-top:14px;}
 "use strict";
 var DB=window.CourseConfig.DB;
 var REG=null,COURSE=null,NS='',ROOT=null,CHAT={},ROSTER=[],THREADS=[],CUR='',TIMER=null,FIND='',DK='dm';
+var SHOW_PEER=false;   /* student-to-student threads are not the instructor's inbox */
 var $=function(id){return document.getElementById(id);};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function body(t){return esc(t).replace(/\n/g,'<br>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');}
@@ -375,7 +377,13 @@ function nameOf(sid){ var r=rosterOf(sid); return r?r.name:sid; }
 function build(){
   var seen={},out=[];
   Object.keys(CHAT).forEach(function(tid){
-    if(tid==='_people')return;                       /* the directory, not a thread */
+    if(tid.charAt(0)==='_')return;                   /* directories, not threads */
+    /* Threads the instructor is not part of stay out of the inbox. They are
+       still in the database — the instructor's token can read the whole
+       namespace and no UI choice changes that — so this is a deliberate
+       decision not to look, not a technical guarantee. SHOW_PEER exists so
+       there is still a way in if a student reports something. */
+    if(!SHOW_PEER&&(tid.indexOf('p-')===0||tid.indexOf('sg-')===0))return;
     var meta=(CHAT[tid]&&CHAT[tid].meta)||{};
     if(meta.off)return;
     var list=msgsOf(tid),last=list[list.length-1]||null;
@@ -448,9 +456,10 @@ function select(tid){
   if(t){
     if(t.kind==='dm')who='Just you and '+t.title+' — the rest of the cohort does not see it.';
     else if(t.kind==='all')who='Everyone in the cohort'+(t.ro?' · announcements only':'')+'.';
-    else if(t.kind==='peer')who='Between two students. You can read it and moderate it; they are told so. Post only if you mean to join in.';
+    else if(t.kind==='peer')who='Between two students. You are not part of this thread and it is hidden by default — you are looking because you chose to.';
     else if(t.kind==='sgroup')who='A group the students made themselves'+
-      (t.members?' — '+Object.keys(t.members).length+' of them':'')+'.';
+      (t.members?' — '+Object.keys(t.members).length+' of them':'')+
+      '. You are not part of it; it is hidden by default.';
     else who=(t.members?Object.keys(t.members).length:0)+' students'+(t.ro?' · announcements only':'')+'.';
   }
   /* "I've lost my code" is the most common thing a student opens a DM to say,
@@ -462,6 +471,7 @@ function select(tid){
     if(r&&r.pass)code=' · <button class="codebtn" id="codeBtn" title="Click to copy">code '+esc(r.pass)+'</button>';
   }
   $('cWho').innerHTML=esc(who)+code;
+  beatPresence();
   var cb=$('codeBtn');
   if(cb)cb.addEventListener('click',function(){ copyCode(cb,cb.textContent.replace(/\D/g,'')); });
   var ro=$('bRo');
@@ -503,6 +513,7 @@ function renderStream(jump){
   if(jump||atBottom)el.scrollTop=el.scrollHeight;
   var newest=list[list.length-1];
   if(newest)markRead(CUR,newest.ts||Date.now());
+  sendReceipt();
 }
 
 function note(txt,cls){ var n=$('fnote'); n.className='fnote'+(cls?' '+cls:''); n.textContent=txt||''; }
@@ -544,27 +555,62 @@ async function del(id){
    purpose. So messaging a classmate is impossible until the instructor puts a
    names-only directory where students can read it. Deliberately a decision, not
    a default: names only, no codes, no progress, and it can be withdrawn. */
-function peopleLive(){ return !!(CHAT&&CHAT._people&&Object.keys(CHAT._people).length); }
+function peopleCount(){ return (CHAT&&CHAT._people)?Object.keys(CHAT._people).length:0; }
+function renderPeer(){
+  var b=$('bPeer'); if(!b)return;
+  b.textContent=SHOW_PEER?'🙉 Student threads: shown':'🙈 Student threads';
+  b.title=SHOW_PEER
+    ? 'You are looking at conversations you are not part of. Click to stop showing them.'
+    : 'Conversations between students are hidden. Click only if you need to look into something reported to you.';
+}
 function renderPeople(){
   var b=$('bPeople'); if(!b)return;
-  var on=peopleLive();
-  b.textContent=on?'👥 Class list: on':'👥 Class list: off';
-  b.title=on
-    ? 'Students can start a conversation with a classmate. Click to withdraw the list.'
-    : 'Students can only message you. Click to publish the class list so they can also message each other.';
+  var n=peopleCount();
+  b.textContent='👥 Class list · '+n;
+  b.title=n+' of '+ROSTER.length+' students are listed. Students add themselves the first time they open '+
+    'their messages; click to add everyone on the roster at once so nobody has to wait for that.';
 }
+/* Students add their own name when they first open the panel, so this is a
+   convenience rather than a switch: it seeds the whole roster so a classmate
+   who has not opened their messages yet is still reachable. Names only. */
 async function togglePeople(){
-  var on=peopleLive();
-  if(on&&!confirm('Withdraw the class list? Students keep the conversations they already have, but cannot start a new one with a classmate.'))return;
-  if(!on&&!confirm('Publish the class list?\n\nStudents will see every classmate\'s NAME so they can message each other. Nothing else is published — no codes, no progress, no answers.'))return;
-  var val=null;
-  if(!on){ val={}; ROSTER.forEach(function(r){ val[r.sid]={n:r.name}; }); }
+  var missing=ROSTER.filter(function(r){ return !(CHAT._people&&CHAT._people[r.sid]); });
+  if(!missing.length){ alert('Everyone on the roster is already on the class list.'); return; }
+  if(!confirm('Add '+missing.length+' student'+(missing.length===1?'':'s')+' to the class list?\n\n'+
+    'The list holds names only — no codes, no progress, no answers. It is what lets students find each other. '+
+    'They add themselves anyway the first time they open their messages; this saves the wait.'))return;
+  var val={};
+  ROSTER.forEach(function(r){ val[r.sid]={n:r.name}; });
   try{
     var res=await fetch(DB+'/'+NS+'/_chat/_people.json'+(await authQ()),
-      {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
     if(!res.ok)throw new Error('write refused');
     await poll(); renderPeople();
-  }catch(e){ alert('Could not change that — '+(e&&e.message||e)+'. Sign in with Google first.'); }
+  }catch(e){ alert('Could not do that — '+(e&&e.message||e)+'. Sign in with Google first.'); }
+}
+
+/* The student's ticks and online dot are drawn from what the OTHER end writes,
+   so this end has to write them too — otherwise a DM with the instructor never
+   moves past one tick. The instructor's sid in these nodes is 'i'. */
+var HEART=null;
+function beatPresence(){
+  if(!NS)return;
+  fetch(DB+'/'+NS+'/_chat/_presence/i.json',{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({t:Date.now(),at:CUR||''})}).catch(function(){});
+}
+function sendReceipt(){
+  if(!NS||!CUR)return;
+  if(CUR.indexOf('dm-')!==0)return;                 /* 1:1 with a student only */
+  var list=msgsOf(CUR), newest=0;
+  list.forEach(function(m){ if(m.by==='s'&&(m.ts||0)>newest)newest=m.ts||0; });
+  if(!newest)return;
+  var key='jem_rcpt_'+NS+'_'+CUR, prev=null;
+  try{prev=JSON.parse(localStorage.getItem(key)||'null');}catch(e){}
+  var mine={d:Math.max(newest,(prev&&prev.d)||0), r:Math.max(newest,(prev&&prev.r)||0)};
+  if(prev&&prev.d>=mine.d&&prev.r>=mine.r)return;
+  try{localStorage.setItem(key,JSON.stringify(mine));}catch(e){}
+  fetch(DB+'/'+NS+'/_chat/'+encodeURIComponent(CUR)+'/rcpt/i.json',
+    {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mine)}).catch(function(){});
 }
 
 async function writeMeta(tid,meta){
@@ -695,6 +741,16 @@ function start(){
     $('warn').style.display='block';$('warn').textContent='Sign-in failed: '+(e&&e.message||e);});});
   $('bNew').addEventListener('click',openDlg);
   $('bPeople').addEventListener('click',togglePeople);
+  $('bPeer').addEventListener('click',function(){
+    SHOW_PEER=!SHOW_PEER;
+    if(!SHOW_PEER&&CUR&&(CUR.indexOf('p-')===0||CUR.indexOf('sg-')===0)){
+      CUR='';$('cTitle').textContent='Pick a conversation';$('cWho').textContent='';
+      $('stream').innerHTML='<div class="empty">Choose a student, a group or the whole cohort on the left.</div>';
+      $('msg').disabled=true;$('send').disabled=true;
+    }
+    renderPeer();build();renderThreads();
+  });
+  renderPeer();
   $('bRo').addEventListener('click',toggleRo);
   $('dCancel').addEventListener('click',function(){$('scrim').classList.remove('on');});
   $('scrim').addEventListener('click',function(e){if(e.target===$('scrim'))$('scrim').classList.remove('on');});
@@ -708,8 +764,12 @@ function start(){
   $('msg').addEventListener('keydown',function(e){
     if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();send();}
   });
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)poll();});
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden){poll();beatPresence();}
+  });
   TIMER=setInterval(poll,8000);
+  beatPresence();
+  HEART=setInterval(function(){ if(!document.hidden)beatPresence(); },20000);
 }
 
 /* This page deliberately does NOT offer the password prompt. A dashboard does

@@ -375,20 +375,33 @@ Five kinds of thread, and the id prefix says which:
 | `p-<a>--<b>` | two students — the two sids **sorted**, so either side derives the same id | either student |
 | `sg-<id>` | a group the students made themselves | any student |
 
-**A student cannot message a classmate until the instructor publishes the class
-list.** Students cannot list the cohort — that is deliberate — so the directory
-`_chat/_people` (`{<sid>:{n:name}}`, names and nothing else) has to be written
-before the panel can offer anyone. It is a button in `chat.html`, off by default,
-and withdrawable. Without it the ＋ sheet offers the instructor and says why.
+**The class directory fills itself.** Students cannot list `_roster` — it holds
+the six-digit sign-in codes — so messaging a classmate needs a separate list.
+`_chat/_people` is `{<sid>:{n:name}}`, names and nothing else, and **each student
+writes their own entry** the first time they open the panel. The rules let a
+client write one entry with one string field, so the worst it can carry is a
+name. The `Class list · N` button in `chat.html` is a convenience that seeds the
+whole roster at once, so a classmate who has not opened their messages yet is
+still reachable — it is not an on/off switch, and there is no way to switch peer
+messaging off short of editing `chat.js`.
 
 Peer and student-group threads write into the *other* student's node
 (`<ns>/<their sid>/chats/<tid>`), because neither side can list `_chat` to find
 a thread they were added to. The `$sid` rule already allows that write; it is the
 same door progress writes go through.
 
-**Nothing here is private from the instructor**, who reads the whole namespace —
-so the student panel says so, in a standing line above the composer on every
-thread that is not their own DM. Do not soften that copy.
+**The instructor does not see student-to-student threads.** `p-` and `sg-`
+threads are filtered out of `chat.html`'s inbox, and the student panel's standing
+line names *who is in the thread* ("your instructor is not in this thread")
+rather than making a promise about privacy.
+
+Be exact about what that is: **a decision not to look, not a technical
+guarantee.** The instructor's token reads the whole namespace and no UI choice
+changes that. The `🙈 Student threads` toggle in the header exists precisely
+because pretending otherwise would be worse — if a student reports something,
+there has to be a way in, and it should be a deliberate click rather than a
+detour through the Firebase console. Do not "tidy up" by removing the toggle,
+and do not add copy claiming student threads are private.
 
 **A student never lists `_chat`** — the rules do not allow it, so nobody can download
 the cohort's conversations in one request. `dm-<their own sid>` and `all` are implicit,
@@ -403,6 +416,23 @@ enforced.
 
 Both ends poll REST (no Firebase SDK on student pages, per §6): the open thread every
 6s, the rest every 30s for the unread badge, paused while the tab is hidden.
+
+### Presence and receipts
+
+Two extra nodes, both deliberately cheap and both **1:1 only** — a single tick on
+a group thread would be a lie about who has read what.
+
+| Node | Written by | Means |
+|---|---|---|
+| `_chat/_presence/<sid>` | whoever has the panel open, every 20s | `{t, at}` — last heartbeat and which thread they are looking at |
+| `_chat/<tid>/rcpt/<sid>` | the reader | `{d, r}` — newest ts fetched, newest ts actually displayed |
+
+The heartbeat runs **only while the panel is open** and goes stale after 45s,
+because the dot means "they are here now". A green ring means they are in *this*
+thread; a plain dot means online elsewhere; otherwise "last seen 5m ago".
+Ticks are ✓ sent · ✓✓ delivered · ✓✓ blue read, drawn from the *other* party's
+receipt. The instructor's sid in both nodes is `i`, and `chat.html` writes them
+too — without that, a DM with the instructor would never move past one tick.
 
 **`chat.html` has no password box.** It opens only on a device where a dashboard
 has already been unlocked (`AdminGate.isUnlocked()`); otherwise it renders a dead
