@@ -17,7 +17,7 @@
 .symkey a:hover{border-color:var(--green);}
 .materials .mi a.jump{cursor:pointer;white-space:nowrap;font-weight:600;color:var(--green-deep);}
 .materials .mi a.jump::after{content:" \2192";}
-.screen:not(.active) .video{display:none;}
+.screen:not(.active) div.video{display:none;}
 .label.watch{background:rgba(91,61,184,0.09);color:var(--plum);border:1px solid rgba(91,61,184,0.35);}
 .label.read{background:rgba(30,138,122,0.08);color:var(--teal);border:1px solid rgba(30,138,122,0.35);}
 .label.work{background:rgba(201,162,39,0.10);color:var(--gold-soft);border:1px solid rgba(201,162,39,0.4);}
@@ -26,7 +26,7 @@
 .aside{background:var(--sand);border:1px solid var(--sand-deep);border-radius:10px;padding:11px 14px;margin:12px 0 0;font-size:13px;color:var(--grey);line-height:1.55;}
 .aside b{color:var(--ink-soft);}
 .aside code,.card code{font-family:Georgia,serif;color:var(--green-deep);background:var(--green-pale);padding:1px 6px;border-radius:4px;font-size:0.95em;}
-.video{position:relative;padding-top:56.25%;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin:14px 0 8px;background:linear-gradient(135deg,#2C5530,#16241a);}
+div.video{position:relative;padding-top:56.25%;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin:14px 0 8px;background:linear-gradient(135deg,#2C5530,#16241a);}
 .video .ytposter{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;border:0;z-index:0;}
 .video.ytf{cursor:pointer;}
 .video.ytf::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,26,18,0.12),rgba(16,26,18,0.5));z-index:1;}
@@ -528,6 +528,19 @@ table.mini td.hl{background:rgba(74,139,58,0.20);color:var(--green-deep);font-we
   </div>
 
   <div class="card">
+    <span class="label idea">Welch's t-test</span>
+    <h3>The two-sample default, and the odd df it gives you.</h3>
+    <p class="lead">For two independent groups there are two versions of the same test, and the difference is one assumption: <strong>do the two groups share a spread?</strong></p>
+    <table class="mini">
+      <tr><th class="l">Version</th><th class="l">Assumes</th><th class="l">df</th><th class="l">Excel</th></tr>
+      <tr><td class="l">Pooled (textbook)</td><td class="l">σ₁ = σ₂ — one common spread, so the two s values are pooled into one</td><td class="l">n₁ + n₂ − 2, a whole number</td><td class="l"><code>T.TEST(…,2,2)</code></td></tr>
+      <tr><td class="l"><b>Welch</b></td><td class="l">nothing — each group keeps its own s</td><td class="l">a <b>fraction</b>, e.g. 72.2</td><td class="l"><code>T.TEST(…,2,3)</code></td></tr>
+    </table>
+    <p>Equal variances is an assumption you will rarely have grounds for, and when it fails with unequal group sizes the real false-alarm rate can be well above the α you chose. <strong>Welch is the sensible default</strong>: it costs you almost nothing when the spreads really are equal, and it protects you when they are not. That fractional df is the price — it is the test buying back the accuracy it lost by refusing to pool.</p>
+    <div class="aside"><b>A quick check on your own work.</b> If your two-sample df came out as a tidy n₁ + n₂ − 2, you ran the pooled version — make sure you meant to. Welch's df is computed for you by <code>T.TEST(…,2,3)</code> and by the ToolPak's <em>Two-Sample Assuming Unequal Variances</em>; you are never asked to derive it by hand.</div>
+  </div>
+
+  <div class="card">
     <span class="label play">Try it — two branches, one question</span>
     <h3>Does Nyon really outsell Vevey?</h3>
     <div class="lab">
@@ -553,10 +566,14 @@ table.mini td.hl{background:rgba(74,139,58,0.20);color:var(--green-deep);font-we
   <div class="card">
     <span class="label idea">Two proportions</span>
     <h3>62% at Nyon, 48% at Vevey. Different, or not?</h3>
-    <p class="lead">Same logic, different standard error. When comparing two shares you pool them under H₀ — because if H₀ is true, both branches share one underlying rate:</p>
-    <div class="formula">pooled p̂ = (37.2 + 26.4) ÷ 115 = 0.553<br>SE = √[ 0.553 × 0.447 × (1/60 + 1/55) ] = 0.0928<br>z = (0.62 − 0.48) ÷ 0.0928 = <b>1.508</b> → p = <b>0.131</b></div>
+    <p class="lead">Same logic, different standard error. When comparing two shares you pool them under H₀ — because if H₀ is true, both branches share one underlying rate, and the honest estimate of that one rate uses everybody:</p>
+    <div class="formula">pooled p̂ = (x₁ + x₂) ÷ (n₁ + n₂) = (p̂₁n₁ + p̂₂n₂) ÷ (n₁ + n₂)</div>
+    <p>The x's are <strong>counts of yes answers</strong>, which the percentages hide. Recover them first: 0.62 × 60 = <b>37.2</b> at Nyon, 0.48 × 55 = <b>26.4</b> at Vevey. (37.2 people is not a person — it is what a rounded 62% implies, and it does no harm.) Then the whole test is three lines:</p>
+    <div class="formula">pooled p̂ = (37.2 + 26.4) ÷ 115 = 63.6 ÷ 115 = 0.553<br>SE = √[ 0.553 × 0.447 × (1/60 + 1/55) ] = 0.0928<br>z = (0.62 − 0.48) ÷ 0.0928 = <b>1.508</b> → p = <b>0.131</b></div>
+    <p>Why <em>z</em> and not <em>t</em>? Because a yes/no answer has no spread of its own to estimate — its variance is fixed by the rate itself, p(1 − p). There is no <em>s</em> and therefore no degrees of freedom to pay for, and <em>t</em> exists only to pay for an estimated <em>s</em>.</p>
+    <div class="aside"><b>Pool for the test, never for the interval.</b> The pooled SE above is computed <em>in the world where H₀ is true</em>, which is the only world a p-value describes. A confidence interval for p₁ − p₂ assumes no such thing, so it keeps the two rates apart: <code>SE = √[ p̂₁(1−p̂₁)/n₁ + p̂₂(1−p̂₂)/n₂ ]</code>. Using the pooled version for an interval is the single most common slip on this test.</div>
     <p>A 14-point gap between the branches, and it still fails to reject at α = 0.05. Proportions are noisy: with 60 and 55 respondents, a 14-point difference is comfortably within what chance produces. Anyone who reports "Nyon is 14 points ahead" without that caveat is reporting the noise.</p>
-    <div class="aside"><b>In Excel</b> there is no built-in two-proportion test. Build it: <code>=(p1-p2)/SQRT(pp*(1-pp)*(1/n1+1/n2))</code> for z, then <code>=2*(1-NORM.S.DIST(ABS(z),TRUE))</code> for the two-tailed p.</div>
+    <div class="aside"><b>In Excel</b> there is no built-in two-proportion test. Build it: <code>=(p1-p2)/SQRT(pp*(1-pp)*(1/n1+1/n2))</code> for z, then <code>=2*(1-NORM.S.DIST(ABS(z),TRUE))</code> for the two-tailed p.<br><br><b>Where those two formulas come from.</b> One yes/no answer has variance p(1 − p); an average of n of them has variance p(1 − p)/n; the branches are independent, so the variances of the <em>difference</em> add — and under H₀ there is one shared p, which factors out to leave p(1 − p)(1/n₁ + 1/n₂). <code>SQRT</code> turns that variance back into a standard error. For the p-value, <code>NORM.S.DIST(z,TRUE)</code> is the area to the <em>left</em> of z (<code>TRUE</code> = cumulative); <code>ABS</code> puts you on the right-hand tail whichever branch is ahead; <code>1−</code> flips it to the tail area; <code>2*</code> makes it two-tailed. Note that <code>T.DIST.2T</code> doubles internally — which is why the t formulas carry no <code>2*</code>.</div>
   </div>
 
   <div class="card">
@@ -706,7 +723,7 @@ const SECTIONS=[
   {id:'s2',num:'5.2',name:'Innocent until proven',    tag:'H₀ vs H₁ · one tail or two · write six of them · video',   badge:'Logic'},
   {id:'s3',num:'5.3',name:'From a gap to a p-value',  tag:'Simulate the null world · the live t-test · video',        badge:'Evidence'},
   {id:'s4',num:'5.4',name:'Four ways to be wrong',    tag:'Type I &amp; II · power · what p is not · video',              badge:'Errors'},
-  {id:'s5',num:'5.5',name:'Comparing two groups',     tag:'Independent · paired · proportions · video',               badge:'Two samples'},
+  {id:'s5',num:'5.5',name:'Comparing two groups',     tag:'Independent · paired · Welch · proportions · video',               badge:'Two samples'},
   {id:'s6',num:'5.6',name:'Checkpoint &amp; toolkit',     tag:'15-question quiz, your own data, Excel toolkit',           badge:'Quiz'},
 ];
 const KEY='omba401_w5_progress_v1';
