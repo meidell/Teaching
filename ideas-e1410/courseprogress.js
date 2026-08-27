@@ -48,7 +48,11 @@ window.CourseProgress=(function(){
        the faults + self-check. */
     {mod:'inf',short:'P6',name:'Primer · Cloud infrastructure (Azure)',total:3,live:true,opt:true,href:'primer-infrastructure.html'},
     {mod:'forum',short:'Forum',name:'Discussion forum',total:1,live:false},
-    {mod:'exam',short:'Exam',name:'Final assessment',total:1,live:false}
+    /* The final exam is now a live chapter with a page behind it. It writes
+       mod/exam/done/quiz on submission, so sitting it fills this slot — which
+       is also why a student who finishes everything can finally get past the
+       old 12-of-14 ceiling. `forum` is still not completable from the site. */
+    {mod:'exam',short:'Exam',name:'Final exam',total:1,live:true,href:'final-exam.html'}
   ];
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem('e1410_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
   /* build the chapter data straight from a student's Firebase mod object
