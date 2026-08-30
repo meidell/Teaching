@@ -46,7 +46,8 @@
         detail: '<b>4 Aug 00:00 – 10 Aug 23:59</b> · open book, 2 h, one attempt',
         syllabusSays: 'during week 5 (3–9 Aug)' },
       { id: 'forum2', label: 'Forum 2',
-        detail: 'released Mon 10 Aug · contributions due <b>Sun 30 Aug</b>' },
+        detail: 'brief and discussion on <b><a href="forum2.html">this site</a></b>, not Moodle · ' +
+                'post + two replies due <b>Sun 6 Sep</b> (extended from 30 Aug)' },
       { id: 'test2',  label: 'Online Test 2', afterWeek: 9,
         scope: 'syllabus topics 7–11 = <b>Weeks 5–9</b>',
         detail: '<b>1 Sep 00:00 – 9 Sep 23:59</b> (extended) · open book, 2 h, one attempt',
