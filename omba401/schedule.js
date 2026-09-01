@@ -64,7 +64,7 @@
     shortForm: {
       examOpens: 'opens 8 Sep',
       courseRuns: '6 July – 15 September 2026',
-      examCard: 'Sits on Moodle, under this name. Opens 8 Sep, 9:30 AM CEST and is due 15 Sep 9:30 AM CEST. One attempt, sequential questions. It covers the whole course, Weeks 1 to 9 — including the material Online Test 2 would have carried. (The syllabus PDF says 7–14 Sep; the Moodle activity is the one that counts.)'
+      examCard: 'You sit it on the Moodle course page, where it is listed as “Final Quiz” — not on this site. Opens 8 Sep, 9:30 AM CEST and is due 15 Sep 9:30 AM CEST. One attempt, sequential questions. It covers the whole course, Weeks 1 to 9 — including the material Online Test 2 would have carried. (The syllabus PDF says 7–14 Sep; the Moodle activity is the one that counts.)'
     }
   };
 
