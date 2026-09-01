@@ -48,13 +48,14 @@
       { id: 'forum2', label: 'Forum 2',
         detail: 'brief and discussion on <b><a href="forum2.html">this site</a></b>, not Moodle · ' +
                 'post + two replies due <b>Sun 6 Sep</b> (extended from 30 Aug)' },
-      { id: 'test2',  label: 'Online Test 2', afterWeek: 9,
-        scope: 'syllabus topics 7–11 = <b>Weeks 5–9</b>',
-        detail: '<b>1 Sep 00:00 – 9 Sep 23:59</b> (extended) · open book, 2 h, one attempt',
+      { id: 'test2',  label: 'Online Test 2',
+        detail: '<b>Cancelled — this test will not take place.</b> The syllabus lists it; ' +
+                'it has been withdrawn and there is nothing to sit. Weeks 5–9 are assessed ' +
+                'in the <b>Final Quiz</b> instead.',
         syllabusSays: 'during week 9 (31 Aug – 6 Sep)' },
       { id: 'essay',  label: 'Final Essay', scope: 'case study',
         detail: 'due <b>Sun 6 Sep</b>' },
-      { id: 'exam',   label: 'Final Exam',
+      { id: 'exam',   label: 'Final Quiz',
         detail: '<b>8 Sep 9:30 AM – 15 Sep 9:30 AM CEST</b> · <b>closed book</b> (formula sheet allowed), 2 h, one attempt',
         syllabusSays: '7 Sep 9:30 – 14 Sep 9:30' }
     ],
@@ -63,7 +64,7 @@
     shortForm: {
       examOpens: 'opens 8 Sep',
       courseRuns: '6 July – 15 September 2026',
-      examCard: 'Opens 8 Sep, 9:30 AM CEST on Moodle, and is due 15 Sep 9:30 AM CEST. One attempt, sequential questions. (The syllabus PDF says 7–14 Sep; the Moodle activity is the one that counts.)'
+      examCard: 'Sits on Moodle, under this name. Opens 8 Sep, 9:30 AM CEST and is due 15 Sep 9:30 AM CEST. One attempt, sequential questions. It covers the whole course, Weeks 1 to 9 — including the material Online Test 2 would have carried. (The syllabus PDF says 7–14 Sep; the Moodle activity is the one that counts.)'
     }
   };
 
