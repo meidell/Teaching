@@ -198,6 +198,7 @@ a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
   <div class="warn" id="warn" style="display:none"></div>
   <div class="stats" id="stats"></div>
   <div class="panel" id="attention" style="display:none"></div>
+  <div class="panel" id="subsPanel" style="display:none"></div>
 
   <div class="panel">
     <h2>Cohort announcement</h2>
@@ -397,6 +398,7 @@ async function load(){
     }
   }
   render();
+  renderSubs();
   renderQuiz();
 }
 
@@ -704,6 +706,55 @@ function toggle(sid){
   if(!h)h='<div class="muted">No activity yet.</div>';
   $('di-'+sid).innerHTML=h;
   row.style.display='table-row';
+}
+
+/* ---------- handed-in files ----------
+   <ns>/_submissions/<sid>/<pushId> — written by the course's own submission
+   page (E1410: ideas-e1410/submit.html). Latest upload per student wins; the
+   earlier ones are kept, so a replaced file is never lost. The panel hides
+   itself entirely for a course that has no submission point, which is every
+   course but E1410 today. */
+function subsLatest(){
+  var all=(ROOT&&ROOT._submissions)||{}, out=[];
+  for(var sid in all){
+    if(!all.hasOwnProperty(sid))continue;
+    var best=null, ups=all[sid]||{};
+    for(var k in ups){
+      if(!ups.hasOwnProperty(k))continue;
+      var u=ups[k]; if(!u||!u.ts)continue;
+      if(!best||u.ts>best.ts)best=u;
+      }
+    if(best)out.push({sid:sid,n:best.n||sid,u:best,count:Object.keys(ups).length});
+  }
+  out.sort(function(a,b){return b.u.ts-a.u.ts;});
+  return out;
+}
+function renderSubs(){
+  var box=$('subsPanel'); if(!box)return;
+  var subs=subsLatest();
+  if(!subs.length&&!(ROOT&&ROOT._submissions)){box.style.display='none';return;}
+  box.style.display='';
+  var inSub={}; subs.forEach(function(x){inSub[x.sid]=1;});
+  var missing=ROWS.filter(function(r){return !inSub[r.sid];});
+  var rows=subs.map(function(x){
+    var u=x.u, kb=u.sz?(u.sz<1048576?Math.round(u.sz/1024)+' KB':(u.sz/1048576).toFixed(1)+' MB'):'';
+    return '<tr>'+
+      '<td style="font-weight:700"><span data-jump="'+esc(x.sid)+'" style="cursor:pointer;text-decoration:underline dotted">'+esc(x.n)+'</span></td>'+
+      '<td class="muted" style="word-break:break-all">'+esc(u.f||'')+(kb?' <span class="muted">· '+kb+'</span>':'')+
+        (x.count>1?' <span class="muted">· v'+x.count+'</span>':'')+'</td>'+
+      '<td class="muted" style="white-space:nowrap">'+esc(whenAgo(u.ts))+
+        (u.late?' <b style="color:#B91C1C">LATE</b>':'')+'</td>'+
+      '<td>'+(u.u?'<a class="btn" href="'+esc(u.u)+'" target="_blank" rel="noopener" download>Download</a>':'<span class="muted">no link</span>')+'</td>'+
+    '</tr>';
+  }).join('');
+  box.innerHTML='<h2>Handed in · final assignment</h2>'+
+    '<div class="sub"><b>'+subs.length+'</b> of '+ROWS.length+' students have handed a file in'+
+      (missing.length?' · still outstanding: '+missing.map(function(m){return esc(m.name);}).join(', '):' · everyone is in')+'</div>'+
+    (subs.length?'<div class="tablewrap"><table><tbody>'+rows+'</tbody></table></div>'
+                :'<div class="muted">Nothing uploaded yet.</div>');
+  Array.prototype.forEach.call(box.querySelectorAll('[data-jump]'),function(c){
+    c.addEventListener('click',function(){jumpTo(c.getAttribute('data-jump'));});
+  });
 }
 
 /* ---------- checkpoint quiz · panel ▸ session ▸ questions ---------- */
