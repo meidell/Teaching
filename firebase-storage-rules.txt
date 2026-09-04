@@ -1,0 +1,56 @@
+/* =====================================================================
+   Firebase STORAGE rules — the E1410 assignment drop.
+
+   ⚠️ Like firebase-database-rules.json, THIS FILE IS A COPY. Editing it
+   changes nothing. Paste it into Firebase Console → Storage → Rules →
+   Publish (or `firebase deploy --only storage`). Until it is published,
+   the default rules require a signed-in user and EVERY STUDENT UPLOAD
+   WILL FAIL with HTTP 403.
+
+   Storage must also be turned on for the project at least once:
+   Console → Build → Storage → Get started. The bucket named in
+   ideas-e1410/submit.html is teaching-70f1c.firebasestorage.app.
+
+   What this allows:
+     • anyone with the page can CREATE a file under e1410-submissions/,
+       up to 25 MB, PDF or Word only. Students are anonymous — the same
+       constraint the database is under — so this cannot be narrowed to
+       "only that student" without real authentication.
+     • nobody can overwrite or delete an existing file, so one student
+       cannot clobber another's submission, and nothing is silently lost.
+     • nobody can READ or LIST the folder except the instructor. A
+       classmate cannot browse the cohort's assignments.
+
+   The download URL returned at upload carries a token, and a token URL
+   bypasses these rules by design — that is how the dashboard fetches a
+   file without signing in. Those URLs are therefore kept in
+   <ns>/_submissions, which is instructor-read-only in the database
+   rules. Do not copy them into the student's own world-readable node.
+   ===================================================================== */
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /e1410-submissions/{sid}/{file} {
+      allow read: if request.auth != null
+                  && request.auth.token.email == 'janerik.meidell@gmail.com';
+
+      allow create: if request.resource.size > 0
+                    && request.resource.size < 25 * 1024 * 1024
+                    && (
+                         request.resource.contentType == 'application/pdf'
+                      || request.resource.contentType == 'application/msword'
+                      || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                      || request.resource.contentType == 'application/octet-stream'
+                    );
+
+      allow update, delete: if request.auth != null
+                            && request.auth.token.email == 'janerik.meidell@gmail.com';
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
