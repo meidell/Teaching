@@ -94,7 +94,7 @@ h1,h2,h3{font-weight:800;letter-spacing:-.3px;}
 
   <div class="due">
     <span><b>Due</b> Sunday 6 September, 23:59 ICT (18:59 CEST)</span>
-    <span style="color:var(--grey)">PDF or Word · one file · up to 25 MB</span>
+    <span style="color:var(--grey)">PDF or Word · one file · up to 15 MB</span>
   </div>
 
   <div class="card" id="upCard">
@@ -167,7 +167,8 @@ h1,h2,h3{font-weight:800;letter-spacing:-.3px;}
 var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
 var NS="e1410";
 var BUCKET="teaching-70f1c.firebasestorage.app";
-var MAX=25*1024*1024;
+var MAX=15*1024*1024;
+var CHUNK=384*1024;      /* raw bytes per database chunk → ~512 KB of base64 */
 var DEADLINE=Date.UTC(2026,8,6,16,59,0);   /* Sun 6 Sep 2026, 23:59 ICT = 16:59 UTC */
 
 var A=window.E1410_AUTH||{};
@@ -189,7 +190,7 @@ function take(f){
   if(!f)return;
   var ok=/\.(pdf|docx?)$/i.test(f.name);
   if(!ok){say('That looks like <b>'+(f.name.split('.').pop()||'an unknown type')+'</b>. Please hand in a PDF or a Word document.','err');return;}
-  if(f.size>MAX){say('That file is '+fmt(f.size)+'. The limit is 25 MB — save it as PDF, or compress the images in it.','err');return;}
+  if(f.size>MAX){say('That file is '+fmt(f.size)+'. The limit is 15 MB — save it as PDF, or compress the images in it.','err');return;}
   if(!f.size){say('That file is empty. Check you picked the right one.','err');return;}
   hide();picked=f;
   $('pFn').textContent=f.name;$('pFs').textContent=fmt(f.size);
@@ -210,10 +211,30 @@ $('drop').addEventListener('drop',function(e){
   var dt=e.dataTransfer;if(dt&&dt.files&&dt.files[0])take(dt.files[0]);
 });
 
-/* ---------- the upload itself ---------- */
+/* ---------- the upload itself ----------
+   Two stores, and the page picks at runtime rather than at author time:
+
+     • Firebase STORAGE, if the project has a bucket. A list request comes
+       back 403 when the bucket is there but the rules refuse to list it —
+       which is the deployed state — and 404 when Storage was never turned
+       on for the project at all.
+     • the REALTIME DATABASE otherwise: the file is base64'd and written in
+       chunks under _files/<sid>/<id>/<n>. Slower and capped lower, but it
+       needs nothing enabled, no billing plan and no console visit, and it
+       is the reason this page works today.
+
+   The probe costs one tiny request and makes the page self-healing: turn
+   Storage on later and it starts using it, with nothing here to change. */
 function safeName(n){return n.replace(/[^A-Za-z0-9._-]+/g,'_').slice(-80);}
 
-function upload(f){
+function pickStore(){
+  return fetch('https://firebasestorage.googleapis.com/v0/b/'+BUCKET+'/o?maxResults=1')
+    .then(function(r){return r.status===404?'db':'storage';})
+    .catch(function(){return 'db';});
+}
+
+/* ---- store A: Firebase Storage ---- */
+function uploadStorage(f,onProg){
   var ts=Date.now();
   var path='e1410-submissions/'+SID+'/'+ts+'-'+safeName(f.name);
   var url='https://firebasestorage.googleapis.com/v0/b/'+BUCKET+'/o?uploadType=media&name='+encodeURIComponent(path);
@@ -221,15 +242,13 @@ function upload(f){
     var x=new XMLHttpRequest();
     x.open('POST',url,true);
     x.setRequestHeader('Content-Type',f.type||'application/octet-stream');
-    x.upload.onprogress=function(e){
-      if(e.lengthComputable)$('barF').style.width=Math.round(e.loaded/e.total*92)+'%';
-    };
+    x.upload.onprogress=function(e){if(e.lengthComputable)onProg(e.loaded/e.total);};
     x.onload=function(){
       if(x.status>=200&&x.status<300){
         var j={};try{j=JSON.parse(x.responseText);}catch(e){}
         var tok=(j.downloadTokens||'').split(',')[0]||'';
-        res({path:path,ts:ts,
-             url:'https://firebasestorage.googleapis.com/v0/b/'+BUCKET+'/o/'+encodeURIComponent(path)+'?alt=media'+(tok?'&token='+tok:'')});
+        res({store:'storage',ts:ts,p:path,
+             u:'https://firebasestorage.googleapis.com/v0/b/'+BUCKET+'/o/'+encodeURIComponent(path)+'?alt=media'+(tok?'&token='+tok:'')});
       }else rej(new Error('Storage refused the file (HTTP '+x.status+').'));
     };
     x.onerror=function(){rej(new Error('The network dropped during the upload.'));};
@@ -237,12 +256,50 @@ function upload(f){
   });
 }
 
+/* ---- store B: the database, in base64 chunks ---- */
+function b64(blob){
+  return new Promise(function(res,rej){
+    var fr=new FileReader();
+    fr.onload=function(){var t=String(fr.result);res(t.slice(t.indexOf(',')+1));};
+    fr.onerror=function(){rej(new Error('Your browser could not read that file.'));};
+    fr.readAsDataURL(blob);
+  });
+}
+
+function uploadDB(f,onProg){
+  var ts=Date.now(), id=ts+'-'+Math.random().toString(36).slice(2,8);
+  var n=Math.ceil(f.size/CHUNK), done=0, next=0, LANES=3;
+
+  function one(i){
+    return b64(f.slice(i*CHUNK,Math.min(f.size,(i+1)*CHUNK))).then(function(part){
+      return fetch(DB+'/'+NS+'/_files/'+SID+'/'+id+'/'+i+'.json',
+                   {method:'PUT',body:JSON.stringify(part)}).then(function(r){
+        if(!r.ok)throw new Error('The database refused part '+(i+1)+' of '+n+' (HTTP '+r.status+').');
+        done++; onProg(done/n);
+      });
+    });
+  }
+  /* three at a time: one round trip per chunk would crawl on a phone, and
+     all forty at once is what makes a mobile connection drop them. */
+  function lane(){
+    if(next>=n)return Promise.resolve();
+    var i=next++;
+    return one(i).then(lane);
+  }
+  var lanes=[];for(var L=0;L<Math.min(LANES,n);L++)lanes.push(lane());
+  return Promise.all(lanes).then(function(){
+    return {store:'db',ts:ts,fid:id,ch:n};
+  });
+}
+
 function record(f,up){
   var late=up.ts>DEADLINE;
-  var rec={n:NAME,sid:SID,f:f.name,sz:f.size,ct:f.type||'',p:up.path,u:up.url,ts:up.ts};
+  var rec={n:NAME,sid:SID,f:f.name,sz:f.size,ct:f.type||'',ts:up.ts,st:up.store};
+  if(up.store==='storage'){rec.p=up.p;rec.u=up.u;}
+  else {rec.fid=up.fid;rec.ch=up.ch;rec.p='_files/'+SID+'/'+up.fid;}
   if(late)rec.late=1;
-  var a=fetch(DB+'/'+NS+'/_submissions/'+SID+'.json',
-      {method:'POST',body:JSON.stringify(rec)});
+  var a=fetch(DB+'/'+NS+'/_submissions/'+SID+'.json',{method:'POST',body:JSON.stringify(rec)})
+        .then(function(r){if(!r.ok)throw new Error('The file went up but the receipt did not save (HTTP '+r.status+').');});
   /* the summary line the existing dashboard already renders — no URL in it,
      because <sid> is world-readable until the rules are deployed. */
   var b=fetch(DB+'/'+NS+'/'+SID+'/work/final_upload.json',{method:'PUT',body:JSON.stringify({
@@ -265,15 +322,20 @@ $('goBtn').addEventListener('click',function(){
   if(!picked)return;
   var f=picked,btn=this;
   btn.disabled=true;btn.textContent='Sending…';
-  $('bar').classList.add('on');$('barF').style.width='4%';hide();
-  upload(f).then(function(up){
-    $('barF').style.width='96%';
+  $('bar').classList.add('on');$('barF').style.width='3%';hide();
+  var prog=function(fr){$('barF').style.width=(4+Math.round(fr*92))+'%';};
+
+  pickStore().then(function(store){
+    return (store==='storage'?uploadStorage(f,prog):uploadDB(f,prog));
+  }).then(function(up){
+    $('barF').style.width='97%';
     return record(f,up).then(function(){$('barF').style.width='100%';showReceipt(f,up);});
   }).catch(function(err){
     $('bar').classList.remove('on');
     btn.disabled=false;btn.textContent='Try again';
     say('<b>That did not go through.</b> '+(err&&err.message?err.message:'')+
-        '<br><br>Do not lose time on it: <b>email the file to your instructor now</b> and say the upload failed. '+
+        '<br><br>Try once more first — most failures here are the connection. '+
+        'If it fails again, <b>email the file to your instructor</b> and say the upload failed. '+
         'The time on your email is your proof you were on time.','err');
   });
 });

@@ -744,7 +744,11 @@ function renderSubs(){
         (x.count>1?' <span class="muted">· v'+x.count+'</span>':'')+'</td>'+
       '<td class="muted" style="white-space:nowrap">'+esc(whenAgo(u.ts))+
         (u.late?' <b style="color:#B91C1C">LATE</b>':'')+'</td>'+
-      '<td>'+(u.u?'<a class="btn" href="'+esc(u.u)+'" target="_blank" rel="noopener" download>Download</a>':'<span class="muted">no link</span>')+'</td>'+
+      '<td>'+(u.st==='db'
+        ? '<button class="btn" data-dl="'+esc(x.sid)+'" data-fid="'+esc(u.fid||'')+'" data-ch="'+(u.ch||0)+
+          '" data-fn="'+esc(u.f||'submission')+'" data-ct="'+esc(u.ct||'')+'">Download</button>'
+        : (u.u?'<a class="btn" href="'+esc(u.u)+'" target="_blank" rel="noopener" download>Download</a>'
+             : '<span class="muted">no link</span>'))+'</td>'+
     '</tr>';
   }).join('');
   box.innerHTML='<h2>Handed in · final assignment</h2>'+
@@ -755,6 +759,44 @@ function renderSubs(){
   Array.prototype.forEach.call(box.querySelectorAll('[data-jump]'),function(c){
     c.addEventListener('click',function(){jumpTo(c.getAttribute('data-jump'));});
   });
+  Array.prototype.forEach.call(box.querySelectorAll('[data-dl]'),function(b){
+    b.addEventListener('click',function(){dlFromDB(b);});
+  });
+}
+
+/* Rebuild a file the student's browser wrote into the database in base64
+   chunks (see ideas-e1410/submit.html — the store used while the project has
+   no Storage bucket). Firebase hands sequential integer keys back as an
+   array, so indexing covers both shapes. */
+async function dlFromDB(btn){
+  var sid=btn.getAttribute('data-dl'), fid=btn.getAttribute('data-fid');
+  var n=+btn.getAttribute('data-ch')||0;
+  var fn=btn.getAttribute('data-fn')||'submission';
+  var ct=btn.getAttribute('data-ct')||'application/octet-stream';
+  var label=btn.textContent;
+  btn.disabled=true; btn.textContent='Fetching…';
+  try{
+    var r=await fetch(DB+'/'+NS+'/_files/'+sid+'/'+fid+'.json'+(await authQ()));
+    var j=await r.json();
+    if(!j)throw new Error('the stored parts are gone');
+    var b='';
+    for(var i=0;i<n;i++){
+      if(typeof j[i]!=='string')throw new Error('part '+(i+1)+' of '+n+' never arrived');
+      b+=j[i];
+    }
+    var bin=atob(b), arr=new Uint8Array(bin.length);
+    for(var k=0;k<bin.length;k++)arr[k]=bin.charCodeAt(k);
+    var url=URL.createObjectURL(new Blob([arr],{type:ct}));
+    var a=document.createElement('a');a.href=url;a.download=fn;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},5000);
+    btn.textContent=label;
+  }catch(e){
+    btn.textContent='Failed';
+    alert('Could not rebuild '+fn+': '+(e&&e.message||e)+
+          '\n\nThe student still has the file — ask them to upload it again, or to email it.');
+  }
+  btn.disabled=false;
 }
 
 /* ---------- checkpoint quiz · panel ▸ session ▸ questions ---------- */
