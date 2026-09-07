@@ -34,7 +34,7 @@ window.CourseProgress=(function(){
     {mod:'w9',    short:'W9', name:'Week 9 · Correlation and regression',            total:8,live:false},
     {mod:'w10',   short:'W10',name:'Week 10 · Chi-square tests and F-tests',         total:8,live:false},
     {mod:'w11',   short:'W11',name:'Week 11 · PCA and non-parametric tests',         total:6,live:false},
-    {mod:'w12',   short:'W12',name:'Week 12 · Working in R',                         total:6,live:false},
+    {mod:'w12',   short:'W12',name:'Week 12 · Statistics in Python',                  total:6,live:false},
     {mod:'w13',   short:'W13',name:'Week 13 · Exercises and repetition I',           total:4,live:false},
     {mod:'w14',   short:'W14',name:'Week 14 · Exercises and repetition II',          total:4,live:false},
     {mod:'w15',   short:'W15',name:'Week 15 · The blank test',                       total:2,live:false},
