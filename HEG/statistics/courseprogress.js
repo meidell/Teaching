@@ -21,9 +21,9 @@ window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS="statistics", K="stats";
   var CHAPTERS=[
-    {mod:'w1',    short:'W1', name:'Week 1 · Introduction — before the formulas',   total:8,live:true, href:'week1.html'},
-    {mod:'w1-hw', short:'HW1',name:'Week 1 · Homework — describe the market',       total:24,live:true,href:'week1-homework.html'},
-    {mod:'w2',    short:'W2', name:'Week 2 · Descriptive statistics',                total:8,live:true, href:'week2.html'},
+    {mod:'w1',    short:'W1', name:'Week 1 · Introduction — before the formulas',   total:9,live:true, href:'week1.html'},
+    {mod:'w1-hw', short:'HW1',name:'Week 1 · Homework — describe the market',       total:23,live:true,href:'week1-homework.html'},
+    {mod:'w2',    short:'W2', name:'Week 2 · Descriptive statistics',                total:9,live:true, href:'week2.html'},
     {mod:'w2-hw', short:'HW2',name:'Week 2 · Homework — picture & place the data',  total:20,live:true,href:'week2-homework.html'},
     {mod:'w3',    short:'W3', name:'Week 3 · Discrete random variables',             total:8,live:false},
     {mod:'w4',    short:'W4', name:'Week 4 · Continuous random variables',           total:8,live:false},
