@@ -36,6 +36,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: two-way count probabilities, independence, discrete vs continuous, µ and σ of a distribution, binomial P(X = k), np and √(npq), and one "is this binomial?" trap.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment three','Workbook fields, saved for your instructor',['w3_event — a Friday event with its probability, computed from a two-way count you define.','w3_expected — the expected number of Margheritas per Friday and how you built the distribution.','w3_binomial — one binomial question about your pizzeria, with n, p and the answer.'],'Exercise')],
   slides=['Applied Statistics · Week 3 — Discrete random variables','Recap → today: from describing to betting','Poll: chance we sell out on Friday?','The rules you need: a two-way count of orders','Conditional probability and independence — "given that"','Random variables: a number attached to chance','A probability distribution: the whole table','Mean and standard deviation of a random variable','The binomial: four conditions','P(X = k), np, √(npq) — with the dessert tables','The hook closes: P(sell-out)','Your turn — checkpoint live','Takeaways · homework · Week 4'],
+  ex=[('Probabilities off a two-way count',12,'P(A), P(A∪B), P(A∩B), P(A|B) from the orders table'),
+      ('Independent or not?',10,'test P(A|B) = P(A) on three pairs of events'),
+      ('Discrete or continuous?',8,'six pizzeria variables, classified with a reason'),
+      ('Build a probability distribution',15,'orders per hour: the table, and the check that it sums to 1'),
+      ('µ and σ of a random variable',15,'Σ x·P(x), then the spread of the order count'),
+      ('Is it binomial?',10,'four scenarios against the four conditions'),
+      ('P(X = k) by hand',15,'dessert orders: n = 10, p = 0.3, three values of k'),
+      ('The hook closes: P(sell-out)',15,'np, √(npq), and the Friday dough decision')],
   tools=[('distributions.html','The shape of uncertainty — which distribution, when'),('exam-cards.html','Exam cards c3–c5')]),
 
  dict(n=4,slug='Continuous random variables',emoji='🔔',
@@ -53,6 +61,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: area = probability, left/right/between areas, standardising, an inverse lookup, and one uniform-distribution question.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment four','Workbook fields',['w4_promise — the delivery promise you would print on the menu ("within __ minutes, 95% of the time") and the calculation behind it.','w4_normal — one quantity of your pizzeria you would model as normal, with a µ and σ you can justify, and one you would not.'],'Exercise')],
   slides=['Applied Statistics · Week 4 — Continuous random variables','Recap → today: from counting to measuring','Poll: share of pizzas within 12 minutes?','Probability is area — the density','The standard normal: one curve, one table','Reading the table: left, right, between','Standardise: z = (x − µ)/σ','Delivery times N(14, 3): the hook closes','Tails: z₀.₀₅, z₀.₀₂₅ — numbers to know','The inverse: the value behind a percentile','Your turn — checkpoint live','Takeaways · homework · Week 5'],
+  ex=[('Area is probability',10,'a uniform density: read three areas'),
+      ('The z table, three ways',15,'P(Z < z), P(Z > z), P(a < Z < b)'),
+      ('Standardise',12,'delivery times N(14, 3): four probabilities'),
+      ('The hook closes: under twelve minutes',10,'P(X < 12), and what it means for the kitchen'),
+      ('Read the table backwards',15,'the 95th percentile of delivery time'),
+      ('z₀.₀₅ and z₀.₀₂₅',10,'the two numbers Weeks 6–7 use constantly'),
+      ('Normal or not?',10,'four quantities: which would you model as normal, and which not'),
+      ('The delivery promise',12,'write the menu line, with the calculation behind it')],
   tools=[('distributions.html','The shape of uncertainty — the normal, the bell, the tails'),('exam-cards.html','Exam cards c2 and c6')]),
 
  dict(n=5,slug='Sampling distributions',emoji='🎲',
@@ -69,6 +85,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: µ_x̄, σ_x̄, the √n, when the CLT applies, P(x̄ in a range), µ_p̂ and σ_p̂, and one "the population is not normal — so what?" trap.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment five','Workbook fields',['w5_se — the standard error of your sample mean for your n, and what halving it would cost in extra visits.','w5_clt — in two sentences, why thirty pizzerias can speak for Geneva — and the one situation where they could not.'],'Exercise')],
   slides=['Applied Statistics · Week 5 — Sampling distributions','Recap → today: the keystone','Poll: how far would tomorrow\'s mean land?','The sampling machine — live','µ_x̄ = µ · σ_x̄ = σ/√n — the √n','The Central Limit Theorem','P(x̄ in a range): standardise with σ/√n','Bimodal, uniform, skewed — still a bell','The sample proportion p̂','Your turn — checkpoint live','Takeaways · homework · Week 6'],
+  ex=[('µ_x̄ and σ_x̄',12,'from a population with known µ and σ, at three sample sizes'),
+      ('The √n, felt',12,'how much must n grow to halve the standard error?'),
+      ('Does the CLT apply?',10,'five situations, yes or no, with the reason'),
+      ('P(x̄ in a range)',18,'n = 30 from µ = 19, σ = 4 — standardise with σ/√n'),
+      ('The same question at n = 10',12,'why the answer changes, and by how much'),
+      ('The sample proportion',15,'µ_p̂, σ_p̂ and P(p̂ > 0.4)'),
+      ('Sample mean vs single value',12,'the classic confusion: P(X > 22) against P(x̄ > 22)'),
+      ('Why thirty can speak for Geneva',12,'write it in two sentences')],
   tools=[('sampling-sim.html','Where the sample mean lives — the simulator'),('sampling-machine.html','The sampling machine'),('exam-cards.html','Exam cards c7–c8')]),
 
  dict(n=6,slug='Estimation',emoji='📏',
@@ -86,6 +110,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: a z-interval, a t-interval, a proportion interval, a sample-size calculation, two interpretation traps ("95% of pizzerias are inside the interval" is wrong), and the z-or-t choice.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment six','Workbook fields',['w6_ci — your 95% confidence interval for the Geneva price, written as a sentence a bank would accept.','w6_n — the sample size for the margin you would want, and whether it is worth the visits.'],'Exercise')],
   slides=['Applied Statistics · Week 6 — Estimation','Recap → today: turning σ/√n around','Poll: the Geneva price ± how much?','The interval: x̄ ± z·σ/√n','What 95% means — 100 intervals, ~95 catches','Small samples: t and df = n − 1','z or t? the decision','A proportion: p̂ ± z·√(p̂q̂/n)','Sample size: n = (z·σ/E)²','Your turn — checkpoint live','Takeaways · homework · Week 7'],
+  ex=[('A 95% interval for the mean',15,'x̄ ± z·σ/√n on the Week 2 data'),
+      ('Change the confidence',10,'90, 95, 99 — what widens, and what it buys'),
+      ('z or t?',10,'six situations, the decision and the reason'),
+      ('A small-sample interval',18,'n = 8 lakeside pizzerias, t with df = 7'),
+      ('An interval for a proportion',15,'p̂ ± z·√(p̂q̂/n), with the np̂ ≥ 10 check'),
+      ('What does 95% mean?',10,'four statements, one correct — the misinterpretation clinic'),
+      ('Sample size for ± 1 franc',15,'n = (z·σ/E)², and what it costs in visits'),
+      ('Your interval, in a sentence',10,'the one a bank would accept')],
   tools=[('catch-the-mean.html','Catch the mean — intervals that catch µ'),('exam-cards.html','Exam cards c9–c12')]),
 
  dict(n=7,slug='Testing hypotheses',emoji='⚖️',
@@ -103,6 +135,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: hypotheses, tails, the rejection region, a z statistic, a p-value interpretation, Type I vs II, a t test, a proportion test, and "significant ≠ important".'],'Quiz'),
    ('Workshop','The pizzeria file · instalment seven','Workbook fields',['w7_claim — a claim about your pizzeria you would test, with H₀ and Hₐ.','w7_errors — the Type I and Type II error for that test, in plain words, and which one costs you more.'],'Exercise')],
   slides=['Applied Statistics · Week 7 — Testing hypotheses','Recap → today: from "where" to "whether"','Poll: is 19.6 different enough from 20?','H₀ and Hₐ — innocent until the data say otherwise','Left, right, two-tailed','The z test and the rejection region','The p-value: how surprising?','What a p-value is not (five things)','Type I and Type II — which do you fear?','t tests and proportion tests','Your turn — checkpoint live','Takeaways · homework · Week 8'],
+  ex=[('Write the hypotheses',12,'six claims → H₀, Hₐ, and the tail'),
+      ('The rejection region',15,'a z test at α = 0.05 on the CHF 20 claim'),
+      ('Change α',10,'0.10, 0.05, 0.01 — what moves, and what it costs'),
+      ('Compute a p-value',15,'the same test, the other way round'),
+      ('What a p-value is not',12,'five statements — spot the three that are wrong'),
+      ('Type I or Type II?',12,'name both errors for the pizzeria, and price them'),
+      ('A small-sample t test',15,'twelve lakeside pizzerias, df = 11'),
+      ('A test for a proportion',12,'“more than 30% charge over CHF 20”')],
   tools=[('real-or-random.html','Real or random? — signal vs noise, again'),('exam-cards.html','Exam cards c13–c15')]),
 
  dict(n=8,slug='Two-sample problems',emoji='⚔️',
@@ -120,6 +160,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: SE of a difference, a two-sample z, a pooled t, paired vs independent ×3, two proportions, and one sample-size question.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment eight','Workbook fields',['w8_design — an A/B test for your pizzeria (two recipes, two prices, two evenings): what is compared, paired or independent, and why.','w8_result — what result would make you change the menu, in numbers.'],'Exercise')],
   slides=['Applied Statistics · Week 8 — Two-sample problems','Recap → today: from one claim to two things','Poll: the lake–station price gap','The difference of two means and its SE','Large samples: z','Small samples: the pooled t','Paired samples: the difference is the data','Paired or independent? — the decision','Two proportions','Your turn — checkpoint live','Takeaways · homework · Week 9'],
+  ex=[('Independent or paired?',12,'eight designs — the decision that carries the chapter'),
+      ('The SE of a difference',12,'√(σ₁²/n₁ + σ₂²/n₂), and why it is not σ₁ + σ₂'),
+      ('Two means, large samples',18,'lake vs station: the interval and the test'),
+      ('Pooled variance',15,'s_p² step by step, df = n₁ + n₂ − 2'),
+      ('Two means, small samples',15,'eight and ten pizzerias, the pooled t'),
+      ('The paired test',18,'the same twelve before and after — and what the independent test misses'),
+      ('Two proportions',15,'pooled p̂ for the test, unpooled SE for the interval'),
+      ('Design your A/B test',10,'two recipes, two evenings: what is compared, and how')],
   tools=[('exam-cards.html','Exam cards c16–c19')]),
 
  dict(n=9,slug='Correlation and regression',emoji='📈',
@@ -137,6 +185,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: interpret r, interpret b₁, compute ŷ, the slope test, r², a prediction, extrapolation, and correlation ≠ causation.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment nine','Workbook fields',['w9_model — one thing that might predict your takings, as ŷ = b₁x + b₀ with plausible numbers.','w9_lurking — the lurking variable that could explain that relationship without causation.'],'Exercise')],
   slides=['Applied Statistics · Week 9 — Correlation and regression','Recap → today: two variables at once','Poll: guess r','The scatter, and r','The least-squares line: ŷ = b₁x + b₀','Interpreting the slope in francs','Is the slope real? t on β₁','r²: the share explained','Prediction — and where it stops','The lurking variable, revisited','Your turn — checkpoint live','Takeaways · homework · Week 10'],
+  ex=[('Guess r, then compute it',15,'the price–rating scatter, by hand'),
+      ('Interpret r',10,'four values of r, four sentences'),
+      ('The least-squares line',18,'b₁ and b₀ from the sums'),
+      ('Interpret the slope in francs',10,'and say what b₀ means — or does not'),
+      ('Is the slope real?',15,'the t test on β₁, df = n − 2'),
+      ('r² — the share explained',12,'compute it, then say what it does not tell you'),
+      ('Predict, and refuse to',15,'ŷ at CHF 22, and why not at CHF 40'),
+      ('The lurking variable returns',10,'the Week 1 scatter, coloured by neighbourhood')],
   tools=[('exam-cards.html','Exam cards c20–c23')]),
 
  dict(n=10,slug='Chi-square tests and F-tests',emoji='🧮',
@@ -154,6 +210,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: expected counts, df, a chi-square decision, goodness of fit, an F for variances, an ANOVA table reading, and three "which test?" items.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment ten','Workbook fields',['w10_table — a contingency table your pizzeria could collect, and the hypothesis it would test.','w10_which — for three questions you actually have about your pizzeria, name the test and why.'],'Exercise')],
   slides=['Applied Statistics · Week 10 — Chi-square and F','Recap → today: categories and many groups','Poll: does topping depend on neighbourhood?','Observed vs expected — the chi-square idea','The test for independence','Goodness of fit: the weekday counts','Two variances: F','ANOVA: between vs within','Reading the ANOVA table','Which test? — the semester in one tree','Your turn — checkpoint live','Takeaways · homework · Week 11'],
+  ex=[('Expected counts',15,'row × column ÷ total, cell by cell'),
+      ('The chi-square statistic',18,'Σ(O − E)²/E, and df = (r−1)(c−1)'),
+      ('Decide',10,'against the critical value — and what it means for the menu'),
+      ('Goodness of fit',15,'weekday orders against “all days equal”'),
+      ('A second claim',12,'the same counts against “Friday and Saturday double”'),
+      ('F for two variances',15,'Pâquis vs Rive, at last tested'),
+      ('One-way ANOVA',20,'four branches: between, within, F, and the table'),
+      ('Which test?',15,'twelve pizzeria questions, twelve procedures')],
   tools=[('exam-cards.html','Exam cards c24–c27')]),
 
  dict(n=11,slug='PCA and other non-parametric tests',emoji='🧭',
@@ -171,6 +235,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Eight questions: which non-parametric test, why ranks, what a component is, reading a loadings table, the scree plot, and one machine-learning vocabulary item.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment eleven','Workbook fields',['w11_survey — the survey you would run on your customers: five items, and the analysis you would do.'],'Exercise')],
   slides=['Applied Statistics · Week 11 — Beyond the textbook','Recap → today: when the assumptions fail','Poll: nine questions, how many things?','Ranks instead of values','The non-parametric twins','Mann–Whitney in DataTab — live','PCA: directions of variance','Loadings, components, the scree plot','PCA in DataTab — live','From statistics to machine learning','Your turn — checkpoint','Takeaways · Week 12'],
+  ex=[('Which non-parametric twin?',12,'six parametric tests → their counterparts'),
+      ('Ranks by hand',12,'rank the data, and watch the outlier lose its power'),
+      ('Mann–Whitney in DataTab',20,'lake vs station: run it, read it'),
+      ('Wilcoxon on the paired data',15,"Week 8's before-and-after, without the normality assumption"),
+      ('Spearman vs Pearson',15,'the price–rating data both ways — and when they disagree'),
+      ('Read a loadings table',15,'nine survey items, two components'),
+      ('PCA in DataTab',20,'run it on the survey, then name the components'),
+      ('What would you report?',10,'one paragraph for a non-technical partner')],
   tools=[]),
 
  dict(n=12,slug='Statistics in Python',emoji='🐍',
@@ -187,6 +259,14 @@ SPEC=[
    ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Eight questions: read four Python outputs and answer the exam-style question each one settles; plus the ddof trap and one "the code ran, the test was wrong" item.'],'Quiz'),
    ('Workshop','The pizzeria file · instalment twelve','Workbook fields',['w12_notebook — the Colab link (set to "anyone with the link can view") for the notebook that reproduces your project\'s numbers.','w12_learned — one line on what the notebook told you that the hand calculation did not, and one thing Python made easy that would have been an hour by hand.'],'Exercise')],
   slides=['Applied Statistics · Week 12 — Statistics in Python','Why code, when the exam is by hand','Colab: nothing to install','Cells, Series, DataFrames','Describe: the thirty prices in one line','The ddof trap: pandas vs NumPy','Infer: scipy.stats, test by test','Regression: statsmodels summary()','Reading an output without panic','The machine does the arithmetic, you choose the test','Your notebook is your project','Takeaways · Weeks 13–15'],
+  ex=[('First cell',8,'open Colab, a list, a Series — and where it saved'),
+      ('The DataFrame',12,'read_csv on the course data, .head(), .describe()'),
+      ('Describe, reproduced',15,'mean, median, std, quantile — matched to your Week 2 answers'),
+      ('The ddof trap',12,'pandas .std() vs numpy .std() — which one is the sample SD'),
+      ('Two pictures',12,'plt.hist and plt.boxplot, three lines each'),
+      ('Three tests',20,'ttest_1samp, ttest_ind, ttest_rel against your hand results'),
+      ('chi2_contingency and f_oneway',15,'the Week 10 tables, reproduced'),
+      ('Read summary()',18,'statsmodels OLS: coefficient, se, t, p, R² — line by line')],
   tools=[]),
 
  dict(n=13,slug='Exercises and repetition I',emoji='🔁',
@@ -202,6 +282,11 @@ SPEC=[
    ('Sampling and estimation','Exam cards c7–c12','CLT · proportions · z and t intervals · sample size',['The decision drill: z or t? mean or proportion? — twelve wordings, twelve answers.'],'Drill'),
    ('Open questions','Bring what you could not do','Q&A, worked live',['A workbook field: the one question type you still cannot do — read before the session, answered in it.'],'Q&A')],
   slides=['Applied Statistics · Week 13 — Exercises I','How the exam reads: six exercises, ten points each','Exercise 1 — describe (20 min)','Worked answer, and the traps','Exercise 2 — probability and the normal','Worked answer','Exercise 3 — estimation','Worked answer','Your questions','Next: Weeks 7–12'],
+  ex=[('Exercise 1 · describe',20,'a full descriptive analysis under exam conditions'),
+      ('Exercise 2 · probability and the normal',20,'binomial and normal, one paper question'),
+      ('Exercise 3 · estimation',20,'a confidence interval, with the z-or-t decision'),
+      ('The trap list',15,'n vs n−1, which tail, P(X = k) vs P(X ≤ k), standardise first'),
+      ('Your worst archetype',15,'the exam card the dashboard says you struggle with')],
   tools=[('practice.html','Practice arena'),('exam-cards.html','Exam cards')]),
 
  dict(n=14,slug='Exercises and repetition II',emoji='🔁',
@@ -217,6 +302,11 @@ SPEC=[
    ('Regression and chi-square','Exam cards c20–c27','r, the line, the slope test, r², chi-square, F, ANOVA',['The interpretation drill: every number in an output, in one business sentence.'],'Drill'),
    ('Open questions','Bring what you could not do','Q&A, worked live',['A workbook field: the question type you still cannot do.'],'Q&A')],
   slides=['Applied Statistics · Week 14 — Exercises II','Which test? — the tree','Exercise 4 — a test (20 min)','Worked answer, and the traps','Exercise 5 — two samples or regression','Worked answer','Exercise 6 — chi-square or ANOVA','Worked answer','Your questions','Next: the blank test'],
+  ex=[('Which test? — the tree',15,'twelve wordings routed to twelve procedures'),
+      ('Exercise 4 · a test',20,'one-sample, with a p-value and a conclusion sentence'),
+      ('Exercise 5 · two samples or regression',20,'paired vs independent, or a slope test'),
+      ('Exercise 6 · chi-square or ANOVA',20,'a contingency table or a four-group comparison'),
+      ('Interpretation drill',15,'every number in an output, in one business sentence')],
   tools=[('practice.html','Practice arena'),('exam-cards.html','Exam cards')]),
 
  dict(n=15,slug='The blank test',emoji='📝',
@@ -231,6 +321,10 @@ SPEC=[
    ('Your two sheets','What to write on them','Formulas, decision rules, the traps — not worked examples',['A card with the recommended contents of the two sheets, section by section: the formula list, the "which test?" tree, the n − 1 rule, the tail conventions.'],'Sheets'),
    ('Last pass','The two types you rehearse once more','Exam cards, targeted',['From your blank-test score: the two archetypes to redo with fresh numbers until Week 16.'],'Rehearse')],
   slides=['Applied Statistics · Week 15 — The blank test','How it went: the room\'s scores','Exercise 1–2: worked','Exercise 3–4: worked','Exercise 5–6: worked','What your sheets should contain','The traps, one last time','Week 16: what to bring'],
+  ex=[('Sit the paper',90,'six exercises, ninety minutes, two hand-written sheets — at home'),
+      ('Correct it against the key',30,'score yourself honestly, exercise by exercise'),
+      ('What your sheets were missing',20,'rewrite them from whatever you had to look up'),
+      ('The two archetypes to redo',20,'chosen from your own score, with fresh numbers')],
   tools=[('exam-cards.html','Exam cards')]),
 
  dict(n=16,slug='Final exam',emoji='🎓',
@@ -252,7 +346,16 @@ def esc(s): return html.escape(s,quote=True)
 
 def page(w):
   n=w['n']; sections=w['sections']
-  secs_js=json.dumps([dict(id='s%d'%(i+1),num='%d.%d'%(n,i+1),name=s[1],tag=s[2],badge=s[4]) for i,s in enumerate(sections)],ensure_ascii=False)
+  exl=w.get('ex') or []
+  exmins=sum(m for _,m,_ in exl)
+  _secs=[dict(id='s%d'%(i+1),num='%d.%d'%(n,i+1),name=s[1],tag=s[2],badge=s[4],part=1) for i,s in enumerate(sections)]
+  if exl:
+    _secs.insert(len(sections)-2 if len(sections)>2 else len(sections),
+      dict(id='ex',num='%d.X'%n,name='Exercises — worked together',
+           tag='%d exercises · ~%d min · solutions released in class'%(len(exl),exmins),
+           badge='Part 2',part=2))
+    for j,x in enumerate(_secs): x['num']='%d.%d'%(n,j+1)
+  secs_js=json.dumps(_secs,ensure_ascii=False)
   slides_js=json.dumps([dict(cls=('dk' if i==0 else None),k=('HEG Genève · Applied Statistics' if i==0 else 'Week %d · slide %d'%(n,i+1)),t=t,
                              b=('<p style="font-size:1.15em"><b>Week %d · %s</b></p><p>Jan Erik Meidell · Haute école de gestion de Genève</p><div class="onproj"><b>Outline deck →</b> this week\'s slides are an outline. Each title becomes a full slide, with an "On the pizzeria →" callout and speaker notes, when the week is written.</div>'%(n,w['slug']) if i==0 else '<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1–2 pattern.</li></ul>'),
                              logo=(True if i==0 else None),n='Outline — speaker notes to write.') for i,t in enumerate(w['slides'])],ensure_ascii=False)
@@ -278,6 +381,22 @@ def page(w):
   </div>
   %s
 </section>'''%(n,i+1,sid,i+1,n,i+1,kick,name,lab,badge,tag,plan_html,nav))
+  ex_rows=''.join('<li><b>Exercise %d · %s</b> &nbsp;<span class="exm">%d min</span><br><span style="color:var(--grey)">%s</span></li>'
+                  %(j+1,html.escape(t),mn,html.escape(wht)) for j,(t,mn,wht) in enumerate(exl))
+  ex_screen=('''
+<!-- ==================== PART 2 · EXERCISES (outline) ==================== -->
+<section class="screen" id="ex" data-num="99">
+  <button class="crumb" data-home>&larr; Week menu</button>
+  <div class="sec-head"><div class="kicker">Part 2 &middot; Exercises</div><h2>%d exercises, worked together</h2></div>
+  <div class="card">
+    <span class="label play">Planned &middot; ~%d min</span>
+    <h3>The second half of the session</h3>
+    <p class="lead">When this week is written, each exercise below becomes a <em>form on this page</em> and a <em>slide in the deck</em>, generated from one array so the two can never disagree &mdash; and its solution opens when the instructor reveals it in class. Same engine as Weeks 1&ndash;2 (<code>exercises.js</code>).</p>
+    <ul class="plan-list">%s</ul>
+    <div class="case-note"><b>Status &rarr;</b> outline only. Nothing here is interactive or counted yet.</div>
+  </div>
+  <div class="nav-foot"><button class="btn ghost" data-home>Menu</button><a class="btn" href="index.html" style="text-decoration:none;display:inline-block;">Course page &rarr;</a></div>
+</section>''' % (len(exl), exmins, ex_rows)) if exl else ''
   return '''<!doctype html>
 <html lang="en">
 <head>
@@ -309,7 +428,7 @@ def page(w):
     <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%%</span></div>
   </div>
 </div>
-<div class="draft-banner">🔧 <b>Week %d is in preparation.</b> What follows is the plan for the week — its objectives, sections and slide outline. Nothing here is counted yet.</div>
+<div class="draft-banner">🔧 <b>Week %d is in preparation.</b> What follows is the plan for the 3-hour session — objectives, the Part 1 sections, the Part 2 exercise outline and the slide outline. Nothing here is counted yet.</div>
 
 <div class="wrap">
 
@@ -319,7 +438,7 @@ def page(w):
     <h1>%s</h1>
     <p class="sub">%s</p>
     <div class="liveinfo">
-      <span class="li">🏫 In class: <b>Week %d</b></span>
+      <span class="li">🏫 In class: <b>3 h</b> · lesson ~1 h, then exercises ~2 h</span>
       <span class="li">📖 <b>%s</b></span>
       <span class="li">▶ The <b>Lecture</b> button shows the slide outline</span>
     </div>
@@ -345,6 +464,7 @@ def page(w):
   </div>
 </section>
 %s
+%s
 </div>
 
 <div id="lect" role="dialog" aria-label="Lecture deck">
@@ -369,8 +489,16 @@ def page(w):
 var SECTIONS=%s;
 function renderList(){
   var list=document.getElementById('sectionList');if(!list)return;list.innerHTML='';
+  var part=0;
   SECTIONS.forEach(function(s){
-    var c=document.createElement('div');c.className='section-card';
+    if(s.part!==part){
+      part=s.part;
+      var h=document.createElement('div');h.className='part-head';
+      h.innerHTML=part===1?'<span class="pt">Part 1 · the lesson</span><span class="pd">~1 hour · presented from the deck, followed here</span>'
+                          :'<span class="pt">Part 2 · exercises</span><span class="pd">~2 hours · worked together</span>';
+      list.appendChild(h);
+    }
+    var c=document.createElement('div');c.className='section-card'+(s.part===2?' part2':'');
     c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+'</div><div class="tag">'+s.tag+'</div><span class="badge">'+s.badge+' · planned</span></div><div class="status">▸</div>';
     c.onclick=function(){show(s.id);};list.appendChild(c);
   });
@@ -419,9 +547,9 @@ renderList();
 <script src="/track.js" defer></script>
 </body>
 </html>
-'''%(n,w['slug'],n,w['slug'],w['ch'],w['emoji'],n,n,n,w['title'],w['sub'],n,esc(w['ch']),n,objs,reads,
+'''%(n,w['slug'],n,w['slug'],w['ch'],w['emoji'],n,n,n,w['title'],w['sub'],esc(w['ch']),n,objs,reads,
      ('<div class="card" style="margin-top:22px;"><span class="label play">Tools for this week</span><div class="tool-links">%s</div></div>'%tools if tools else ''),
-     ''.join(screens),n,w['slug'],secs_js,slides_js,n)
+     ''.join(screens),ex_screen,n,w['slug'],secs_js,slides_js,n)
 
 if __name__=='__main__':
   for w in SPEC:

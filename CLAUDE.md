@@ -169,9 +169,9 @@ Cohort courses also carry: `glossary.html` or `notation.html` (a reference page 
 The Bachelor IBM course, rebuilt in Sept 2026 on the HEG syllabus (16 weeks,
 Saylor's *Introductory Statistics*, 70 % exam · 15 % project · 15 % presence) and
 on the E1410 pattern: a hub with a course-progress bar, one `weekN.html` per
-syllabus week with earned sections, classify exercises, a 10-question checkpoint,
-a workbook and a lecture deck (▶ Lecture, print → PDF), plus `weekN-homework.html`
-on the shared homework engine. One running case throughout: pricing a pizzeria in
+syllabus week — **nine sections**: six lesson screens, the in-class exercise set,
+a 10-question checkpoint and a workbook — with a lecture deck (▶ Lecture,
+print → PDF), plus `weekN-homework.html` on the shared homework engine. One running case throughout: pricing a pizzeria in
 Geneva. Public and listed; shared login only, **no class password** by decision.
 
 - **Theme** is `/shared/themes/heg.css` — blue `#002C46` for headings and dark
@@ -188,6 +188,29 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
 - **Module ids are `w1`, `w1-hw`, `w2`, `w2-hw`…** — they replaced `m0`/`ch1` in
   the rebuild. The old filenames (`m0-foundations.html`, `ch1-descriptive.html`,
   the two homeworks) are redirect stubs; keep them. `keyPrefix` stays `stats`.
+- **A session is 3 hours in two parts, and the deck and the page mirror each
+  other.** Part 1 (~1 h) is six lesson sections; each `SECTIONS[]` entry carries
+  `slide:` and the matching slide carries `site:'sN'`, rendered as a chip on
+  both. Part 2 (~2 h) is the in-class exercise set. Change one side of that
+  mapping and you must change the other — nothing checks it for you.
+- **`exercises.js` is the Part 2 engine, and ONE `EXERCISES` array per week is
+  the source of truth** for the page form, the deck slide and the speaker-note
+  solution, so the three cannot drift. `StatsEx.mount()` builds the forms,
+  `StatsEx.slides()` the slides, `StatsEx.wireSlide()` the reveal button.
+  Answers go to `mod/<m>/ex/<id>` — *not* `work/`, which is the graded project.
+- **Solutions are released by the instructor, per exercise.** The instructor's
+  device is the one where `AdminGate.isUnlocked()` is true (the same password as
+  the dashboards); there, every solution is in the speaker notes from the start,
+  and the slide's reveal button writes `statistics/_release/<mod>/<exId>`.
+  Student pages poll it every 8 s and unlock; releases are permanent. On a
+  student device the solution is never rendered into the deck — but **the `sol:`
+  text is still in the page source**, like every homework solution in this repo.
+  The release stops a student racing ahead in class; it is not secrecy. Never
+  put anything confidential in a `sol:`.
+- **The student sign-in prompt is suppressed when the gate is unlocked**
+  (`COURSE_LOGIN_AUTO=false`), or it lands on top of a slide mid-lecture.
+- **Every `ans:` was verified in Python before shipping.** The answer key goes on
+  a projector in front of thirty people. Do the same for any new set.
 - **The progress denominator is `EXTRA_STEPS.length + .cl-row + .q + [data-work]`.**
   Same trap as E1410's `exercises.js`: any element added to a live week page with
   class `q` or `cl-row` or a `data-work` attribute silently lowers every
