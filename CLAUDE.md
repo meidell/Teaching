@@ -23,6 +23,8 @@ Database (`teaching-70f1c`), namespaced per course.
 /shared/              the shared runtime (see §3)
 /track.js             site-wide pageview logger (loaded by ~190 pages)
 /<course>/            one folder per course; see §4
+/<School>/<course>/   some courses sit under a school folder — HEG, Kalaidos, UMEF.
+                      `dir` in courses.json carries the full path either way
 ```
 
 ## 2. courses.json — the registry
@@ -504,7 +506,12 @@ trusts. The two are not the same thing and one cannot replace the other.
 
 - **Absolute paths for shared assets** (`/shared/…`, `/track.js`), relative for
   course-local ones. The `digital banking` folder has a space in it — always URL-encode
-  it as `digital%20banking` in hrefs.
+  it as `Kalaidos/digital%20banking` in hrefs.
+- **A course folder may be nested one level under a school** (`HEG/statistics`,
+  `Kalaidos/digital banking`, `UMEF/negotiation`). `dir` is the path from the web
+  root, so `encodeURI(COURSE.dir)` still builds the right link — it leaves `/`
+  alone. A page inside a nested course reaches the root catalogue with
+  `../../index.html`, not `../index.html`.
 - **Theme via CSS variables.** A page's `<style>` should contain layout that is genuinely
   unique to it. Shared layout belongs in `/shared/lesson.css` or `/shared/homework.css`;
   colours belong in `/shared/themes/<theme>.css`. A new week page links a theme plus its
