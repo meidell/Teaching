@@ -28,7 +28,9 @@ window.CourseConfig = (function () {
     umef:  { deep:"#0F4C60", bar:"#176B87", main:"#176B87", glow:"#2A93B0",
              pale:"#E3EEF2", surface:"#F4F6F8", ink:"#232A31", grey:"#6B7280" },
     navy:  { deep:"#0a1a3a", bar:"#152a5e", main:"#1e5aa8", glow:"#f0b33d",
-             pale:"#E8EEF8", surface:"#F4F6FA", ink:"#0a1a3a", grey:"#5A6B87" }
+             pale:"#E8EEF8", surface:"#F4F6FA", ink:"#0a1a3a", grey:"#5A6B87" },
+    heg:   { deep:"#002C46", bar:"#002C46", main:"#CC0000", glow:"#FF3127",
+             pale:"#FFF0EF", surface:"#F6F7F7", ink:"#24272A", grey:"#5F6B76" }
   };
 
   /* key = the data-course value on the page.
@@ -48,8 +50,8 @@ window.CourseConfig = (function () {
                    label:"E1410 · Advanced Project Management in AI" },
     "umef407":   { ns:"umef407",   theme:"umef",  lang:"en", login:true,
                    label:"UMEF407 · Digital Innovation" },
-    "statistics":{ ns:"statistics",theme:"navy",  lang:"en", login:true, key:"stats",
-                   label:"Statistics & Data" }
+    "statistics":{ ns:"statistics",theme:"heg",   lang:"en", login:true, key:"stats",
+                   label:"HEG · Applied Statistics" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
