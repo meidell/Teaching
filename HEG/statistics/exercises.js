@@ -99,20 +99,27 @@ window.StatsEx = (function () {
   }
   /* students: poll while the tab is visible. 8s is fast enough that the
      room unlocks together, cheap enough to leave running for two hours. */
-  var polling=false;
+  var polling=false, relFails=0, relBlocked=false;
+  function releaseBlocked(){return relBlocked;}
   function startPolling(mod){
     if(polling||isInstructor())return; polling=true;
     function tick(){
       if(document.hidden)return;
       fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'.json')
-        .then(function(r){return r.json();})
+        .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); })
         .then(function(o){
+          if(o&&o.error)throw new Error(o.error);
+          relFails=0; if(relBlocked){relBlocked=false;notify();}
           if(!o)return;
           var changed=false;
           if(!released[mod])released[mod]={};
           for(var k in o){if(o[k]&&!released[mod][k]){released[mod][k]=o[k];changed=true;}}
           if(changed){saveReleaseLocal(mod);notify();}
-        }).catch(function(){});
+        }).catch(function(){
+          /* If we cannot read the release node the solution button would stay
+             locked for ever with no explanation. Say so instead. */
+          if(++relFails>=2&&!relBlocked){relBlocked=true;notify();}
+        });
     }
     tick(); setInterval(tick,8000);
     document.addEventListener('visibilitychange',function(){if(!document.hidden)tick();});
@@ -231,7 +238,9 @@ window.StatsEx = (function () {
         if(act==='hint'){show('hint','💡 <b>Hint.</b> '+x.hint);return;}
         if(act==='sol'){
           if(!inst&&!isReleased(mod,x.id)){
-            show('hint','🔒 <b>Not yet.</b> We do this one together — the solution opens when your instructor reveals it in class. Try it, take the hint, and check your answer meanwhile.');
+            show('hint', releaseBlocked()
+              ? '⚠ <b>This device cannot reach the solutions server</b>, so this button will not unlock on its own. Tell your instructor — they can read the solution out, and it needs fixing for everyone.'
+              : '🔒 <b>Not yet.</b> We do this one together — the solution opens when your instructor reveals it in class. Try it, take the hint, and check your answer meanwhile.');
             return;
           }
           show('sol',(inst?'<span class="ei-tag">instructor view</span>':'')+'📘 <b>Solution.</b> '+x.sol);
@@ -306,7 +315,7 @@ window.StatsEx = (function () {
     });
   }
 
-  return {mount:mount, slides:slides, wireSlide:wireSlide,
+  return {mount:mount, slides:slides, wireSlide:wireSlide, releaseBlocked:releaseBlocked,
           isInstructor:isInstructor, release:release, releaseAll:releaseAll,
           isReleased:isReleased, onChange:function(f){listeners.push(f);}};
 })();

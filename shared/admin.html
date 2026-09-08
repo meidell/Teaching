@@ -199,6 +199,7 @@ a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
   <div class="stats" id="stats"></div>
   <div class="panel" id="attention" style="display:none"></div>
   <div class="panel" id="subsPanel" style="display:none"></div>
+  <div class="panel" id="presencePanel" style="display:none"></div>
 
   <div class="panel">
     <h2>Cohort announcement</h2>
@@ -231,6 +232,23 @@ a.back{color:var(--deep);text-decoration:none;font-size:12.5px;font-weight:600;}
   <div class="hint" id="hint"></div>
 </div>
 
+<style>
+/* presence · one column per session. Opt-in: a course gets this panel only
+   if its courses.json `features` include "presence". */
+#presencePanel table.pres{width:auto;min-width:100%;border-collapse:collapse;font-size:12.5px;}
+#presencePanel table.pres th,#presencePanel table.pres td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap;}
+#presencePanel table.pres th.nm,#presencePanel table.pres td.nm{text-align:left;position:sticky;left:0;background:var(--card);z-index:2;}
+#presencePanel table.pres thead th{background:var(--deep);color:#fff;font-size:10px;letter-spacing:.5px;text-transform:uppercase;position:sticky;top:0;}
+#presencePanel table.pres thead th.nm{background:var(--deep);color:#fff;z-index:3;}
+#presencePanel .pcell{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:6px;cursor:pointer;font-weight:700;}
+#presencePanel .pcell.yes{background:rgba(47,133,90,.16);color:#1F6B45;}
+#presencePanel .pcell.no{background:#EEF1F5;color:#B6BFC8;}
+#presencePanel .pcell:hover{outline:2px solid var(--main);}
+#presencePanel td.tot{font-weight:800;color:var(--deep);}
+#presencePanel .live{color:#B3402A;font-weight:800;}
+#presencePanel .presbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+#presencePanel .wrapx{overflow:auto;max-height:70vh;}
+</style>
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
 <script>
@@ -528,6 +546,84 @@ function render(){
   });
   renderAttention();
   renderProject();
+  renderPresence();
+}
+
+/* ---------- presence ----------
+   Opt-in per course: `features` must contain "presence". Sessions live at
+   <ns>/_presence/<sessionId> with a marks/<sid> map, which the root fetch
+   already brought back — so a column appears the moment a session is opened,
+   with no extra request and no schema maintained here.
+   Clicking a cell toggles a student's mark by hand: somebody always arrives
+   late or has a flat battery, and the alternative is a register that is
+   quietly wrong. */
+function hasPresence(){return !!(COURSE&&(COURSE.features||[]).indexOf('presence')>=0);}
+function presSessions(){
+  var p=(ROOT&&ROOT._presence)||{};
+  var ids=Object.keys(p).filter(function(k){var x=p[k];return x&&(x.openedAt||x.closedAt||x.open);});
+  function ord(id){var m=/^w(\d+)/.exec(id);return m?parseInt(m[1],10):999;}
+  ids.sort(function(a,b){return ord(a)-ord(b)||a.localeCompare(b);});
+  return ids.map(function(id){var x=p[id]||{};return {id:id,label:x.label||id,open:!!x.open,marks:x.marks||{}};});
+}
+async function presToggle(sid,session,on){
+  var url=DB+'/'+NS+'/_presence/'+encodeURIComponent(session)+'/marks/'+encodeURIComponent(sid)+'.json'+(await authQ());
+  try{
+    await fetch(url,on?{method:'PUT',body:JSON.stringify(Date.now())}:{method:'DELETE'});
+    if(!ROOT._presence)ROOT._presence={};
+    if(!ROOT._presence[session])ROOT._presence[session]={};
+    if(!ROOT._presence[session].marks)ROOT._presence[session].marks={};
+    if(on)ROOT._presence[session].marks[sid]=Date.now(); else delete ROOT._presence[session].marks[sid];
+    renderPresence();
+  }catch(e){}
+}
+function renderPresence(){
+  var el=$('presencePanel');
+  if(!hasPresence()){el.style.display='none';return;}
+  var S=presSessions();
+  el.style.display='block';
+  if(!S.length){
+    el.innerHTML='<h2 id="presence">Presence</h2><div class="sub">No session has been opened yet. Open one from the week page \u2014 the control sits on the page and in the lecture deck \u2014 and a column appears here immediately.</div>';
+    return;
+  }
+  var rows=sorted(), held=S.length;
+  var head='<tr><th class="nm">Student</th>'+S.map(function(x){
+      return '<th title="'+esc(x.label)+'">'+esc(x.id.toUpperCase())+(x.open?'<br><span class="live">live</span>':'')+'</th>';
+    }).join('')+'<th>Present</th><th>Rate</th></tr>';
+  var body=rows.map(function(r){
+    var here=0;
+    var cells=S.map(function(x){
+      var on=!!x.marks[r.sid]; if(on)here++;
+      return '<td><span class="pcell '+(on?'yes':'no')+'" data-sid="'+esc(r.sid)+'" data-ses="'+esc(x.id)+'" data-on="'+(on?1:0)+
+             '" title="'+(on?'Present \u2014 click to remove':'Absent \u2014 click to mark present')+'">'+(on?'\u2713':'\u00b7')+'</span></td>';
+    }).join('');
+    return '<tr><td class="nm">'+esc(r.name)+'</td>'+cells+
+           '<td class="tot">'+here+' / '+held+'</td><td class="tot">'+Math.round(here/held*100)+'%</td></tr>';
+  }).join('');
+  var totals='<tr><td class="nm"><b>In the room</b></td>'+S.map(function(x){
+      var n=0;for(var k in x.marks)n++;return '<td class="tot">'+n+'</td>';}).join('')+
+      '<td class="tot">\u2014</td><td class="tot">\u2014</td></tr>';
+  el.innerHTML='<h2 id="presence">Presence</h2>'+
+    '<div class="sub">One column per session held. <b>20% of the grade, pro rata</b> \u2014 the rate column is the mark. '+
+    'Students press the button in the room while you have the window open; click any cell here to correct it by hand.</div>'+
+    '<div class="presbar"><button class="btn" id="bPresCsv">\u2b07 Presence CSV</button>'+
+    '<span class="muted">'+held+' session'+(held>1?'s':'')+' held \u00b7 '+rows.length+' students</span></div>'+
+    '<div class="wrapx"><table class="pres"><thead>'+head+'</thead><tbody>'+body+totals+'</tbody></table></div>';
+  Array.prototype.forEach.call(el.querySelectorAll('.pcell'),function(c){
+    c.addEventListener('click',function(){
+      presToggle(c.getAttribute('data-sid'),c.getAttribute('data-ses'),c.getAttribute('data-on')!=='1');
+    });
+  });
+  $('bPresCsv').addEventListener('click',function(){
+    var lines=[['Student'].concat(S.map(function(x){return x.id;})).concat(['Present','Held','Rate %']).join(',')];
+    sorted().forEach(function(r){
+      var here=0;
+      var cs=S.map(function(x){var on=!!x.marks[r.sid];if(on)here++;return on?'1':'0';});
+      lines.push(['"'+String(r.name).replace(/"/g,'""')+'"'].concat(cs).concat([here,held,Math.round(here/held*100)]).join(','));
+    });
+    var b=new Blob([lines.join('\n')],{type:'text/csv'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download=NS+'-presence.csv';a.click();
+  });
 }
 
 /* ---------- final project · section by section ---------- */
