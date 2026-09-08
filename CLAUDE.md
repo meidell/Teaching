@@ -167,7 +167,8 @@ Cohort courses also carry: `glossary.html` or `notation.html` (a reference page 
 ### HEG · Applied Statistics — `HEG/statistics/`
 
 The Bachelor IBM course, rebuilt in Sept 2026 on the HEG syllabus (16 weeks,
-Saylor's *Introductory Statistics*, 70 % exam · 15 % project · 15 % presence) and
+Saylor's *Introductory Statistics*, 60 % exam · 20 % project · 20 % presence — the
+syllabus prints 70/15/15 and Jan Erik overrode it) and
 on the E1410 pattern: a hub with a course-progress bar, one `weekN.html` per
 syllabus week — **nine sections**: six lesson screens, the in-class exercise set,
 a 10-question checkpoint and a workbook — with a lecture deck (▶ Lecture,
@@ -207,6 +208,19 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   text is still in the page source**, like every homework solution in this repo.
   The release stops a student racing ahead in class; it is not secrecy. Never
   put anything confidential in a `sol:`.
+- **Presence is 20% of the grade, pro rata, and `presence.js` records it.** The
+  instructor opens a window for the session (a control on the week page, and the
+  same node is editable from the dashboard); every student's button goes grey →
+  red; each student presses it once; the instructor closes it. Data lives at
+  `statistics/_presence/<mod>` — `open`, `label`, `openedAt`/`closedAt` and a
+  `marks/<sid>` map. **Marks live under `_presence`, not under `<sid>`**, so that
+  a mark cannot exist without a session behind it and one read gives the whole
+  register. `/shared/admin.html` grows a column per session automatically —
+  opt-in via `"presence"` in the course's `features`; any cell is clickable to
+  correct the register by hand, because somebody always arrives late.
+- **The grade is 60 exam / 20 project / 20 presence**, not the syllabus's
+  70/15/15. If you change it, it is stated in four places: the hub's intro modal,
+  its assessment block, `teaching-plan.html` §1 and Week 1's slide 2.
 - **The student sign-in prompt is suppressed when the gate is unlocked**
   (`COURSE_LOGIN_AUTO=false`), or it lands on top of a slide mid-lecture.
 - **Every `ans:` was verified in Python before shipping.** The answer key goes on
@@ -525,9 +539,25 @@ before `/track.js`; nothing else. The launcher stays bottom-right and steps up t
 
 ⚠️ **This file is a copy. Editing it changes nothing until you deploy it** — paste it
 into Firebase Console → Realtime Database → Rules → Publish (or `firebase deploy
---only database`). **As of Aug 2026 it has never been deployed** — the live rules are
-still the original `{".read": true, ".write": true}` per namespace. Everything below
-describes what this file *would* enforce, not what the database does today.
+--only database`). Everything below describes what this file *would* enforce, not
+what the database does today.
+
+⚠️ **The live rules and this file have drifted, and they differ per namespace.**
+Probed 8 Sep 2026 with anonymous REST reads:
+
+| Namespace | anonymous read | anonymous write |
+|---|---|---|
+| `omba401`, `ombafr455`, `e1410`, `umef407` | **yes** (the original open rules) | yes |
+| `statistics` | **NO — HTTP 401 on every path** | yes |
+| `analytics` | no | — |
+
+So `statistics` is the one course where the student runtime cannot read anything:
+`announce.js`, `login.js`'s cross-device merge, `courseprogress.js`'s Firebase
+refine, `exercises.js`'s solution release and `presence.js` all fail there. Writes
+still work, so progress is *recorded* and simply never read back. **Deploying this
+file fixes it** (it gives `statistics` the same per-path public reads the other
+courses have by accident). Until then the two release-driven features degrade to a
+visible warning rather than a silently dead button — see `presence.js`.
 
 What the current version enforces, and why it changed:
 

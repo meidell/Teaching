@@ -332,12 +332,12 @@ SPEC=[
   sub='Ninety minutes, closed book, six exercises. Everything below is the syllabus\'s own rules, so that nothing about the format is a surprise on the day. The date and room are on Cyberlearn.',
   ch='Week 16 · exam week',
   reads=[],
-  objectives=['Know the format: 90 minutes, six exercises of ten points, graded to the half point, 70% of the course grade.','Bring exactly what is allowed: a simple non-programmable calculator and two hand-written sheets (both sides).','Leave at home what is not: computers, phones, communication devices of any kind.','Hand in the pizzeria file — the individual project — by the deadline on Cyberlearn.'],
+  objectives=['Know the format: 90 minutes, six exercises of ten points, graded to the half point, 60% of the course grade.','Bring exactly what is allowed: a simple non-programmable calculator and two hand-written sheets (both sides).','Leave at home what is not: computers, phones, communication devices of any kind.','Hand in the pizzeria file — the individual project — by the deadline on Cyberlearn.'],
   sections=[
    ('The format','What the paper looks like','Six exercises · ten points each · 90 minutes',['One exercise per block of the course: describe · probability and the normal · sampling and estimation · a test · two samples or regression · chi-square or ANOVA. Each is one of the archetypes in the exam cards, with fresh numbers.'],'Format'),
    ('The rules','What you may bring','Calculator and two hand-written sheets',['A simple, non-programmable calculator. A personal summary of two sheets, two-sided (four pages), hand-written — printed or photocopied sheets are not allowed. No computers, smartphones or communication devices.'],'Rules'),
    ('The project','Hand in the pizzeria file','15% · individual · graded to the half point',['The workshop pages from Weeks 1–12, finished and argued, as one document. The deadline and the upload are on Cyberlearn.'],'Project'),
-   ('After','Results and the viva that never was','How the grade is built',['Final grade = 15% presence + 15% project + 70% exam. Results on the school\'s schedule.'],'Grade')],
+   ('After','Results and the viva that never was','How the grade is built',['Final grade = 20% presence (pro rata) + 20% project + 60% exam. Results on the school\'s schedule.'],'Grade')],
   slides=['Applied Statistics · Week 16 — the final exam','The format: six exercises, 90 minutes','What you may bring','The project deadline','Good luck'],
   tools=[('exam-cards.html','Exam cards')]),
 ]
