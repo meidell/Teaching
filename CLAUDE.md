@@ -542,24 +542,27 @@ into Firebase Console → Realtime Database → Rules → Publish (or `firebase 
 --only database`). Everything below describes what this file *would* enforce, not
 what the database does today.
 
-⚠️ **The live rules and this file have drifted, and they differ per namespace.**
-Probed 8 Sep 2026 with anonymous REST reads:
+✅ **Deployed 8 Sep 2026.** The live rules now match this file. Verified by
+anonymous REST probe on all five course namespaces:
 
-| Namespace | anonymous read | anonymous write |
+| Path | Anonymous | Why |
 |---|---|---|
-| `omba401`, `ombafr455`, `e1410`, `umef407` | **yes** (the original open rules) | yes |
-| `statistics` | **NO — HTTP 401 on every path** | yes |
-| `analytics` | no | — |
+| `<ns>` (the whole cohort) | **401** | enumeration is the thing to stop |
+| `<ns>/<sid>` | 200 | a device must fetch its own progress with no login |
+| `<ns>/_announce`, `_quizmeta/$mod`, `_roster/$sid`, `_chat/$tid` | 200 | the student runtime reads these |
+| `statistics/_release/$mod`, `statistics/_presence/$session` | 200 | solution release · the presence window |
+| `statistics/_presence` (the node itself) | **401** | deliberate — it would hand out the cohort's sid list in one request, and a sid is what makes `<ns>/<sid>` guessable. `StatsPresence.mine()` therefore reads **one session at a time**; do not "optimise" it into a single read. |
+| writing `_presence/$session` (open/close), `_release/…` | **401** | instructor token only |
+| writing `_presence/$session/marks/$sid` | 401 unless that session is **open** | a student marks themselves once, only inside the window, and can never remove a mark |
+| writing `<ns>/<sid>`, `analytics/$day/$hit` | 200 | progress and pageviews still record with no login |
+| **deleting** anything under `<ns>/<sid>` | **401** | a write must leave data behind, so nobody can wipe a student |
 
-So `statistics` is the one course where the student runtime cannot read anything:
-`announce.js`, `login.js`'s cross-device merge, `courseprogress.js`'s Firebase
-refine, `exercises.js`'s solution release and `presence.js` all fail there. Writes
-still work, so progress is *recorded* and simply never read back. **Deploying this
-file fixes it** (it gives `statistics` the same per-path public reads the other
-courses have by accident). Until then the two release-driven features degrade to a
-visible warning rather than a silently dead button — see `presence.js`.
+**Consequence worth knowing:** every dashboard now requires the 🔑 Google
+sign-in, because the root read it starts with is refused. That was always the
+design (`admin.html` falls through to `signIn()`), but before the deploy the
+anonymous read happened to succeed, so the button was never needed.
 
-What the current version enforces, and why it changed:
+What the current version enforces, and why it changed:What the current version enforces, and why it changed:
 
 | | Before | Now |
 |---|---|---|

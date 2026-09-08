@@ -191,25 +191,47 @@ window.StatsPresence = (function () {
     return {refresh:pull};
   }
 
-  /* ---------- a student's own running total, for the hub ---------- */
+  /* ---------- a student's own running total, for the hub ----------
+     Reads one session at a time rather than the whole _presence node. That
+     is not an optimisation, it is the security property: the rules put
+     `.read: true` on _presence/$session and NOT on _presence, so nobody can
+     pull the cohort's sid list in a single request — and a sid is what makes
+     <ns>/<sid> guessable. Session ids come from CourseProgress.CHAPTERS, so
+     this asks only about weeks the course actually has, and only about the
+     ones already published. */
+  function weekMods(){
+    var out=[];
+    try{
+      (window.CourseProgress&&CourseProgress.CHAPTERS||[]).forEach(function(c){
+        if(c.live && /^w\d+$/.test(c.mod)) out.push(c.mod);
+      });
+    }catch(e){}
+    return out;
+  }
   function mine(el){
     var a=auth(); if(!el||!a)return;
-    fetch(DB+'/'+NS+'/_presence.json').then(function(r){return r.json();}).then(function(p){
-      if(!p||p.error)return;
+    var mods=weekMods(); if(!mods.length)return;
+    Promise.all(mods.map(function(m){
+      return fetch(node(m)+'.json').then(function(r){
+        return r.ok?r.json():null;
+      }).catch(function(){return null;});
+    })).then(function(list){
       var held=0,here=0;
-      for(var k in p){
-        var s=p[k]; if(!s||(!s.openedAt&&!s.closedAt))continue;
+      list.forEach(function(s){
+        if(!s||s.error||(!s.openedAt&&!s.closedAt))return;   /* never opened = never held */
         held++; if(s.marks&&s.marks[a.sid])here++;
-      }
+      });
       if(!held)return;
       el.innerHTML='<span class="pres-mini">Presence so far: <b>'+here+' of '+held+'</b> session'+(held>1?'s':'')+
         ' held ('+Math.round(here/held*100)+'%). Worth 20% of the grade, pro rata.</span>';
-    }).catch(function(){});
+    });
   }
 
   /* ---------- the dashboard summary ----------
      Given the namespace root the dashboard already fetched, returns the
-     sessions in week order and each student's marks. No extra request. */
+     sessions in week order and each student's marks. No extra request — and
+     it is the INSTRUCTOR's fetch, made with a signed-in token, which is the
+     only way the whole _presence node is readable at all. */
   function summary(root){
     var p=(root&&root._presence)||{};
     var ids=Object.keys(p).filter(function(k){var s=p[k];return s&&(s.openedAt||s.closedAt||s.open);});
