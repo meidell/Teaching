@@ -209,8 +209,7 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   The release stops a student racing ahead in class; it is not secrecy. Never
   put anything confidential in a `sol:`.
 - **Presence is 20% of the grade, pro rata, and `presence.js` records it.** The
-  instructor opens a window for the session (a control on the week page, and the
-  same node is editable from the dashboard); every student's button goes grey →
+  instructor opens a window for the session; every student's button goes grey →
   red; each student presses it once; the instructor closes it. Data lives at
   `statistics/_presence/<mod>` — `open`, `label`, `openedAt`/`closedAt` and a
   `marks/<sid>` map. **Marks live under `_presence`, not under `<sid>`**, so that
@@ -218,6 +217,32 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   register. `/shared/admin.html` grows a column per session automatically —
   opt-in via `"presence"` in the course's `features`; any cell is clickable to
   correct the register by hand, because somebody always arrives late.
+- **The whole ritual lives on the hub: `StatsPresence.hub(el)` in `index.html`.**
+  One card carries both halves — the student's button, and (only where
+  `AdminGate.isUnlocked()`) a console with a picker for W1–W15 and Open/Close.
+  It defaults to the session currently open, else the first week never held. The
+  week pages keep their own `mount()` button; both write the same nodes. `#teach`
+  on the hub URL unlocks the console on a device that has never opened a
+  dashboard, without hiding the page from students the way `AdminGate.mount` does.
+- ⚠️ **Opening a window needs the instructor's Google token, not the gate.** The
+  deployed rules make `_presence/$session` instructor-write-only, so the plain
+  `fetch` the week page used until Sept 2026 came back **401** — the button
+  appeared to work for six seconds and then silently reverted, and no student
+  button ever turned red. `presence.js` now lazily `import()`s the Firebase SDK
+  and signs in with the same Google popup as `/shared/admin.html`, re-minting the
+  ID token on every write because a session is three hours and a token lasts one.
+  The gate decides what is *shown*; the token is what the database *trusts*. Do
+  not "simplify" this back to an anonymous write, and do not relax the rule
+  instead — an anonymous open would let any student open a window and mark
+  themselves.
+- **`statistics/_presence_now` = `{mod, label, open, ts}` is how students find
+  the open session.** They cannot list `_presence` (that would hand out the
+  cohort's sids in one request), so they have no other way to discover *which*
+  week is accepting marks. The pointer carries no sids, so it is world-readable;
+  it is written alongside the session node on every open and close. Until that
+  rules block is deployed the hub **falls back to scanning all fifteen session
+  nodes every 20 s** — which works, just fifteen times the traffic — so presence
+  is never broken by an undeployed rule, only slower.
 - **The grade is 60 exam / 20 project / 20 presence**, not the syllabus's
   70/15/15. If you change it, it is stated in four places: the hub's intro modal,
   its assessment block, `teaching-plan.html` §1 and Week 1's slide 2.
@@ -551,6 +576,7 @@ anonymous REST probe on all five course namespaces:
 | `<ns>/<sid>` | 200 | a device must fetch its own progress with no login |
 | `<ns>/_announce`, `_quizmeta/$mod`, `_roster/$sid`, `_chat/$tid` | 200 | the student runtime reads these |
 | `statistics/_release/$mod`, `statistics/_presence/$session` | 200 | solution release · the presence window |
+| `statistics/_presence_now` | 200 | which window is open — carries no sids, and it is the only way a student can discover the session to mark |
 | `statistics/_presence` (the node itself) | **401** | deliberate — it would hand out the cohort's sid list in one request, and a sid is what makes `<ns>/<sid>` guessable. `StatsPresence.mine()` therefore reads **one session at a time**; do not "optimise" it into a single read. |
 | writing `_presence/$session` (open/close), `_release/…` | **401** | instructor token only |
 | writing `_presence/$session/marks/$sid` | 401 unless that session is **open** | a student marks themselves once, only inside the window, and can never remove a mark |
