@@ -78,6 +78,9 @@ window.StatsPresence = (function () {
       'padding:9px 11px;margin:0 0 10px;font-size:12.5px;line-height:1.5;}'+
     '.pres-inst .pi-err code{background:rgba(0,0,0,.25);padding:1px 5px;border-radius:4px;font-size:11.5px;}'+
     '.pres-inst .pi-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}'+
+    '.pres-inst input{background:#fff;color:var(--navy);border:none;border-radius:9px;padding:9px 12px;'+
+      'font:600 13px inherit;min-width:0;flex:1 1 180px;max-width:260px;}'+
+    '.pres-inst .who a{color:#FFB3AD;}'+
     '.pres-inst .who{font-size:11.5px;color:rgba(255,255,255,.7);margin-top:9px;}'+
     '.pres-mini{font-size:12px;color:var(--grey);}'+
     '.pres-mini b{color:var(--accent-deep);}';
@@ -85,39 +88,69 @@ window.StatsPresence = (function () {
   }
 
 
-  /* ---------- the instructor's Google token ----------------------------
+  /* ---------- the instructor's sign-in ---------------------------------
      The deployed rules make `_presence/$session` and `_presence_now`
      instructor-write-only. An anonymous PATCH comes back 401 — which is
      exactly what used to make the open button appear to work for six
-     seconds and then silently revert, with no student button ever turning
-     red. The AdminGate unlock decides whether the console is *shown*; this
-     token is what the database actually trusts. They are not the same
-     thing and one cannot replace the other.
+     seconds and then silently revert, with no student button turning red.
 
-     Same Google popup as /shared/admin.html: no password is ever typed
-     into this page or stored anywhere.
+     So the database needs to know it is really you. It is a dedicated
+     Firebase email+password account, NOT a Google popup: popups are
+     blocked whenever the click that opened them has been "spent" waiting
+     for the SDK to load, which is a lousy thing to discover in front of
+     thirty people. There is no popup here at all.
+
+     We never store the password. Firebase keeps its own session in
+     IndexedDB, so `restore()` signs you back in silently on every later
+     visit — you type it once per laptop, not once per class.
+
+     The AdminGate unlock decides whether the console is *shown*; this
+     account is what the database *trusts*. They are not the same thing
+     and one cannot replace the other. Students never see either: they
+     still just type a full name and get a six-digit code.
      -------------------------------------------------------------------- */
-  var FBAPP=null, FBUSER=null;
+  var CTRL_EMAIL = "presence@janerikmeidell.com";   /* must match the rules */
+  var FBAPP=null, FBAUTH=null, FBUSER=null, FBSDK=null;
+
   function signedIn(){return !!FBUSER;}
+  function ctrlEmail(){return CTRL_EMAIL;}
   function tokenQ(){
     if(!FBUSER)return Promise.resolve('');
     /* re-minted on every write: ID tokens last an hour, a session is three */
     return FBUSER.getIdToken().then(function(t){return '?auth='+t;},function(){return '';});
   }
-  function signIn(){
-    return Promise.all([
+  /* the SDK is the one CDN import in this repo (see CLAUDE.md §6) and it is
+     loaded only on a device where the console is already unlocked */
+  function sdk(){
+    if(FBSDK)return FBSDK;
+    FBSDK=Promise.all([
       import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
       import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js")
     ]).then(function(m){
       var app=m[0], au=m[1];
-      if(!FBAPP)FBAPP=app.initializeApp({
+      FBAPP=app.initializeApp({
         apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
         databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
-        messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"});
-      var a=au.getAuth(FBAPP), p=new au.GoogleAuthProvider();
-      p.setCustomParameters({prompt:'select_account'});
-      return au.signInWithPopup(a,p);
+        messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"},'presence');
+      FBAUTH=au.getAuth(FBAPP);
+      return au;
+    });
+    return FBSDK;
+  }
+  /* silently pick up the session saved on this device, if there is one */
+  function restore(cb){
+    sdk().then(function(au){
+      au.onAuthStateChanged(FBAUTH,function(u){FBUSER=u||null;if(cb)cb();});
+    }).catch(function(){if(cb)cb();});
+  }
+  function signInPw(email,pw){
+    return sdk().then(function(au){
+      return au.signInWithEmailAndPassword(FBAUTH,email,pw);
     }).then(function(res){FBUSER=res.user;return res.user;});
+  }
+  function signOutNow(cb){
+    sdk().then(function(au){return au.signOut(FBAUTH);})
+      .then(function(){FBUSER=null;if(cb)cb();},function(){if(cb)cb();});
   }
   /* Unlock the console on a device that has never opened a dashboard,
      without hiding the page from students the way AdminGate.mount does.
@@ -197,6 +230,7 @@ window.StatsPresence = (function () {
     if(!el)return;
     css();
     var inst=isInstructor(), a=auth(), state=null, timer=null, fails=0, blocked=false, instMsg='';
+    if(inst)restore(function(){paint();});
 
     el.className='pres';
     el.innerHTML='<h4>Presence · this session</h4>'+
@@ -268,11 +302,12 @@ window.StatsPresence = (function () {
     function toggle(on){
       if(!isInstructor())return;
       instMsg='';
-      var go=function(){return setWindow(mod,label,on).then(function(){instMsg='';pull();});};
-      (signedIn()?go():signIn().then(go)).catch(function(e){
-        instMsg=explain(e);
-        pull();
-      });
+      if(!signedIn()){
+        instMsg='<b>Not signed in on this device.</b> Open the <a href="index.html" style="color:#FFB3AD">course page</a> and sign the presence console in once — after that this button works everywhere, on this laptop, indefinitely.';
+        paint();return;
+      }
+      setWindow(mod,label,on).then(function(){instMsg='';pull();})
+        .catch(function(e){instMsg=explain(e);pull();});
       state=state||{};state.open=!!on;paint();
     }
 
@@ -310,9 +345,12 @@ window.StatsPresence = (function () {
 
   function explain(e){
     var m=String((e&&e.message)||e||'');
-    if(m==='SIGNIN')return '<b>Not signed in.</b> The database only accepts an open or close from your Google account. Press the button again and finish the popup.';
+    if(m==='SIGNIN')return '<b>Not signed in on this device.</b> The database only accepts an open or close from the presence account. Sign in below — once per laptop, then never again.';
     if(m==='RULES')return '<b>The window IS open</b> — but the <code>_presence_now</code> pointer was refused, so student devices fall back to scanning all fifteen sessions and can take up to 20 s to turn red. Deploy <code>firebase-database-rules.json</code> (it now carries <code>statistics/_presence_now</code>) to make that instant.';
-    if(/popup.*(closed|cancel)|cancelled/i.test(m))return '<b>Sign-in cancelled.</b> Nothing was changed.';
+    if(/wrong-password|invalid-credential|invalid-login/i.test(m))return '<b>Wrong password</b> for <code>'+esc(CTRL_EMAIL)+'</code>.';
+    if(/user-not-found/i.test(m))return '<b>No such account.</b> Create <code>'+esc(CTRL_EMAIL)+'</code> in Firebase Console → Authentication → Users → Add user, then try again.';
+    if(/too-many-requests/i.test(m))return '<b>Too many attempts.</b> Firebase has paused sign-in on this device for a few minutes.';
+    if(/network/i.test(m))return '<b>No network.</b> Nothing was changed.';
     return '<b>Could not change the window.</b> '+esc(m);
   }
 
@@ -332,7 +370,8 @@ window.StatsPresence = (function () {
 
     var inst=isInstructor(), a=auth();
     var now=null, sess=null, selSess=null, blocked=false, fails=0, instMsg='';
-    var scanning=false, lastScan=0;
+    var scanning=false, lastScan=0, lastSig=null;
+    if(inst)restore(function(){lastSig=null;paint();});
     var weeks=allWeeks(), held={}, sel=null;
 
     el.className='pres';
@@ -418,6 +457,11 @@ window.StatsPresence = (function () {
       var s=selSess||{}, open=!!s.open, n=0, names=[];
       for(var k in (s.marks||{})){n++;names.push(k);}
       names.sort();
+      /* the poll runs every 7s and the signed-out state contains a password
+         field — re-rendering on a tick would wipe what is being typed */
+      var sig=[signedIn()?1:0,open?1:0,sel,n,instMsg].join('|');
+      if(sig===lastSig)return;
+      lastSig=sig;
       var opts=weeks.map(function(w){
         var h=held[w.mod];
         return '<option value="'+w.mod+'"'+(w.mod===sel?' selected':'')+'>W'+w.n+' · '+
@@ -429,25 +473,36 @@ window.StatsPresence = (function () {
         (instMsg?'<div class="pi-err">'+instMsg+'</div>':'')+
         '<div class="pi-d">'+(signedIn()
           ? 'Say “go”, press <b>Open</b>, let the room mark itself, then press <b>Close</b>. Every student button turns red within a few seconds.'
-          : 'Unlocked on this device — but the database wants your Google account before it will accept an open or close. One click, once per browser session.')+'</div>'+
-        '<div class="pi-row">'+
-          '<select id="hubSel" aria-label="Which session">'+opts+'</select>'+
-          (signedIn()
-            ? '<button class="btn'+(open?' on':'')+'" id="hubToggle">'+(open?'■ Close the window':'▶ Open the window')+'</button>'
-            : '<button class="btn" id="hubKey">🔑 Sign in with Google</button>')+
-          '<a class="btn" href="/shared/admin.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Register →</a>'+
-        '</div>'+
-        '<div class="names"><b>'+n+'</b> marked'+(names.length?': '+names.map(esc).join(', '):' — nobody yet')+'</div>'+
-        (signedIn()?'<div class="who">Signed in as '+esc((FBUSER&&FBUSER.email)||'')+'</div>':'');
+          : 'Sign in once on this laptop and it is remembered from then on — the database will not accept an open or close from an unidentified device.')+'</div>'+
+        (signedIn()
+          ? '<div class="pi-row">'+
+              '<select id="hubSel" aria-label="Which session">'+opts+'</select>'+
+              '<button class="btn'+(open?' on':'')+'" id="hubToggle">'+(open?'■ Close the window':'▶ Open the window')+'</button>'+
+              '<a class="btn" href="/shared/admin.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Register →</a>'+
+            '</div>'+
+            '<div class="names"><b>'+n+'</b> marked'+(names.length?': '+names.map(esc).join(', '):' — nobody yet')+'</div>'+
+            '<div class="who">Signed in as '+esc((FBUSER&&FBUSER.email)||'')+' · <a href="#" id="hubOut">sign out</a></div>'
+          : '<div class="pi-row">'+
+              '<input id="hubEmail" type="email" autocomplete="username" value="'+esc(CTRL_EMAIL)+'">'+
+              '<input id="hubPw" type="password" autocomplete="current-password" placeholder="password">'+
+              '<button class="btn" id="hubKey">Sign in</button>'+
+            '</div>');
 
       var sl=box.querySelector('#hubSel');
-      if(sl)sl.addEventListener('change',function(){sel=sl.value;selSess=null;pullSel().then(paint);});
-      var kb=box.querySelector('#hubKey');
-      if(kb)kb.addEventListener('click',function(){
-        instMsg='';paint();
-        signIn().then(function(){instMsg='';paint();})
-                .catch(function(e){instMsg=explain(e);paint();});
-      });
+      if(sl)sl.addEventListener('change',function(){sel=sl.value;selSess=null;lastSig=null;pullSel().then(paint);});
+      var kb=box.querySelector('#hubKey'), pwf=box.querySelector('#hubPw'), emf=box.querySelector('#hubEmail');
+      function doSignIn(){
+        var e=(emf.value||'').trim(), w=pwf.value||'';
+        if(!w)return;
+        kb.disabled=true;kb.textContent='Signing in…';
+        signInPw(e,w).then(function(){instMsg='';lastSig=null;paint();})
+          .catch(function(err){instMsg=explain(err);kb.disabled=false;kb.textContent='Sign in';lastSig=null;paint();});
+      }
+      if(kb)kb.addEventListener('click',doSignIn);
+      if(pwf)pwf.addEventListener('keydown',function(ev){if(ev.key==='Enter')doSignIn();});
+      var out=box.querySelector('#hubOut');
+      if(out)out.addEventListener('click',function(ev){ev.preventDefault();
+        signOutNow(function(){instMsg='';lastSig=null;paint();});});
       var tb=box.querySelector('#hubToggle');
       if(tb)tb.addEventListener('click',function(){
         var w=null;weeks.forEach(function(x){if(x.mod===sel)w=x;});
@@ -456,7 +511,7 @@ window.StatsPresence = (function () {
         setWindow(sel,w.name,!open)
           .then(function(){instMsg='';return Promise.all([pullSel(),pull()]);})
           .catch(function(e){instMsg=explain(e);})
-          .then(function(){tb.disabled=false;paint();});
+          .then(function(){tb.disabled=false;lastSig=null;paint();});
       });
     }
 
@@ -564,5 +619,5 @@ window.StatsPresence = (function () {
   }
 
   return {mount:mount, hub:hub, mine:mine, summary:summary,
-          isInstructor:isInstructor, signedIn:signedIn, signIn:signIn};
+          isInstructor:isInstructor, signedIn:signedIn, ctrlEmail:ctrlEmail};
 })();
