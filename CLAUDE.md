@@ -224,17 +224,30 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   week pages keep their own `mount()` button; both write the same nodes. `#teach`
   on the hub URL unlocks the console on a device that has never opened a
   dashboard, without hiding the page from students the way `AdminGate.mount` does.
-- ⚠️ **Opening a window needs the instructor's Google token, not the gate.** The
-  deployed rules make `_presence/$session` instructor-write-only, so the plain
-  `fetch` the week page used until Sept 2026 came back **401** — the button
-  appeared to work for six seconds and then silently reverted, and no student
-  button ever turned red. `presence.js` now lazily `import()`s the Firebase SDK
-  and signs in with the same Google popup as `/shared/admin.html`, re-minting the
-  ID token on every write because a session is three hours and a token lasts one.
-  The gate decides what is *shown*; the token is what the database *trusts*. Do
-  not "simplify" this back to an anonymous write, and do not relax the rule
-  instead — an anonymous open would let any student open a window and mark
-  themselves.
+- ⚠️ **Opening a window needs a signed-in account, not the gate.** The deployed
+  rules make `_presence/$session` instructor-write-only, so the plain `fetch` the
+  week page used until Sept 2026 came back **401** — the button appeared to work
+  for six seconds and then silently reverted, and no student button ever turned
+  red. The gate decides what is *shown*; the account is what the database
+  *trusts*. Do not "simplify" this back to an anonymous write, and do not relax
+  the rule instead — an anonymous open would let any student open a window and
+  mark themselves present for a session that never happened.
+- **It is a dedicated email+password account, `presence@janerikmeidell.com`, not
+  a Google popup.** Two reasons. A popup is blocked whenever the click that
+  opened it has been spent waiting for the SDK to load (`auth/popup-blocked`) —
+  a lousy thing to discover in front of thirty people. And the account is scoped:
+  the rules let it write `_presence_now`, `_presence/$session` and a mark, and
+  **nothing else** — no read on the namespace, no announcements, no chat. It is a
+  classroom key, not an admin account; the dashboards still use Google.
+  `CTRL_EMAIL` in `presence.js` and the two `.write` rules must agree. The
+  password is never stored by us: Firebase keeps its own session in IndexedDB and
+  `restore()` picks it up silently, so it is typed once per laptop, not once per
+  class. The ID token is re-minted on every write, because a session is three
+  hours and a token lasts one.
+- **The signed-out console contains a password field and the hub polls every 7 s** —
+  so `paintInst()` skips the re-render unless its signature (signed-in, open,
+  selected week, tally, message) actually changed. Remove that guard and the
+  field empties itself while you type.
 - **`statistics/_presence_now` = `{mod, label, open, ts}` is how students find
   the open session.** They cannot list `_presence` (that would hand out the
   cohort's sids in one request), so they have no other way to discover *which*
