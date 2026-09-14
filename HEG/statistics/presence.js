@@ -348,7 +348,8 @@ window.StatsPresence = (function () {
     if(m==='SIGNIN')return '<b>Not signed in on this device.</b> The database only accepts an open or close from the presence account. Sign in below — once per laptop, then never again.';
     if(m==='RULES')return '<b>The window IS open</b> — but the <code>_presence_now</code> pointer was refused, so student devices fall back to scanning all fifteen sessions and can take up to 20 s to turn red. Deploy <code>firebase-database-rules.json</code> (it now carries <code>statistics/_presence_now</code>) to make that instant.';
     if(/wrong-password|invalid-credential|invalid-login/i.test(m))return '<b>Wrong password</b> for <code>'+esc(CTRL_EMAIL)+'</code>.';
-    if(/user-not-found/i.test(m))return '<b>No such account.</b> Create <code>'+esc(CTRL_EMAIL)+'</code> in Firebase Console → Authentication → Users → Add user, then try again.';
+    if(/operation-not-allowed|password-login-disabled/i.test(m))return '<b>Email sign-in is switched off for this project.</b> Firebase Console → Authentication → <b>Sign-in method</b> → Email/Password → Enable. Then add the user.';
+    if(/user-not-found|invalid-email/i.test(m))return '<b>No such account.</b> Create <code>'+esc(CTRL_EMAIL)+'</code> in Firebase Console → Authentication → Users → Add user, then try again.';
     if(/too-many-requests/i.test(m))return '<b>Too many attempts.</b> Firebase has paused sign-in on this device for a few minutes.';
     if(/network/i.test(m))return '<b>No network.</b> Nothing was changed.';
     return '<b>Could not change the window.</b> '+esc(m);
@@ -365,8 +366,14 @@ window.StatsPresence = (function () {
     if(!el)return;
     css();
     /* #teach unlocks the console on a device that has never opened a
-       dashboard, without hiding the page from students */
-    if(/teach/.test(location.hash))unlockHere();
+       dashboard, without hiding the page from students. Accept ?teach too —
+       people mistype it — and listen for the hash being added to a page
+       that is already open, which is how you will actually reach for it. */
+    function teachAsked(){return /teach/.test(location.hash)||/[?&]teach\b/.test(location.search);}
+    if(teachAsked())unlockHere();
+    window.addEventListener('hashchange',function(){
+      if(teachAsked()&&!isInstructor()&&unlockHere())location.reload();
+    });
 
     var inst=isInstructor(), a=auth();
     var now=null, sess=null, selSess=null, blocked=false, fails=0, instMsg='';
@@ -493,7 +500,10 @@ window.StatsPresence = (function () {
       var kb=box.querySelector('#hubKey'), pwf=box.querySelector('#hubPw'), emf=box.querySelector('#hubEmail');
       function doSignIn(){
         var e=(emf.value||'').trim(), w=pwf.value||'';
-        if(!w)return;
+        /* clicking Sign in with an empty box used to do nothing at all, which
+           is indistinguishable from the page being broken */
+        if(!w){instMsg='<b>Type the password first</b> — the one for <code>'+esc(e)+'</code>, not the instructor gate password.';
+               lastSig=null;paint();var f=el.querySelector('#hubPw');if(f)f.focus();return;}
         kb.disabled=true;kb.textContent='Signing in…';
         signInPw(e,w).then(function(){instMsg='';lastSig=null;paint();})
           .catch(function(err){instMsg=explain(err);kb.disabled=false;kb.textContent='Sign in';lastSig=null;paint();});
