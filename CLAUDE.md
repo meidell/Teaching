@@ -30,7 +30,7 @@ Database (`teaching-70f1c`), namespaced per course.
 ## 2. courses.json — the registry
 
 Adding a course means adding an entry to [courses.json](courses.json). It drives the
-root catalogue cards, the `/shared/admin.html` course picker, and the shared runtime's
+root catalogue cards, the `/shared/admin2.html` course picker, and the shared runtime's
 theming. Key fields:
 
 | Field | Meaning |
@@ -78,29 +78,26 @@ same from `/omba401/week3.html` and `/ideas-e1410/session1.html`.
 | `announce.js` | cohort announcement banner (instructor posts it from admin) |
 | `chat.js` | the student's message panel — instructor, group and cohort threads |
 | `admin-gate.js` | the shared instructor gate (hashed PIN, remembered per device) |
-| `admin.html` | the original dashboard for every course: `/shared/admin.html?course=omba401` |
-| `admin2.html` | the **redesigned** dashboard — same data and namespace, reorganised as Today → The cohort → The roster. Runs alongside `admin.html` until one is chosen; the two link to each other |
+| `admin2.html` | **the** dashboard for every course: `/shared/admin2.html?course=omba401`. Today → The cohort → The roster, plus Presence and Handed in, as tabs. The original `admin.html` was deleted in Sept 2026 once this one was chosen; its presence register and submissions panel were ported across first |
 | `insights.html` | the other instructor view: **where the cohort gets stuck** — section-level stall points, module drop-off, workbook fill rates. Same gate, same read path. Per-question quiz stats stay in the dashboards; don't duplicate them |
 | `chat.html` | the instructor's end of `chat.js`: read what came in and answer it — one student, a group, or the whole cohort |
 
-### The four instructor views, and what each is for
+### The three instructor views, and what each is for
 
 | | Question it answers |
 |---|---|
-| `admin2.html` | *What do I do before the next session?* Ranked actions, cohort shape, then one roster table with a per-student drawer |
-| `admin.html` | *What is every student's state on every module and on the assignment?* One wide table carrying both; kept while the redesign is on trial |
+| `admin2.html` | *What do I do before the next session?* Ranked actions, cohort shape, one roster table with a per-student drawer, the presence register, and what has been handed in — five tabs |
 | `insights.html` | *Where is the course failing them?* Section-level stall points and workbook fill rates, across any course |
-| `chat.html` | *What are they asking me?* Threads with one student, a group or the cohort. All four link to each other in the header |
+| `chat.html` | *What are they asking me?* Threads with one student, a group or the cohort. All three link to each other in the header |
 
 Five things worth knowing before editing any of them:
 
-- **`admin.html` has one student table, not two.** The sessions and the final
-  assignment used to be separate tables in separate panels, which meant scrolling
-  between them to answer "is this student behind on both?". They are now two labelled
-  column blocks (`th.grp.g1` / `th.grp.g2`) in a single table, with `#` and `Name`
-  `position:sticky` — at eighteen module columns plus eight section columns the name
-  has to survive the horizontal scroll. `colCount()` is the single source of the column
-  total; the detail row's `colspan` reads it, so don't hand-count it again.
+- **A tab is offered only when its panel has content.** `renderTabs()` reads each
+  panel's own display state rather than duplicating the "does this course have
+  presence / submissions" logic, so a course with no quizzes never grows a
+  Checkpoint tab and one with no register never grows a Presence tab. The active
+  tab is remembered per browser, and `#presence` in the URL opens that tab — which
+  is what the classroom console's "Register →" link relies on.
 - **The checkpoint quiz is a two-level accordion**, panel ▸ session ▸ questions. Flat, it
   printed eighty rows. Closed, each session shows its score and its weakest question,
   which is the line you actually act on. Open/closed state lives in `QOPEN` / `QPANEL`
@@ -110,7 +107,7 @@ Five things worth knowing before editing any of them:
   prints their whole assignment with the gaps spelled out. `assignmentHTML(s, showGaps)`
   is shared with the row drawer — one renderer, two entry points.
 - **Flags in `admin2.html` are relative, not absolute.** "Behind" means well under *this cohort's* median at *this point* in the course. The original used fixed thresholds (under 60%, under 50%), which mid-term flagged 13 of 18 students — a flag on two thirds of the cohort is not a flag. Don't reintroduce a constant here.
-- **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. `applyTheme()` in `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. Both dashboards now map the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
+- **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. The old `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. `applyTheme()` maps the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
 | `homework.css` | the 70 rules every `weekN-homework.html` shares |
 | `themes/*.css` | colour variables only — `sumas`, `ideas`, `umef`, `navy` |
@@ -153,7 +150,7 @@ StatsTrack.setScore(6, 8);     // quiz / homework pages
   index.html          course home — the map of the course
   week1.html …        one lesson page per week/session
   week1-homework.html paired homework, where the course has one
-  admin.html          thin redirect → /shared/admin.html?course=<id>
+  admin.html          thin redirect → /shared/admin2.html?course=<id>
   _private/           NEVER COMMITTED — answer keys, question banks, run sheets
 ```
 
@@ -214,7 +211,7 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   `statistics/_presence/<mod>` — `open`, `label`, `openedAt`/`closedAt` and a
   `marks/<sid>` map. **Marks live under `_presence`, not under `<sid>`**, so that
   a mark cannot exist without a session behind it and one read gives the whole
-  register. `/shared/admin.html` grows a column per session automatically —
+  register. `/shared/admin2.html` grows a column per session automatically —
   opt-in via `"presence"` in the course's `features`; any cell is clickable to
   correct the register by hand, because somebody always arrives late.
 - **The whole ritual lives on the hub: `StatsPresence.hub(el)` in `index.html`.**
@@ -598,7 +595,7 @@ anonymous REST probe on all five course namespaces:
 
 **Consequence worth knowing:** every dashboard now requires the 🔑 Google
 sign-in, because the root read it starts with is refused. That was always the
-design (`admin.html` falls through to `signIn()`), but before the deploy the
+design (the dashboard falls through to a sign-in), but before the deploy the
 anonymous read happened to succeed, so the button was never needed.
 
 What the current version enforces, and why it changed:What the current version enforces, and why it changed:
@@ -655,7 +652,7 @@ trusts. The two are not the same thing and one cannot replace the other.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
-  `/shared/admin.html` `import()`s lazily *only* if a namespace refuses an anonymous
+  `/shared/admin2.html` `import()`s lazily *only* if a namespace refuses an anonymous
   read and the instructor has to sign in with Google.
 - **French courses are French throughout** — UI strings, error messages, the identity
   modal. Check `lang` in courses.json.
@@ -684,7 +681,7 @@ in that browser opens straight through, and unlocking any one instructor page un
 them all. `AdminGate.lock()` forgets it. Changing `PASS_HASH` invalidates every
 remembered device automatically, because the stored value stops hashing to a match.
 
-Pages behind it: `/shared/admin.html` (all course dashboards), `beyond-defi-dashboard`,
+Pages behind it: `/shared/admin2.html` (all course dashboards), `beyond-defi-dashboard`,
 `samedi-dashboard`, `samedi-tutorat`, `gauntlet-host`.
 
 **Instructor gates and student PINs are deliberately different passwords.** Several

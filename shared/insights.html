@@ -9,7 +9,7 @@
   SHARED · where the cohort gets stuck.
       /shared/insights.html?course=e1410
 
-  The dashboard (/shared/admin.html) answers "how is each student doing".
+  The dashboard (/shared/admin2.html) answers "how is each student doing".
   This answers the other question: "where is the COURSE failing them".
 
   Nothing here is new data — it is the same nodes /shared/progress.js
@@ -154,7 +154,7 @@ table.fields tr.low td{background:var(--bad-l);}
   </section>
 
   <div class="foot">
-    <a href="admin.html" id="dashLink">← Full dashboard</a> ·
+    <a href="admin2.html" id="dashLink">← Full dashboard</a> ·
     per-question quiz analysis lives there ·
     <a href="chat.html" id="chatLink">💬 Messages</a>
   </div>
@@ -162,6 +162,7 @@ table.fields tr.low td{background:var(--bad-l);}
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
 <script>
 /* =====================================================================
    Cohort insights. Same read path as admin.html: anonymous REST first,
@@ -175,18 +176,6 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 async function authQ(){
   if(!window.__fbUser) return '';
   try{ return '?auth='+await window.__fbUser.getIdToken(); }catch(e){ return ''; }
-}
-async function signIn(){
-  var app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-  var auth=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-  var cfg={apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
-           databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
-           messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
-  var a=auth.getAuth(app.initializeApp(cfg));
-  var p=new auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
-  window.__fbUser=(await auth.signInWithPopup(a,p)).user;
-  $('warn').style.display='none';
-  load();
 }
 
 /* ---------------------------------------------------------------- */
@@ -442,12 +431,10 @@ async function load(){
     if(j&&j.error) throw new Error(j.error);
     ROOT=j||{};
   }catch(e){
+    /* inline form, not a popup — Safari blocks popups and its redirect
+       fallback is unreliable there too */
     $('warn').style.display='block';
-    $('warn').innerHTML='Reading this cohort needs a signed-in instructor. '+
-      '<button class="btn" id="bSignIn" style="margin-left:8px">Sign in with Google</button>';
-    var b=$('bSignIn'); if(b) b.addEventListener('click',function(){ signIn().catch(function(err){
-      $('warn').innerHTML='Sign-in failed: '+esc(err&&err.message||err);
-    }); });
+    if(!$('warn').querySelector('.fba'))FBAuth.form($('warn'),function(){ $('warn').style.display='none'; load(); });
     return;
   }
   STUDENTS=[];
@@ -468,7 +455,7 @@ function pickCourse(id){
          document.documentElement.style.setProperty('--deep',t.accent);
          document.documentElement.style.setProperty('--glow',t.glow||t.accentBright); }
   $('hTitle').textContent='Where '+(COURSE.code||COURSE.id)+' gets stuck';
-  $('dashLink').href='admin.html?course='+encodeURIComponent(id);
+  $('dashLink').href='admin2.html?course='+encodeURIComponent(id);
   $('chatLink').href='chat.html?course='+encodeURIComponent(id);
   try{ history.replaceState(null,'','?course='+encodeURIComponent(id)); }catch(e){}
   $('warn').style.display='none';
@@ -501,7 +488,14 @@ function start(){
 
 AdminGate.mount({ brand:'COURSE INSIGHTS', title:'Instructor access',
                   blurb:'Enter the instructor password. This device will remember it.',
-                  onUnlock:start });
+                  onUnlock:function(){
+                    /* Never wait on the network to draw the page: start now,
+                       and if a sign-in this device already made comes back,
+                       re-read with the token. That is what makes the 🔑
+                       button a once-per-browser thing instead of every visit. */
+                    start();
+                    FBAuth.restore(function(u){ if(u&&NS){ load(); } });
+                  } });
 </script>
 <script src="/track.js" defer></script>
 </body>

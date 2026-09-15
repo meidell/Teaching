@@ -2,7 +2,7 @@
    SHARED · cohort announcement banner (student side, read-only).
    Reads <ns>/_announce from the teaching-70f1c Realtime DB and, if one
    is live, shows a dismissible banner at the top of the page. The
-   instructor posts and clears it from /shared/admin.html.
+   instructor posts and clears it from /shared/admin2.html.
 
      <body data-course="omba401">
      <script src="/shared/config.js"   defer></script>

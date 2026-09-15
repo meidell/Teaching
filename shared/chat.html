@@ -215,7 +215,7 @@ line-height:1.55;margin-top:14px;}
        been unlocked there. It has no password box of its own.</p>
     <p class="sm">If you are a student: your messages are on the course pages
        themselves — the <b>Messages</b> button at the bottom right of any page.</p>
-    <a class="btn" href="admin.html">Go to the dashboard</a>
+    <a class="btn" href="admin2.html">Go to the dashboard</a>
   </div>
 </div>
 
@@ -246,6 +246,7 @@ line-height:1.55;margin-top:14px;}
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
 <script>
 "use strict";
 var DB=window.CourseConfig.DB;
@@ -270,24 +271,13 @@ function dayLabel(ts){
 /* need the Google token; the gate above is only the UI lock         */
 /* ---------------------------------------------------------------- */
 async function authQ(){ if(!window.__fbUser)return ''; try{return '?auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
-async function signIn(){
-  var app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-  var auth=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-  var cfg={apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
-           databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
-           messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
-  var a=auth.getAuth(app.initializeApp(cfg));
-  var p=new auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
-  window.__fbUser=(await auth.signInWithPopup(a,p)).user;
-  $('bAuth').style.display='none';$('warn').style.display='none';
-  load();
-}
 function needSignIn(why){
   $('warn').style.display='block';
-  $('warn').innerHTML=esc(why)+' <button class="btn" id="bSi" style="margin-left:8px">Sign in with Google</button>';
   $('bAuth').style.display='';
-  var b=$('bSi'); if(b)b.addEventListener('click',function(){signIn().catch(function(e){
-    $('warn').innerHTML='Sign-in failed: '+esc(e&&e.message||e);});});
+  if(!$('warn').querySelector('.fba')){
+    $('warn').innerHTML='<div style="margin-bottom:9px">'+esc(why)+'</div><div id="warnForm"></div>';
+    FBAuth.form($('warnForm'),function(){ $('warn').style.display='none'; load(); });
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -586,7 +576,7 @@ async function togglePeople(){
       {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
     if(!res.ok)throw new Error('write refused');
     await poll(); renderPeople();
-  }catch(e){ alert('Could not do that — '+(e&&e.message||e)+'. Sign in with Google first.'); }
+  }catch(e){ alert('Could not do that — '+(e&&e.message||e)+'. Sign in first (the 🔑 button).'); }
 }
 
 /* The student's ticks and online dot are drawn from what the OTHER end writes,
@@ -737,8 +727,11 @@ function start(){
 
   $('bRefresh').addEventListener('click',function(){load();});
   $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
-  $('bAuth').addEventListener('click',function(){signIn().catch(function(e){
-    $('warn').style.display='block';$('warn').textContent='Sign-in failed: '+(e&&e.message||e);});});
+  /* inline form, not a popup — Safari eats popups */
+  $('bAuth').addEventListener('click',function(){
+    $('warn').style.display='block';
+    FBAuth.form($('warn'),function(){$('warn').style.display='none';$('bAuth').style.display='none';load();});
+  });
   $('bNew').addEventListener('click',openDlg);
   $('bPeople').addEventListener('click',togglePeople);
   $('bPeer').addEventListener('click',function(){
@@ -782,7 +775,9 @@ function start(){
    keeps a student out of the instructor's side is the database — reading
    `_chat` whole needs the Google token, and `by:'i'` is refused without it. */
 (function(){
-  if(AdminGate.isUnlocked()){ start(); return; }
+  /* Start now, restore in the background: a slow CDN import must never
+     hold the page blank. The 🔑 button then only appears once per browser. */
+  if(AdminGate.isUnlocked()){ start(); FBAuth.restore(function(u){ if(u&&NS)load(); }); return; }
   document.getElementById('locked').style.display='flex';
 })();
 </script>

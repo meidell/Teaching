@@ -9,15 +9,15 @@
   SHARED · instructor dashboard, second generation.
       /shared/admin2.html?course=omba401
 
-  Same data, same namespace, same gate as admin.html — different question.
-  admin.html answers "what is every student's state on every module", which
+  Same data, same namespace, same gate as the dashboard it replaced.
+  The old admin.html answered "what is every student's state on every module",
   is a table nobody reads. This answers, in order:
 
     1 · TODAY        what should I do before the next session      (3 sentences)
     2 · THE COHORT   what shape is this group in                   (four views)
     3 · THE ROSTER   the detail, when I actually need a name       (one table)
 
-  Structural changes from admin.html, and why:
+  Structural changes from the old admin.html, and why:
     • ONE roster table, not two. The per-section §-grid moved into the
       student drawer — the same 18 rows rendered twice, 1500px apart, was
       the biggest single source of noise.
@@ -55,6 +55,35 @@
      with a red-accented course (IDEAS) a brand-coloured "doing fine" bar is
      indistinguishable from a red "gone quiet" one. */
   --step1:#B91C1C; --step2:#D97706; --step3:#CA8A04; --step4:#65A30D; --step5:#15803D;
+}
+/* tabs, and the presence register carried over from the old dashboard */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 18px;border-bottom:2px solid var(--line);}
+.tabs button{background:none;border:none;border-bottom:3px solid transparent;color:var(--grey);
+  font:700 13.5px inherit;padding:10px 15px;cursor:pointer;border-radius:9px 9px 0 0;
+  margin-bottom:-2px;white-space:nowrap;}
+.tabs button:hover{color:var(--ink);background:var(--wash);}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--card);}
+.tabs button .n{display:inline-block;margin-left:7px;font-size:11px;font-weight:800;
+  background:var(--line);color:var(--ink2);border-radius:9px;padding:1px 7px;}
+.tabs button.on .n{background:var(--accent);color:#fff;}
+.pane{display:none;}
+.pane.on{display:block;}
+table.pres{width:auto;min-width:100%;border-collapse:collapse;font-size:12.5px;}
+table.pres th,table.pres td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap;}
+table.pres th.nm,table.pres td.nm{text-align:left;position:sticky;left:0;background:var(--card);z-index:2;}
+table.pres thead th{background:var(--accent);color:#fff;font-size:10px;letter-spacing:.5px;
+  text-transform:uppercase;position:sticky;top:0;}
+table.pres thead th.nm{background:var(--accent);color:#fff;z-index:3;}
+.pcell{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:6px;cursor:pointer;font-weight:700;}
+.pcell.yes{background:var(--good-bg);color:var(--good);}
+.pcell.no{background:var(--wash);color:var(--faint);}
+.pcell:hover{outline:2px solid var(--accent-bright);}
+table.pres td.tot{font-weight:800;color:var(--accent);}
+.pres .live{color:var(--bad);font-weight:800;}
+.presbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.wrapx{overflow:auto;max-height:70vh;}
+.subsrow{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.subsrow a{color:var(--accent-bright);}
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -16px rgba(16,24,40,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -336,15 +365,21 @@ table.roster th.r,table.roster td.r{text-align:right;}
     </div>
   </div>
 
+  <!-- One card-set at a time. The three levels were already the natural
+       tabs; Presence and Handed in came across from the old dashboard. -->
+  <div class="tabs" id="tabs"></div>
+
   <!-- ======================= LEVEL 1 ======================= -->
-  <div class="lvl">Today</div>
+  <div class="pane" data-pane="today">
   <div class="today">
     <div class="kpis" id="kpis"></div>
     <ul class="acts" id="acts"></ul>
   </div>
 
+  </div><!-- /today -->
+
   <!-- ======================= LEVEL 2 ======================= -->
-  <div class="lvl">The cohort</div>
+  <div class="pane" data-pane="cohort">
   <div class="grid2">
     <div class="card">
       <h3>When each student was last here</h3>
@@ -390,8 +425,13 @@ table.roster th.r,table.roster td.r{text-align:right;}
     </div>
   </div>
 
+  </div><!-- /cohort -->
+
+  <div class="pane" data-pane="presence"><div class="card" id="presenceCard"></div></div>
+  <div class="pane" data-pane="subs"><div class="card" id="subsCard"></div></div>
+
   <!-- ======================= LEVEL 3 ======================= -->
-  <div class="lvl">The roster</div>
+  <div class="pane" data-pane="roster">
   <div class="tools">
     <input class="f" id="filter" type="search" placeholder="Filter by name…">
     <button class="chipbtn" data-quick="all">Everyone</button>
@@ -405,6 +445,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
     <table class="roster"><thead><tr id="head"></tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="empty" id="empty" style="display:none">No students yet. They appear as soon as someone opens a page and identifies themselves.</div>
+  </div><!-- /roster -->
 
   <div class="foot" id="foot"></div>
 </div>
@@ -421,6 +462,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
 <script>
 "use strict";
 var DB=window.CourseConfig.DB;
@@ -430,7 +472,7 @@ function $(id){return document.getElementById(id);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
 /* ---------------------------------------------------------------- */
-/* helpers — ported unchanged from admin.html where the logic was    */
+/* helpers — ported unchanged from the old admin.html                 */
 /* already right                                                     */
 /* ---------------------------------------------------------------- */
 function doneCount(c){var n=0,d=(c&&c.done)||{};for(var k in d){if(d[k])n++;}return n;}
@@ -507,18 +549,6 @@ function keeping(x){
 /* ---------------------------------------------------------------- */
 function setConn(ok,txt){$('dot').className='dot '+(ok?'ok':'bad');$('connTxt').textContent=txt||(ok?'online':'offline');}
 async function authQ(){ if(!window.__fbUser)return ''; try{return '?auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
-async function signIn(){
-  var app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-  var auth=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-  var cfg={apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
-           databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
-           messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
-  var a=auth.getAuth(app.initializeApp(cfg));
-  var p=new auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
-  window.__fbUser=(await auth.signInWithPopup(a,p)).user;
-  $('warn').style.display='none';$('bAuth').style.display='none';
-  load();loadAnnounce();
-}
 async function load(){
   if(!NS){setConn(false,'no namespace');$('warn').style.display='block';$('warn').textContent='This course stores no student data.';return;}
   try{
@@ -530,8 +560,10 @@ async function load(){
     setConn(false,'read blocked');
     $('bAuth').style.display='';
     $('warn').style.display='block';
-    $('warn').innerHTML='This cohort needs a signed-in instructor to read. <button class="btn primary" id="bSignIn">Sign in with Google</button>';
-    var b=$('bSignIn');if(b)b.addEventListener('click',function(){signIn().catch(function(err){$('warn').innerHTML='Sign-in failed: '+esc(err&&err.message||err);});});
+    if(!$('warn').querySelector('.fba')){
+      $('warn').innerHTML='<div style="margin-bottom:9px">This cohort needs a signed-in instructor to read.</div><div id="warnForm"></div>';
+      FBAuth.form($('warnForm'),function(){ $('warn').style.display='none'; load(); loadAnnounce(); });
+    }
     ROOT=null;
   }
   ROWS=[];
@@ -1035,22 +1067,225 @@ function closeDrawer(){
 }
 
 /* ---------------------------------------------------------------- */
+
+/* ===================================================================
+   PRESENCE + HANDED IN — carried over from the dashboard this one
+   replaced. The register is the only place the pro-rata presence mark
+   is visible, so it had to come across intact; the cells stay clickable
+   because somebody always arrives late.
+   =================================================================== */
+var PRES_N=0, SUBS_N=0;
+function byName(){return ROWS.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));});}
+function hasPresence(){return !!(COURSE&&(COURSE.features||[]).indexOf('presence')>=0);}
+function presSessions(){
+  var p=(ROOT&&ROOT._presence)||{};
+  var ids=Object.keys(p).filter(function(k){var x=p[k];return x&&(x.openedAt||x.closedAt||x.open);});
+  function ord(id){var m=/^w(\d+)/.exec(id);return m?parseInt(m[1],10):999;}
+  ids.sort(function(a,b){return ord(a)-ord(b)||a.localeCompare(b);});
+  return ids.map(function(id){var x=p[id]||{};return {id:id,label:x.label||id,open:!!x.open,marks:x.marks||{}};});
+}
+async function presToggle(sid,session,on){
+  var url=DB+'/'+NS+'/_presence/'+encodeURIComponent(session)+'/marks/'+encodeURIComponent(sid)+'.json'+(await authQ());
+  try{
+    await fetch(url,on?{method:'PUT',body:JSON.stringify(Date.now())}:{method:'DELETE'});
+    if(!ROOT._presence)ROOT._presence={};
+    if(!ROOT._presence[session])ROOT._presence[session]={};
+    if(!ROOT._presence[session].marks)ROOT._presence[session].marks={};
+    if(on)ROOT._presence[session].marks[sid]=Date.now(); else delete ROOT._presence[session].marks[sid];
+    renderPresence();
+  }catch(e){}
+}
+function renderPresence(){
+  var el=$('presenceCard');
+  if(!hasPresence()){el.style.display='none';PRES_N=0;return;}
+  var S=presSessions();PRES_N=S.length;
+  el.style.display='block';
+  if(!S.length){
+    el.innerHTML='<h3 id="presence">Presence</h3><div class="sub">No session has been opened yet. Open one from the week page \u2014 the control sits on the page and in the lecture deck \u2014 and a column appears here immediately.</div>';
+    return;
+  }
+  var rows=byName(), held=S.length;
+  var head='<tr><th class="nm">Student</th>'+S.map(function(x){
+      return '<th title="'+esc(x.label)+'">'+esc(x.id.toUpperCase())+(x.open?'<br><span class="live">live</span>':'')+'</th>';
+    }).join('')+'<th>Present</th><th>Rate</th></tr>';
+  var body=rows.map(function(r){
+    var here=0;
+    var cells=S.map(function(x){
+      var on=!!x.marks[r.sid]; if(on)here++;
+      return '<td><span class="pcell '+(on?'yes':'no')+'" data-sid="'+esc(r.sid)+'" data-ses="'+esc(x.id)+'" data-on="'+(on?1:0)+
+             '" title="'+(on?'Present \u2014 click to remove':'Absent \u2014 click to mark present')+'">'+(on?'\u2713':'\u00b7')+'</span></td>';
+    }).join('');
+    return '<tr><td class="nm">'+esc(r.name)+'</td>'+cells+
+           '<td class="tot">'+here+' / '+held+'</td><td class="tot">'+Math.round(here/held*100)+'%</td></tr>';
+  }).join('');
+  var totals='<tr><td class="nm"><b>In the room</b></td>'+S.map(function(x){
+      var n=0;for(var k in x.marks)n++;return '<td class="tot">'+n+'</td>';}).join('')+
+      '<td class="tot">\u2014</td><td class="tot">\u2014</td></tr>';
+  el.innerHTML='<h3 id="presence">Presence</h3>'+
+    '<div class="sub">One column per session held. <b>20% of the grade, pro rata</b> \u2014 the rate column is the mark. '+
+    'Students press the button in the room while you have the window open; click any cell here to correct it by hand.</div>'+
+    '<div class="presbar"><button class="btn" id="bPresCsv">\u2b07 Presence CSV</button>'+
+    '<span class="muted">'+held+' session'+(held>1?'s':'')+' held \u00b7 '+rows.length+' students</span></div>'+
+    '<div class="wrapx"><table class="pres"><thead>'+head+'</thead><tbody>'+body+totals+'</tbody></table></div>';
+  Array.prototype.forEach.call(el.querySelectorAll('.pcell'),function(c){
+    c.addEventListener('click',function(){
+      presToggle(c.getAttribute('data-sid'),c.getAttribute('data-ses'),c.getAttribute('data-on')!=='1');
+    });
+  });
+  $('bPresCsv').addEventListener('click',function(){
+    var lines=[['Student'].concat(S.map(function(x){return x.id;})).concat(['Present','Held','Rate %']).join(',')];
+    byName().forEach(function(r){
+      var here=0;
+      var cs=S.map(function(x){var on=!!x.marks[r.sid];if(on)here++;return on?'1':'0';});
+      lines.push(['"'+String(r.name).replace(/"/g,'""')+'"'].concat(cs).concat([here,held,Math.round(here/held*100)]).join(','));
+    });
+    var b=new Blob([lines.join('\n')],{type:'text/csv'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download=NS+'-presence.csv';a.click();
+  });
+}
+
+/* ---------- final project · section by section ---------- */
+
+function subsLatest(){
+  var all=(ROOT&&ROOT._submissions)||{}, out=[];
+  for(var sid in all){
+    if(!all.hasOwnProperty(sid))continue;
+    var best=null, ups=all[sid]||{};
+    for(var k in ups){
+      if(!ups.hasOwnProperty(k))continue;
+      var u=ups[k]; if(!u||!u.ts)continue;
+      if(!best||u.ts>best.ts)best=u;
+      }
+    if(best)out.push({sid:sid,n:best.n||sid,u:best,count:Object.keys(ups).length});
+  }
+  out.sort(function(a,b){return b.u.ts-a.u.ts;});
+  return out;
+}
+
+function renderSubs(){
+  var box=$('subsCard'); if(!box)return;
+  var subs=subsLatest();
+  if(!subs.length&&!(ROOT&&ROOT._submissions)){box.style.display='none';SUBS_N=0;return;}
+  box.style.display='';SUBS_N=subs.length;
+  var inSub={}; subs.forEach(function(x){inSub[x.sid]=1;});
+  var missing=ROWS.filter(function(r){return !inSub[r.sid];});
+  var rows=subs.map(function(x){
+    var u=x.u, kb=u.sz?(u.sz<1048576?Math.round(u.sz/1024)+' KB':(u.sz/1048576).toFixed(1)+' MB'):'';
+    return '<tr>'+
+      '<td style="font-weight:700"><span data-jump="'+esc(x.sid)+'" style="cursor:pointer;text-decoration:underline dotted">'+esc(x.n)+'</span></td>'+
+      '<td class="muted" style="word-break:break-all">'+esc(u.f||'')+(kb?' <span class="muted">· '+kb+'</span>':'')+
+        (x.count>1?' <span class="muted">· v'+x.count+'</span>':'')+'</td>'+
+      '<td class="muted" style="white-space:nowrap">'+esc(whenAgo(u.ts))+
+        (u.late?' <b style="color:#B91C1C">LATE</b>':'')+'</td>'+
+      '<td>'+(u.st==='db'
+        ? '<button class="btn" data-dl="'+esc(x.sid)+'" data-fid="'+esc(u.fid||'')+'" data-ch="'+(u.ch||0)+
+          '" data-fn="'+esc(u.f||'submission')+'" data-ct="'+esc(u.ct||'')+'">Download</button>'
+        : (u.u?'<a class="btn" href="'+esc(u.u)+'" target="_blank" rel="noopener" download>Download</a>'
+             : '<span class="muted">no link</span>'))+'</td>'+
+    '</tr>';
+  }).join('');
+  box.innerHTML='<h3>Handed in · final assignment</h3>'+
+    '<div class="sub"><b>'+subs.length+'</b> of '+ROWS.length+' students have handed a file in'+
+      (missing.length?' · still outstanding: '+missing.map(function(m){return esc(m.name);}).join(', '):' · everyone is in')+'</div>'+
+    (subs.length?'<div class="wrapx"><table style="width:100%"><tbody>'+rows+'</tbody></table></div>'
+                :'<div class="muted">Nothing uploaded yet.</div>');
+  Array.prototype.forEach.call(box.querySelectorAll('[data-jump]'),function(c){
+    c.addEventListener('click',function(){openDrawer(c.getAttribute('data-jump'));});
+  });
+  Array.prototype.forEach.call(box.querySelectorAll('[data-dl]'),function(b){
+    b.addEventListener('click',function(){dlFromDB(b);});
+  });
+}
+
+async function dlFromDB(btn){
+  var sid=btn.getAttribute('data-dl'), fid=btn.getAttribute('data-fid');
+  var n=+btn.getAttribute('data-ch')||0;
+  var fn=btn.getAttribute('data-fn')||'submission';
+  var ct=btn.getAttribute('data-ct')||'application/octet-stream';
+  var label=btn.textContent;
+  btn.disabled=true; btn.textContent='Fetching…';
+  try{
+    var r=await fetch(DB+'/'+NS+'/_files/'+sid+'/'+fid+'.json'+(await authQ()));
+    var j=await r.json();
+    if(!j)throw new Error('the stored parts are gone');
+    var b='';
+    for(var i=0;i<n;i++){
+      if(typeof j[i]!=='string')throw new Error('part '+(i+1)+' of '+n+' never arrived');
+      b+=j[i];
+    }
+    var bin=atob(b), arr=new Uint8Array(bin.length);
+    for(var k=0;k<bin.length;k++)arr[k]=bin.charCodeAt(k);
+    var url=URL.createObjectURL(new Blob([arr],{type:ct}));
+    var a=document.createElement('a');a.href=url;a.download=fn;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},5000);
+    btn.textContent=label;
+  }catch(e){
+    btn.textContent='Failed';
+    alert('Could not rebuild '+fn+': '+(e&&e.message||e)+
+          '\n\nThe student still has the file — ask them to upload it again, or to email it.');
+  }
+  btn.disabled=false;
+}
+
+/* ---------- tabs ----------------------------------------------------
+   The three levels this dashboard was designed around are the tabs;
+   Presence and Handed in appear only for a course that has them. */
+var TABS=[
+  {id:'today',    label:'Today',      always:true},
+  {id:'cohort',   label:'The cohort', always:true},
+  {id:'roster',   label:'The roster', always:true},
+  {id:'presence', label:'Presence',   n:function(){return PRES_N;}},
+  {id:'subs',     label:'Handed in',  n:function(){return SUBS_N;}}
+];
+var TAB=null;
+try{TAB=localStorage.getItem('jem_admin2_tab');}catch(e){}
+if(location.hash){
+  var _h=location.hash.slice(1);
+  if(TABS.some(function(t){return t.id===_h;}))TAB=_h;
+}
+function showTab(id){
+  TAB=id;
+  try{localStorage.setItem('jem_admin2_tab',id);}catch(e){}
+  Array.prototype.forEach.call(document.querySelectorAll('.pane'),function(p){
+    p.classList.toggle('on',p.getAttribute('data-pane')===id);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'),function(b){
+    b.classList.toggle('on',b.getAttribute('data-tab')===id);
+  });
+}
+function renderTabs(){
+  var live=TABS.filter(function(t){return t.always||(t.n&&t.n()>0);});
+  if(!live.some(function(t){return t.id===TAB;}))TAB=live[0].id;
+  $('tabs').innerHTML=live.map(function(t){
+    var c=t.id==='roster'?ROWS.length:(t.n?t.n():0);
+    return '<button data-tab="'+t.id+'">'+t.label+(c?'<span class="n">'+c+'</span>':'')+'</button>';
+  }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'),function(b){
+    b.addEventListener('click',function(){showTab(b.getAttribute('data-tab'));});
+  });
+  showTab(TAB);
+}
+
 function renderAll(){
   if(!ROWS.length){
     $('kpis').innerHTML=tile('Cohort',0,'nobody yet');
     $('acts').innerHTML='<li class="clear">No students have identified themselves yet.</li>';
     $('empty').style.display='block';
+    renderTabs();
     return;
   }
   renderKpis();renderActs();renderPulse();renderDist();renderFunnel();
   renderSections();renderQuiz();renderReader();renderRoster();
+  renderPresence();renderSubs();renderTabs();
   /* a half-width card with nothing beside it should take the whole row */
   $('row2').classList.toggle('solo',$('secCard').style.display==='none');
   $('row3').classList.toggle('solo',$('readerCard').style.display==='none'||$('quizCard').style.display==='none');
   $('foot').innerHTML='<b>Keeping up</b> ignores parts of the course nobody has reached yet — it is the number to read today. '+
     '<b>Course</b> is against everything released so far. Click any student for their full record. '+
     'Deeper analysis of where pages lose people: <a href="insights.html?course='+esc(COURSE?COURSE.id:'')+'">Insights</a>. '+
-    'Prefer the original layout? <a href="admin.html?course='+esc(COURSE?COURSE.id:'')+'">Classic dashboard</a>.';
+    '';
   Array.prototype.forEach.call($('pulse').querySelectorAll('[data-bucket]'),function(b){
     b.addEventListener('click',function(){
       var i=+b.getAttribute('data-bucket');
@@ -1113,7 +1348,7 @@ function hexRgba(hex,a){
   return 'rgba('+parseInt(m[1],16)+','+parseInt(m[2],16)+','+parseInt(m[3],16)+','+a+')';
 }
 /* courses.json themes expose accent / accentBright / glow / surface.
-   admin.html looked for deep/bar/main/pale/ink/grey — keys that do not
+   the old admin.html looked for deep/bar/main/pale/ink/grey — keys that do not
    exist there — so only two of eight ever matched and every course
    rendered navy. This maps the keys that are actually in the file. */
 function applyTheme(t){
@@ -1167,7 +1402,11 @@ function start(){
   $('bRefresh').addEventListener('click',function(){load();loadAnnounce();});
   $('bCsv').addEventListener('click',exportCSV);
   $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
-  $('bAuth').addEventListener('click',function(){signIn().catch(function(e){$('warn').style.display='block';$('warn').textContent='Sign-in failed: '+(e&&e.message||e);});});
+  /* inline form, not a popup — Safari eats popups */
+  $('bAuth').addEventListener('click',function(){
+    $('warn').style.display='block';
+    FBAuth.form($('warn'),function(){$('warn').style.display='none';$('bAuth').style.display='none';load();loadAnnounce();});
+  });
   $('bAnnEdit').addEventListener('click',function(){var e=$('annEdit');e.style.display=e.style.display==='block'?'none':'block';});
   $('bAnnCancel').addEventListener('click',function(){$('annEdit').style.display='none';});
   $('bPost').addEventListener('click',postAnnounce);
@@ -1184,7 +1423,14 @@ function start(){
 
 AdminGate.mount({ brand:'INSTRUCTOR DASHBOARD', title:'Dashboard access',
                   blurb:'Enter the instructor password. This device will remember it.',
-                  onUnlock:start });
+                  onUnlock:function(){
+                    /* Never wait on the network to draw the page: start now,
+                       and if a sign-in this device already made comes back,
+                       re-read with the token. That is what makes the 🔑
+                       button a once-per-browser thing instead of every visit. */
+                    start();
+                    FBAuth.restore(function(u){ if(u&&NS){ load(); loadAnnounce(); } });
+                  } });
 </script>
 <script src="/track.js" defer></script>
 </body>

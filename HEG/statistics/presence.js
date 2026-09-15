@@ -294,7 +294,7 @@ window.StatsPresence = (function () {
           ? 'The window is <b>OPEN</b> — every student\'s button is red right now. Close it when the room has marked itself.'
           : 'The window is closed. Opening it turns the button red on every student device within a few seconds.')+'</div>'+
         '<button class="btn'+(open?' on':'')+'" id="presToggle">'+(open?'■ Close the window':'▶ Open presence for this session')+'</button>'+
-        '<a class="btn" href="/shared/admin.html?course=statistics#presence" target="_blank" style="text-decoration:none;display:inline-block;">Summary →</a>'+
+        '<a class="btn" href="/shared/admin2.html?course=statistics#presence" target="_blank" style="text-decoration:none;display:inline-block;">Summary →</a>'+
         '<div class="names"><b>'+n+'</b> marked'+(names.length?': '+names.map(esc).join(', '):' — nobody yet')+'</div>';
       box.querySelector('#presToggle').addEventListener('click',function(){ toggle(!open); });
     }
@@ -485,7 +485,7 @@ window.StatsPresence = (function () {
           ? '<div class="pi-row">'+
               '<select id="hubSel" aria-label="Which session">'+opts+'</select>'+
               '<button class="btn'+(open?' on':'')+'" id="hubToggle">'+(open?'■ Close the window':'▶ Open the window')+'</button>'+
-              '<a class="btn" href="/shared/admin.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Register →</a>'+
+              '<a class="btn" href="/shared/admin2.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Register →</a>'+
             '</div>'+
             '<div class="names"><b>'+n+'</b> marked'+(names.length?': '+names.map(esc).join(', '):' — nobody yet')+'</div>'+
             '<div class="who">Signed in as '+esc((FBUSER&&FBUSER.email)||'')+' · <a href="#" id="hubOut">sign out</a></div>'

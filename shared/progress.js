@@ -14,7 +14,7 @@
 
    Writes to <ns>/<sid>/... in the teaching-70f1c Realtime DB: who, when
    (first seen + last active), active seconds, per-section completion,
-   scores, quiz answers and workbook text. Read by /shared/admin.html.
+   scores, quiz answers and workbook text. Read by /shared/admin2.html.
    Best-effort — every network call fails silently, and localStorage is
    always the source of truth.
 
