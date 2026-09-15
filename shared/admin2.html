@@ -1214,6 +1214,7 @@ function renderPresence(){
       '<div class="sub">No session has been held yet. Pick one and open the window \u2014 every student\u2019s button turns red within a few seconds, and a column appears here.</div>'+
       presControl();
     wirePresControl();
+    presPollTune();
     return;
   }
   var rows=byName(), held=S.length;
@@ -1246,6 +1247,7 @@ function renderPresence(){
     });
   });
   wirePresControl();
+  presPollTune();
   $('bPresCsv').addEventListener('click',function(){
     var lines=[['Student'].concat(S.map(function(x){return x.id;})).concat(['Present','Held','Rate %']).join(',')];
     byName().forEach(function(r){
@@ -1257,6 +1259,40 @@ function renderPresence(){
     var a=document.createElement('a');a.href=URL.createObjectURL(b);
     a.download=NS+'-presence.csv';a.click();
   });
+}
+
+/* ---------- keeping the register live -------------------------------
+   The rest of this dashboard is a snapshot you refresh when you want one.
+   The register is not: while a window is open you are watching a room fill
+   up, and clicking ↻ thirty times is not a plan.
+
+   So this polls `_presence` alone — 15 sessions of marks, a few KB — rather
+   than the whole namespace, and only while it can matter: a window is open,
+   or you are looking at the tab. Nothing else on the page re-renders, so a
+   half-typed announcement or an open drawer is never disturbed.
+   -------------------------------------------------------------------- */
+var PRESPOLL=null, PRESBUSY=false;
+async function presRefresh(){
+  if(PRESBUSY||document.hidden)return;
+  PRESBUSY=true;
+  try{
+    var r=await fetch(DB+'/'+NS+'/_presence.json'+(await authQ()));
+    var j=await r.json();
+    if(j&&j.error)throw new Error(j.error);
+    if(!ROOT)ROOT={};
+    ROOT._presence=j||{};
+    renderPresence();
+    renderTabs();
+  }catch(e){ /* a dropped poll is not worth a message on screen */ }
+  PRESBUSY=false;
+}
+function presPollTune(){
+  var open=false;
+  try{ open=presSessions().some(function(x){return x.open;}); }catch(e){}
+  var want = open ? 5000 : (TAB==='presence' ? 15000 : 0);
+  if(PRESPOLL && PRESPOLL.ms===want)return;
+  if(PRESPOLL){clearInterval(PRESPOLL.id);PRESPOLL=null;}
+  if(want)PRESPOLL={ms:want,id:setInterval(presRefresh,want)};
 }
 
 function wirePresControl(){
@@ -1376,6 +1412,7 @@ if(location.hash){
 }
 function showTab(id){
   TAB=id;
+  setTimeout(presPollTune,0);   /* the tab you are on decides the cadence */
   try{localStorage.setItem('jem_admin2_tab',id);}catch(e){}
   Array.prototype.forEach.call(document.querySelectorAll('.pane'),function(p){
     p.classList.toggle('on',p.getAttribute('data-pane')===id);
