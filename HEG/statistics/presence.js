@@ -82,7 +82,24 @@ window.StatsPresence = (function () {
       'font:600 13px inherit;min-width:0;flex:1 1 180px;max-width:260px;}'+
     '.pres-inst .who a{color:#FFB3AD;}'+
     '.pres-inst .who{font-size:11.5px;color:rgba(255,255,255,.7);margin-top:9px;}'+
+    '.pres-inst .roll{margin-top:10px;display:grid;gap:7px;}'+
+    '.pres-inst .roll .rl{font-size:12px;color:rgba(255,255,255,.92);background:rgba(255,255,255,.10);'+
+      'border-left:3px solid var(--ok,#2F855A);border-radius:6px;padding:7px 10px;line-height:1.5;}'+
+    '.pres-inst .roll .rl.no{border-left-color:#FFB3AD;color:rgba(255,255,255,.75);}'+
+    '.pres-inst .roll .ns{display:block;font-size:11.5px;opacity:.85;margin-top:3px;}'+
     '.pres-mini{font-size:12px;color:var(--grey);}'+
+    '.pres-mine{font-size:12.5px;color:var(--grey);line-height:1.55;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}'+
+    '.pres-mine .pm-h{color:var(--ink);font-size:13.5px;}'+
+    '.pres-mine .pm-h b{color:var(--accent-deep);}'+
+    '.pres-mine .pm-pct{font-weight:800;border-radius:20px;padding:1px 9px;font-size:12px;margin-left:6px;}'+
+    '.pres-mine .pm-pct.ok{background:rgba(47,133,90,.14);color:#2F855A;}'+
+    '.pres-mine .pm-pct.mid{background:rgba(201,151,28,.16);color:#8A6A12;}'+
+    '.pres-mine .pm-pct.low{background:rgba(204,0,0,.12);color:var(--accent);}'+
+    '.pres-mine .pm-chips{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0;}'+
+    '.pres-mine .pchip{font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:5px;padding:2px 7px;}'+
+    '.pres-mine .pchip.y{background:rgba(47,133,90,.16);color:#2F855A;}'+
+    '.pres-mine .pchip.n{background:#EEF1F5;color:#98A2AD;}'+
+    '.pres-mine .pm-f{font-size:11.5px;}'+
     '.pres-mini b{color:var(--accent-deep);}';
     document.head.appendChild(s);
   }
@@ -181,6 +198,18 @@ window.StatsPresence = (function () {
      because a half-open window is worse than a closed one.
      -------------------------------------------------------------------- */
   function nowUrl(){return DB+'/'+NS+'/_presence_now';}
+  /* sid → display name. _chat/_people is world-readable and carries names and
+     nothing else (no codes), which is exactly what a register needs. */
+  var PEOPLE=null;
+  function loadPeople(cb){
+    if(PEOPLE){cb(PEOPLE);return;}
+    fetch(DB+'/'+NS+'/_chat/_people.json').then(function(r){return r.ok?r.json():null;})
+      .then(function(j){PEOPLE=(j&&!j.error)?j:{};cb(PEOPLE);},function(){PEOPLE={};cb(PEOPLE);});
+  }
+  function nameOf(sid){
+    var p=PEOPLE&&PEOPLE[sid];
+    return (p&&p.n)||sid.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+  }
   function readNow(){
     return fetch(nowUrl()+'.json').then(function(r){
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -387,6 +416,7 @@ window.StatsPresence = (function () {
       '<div class="pd">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens the window in the room; press the button once while it is red.</div>'+
       '<button class="pres-btn" id="hubBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="hubState"></div>'+
+      '<div id="hubMine"></div>'+
       (inst?'<div class="pres-inst" id="hubInst"></div>':'');
     var btn=el.querySelector('#hubBtn'), st=el.querySelector('#hubState');
 
@@ -466,7 +496,7 @@ window.StatsPresence = (function () {
       names.sort();
       /* the poll runs every 7s and the signed-out state contains a password
          field — re-rendering on a tick would wipe what is being typed */
-      var sig=[signedIn()?1:0,open?1:0,sel,n,instMsg].join('|');
+      var sig=[signedIn()?1:0,open?1:0,sel,n,instMsg,PEOPLE?1:0].join('|');
       if(sig===lastSig)return;
       lastSig=sig;
       var opts=weeks.map(function(w){
@@ -475,21 +505,35 @@ window.StatsPresence = (function () {
           esc(String(w.name).replace(/^Week\s*\d+\s*·\s*/,''))+
           (h==='open'?'   ● OPEN NOW':h==='held'?'   ✓ held':'')+'</option>';
       }).join('');
+      /* who is in the room, by name — the list you actually read while the
+         window is open, and the one that tells you who to chase */
+      var roll='';
+      if(n||open){
+        var inRoom=names.map(nameOf).sort();
+        var absent=Object.keys(PEOPLE||{}).filter(function(k){return names.indexOf(k)<0;})
+                     .map(nameOf).sort();
+        roll='<div class="roll"><div class="rl"><b>'+n+'</b> in the room'+
+               (inRoom.length?'<span class="ns">'+inRoom.map(esc).join(' · ')+'</span>':'')+'</div>'+
+             (absent.length?'<div class="rl no"><b>'+absent.length+'</b> not yet'+
+               '<span class="ns">'+absent.map(esc).join(' · ')+'</span></div>':'')+'</div>';
+      }
       box.innerHTML=
         '<div class="pi-t">👁 Instructor · presence console</div>'+
         (instMsg?'<div class="pi-err">'+instMsg+'</div>':'')+
         '<div class="pi-d">'+(signedIn()
           ? 'Say “go”, press <b>Open</b>, let the room mark itself, then press <b>Close</b>. Every student button turns red within a few seconds.'
-          : 'Sign in once on this laptop and it is remembered from then on — the database will not accept an open or close from an unidentified device.')+'</div>'+
+          : 'Pick the session and sign in once on this laptop — it is remembered from then on. The database will not accept an open or close from an unidentified device.')+'</div>'+
+        /* the picker and the button are always visible, even signed out, so it
+           is obvious what the console does before you have typed anything */
+        '<div class="pi-row">'+
+          '<select id="hubSel" aria-label="Which session"'+(signedIn()?'':' disabled')+'>'+opts+'</select>'+
+          '<button class="btn'+(open?' on':'')+'" id="hubToggle"'+(signedIn()?'':' disabled title="sign in first"')+'>'+
+            (open?'■ Close the window':'▶ Open the window')+'</button>'+
+          '<a class="btn" href="/shared/admin2.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Full register →</a>'+
+        '</div>'+
         (signedIn()
-          ? '<div class="pi-row">'+
-              '<select id="hubSel" aria-label="Which session">'+opts+'</select>'+
-              '<button class="btn'+(open?' on':'')+'" id="hubToggle">'+(open?'■ Close the window':'▶ Open the window')+'</button>'+
-              '<a class="btn" href="/shared/admin2.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Register →</a>'+
-            '</div>'+
-            '<div class="names"><b>'+n+'</b> marked'+(names.length?': '+names.map(esc).join(', '):' — nobody yet')+'</div>'+
-            '<div class="who">Signed in as '+esc((FBUSER&&FBUSER.email)||'')+' · <a href="#" id="hubOut">sign out</a></div>'
-          : '<div class="pi-row">'+
+          ? roll+'<div class="who">Signed in as '+esc((FBUSER&&FBUSER.email)||'')+' · <a href="#" id="hubOut">sign out</a></div>'
+          : '<div class="pi-row" style="margin-top:8px">'+
               '<input id="hubEmail" type="email" autocomplete="username" value="'+esc(CTRL_EMAIL)+'">'+
               '<input id="hubPw" type="password" autocomplete="current-password" placeholder="password">'+
               '<button class="btn" id="hubKey">Sign in</button>'+
@@ -567,7 +611,8 @@ window.StatsPresence = (function () {
     }
 
     paint();
-    if(inst)loadStatus().then(pullSel).then(paint);
+    mine(el.querySelector('#hubMine'));
+    if(inst){loadPeople(function(){lastSig=null;paint();});loadStatus().then(pullSel).then(paint);}
     pull();
     setInterval(function(){pull();if(inst)pullSel().then(paint);},7000);
     document.addEventListener('visibilitychange',function(){if(!document.hidden)pull();});
@@ -599,14 +644,27 @@ window.StatsPresence = (function () {
         return r.ok?r.json():null;
       }).catch(function(){return null;});
     })).then(function(list){
-      var held=0,here=0;
-      list.forEach(function(s){
-        if(!s||s.error||(!s.openedAt&&!s.closedAt))return;   /* never opened = never held */
-        held++; if(s.marks&&s.marks[a.sid])here++;
+      var held=0,here=0,chips='',missed=[];
+      list.forEach(function(x,i){
+        if(!x||x.error||(!x.openedAt&&!x.closedAt))return;   /* never opened = never held */
+        held++;
+        var on=!!(x.marks&&x.marks[a.sid]);
+        if(on)here++; else missed.push(x.label||mods[i]);
+        chips+='<span class="pchip '+(on?'y':'n')+'" title="'+esc(x.label||mods[i])+
+               (on?' — you were marked present':' — no mark for you')+'">'+esc(mods[i].toUpperCase())+'</span>';
       });
       if(!held)return;
-      el.innerHTML='<span class="pres-mini">Presence so far: <b>'+here+' of '+held+'</b> session'+(held>1?'s':'')+
-        ' held ('+Math.round(here/held*100)+'%). Worth 20% of the grade, pro rata.</span>';
+      var pct=Math.round(here/held*100);
+      /* the mark itself, plus exactly which sessions are missing — a number
+         with no list behind it is the thing students come and argue about */
+      el.innerHTML='<div class="pres-mine">'+
+        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> session'+(held>1?'s':'')+
+          ' held <span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span></div>'+
+        '<div class="pm-chips">'+chips+'</div>'+
+        '<div class="pm-f">'+(missed.length
+          ? 'Not marked for: <b>'+missed.map(esc).join(' · ')+'</b>. If you were in the room, tell your instructor — they can correct the register.'
+          : 'Nothing missed so far.')+
+          ' Presence is 20% of the grade, pro rata.</div></div>';
     });
   }
 
