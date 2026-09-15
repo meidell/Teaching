@@ -575,6 +575,8 @@ async function load(){
     var j=await r.json();
     if(j&&j.error)throw new Error(j.error);
     ROOT=j||{};setConn(true);$('warn').style.display='none';
+    /* the read worked, so we are identified — stop offering sign-in */
+    $('bAuth').style.display='none';
   }catch(e){
     setConn(false,'read blocked');
     $('bAuth').style.display='';
@@ -1363,8 +1365,8 @@ var TABS=[
   {id:'today',    label:'Today',      always:true},
   {id:'cohort',   label:'The cohort', always:true},
   {id:'roster',   label:'The roster', always:true},
-  {id:'presence', label:'Presence',   n:function(){return PRES_N;}},
-  {id:'subs',     label:'Handed in',  n:function(){return SUBS_N;}}
+  {id:'presence', label:'Presence',   show:function(){return hasPresence();}, n:function(){return PRES_N;}},
+  {id:'subs',     label:'Handed in',  show:function(){return SUBS_N>0;},       n:function(){return SUBS_N;}}
 ];
 var TAB=null;
 try{TAB=localStorage.getItem('jem_admin2_tab');}catch(e){}
@@ -1383,7 +1385,7 @@ function showTab(id){
   });
 }
 function renderTabs(){
-  var live=TABS.filter(function(t){return t.always||(t.n&&t.n()>0);});
+  var live=TABS.filter(function(t){return t.always||(t.show&&t.show());});
   if(!live.some(function(t){return t.id===TAB;}))TAB=live[0].id;
   $('tabs').innerHTML=live.map(function(t){
     var c=t.id==='roster'?ROWS.length:(t.n?t.n():0);
