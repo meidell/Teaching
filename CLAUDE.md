@@ -285,6 +285,11 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   p-value on the wrong tail, 2022 Ex5 χ², 2020 Ex4 sample size). Each correction is
   flagged in the card's solution rather than silently applied. Never copy a number
   off an old key; recompute it.
+- **A regression card without its printout is unanswerable.** The six regression
+  questions are answered *from* an Excel output with values blanked, so each card
+  carries an `excel:` table reproducing the real one, blanks highlighted and
+  labelled exactly as the paper labelled them — (a)…(e), or A…E in 2020. The
+  answer fields must match those blanks one for one.
 - **The seven tools** (`practice`, `exam-cards`, `sampling-sim`, `distributions`,
   `sampling-machine`, `real-or-random`, `catch-the-mean`) keep their own inline
   CSS, written for the old navy/gold dark theme; the restyle **redefined their
