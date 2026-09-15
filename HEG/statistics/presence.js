@@ -76,10 +76,18 @@ window.StatsPresence = (function () {
     '.pres-mine .pm-pct.ok{background:rgba(47,133,90,.14);color:#2F855A;}'+
     '.pres-mine .pm-pct.mid{background:rgba(201,151,28,.16);color:#8A6A12;}'+
     '.pres-mine .pm-pct.low{background:rgba(204,0,0,.12);color:var(--accent);}'+
-    '.pres-mine .pm-chips{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0;}'+
-    '.pres-mine .pchip{font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:5px;padding:2px 7px;}'+
-    '.pres-mine .pchip.y{background:rgba(47,133,90,.16);color:#2F855A;}'+
-    '.pres-mine .pchip.n{background:#EEF1F5;color:#98A2AD;}'+
+    '.pres-mine .pm-bar{display:grid;grid-template-columns:repeat(15,1fr);gap:3px;margin:10px 0 3px;}'+
+    '.pres-mine .pm-seg{height:15px;border-radius:3px;background:#EEF1F5;}'+
+    '.pres-mine .pm-seg.y{background:#2F855A;}'+
+    '.pres-mine .pm-seg.n{background:var(--accent);}'+
+    '.pres-mine .pm-seg.u{background:repeating-linear-gradient(45deg,#eef1f5,#eef1f5 4px,#e4e8ee 4px,#e4e8ee 8px);}'+
+    '.pres-mine .pm-x{display:grid;grid-template-columns:repeat(15,1fr);gap:3px;font-size:9px;'+
+      'color:var(--grey);text-align:center;letter-spacing:-.02em;}'+
+    '.pres-mine .pm-lgd{display:flex;gap:14px;flex-wrap:wrap;margin:9px 0 6px;font-size:11px;color:var(--grey);}'+
+    '.pres-mine .pm-lgd i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;}'+
+    '.pres-mine .pm-lgd i.y{background:#2F855A;}'+
+    '.pres-mine .pm-lgd i.n{background:var(--accent);}'+
+    '.pres-mine .pm-lgd i.u{background:repeating-linear-gradient(45deg,#eef1f5,#eef1f5 3px,#e4e8ee 3px,#e4e8ee 6px);}'+
     '.pres-mine .pm-f{font-size:11.5px;}'+
     '.pres-mini b{color:var(--accent-deep);}';
     document.head.appendChild(s);
@@ -321,35 +329,44 @@ window.StatsPresence = (function () {
   }
   function mine(el){
     var a=auth(); if(!el||!a)return;
-    var mods=allWeeks().map(function(w){return w.mod;}); if(!mods.length)return;
-    Promise.all(mods.map(function(m){
-      return fetch(node(m)+'.json').then(function(r){
+    var weeks=allWeeks(); if(!weeks.length)return;   /* w1…w15 — the exam is not a session */
+    Promise.all(weeks.map(function(w){
+      return fetch(node(w.mod)+'.json').then(function(r){
         return r.ok?r.json():null;
       }).catch(function(){return null;});
     })).then(function(list){
-      var held=0,here=0,chips='',missed=[];
+      var held=0,here=0,segs='',labs='',missed=[];
       list.forEach(function(x,i){
-        if(!x||x.error||(!x.openedAt&&!x.closedAt))return;   /* never opened = never held */
-        held++;
-        var on=!!(x.marks&&x.marks[a.sid]);
-        if(on)here++; else missed.push(x.label||mods[i]);
-        chips+='<span class="pchip '+(on?'y':'n')+'" title="'+esc(x.label||mods[i])+
-               (on?' — you were marked present':' — no mark for you')+'">'+esc(mods[i].toUpperCase())+'</span>';
+        var w=weeks[i];
+        var run=!!(x&&!x.error&&(x.openedAt||x.closedAt));   /* never opened = never held */
+        var on=run&&!!(x.marks&&x.marks[a.sid]);
+        var cls,tip;
+        if(!run){ cls='u'; tip=esc(w.name)+' — not held yet'; }
+        else if(on){ held++;here++; cls='y'; tip=esc(w.name)+' — you were marked present'; }
+        else { held++; cls='n'; missed.push(w.name); tip=esc(w.name)+' — no mark for you'; }
+        segs+='<span class="pm-seg '+cls+'" title="'+tip+'"></span>';
+        labs+='<span>'+w.n+'</span>';
       });
-      if(!held)return;
-      var pct=Math.round(here/held*100);
-      /* the mark itself, plus exactly which sessions are missing — a number
-         with no list behind it is the thing students come and argue about */
+      var pct=held?Math.round(here/held*100):0;
+      /* The whole term at a glance: what is behind you, what is still to come.
+         A student who has missed one of two sessions is at 50% and panicking;
+         seeing thirteen grey weeks ahead is the honest context for that. */
       el.innerHTML='<div class="pres-mine">'+
-        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> session'+(held>1?'s':'')+
-          ' held <span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span></div>'+
-        '<div class="pm-chips">'+chips+'</div>'+
-        '<div class="pm-f">'+(missed.length
-          ? 'Not marked for: <b>'+missed.map(esc).join(' · ')+'</b>. If you were in the room, tell your instructor — they can correct the register.'
-          : 'Nothing missed so far.')+
-          ' Presence is 20% of the grade, pro rata.</div></div>';
+        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> session'+(held===1?'':'s')+
+          ' held so far'+(held?'<span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span>':'')+'</div>'+
+        '<div class="pm-bar">'+segs+'</div>'+
+        '<div class="pm-x">'+labs+'</div>'+
+        '<div class="pm-lgd"><span><i class="y"></i>Present</span><span><i class="n"></i>Missed</span>'+
+          '<span><i class="u"></i>Still to come</span></div>'+
+        '<div class="pm-f">'+(!held
+          ? 'No session has been held yet — the bar fills as the term goes on.'
+          : (missed.length
+            ? 'Not marked for: <b>'+missed.map(esc).join(' · ')+'</b>. If you were in the room, tell your instructor — they can correct the register.'
+            : 'Nothing missed so far.'))+
+          ' Presence is 20% of the grade, pro rata — counted only on the sessions actually held.</div></div>';
     });
   }
+
 
   /* ---------- the dashboard summary ----------
      Given the namespace root the dashboard already fetched, returns the
