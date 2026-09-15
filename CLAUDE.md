@@ -221,6 +221,12 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   `presence.js` has no sign-in code, no Firebase import and no `isInstructor()`
   branch at all. It briefly had an instructor console on the course page; that was
   wrong, because that page is what thirty students are looking at.
+- **The register is the only thing on the dashboard that polls.** Everything
+  else is a snapshot you refresh when you want one; while a window is open you
+  are watching a room fill up, so `presRefresh()` re-reads `_presence` alone —
+  a few KB, not the whole namespace — every 5 s while open, 15 s while you are
+  on the tab, and never otherwise. It re-renders only the presence card, so an
+  open drawer or a half-typed announcement is never disturbed.
 - **The picker needs every teaching week, not just the published ones.**
   `courses.json` lists only modules that exist, so presence reads
   `presenceSessions` (15 for statistics) and offers `w1`…`wN`, labelled from
