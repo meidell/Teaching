@@ -94,6 +94,15 @@ table.pres td.tot{font-weight:800;color:var(--accent);}
 .ptag.n{background:var(--wash);color:var(--faint);}
 .ptag:hover{outline:2px solid var(--accent-bright);}
 .dmiss{font-size:12px;color:var(--grey);margin-bottom:10px;line-height:1.5;}
+.presctl{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:4px 0 14px;padding:12px 14px;
+  background:var(--wash);border:1px solid var(--line);border-radius:12px;}
+.presctl select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:9px;
+  padding:9px 12px;font:700 13px inherit;max-width:100%;}
+.presctl .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.presctl .btn.danger{background:var(--bad);color:#fff;border-color:var(--bad);}
+.presctl .muted{font-size:12.5px;}
+.preserr{flex:1 1 100%;font-size:12.5px;color:var(--bad);background:var(--bad-bg);
+  border-radius:8px;padding:8px 11px;}
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -16px rgba(16,24,40,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -1134,13 +1143,75 @@ async function presToggle(sid,session,on){
     renderPresence();
   }catch(e){}
 }
+/* ---------- opening and closing a session, from here -----------------
+   This is the instructor control. It used to sit on the course page, which
+   was wrong: that page is what students look at. Say "go", press Open, let
+   the room mark itself in the table below, press Close.
+
+   Two nodes move together — the session itself, and the public pointer that
+   tells a student's browser which window is accepting marks. Both need the
+   signed-in account; an anonymous PATCH comes back 401. -------------------- */
+function presSessionList(){
+  var n=(COURSE&&COURSE.presenceSessions)||0, out=[], seen={};
+  for(var i=1;i<=n;i++){
+    var id='w'+i, m=MODULES.filter(function(x){return x.id===id;})[0];
+    out.push({id:id,label:m?(m.label||id):('Week '+i)}); seen[id]=1;
+  }
+  /* anything already opened that is not in that range still belongs here */
+  presSessions().forEach(function(x){ if(!seen[x.id])out.push({id:x.id,label:x.label}); });
+  return out;
+}
+async function presSetWindow(mod,label,on){
+  var t=Date.now(), body={open:!!on,label:label};
+  body[on?'openedAt':'closedAt']=t;
+  var q=await authQ();
+  var a=await fetch(DB+'/'+NS+'/_presence/'+encodeURIComponent(mod)+'.json'+q,
+        {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(a.status===401)throw new Error('Not signed in — use the 🔑 button, then try again.');
+  if(!a.ok)throw new Error('The session refused the write (HTTP '+a.status+').');
+  var b=await fetch(DB+'/'+NS+'/_presence_now.json'+q,
+        {method:'PUT',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({mod:mod,label:label,open:!!on,ts:t})});
+  if(!b.ok)throw new Error('The window is '+(on?'open':'closed')+', but the pointer node was refused — student buttons may take up to 20s.');
+  if(!ROOT._presence)ROOT._presence={};
+  if(!ROOT._presence[mod])ROOT._presence[mod]={};
+  ROOT._presence[mod].open=!!on; ROOT._presence[mod].label=label;
+  ROOT._presence[mod][on?'openedAt':'closedAt']=t;
+}
+var PRESMSG='';
+function presControl(){
+  var list=presSessionList(); if(!list.length)return '';
+  var openNow=presSessions().filter(function(x){return x.open;})[0];
+  var held={}; presSessions().forEach(function(x){held[x.id]=x.open?'open':'held';});
+  var sel=PRESSEL||(openNow?openNow.id:(list.filter(function(x){return !held[x.id];})[0]||list[0]).id);
+  PRESSEL=sel;
+  var isOpen=!!(openNow&&openNow.id===sel);
+  return '<div class="presctl">'+
+    '<select id="presSel">'+list.map(function(x){
+      var h=held[x.id];
+      return '<option value="'+esc(x.id)+'"'+(x.id===sel?' selected':'')+'>'+esc(x.label)+
+             (h==='open'?'   ● OPEN NOW':h==='held'?'   ✓ held':'')+'</option>';
+    }).join('')+'</select>'+
+    '<button class="btn '+(isOpen?'danger':'primary')+'" id="presBtn">'+
+      (isOpen?'■ Close the window':'▶ Open the window')+'</button>'+
+    '<span class="muted">'+(isOpen
+      ? 'Students can press their button now.'
+      : 'Say “go”, then press Open.')+'</span>'+
+    (PRESMSG?'<div class="preserr">'+PRESMSG+'</div>':'')+
+    '</div>';
+}
+var PRESSEL=null;
+
 function renderPresence(){
   var el=$('presenceCard');
   if(!hasPresence()){el.style.display='none';PRES_N=0;return;}
   var S=presSessions();PRES_N=S.length;
   el.style.display='block';
   if(!S.length){
-    el.innerHTML='<h3 id="presence">Presence</h3><div class="sub">No session has been opened yet. Open one from the week page \u2014 the control sits on the page and in the lecture deck \u2014 and a column appears here immediately.</div>';
+    el.innerHTML='<h3 id="presence">Presence</h3>'+
+      '<div class="sub">No session has been held yet. Pick one and open the window \u2014 every student\u2019s button turns red within a few seconds, and a column appears here.</div>'+
+      presControl();
+    wirePresControl();
     return;
   }
   var rows=byName(), held=S.length;
@@ -1163,6 +1234,7 @@ function renderPresence(){
   el.innerHTML='<h3 id="presence">Presence</h3>'+
     '<div class="sub">One column per session held. <b>20% of the grade, pro rata</b> \u2014 the rate column is the mark. '+
     'Students press the button in the room while you have the window open; click any cell here to correct it by hand.</div>'+
+    presControl()+
     '<div class="presbar"><button class="btn" id="bPresCsv">\u2b07 Presence CSV</button>'+
     '<span class="muted">'+held+' session'+(held>1?'s':'')+' held \u00b7 '+rows.length+' students</span></div>'+
     '<div class="wrapx"><table class="pres"><thead>'+head+'</thead><tbody>'+body+totals+'</tbody></table></div>';
@@ -1171,6 +1243,7 @@ function renderPresence(){
       presToggle(c.getAttribute('data-sid'),c.getAttribute('data-ses'),c.getAttribute('data-on')!=='1');
     });
   });
+  wirePresControl();
   $('bPresCsv').addEventListener('click',function(){
     var lines=[['Student'].concat(S.map(function(x){return x.id;})).concat(['Present','Held','Rate %']).join(',')];
     byName().forEach(function(r){
@@ -1181,6 +1254,21 @@ function renderPresence(){
     var b=new Blob([lines.join('\n')],{type:'text/csv'});
     var a=document.createElement('a');a.href=URL.createObjectURL(b);
     a.download=NS+'-presence.csv';a.click();
+  });
+}
+
+function wirePresControl(){
+  var sl=$('presSel'), bt=$('presBtn'); if(!sl||!bt)return;
+  sl.addEventListener('change',function(){PRESSEL=sl.value;PRESMSG='';renderPresence();});
+  bt.addEventListener('click',function(){
+    var list=presSessionList(), cur=list.filter(function(x){return x.id===PRESSEL;})[0];
+    if(!cur)return;
+    var openNow=presSessions().filter(function(x){return x.open;})[0];
+    var willOpen=!(openNow&&openNow.id===PRESSEL);
+    bt.disabled=true;bt.textContent=willOpen?'Opening…':'Closing…';PRESMSG='';
+    presSetWindow(cur.id,cur.label,willOpen)
+      .then(function(){PRESMSG='';},function(e){PRESMSG=esc(e.message||e);})
+      .then(function(){renderPresence();renderTabs();});
   });
 }
 
