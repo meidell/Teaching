@@ -447,6 +447,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
   </div><!-- /cohort -->
 
   <div class="pane" data-pane="presence"><div class="card" id="presenceCard"></div></div>
+  <div class="pane" data-pane="solutions"><div class="card" id="solCard"></div></div>
   <div class="pane" data-pane="subs"><div class="card" id="subsCard"></div></div>
 
   <!-- ======================= LEVEL 3 ======================= -->
@@ -1127,6 +1128,109 @@ function closeDrawer(){
 var PRES_N=0, SUBS_N=0;
 function byName(){return ROWS.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));});}
 function hasPresence(){return !!(COURSE&&(COURSE.features||[]).indexOf('presence')>=0);}
+function hasReleases(){return !!(COURSE&&(COURSE.features||[]).indexOf('releases')>=0);}
+
+/* ------------------------------------------------------------------ */
+/* SOLUTIONS — the switch that opens a module's worked solutions       */
+/* ------------------------------------------------------------------ */
+/* Homework and in-class exercises ship with their solutions written, and
+   a student who can read them before attempting the work learns nothing.
+   So a solution is hidden until the instructor releases its module, by
+   writing a single key:
+
+       <ns>/_release/<mod>/_all = <timestamp>
+
+   Student pages poll that node every 8 s (exercises.js) and unlock in
+   place; re-locking deletes the key. Per-exercise release still works —
+   the deck's reveal button writes `_release/<mod>/<exId>` — and `_all`
+   simply means "every id in this module".
+
+   ⚠ BE HONEST ABOUT WHAT THIS IS. The solution text is in the page
+   source, as every homework solution in this repo is. This stops a
+   student reading the answers instead of doing the work; it does not
+   stop a determined one pressing ⌥⌘U. It is a classroom gate, not
+   secrecy — so nothing confidential goes in a solution, ever.
+
+   The write needs the signed-in Google token: `_release` is
+   instructor-write-only in the deployed rules. Without it the PUT comes
+   back 401 and the row says so rather than pretending it worked. */
+var SOL={};        /* {mod: ts|null} — what is currently open */
+var SOL_N=0;       /* how many modules are open, for the tab badge */
+function solMods(){
+  /* every module the course declares, plus any module that already has a
+     release recorded (so a module retired from courses.json can still be
+     re-locked rather than being stranded open) */
+  var out=[],seen={};
+  (MODULES||[]).forEach(function(m){ if(m&&m.id&&!seen[m.id]){seen[m.id]=1;out.push({id:m.id,label:m.label||m.id});} });
+  Object.keys(SOL).forEach(function(id){ if(!seen[id]){seen[id]=1;out.push({id:id,label:id+' (not in courses.json)'});} });
+  return out;
+}
+function loadReleases(){
+  if(!NS||!hasReleases())return Promise.resolve();
+  return fetch(DB+'/'+NS+'/_release.json').then(function(r){return r.ok?r.json():null;})
+    .then(function(j){
+      SOL={};
+      if(j&&!j.error)Object.keys(j).forEach(function(mod){
+        var node=j[mod]||{};
+        SOL[mod]=node._all||null;
+      });
+      renderSolutions();renderTabs();
+    },function(){});
+}
+async function setRelease(mod,on){
+  var q=await authQ();
+  if(!q)return {ok:false,why:'Sign in with the 🔑 button first — releasing needs your instructor account, not the page password.'};
+  var url=DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'/_all.json'+q;
+  try{
+    var r=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
+                           body:JSON.stringify(on?Date.now():null)});
+    if(!r.ok)return {ok:false,why:'The database refused the write (HTTP '+r.status+'). Are you signed in as the instructor?'};
+    var j=await r.json().catch(function(){return null;});
+    if(j&&j.error)return {ok:false,why:String(j.error)};
+    return {ok:true};
+  }catch(e){ return {ok:false,why:'Could not reach the database.'}; }
+}
+function renderSolutions(){
+  var el=$('solCard'); if(!el)return;
+  if(!hasReleases()){el.style.display='none';SOL_N=0;return;}
+  el.style.display='';
+  var mods=solMods();
+  SOL_N=mods.filter(function(m){return !!SOL[m.id];}).length;
+  el.innerHTML=
+    '<h3 id="solutions">Solutions <span class="muted" style="font-weight:400;font-size:12px">· '+SOL_N+' of '+mods.length+' open</span></h3>'+
+    '<div class="sub">Worked solutions stay locked on the students’ pages until you open them here. '+
+    'Their page unlocks within about eight seconds — no reload, and the whole room opens together. '+
+    'Hints and the Check button are never locked: those are the parts that teach.</div>'+
+    '<table class="roster" style="margin-top:10px"><thead><tr>'+
+      '<th class="nm">Module</th><th>Solutions</th><th>Opened</th><th></th></tr></thead><tbody>'+
+    mods.map(function(m){
+      var on=!!SOL[m.id];
+      return '<tr data-mod="'+esc(m.id)+'">'+
+        '<td class="nm">'+esc(m.label)+'<div class="muted" style="font-size:11px">'+esc(m.id)+'</div></td>'+
+        '<td><span class="pill '+(on?'d':'p')+'">'+(on?'Open to students':'Locked')+'</span></td>'+
+        '<td class="muted">'+(on?esc(whenAgo(SOL[m.id])):'—')+'</td>'+
+        '<td class="r"><button class="btn'+(on?'':' primary')+'" data-rel="'+esc(m.id)+'" data-on="'+(on?'0':'1')+'">'+
+          (on?'Lock again':'Release solutions')+'</button></td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table>'+
+    '<div class="sub" id="solMsg" style="margin-top:10px"></div>'+
+    '<div class="sub" style="margin-top:10px;opacity:.85"><b>What this is, exactly.</b> A classroom gate. The solution text sits '+
+    'in the page source like every homework solution in this repo, so it stops a student reading the answers instead of doing '+
+    'the work — it is not secrecy, and nothing confidential should ever go in a solution.</div>';
+  Array.prototype.forEach.call(el.querySelectorAll('[data-rel]'),function(b){
+    b.addEventListener('click',async function(){
+      var mod=b.getAttribute('data-rel'), on=b.getAttribute('data-on')==='1';
+      if(on&&!confirm('Open the worked solutions for “'+mod+'” to the whole cohort?\n\nThey unlock on every student’s page within about eight seconds.'))return;
+      b.disabled=true;b.textContent=on?'Releasing…':'Locking…';
+      var res=await setRelease(mod,on);
+      if(res.ok){ SOL[mod]=on?Date.now():null; renderSolutions(); renderTabs();
+                  $('solMsg').innerHTML=on?'✅ <b>'+esc(mod)+'</b> is open. Students see the solutions within ~8 s.'
+                                          :'🔒 <b>'+esc(mod)+'</b> is locked again. Devices that already unlocked it keep it until they reload.'; }
+      else { renderSolutions(); $('solMsg').innerHTML='❌ '+esc(res.why); }
+    });
+  });
+}
 function presSessions(){
   var p=(ROOT&&ROOT._presence)||{};
   var ids=Object.keys(p).filter(function(k){var x=p[k];return x&&(x.openedAt||x.closedAt||x.open);});
@@ -1402,6 +1506,7 @@ var TABS=[
   {id:'cohort',   label:'The cohort', always:true},
   {id:'roster',   label:'The roster', always:true},
   {id:'presence', label:'Presence',   show:function(){return hasPresence();}, n:function(){return PRES_N;}},
+  {id:'solutions',label:'Solutions',  show:function(){return hasReleases();},  n:function(){return SOL_N;}},
   {id:'subs',     label:'Handed in',  show:function(){return SUBS_N>0;},       n:function(){return SUBS_N;}}
 ];
 var TAB=null;
@@ -1439,12 +1544,12 @@ function renderAll(){
     $('kpis').innerHTML=tile('Cohort',0,'nobody yet');
     $('acts').innerHTML='<li class="clear">No students have identified themselves yet.</li>';
     $('empty').style.display='block';
-    renderTabs();
+    renderSolutions();renderTabs();
     return;
   }
   renderKpis();renderActs();renderPulse();renderDist();renderFunnel();
   renderSections();renderQuiz();renderReader();renderRoster();
-  renderPresence();renderSubs();renderTabs();
+  renderPresence();renderSubs();renderSolutions();renderTabs();
   /* a half-width card with nothing beside it should take the whole row */
   $('row2').classList.toggle('solo',$('secCard').style.display==='none');
   $('row3').classList.toggle('solo',$('readerCard').style.display==='none'||$('quizCard').style.display==='none');
@@ -1544,11 +1649,40 @@ function selectCourse(id){
   $('bChat').href='chat.html?course='+encodeURIComponent(id);
   try{history.replaceState(null,'','?course='+encodeURIComponent(id));}catch(e){}
   setQuick('all');
-  load();loadAnnounce();
+  SOL={};SOL_N=0;
+  load();loadAnnounce();loadReleases();
 }
+/* Which course was asked for, and was it asked for EXPLICITLY.
+   The distinction matters: a `?course=` in the URL is a request, and a
+   request that cannot be honoured must fail loudly. A remembered id with
+   no URL param is only a convenience, and may quietly fall back. */
 function wantedId(){
   var m=(location.search||'').match(/[?&]course=([^&#]+)/);
-  return m?decodeURIComponent(m[1]):(localStorage.getItem('jem_admin_last')||'');
+  if(m)return {id:decodeURIComponent(m[1]),explicit:true};
+  return {id:(localStorage.getItem('jem_admin_last')||''),explicit:false};
+}
+/* ⚠ NEVER substitute a different cohort for the one that was asked for.
+   This used to fall through to list[0] whenever the requested id was not
+   in the registry — which happens for real whenever a browser is holding
+   a cached /courses.json from before a course was added. The dashboard
+   then showed ANOTHER COURSE'S STUDENTS under a URL naming this one, with
+   no warning at all; with two courses called something like "Quantitative
+   Methods" it is not even obviously wrong on screen. Reading out the
+   wrong cohort's names is exactly the failure this file exists to avoid.
+   So: unknown id + explicit request = stop, say so, load nothing. */
+function noSuchCourse(id,list){
+  $('app').style.display='';
+  document.querySelectorAll('[data-pane]').forEach(function(el){el.style.display='none';});
+  var tabs=$('tabs'); if(tabs)tabs.style.display='none';
+  $('warn').style.display='block';
+  $('warn').innerHTML='<div style="margin-bottom:9px"><b>No course with the id “'+esc(id)+'”.</b> '+
+    'Nothing has been loaded — this page will not show you another cohort\'s students instead.</div>'+
+    '<div style="margin-bottom:9px">If you have just added the course, your browser may be holding an old copy of '+
+    '<code>/courses.json</code>: reload once with ⇧⌘R. Otherwise pick one of these:</div>'+
+    '<div>'+list.map(function(c){
+      return '<a href="?course='+encodeURIComponent(c.id)+'" style="display:inline-block;margin:0 8px 6px 0;'+
+             'font-weight:700;color:var(--accent)">'+esc(c.code||c.id)+'</a>';
+    }).join('')+'</div>';
 }
 function start(){
   $('app').style.display='';
@@ -1558,14 +1692,16 @@ function start(){
     $('pick').innerHTML=list.map(function(c){
       return '<option value="'+esc(c.id)+'">'+esc(c.code||c.id)+'</option>';
     }).join('');
-    var id=wantedId();
-    if(!list.some(function(c){return c.id===id;}))id=list[0]&&list[0].id;
+    var w=wantedId();
+    var known=list.some(function(c){return c.id===w.id;});
+    if(!known&&w.explicit)return noSuchCourse(w.id,list);
+    var id=known?w.id:(list[0]&&list[0].id);
     $('pick').value=id;
     $('pick').addEventListener('change',function(){selectCourse($('pick').value);});
     selectCourse(id);
   });
 
-  $('bRefresh').addEventListener('click',function(){load();loadAnnounce();});
+  $('bRefresh').addEventListener('click',function(){load();loadAnnounce();loadReleases();});
   $('bCsv').addEventListener('click',exportCSV);
   $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
   /* inline form, not a popup — Safari eats popups */

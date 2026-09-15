@@ -10,6 +10,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4DD;</text></svg>">
 <link rel="stylesheet" href="/shared/themes/heg.css">
 <link rel="stylesheet" href="/shared/homework.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="exercises.js"></script>
 <style>
 h1,h2,h3,.databox h4,.finish .res,.prob .pnum{font-family:inherit;font-weight:800;}
 /* page-unique: the HEG chrome, the maths type and the in-question tables */
@@ -21,6 +23,14 @@ h1,h2,h3,.databox h4,.finish .res,.prob .pnum{font-family:inherit;font-weight:80
 .qtable th{background:var(--surface);color:var(--navy);font-weight:800;}
 .prob .q em{color:var(--accent-deep);font-style:normal;font-weight:700;}
 .fb.sol .step{margin:6px 0;}
+.btn.locked{opacity:.55;cursor:not-allowed;}
+.relbar{display:flex;gap:10px;align-items:flex-start;background:#FFF8E6;border:1px solid #E8D9A8;
+  border-left:4px solid #C9971C;border-radius:6px;padding:12px 15px;margin:16px 0;font-size:13.5px;line-height:1.6;}
+.relbar.open{background:rgba(47,133,90,.08);border-color:rgba(47,133,90,.3);border-left-color:var(--ok);}
+.relbar.inst{background:rgba(0,44,70,.06);border-color:rgba(0,44,70,.22);border-left-color:var(--navy);}
+.relbar .ic{flex:none;font-size:17px;line-height:1.3;}
+.relbar b{color:var(--navy);}
+.relbar.open b{color:var(--ok);}
 .databox .biz{background:#FFF8E6;border:1px solid #E8D9A8;border-left:4px solid #C9971C;border-radius:4px;
   padding:10px 12px;margin-top:10px;font-size:13px;line-height:1.6;}
 </style>
@@ -45,6 +55,8 @@ h1,h2,h3,.databox h4,.finish .res,.prob .pnum{font-family:inherit;font-weight:80
     <p>Homework in this course does <b>not</b> count toward your grade. Neither does the weekly review quiz. That is deliberate: they exist so that you, and your instructor, find out what has not landed <em>before</em> the midterm in Week 9, at a moment when it is free to fix.</p>
     <div class="biz"><b>What does count:</b> 20% fall midterm (MCQ, 60 min) · 40% fall exam · 40% spring exam. Both finals are 120 minutes, closed book, open questions — one calculator and two hand-written sheets recto/verso. Everything you do here is rehearsal for that room.</div>
   </div>
+
+  <div class="relbar" id="relBar"><span class="ic">🔒</span><span id="relTxt">Checking whether solutions are open…</span></div>
 
   <div id="problems"></div>
 
@@ -189,7 +201,21 @@ function wire(card,p){
   card.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',()=>{
     const act=btn.dataset.act;
     if(act==='hint'){show(fb,'hint','💡 <b>Hint.</b> '+p.hint);return;}
-    if(act==='sol'){show(fb,'sol','📘 <b>Solution.</b> '+p.sol);return;}
+    if(act==='sol'){
+      /* Hints are never locked — they are the part that teaches. The worked
+         solution is, until the instructor opens this module from the
+         dashboard's Solutions tab. */
+      if(!solutionsOpen()){
+        show(fb,'hint','🔒 <b>Solutions are not open yet.</b> Your instructor opens them for the whole class at once — '+
+          'usually after the session the homework belongs to. Until then: attempt it, then take the '+
+          '<b>Hint</b>, then press <b>Check</b> to find out whether your answer is right. '+
+          (QMEx&&QMEx.releaseBlocked&&QMEx.releaseBlocked()
+            ? '<br><br><i>(This device cannot currently reach the server to check — if the solutions have been opened and this button is still locked, reload the page.)</i>'
+            : '<br><br><i>This page unlocks by itself within a few seconds of your instructor opening them — you do not need to reload.</i>'));
+        return;
+      }
+      show(fb,'sol','📘 <b>Solution.</b> '+p.sol);return;
+    }
     if(p.type==='num'){
       let allok=true;
       p.fields.forEach((f,i)=>{
@@ -234,8 +260,49 @@ document.getElementById('finishBtn').addEventListener('click',()=>{
   if(window.StatsTrack){StatsTrack.setScore(n,TOTAL);StatsTrack.complete('submitted');}
 });
 
+/* =====================================================================
+   THE SOLUTION GATE
+   Worked solutions are written and shipped with the page, but stay shut
+   until the instructor releases this module — `qm1/_release/w1-hw/_all`,
+   written from the Solutions tab of /shared/admin2.html. exercises.js
+   already owns that flag for the in-class exercises, so the homework page
+   borrows the same engine: QMEx.watch(MOD) polls every 8 s while the tab
+   is visible, and QMEx.onChange re-renders when it flips. The room
+   therefore unlocks together, with no reload.
+
+   ⚠ HONEST ABOUT WHAT IT IS. The `sol:` text is in this file's source,
+   like every homework solution in this repo. This stops a student reading
+   the answers instead of doing the work; it is not secrecy, and nothing
+   confidential may go in a solution. The instructor's own device — where
+   the shared gate is unlocked — always sees them.
+   ===================================================================== */
+const MOD='w1-hw';
+function solutionsOpen(){
+  try{ return !!(window.QMEx && QMEx.isReleased(MOD, QMEx.ALL)); }catch(e){ return false; }
+}
+function paintRelBar(){
+  const bar=document.getElementById('relBar'), txt=document.getElementById('relTxt');
+  if(!bar)return;
+  const inst=!!(window.QMEx && QMEx.isInstructor && QMEx.isInstructor());
+  bar.classList.remove('open','inst');
+  if(inst){
+    bar.classList.add('inst');bar.querySelector('.ic').textContent='🔑';
+    txt.innerHTML='<b>Instructor device.</b> You can see every solution. Students cannot until you open this set in the '+
+      '<a href="/shared/admin2.html?course=qm1#solutions">dashboard → Solutions</a>.';
+  }else if(solutionsOpen()){
+    bar.classList.add('open');bar.querySelector('.ic').textContent='✅';
+    txt.innerHTML='<b>Solutions are open.</b> Read them — especially for the problems you got right, because they carry the part the printed sheet does not ask for.';
+  }else{
+    bar.querySelector('.ic').textContent='🔒';
+    txt.innerHTML='<b>Solutions are closed for now.</b> Hints and <b>Check</b> work as normal — attempt each problem, take the hint, check your answer. '+
+      'Your instructor opens the worked solutions for the whole class at once, and this page unlocks by itself within a few seconds. '+
+      'Nothing here is graded.';
+  }
+}
 window.addEventListener('DOMContentLoaded',function(){
-  if(window.StatsTrack)StatsTrack.init({module:'w1-hw',title:'Fall Week 1 · Homework — the ten printed problems',total:TOTAL});
+  if(window.StatsTrack)StatsTrack.init({module:MOD,title:'Fall Week 1 · Homework — the ten printed problems',total:TOTAL});
+  if(window.QMEx){ QMEx.watch(MOD); QMEx.onChange(paintRelBar); }
+  paintRelBar();
 });
 </script>
 <script src="/shared/config.js" defer></script>

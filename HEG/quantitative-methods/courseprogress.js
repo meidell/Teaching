@@ -29,7 +29,7 @@ window.CourseProgress=(function(){
   var NS="qm1", K="qm1";
   var CHAPTERS=[
     /* ---------------- FALL SEMESTER ---------------- */
-    {mod:'w1',    short:'W1', name:'Fall W1 · Leveling up, functions and graphs',        total:8, live:true, href:'week1.html'},
+    {mod:'w1',    short:'W1', name:'Fall W1 · Leveling up, functions and graphs',        total:9, live:true, href:'week1.html'},
     {mod:'w1-hw', short:'HW1',name:'Fall W1 · Homework — the ten printed problems', total:11,live:true,href:'week1-homework.html'},
     {mod:'w2',    short:'W2', name:'Fall W2 · Operations on functions',                  total:8, live:false},
     {mod:'w3',    short:'W3', name:'Fall W3 · Lines, parabolas and systems',             total:8, live:false},

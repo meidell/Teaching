@@ -61,16 +61,26 @@ window.QMEx = (function () {
   /* ---------- release state ---------------------------------------- */
   var released = {};          /* {mod:{exId:ts}} — what the cohort may see */
   var listeners = [];         /* redraw hooks, called when it changes */
-  function relKey(mod){return 'stats_release_'+mod;}
+  /* Namespaced per course: a student with this course and Applied
+     Statistics open in the same browser must not share a release
+     cache — the module ids (w1, w1-hw…) are identical in both. */
+  function relKey(mod){return 'qm1_release_'+mod;}
   function loadReleaseLocal(mod){
     try{released[mod]=JSON.parse(localStorage.getItem(relKey(mod))||'{}');}catch(e){released[mod]={};}
   }
   function saveReleaseLocal(mod){
     try{localStorage.setItem(relKey(mod),JSON.stringify(released[mod]||{}));}catch(e){}
   }
+  /* `_all` is a whole-module release: one switch in the dashboard opens
+     every solution in that module at once. It is what the homework pages
+     use (a homework set is released as a set, not problem by problem) and
+     it works for exercises too, so the instructor can open the lot when
+     the room has finished rather than clicking eight times. */
+  var ALL='_all';
   function isReleased(mod,id){
     if(isInstructor())return true;                     /* you always see it */
-    return !!(released[mod]&&released[mod][id]);
+    var r=released[mod];
+    return !!(r&&(r[ALL]||r[id]));
   }
   function notify(){listeners.forEach(function(f){try{f();}catch(e){}});}
 
@@ -140,7 +150,7 @@ window.QMEx = (function () {
     if(!root||!EX||!EX.length)return;
     loadReleaseLocal(mod); startPolling(mod);
     var inst=isInstructor();
-    var KEY='stats_ex_'+mod;
+    var KEY='qm1_ex_'+mod;
     var state={}; try{state=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
     function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 
@@ -317,5 +327,10 @@ window.QMEx = (function () {
 
   return {mount:mount, slides:slides, wireSlide:wireSlide, releaseBlocked:releaseBlocked,
           isInstructor:isInstructor, release:release, releaseAll:releaseAll,
-          isReleased:isReleased, onChange:function(f){listeners.push(f);}};
+          isReleased:isReleased, onChange:function(f){listeners.push(f);},
+          /* watch(mod) is startPolling for a page that has no exercise
+             forms to mount — the homework page, which needs the release
+             flag and nothing else. */
+          watch:function(mod){loadReleaseLocal(mod);startPolling(mod);},
+          ALL:ALL};
 })();

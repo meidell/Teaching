@@ -106,6 +106,16 @@ Five things worth knowing before editing any of them:
   across the whole cohort; you mark a person, not a field, so it now takes a student and
   prints their whole assignment with the gaps spelled out. `assignmentHTML(s, showGaps)`
   is shared with the row drawer — one renderer, two entry points.
+- ⚠ **`admin2.html` must never substitute one cohort for another.** Asking for
+  `?course=X` where X is not in the registry now **stops and says so**; it used
+  to fall through to `list[0]`, so the page showed *another course's students*
+  under a URL naming this one, with no warning. That is not hypothetical: a
+  browser holding a cached `/courses.json` from before a course was added hits
+  it every time, and with two courses called something like "Quantitative
+  Methods" the substitution is not even obviously wrong on screen. A
+  *remembered* id (no URL param) may still fall back — nothing was asked for.
+  `CourseConfig.load()` now fetches `courses.json` with `cache:"no-cache"` for
+  the same reason: a stale registry makes a new course simply not exist.
 - **Flags in `admin2.html` are relative, not absolute.** "Behind" means well under *this cohort's* median at *this point* in the course. The original used fixed thresholds (under 60%, under 50%), which mid-term flagged 13 of 18 students — a flag on two thirds of the cohort is not a flag. Don't reintroduce a constant here.
 - **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. The old `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. `applyTheme()` maps the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
@@ -363,11 +373,35 @@ listed; shared login, no class password.
   least twice, plus the business reasoning the printed version leaves to the
   room. PDF overlay builds are flattened into one slide with the working
   shown; the speaker notes say where to stop and ask the room first.
-- **Slide ↔ section mapping is manual and nothing checks it.** `SECTIONS[].slide`,
-  the `map={6:'s1',9:'s2',…}` block that sets `SLIDES[n-1].site`, and the
-  `<span class="ref">slides N–M</span>` chips in each section heading must all
-  agree. They are currently 6 · 9 · 17 · 25 · 38 · 51 · 67. Insert a slide and
-  all three drift — it happened once already in the build.
+- **Reading the notation is taught explicitly, in §1.2, before any algebra.**
+  This cohort is first-year Bachelor and most of them cannot *say* a formula
+  out loud — and a formula you cannot say is one you cannot think with. So the
+  week carries a notation layer that is not in the printed deck:
+  a **symbol decoder** (`SYMBOLS`, ~33 entries in five groups, each with its
+  name, **how you pronounce it**, what it does and where it appears today), an
+  **out-loud reader** (`READINGS`, which steps through a formula highlighting
+  the symbol and its English words together), and a `.sayit` block under every
+  displayed `.formula` on the page. When you add a formula, add its reading —
+  `grep -c 'class="sayit"'` should stay equal to the number of `.formula`
+  blocks. The deck mirrors this with six slides and the same `.sayit`/`.symrow`
+  devices.
+- **The discriminant is derived, not asserted.** Completing the square, with
+  numbers first and then the identical moves with letters, so `b² − 4ac` is
+  seen to *appear* rather than handed down; then why the sign decides the case
+  (it is the one fact that a real number squared is never negative); then
+  `gap = √Δ ⁄ |a|`, which turns three rules into one story. Three slides and
+  three cards. Any formula in this course that a student would otherwise
+  memorise deserves the same treatment — that is the standing instruction.
+- **Slide ↔ section mapping is COMPUTED, and must stay that way.** Each
+  section's opening slide carries `site:'sX'` in its own literal;
+  `wireSlides()` walks the finished deck, sets `SECTIONS[].slide` /
+  `.slides` from where the anchors actually landed, and paints the
+  `<span class="ref">` chips in the section headings. ⚠ It used to be a
+  hand-kept table (`map={6:'s1',9:'s2',…}`) and inserting one slide silently
+  desynchronised the deck, the week menu and the headings — which it duly did,
+  once, in the first build, and again when §1.2 was added. **Do not reintroduce
+  a literal slide number anywhere**; insert slides freely and every number
+  moves with them.
 - **The progress denominator is `EXTRA_STEPS.length + EXERCISES.length +
   .cl-row + .q`.** Same trap as everywhere else in this repo: any element added
   to a live week page with class `q` or `cl-row` silently lowers every
@@ -391,6 +425,20 @@ listed; shared login, no class password.
   problem numbers on screen match the numbers on the desk. Printed parts
   become extra *fields*, never extra *problems* — which is why 1.5 is split
   into `1.5a`/`1.5b` and the chapter total is 11, not 10.
+- **Worked solutions are locked until the instructor throws a switch.** The
+  homework page ships its solutions in the source (repo convention) but the
+  **Show solution** button refuses until `qm1/_release/w1-hw/_all` exists.
+  That key is written from the **Solutions tab** of `/shared/admin2.html`,
+  which appears only for a course whose `features` include `"releases"` — so
+  no other course's dashboard changes. Student pages poll it every 8 s via
+  `QMEx.watch(mod)` and unlock in place, so the room opens together with no
+  reload. **Hints and Check are never locked**: those are the parts that
+  teach. Per-exercise release (the deck's reveal button) still works — `_all`
+  simply means "every id in this module".
+  ⚠ **Say what it is.** A classroom gate, not secrecy: the `sol:` text is in
+  the page source like every homework solution in this repo. It stops a
+  student reading the answers instead of doing the work; it does not stop a
+  determined one pressing ⌥⌘U. Nothing confidential in a solution, ever.
 - The hub lists **both semesters** in one grid with a `.semhead` divider, which
   is the only layout this hub has that `HEG/statistics/index.html` does not.
 
