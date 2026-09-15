@@ -214,13 +214,17 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   register. `/shared/admin2.html` grows a column per session automatically —
   opt-in via `"presence"` in the course's `features`; any cell is clickable to
   correct the register by hand, because somebody always arrives late.
-- **The whole ritual lives on the hub: `StatsPresence.hub(el)` in `index.html`.**
-  One card carries both halves — the student's button, and (only where
-  `AdminGate.isUnlocked()`) a console with a picker for W1–W15 and Open/Close.
-  It defaults to the session currently open, else the first week never held. The
-  week pages keep their own `mount()` button; both write the same nodes. `#teach`
-  on the hub URL unlocks the console on a device that has never opened a
-  dashboard, without hiding the page from students the way `AdminGate.mount` does.
+- **Opening and closing lives in the dashboard, never on a student page.**
+  `admin2.html` → Presence tab has the session picker and the Open/Close button,
+  and writes both nodes with the dashboard's own signed-in token. The course page
+  and the week pages carry *only* the student's own button and their own record —
+  `presence.js` has no sign-in code, no Firebase import and no `isInstructor()`
+  branch at all. It briefly had an instructor console on the course page; that was
+  wrong, because that page is what thirty students are looking at.
+- **The picker needs every teaching week, not just the published ones.**
+  `courses.json` lists only modules that exist, so presence reads
+  `presenceSessions` (15 for statistics) and offers `w1`…`wN`, labelled from
+  `modules` where a match exists and "Week N" otherwise.
 - ⚠️ **Opening a window needs a signed-in account, not the gate.** The deployed
   rules make `_presence/$session` instructor-write-only, so the plain `fetch` the
   week page used until Sept 2026 came back **401** — the button appeared to work

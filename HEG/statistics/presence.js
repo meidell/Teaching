@@ -45,7 +45,6 @@ window.StatsPresence = (function () {
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem('stats_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}
-  function isInstructor(){try{return !!(window.AdminGate&&AdminGate.isUnlocked());}catch(e){return false;}}
   function node(mod){return DB+'/'+NS+'/_presence/'+encodeURIComponent(mod);}
 
   function css(){
@@ -65,28 +64,10 @@ window.StatsPresence = (function () {
     '.pres-state b{color:var(--ink);}'+
     '.pres-tally{font-size:13px;color:var(--ink-soft);margin-top:10px;}'+
     '.pres-tally b{color:var(--navy);font-size:16px;}'+
-    '.pres-inst{background:var(--navy);color:#fff;border-radius:14px;padding:14px 16px;margin-top:14px;}'+
-    '.pres-inst .pi-t{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;}'+
-    '.pres-inst .pi-d{font-size:12.5px;color:rgba(255,255,255,.85);margin:4px 0 10px;line-height:1.45;}'+
-    '.pres-inst .btn{background:#fff;color:var(--navy);border:none;border-radius:30px;padding:9px 18px;font:800 13px inherit;cursor:pointer;margin-right:8px;}'+
-    '.pres-inst .btn:hover{background:#FFB3AD;}'+
-    '.pres-inst .btn.on{background:var(--accent);color:#fff;}'+
-    '.pres-inst .names{font-size:12px;color:rgba(255,255,255,.8);margin-top:10px;line-height:1.7;max-height:120px;overflow-y:auto;}'+
-    '.pres-inst select{background:#fff;color:var(--navy);border:none;border-radius:9px;padding:9px 12px;'+
       'font:700 13px inherit;margin:0 8px 8px 0;max-width:100%;}'+
-    '.pres-inst .pi-err{background:rgba(255,255,255,.14);border-left:3px solid #FFB3AD;border-radius:6px;'+
       'padding:9px 11px;margin:0 0 10px;font-size:12.5px;line-height:1.5;}'+
-    '.pres-inst .pi-err code{background:rgba(0,0,0,.25);padding:1px 5px;border-radius:4px;font-size:11.5px;}'+
-    '.pres-inst .pi-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}'+
-    '.pres-inst input{background:#fff;color:var(--navy);border:none;border-radius:9px;padding:9px 12px;'+
       'font:600 13px inherit;min-width:0;flex:1 1 180px;max-width:260px;}'+
-    '.pres-inst .who a{color:#FFB3AD;}'+
-    '.pres-inst .who{font-size:11.5px;color:rgba(255,255,255,.7);margin-top:9px;}'+
-    '.pres-inst .roll{margin-top:10px;display:grid;gap:7px;}'+
-    '.pres-inst .roll .rl{font-size:12px;color:rgba(255,255,255,.92);background:rgba(255,255,255,.10);'+
       'border-left:3px solid var(--ok,#2F855A);border-radius:6px;padding:7px 10px;line-height:1.5;}'+
-    '.pres-inst .roll .rl.no{border-left-color:#FFB3AD;color:rgba(255,255,255,.75);}'+
-    '.pres-inst .roll .ns{display:block;font-size:11.5px;opacity:.85;margin-top:3px;}'+
     '.pres-mini{font-size:12px;color:var(--grey);}'+
     '.pres-mine{font-size:12.5px;color:var(--grey);line-height:1.55;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}'+
     '.pres-mine .pm-h{color:var(--ink);font-size:13.5px;}'+
@@ -104,84 +85,6 @@ window.StatsPresence = (function () {
     document.head.appendChild(s);
   }
 
-
-  /* ---------- the instructor's sign-in ---------------------------------
-     The deployed rules make `_presence/$session` and `_presence_now`
-     instructor-write-only. An anonymous PATCH comes back 401 — which is
-     exactly what used to make the open button appear to work for six
-     seconds and then silently revert, with no student button turning red.
-
-     So the database needs to know it is really you. It is a dedicated
-     Firebase email+password account, NOT a Google popup: popups are
-     blocked whenever the click that opened them has been "spent" waiting
-     for the SDK to load, which is a lousy thing to discover in front of
-     thirty people. There is no popup here at all.
-
-     We never store the password. Firebase keeps its own session in
-     IndexedDB, so `restore()` signs you back in silently on every later
-     visit — you type it once per laptop, not once per class.
-
-     The AdminGate unlock decides whether the console is *shown*; this
-     account is what the database *trusts*. They are not the same thing
-     and one cannot replace the other. Students never see either: they
-     still just type a full name and get a six-digit code.
-     -------------------------------------------------------------------- */
-  var CTRL_EMAIL = "presence@janerikmeidell.com";   /* must match the rules */
-  var FBAPP=null, FBAUTH=null, FBUSER=null, FBSDK=null;
-
-  function signedIn(){return !!FBUSER;}
-  function ctrlEmail(){return CTRL_EMAIL;}
-  function tokenQ(){
-    if(!FBUSER)return Promise.resolve('');
-    /* re-minted on every write: ID tokens last an hour, a session is three */
-    return FBUSER.getIdToken().then(function(t){return '?auth='+t;},function(){return '';});
-  }
-  /* the SDK is the one CDN import in this repo (see CLAUDE.md §6) and it is
-     loaded only on a device where the console is already unlocked */
-  function sdk(){
-    if(FBSDK)return FBSDK;
-    FBSDK=Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js")
-    ]).then(function(m){
-      var app=m[0], au=m[1];
-      FBAPP=app.initializeApp({
-        apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",authDomain:"teaching-70f1c.firebaseapp.com",
-        databaseURL:DB,projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
-        messagingSenderId:"1026356553251",appId:"1:1026356553251:web:d23a4c30af7e6983463396"},'presence');
-      FBAUTH=au.getAuth(FBAPP);
-      return au;
-    });
-    return FBSDK;
-  }
-  /* silently pick up the session saved on this device, if there is one */
-  function restore(cb){
-    sdk().then(function(au){
-      au.onAuthStateChanged(FBAUTH,function(u){FBUSER=u||null;if(cb)cb();});
-    }).catch(function(){if(cb)cb();});
-  }
-  function signInPw(email,pw){
-    return sdk().then(function(au){
-      return au.signInWithEmailAndPassword(FBAUTH,email,pw);
-    }).then(function(res){FBUSER=res.user;return res.user;});
-  }
-  function signOutNow(cb){
-    sdk().then(function(au){return au.signOut(FBAUTH);})
-      .then(function(){FBUSER=null;if(cb)cb();},function(){if(cb)cb();});
-  }
-  /* Unlock the console on a device that has never opened a dashboard,
-     without hiding the page from students the way AdminGate.mount does.
-     Reached with #teach on the URL — bookmark the hub with it. */
-  function unlockHere(){
-    if(isInstructor())return true;
-    var pw=window.prompt('Instructor password');
-    if(pw&&window.AdminGate&&AdminGate.check(pw)){
-      try{localStorage.setItem('jem_admin_pw',pw);}catch(e){}
-      return true;
-    }
-    if(pw)window.alert('Not that one.');
-    return false;
-  }
 
   /* ---------- which window is open, for students ----------------------
      Students cannot list `_presence` — the rules put `.read: true` on
@@ -219,25 +122,6 @@ window.StatsPresence = (function () {
       return j||null;
     });
   }
-  function setWindow(mod,label,on){
-    var t=Date.now(), payload={open:!!on,label:label};
-    payload[on?'openedAt':'closedAt']=t;
-    return tokenQ().then(function(q){
-      return Promise.all([
-        fetch(node(mod)+'.json'+q,{method:'PATCH',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(payload)}),
-        fetch(nowUrl()+'.json'+q,{method:'PUT',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({mod:mod,label:label,open:!!on,ts:t})})
-      ]);
-    }).then(function(rs){
-      if(rs[0].status===401)throw new Error('SIGNIN');
-      if(!rs[0].ok)throw new Error('The session node refused the write (HTTP '+rs[0].status+').');
-      if(rs[1].status===401)throw new Error('RULES');
-      if(!rs[1].ok)throw new Error('The pointer node refused the write (HTTP '+rs[1].status+').');
-      return true;
-    });
-  }
-
   /* w1…w15 — the fifteen taught sessions. Week 16 is the exam and is not
      marked here. Names come from CourseProgress so one list serves the
      dropdown, the student's running total and the dashboard alike. */
@@ -258,15 +142,14 @@ window.StatsPresence = (function () {
     var el=o.el, mod=o.mod, label=o.label||mod;
     if(!el)return;
     css();
-    var inst=isInstructor(), a=auth(), state=null, timer=null, fails=0, blocked=false, instMsg='';
-    if(inst)restore(function(){paint();});
+    var a=auth(), state=null, timer=null, fails=0, blocked=false;
 
     el.className='pres';
     el.innerHTML='<h4>Presence · this session</h4>'+
       '<div class="pd" id="presWhy">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens this button in the room; press it once while it is red.</div>'+
       '<button class="pres-btn" id="presBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="presState"></div>'+
-      (inst?'<div class="pres-inst" id="presInst"></div>':'');
+      '';
 
     var btn=el.querySelector('#presBtn'), st=el.querySelector('#presState');
 
@@ -299,45 +182,6 @@ window.StatsPresence = (function () {
           ? 'The window for this session is <b>closed</b>. If you were in the room and missed it, tell your instructor — they can mark you from the dashboard.'
           : 'Your instructor opens this in the room. It turns red when you can press it.';
       }
-      if(inst)paintInst();
-    }
-
-    function paintInst(){
-      var box=el.querySelector('#presInst'); if(!box)return;
-      var open=!!(state&&state.open), n=count();
-      if(blocked){
-        box.innerHTML='<div class="pi-t">👁 Instructor · presence control</div>'+
-          '<div class="pi-d">⚠ <b>This device cannot READ the presence node.</b> Opening the window will still write, but no student button will turn red and you will see no tally, because the database rules for the <code>statistics</code> namespace deny anonymous reads. '+
-          'Fix: Firebase Console → Realtime Database → Rules, and allow read on <code>statistics/_presence</code> (the repo\'s <code>firebase-database-rules.json</code> has the block ready to paste). Until then, mark the register by hand in the dashboard.</div>'+
-          '<button class="btn" id="presToggle">'+(open?'■ Close the window':'▶ Open anyway')+'</button>';
-        box.querySelector('#presToggle').addEventListener('click',function(){ toggle(!open); });
-        return;
-      }
-      var names=[];
-      var m=(state&&state.marks)||{};
-      for(var k in m)names.push(k);
-      names.sort();
-      box.innerHTML='<div class="pi-t">👁 Instructor · presence control</div>'+
-        (instMsg?'<div class="pi-err">'+instMsg+'</div>':'')+
-        '<div class="pi-d">'+(open
-          ? 'The window is <b>OPEN</b> — every student\'s button is red right now. Close it when the room has marked itself.'
-          : 'The window is closed. Opening it turns the button red on every student device within a few seconds.')+'</div>'+
-        '<button class="btn'+(open?' on':'')+'" id="presToggle">'+(open?'■ Close the window':'▶ Open presence for this session')+'</button>'+
-        '<a class="btn" href="/shared/admin2.html?course=statistics#presence" target="_blank" style="text-decoration:none;display:inline-block;">Summary →</a>'+
-        '<div class="names"><b>'+n+'</b> marked'+(names.length?': '+names.map(esc).join(', '):' — nobody yet')+'</div>';
-      box.querySelector('#presToggle').addEventListener('click',function(){ toggle(!open); });
-    }
-
-    function toggle(on){
-      if(!isInstructor())return;
-      instMsg='';
-      if(!signedIn()){
-        instMsg='<b>Not signed in on this device.</b> Open the <a href="index.html" style="color:#FFB3AD">course page</a> and sign the presence console in once — after that this button works everywhere, on this laptop, indefinitely.';
-        paint();return;
-      }
-      setWindow(mod,label,on).then(function(){instMsg='';pull();})
-        .catch(function(e){instMsg=explain(e);pull();});
-      state=state||{};state.open=!!on;paint();
     }
 
     function mark(){
@@ -372,18 +216,6 @@ window.StatsPresence = (function () {
     return {refresh:pull};
   }
 
-  function explain(e){
-    var m=String((e&&e.message)||e||'');
-    if(m==='SIGNIN')return '<b>Not signed in on this device.</b> The database only accepts an open or close from the presence account. Sign in below — once per laptop, then never again.';
-    if(m==='RULES')return '<b>The window IS open</b> — but the <code>_presence_now</code> pointer was refused, so student devices fall back to scanning all fifteen sessions and can take up to 20 s to turn red. Deploy <code>firebase-database-rules.json</code> (it now carries <code>statistics/_presence_now</code>) to make that instant.';
-    if(/wrong-password|invalid-credential|invalid-login/i.test(m))return '<b>Wrong password</b> for <code>'+esc(CTRL_EMAIL)+'</code>.';
-    if(/operation-not-allowed|password-login-disabled/i.test(m))return '<b>Email sign-in is switched off for this project.</b> Firebase Console → Authentication → <b>Sign-in method</b> → Email/Password → Enable. Then add the user.';
-    if(/user-not-found|invalid-email/i.test(m))return '<b>No such account.</b> Create <code>'+esc(CTRL_EMAIL)+'</code> in Firebase Console → Authentication → Users → Add user, then try again.';
-    if(/too-many-requests/i.test(m))return '<b>Too many attempts.</b> Firebase has paused sign-in on this device for a few minutes.';
-    if(/network/i.test(m))return '<b>No network.</b> Nothing was changed.';
-    return '<b>Could not change the window.</b> '+esc(m);
-  }
-
   /* ---------- the hub: one card on the course landing page -------------
      For a student: the button, driven by `_presence_now` so it works
      whatever week is open and wherever they are on the site.
@@ -394,21 +226,10 @@ window.StatsPresence = (function () {
   function hub(el){
     if(!el)return;
     css();
-    /* #teach unlocks the console on a device that has never opened a
-       dashboard, without hiding the page from students. Accept ?teach too —
-       people mistype it — and listen for the hash being added to a page
-       that is already open, which is how you will actually reach for it. */
-    function teachAsked(){return /teach/.test(location.hash)||/[?&]teach\b/.test(location.search);}
-    if(teachAsked())unlockHere();
-    window.addEventListener('hashchange',function(){
-      if(teachAsked()&&!isInstructor()&&unlockHere())location.reload();
-    });
-
-    var inst=isInstructor(), a=auth();
+    var a=auth();
     var now=null, sess=null, selSess=null, blocked=false, fails=0, instMsg='';
-    var scanning=false, lastScan=0, lastSig=null;
-    if(inst)restore(function(){lastSig=null;paint();});
-    var weeks=allWeeks(), held={}, sel=null;
+    var scanning=false, lastScan=0;
+    var weeks=allWeeks();
 
     el.className='pres';
     el.innerHTML=
@@ -417,7 +238,7 @@ window.StatsPresence = (function () {
       '<button class="pres-btn" id="hubBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="hubState"></div>'+
       '<div id="hubMine"></div>'+
-      (inst?'<div class="pres-inst" id="hubInst"></div>':'');
+      '';
     var btn=el.querySelector('#hubBtn'), st=el.querySelector('#hubState');
 
     function openMod(){return (now&&now.open&&now.mod)?now.mod:null;}
@@ -447,7 +268,6 @@ window.StatsPresence = (function () {
           ? 'The last window (<b>'+esc(lbl())+'</b>) is <b>closed</b>. If you were in the room and missed it, tell your instructor — they can mark you from the register.'
           : 'Your instructor opens this in the room. It turns red when you can press it.';
       }
-      if(inst)paintInst();
     }
 
     function mark(){
@@ -462,148 +282,12 @@ window.StatsPresence = (function () {
     }
     btn.addEventListener('click',mark);
 
-    /* ---- instructor ---- */
-    function statusOf(s){
-      if(!s||s.error)return null;
-      return s.open?'open':((s.openedAt||s.closedAt)?'held':null);
-    }
-    function loadStatus(){
-      /* one small GET per week, once — never a single read of `_presence`,
-         which would hand out the cohort's sid list in one request */
-      return Promise.all(weeks.map(function(w){
-        return fetch(node(w.mod)+'.json').then(function(r){return r.ok?r.json():null;})
-          .catch(function(){return null;});
-      })).then(function(list){
-        list.forEach(function(s,i){held[weeks[i].mod]=statusOf(s);});
-        if(!sel){
-          var open=weeks.filter(function(w){return held[w.mod]==='open';})[0];
-          var next=weeks.filter(function(w){return !held[w.mod];})[0];
-          sel=(open||next||weeks[weeks.length-1]).mod;
-        }
-        paint();
-      });
-    }
-    function pullSel(){
-      if(!inst||!sel)return Promise.resolve();
-      return fetch(node(sel)+'.json').then(function(r){return r.ok?r.json():null;})
-        .then(function(k){selSess=(k&&!k.error)?k:null;held[sel]=statusOf(selSess);})
-        .catch(function(){});
-    }
-    function paintInst(){
-      var box=el.querySelector('#hubInst'); if(!box)return;
-      var s=selSess||{}, open=!!s.open, n=0, names=[];
-      for(var k in (s.marks||{})){n++;names.push(k);}
-      names.sort();
-      /* the poll runs every 7s and the signed-out state contains a password
-         field — re-rendering on a tick would wipe what is being typed */
-      var sig=[signedIn()?1:0,open?1:0,sel,n,instMsg,PEOPLE?1:0].join('|');
-      if(sig===lastSig)return;
-      lastSig=sig;
-      var opts=weeks.map(function(w){
-        var h=held[w.mod];
-        return '<option value="'+w.mod+'"'+(w.mod===sel?' selected':'')+'>W'+w.n+' · '+
-          esc(String(w.name).replace(/^Week\s*\d+\s*·\s*/,''))+
-          (h==='open'?'   ● OPEN NOW':h==='held'?'   ✓ held':'')+'</option>';
-      }).join('');
-      /* who is in the room, by name — the list you actually read while the
-         window is open, and the one that tells you who to chase */
-      var roll='';
-      if(n||open){
-        var inRoom=names.map(nameOf).sort();
-        var absent=Object.keys(PEOPLE||{}).filter(function(k){return names.indexOf(k)<0;})
-                     .map(nameOf).sort();
-        roll='<div class="roll"><div class="rl"><b>'+n+'</b> in the room'+
-               (inRoom.length?'<span class="ns">'+inRoom.map(esc).join(' · ')+'</span>':'')+'</div>'+
-             (absent.length?'<div class="rl no"><b>'+absent.length+'</b> not yet'+
-               '<span class="ns">'+absent.map(esc).join(' · ')+'</span></div>':'')+'</div>';
-      }
-      box.innerHTML=
-        '<div class="pi-t">👁 Instructor · presence console</div>'+
-        (instMsg?'<div class="pi-err">'+instMsg+'</div>':'')+
-        '<div class="pi-d">'+(signedIn()
-          ? 'Say “go”, press <b>Open</b>, let the room mark itself, then press <b>Close</b>. Every student button turns red within a few seconds.'
-          : 'Pick the session and sign in once on this laptop — it is remembered from then on. The database will not accept an open or close from an unidentified device.')+'</div>'+
-        /* the picker and the button are always visible, even signed out, so it
-           is obvious what the console does before you have typed anything */
-        '<div class="pi-row">'+
-          '<select id="hubSel" aria-label="Which session"'+(signedIn()?'':' disabled')+'>'+opts+'</select>'+
-          '<button class="btn'+(open?' on':'')+'" id="hubToggle"'+(signedIn()?'':' disabled title="sign in first"')+'>'+
-            (open?'■ Close the window':'▶ Open the window')+'</button>'+
-          '<a class="btn" href="/shared/admin2.html?course=statistics#presence" target="_blank" style="text-decoration:none;">Full register →</a>'+
-        '</div>'+
-        (signedIn()
-          ? roll+'<div class="who">Signed in as '+esc((FBUSER&&FBUSER.email)||'')+' · <a href="#" id="hubOut">sign out</a></div>'
-          : '<div class="pi-row" style="margin-top:8px">'+
-              '<input id="hubEmail" type="email" autocomplete="username" value="'+esc(CTRL_EMAIL)+'">'+
-              '<input id="hubPw" type="password" autocomplete="current-password" placeholder="password">'+
-              '<button class="btn" id="hubKey">Sign in</button>'+
-            '</div>');
-
-      var sl=box.querySelector('#hubSel');
-      if(sl)sl.addEventListener('change',function(){sel=sl.value;selSess=null;lastSig=null;pullSel().then(paint);});
-      var kb=box.querySelector('#hubKey'), pwf=box.querySelector('#hubPw'), emf=box.querySelector('#hubEmail');
-      function doSignIn(){
-        var e=(emf.value||'').trim(), w=pwf.value||'';
-        /* clicking Sign in with an empty box used to do nothing at all, which
-           is indistinguishable from the page being broken */
-        if(!w){instMsg='<b>Type the password first</b> — the one for <code>'+esc(e)+'</code>, not the instructor gate password.';
-               lastSig=null;paint();var f=el.querySelector('#hubPw');if(f)f.focus();return;}
-        kb.disabled=true;kb.textContent='Signing in…';
-        signInPw(e,w).then(function(){instMsg='';lastSig=null;paint();})
-          .catch(function(err){instMsg=explain(err);kb.disabled=false;kb.textContent='Sign in';lastSig=null;paint();});
-      }
-      if(kb)kb.addEventListener('click',doSignIn);
-      if(pwf)pwf.addEventListener('keydown',function(ev){if(ev.key==='Enter')doSignIn();});
-      var out=box.querySelector('#hubOut');
-      if(out)out.addEventListener('click',function(ev){ev.preventDefault();
-        signOutNow(function(){instMsg='';lastSig=null;paint();});});
-      var tb=box.querySelector('#hubToggle');
-      if(tb)tb.addEventListener('click',function(){
-        var w=null;weeks.forEach(function(x){if(x.mod===sel)w=x;});
-        if(!w)return;
-        tb.disabled=true;instMsg='';
-        setWindow(sel,w.name,!open)
-          .then(function(){instMsg='';return Promise.all([pullSel(),pull()]);})
-          .catch(function(e){instMsg=explain(e);})
-          .then(function(){tb.disabled=false;lastSig=null;paint();});
-      });
-    }
-
-    /* Fallback for as long as `_presence_now` is not in the deployed rules:
-       ask each of the fifteen sessions directly. Those ARE publicly
-       readable, so presence works today — it just costs fifteen requests
-       instead of one, which is why it runs on a 20-second clock and stops
-       the moment the pointer becomes readable. */
-    function scan(){
-      var t=Date.now();
-      if(t-lastScan<20000)return Promise.resolve();
-      lastScan=t;scanning=true;
-      return Promise.all(weeks.map(function(w){
-        return fetch(node(w.mod)+'.json').then(function(r){return r.ok?r.json():null;})
-          .catch(function(){return null;});
-      })).then(function(list){
-        var hit=null;
-        list.forEach(function(k,i){
-          if(k&&!k.error&&k.open)hit={mod:weeks[i].mod,label:k.label||weeks[i].name,state:k};
-        });
-        fails=0;blocked=false;
-        now=hit?{mod:hit.mod,label:hit.label,open:true}:null;
-        sess=hit?hit.state:null;
-        paint();
-      }).catch(function(){
-        /* two failures, not one — flaky lecture-hall wifi should not put a
-           message in front of thirty people over one dropped request */
-        if(++fails>=2&&!blocked){blocked=true;paint();}
-      });
-    }
-
     function pull(){
       if(document.hidden)return Promise.resolve();
       return readNow().then(function(j){
         fails=0;blocked=false;scanning=false;now=j;
         var m=(j&&j.mod)?j.mod:null;
         if(!m){sess=null;return;}
-        if(inst&&m===sel&&selSess){sess=selSess;return;}
         return fetch(node(m)+'.json').then(function(r){return r.ok?r.json():null;})
           .then(function(k){sess=(k&&!k.error)?k:null;});
       }).then(function(){paint();})
@@ -612,9 +296,8 @@ window.StatsPresence = (function () {
 
     paint();
     mine(el.querySelector('#hubMine'));
-    if(inst){loadPeople(function(){lastSig=null;paint();});loadStatus().then(pullSel).then(paint);}
     pull();
-    setInterval(function(){pull();if(inst)pullSel().then(paint);},7000);
+    setInterval(pull,7000);
     document.addEventListener('visibilitychange',function(){if(!document.hidden)pull();});
     return {refresh:pull};
   }
@@ -686,6 +369,5 @@ window.StatsPresence = (function () {
     return {sessions:sessions, held:sessions.length};
   }
 
-  return {mount:mount, hub:hub, mine:mine, summary:summary,
-          isInstructor:isInstructor, signedIn:signedIn, ctrlEmail:ctrlEmail};
+  return {mount:mount, hub:hub, mine:mine, summary:summary};
 })();
