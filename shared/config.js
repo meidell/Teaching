@@ -119,7 +119,14 @@ window.CourseConfig = (function () {
     get: get,
     /* the full /courses.json, for pages that need titles, modules, status */
     load: function () {
-      if (!this._p) this._p = fetch("/courses.json").then(function (r) { return r.json(); });
+      /* `no-cache` = revalidate with the server every time (a conditional
+         request, normally answered 304, so it costs almost nothing). Plain
+         caching is not safe here: a browser holding a /courses.json from
+         before a course was added simply does not know that course exists,
+         and anything keyed on the registry — the dashboard's course picker
+         most of all — then behaves as though it had been deleted. */
+      if (!this._p) this._p = fetch("/courses.json", { cache: "no-cache" })
+        .then(function (r) { return r.json(); });
       return this._p;
     }
   };
