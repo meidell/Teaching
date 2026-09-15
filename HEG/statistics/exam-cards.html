@@ -54,7 +54,8 @@ h1,h2,h3{font-family:inherit;font-weight:800;}
 .card.solved{border-color:rgba(78,201,139,0.55);}
 .card .tagrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px;}
 .chip{font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;padding:3px 10px;border-radius:20px;border:1px solid var(--line);color:var(--grey-dim);}
-.chip.chap{color:var(--blue-glow);border-color:rgba(0,44,70,0.30);}
+.chip.year{color:var(--blue-glow);border-color:rgba(0,44,70,0.30);}
+.chip.cat{color:var(--gold-bright);border-color:rgba(204,0,0,0.35);}
 .chip.pts{color:var(--cheese);border-color:rgba(0,44,70,0.30);}
 .chip.ready{color:var(--ok);border-color:var(--ok);}
 .chip.soon{color:var(--tomato);border-color:rgba(204,0,0,0.5);}
@@ -90,6 +91,11 @@ h1,h2,h3{font-family:inherit;font-weight:800;}
 .soonbox .big{font-size:34px;margin-bottom:8px;}
 .soonbox .why{font-size:14px;color:var(--grey);max-width:46ch;margin:6px auto 0;}
 .deckctrl{display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.mono{display:block;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;
+  line-height:1.65;white-space:pre-wrap;background:rgba(0,44,70,0.05);border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;margin-top:8px;color:var(--ink);}
+.note{display:block;margin-top:9px;padding-left:10px;border-left:3px solid rgba(204,0,0,0.35);
+  color:var(--grey);font-size:13px;}
 .foot{text-align:center;color:var(--grey-dim);font-size:12px;margin-top:26px;}
 .foot a{color:var(--gold-bright);text-decoration:none;border:1px solid rgba(204,0,0,0.35);border-radius:20px;padding:6px 14px;display:inline-block;margin-top:10px;}
 </style>
@@ -104,10 +110,10 @@ h1,h2,h3{font-family:inherit;font-weight:800;}
 <div class="wrap">
   <div class="hero">
     <div class="eyebrow">EXAM PREPARATION</div>
-    <h1>Archetypal exam questions</h1>
-    <p>Each card is a typical closed-book exam exercise. Master every card and you have seen every question type the exam can throw at you — just with <b>different numbers</b> (hamburgers, weights, counts), so you drill the <b>method</b>, never the memory.</p>
+    <h1>Every question, from five real exams</h1>
+    <p>Not invented practice: each card is a question that was actually set, in <b>2020, 2022, 2023, 2024</b> or <b>2026</b>. Every card carries the year it came from and the kind of question it is, so you can see what recurs — and it recurs a lot. Work them all and you have worked the exam five times over.</p>
   </div>
-  <div class="examnote">📝 Real exam: <b>written, closed-book, 6 exercises × 10 points</b>. You need <b>40 / 60</b> to pass. Bring a calculator and the provided z- and t-tables.</div>
+  <div class="examnote">📝 Written, closed-book, <b>90 minutes</b>, five or six exercises. Bring a calculator; the z, t and χ² tables are provided. <b>Every answer here was recomputed from the question</b> — six of the original answer keys contain arithmetic errors, and each is flagged in the worked solution.</div>
 
   <div class="rail" id="rail"></div>
   <div id="deck"></div>
@@ -125,97 +131,300 @@ h1,h2,h3{font-family:inherit;font-weight:800;}
 
 <script>
 /* =====================================================================
-   EXAM CARD DECK.  status:'ready' cards are fully playable;
-   status:'soon' are mapped archetypes that unlock as each chapter ships.
-   Numbers are hamburgers/other contexts — deliberately different from the
-   pizza teaching examples, to test method recall not number recall.
+   EXAM CARD DECK — the real thing.
+   Every card is a question that was actually set, from the 2020, 2022,
+   2023, 2024 and 2026 papers. No invented numbers: if it is on a card,
+   a cohort sat it.
+
+   Each card carries the YEAR it was set and the CATEGORY of question, so
+   you can see what recurs. Six categories cover almost every paper:
+   normal distribution, confidence interval, hypothesis test, two-sample,
+   regression, chi-square.
+
+   ⚠ Every `ans:` below was recomputed in Python from the question, NOT
+   copied from the original answer keys — six of those keys are wrong and
+   the corrections are flagged inside the solutions. Do the same for any
+   card you add.
    ===================================================================== */
 const CARDS=[
- {id:'c1', status:'ready', title:'Describe a dataset', chap:'Ch. 1–2', pts:10, topic:'Descriptive statistics',
-  scenario:'A food critic records the price of a cheeseburger (CHF) at <b>8 diners</b>: <em>9, 11, 8, 12, 10, 14, 9, 13</em>.',
-  parts:['(a) the mean','(b) the median','(c) the mode','(d) the range','(e) the sample standard deviation s'],
-  fields:[{label:'(a) mean',ans:10.75,tol:0.05,unit:'CHF'},{label:'(b) median',ans:10.5,tol:0.01,unit:'CHF'},
-          {label:'(c) mode',ans:9,tol:0.01,unit:'CHF'},{label:'(d) range',ans:6,tol:0.01,unit:'CHF'},
-          {label:'(e) s',ans:2.12,tol:0.04,unit:'CHF'}],
-  hint:'Sort first: 8,9,9,10,11,12,13,14. Mean=Σx/n. For s use Σ(x−x̄)²/(n−1) then square-root.',
-  sol:'Sorted: 8,9,9,10,11,12,13,14 (n=8). Σx=86 → <b>mean=10.75</b>. Median=(10+11)/2=<b>10.5</b>. <b>Mode=9</b> (only repeat). Range=14−8=<b>6</b>. Σ(x−x̄)²=31.5 → s²=31.5/7=4.5 → <b>s=√4.5=2.12</b>.'},
 
- {id:'c2', status:'ready', title:'z-scores, Empirical Rule & Chebyshev', chap:'Ch. 2 & 5', pts:10, topic:'Relative position',
-  scenario:'Cooked burger weights are <b>bell-shaped</b> with mean <em>150 g</em> and standard deviation <em>10 g</em>.',
-  parts:['(a) the z-score of a 165 g burger','(b) % of burgers between 130 g and 170 g','(c) % above 170 g','(d) by Chebyshev (shape unknown), the least % within 2.5 sd'],
-  fields:[{label:'(a) z',ans:1.5,tol:0.02,unit:''},{label:'(b) %',ans:95,tol:0.6,unit:'%'},
-          {label:'(c) %',ans:2.5,tol:0.4,unit:'%'},{label:'(d) at least %',ans:84,tol:0.6,unit:'%'}],
-  hint:'z=(x−µ)/σ. 130 & 170 are ±2σ. Chebyshev: 1−1/k² with k=2.5.',
-  sol:'(a) z=(165−150)/10=<b>1.5</b>. (b) 130,170 = µ±2σ → Empirical Rule ≈ <b>95%</b>. (c) tails beyond ±2σ are 5%, half above → <b>2.5%</b>. (d) Chebyshev 1−1/2.5²=1−1/6.25=0.84 → at least <b>84%</b>.'},
+/* ============================ 2026 ============================ */
+ {id:'y26q1', year:'2026', cat:'Normal distribution', title:'Delivery times', pts:10,
+  scenario:'Delivery times at a distribution centre are normally distributed with mean <b>µ = 68 minutes</b> and standard deviation <b>σ = 9 minutes</b>.',
+  parts:['(a) P(a delivery takes more than 80 minutes) — 4 pts','(b) the delivery time marking the 90th percentile — 4 pts','(c) x such that only 5% of deliveries take more than x — 2 pts'],
+  fields:[{label:'(a) P(X > 80)',ans:0.0912,tol:0.004,unit:''},
+          {label:'(b) 90th percentile',ans:79.5,tol:0.25,unit:'min'},
+          {label:'(c) x',ans:82.8,tol:0.3,unit:'min'}],
+  hint:'Standardise: z = (x − µ)/σ. For (b) and (c) go backwards — find the z with that area to its LEFT (0.90 and 0.95), then x = µ + zσ.',
+  sol:'(a) z = (80 − 68)/9 = 1.33 → area to the right = 1 − 0.9082 = <b>0.0912</b> (≈9%).<br>(b) 90th percentile → z = 1.28 → x = 68 + 1.28(9) = <b>79.5 min</b>.<br>(c) only 5% above → z = 1.645 → x = 68 + 1.645(9) = <b>82.8 min</b>.<br><span class="note">(b) and (c) are the same move in reverse: the table gives you z, the formula gives you back x.</span>'},
 
- {id:'c3', status:'ready', title:'Probability from a two-way count', chap:'Ch. 3', pts:10, topic:'Probability rules',
-  scenario:'Of <b>200</b> customers, <em>120</em> order fries, <em>80</em> order a drink, and <em>50</em> order <b>both</b>.',
-  parts:['(a) P(fries)','(b) P(fries OR drink)','(c) P(neither)','(d) P(drink | fries)'],
-  fields:[{label:'(a)',ans:0.6,tol:0.01,unit:''},{label:'(b)',ans:0.75,tol:0.01,unit:''},
-          {label:'(c)',ans:0.25,tol:0.01,unit:''},{label:'(d)',ans:0.42,tol:0.01,unit:''}],
-  hint:'P(A∪B)=P(A)+P(B)−P(A∩B). P(neither)=1−P(A∪B). P(B|A)=P(A∩B)/P(A).',
-  sol:'(a) 120/200=<b>0.60</b>. (b) 0.60+0.40−0.25=<b>0.75</b>. (c) 1−0.75=<b>0.25</b>. (d) 0.25/0.60=<b>0.42</b>. <br>Independent? P(drink)=0.40 but P(drink|fries)=0.42 — not equal, so the two are <b>not independent</b>.'},
+ {id:'y26q2', year:'2026', cat:'Confidence interval', title:'Minutes a day on email', pts:10,
+  scenario:'A random sample of <b>45 employees</b> reports minutes per day spent on short email exchanges. The sample mean is <b>34.8 minutes</b>; the population standard deviation is assumed to be <b>σ = 12 minutes</b>.',
+  parts:['(a) construct a 95% confidence interval for the true mean — 6 pts','(b) interpret the interval in plain language — 4 pts'],
+  fields:[{label:'(a) lower',ans:31.29,tol:0.12,unit:'min'},
+          {label:'(a) upper',ans:38.31,tol:0.12,unit:'min'}],
+  hint:'σ is known, so this is a z-interval: x̄ ± z·σ/√n with z = 1.96. Note √45, not 45.',
+  sol:'σ/√n = 12/√45 = 1.789. Margin = 1.96 × 1.789 = 3.51.<br>CI = 34.8 ± 3.51 = <b>(31.29, 38.31) minutes</b>.<br>(b) The interval came from a procedure that captures the true mean about 95% of the time. <b>Not</b> "there is a 95% chance the mean is in here" — that sentence loses the marks.'},
 
- {id:'c4', status:'ready', title:'Discrete random variable', chap:'Ch. 4', pts:10, topic:'Expected value & variance',
-  scenario:'The number of burgers <b>X</b> a customer buys has distribution: P(0)=0.1, P(1)=0.4, P(2)=0.3, P(3)=0.2.',
-  parts:['(a) E(X)','(b) Var(X)','(c) the standard deviation of X','(d) P(X ≥ 2)'],
-  fields:[{label:'(a) E(X)',ans:1.6,tol:0.01,unit:''},{label:'(b) Var',ans:0.84,tol:0.02,unit:''},
-          {label:'(c) sd',ans:0.92,tol:0.02,unit:''},{label:'(d) P(X≥2)',ans:0.5,tol:0.01,unit:''}],
-  hint:'E(X)=Σ x·P(x). Var=E(X²)−[E(X)]². E(X²)=Σ x²·P(x).',
-  sol:'E(X)=0(.1)+1(.4)+2(.3)+3(.2)=<b>1.6</b>. E(X²)=0+0.4+1.2+1.8=3.4. Var=3.4−1.6²=3.4−2.56=<b>0.84</b>. sd=√0.84=<b>0.92</b>. P(X≥2)=0.3+0.2=<b>0.50</b>.'},
+ {id:'y26q3', year:'2026', cat:'Two proportions', title:'Helmets in two neighbourhoods', pts:10,
+  scenario:'Neighbourhood <b>A</b>: 175 of 250 cyclists always wear a helmet. Neighbourhood <b>B</b>: 108 of 180 do. Test at <b>α = 0.05</b>, two-sided, whether the true proportions differ.',
+  parts:['(a) p̂A, p̂B and a point estimate of pA − pB — 4 pts','(b) state H₀ and Hₐ, compute the test statistic, conclude — 4 pts','(c) interpret in context — 2 pts'],
+  fields:[{label:'(a) p̂A',ans:0.70,tol:0.005,unit:''},
+          {label:'(a) p̂B',ans:0.60,tol:0.005,unit:''},
+          {label:'(a) difference',ans:0.10,tol:0.005,unit:''},
+          {label:'(b) z',ans:2.16,tol:0.06,unit:''}],
+  hint:'Pool under H₀: p̂ = (175+108)/(250+180). Then SE = √[ p̂(1−p̂)(1/nA + 1/nB) ].',
+  sol:'p̂A = 175/250 = <b>0.70</b>, p̂B = 108/180 = <b>0.60</b>, difference = <b>0.10</b>.<br>H₀: pA = pB · Hₐ: pA ≠ pB.<br>Pooled p̂ = 283/430 = 0.6581. SE = √[0.6581×0.3419×(1/250 + 1/180)] = 0.0464.<br>z = 0.10/0.0464 = <b>2.16</b>. Two-sided critical ±1.96, so <b>reject H₀</b> (p ≈ 0.031).<br>(c) Helmet use really does differ: about 70% in A against 60% in B, and a gap that size is unlikely to be luck in samples this large.'},
 
- {id:'c5', status:'ready', title:'Binomial distribution', chap:'Ch. 4', pts:10, topic:'Binomial',
-  scenario:'<b>30%</b> of customers add cheese. A random sample of <b>n = 10</b> customers is taken; let X = number who add cheese.',
-  parts:['(a) P(X = 3)','(b) the mean of X','(c) the standard deviation of X','(d) P(X ≥ 1)'],
-  fields:[{label:'(a)',ans:0.267,tol:0.005,unit:''},{label:'(b) mean',ans:3,tol:0.01,unit:''},
-          {label:'(c) sd',ans:1.45,tol:0.03,unit:''},{label:'(d)',ans:0.972,tol:0.005,unit:''}],
-  hint:'P(X=k)=C(n,k)pᵏ(1−p)ⁿ⁻ᵏ. Mean=np. sd=√(np(1−p)). P(X≥1)=1−P(X=0).',
-  sol:'(a) C(10,3)(.3)³(.7)⁷=120(.027)(.0823543)=<b>0.267</b>. (b) np=10(.3)=<b>3</b>. (c) √(10·.3·.7)=√2.1=<b>1.45</b>. (d) 1−(.7)¹⁰=1−0.0282=<b>0.972</b>.'},
+ {id:'y26q4', year:'2026', cat:'Hypothesis test · mean', title:'Truck loading time', pts:10,
+  scenario:'A logistics company claims the mean loading time is <b>52 minutes</b>. A sample of <b>36 loadings</b> gives a mean of <b>49.3</b> with sample standard deviation <b>8.4</b>. Test whether the true mean is <b>lower</b> than 52.',
+  parts:['(a) state H₀ and Hₐ — 2 pts','(b) define and compute the test statistic — 4 pts','(c) at α = 0.05 give the rejection region and conclude — 4 pts'],
+  fields:[{label:'(b) test statistic',ans:-1.93,tol:0.04,unit:''},
+          {label:'(c) critical value',ans:-1.69,tol:0.03,unit:''}],
+  hint:'s is the SAMPLE standard deviation, so it is a t-test: t = (x̄ − µ₀)/(s/√n), df = n − 1 = 35. One-tailed, lower.',
+  sol:'H₀: µ = 52 · Hₐ: µ &lt; 52 (one-tailed, lower).<br>s/√n = 8.4/6 = 1.40. t = (49.3 − 52)/1.40 = <b>−1.93</b>, df = 35.<br>Critical value at α = 0.05, one tail ≈ <b>−1.69</b>. Rejection region: t ≤ −1.69.<br>−1.93 &lt; −1.69 → <b>reject H₀</b>: the evidence says loading takes less than 52 minutes.'},
 
- {id:'c6', status:'ready', title:'Normal distribution & inverse', chap:'Ch. 5', pts:10, topic:'Normal probabilities',
-  scenario:'The time to grill a burger is <b>normal</b> with mean <em>4.0 min</em> and standard deviation <em>0.5 min</em>.',
-  parts:['(a) P(time > 5 min)','(b) P(time between 3.5 and 4.5 min)','(c) the time the slowest 10% exceed'],
-  fields:[{label:'(a)',ans:0.0228,tol:0.002,unit:''},{label:'(b)',ans:0.683,tol:0.004,unit:''},{label:'(c)',ans:4.64,tol:0.03,unit:'min'}],
-  hint:'Standardise z=(x−µ)/σ. For (c) find the z with 0.90 below it (z≈1.28), then x=µ+zσ.',
-  sol:'(a) z=(5−4)/0.5=2 → P(Z&gt;2)=<b>0.0228</b>. (b) z=±1 → P(−1&lt;Z&lt;1)=<b>0.683</b>. (c) 90th percentile z=1.28 → x=4+1.28(0.5)=<b>4.64 min</b>.'},
+ {id:'y26q5', year:'2026', cat:'Regression', title:'Advertising and sales — Excel output', pts:10,
+  scenario:'Simple regression, Y = monthly sales (thousands), X = advertising spend (thousands).<br><span class="mono">R Square 0.764 · Observations 12<br>Intercept: coeff 4.12, SE 1.03, t 4.00, p 0.0025<br>Advertising: coeff 2.87, SE 0.52, t 5.54, p 0.0003</span>',
+  parts:['(a) the estimated regression equation','(b) interpret the slope in business terms','(c) predicted sales when advertising = 6','(d) is the Advertising coefficient significant at α = 0.05?','(e) % of the variation in sales explained by advertising'],
+  fields:[{label:'(c) predicted sales',ans:21.34,tol:0.06,unit:'k'},
+          {label:'(e) variation explained',ans:76.4,tol:0.4,unit:'%'}],
+  hint:'Read the coefficients straight off: ŷ = intercept + slope·x. R Square already IS the proportion explained.',
+  sol:'(a) <b>ŷ = 4.12 + 2.87x</b>.<br>(b) Each extra <b>thousand</b> spent on advertising is associated with about <b>CHF 2 870</b> more monthly sales — association, not proof of cause.<br>(c) 4.12 + 2.87(6) = <b>21.34</b> thousand.<br>(d) p = 0.0003 &lt; 0.05 → <b>yes, significant</b>; equivalently t = 5.54 is far beyond ±2.23 (df = 10).<br>(e) R² = 0.764 → <b>76.4%</b>.'},
 
- /* ---------- mapped archetypes, unlock as chapters ship ---------- */
- {id:'c7',  status:'soon', title:'Sampling distribution of the mean (CLT)', chap:'Ch. 6', pts:10, topic:'P(x̄ in a range) via the Central Limit Theorem'},
- {id:'c8',  status:'soon', title:'Sampling distribution of a proportion', chap:'Ch. 6', pts:10, topic:'P(p̂ in a range)'},
- {id:'c9',  status:'soon', title:'Confidence interval for a mean — large sample (z)', chap:'Ch. 7', pts:10, topic:'x̄ ± z·σ/√n'},
- {id:'c10', status:'soon', title:'Confidence interval for a mean — small sample (t)', chap:'Ch. 7', pts:10, topic:'x̄ ± t·s/√n, df = n−1'},
- {id:'c11', status:'soon', title:'Confidence interval for a proportion', chap:'Ch. 7', pts:10, topic:'p̂ ± z·√(p̂q̂/n)'},
- {id:'c12', status:'soon', title:'Sample-size determination', chap:'Ch. 7 & 9', pts:10, topic:'n for a target margin of error'},
- {id:'c13', status:'soon', title:'Hypothesis test for a mean (z)', chap:'Ch. 8', pts:10, topic:'H₀/Hₐ, z-statistic, decision'},
- {id:'c14', status:'soon', title:'Hypothesis test for a mean (t)', chap:'Ch. 8', pts:10, topic:'small-sample t-test'},
- {id:'c15', status:'soon', title:'Hypothesis test for a proportion', chap:'Ch. 8', pts:10, topic:'one-proportion z-test'},
- {id:'c16', status:'soon', title:'Two means — independent, large samples', chap:'Ch. 9', pts:10, topic:'difference of means, z'},
- {id:'c17', status:'soon', title:'Two means — independent, small samples', chap:'Ch. 9', pts:10, topic:'difference of means, t'},
- {id:'c18', status:'soon', title:'Paired (matched) samples', chap:'Ch. 9', pts:10, topic:'test on the mean difference d̄'},
- {id:'c19', status:'soon', title:'Two proportions', chap:'Ch. 9', pts:10, topic:'difference of proportions'},
- {id:'c20', status:'soon', title:'Linear correlation coefficient r', chap:'Ch. 10', pts:10, topic:'compute & interpret r'},
- {id:'c21', status:'soon', title:'Least-squares regression line + prediction', chap:'Ch. 10', pts:10, topic:'ŷ = b₀ + b₁x'},
- {id:'c22', status:'soon', title:'Inference on the slope β₁', chap:'Ch. 10', pts:10, topic:'test / CI for the slope'},
- {id:'c23', status:'soon', title:'Coefficient of determination r² & prediction', chap:'Ch. 10', pts:10, topic:'r² and prediction intervals'},
- {id:'c24', status:'soon', title:'Chi-square test for independence', chap:'Ch. 11', pts:10, topic:'contingency table, expected counts'},
- {id:'c25', status:'soon', title:'Chi-square goodness-of-fit', chap:'Ch. 11', pts:10, topic:'observed vs expected'},
- {id:'c26', status:'soon', title:'F-test for equality of two variances', chap:'Ch. 11', pts:10, topic:'F = s₁²/s₂²'},
- {id:'c27', status:'soon', title:'One-way ANOVA F-test', chap:'Ch. 11', pts:10, topic:'between vs within variance'},
+ {id:'y26q6', year:'2026', cat:'Chi-square', title:'Field of study and starting a business', pts:10,
+  scenario:'<span class="mono">                 Plan   Do not   Total<br>Business          54      26       80<br>Engineering       32      48       80<br>Social Science    27      43       70<br>Total            113     117      230</span><br>Test at <b>α = 0.05</b> whether intention to start a business is independent of field of study.',
+  parts:['(a) state the hypotheses — 2 pts','(b) define and calculate χ² — 4 pts','(c) compare with the critical region and conclude — 4 pts'],
+  fields:[{label:'(b) expected, Business/Plan',ans:39.3,tol:0.15,unit:''},
+          {label:'(b) χ²',ans:16.59,tol:0.25,unit:''},
+          {label:'(c) critical value',ans:5.99,tol:0.03,unit:''}],
+  hint:'E = row total × column total ÷ grand total. df = (3−1)(2−1) = 2.',
+  sol:'H₀: intention and field are independent · Hₐ: they are not.<br>E(Business, Plan) = 80×113/230 = <b>39.30</b>; the other five the same way.<br>χ² = Σ(O−E)²/E = 5.49 + 5.31 + 1.36 + 1.31 + 1.59 + 1.53 = <b>16.59</b>.<br>df = 2 → critical <b>5.99</b>. 16.59 &gt; 5.99 → <b>reject H₀</b>: field of study and entrepreneurial intent are associated (Business students far above expectation, Engineering below).'},
+
+/* ============================ 2024 ============================ */
+ {id:'y24e1', year:'2024', cat:'Normal distribution', title:'Tyre life, and four tyres', pts:10,
+  scenario:'A tyre brand\'s life is normally distributed with mean <b>28 750 km</b> and standard deviation <b>425 km</b>.',
+  parts:['(a) P(a tyre lasts between 28 500 and 29 000 km)','(b) you buy four; P(all four last between 28 500 and 29 000). Hint: a binomial with p from (a)'],
+  fields:[{label:'(a) P',ans:0.4436,tol:0.006,unit:''},
+          {label:'(b) P(all four)',ans:0.0387,tol:0.002,unit:''}],
+  hint:'(a) two z-scores, subtract the areas. (b) four independent successes → p⁴.',
+  sol:'(a) z₁ = (28500−28750)/425 = −0.59, z₂ = (29000−28750)/425 = +0.59. Area = 0.7224 − 0.2776 = <b>0.4436</b>.<br>(b) Independent, so P = 0.4436⁴ = <b>0.0387</b> (3.87%).<br><span class="note">This is the binomial P(X = 4) with n = 4: C(4,4)p⁴(1−p)⁰ = p⁴.</span>'},
+
+ {id:'y24e2', year:'2024', cat:'Normal distribution', title:'Faulty watches in a batch of 700', pts:10,
+  scenario:'About <b>4%</b> of watches from a brand contain an error. In a random sample of <b>700</b>, find P(at least 30 are faulty). The normal approximation applies.',
+  parts:['(a) the mean and standard deviation of the count','(b) P(X ≥ 30)'],
+  fields:[{label:'(a) mean',ans:28,tol:0.1,unit:''},
+          {label:'(a) sd',ans:5.19,tol:0.06,unit:''},
+          {label:'(b) P(X ≥ 30)',ans:0.35,tol:0.02,unit:''}],
+  hint:'Binomial mean = np, sd = √(np(1−p)). Then standardise 30 and read the upper tail.',
+  sol:'µ = 700(0.04) = <b>28</b>. σ = √(700×0.04×0.96) = √26.88 = <b>5.19</b>.<br>z = (30 − 28)/5.19 = 0.39 → upper tail = 1 − 0.6517 = <b>0.35</b> (35%).<br><span class="note">With a continuity correction (29.5) you would get 0.386 — the official key did not use one, so 0.35 is the expected answer.</span>'},
+
+ {id:'y24e3', year:'2024', cat:'Confidence interval', title:'Three lightweight cars, 80% interval', pts:10,
+  scenario:'Three lightweight cars weigh (kg): <b>926, 742, 1109</b>. Weights are normally distributed. Construct an <b>80% confidence interval</b> for the mean weight of all such cars.',
+  parts:['(a) the sample mean','(b) the sample standard deviation','(c) the interval'],
+  fields:[{label:'(a) mean',ans:925.67,tol:0.3,unit:'kg'},
+          {label:'(b) s',ans:183.5,tol:1.5,unit:'kg'},
+          {label:'(c) lower',ans:725.9,tol:2,unit:'kg'},
+          {label:'(c) upper',ans:1125.4,tol:2,unit:'kg'}],
+  hint:'n = 3, so σ is unknown and df = 2. For 80% two-sided, t* = 1.886.',
+  sol:'x̄ = 2777/3 = <b>925.67 kg</b>.<br>Deviations 0.33, −183.67, 183.33 → Σ(x−x̄)² = 67 344.7 → s² = 33 672.3 → s = <b>183.50</b>.<br>SE = 183.50/√3 = 105.94. t*(df 2, 80%) = 1.886 → margin = 199.8.<br>CI = <b>(725.9, 1125.4) kg</b>.<br><span class="note">Three observations buy you almost nothing: the interval is 400 kg wide. That is the point of the question.</span>'},
+
+ {id:'y24e4', year:'2024', cat:'Hypothesis test · mean', title:'Truck weights, p-value approach', pts:10,
+  scenario:'Nominal truck weight is <b>4350 kg</b>. Five trucks are weighed: <b>4320, 4290, 4360, 4350, 4320</b>. Test at the <b>10%</b> level that the mean is less than 4350.',
+  parts:['(a) test the null hypothesis against µ < 4350','(b) estimate the p-value','(c) compare the p-value with α = 0.10 and decide'],
+  fields:[{label:'(a) x̄',ans:4328,tol:0.5,unit:'kg'},
+          {label:'(a) s',ans:27.75,tol:0.3,unit:'kg'},
+          {label:'(a) t',ans:-1.773,tol:0.02,unit:''},
+          {label:'(b) p-value',ans:0.0755,tol:0.006,unit:''}],
+  hint:'df = 4. t = (x̄ − 4350)/(s/√5). For the p-value, find where |t| sits in the df = 4 row of the t-table.',
+  sol:'x̄ = 21 640/5 = <b>4328</b>. Σ(x−x̄)² = 3080 → s² = 770 → s = <b>27.75</b>.<br>SE = 27.75/√5 = 12.41 → t = (4328 − 4350)/12.41 = <b>−1.773</b>, df = 4.<br>Critical at 10% one-tailed = −1.533; −1.773 &lt; −1.533 → <b>reject H₀</b>.<br>(b) p ≈ <b>0.0755</b>. (c) 0.0755 &lt; 0.10 → reject, the same conclusion by the other route.'},
+
+ {id:'y24e5', year:'2024', cat:'Regression', title:'Weekly commuters — reading the output', pts:10,
+  scenario:'Multiple regression on weekly public-transport commuters.<br><span class="mono">Multiple R 0.97 · Adj R² 0.94 · Obs 27<br>ANOVA: Regression df 4, MS 2 788 530 240, F 95.40<br>Residual df 22, SS 643 034 445 · Total df 26, SS 11 797 155 404<br>Intercept 100 222.56 (SE 135 917.87, t 0.7374)<br>Parking rates 152.46 (SE 73.86, t 2.0640, p 0.0510)</span>',
+  parts:['(a) the SS for the regression','(b) the p-value of the intercept','(c) the lower limit of the CI for the parking coefficient','(d) the upper limit','(e) the R square','(f) interpret the coefficients'],
+  fields:[{label:'(a) SS regression',ans:11154120959,tol:5000000,unit:''},
+          {label:'(b) p-value intercept',ans:0.47,tol:0.02,unit:''},
+          {label:'(e) R square',ans:0.9455,tol:0.004,unit:''}],
+  hint:'SS total = SS regression + SS residual. R² = SS regression / SS total.',
+  sol:'(a) 11 797 155 404 − 643 034 445 = <b>11 154 120 959</b>.<br>(b) t = 0.7374 on df = 22 → <b>p ≈ 0.47</b>, nowhere near significant — the intercept is indistinguishable from zero.<br>(c)/(d) 152.46 ± 2.074×73.86 → <b>(−0.73, 305.64)</b>.<br>(e) R² = 11 154 120 959 / 11 797 155 404 = <b>0.9455</b>.<br>(f) Price per week −689.52: each franc of fare costs about 690 riders. Parking +152.46, but its CI straddles zero, so it is not reliably different from no effect at all.'},
+
+ {id:'y24e6', year:'2024', cat:'Chi-square', title:'Family structure and graduation', pts:10,
+  scenario:'100 students, by family structure and whether they graduated.<br><span class="mono">              Yes   No<br>No parent      12    10<br>One parent     33    13<br>Two parents    23     9</span><br>Test at the <b>1%</b> level whether family structure matters for graduation.',
+  parts:['(a) state the hypotheses','(b) compute the expected counts and χ²','(c) compare with the critical value and conclude'],
+  fields:[{label:'(b) expected, No parent/Yes',ans:14.96,tol:0.1,unit:''},
+          {label:'(b) χ²',ans:2.35,tol:0.08,unit:''},
+          {label:'(c) critical value',ans:9.21,tol:0.05,unit:''}],
+  hint:'Column totals are 68 and 32. E = row × column ÷ 100. df = (3−1)(2−1) = 2, and α = 0.01 this time, not 0.05.',
+  sol:'E(No parent, Yes) = 22×68/100 = <b>14.96</b>; the rest 31.28, 21.76 / 7.04, 14.72, 10.24.<br>χ² = 0.59 + 1.24 + 0.09 + 0.20 + 0.07 + 0.15 = <b>2.35</b>.<br>df = 2, α = 0.01 → critical <b>9.21</b>. 2.35 &lt; 9.21 → <b>fail to reject</b>: no evidence that family structure affects graduation.<br><span class="note">The official key printed 2.32; recomputed exactly it is 2.347. Same conclusion.</span>'},
+
+/* ============================ 2023 ============================ */
+ {id:'y23e1', year:'2023', cat:'Normal distribution', title:'Fasteners within tolerance', pts:20,
+  scenario:'A machine makes fasteners that must be within <b>0.5 inch of 22 inches</b>. Lengths are normal with mean <b>22.0</b> and standard deviation <b>0.17</b>.',
+  parts:['(a) P(a randomly selected fastener is acceptable)','(b) 20 are made per hour; P(all 20 acceptable), lengths independent'],
+  fields:[{label:'(a) P(acceptable)',ans:0.9967,tol:0.0008,unit:''},
+          {label:'(b) P(all 20)',ans:0.9366,tol:0.004,unit:''}],
+  hint:'Acceptable means 21.5 to 22.5, i.e. ±0.5/0.17 = ±2.94 standard deviations. Then p²⁰.',
+  sol:'(a) z = ±0.5/0.17 = ±2.94 → area = 0.9984 − 0.0016 = <b>0.9967</b>.<br>(b) 0.9967²⁰ = <b>0.9366</b> (93.66%).<br><span class="note">A 99.67% pass rate per unit still means one hour in sixteen has a reject in it — small individual risks compound.</span>'},
+
+ {id:'y23e2', year:'2023', cat:'Confidence interval', title:'Waist measurement, size 6 dresses', pts:20,
+  scenario:'26 size-6 dresses have mean waist <b>25.25 inches</b>, sample standard deviation <b>0.375</b>. Construct a <b>95%</b> confidence interval for the mean of all such dresses.',
+  parts:['(a) the standard error','(b) the interval'],
+  fields:[{label:'(a) SE',ans:0.0735,tol:0.002,unit:'in'},
+          {label:'(b) lower',ans:25.10,tol:0.02,unit:'in'},
+          {label:'(b) upper',ans:25.40,tol:0.02,unit:'in'}],
+  hint:'s is a sample sd → t-interval, df = 25, t* = 2.060.',
+  sol:'SE = 0.375/√26 = <b>0.0735</b>. Margin = 2.060 × 0.0735 = 0.1515.<br>CI = 25.25 ± 0.15 = <b>(25.10, 25.40) inches</b>.'},
+
+ {id:'y23e3', year:'2023', cat:'Hypothesis test · proportion', title:'Repeat customers at a garage', pts:20,
+  scenario:'Historically <b>68%</b> of a garage\'s business was repeat clients. Of <b>200</b> invoices today, only <b>114</b> are repeat customers. Test at the <b>1%</b> level that the true proportion is now less than 68%.',
+  parts:['(a) test the claim','(b) compute the observed significance (p-value)'],
+  fields:[{label:'(a) p̂',ans:0.57,tol:0.005,unit:''},
+          {label:'(a) z',ans:-3.34,tol:0.06,unit:''},
+          {label:'(b) p-value',ans:0.0004,tol:0.0004,unit:''}],
+  hint:'Use p₀ = 0.68 in the standard error, not p̂: SE = √(p₀(1−p₀)/n).',
+  sol:'p̂ = 114/200 = <b>0.57</b>. SE = √(0.68×0.32/200) = 0.03299.<br>z = (0.57 − 0.68)/0.03299 = <b>−3.34</b>.<br>Critical at 1% one-tailed = −2.33; −3.34 &lt; −2.33 → <b>reject H₀</b>. p-value = P(Z &lt; −3.34) ≈ <b>0.0004</b>.<br><span class="note">⚠ The official key printed z = −3.14. Recomputed it is −3.34 (−0.11 ÷ 0.03299). The conclusion is unaffected.</span>'},
+
+ {id:'y23e4', year:'2023', cat:'Regression', title:'Beds and the price of a rental', pts:20,
+  scenario:'Regression of nightly price on how many the flat accommodates.<br><span class="mono">Multiple R 0.99328 · Adj R² 0.98622 · Obs 37<br>Residual df 35, SS 34 963.52 · Total df 36, SS 2 610 544.49<br>Intercept 7.6210 (SE 11.0643, t 0.6888)<br>Accommodates 102.5252 (SE 2.01914, t 50.777)</span>',
+  parts:['(a) SS for the regression','(b) p-value of the intercept','(c) lower limit of the CI for the coefficient','(d) upper limit','(e) the r square','(f) the correlation'],
+  fields:[{label:'(a) SS regression',ans:2575581,tol:400,unit:''},
+          {label:'(b) p-value intercept',ans:0.4955,tol:0.004,unit:''},
+          {label:'(c) lower',ans:98.43,tol:0.2,unit:''},
+          {label:'(d) upper',ans:106.62,tol:0.2,unit:''},
+          {label:'(e) R square',ans:0.9866,tol:0.002,unit:''},
+          {label:'(f) correlation',ans:0.9933,tol:0.002,unit:''}],
+  hint:'SS regression = SS total − SS residual. The CI is coefficient ± t*·SE with df = 35 → t* ≈ 2.030.',
+  sol:'(a) 2 610 544.49 − 34 963.52 = <b>2 575 581</b>.<br>(b) t = 0.6888, df 35 → <b>p = 0.4955</b>.<br>(c)/(d) 102.5252 ± 2.030×2.01914 = 102.53 ± 4.10 → <b>lower 98.43, upper 106.62</b>.<br>(e) R² = 0.99328² = <b>0.9866</b>. (f) correlation = Multiple R = <b>0.9933</b>.<br><span class="note">⚠ The official key has (c) and (d) the wrong way round — it lists 106.62 as the lower limit. A lower limit is always the smaller number.</span>'},
+
+ {id:'y23e5', year:'2023', cat:'Chi-square', title:'Handedness and GRE language scores', pts:20,
+  scenario:'807 GRE candidates, by handedness and language score.<br><span class="mono">        Low  Average  High<br>Left     18      40     22<br>Right   201     360    166</span><br>Test at the <b>5%</b> level whether left-handers tend to have stronger language ability.',
+  parts:['(a) state the hypotheses','(b) compute χ²','(c) conclude'],
+  fields:[{label:'(b) χ²',ans:1.38,tol:0.08,unit:''},
+          {label:'(c) critical value',ans:5.99,tol:0.03,unit:''}],
+  hint:'df = (2−1)(3−1) = 2. Column totals 219, 400, 188; row totals 80 and 727.',
+  sol:'H₀: handedness and score are independent · Hₐ: they are not.<br>Expected for Left: 21.71, 39.65, 18.64; for Right: 197.29, 360.35, 169.36.<br>χ² = <b>1.38</b>, df = 2, critical <b>5.99</b>.<br>1.38 &lt; 5.99 → <b>fail to reject</b>. No evidence that left-handers score differently — and note that "fail to reject" is not the same as proving the genetic claim false.'},
+
+/* ============================ 2022 ============================ */
+ {id:'y22e1', year:'2022', cat:'Normal distribution', title:'Finishing an algebra exam in time', pts:20,
+  scenario:'Time taken on an algebra exam is normal with mean <b>23 minutes</b> and standard deviation <b>2 minutes</b>.',
+  parts:['(a) the proportion who finish within a 21-minute limit','(b) six students today; P(all six finish within 21 minutes)'],
+  fields:[{label:'(a) proportion',ans:0.1587,tol:0.001,unit:''},
+          {label:'(b) P(all six)',ans:0.000016,tol:0.000004,unit:''}],
+  hint:'(a) z = (21 − 23)/2. (b) six independent successes → p⁶.',
+  sol:'(a) z = −1.00 → <b>0.1587</b> (15.87%).<br>(b) 0.1587⁶ = <b>0.000016</b> — about one chance in 63 000.<br><span class="note">⚠ The official key printed 0.000065. 0.1587⁶ = 1.60 × 10⁻⁵, so 0.000016 is correct. Either way the point stands: a 21-minute limit fails almost everybody.</span>'},
+
+ {id:'y22e2', year:'2022', cat:'Sampling distribution', title:'Sharks in tonic immobility', pts:20,
+  scenario:'Time in tonic immobility is normal with mean <b>10.5 minutes</b>, standard deviation <b>0.9</b>.',
+  parts:['(a) P(one shark stays immobile between 9 and 12 minutes)','(b) for a sample of 14 sharks, P(the sample MEAN is between 9 and 12)'],
+  fields:[{label:'(a) P(one shark)',ans:0.904,tol:0.006,unit:''},
+          {label:'(b) SE of the mean',ans:0.2405,tol:0.004,unit:''},
+          {label:'(b) P(sample mean)',ans:1.00,tol:0.005,unit:''}],
+  hint:'(a) uses σ = 0.9. (b) uses the standard error of the MEAN, σ/√14 — much smaller, so the same 9–12 window is far further out.',
+  sol:'(a) z = ±1.5/0.9 = ±1.67 → 0.9525 − 0.0475 = <b>0.904</b>.<br>(b) SE = 0.9/√14 = <b>0.2405</b>. z = ±1.5/0.2405 = ±6.24 → P ≈ <b>1.00</b>.<br><span class="note">This is the whole idea of a sampling distribution in one question: averages vary far less than individuals, so a window that catches 90% of sharks catches essentially every possible sample mean.</span>'},
+
+ {id:'y22e3', year:'2022', cat:'Hypothesis test · proportion', title:'Insurance claims settled in 35 days', pts:20,
+  scenario:'An insurer claims it settles <b>85%</b> of claims within 35 days. In <b>220</b> claims, <b>195</b> were settled in time. Test at the <b>5%</b> level that the true proportion is less than 85%.',
+  parts:['(a) test the claim','(b) compute the observed significance'],
+  fields:[{label:'(a) p̂',ans:0.8864,tol:0.002,unit:''},
+          {label:'(a) z',ans:1.51,tol:0.04,unit:''}],
+  hint:'Compute p̂ first and look at its sign relative to 0.85 before you do anything else.',
+  sol:'p̂ = 195/220 = <b>0.8864</b>. SE = √(0.85×0.15/220) = 0.02407.<br>z = (0.8864 − 0.85)/0.02407 = <b>+1.51</b>.<br>The alternative is p &lt; 0.85, so the rejection region is z &lt; −1.645. z is <b>positive</b> → <b>fail to reject</b>. The sample is if anything better than claimed.<br><span class="note">⚠ The official key gives p = 0.0655, which is the UPPER tail. For a lower-tailed test the p-value is P(Z &lt; 1.51) = 0.9345 — enormous, which is exactly why you do not reject.</span>'},
+
+ {id:'y22e4', year:'2022', cat:'Regression', title:'Length and height of birds', pts:20,
+  scenario:'Regression of bird height on length.<br><span class="mono">Multiple R 0.969 · Adj R² 0.932 · Obs 12<br>Regression df 1, MS 667.185, F 152.275<br>Residual df 10, SS 43.815 · Total df 11, SS 711<br>Intercept 10.678 (SE 16.042, t 0.666)<br>X Variable 2.121 (SE 0.172, t 12.340)</span>',
+  parts:['(a) SS for the regression','(b) p-value of the intercept','(c) lower limit of the CI for the coefficient','(d) upper limit','(e) the r square','(f) the correlation'],
+  fields:[{label:'(a) SS regression',ans:667.19,tol:0.2,unit:''},
+          {label:'(b) p-value intercept',ans:0.5207,tol:0.004,unit:''},
+          {label:'(c) lower',ans:1.7384,tol:0.01,unit:''},
+          {label:'(d) upper',ans:2.5045,tol:0.01,unit:''},
+          {label:'(e) R square',ans:0.9384,tol:0.002,unit:''},
+          {label:'(f) correlation',ans:0.9687,tol:0.003,unit:''}],
+  hint:'With df = 1 for the regression, SS = MS. Total SS is 711, so the residual tells you the rest.',
+  sol:'(a) df = 1 so SS = MS = <b>667.19</b> (and 711 − 43.815 confirms it).<br>(b) t = 0.666 on df = 10 → <b>p = 0.5207</b>.<br>(c)/(d) 2.121 ± 2.228×0.172 → <b>(1.7384, 2.5045)</b>.<br>(e) R² = 667.19/711 = <b>0.9384</b>. (f) correlation = √0.9384 = <b>0.9687</b>.<br><span class="note">The intercept is not significant but the slope is overwhelmingly so — the usual pattern, and no reason to drop the intercept.</span>'},
+
+ {id:'y22e5', year:'2022', cat:'Chi-square', title:'Is the poker dealer fair?', pts:20,
+  scenario:'1400 cards dealt: <b>Spades 354 · Hearts 370 · Diamonds 350 · Clubs 326</b>. Could the suits be equally likely? Test at the <b>5%</b> level.',
+  parts:['(a) state the hypotheses','(b) compute the expected count and χ²','(c) conclude'],
+  fields:[{label:'(b) expected per suit',ans:350,tol:0.5,unit:''},
+          {label:'(b) χ²',ans:2.83,tol:0.08,unit:''},
+          {label:'(c) critical value',ans:7.815,tol:0.05,unit:''}],
+  hint:'This is goodness of fit, not independence: E = 1400/4 for every suit, and df = 4 − 1 = 3.',
+  sol:'E = 1400/4 = <b>350</b> per suit.<br>χ² = 16/350 + 400/350 + 0 + 576/350 = 0.05 + 1.14 + 0 + 1.65 = <b>2.83</b>.<br>df = 3 → critical <b>7.815</b>. 2.83 &lt; 7.815 → <b>fail to reject</b>: the machine looks fair.<br><span class="note">⚠ The official key totals 3.93, having written the Spades term as 1.14 instead of 0.05. Recomputed, χ² = 2.83. Conclusion unchanged.</span>'},
+
+/* ============================ 2020 ============================ */
+ {id:'y20e1', year:'2020', cat:'Paired samples', title:'Does the new tram schedule help?', pts:15,
+  scenario:'Five commuters, round-trip minutes on the <b>old</b> then the <b>new</b> schedule:<br><span class="mono">55→50 · 90→95 · 25→20 · 65→55 · 75→65</span><br>Test at <b>α = 2%</b> whether travel time is shorter under the new schedule.',
+  parts:['(a) the mean difference','(b) the standard deviation of the differences','(c) the test statistic and conclusion'],
+  fields:[{label:'(a) mean difference',ans:5,tol:0.1,unit:'min'},
+          {label:'(b) s of differences',ans:6.12,tol:0.1,unit:'min'},
+          {label:'(c) t',ans:1.83,tol:0.04,unit:''}],
+  hint:'Work with the five DIFFERENCES (old − new): 5, −5, 5, 10, 10. One sample of differences, df = n − 1 = 4.',
+  sol:'Differences 5, −5, 5, 10, 10 → d̄ = 25/5 = <b>5</b>.<br>Σ(d−d̄)² = 150 → s²_d = 37.5 → s_d = <b>6.12</b>.<br>t = 5/(6.12/√5) = 5/2.739 = <b>1.83</b>, df = 4.<br>Critical at 2% one-tailed ≈ 2.999 → 1.83 does not reach it → <b>fail to reject</b>. Five commuters is not enough to show the schedule helps.<br><span class="note">⚠ The official key writes df = n − 2; for a paired test it is n − 1. Both give 4 here, so the answer survives the slip.</span>'},
+
+ {id:'y20e2', year:'2020', cat:'Regression', title:'Do NESN and UBS move together?', pts:25,
+  scenario:'Closing prices on four days:<br><span class="mono">NESN  100.82  99.70  99.11  99.47<br>UBS    12.56  12.34  12.45  12.35</span><br>NESN is the dependent variable.',
+  parts:['(a) the correlation','(b) the regression coefficients','(c) the coefficient of determination','(d) predicted NESN if UBS rises 20%','(e) is UBS relevant at α = 10%? (t-stat 1.295, p 0.3244)'],
+  fields:[{label:'(a) correlation r',ans:0.676,tol:0.01,unit:''},
+          {label:'(b) slope',ans:4.85,tol:0.06,unit:''},
+          {label:'(b) intercept',ans:39.53,tol:0.6,unit:''},
+          {label:'(c) R²',ans:0.456,tol:0.01,unit:''},
+          {label:'(d) predicted NESN',ans:111.4,tol:0.6,unit:''}],
+  hint:'R² is r SQUARED. For (d) the new UBS price is 12.35 × 1.2, then put it through the fitted line.',
+  sol:'(a) r = <b>0.676</b>.<br>(b) slope = <b>4.85</b>, intercept = <b>39.53</b> → NESN = 39.53 + 4.85·UBS.<br>(c) R² = 0.676² = <b>0.456</b> — under half the movement in NESN is tracked by UBS.<br>(d) new UBS = 12.35 × 1.2 = 14.82 → 39.53 + 4.85(14.82) = <b>111.4</b>.<br>(e) p = 0.3244 &gt; 0.10, and t = 1.295 is below the critical 2.92 → <b>no</b>, UBS is not a useful predictor. Four data points can barely show anything.<br><span class="note">⚠ The official key writes "coefficient of determination = sqrt(0.68)". The value 0.46 is right but the operation is squaring, not square-rooting.</span>'},
+
+ {id:'y20e3', year:'2020', cat:'Two samples', title:'Self-checkout against a cashier', pts:15,
+  scenario:'175 customers each.<br><span class="mono">Self-checkout: x̄ = 250 s, s = 26<br>Traditional:   x̄ = 290 s, s = 33</span><br>Is self-checkout faster? Test at <b>α = 5%</b>.',
+  parts:['(a) is the equal-variance assumption reasonable?','(b) perform the appropriate test'],
+  fields:[{label:'(b) pooled s',ans:29.71,tol:0.15,unit:'s'},
+          {label:'(b) test statistic',ans:-12.6,tol:0.15,unit:''}],
+  hint:'Pooled: s_p = √[((n₁−1)s₁² + (n₂−1)s₂²)/(n₁+n₂−2)]. Then divide the difference in means by s_p√(1/n₁+1/n₂).',
+  sol:'(a) Reasonable: 26 and 33 are the same order of magnitude — F = 26²/33² = 0.62, well inside the critical range.<br>(b) s_p = √[(174×676 + 174×1089)/348] = √882.5 = <b>29.71</b>.<br>t = (250 − 290)/(29.71×√(2/175)) = −40/3.18 = <b>−12.6</b>, df = 348.<br>Critical −1.645 → <b>reject</b> overwhelmingly. Self-checkout is faster by about 40 seconds.'},
+
+ {id:'y20e4', year:'2020', cat:'Confidence interval', title:'Skiing, and how big a sample you need', pts:10,
+  scenario:'Of <b>26 students</b>, <b>16</b> plan to ski this winter.',
+  parts:['(a) a 95% confidence interval for the proportion who plan to ski','(b) the smallest sample giving a margin of error of 0.2 in a 98% interval for a proportion'],
+  fields:[{label:'(a) p̂',ans:0.615,tol:0.01,unit:''},
+          {label:'(a) lower',ans:0.428,tol:0.012,unit:''},
+          {label:'(a) upper',ans:0.802,tol:0.012,unit:''},
+          {label:'(b) n',ans:34,tol:1,unit:''}],
+  hint:'(b) has no pilot estimate, so use the worst case p = 0.5, z = 2.33 for 98%, and n = z²p(1−p)/e². Round UP.',
+  sol:'(a) p̂ = 16/26 = <b>0.615</b>. SE = √(0.615×0.385/26) = 0.0954 → margin = 1.96×0.0954 = 0.187.<br>CI = <b>(0.428, 0.802)</b> — enormously wide, because 26 is a small sample.<br>(b) n = 2.33²×0.25/0.2² = 1.357/0.04 = 33.9 → <b>n = 34</b>.<br><span class="note">⚠ The official key answers 136, which is the answer for a margin of 0.1. The question asks for 0.2, and halving the precision cuts the sample by four.</span>'},
+
+ {id:'y20e5', year:'2020', cat:'Sampling distribution', title:'How far can a sample mean fall?', pts:15,
+  scenario:'A population is normal with <b>µ = 16</b> and <b>σ = 3</b>.',
+  parts:['(a) n = 13: P(x̄ < 15)','(b) n = 46: P(x̄ < 15)'],
+  fields:[{label:'(a) P',ans:0.1151,tol:0.004,unit:''},
+          {label:'(b) P',ans:0.0119,tol:0.002,unit:''}],
+  hint:'The sample mean has standard deviation σ/√n, not σ. Bigger n → smaller SE → the same gap becomes far more extreme.',
+  sol:'(a) SE = 3/√13 = 0.832 → z = (15 − 16)/0.832 = −1.20 → <b>0.1151</b>.<br>(b) SE = 3/√46 = 0.442 → z = −2.26 → <b>0.0119</b>.<br><span class="note">Same population, same question, same threshold — and the probability drops tenfold purely because the sample got bigger. That is √n doing the work.</span>'},
+
+ {id:'y20e6', year:'2020', cat:'Regression', title:'Airbnb in Austin — fill the blanks', pts:20,
+  scenario:'Multiple regression, 96 listings.<br><span class="mono">R² 0.22 · Obs 96<br>ANOVA: Regression df 3, SS 192 962.05, F 8.72, Sig F 0.000038<br>Residual df 92, SS (E), MS 7380.37 · Total df 95, SS 871 955.91<br>Intercept 36.5751 (SE 25.2468, t A)<br>Accommodates 18.5206 (SE 13.1870, t 1.4045, CI C to D)<br>Bedrooms 54.7697 (SE 22.1755, t B)</span>',
+  parts:['(a) fill in A, B, C, D and E','(b) is the model globally significant at α = 5%?','(c) interpret the coefficients'],
+  fields:[{label:'A (t, intercept)',ans:1.4487,tol:0.01,unit:''},
+          {label:'B (t, bedrooms)',ans:2.4698,tol:0.01,unit:''},
+          {label:'C (lower, accommodates)',ans:-7.67,tol:0.12,unit:''},
+          {label:'D (upper, accommodates)',ans:44.71,tol:0.12,unit:''},
+          {label:'E (SS residual)',ans:678993.86,tol:100,unit:''}],
+  hint:'t = coefficient ÷ standard error. A CI is coefficient ± t*·SE with t* ≈ 1.986 at df = 92. SS total = regression + residual.',
+  sol:'A = 36.5751/25.2468 = <b>1.4487</b>. B = 54.7697/22.1755 = <b>2.4698</b>.<br>C, D = 18.5206 ± 1.986×13.1870 → <b>(−7.67, 44.71)</b>.<br>E = 871 955.91 − 192 962.05 = <b>678 993.86</b>.<br>(b) Significance F = 0.000038 &lt; 0.05 → <b>yes</b>, the model as a whole predicts price.<br>(c) One more bedroom adds about <b>CHF 54.77</b> a night and is significant (p = 0.0154). Accommodates and Beds are not — their intervals cross zero. A globally significant model can still contain individually useless variables, usually because they measure the same thing as each other.'}
 ];
 
-const READY=CARDS.filter(c=>c.status==='ready').length;
+/* every card is playable now — the deck is real past questions, not a
+   roadmap of archetypes waiting on chapters */
+const READY=CARDS.length;
 const solved={};
 let cur=0;
 const deck=document.getElementById('deck');
 const rail=document.getElementById('rail');
-document.getElementById('meta').textContent=READY+' of '+CARDS.length+' cards ready';
+document.getElementById('meta').textContent=CARDS.length+' questions · 2020–2026';
 
 function buildRail(){
   rail.innerHTML='';
   CARDS.forEach((c,i)=>{
     const d=document.createElement('button');
-    d.className='rdot'+(c.status==='ready'?' ready':'')+(solved[c.id]?' solved':'')+(i===cur?' cur':'');
-    d.textContent=i+1;d.title=c.title;
+    d.className='rdot ready'+(solved[c.id]?' solved':'')+(i===cur?' cur':'');
+    d.textContent=i+1;d.title=c.year+' · '+c.cat+' — '+c.title;
     d.onclick=()=>{cur=i;render();};
     rail.appendChild(d);
   });
@@ -226,11 +435,7 @@ function render(){
   document.getElementById('pos').textContent='Card '+(cur+1)+' / '+CARDS.length;
   document.getElementById('prev').disabled=cur===0;
   document.getElementById('next').disabled=cur===CARDS.length-1;
-  let h=`<div class="card${solved[c.id]?' solved':''}"><div class="tagrow"><span class="chip chap">${c.chap}</span><span class="chip pts">${c.pts} points</span><span class="chip ${c.status}">${c.status==='ready'?'Ready':'Coming with '+c.chap}</span></div><h2>Card ${cur+1} · ${c.title}</h2>`;
-  if(c.status==='soon'){
-    h+=`<div class="soonbox"><div class="big">🔒</div><div><b>Archetype:</b> ${c.topic}</div><div class="why">This exam type is mapped and will become a fully worked, playable card when we build <b>${c.chap}</b>. It will use fresh numbers, just like the ready cards.</div></div></div>`;
-    deck.innerHTML=h;return;
-  }
+  let h=`<div class="card${solved[c.id]?' solved':''}"><div class="tagrow"><span class="chip year">Exam ${c.year}</span><span class="chip cat">${c.cat}</span><span class="chip pts">${c.pts} points</span></div><h2>Card ${cur+1} · ${c.title}</h2>`;
   h+=`<div class="scenario">${c.scenario}</div><p style="color:var(--grey);font-size:14px;margin-bottom:4px;">Calculate:</p><ol class="parts">${c.parts.map(p=>`<li>${p}</li>`).join('')}</ol>`;
   h+='<div class="fields">'+c.fields.map((f,i)=>`<div class="field"><label>${f.label}</label><div class="inwrap"><input type="text" inputmode="decimal" data-f="${i}">${f.unit?`<span class="unit">${f.unit}</span>`:''}<span class="mark" data-m="${i}"></span></div></div>`).join('')+'</div>';
   h+=`<div class="btns"><button class="btn" data-act="check">Check answers</button><button class="btn ghost" data-act="hint">Hint</button><button class="btn dim" data-act="sol">Worked solution</button></div><div class="fb" data-fb></div></div>`;
