@@ -42,7 +42,7 @@ window.CourseProgress=(function(){
     /* tools: listed and ticked, never part of the percentage */
     {mod:'practice',     short:'PA', name:'Practice arena — endless randomised problems', total:8,live:true,opt:true,href:'practice.html'},
     {mod:'sampling-sim', short:'SIM',name:'Sampling-distribution simulator',              total:1,live:true,opt:true,href:'sampling-sim.html'},
-    {mod:'exam',         short:'EX', name:'Exam cards — every archetype, fresh numbers',  total:6,live:true,opt:true,href:'exam-cards.html'}
+    {mod:'exam',         short:'EX', name:'Exam cards — every question from five real exams', total:28,live:true,opt:true,href:'exam-cards.html'}
   ];
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}

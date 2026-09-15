@@ -276,6 +276,15 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   student's displayed progress. The course-map cards use `.mq` for exactly this
   reason. Tools (practice, exam cards, simulators) are `opt:true` in
   `courseprogress.js` and never enter the percentage.
+- **`exam-cards.html` is the real papers, not invented practice.** 28 cards, one
+  per question actually set in 2020, 2022, 2023, 2024 and 2026; each carries its
+  `year` and `cat` (Normal distribution · Confidence interval · Hypothesis test ·
+  Two samples · Paired · Regression · Chi-square · Sampling distribution). Every
+  `ans:` was recomputed in Python from the question — **six of the original answer
+  keys are wrong** (2023 Ex3 z, 2023 Ex4 CI limits swapped, 2022 Ex1 p⁶, 2022 Ex3
+  p-value on the wrong tail, 2022 Ex5 χ², 2020 Ex4 sample size). Each correction is
+  flagged in the card's solution rather than silently applied. Never copy a number
+  off an old key; recompute it.
 - **The seven tools** (`practice`, `exam-cards`, `sampling-sim`, `distributions`,
   `sampling-machine`, `real-or-random`, `catch-the-mean`) keep their own inline
   CSS, written for the old navy/gold dark theme; the restyle **redefined their
