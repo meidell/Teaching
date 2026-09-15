@@ -51,7 +51,9 @@ window.CourseConfig = (function () {
     "umef407":   { ns:"umef407",   theme:"umef",  lang:"en", login:true,
                    label:"UMEF407 · Digital Innovation" },
     "statistics":{ ns:"statistics",theme:"heg",   lang:"en", login:true, key:"stats",
-                   label:"HEG · Applied Statistics" }
+                   label:"HEG · Applied Statistics" },
+    "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
+                   label:"HEG · Quantitative Methods I" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
