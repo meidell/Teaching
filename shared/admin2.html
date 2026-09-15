@@ -84,6 +84,16 @@ table.pres td.tot{font-weight:800;color:var(--accent);}
 .wrapx{overflow:auto;max-height:70vh;}
 .subsrow{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;}
 .subsrow a{color:var(--accent-bright);}
+.drate{font-weight:800;border-radius:20px;padding:1px 9px;font-size:11.5px;margin-left:4px;}
+.drate.ok{background:var(--good-bg);color:var(--good);}
+.drate.mid{background:var(--warn-bg);color:var(--warn);}
+.drate.low{background:var(--bad-bg);color:var(--bad);}
+.dpres{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 8px;}
+.ptag{font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:5px;padding:3px 8px;cursor:pointer;}
+.ptag.y{background:var(--good-bg);color:var(--good);}
+.ptag.n{background:var(--wash);color:var(--faint);}
+.ptag:hover{outline:2px solid var(--accent-bright);}
+.dmiss{font-size:12px;color:var(--grey);margin-bottom:10px;line-height:1.5;}
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -16px rgba(16,24,40,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -1016,6 +1026,29 @@ function openDrawer(sid){
     '<div><div class="k">Sections</div><div class="v">'+totalDone(s.node)+
       '<span style="font-size:13px;color:var(--faint)">/'+expectTotal()+'</span></div></div></div>';
 
+  /* presence — 20% of the grade, so the record belongs on the student and not
+     only in the register. Missed sessions are named: "why is my mark 60%" is
+     the question this answers, and the tags are clickable to correct it. */
+  if(hasPresence()){
+    var PS=presSessions();
+    if(PS.length){
+      var were=PS.filter(function(x){return !!x.marks[sid];});
+      var miss=PS.filter(function(x){return !x.marks[sid];});
+      var rate=Math.round(were.length/PS.length*100);
+      h+='<div class="dsec">Presence · '+were.length+' of '+PS.length+
+         ' <span class="drate '+(rate>=80?'ok':rate>=50?'mid':'low')+'">'+rate+'%</span></div>'+
+        '<div class="dpres">'+PS.map(function(x){
+           var on=!!x.marks[sid];
+           return '<span class="ptag '+(on?'y':'n')+'" data-ses="'+esc(x.id)+'" data-on="'+(on?1:0)+
+                  '" title="'+esc(x.label)+(on?' — present · click to remove':' — absent · click to mark present')+'">'+
+                  esc(x.id.toUpperCase())+'</span>';
+         }).join('')+'</div>'+
+        '<div class="dmiss">'+(miss.length
+          ? 'Missed: <b>'+miss.map(function(x){return esc(x.label);}).join(' · ')+'</b>'
+          : 'Present at every session held.')+'</div>';
+    }
+  }
+
   h+='<div class="dsec">Modules</div>';
   var any=false;
   MODULES.forEach(function(m){
@@ -1058,6 +1091,12 @@ function openDrawer(sid){
     });
   }
   $('dBody').innerHTML=h;
+  Array.prototype.forEach.call($('dBody').querySelectorAll('.ptag[data-ses]'),function(t){
+    t.addEventListener('click',function(){
+      presToggle(sid,t.getAttribute('data-ses'),t.getAttribute('data-on')!=='1')
+        .then(function(){openDrawer(sid);});
+    });
+  });
   $('drawer').classList.add('on');$('drawer').setAttribute('aria-hidden','false');
   $('scrim').classList.add('on');
 }
