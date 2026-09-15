@@ -373,15 +373,44 @@ listed; shared login, no class password.
   least twice, plus the business reasoning the printed version leaves to the
   room. PDF overlay builds are flattened into one slide with the working
   shown; the speaker notes say where to stop and ask the room first.
+- ⚠ **A new namespace needs a block in `firebase-database-rules.json`, and a
+  DEPLOY.** The rules enumerate namespaces (`omba401`, `statistics`, …) and the
+  root is `.read:false, .write:false`, so a namespace with no block is **shut
+  to everyone**: no progress, no sign-in, no presence, no chat, no release.
+  `qm1`'s block is a copy of `statistics`'s with the one self-reference
+  changed (`root.child('qm1/_presence/'…)`). Verify with an anonymous probe —
+  `<ns>/<sid>` must read **200** and `<ns>` itself **401**.
+- ⚠ **Releasing needs an ACCOUNT, not the gate** — the same lesson presence
+  learned. `_release` is instructor-token-only, and the week page has no
+  signed-in account, so its PUT returns 401. It used to be swallowed by a bare
+  `.catch()`: the button said "✓ Revealed", the instructor's own copy opened,
+  and **no student ever saw it**. `pushRelease()` now reports the failure and
+  points at the dashboard's Solutions tab, which is signed in and does work.
+  Never restore a silent catch here.
+- **`QMEx.setPreview()` — view as student.** The gate is per *device*, not per
+  account, so once it is unlocked every page shows the instructor view whoever
+  is signed in, and there was no way to check what the class sees. The
+  exercise strip carries a **View as student** toggle (sessionStorage, so a
+  fresh tab is the instructor again) and says loudly when it is on.
+- **Answers must not run down the diagonal.** `domRows` shipped with its six
+  options in answer order — a perfect 0,1,2,3,4,5 — and `cycRows` nearly so,
+  which trains pattern-reading instead of thinking. Same trap the E1410 exam
+  trainer documents (its correct answer sat in slot B 69 times out of 81).
+  After editing any classify group or quiz, check the answer positions are
+  mixed, not ascending, and never repeat three times running. The printed
+  quiz's seven are exempt — they are verbatim and must not be reordered.
 - **Reading the notation is taught explicitly, in §1.2, before any algebra.**
   This cohort is first-year Bachelor and most of them cannot *say* a formula
   out loud — and a formula you cannot say is one you cannot think with. So the
   week carries a notation layer that is not in the printed deck:
-  a **symbol decoder** (`SYMBOLS`, ~33 entries in five groups, each with its
-  name, **how you pronounce it**, what it does and where it appears today), an
-  **out-loud reader** (`READINGS`, which steps through a formula highlighting
-  the symbol and its English words together), and a `.sayit` block under every
-  displayed `.formula` on the page. When you add a formula, add its reading —
+  a **symbol decoder** (`SYMBOLS`, ~33 entries in five groups, each carrying
+  *what it does*, **why it was invented** — the problem it solves — and *what
+  goes wrong if you misread it*), an **anatomy walker** (`ANATOMY`, which
+  steps through a formula explaining the job each part performs), and a
+  `.sayit` block under every displayed `.formula` on the page.
+  ⚠ This was first built around **pronunciation** ("eff of ex") and that was
+  wrong: the students do not need to say the symbols, they need to know what
+  they *mean*. Explain the job and the reason, never the sound. When you add a formula, add its reading —
   `grep -c 'class="sayit"'` should stay equal to the number of `.formula`
   blocks. The deck mirrors this with six slides and the same `.sayit`/`.symrow`
   devices.
