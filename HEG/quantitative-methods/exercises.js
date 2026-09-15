@@ -56,7 +56,20 @@ window.QMEx = (function () {
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem('qm1_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}
-  function isInstructor(){try{return !!(window.AdminGate&&AdminGate.isUnlocked());}catch(e){return false;}}
+  /* The gate is per DEVICE (localStorage jem_admin_pw), not per account —
+     so once it is unlocked every page shows the instructor view whoever is
+     signed in. That makes it impossible to check what students actually
+     see, which is exactly the check you want to make before a session.
+     PREVIEW lets the instructor drop to the student view without forgetting
+     the password. sessionStorage, so a fresh tab is the instructor again. */
+  var PREVIEW_KEY='qm1_view_as_student';
+  function previewing(){try{return sessionStorage.getItem(PREVIEW_KEY)==='1';}catch(e){return false;}}
+  function setPreview(on){
+    try{on?sessionStorage.setItem(PREVIEW_KEY,'1'):sessionStorage.removeItem(PREVIEW_KEY);}catch(e){}
+    notify();
+  }
+  function gateUnlocked(){try{return !!(window.AdminGate&&AdminGate.isUnlocked());}catch(e){return false;}}
+  function isInstructor(){return gateUnlocked()&&!previewing();}
 
   /* ---------- release state ---------------------------------------- */
   var released = {};          /* {mod:{exId:ts}} — what the cohort may see */
@@ -86,26 +99,50 @@ window.QMEx = (function () {
 
   /* instructor → cohort. Fire-and-forget; the local flag flips regardless,
      so a reveal still works with no network in the room. */
+  /* ⚠ THE WRITE NEEDS AN ACCOUNT, NOT THE GATE — the same lesson presence
+     learned the hard way. The deployed rules make `_release` writable only
+     by a signed-in instructor token, and this page has no Firebase SDK and
+     no signed-in account, so these PUTs come back 401. They used to be
+     `.catch(function(){})`: the button said "✓ Revealed", the local copy
+     unlocked for the instructor, and NOT ONE STUDENT EVER SAW IT. That is
+     a failure you discover in front of thirty people.
+
+     So the write is now reported. On failure the caller is told, and the
+     honest instruction is to use the dashboard's Solutions tab, which is
+     signed in and can write. Local state is only updated once the server
+     has actually accepted it. */
+  var relErr=null;
+  function releaseError(){return relErr;}
+  function pushRelease(mod,patch){
+    return fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'.json',
+      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
+      .then(function(r){
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json().catch(function(){return null;});
+      }).then(function(j){
+        if(j&&j.error)throw new Error(j.error);
+        if(!released[mod])released[mod]={};
+        for(var k in patch)released[mod][k]=patch[k];
+        saveReleaseLocal(mod);relErr=null;notify();
+        return true;
+      },function(e){
+        relErr=(String(e.message||e).indexOf('401')>=0)
+          ? 'This page is not signed in, so it cannot release to the class. Open the dashboard → Solutions and release it there.'
+          : 'Could not reach the database. Nothing was released.';
+        notify();
+        return false;
+      });
+  }
   function release(mod,id){
-    if(!isInstructor())return false;
-    if(!released[mod])released[mod]={};
-    released[mod][id]=Date.now();
-    saveReleaseLocal(mod);
-    try{fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'/'+encodeURIComponent(id)+'.json',
-      {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())}).catch(function(){});}catch(e){}
-    notify();
-    return true;
+    if(!isInstructor())return Promise.resolve(false);
+    var p={};p[id]=Date.now();
+    return pushRelease(mod,p);
   }
   function releaseAll(mod,ids){
-    if(!isInstructor())return false;
-    if(!released[mod])released[mod]={};
+    if(!isInstructor())return Promise.resolve(false);
     var now=Date.now(),body={};
-    ids.forEach(function(id){released[mod][id]=now;body[id]=now;});
-    saveReleaseLocal(mod);
-    try{fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'.json',
-      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(){});}catch(e){}
-    notify();
-    return true;
+    ids.forEach(function(id){body[id]=now;});
+    return pushRelease(mod,body);
   }
   /* students: poll while the tab is visible. 8s is fast enough that the
      room unlocks together, cheap enough to leave running for two hours. */
@@ -159,11 +196,36 @@ window.QMEx = (function () {
     if(inst){
       var strip=document.createElement('div');strip.className='ex-inst';
       strip.innerHTML='<span class="ei-t">👁 Instructor view</span>'+
-        '<span class="ei-d">Solutions below are visible to you only. Reveal releases them to the class — on their devices, within ~8 seconds.</span>'+
-        '<button class="btn small" id="exRelAll">Release all '+EX.length+'</button>';
+        '<span class="ei-d">Solutions below are visible <b>to you only</b> — a student device shows none of this. '+
+          'Releasing writes to the class register and needs the dashboard\'s signed-in account.</span>'+
+        '<button class="btn small" id="exRelAll">Release all '+EX.length+'</button>'+
+        '<button class="btn small ghost" id="exPrev">View as student</button>'+
+        '<span class="ei-msg" id="exRelMsg"></span>';
       root.appendChild(strip);
+      var msg=strip.querySelector('#exRelMsg');
       strip.querySelector('#exRelAll').addEventListener('click',function(){
-        if(confirm('Release all '+EX.length+' solutions to the class?'))releaseAll(mod,EX.map(function(x){return x.id;}));
+        if(!confirm('Release all '+EX.length+' solutions to the class?'))return;
+        var b=this;b.disabled=true;b.textContent='Releasing…';
+        releaseAll(mod,EX.map(function(x){return x.id;})).then(function(ok){
+          b.disabled=false;b.textContent='Release all '+EX.length;
+          msg.className='ei-msg '+(ok?'ok':'bad');
+          msg.innerHTML=ok?'✓ Released to the class.':('⚠ '+releaseError());
+        });
+      });
+      /* drop to the student view without forgetting the password — the only
+         way to check what the class actually sees before a session */
+      strip.querySelector('#exPrev').addEventListener('click',function(){
+        setPreview(true);location.reload();
+      });
+    }else if(gateUnlocked()&&previewing()){
+      /* previewing: say so loudly, or you will forget and think the gate broke */
+      var pv=document.createElement('div');pv.className='ex-inst prev';
+      pv.innerHTML='<span class="ei-t">🎓 Student view</span>'+
+        '<span class="ei-d">You are an instructor previewing what the class sees. Solutions are hidden exactly as they are for them.</span>'+
+        '<button class="btn small" id="exPrevOff">Back to instructor view</button>';
+      root.appendChild(pv);
+      pv.querySelector('#exPrevOff').addEventListener('click',function(){
+        setPreview(false);location.reload();
       });
     }
 
@@ -318,14 +380,21 @@ window.QMEx = (function () {
     var btn=box.querySelector('.exs-btn'); if(!btn)return;
     btn.addEventListener('click',function(){
       var sol=box.querySelector('.exs-sol');
-      if(sol)sol.hidden=false;
-      release(box.dataset.mod,box.dataset.ex);
-      btn.textContent='✓ Revealed — the class can now open it';
-      btn.disabled=true;
+      if(sol)sol.hidden=false;          /* your own copy, whatever happens */
+      btn.disabled=true;btn.textContent='Releasing…';
+      release(box.dataset.mod,box.dataset.ex).then(function(ok){
+        /* ⚠ report the truth. A button that says "revealed" while the write
+           was refused is worse than no button — see pushRelease(). */
+        btn.textContent=ok?'✓ Revealed — the class can now open it'
+                          :'⚠ Not released — use the dashboard → Solutions';
+        if(!ok)btn.disabled=false;
+      });
     });
   }
 
   return {mount:mount, slides:slides, wireSlide:wireSlide, releaseBlocked:releaseBlocked,
+          previewing:previewing, setPreview:setPreview, gateUnlocked:gateUnlocked,
+          releaseError:releaseError,
           isInstructor:isInstructor, release:release, releaseAll:releaseAll,
           isReleased:isReleased, onChange:function(f){listeners.push(f);},
           /* watch(mod) is startPolling for a page that has no exercise
