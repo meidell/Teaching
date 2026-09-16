@@ -106,14 +106,51 @@ window.FBAuth = (function () {
       '.fba input{border:1px solid rgba(0,0,0,.2);border-radius:9px;padding:8px 11px;font:inherit;min-width:0;flex:1 1 170px;max-width:250px;background:#fff;color:#111;}'+
       '.fba button{border:none;border-radius:9px;padding:8px 16px;font:800 13px inherit;cursor:pointer;background:#CC0000;color:#fff;}'+
       '.fba button[disabled]{opacity:.55;cursor:default;}'+
-      '.fba .fba-msg{flex:1 1 100%;font-weight:600;opacity:.85;}';
+      '.fba .fba-msg{flex:1 1 100%;font-weight:600;opacity:.85;}'+
+      '.fba .fba-why{flex:1 1 100%;font-weight:600;line-height:1.5;}'+
+      '.fba .fba-why code{font:700 12px ui-monospace,Menlo,monospace;background:rgba(0,0,0,.07);padding:1px 5px;border-radius:5px;}'+
+      '.fba .fba-ghost{background:transparent;color:inherit;border:1px solid rgba(0,0,0,.25);}';
     document.head.appendChild(st);
   }
 
+  /* ---------- signed in, and STILL refused --------------------------
+     A namespace that has no block in the deployed rules is shut to
+     everyone — the root is .read:false, so no account opens it and no
+     password ever will. The page could not tell that apart from a bad
+     password: it re-rendered an empty password form with no message,
+     every time, which reads exactly like "my password stopped working".
+     It is not the password. Say so, and say what to do.
+     ------------------------------------------------------------------ */
+  function blocked(el,cb,ns){
+    css();
+    var who=(window.__fbUser&&window.__fbUser.email)||'an instructor account';
+    el.innerHTML='<div class="fba"><div class="fba-why">'+
+      'Signed in as <b>'+esc(who)+'</b> — and the database still refuses to read'+
+      (ns?' <code>'+esc(ns)+'</code>':' this cohort')+'.<br>'+
+      '<b>This is not your password.</b> Almost always it means '+
+      (ns?'<code>'+esc(ns)+'</code>':'that namespace')+' has no block in the '+
+      '<i>deployed</i> rules — the root is <code>.read:false</code>, so every '+
+      'account is refused, signed in or not. Publish <code>firebase-database-rules.json</code>: '+
+      'Firebase Console → Realtime Database → Rules → paste → Publish.'+
+      '</div><button>Try again</button>'+
+      '<button class="fba-ghost">Sign out</button>'+
+      '<span class="fba-msg"></span></div>';
+    var bs=el.querySelectorAll('button');
+    bs[0].addEventListener('click',function(){try{cb(window.__fbUser);}catch(e){}});
+    bs[1].addEventListener('click',function(){signOut(function(){location.reload();});});
+  }
+
+  function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
   /* Renders the two fields into `el` and calls cb(user) once signed in.
-     No popup, so nothing for a pop-up blocker to eat. */
-  function form(el,cb){
+     No popup, so nothing for a pop-up blocker to eat.
+     `ns` is only for the message when we are already signed in. */
+  function form(el,cb,ns){
     if(!el)return;
+    /* Already identified? Then the read failed for a reason a password
+       cannot fix, and offering the password box again is a lie. */
+    if(window.__fbUser){ blocked(el,cb,ns); return; }
     /* A dashboard that re-reads on a timer will call this again on every
        failed read. Rebuilding would wipe a half-typed password, which is
        exactly what made signing in feel impossible. */
@@ -145,5 +182,5 @@ window.FBAuth = (function () {
   }
 
   return {restore:restore, mark:mark, forget:forget, signOut:signOut, seen:seen,
-          form:form, signInPassword:signInPassword, email:function(){return EMAIL;}};
+          form:form, blocked:blocked, signInPassword:signInPassword, email:function(){return EMAIL;}};
 })();

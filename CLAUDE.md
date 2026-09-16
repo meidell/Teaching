@@ -252,11 +252,16 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
 - **It is a dedicated email+password account, `presence@janerikmeidell.com`, not
   a Google popup.** Two reasons. A popup is blocked whenever the click that
   opened it has been spent waiting for the SDK to load (`auth/popup-blocked`) —
-  a lousy thing to discover in front of thirty people. And the account is scoped:
-  the rules let it write `_presence_now`, `_presence/$session` and a mark, and
-  **nothing else** — no read on the namespace, no announcements, no chat. It is a
-  classroom key, not an admin account; the dashboards still use Google.
-  `CTRL_EMAIL` in `presence.js` and the two `.write` rules must agree. The
+  a lousy thing to discover in front of thirty people. Safari blocks the popup
+  outright and its redirect fallback is unreliable there too, so since Sept 2026
+  **the three instructor pages sign in with this same account** through
+  `shared/fb-auth.js`, and the rules accept it everywhere the Google address is
+  accepted. ⚠ It was originally scoped — write `_presence_now`, `_presence/$session`
+  and a mark, nothing else — and commit `447c44e` widened it to full instructor
+  read/write on every namespace. **So it is no longer a classroom-only key**: the
+  password typed on a laptop in front of thirty students now opens every cohort's
+  data. If that is not wanted, the fix is a second account for the dashboards, not
+  a UI change. `CTRL_EMAIL` in `presence.js` and the `.write` rules must agree. The
   password is never stored by us: Firebase keeps its own session in IndexedDB and
   `restore()` picks it up silently, so it is typed once per laptop, not once per
   class. The ID token is re-minted on every write, because a session is three
