@@ -1351,10 +1351,26 @@ function renderSolutions(){
 }
 /* Sessions held. With subgroups, ALWAYS ask for one group: a register that
    mixes the two rooms gives every student a rate out of twice the sessions
-   they were ever invited to. */
+   they were ever invited to.
+
+   A SESSION COUNTS WHEN SOMEBODY WAS MARKED AT IT — not when a window was
+   once opened. Opening and closing is two clicks and gets done by accident;
+   before this, a stray window grew a column here and cost every student a
+   session's worth of rate, and told them on the week page that they had
+   missed it. A window open right now counts too, because that is the one
+   you are watching fill up. Everything else is an empty window: reported
+   below the register, not folded into anyone's mark. */
+function anyMarks(x){ for(var k in ((x&&x.marks)||{}))return true; return false; }
+function presEmpty(grp){
+  var p=(ROOT&&ROOT._presence)||{};
+  return Object.keys(p).filter(function(k){
+    var x=p[k]; return x&&!x.open&&(x.openedAt||x.closedAt)&&!anyMarks(x);
+  }).filter(function(k){return !hasGroups()||!grp||sesGrp(k)===grp;})
+    .map(function(k){return {id:k,mod:sesMod(k),label:(p[k].label||k)};});
+}
 function presSessions(grp){
   var p=(ROOT&&ROOT._presence)||{};
-  var ids=Object.keys(p).filter(function(k){var x=p[k];return x&&(x.openedAt||x.closedAt||x.open);});
+  var ids=Object.keys(p).filter(function(k){var x=p[k];return x&&(x.open||anyMarks(x));});
   function ord(id){var m=/^w(\d+)/.exec(sesMod(id));return m?parseInt(m[1],10):999;}
   ids.sort(function(a,b){return ord(a)-ord(b)||a.localeCompare(b);});
   if(hasGroups()&&grp)ids=ids.filter(function(id){return sesGrp(id)===grp;});
@@ -1481,7 +1497,7 @@ function presBlock(grp){
     ? '<div class="ghead"><h4>'+esc(grpLabel(grp))+' group</h4>'+
       '<span class="m">'+held+' session'+(held===1?'':'s')+' held · '+rows.length+' student'+(rows.length===1?'':'s')+'</span></div>'
     : '';
-  if(!held)return title+'<div class="sub" style="margin-bottom:8px">No session held for this group yet.</div>';
+  if(!held)return title+'<div class="sub" style="margin-bottom:8px">No session held for this group yet.</div>'+emptyNote(grp);
   if(!rows.length)return title+'<div class="sub" style="margin-bottom:8px">Nobody is in this group yet — '+
     'students choose when they register, and the ones who signed up before the split are in '+esc(grpLabel(defGrp()))+'.</div>';
   var head='<tr><th class="nm">Student</th>'+S.map(function(x){
@@ -1500,10 +1516,21 @@ function presBlock(grp){
   var totals='<tr><td class="nm"><b>In the room</b></td>'+S.map(function(x){
       var n=0;for(var k in x.marks)n++;return '<td class="tot">'+n+'</td>';}).join('')+
       '<td class="tot">\u2014</td><td class="tot">\u2014</td></tr>';
-  return title+
+  return title+emptyNote(grp)+
     '<div class="presbar"><button class="btn" data-pcsv="'+esc(grp||'')+'">\u2b07 Presence CSV</button>'+
     '<span class="muted">'+held+' session'+(held>1?'s':'')+' held \u00b7 '+rows.length+' students</span></div>'+
     '<div class="wrapx"><table class="pres"><thead>'+head+'</thead><tbody>'+body+totals+'</tbody></table></div>';
+}
+/* An opened-and-closed window with nobody marked at it. Nearly always a
+   mis-click, so it is not counted — but it is never hidden either: if it
+   WAS a real session, presence is broken for that room and that is the
+   most important thing on this page. */
+function emptyNote(grp){
+  var e=presEmpty(grp); if(!e.length)return '';
+  return '<div class="sub" style="margin-bottom:8px;opacity:.9">'+
+    '⚠ Opened and closed with <b>nobody marked</b>: '+e.map(function(x){return esc(x.label);}).join(' · ')+
+    '. Not counted as a session held, so it costs nobody a mark. '+
+    'If one of those was a real session, the buttons did not reach the room — mark people by hand below and it will count.</div>';
 }
 function presCsv(grp){
   var S=presSessions(grp), rows=byName(), held=S.length;
