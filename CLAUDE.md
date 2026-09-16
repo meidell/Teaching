@@ -118,6 +118,7 @@ Five things worth knowing before editing any of them:
   the same reason: a stale registry makes a new course simply not exist.
 - **Flags in `admin2.html` are relative, not absolute.** "Behind" means well under *this cohort's* median at *this point* in the course. The original used fixed thresholds (under 60%, under 50%), which mid-term flagged 13 of 18 students — a flag on two thirds of the cohort is not a flag. Don't reintroduce a constant here.
 - **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. The old `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. `applyTheme()` maps the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
+| `theme.js` | light / dark, one switch per device. **Loaded in `<head>`, not deferred** — it sets `data-theme` before first paint, or the page flashes white. Opt-in, one `<script>` per page; only `HEG/statistics` uses it today |
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
 | `homework.css` | the 70 rules every `weekN-homework.html` shares |
 | `themes/*.css` | colour variables only — `sumas`, `ideas`, `umef`, `navy` |
@@ -131,6 +132,61 @@ Themes expose two naming layers: neutral names (`--accent`, `--surface`, `--ink`
 the API for new work; legacy names (`--green`, `--sand`) alias onto them because the
 existing pages and the shared stylesheets still reference those. Don't write new rules
 against the legacy names.
+
+### Dark mode — `/shared/theme.js` and the rules that make it safe
+
+`HEG/statistics` runs light or dark from one switch in the top bar (`jem_theme`,
+site-wide, default = the operating system's setting). `theme.js` resolves *auto*
+itself and writes `data-theme="light|dark"` on `<html>`; the CSS therefore needs
+**one** palette block rather than a `[data-theme]` block plus a matching media
+query that would drift from it. With JavaScript off every page is light, which is
+what it was before.
+
+Four rules, each of which was learned by breaking something:
+
+- **A dark value is a NEW token; a light value is never edited.** Every use
+  passes its own light colour as the `var()` fallback — `var(--wash,#E5E9EF)` —
+  and the token exists only in the dark block. Daylight then cannot change, by
+  construction. The first pass did the opposite (tokenise the literal, define
+  the token in both themes) and quietly moved the tools' page background from
+  `#F6F7F7` to white — 55% of the pixels on `practice.html`.
+- ⚠ **A colour that carries white text is a SURFACE, not a text colour.**
+  `--navy` is what an `h2` is set in, so on a dark page it becomes pale blue —
+  and every navy *panel* (`.lect-btn`, the plan's table headers, `.ex-inst`,
+  the speaker-note strip, which used `--ink` the same way) turned into white
+  text on pale blue. `--navy-surface` / `--navy-surface-deep` / `--ink-surface`
+  stay dark in both themes and are what those rules use. Their light values are
+  exactly what they replaced.
+- **Pale washes invert, they do not darken.** `--accent-pale` is `#FFF0EF` by
+  day and `#3A1B18` by night. Darkened instead, every accent block turns muddy
+  grey and the page stops having an accent.
+- **HEG red is not readable as text on dark.** `#CC0000` measures about 3.4:1
+  on `#161B21`. `--accent` lightens to `#FF5A4E` (~6.4:1) for text and rules;
+  `--accent-fill` keeps the brand red for large fills.
+
+Three things deliberately do **not** follow the reader's theme:
+
+- **The projected deck.** `#lect.dkbg .lect-stage` is written in literal brand
+  navy: what the room sees must not depend on whose laptop is plugged in.
+- **Print.** `@media print` restores the whole light palette, and `theme.js`
+  also flips the attribute around `beforeprint`/`afterprint` so that **charts**
+  repaint — CSS cannot reach a colour already drawn into an SVG.
+- **Every other course.** They never load `theme.js`, so `data-theme` is never
+  set and every `var(--x, <literal>)` falls back to the literal.
+
+**Charts are the part CSS cannot do.** An SVG or canvas attribute does not
+follow a variable, so `week1`/`week2` build their `C` palette from `--viz-*`
+tokens and, on the `course-theme` event, **remap the colours already in the
+DOM** rather than calling `draw()` again — most of those widgets resample or
+refit inside `draw()`, and switching theme must not deal the reader a new hand
+of data. `sampling-sim` redraws instead, because its two draws are idempotent.
+
+**Testing it means looking at it.** `--force-dark-mode` makes headless Chrome
+report `prefers-color-scheme: dark`, so the whole course can be screenshotted
+in both themes; and a light-mode screenshot diffed against `git archive HEAD`
+is what proves daylight did not move. That diff is the test that matters — the
+toggle button, and a 3px taller bar on the tool pages, are the only differences
+that should survive it.
 
 ### Wiring a page into it
 
@@ -350,6 +406,11 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   carries an `excel:` table reproducing the real one, blanks highlighted and
   labelled exactly as the paper labelled them — (a)…(e), or A…E in 2020. The
   answer fields must match those blanks one for one.
+- **The course runs light or dark** — the ☾/☀ switch in the top bar, `/shared/theme.js`,
+  default = the reader's system setting. See *Dark mode* in §3 before touching a
+  colour anywhere in this course: the short version is that a light value is
+  never edited, a dark value is a new token with the light one as its `var()`
+  fallback, and anything drawn into an SVG has to be repainted in JavaScript.
 - **The seven tools** (`practice`, `exam-cards`, `sampling-sim`, `distributions`,
   `sampling-machine`, `real-or-random`, `catch-the-mean`) keep their own inline
   CSS, written for the old navy/gold dark theme; the restyle **redefined their

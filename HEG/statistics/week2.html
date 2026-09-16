@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#002C46">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 <link rel="stylesheet" href="/shared/themes/heg.css">
+<script src="/shared/theme.js"></script>
 <link rel="stylesheet" href="stats.css">
 <script src="/shared/admin-gate.js"></script>
 <script src="answers.js"></script>
@@ -503,8 +504,52 @@ const OVER20=PRICES.filter(v=>v>20).length;
 const SVGNS="http://www.w3.org/2000/svg";
 function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
 function svgTxt(svg,x,y,s,fill,size,anchor,bold){const t=el("text",{x:x,y:y,"text-anchor":anchor||"middle","font-size":size||11,fill:fill});if(bold)t.setAttribute("font-weight","bold");t.textContent=s;svg.appendChild(t);}
-const C={navy:'#002C46',red:'#CC0000',green:'#2F855A',blue:'#3E6E96',grey:'#5F6B76',ink:'#24272A',white:'#fff',
-         axis:'rgba(36,39,42,0.30)',fill:'rgba(0,44,70,0.14)',redFill:'rgba(204,0,0,0.14)'};
+/* ---- HEG chart palette (series identity is never colour-alone: every
+        series is also labelled in text) ----
+
+   An SVG attribute cannot read a CSS variable, so this object is BUILT from
+   the tokens in /shared/themes/heg.css and rebuilt when the theme changes.
+   Drawing straight from a literal hex is what made the histogram invisible
+   in dark mode — navy bars on a navy-black page — so don't reintroduce one.
+
+   Charts already on screen are REMAPPED IN PLACE rather than redrawn: most
+   of these widgets resample or refit inside draw(), so calling them again
+   would silently change the numbers under the reader, and switching theme
+   is not supposed to deal a new hand of data. Anything drawn after the
+   switch picks the new palette up from C on its own. */
+const C={};
+function tok(name,fallback){
+  try{ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
+  catch(e){ return fallback; }
+}
+function paintTheme(){
+  const was=Object.assign({},C);
+  Object.assign(C,{
+    navy:tok('--viz-navy','#002C46'), red:tok('--accent','#CC0000'),
+    redB:tok('--accent-bright','#FF3127'), green:tok('--ok','#2F855A'),
+    blue:tok('--viz-blue','#3E6E96'), grey:tok('--grey','#5F6B76'),
+    ink:tok('--ink','#24272A'), axis:tok('--viz-axis','rgba(36,39,42,0.30)'),
+    fill:tok('--viz-fill','rgba(0,44,70,0.12)'), redFill:tok('--viz-red-fill','rgba(204,0,0,0.14)'),
+    white:tok('--card','#fff')
+  });
+  return was;
+}
+function repaintViz(was){
+  const map={};
+  Object.keys(C).forEach(function(k){
+    if(was[k]&&was[k]!==C[k])map[String(was[k]).toLowerCase().replace(/\s+/g,'')]=C[k];
+  });
+  if(!Object.keys(map).length)return;
+  Array.prototype.forEach.call(document.querySelectorAll('svg.viz *'),function(n){
+    ['fill','stroke'].forEach(function(a){
+      const v=n.getAttribute(a); if(!v)return;
+      const m=map[v.toLowerCase().replace(/\s+/g,'')]; if(m)n.setAttribute(a,m);
+    });
+  });
+}
+paintTheme();
+document.addEventListener('course-theme',function(){ repaintViz(paintTheme()); });
+
 
 /* =====================================================================
    NAVIGATION + PROGRESS
