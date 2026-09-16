@@ -409,6 +409,7 @@ def page(w):
 <meta name="theme-color" content="#002C46">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%s</text></svg>">
 <link rel="stylesheet" href="/shared/themes/heg.css">
+<script src="/shared/theme.js"></script>
 <link rel="stylesheet" href="stats.css">
 </head>
 <body data-course="statistics">
