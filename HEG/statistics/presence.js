@@ -90,6 +90,26 @@ window.StatsPresence = (function () {
   }
   function node(mod){return DB+'/'+NS+'/_presence/'+encodeURIComponent(mod);}
 
+  /* ---- WHAT COUNTS AS A SESSION HELD -------------------------------------
+     Not "a window was opened once". Opening and closing a window takes two
+     clicks and is done by accident — a mis-picked week, a test, a double
+     press — and the moment a node had `openedAt` on it, every student who
+     had not marked themselves was shown ABSENT from a session that never
+     happened, and the week page told them they had missed it. That is the
+     opposite of what a register is for. (It happened for real: a two-second
+     window on `w2-g2`, 16 Sep 2026, painted week 2 red for the whole
+     Wednesday group.)
+
+     So: a session counts once SOMEBODY WAS MARKED AT IT. A real session
+     always has marks — including one the instructor fills in by hand from
+     the dashboard afterwards. A stray window has none, counts as nothing
+     for everyone, and needs no cleanup.
+
+     A window that is open RIGHT NOW is in progress, not held: nobody is
+     absent from a session they are sitting in and about to mark. */
+  function anyMarks(s){ for(var k in ((s&&s.marks)||{}))return true; return false; }
+  function isHeld(s){ return !!(s && !s.open && anyMarks(s)); }
+
   function css(){
     if(document.getElementById('pres-css'))return;
     var s=document.createElement('style');s.id='pres-css';
@@ -245,7 +265,11 @@ window.StatsPresence = (function () {
           '<b>Tell your instructor now</b> — they can mark you from the dashboard, and it needs fixing for everyone.';
       }else{
         btn.className='pres-btn';btn.disabled=true;btn.innerHTML='Presence not open';
-        st.innerHTML=(state&&state.closedAt)
+        /* Only say "you missed it" about a session that actually happened.
+           A closed window nobody was marked at was opened by mistake, and
+           telling thirty people they were absent from it is a message they
+           will act on. */
+        st.innerHTML=isHeld(state)
           ? 'The window for this session is <b>closed</b>. If you were in the room and missed it, tell your instructor — they can mark you from the dashboard.'
           : 'Your instructor opens this in the room. It turns red when you can press it. '+
             'A window open for the other group leaves it grey — that is correct.';
@@ -335,7 +359,7 @@ window.StatsPresence = (function () {
         st.innerHTML='This device cannot reach the register just now. If the button has not turned red a minute after your instructor opens the window, say so in the room — they can mark you by hand.';
       }else{
         btn.className='pres-btn';btn.disabled=true;btn.innerHTML='Presence not open';
-        st.innerHTML=(now&&now.mod)
+        st.innerHTML=(now&&now.mod&&isHeld(sess))
           ? 'The last window (<b>'+esc(lbl())+'</b>) is <b>closed</b>. If you were in the room and missed it, tell your instructor — they can mark you from the register.'
           : 'Your instructor opens this in the room. It turns red when you can press it.';
       }
@@ -438,7 +462,7 @@ window.StatsPresence = (function () {
       var held=0,here=0,segs='',labs='',missed=[];
       list.forEach(function(x,i){
         var w=weeks[i];
-        var run=!!(x&&!x.error&&(x.openedAt||x.closedAt));   /* never opened = never held */
+        var run=isHeld(x&&!x.error?x:null);   /* no marks = it never happened */
         var on=run&&!!(x.marks&&x.marks[a.sid]);
         var cls,tip;
         if(!run){ cls='u'; tip=esc(w.name)+' — not held yet'; }
@@ -475,7 +499,7 @@ window.StatsPresence = (function () {
      only way the whole _presence node is readable at all. */
   function summary(root,grp){
     var p=(root&&root._presence)||{};
-    var ids=Object.keys(p).filter(function(k){var s=p[k];return s&&(s.openedAt||s.closedAt||s.open);});
+    var ids=Object.keys(p).filter(function(k){var s=p[k];return s&&(s.open||anyMarks(s));});
     function order(id){var m=/^w(\d+)/.exec(id);return m?parseInt(m[1],10):999;}
     ids.sort(function(a,b){return order(a)-order(b)||a.localeCompare(b);});
     var sessions=ids.map(function(id){

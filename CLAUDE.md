@@ -257,6 +257,18 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   register. `/shared/admin2.html` grows a column per session automatically —
   opt-in via `"presence"` in the course's `features`; any cell is clickable to
   correct the register by hand, because somebody always arrives late.
+- ⚠ **A session counts as HELD when somebody was marked at it — not when a
+  window was once opened.** Opening and closing is two clicks and gets done by
+  accident; a two-second stray window on `w2-g2` (16 Sep 2026) made week 2
+  “held” for the whole Wednesday group, so every student's term bar went red
+  and their week page told them they had missed a session that never happened.
+  `isHeld()` in `presence.js` and `anyMarks()` in `admin2.html` are the one
+  rule: marks, and not currently open. A window open *right now* still counts —
+  that is the one you are watching fill up — and a student is never “absent”
+  from it. An opened-and-closed window with no marks is an **empty window**:
+  the dashboard names it under the register rather than hiding it, because if
+  it *was* a real session then presence is broken for that room, which is the
+  most important thing on the page. Never go back to `openedAt || closedAt`.
 - **Opening and closing lives in the dashboard, never on a student page.**
   `admin2.html` → Presence tab has the session picker and the Open/Close button,
   and writes both nodes with the dashboard's own signed-in token. The course page
