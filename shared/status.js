@@ -13,7 +13,7 @@
       A page can also name the course explicitly, for folders that are
       not a data-course namespace:
 
-        <script>window.COURSE_STATUS_ID='sustainable-finance';</script>
+        <script>window.COURSE_STATUS_ID='<script>window.COURSE_STATUS_ID='sustainable-finance';</script>lt;the-archived-course-id<script>window.COURSE_STATUS_ID='sustainable-finance';</script>gt;';</script>
 
    2. On the root catalogue — CourseStatus.decorate() marks archived
       cards and, in development, warns in the console when courses.json

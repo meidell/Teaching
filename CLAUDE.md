@@ -20,10 +20,14 @@ Database (`teaching-70f1c`), namespaced per course.
 ```
 /                     root catalogue page, built from courses.json
 /courses.json         ← single source of truth for every course
+/assets/              site-wide images that belong to no course — today just the
+                      root catalogue's og-image.png. A course's own images live in
+                      the course folder; nothing loose at the web root
 /shared/              the shared runtime (see §3)
 /track.js             site-wide pageview logger (loaded by ~190 pages)
 /<course>/            one folder per course; see §4
-/<School>/<course>/   some courses sit under a school folder — HEG, Kalaidos, UMEF.
+/<School>/<course>/   most courses sit under a school folder — HEG, SUMAS, UMEF, ESM, GBS,
+                      Kalaidos.
                       `dir` in courses.json carries the full path either way
 ```
 
@@ -56,7 +60,7 @@ students have the links bookmarked and the LMS points at them. Set `status:"arch
 add `supersededBy:"<new-id>"`, set `listed:false`, and add to its pages:
 
 ```html
-<script>window.COURSE_STATUS_ID="sustainable-finance";</script>
+<script>window.COURSE_STATUS_ID="<the-archived-course-id>";</script>
 <script src="/shared/status.js" defer></script>
 ```
 
@@ -68,7 +72,7 @@ the closest thing to a build-time check this repo has.
 ## 3. The shared runtime — `/shared/`
 
 Always loaded by **absolute** path (`/shared/x.js`), never relative, so it resolves the
-same from `/omba401/week3.html` and `/ideas-e1410/session1.html`.
+same from `/SUMAS/omba401/week3.html` and `/ideas-e1410/session1.html`.
 
 | File | Does |
 |---|---|
@@ -956,10 +960,21 @@ trusts. The two are not the same thing and one cannot replace the other.
   course-local ones. The `digital banking` folder has a space in it — always URL-encode
   it as `Kalaidos/digital%20banking` in hrefs.
 - **A course folder may be nested one level under a school** (`HEG/statistics`,
-  `Kalaidos/digital banking`, `UMEF/negotiation`). `dir` is the path from the web
-  root, so `encodeURI(COURSE.dir)` still builds the right link — it leaves `/`
-  alone. A page inside a nested course reaches the root catalogue with
+  `SUMAS/omba401`, `Kalaidos/digital banking`, `UMEF/umef407`). `dir` is the
+  path from the web root, so `encodeURI(COURSE.dir)` still builds the right link —
+  it leaves `/` alone. A page inside a nested course reaches the root catalogue with
   `../../index.html`, not `../index.html`.
+- ⚠ **Eight courses moved under their school folder in Sept 2026** — `omba401`,
+  `ombafr455` and `wind` into `SUMAS/`, `umef407` into `UMEF/`, `macro` into the
+  new `ESM/`, and `blockchain`, `fintech` and `foresight` into the new `GBS/` —
+  and the old root folders were deleted outright, with no redirect stub. So
+  **every LMS link, QR code and student bookmark pointing at the old root paths
+  now 404s** until the links are updated in the LMS by hand. `ns` and `keyPrefix`
+  were **not** touched, so no student's saved progress moved.
+- ⚠ **`sustainable-finance` was deleted in Sept 2026**, folder and registry entry
+  both — so the archived-course machinery below now has **no live example** in
+  this repo, and the 2025 edition's old links 404 rather than landing on the
+  banner pointing at OMBAFR455.
 - **Theme via CSS variables.** A page's `<style>` should contain layout that is genuinely
   unique to it. Shared layout belongs in `/shared/lesson.css` or `/shared/homework.css`;
   colours belong in `/shared/themes/<theme>.css`. A new week page links a theme plus its
