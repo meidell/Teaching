@@ -268,6 +268,18 @@ a.btn{text-decoration:none;display:inline-block;}
   font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;}
 .chipbtn:hover{border-color:var(--accent-line);}
 .chipbtn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.chipbtn .gn{opacity:.6;font-weight:800;margin-left:3px;}
+.grpchips{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.gsep{width:1px;height:20px;background:var(--line);display:inline-block;}
+/* which room a student is in — a tint, not a shout: it is on every row */
+.gpill{display:inline-block;border-radius:5px;padding:2px 7px;font-size:10.5px;font-weight:800;
+  letter-spacing:.4px;background:var(--wash);color:var(--ink2);border:1px solid var(--line);}
+.gpill.gg2{background:var(--accent-pale);color:var(--accent);border-color:var(--accent-line);}
+.ghead{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:18px 0 6px;}
+.ghead h4{font-size:14px;font-weight:800;color:var(--ink);}
+.ghead .m{font-size:12px;color:var(--grey);}
+.gmove{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 0 14px;font-size:12px;color:var(--grey);}
+.gmove .btn{padding:4px 10px;font-size:12px;}
 .tblwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:auto;
   max-height:74vh;box-shadow:var(--shadow);}
 table.roster{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;}
@@ -458,6 +470,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
     <button class="chipbtn" data-quick="quiet">Gone quiet</button>
     <button class="chipbtn" data-quick="behind">Falling behind</button>
     <button class="chipbtn" data-quick="none">Never started</button>
+    <span class="grpchips" id="grpChips"></span>
     <span class="sp" style="flex:1"></span>
     <span class="muted" id="rosterCount"></span>
   </div>
@@ -488,6 +501,8 @@ table.roster th.r,table.roster td.r{text-align:right;}
 var DB=window.CourseConfig.DB;
 var REG=null,COURSE=null,MODULES=[],NS='',ROOT=null,ROWS=[],PROJECT=null;
 var QUICK='all',FILTER='',SORT='keeping',SORTDIR=1,QUIZ_ALL=false,PJ_FIELD='';
+var GRPSEL='';      /* roster: '' = both groups · 'g2' = Wednesday only */
+var PRESGRP='';     /* presence: which room the Open/Close button acts on */
 function $(id){return document.getElementById(id);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -595,8 +610,9 @@ async function load(){
     for(var sid in ROOT){
       if(!ROOT.hasOwnProperty(sid)||sid.charAt(0)==='_')continue;
       var n=ROOT[sid]||{};
-      ROWS.push({sid:sid,name:n.name||sid,node:n,mod:n.mod||{},ts:lastSeen(n)});
+      ROWS.push({sid:sid,name:n.name||sid,node:n,mod:n.mod||{},ts:lastSeen(n),grp:''});
     }
+    ROWS.forEach(function(r){r.grp=grpOfSid(r.sid);});
   }
   computeExpected();
   LIVE=projLive();
@@ -912,17 +928,72 @@ function wireJumps(el){
 function hasRoster(){return !!(ROOT&&ROOT._roster);}
 function rosterOf(sid){return (ROOT&&ROOT._roster&&ROOT._roster[sid])||null;}
 
+/* ---------------------------------------------------------------- */
+/* SUBGROUPS — one cohort, taught twice                              */
+/* ---------------------------------------------------------------- */
+/* A course with a `groups` block in courses.json is ONE class taught in
+   two rooms on two days. Everything below is a no-op for every other
+   course, because GRPS() is empty and each branch short-circuits.
+
+   The session id carries the group: the FIRST group keeps the bare
+   module id (`w3`) and the others are suffixed (`w3-g2`). That is what
+   makes the split free — every mark taken before the split is a bare
+   `wN` and stays exactly where it was, in the first group's register.
+
+   A student's group is read from their own node (`<ns>/<sid>/grp`),
+   falling back to the roster copy written at registration, falling back
+   to the first group. That last fallback is the whole migration: the
+   cohort that registered before the split has no `grp` and is Monday. */
+function GRPS(){return (COURSE&&COURSE.groups)||[];}
+function hasGroups(){return GRPS().length>1;}
+function defGrp(){var G=GRPS();return G.length?G[0].id:'';}
+function grpMeta(id){var G=GRPS();for(var i=0;i<G.length;i++)if(G[i].id===id)return G[i];return null;}
+function grpLabel(id){var g=grpMeta(id);return g?(g.label||g.id):(id||'—');}
+function grpShort(id){var g=grpMeta(id);return g?(g.short||g.label||g.id):(id||'—');}
+function sesId(mod,grp){return (hasGroups()&&grp&&grp!==defGrp())?(mod+'-'+grp):mod;}
+function sesGrp(id){var m=/^(.+)-(g\d+)$/.exec(id);return (m&&grpMeta(m[2]))?m[2]:defGrp();}
+function sesMod(id){var m=/^(.+)-(g\d+)$/.exec(id);return (m&&grpMeta(m[2]))?m[1]:id;}
+function grpOfSid(sid){
+  if(!hasGroups())return '';
+  var n=(ROOT&&ROOT[sid])||null, r=rosterOf(sid);
+  var g=(n&&n.grp)||(r&&r.grp)||'';
+  return grpMeta(g)?g:defGrp();
+}
+function grpRows(grp){
+  if(!hasGroups()||!grp)return ROWS.slice();
+  return ROWS.filter(function(r){return r.grp===grp;});
+}
+/* Moving a student between rooms. The roster copy is create-once in the
+   rules and can never be rewritten, so the student's own node is the one
+   that counts — and it is what login.js re-reads on every load, so the
+   move reaches their device by itself. Marks already taken stay where
+   they are: they are attached to a session, not to a person. */
+async function setGrp(sid,grp){
+  var url=DB+'/'+NS+'/'+encodeURIComponent(sid)+'/grp.json'+(await authQ());
+  var r=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(grp)});
+  if(!r.ok)throw new Error('The database refused the write (HTTP '+r.status+').');
+  if(ROOT&&ROOT[sid])ROOT[sid].grp=grp;
+  ROWS.forEach(function(x){if(x.sid===sid)x.grp=grp;});
+}
+function grpChip(grp){
+  return '<span class="gpill g'+esc(grp)+'">'+esc(grpShort(grp))+'</span>';
+}
+
 function visibleRows(){
   var q=FILTER.trim().toLowerCase();
   var set=ROWS;
   if(QUICK==='quiet')  set=quietList();
   else if(QUICK==='behind')set=behindList();
   else if(QUICK==='none')  set=neverList();
+  /* after the quick lists, not before: each of them rebuilds the set from
+     ROWS, so filtering first would be thrown away */
+  if(hasGroups()&&GRPSEL)set=set.filter(function(s){return s.grp===GRPSEL;});
   if(q)set=set.filter(function(s){return s.name.toLowerCase().indexOf(q)>=0;});
   var a=set.slice();
   a.sort(function(x,y){
     var v=0;
     if(SORT==='name')v=x.name.localeCompare(y.name);
+    else if(SORT==='group')v=String(x.grp).localeCompare(String(y.grp))||x.name.localeCompare(y.name);
     else if(SORT==='recent')v=y.ts-x.ts;
     else if(SORT==='time')v=totalSecs(y.node)-totalSecs(x.node);
     else if(SORT==='course')v=coursePct(y.node)-coursePct(x.node);
@@ -936,6 +1007,7 @@ function visibleRows(){
 function hasProj(){return !!(PROJECT&&projTotal());}
 function buildHead(){
   var h='<th class="nm" data-sort="name">Student</th>'+
+        (hasGroups()?'<th class="c" data-sort="group" title="Which of the two sessions they attend">Group</th>':'')+
         (hasProj()?'<th class="c" data-sort="keeping" title="Written, against the sections the course has reached">Keeping up</th>':'')+
         '<th class="c" data-sort="course">'+(hasProj()?'Course':'Progress')+'</th>'+
         '<th class="c" title="Mean of self-check scores">Self-check</th>'+
@@ -952,7 +1024,26 @@ function buildHead(){
     });
   });
 }
+/* Two rooms, so "the cohort" is an ambiguous word on this page. The chips
+   make which one you are reading explicit, and the count next to each is
+   the answer to "did everyone pick a group". */
+function renderGrpChips(){
+  var el=$('grpChips'); if(!el)return;
+  if(!hasGroups()){el.innerHTML='';return;}
+  el.innerHTML='<span class="gsep"></span>'+
+    [{id:'',label:'Both groups'}].concat(GRPS().map(function(g){
+      return {id:g.id,label:(g.label||g.id)};
+    })).map(function(g){
+      var n=g.id?grpRows(g.id).length:ROWS.length;
+      return '<button class="chipbtn'+(GRPSEL===g.id?' on':'')+'" data-grp="'+esc(g.id)+'">'+
+             esc(g.label)+' <span class="gn">'+n+'</span></button>';
+    }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('[data-grp]'),function(b){
+    b.addEventListener('click',function(){GRPSEL=b.getAttribute('data-grp');renderRoster();});
+  });
+}
 function renderRoster(){
+  renderGrpChips();
   buildHead();
   var rows=visibleRows();
   $('empty').style.display=rows.length?'none':'block';
@@ -973,6 +1064,7 @@ function renderRoster(){
     var r=rosterOf(s.sid);
     return '<tr data-sid="'+esc(s.sid)+'">'+
       '<td class="nm">'+esc(s.name)+(totalDone(s.node)===0?'<span class="tagq">not started</span>':'')+'</td>'+
+      (hasGroups()?'<td class="c">'+grpChip(s.grp)+'</td>':'')+
       (hasProj()?'<td class="c"><span class="kp '+kc+'">'+k+'%</span></td>':'')+
       '<td class="c">'+(hasProj()?coursePct(s.node)+'%':'<span class="kp '+kc+'">'+k+'%</span>')+'</td>'+
       '<td class="c">'+(av==null?'<span class="dim">—</span>':Math.round(av*100)+'%')+'</td>'+
@@ -1043,13 +1135,26 @@ function openDrawer(sid){
   /* presence — 20% of the grade, so the record belongs on the student and not
      only in the register. Missed sessions are named: "why is my mark 60%" is
      the question this answers, and the tags are clickable to correct it. */
+  if(hasGroups()){
+    /* Somebody always registers in the wrong room. The move writes their own
+       node, which is the copy login.js re-reads, so it reaches their device
+       on their next page load with nothing for them to do. Marks already
+       taken do not move: they belong to a session, not to a person. */
+    h+='<div class="gmove">Group: <b style="color:var(--ink)">'+esc(grpLabel(s.grp))+'</b>'+
+       GRPS().filter(function(g){return g.id!==s.grp;}).map(function(g){
+         return '<button class="btn" data-move="'+esc(g.id)+'">Move to '+esc(g.label||g.id)+'</button>';
+       }).join('')+'<span id="dMoveMsg"></span></div>';
+  }
+
   if(hasPresence()){
-    var PS=presSessions();
+    /* their own room's sessions — a week the other group sat is not a week
+       this student missed */
+    var PS=presSessions(hasGroups()?s.grp:'');
     if(PS.length){
       var were=PS.filter(function(x){return !!x.marks[sid];});
       var miss=PS.filter(function(x){return !x.marks[sid];});
       var rate=Math.round(were.length/PS.length*100);
-      h+='<div class="dsec">Presence · '+were.length+' of '+PS.length+
+      h+='<div class="dsec">Presence'+(hasGroups()?' · '+esc(grpLabel(s.grp)):'')+' · '+were.length+' of '+PS.length+
          ' <span class="drate '+(rate>=80?'ok':rate>=50?'mid':'low')+'">'+rate+'%</span></div>'+
         '<div class="dpres">'+PS.map(function(x){
            var on=!!x.marks[sid];
@@ -1109,6 +1214,17 @@ function openDrawer(sid){
     t.addEventListener('click',function(){
       presToggle(sid,t.getAttribute('data-ses'),t.getAttribute('data-on')!=='1')
         .then(function(){openDrawer(sid);});
+    });
+  });
+  Array.prototype.forEach.call($('dBody').querySelectorAll('[data-move]'),function(b){
+    b.addEventListener('click',async function(){
+      var to=b.getAttribute('data-move');
+      if(!confirm('Move '+s.name+' to the '+grpLabel(to)+' group?\n\n'+
+                  'Their presence is then recorded in that room. Marks already taken stay where they are.'))return;
+      b.disabled=true;b.textContent='Moving…';
+      try{ await setGrp(sid,to); renderRoster(); renderPresence(); openDrawer(sid); }
+      catch(e){ var m=$('dMoveMsg'); if(m)m.innerHTML=' <b style="color:var(--bad)">'+esc(e.message||e)+'</b>';
+                b.disabled=false;b.textContent='Move to '+grpLabel(to); }
     });
   });
   $('drawer').classList.add('on');$('drawer').setAttribute('aria-hidden','false');
@@ -1233,12 +1349,17 @@ function renderSolutions(){
     });
   });
 }
-function presSessions(){
+/* Sessions held. With subgroups, ALWAYS ask for one group: a register that
+   mixes the two rooms gives every student a rate out of twice the sessions
+   they were ever invited to. */
+function presSessions(grp){
   var p=(ROOT&&ROOT._presence)||{};
   var ids=Object.keys(p).filter(function(k){var x=p[k];return x&&(x.openedAt||x.closedAt||x.open);});
-  function ord(id){var m=/^w(\d+)/.exec(id);return m?parseInt(m[1],10):999;}
+  function ord(id){var m=/^w(\d+)/.exec(sesMod(id));return m?parseInt(m[1],10):999;}
   ids.sort(function(a,b){return ord(a)-ord(b)||a.localeCompare(b);});
-  return ids.map(function(id){var x=p[id]||{};return {id:id,label:x.label||id,open:!!x.open,marks:x.marks||{}};});
+  if(hasGroups()&&grp)ids=ids.filter(function(id){return sesGrp(id)===grp;});
+  return ids.map(function(id){var x=p[id]||{};
+    return {id:id,mod:sesMod(id),grp:sesGrp(id),label:x.label||id,open:!!x.open,marks:x.marks||{}};});
 }
 async function presToggle(sid,session,on){
   var url=DB+'/'+NS+'/_presence/'+encodeURIComponent(session)+'/marks/'+encodeURIComponent(sid)+'.json'+(await authQ());
@@ -1259,42 +1380,75 @@ async function presToggle(sid,session,on){
    Two nodes move together — the session itself, and the public pointer that
    tells a student's browser which window is accepting marks. Both need the
    signed-in account; an anonymous PATCH comes back 401. -------------------- */
-function presSessionList(){
+function presSessionList(grp){
   var n=(COURSE&&COURSE.presenceSessions)||0, out=[], seen={};
   for(var i=1;i<=n;i++){
-    var id='w'+i, m=MODULES.filter(function(x){return x.id===id;})[0];
-    out.push({id:id,label:m?(m.label||id):('Week '+i)}); seen[id]=1;
+    var mod='w'+i, id=sesId(mod,grp), m=MODULES.filter(function(x){return x.id===mod;})[0];
+    var lab=m?(m.label||mod):('Week '+i);
+    out.push({id:id,mod:mod,label:lab,full:hasGroups()?(lab+' · '+grpLabel(grp)):lab}); seen[id]=1;
   }
   /* anything already opened that is not in that range still belongs here */
-  presSessions().forEach(function(x){ if(!seen[x.id])out.push({id:x.id,label:x.label}); });
+  presSessions(grp).forEach(function(x){
+    if(!seen[x.id])out.push({id:x.id,mod:x.mod,label:x.label,full:x.label});
+  });
   return out;
 }
-async function presSetWindow(mod,label,on){
+/* `ses` is the session id (already carrying the group), `mod` the module it
+   belongs to. The public pointer is per group — `_presence_now/<grp>` —
+   because both rooms can have a window open on the same afternoon and a
+   student must never be shown the other one's. It is PATCHed, not PUT, so
+   opening Monday does not wipe Wednesday's pointer; the same PATCH clears
+   the pre-split flat keys, which would otherwise sit there for ever
+   claiming a window is open. */
+async function presSetWindow(ses,mod,label,on,grp){
   var t=Date.now(), body={open:!!on,label:label};
   body[on?'openedAt':'closedAt']=t;
   var q=await authQ();
-  var a=await fetch(DB+'/'+NS+'/_presence/'+encodeURIComponent(mod)+'.json'+q,
+  var a=await fetch(DB+'/'+NS+'/_presence/'+encodeURIComponent(ses)+'.json'+q,
         {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(a.status===401)throw new Error('Not signed in — use the 🔑 button, then try again.');
   if(!a.ok)throw new Error('The session refused the write (HTTP '+a.status+').');
+  var ptr={mod:mod,label:label,open:!!on,ts:t};
+  var payload;
+  if(hasGroups()){
+    payload={};
+    payload[grp||defGrp()]=ptr;
+    ['mod','label','open','ts'].forEach(function(k){payload[k]=null;});  /* drop the pre-split pointer */
+  }else payload=ptr;
   var b=await fetch(DB+'/'+NS+'/_presence_now.json'+q,
-        {method:'PUT',headers:{'Content-Type':'application/json'},
-         body:JSON.stringify({mod:mod,label:label,open:!!on,ts:t})});
+        {method:'PATCH',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify(payload)});
   if(!b.ok)throw new Error('The window is '+(on?'open':'closed')+', but the pointer node was refused — student buttons may take up to 20s.');
   if(!ROOT._presence)ROOT._presence={};
-  if(!ROOT._presence[mod])ROOT._presence[mod]={};
-  ROOT._presence[mod].open=!!on; ROOT._presence[mod].label=label;
-  ROOT._presence[mod][on?'openedAt':'closedAt']=t;
+  if(!ROOT._presence[ses])ROOT._presence[ses]={};
+  ROOT._presence[ses].open=!!on; ROOT._presence[ses].label=label;
+  ROOT._presence[ses][on?'openedAt':'closedAt']=t;
 }
 var PRESMSG='';
+/* The control is per room. Picking the group FIRST, and before the week, is
+   deliberate: it is the mistake that cannot be undone from the room — a
+   window opened on the wrong group marks the wrong register, and thirty
+   students press a button that records nothing for them. */
 function presControl(){
-  var list=presSessionList(); if(!list.length)return '';
-  var openNow=presSessions().filter(function(x){return x.open;})[0];
-  var held={}; presSessions().forEach(function(x){held[x.id]=x.open?'open':'held';});
-  var sel=PRESSEL||(openNow?openNow.id:(list.filter(function(x){return !held[x.id];})[0]||list[0]).id);
+  if(hasGroups()&&!grpMeta(PRESGRP))PRESGRP=defGrp();
+  var grp=hasGroups()?PRESGRP:'';
+  var list=presSessionList(grp); if(!list.length)return '';
+  var mine=presSessions(grp);
+  var openNow=mine.filter(function(x){return x.open;})[0];
+  var held={}; mine.forEach(function(x){held[x.id]=x.open?'open':'held';});
+  var sel=PRESSEL;
+  if(!sel||!list.some(function(x){return x.id===sel;}))
+    sel=(openNow?openNow.id:(list.filter(function(x){return !held[x.id];})[0]||list[0]).id);
   PRESSEL=sel;
   var isOpen=!!(openNow&&openNow.id===sel);
+  /* a window open in the OTHER room is worth saying out loud — it is how you
+     notice you left one running */
+  var elsewhere=hasGroups()?presSessions().filter(function(x){return x.open&&x.grp!==grp;}):[];
   return '<div class="presctl">'+
+    (hasGroups()?'<select id="presGrp" title="Which of the two sessions you are running">'+
+      GRPS().map(function(g){
+        return '<option value="'+esc(g.id)+'"'+(g.id===grp?' selected':'')+'>'+esc(g.label||g.id)+' group</option>';
+      }).join('')+'</select>':'')+
     '<select id="presSel">'+list.map(function(x){
       var h=held[x.id];
       return '<option value="'+esc(x.id)+'"'+(x.id===sel?' selected':'')+'>'+esc(x.label)+
@@ -1303,29 +1457,35 @@ function presControl(){
     '<button class="btn '+(isOpen?'danger':'primary')+'" id="presBtn">'+
       (isOpen?'■ Close the window':'▶ Open the window')+'</button>'+
     '<span class="muted">'+(isOpen
-      ? 'Students can press their button now.'
+      ? 'The <b>'+esc(grpLabel(grp))+'</b> room can press their button now.'
       : 'Say “go”, then press Open.')+'</span>'+
+    (elsewhere.length?'<div class="preserr" style="color:var(--ink2);background:var(--wash)">'+
+      '● Still open in the other room: <b>'+elsewhere.map(function(x){return esc(x.label);}).join(' · ')+
+      '</b> ('+esc(grpLabel(elsewhere[0].grp))+'). Switch the group above to close it.</div>':'')+
     (PRESMSG?'<div class="preserr">'+PRESMSG+'</div>':'')+
     '</div>';
 }
 var PRESSEL=null;
 
-function renderPresence(){
-  var el=$('presenceCard');
-  if(!hasPresence()){el.style.display='none';PRES_N=0;return;}
-  var S=presSessions();PRES_N=S.length;
-  el.style.display='block';
-  if(!S.length){
-    el.innerHTML='<h3 id="presence">Presence</h3>'+
-      '<div class="sub">No session has been held yet. Pick one and open the window \u2014 every student\u2019s button turns red within a few seconds, and a column appears here.</div>'+
-      presControl();
-    wirePresControl();
-    presPollTune();
-    return;
-  }
-  var rows=byName(), held=S.length;
+/* ONE TABLE PER ROOM. With two groups this is not a display preference: a
+   student's rate is their marks over the sessions THEIR GROUP held, and a
+   single table with thirty columns would divide by both rooms' sessions and
+   hand every student a mark of about half. So the register is rendered per
+   group, over that group's students and that group's sessions, and each has
+   its own CSV. Courses with no groups get exactly one block, unchanged. */
+function presBlock(grp){
+  var S=presSessions(grp), rows=byName();
+  if(hasGroups())rows=rows.filter(function(r){return r.grp===grp;});
+  var held=S.length;
+  var title=hasGroups()
+    ? '<div class="ghead"><h4>'+esc(grpLabel(grp))+' group</h4>'+
+      '<span class="m">'+held+' session'+(held===1?'':'s')+' held · '+rows.length+' student'+(rows.length===1?'':'s')+'</span></div>'
+    : '';
+  if(!held)return title+'<div class="sub" style="margin-bottom:8px">No session held for this group yet.</div>';
+  if(!rows.length)return title+'<div class="sub" style="margin-bottom:8px">Nobody is in this group yet — '+
+    'students choose when they register, and the ones who signed up before the split are in '+esc(grpLabel(defGrp()))+'.</div>';
   var head='<tr><th class="nm">Student</th>'+S.map(function(x){
-      return '<th title="'+esc(x.label)+'">'+esc(x.id.toUpperCase())+(x.open?'<br><span class="live">live</span>':'')+'</th>';
+      return '<th title="'+esc(x.label)+'">'+esc(x.mod.toUpperCase())+(x.open?'<br><span class="live">live</span>':'')+'</th>';
     }).join('')+'<th>Present</th><th>Rate</th></tr>';
   var body=rows.map(function(r){
     var here=0;
@@ -1340,31 +1500,57 @@ function renderPresence(){
   var totals='<tr><td class="nm"><b>In the room</b></td>'+S.map(function(x){
       var n=0;for(var k in x.marks)n++;return '<td class="tot">'+n+'</td>';}).join('')+
       '<td class="tot">\u2014</td><td class="tot">\u2014</td></tr>';
-  el.innerHTML='<h3 id="presence">Presence</h3>'+
-    '<div class="sub">One column per session held. <b>20% of the grade, pro rata</b> \u2014 the rate column is the mark. '+
-    'Students press the button in the room while you have the window open; click any cell here to correct it by hand.</div>'+
-    presControl()+
-    '<div class="presbar"><button class="btn" id="bPresCsv">\u2b07 Presence CSV</button>'+
+  return title+
+    '<div class="presbar"><button class="btn" data-pcsv="'+esc(grp||'')+'">\u2b07 Presence CSV</button>'+
     '<span class="muted">'+held+' session'+(held>1?'s':'')+' held \u00b7 '+rows.length+' students</span></div>'+
     '<div class="wrapx"><table class="pres"><thead>'+head+'</thead><tbody>'+body+totals+'</tbody></table></div>';
+}
+function presCsv(grp){
+  var S=presSessions(grp), rows=byName(), held=S.length;
+  if(hasGroups())rows=rows.filter(function(r){return r.grp===grp;});
+  var lines=[['Student'].concat(hasGroups()?['Group']:[]).concat(S.map(function(x){return x.mod;}))
+             .concat(['Present','Held','Rate %']).join(',')];
+  rows.forEach(function(r){
+    var here=0;
+    var cs=S.map(function(x){var on=!!x.marks[r.sid];if(on)here++;return on?'1':'0';});
+    lines.push(['"'+String(r.name).replace(/"/g,'""')+'"'].concat(hasGroups()?[grpLabel(grp)]:[])
+      .concat(cs).concat([here,held,held?Math.round(here/held*100):0]).join(','));
+  });
+  var b=new Blob([lines.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download=NS+'-presence'+(hasGroups()?'-'+grp:'')+'.csv';a.click();
+}
+function renderPresence(){
+  var el=$('presenceCard');
+  if(!hasPresence()){el.style.display='none';PRES_N=0;return;}
+  var ALL=presSessions();PRES_N=ALL.length;
+  el.style.display='block';
+  if(!ALL.length){
+    el.innerHTML='<h3 id="presence">Presence</h3>'+
+      '<div class="sub">No session has been held yet. '+
+      (hasGroups()?'Pick the room you are standing in, then the week, and open the window \u2014 only that group\u2019s buttons turn red.'
+                  :'Pick one and open the window \u2014 every student\u2019s button turns red within a few seconds, and a column appears here.')+'</div>'+
+      presControl();
+    wirePresControl();
+    presPollTune();
+    return;
+  }
+  var blocks=hasGroups()?GRPS().map(function(g){return presBlock(g.id);}).join(''):presBlock('');
+  el.innerHTML='<h3 id="presence">Presence</h3>'+
+    '<div class="sub">One column per session held. <b>20% of the grade, pro rata</b> \u2014 the rate column is the mark. '+
+    'Students press the button in the room while you have the window open; click any cell here to correct it by hand.'+
+    (hasGroups()?' The class is taught twice, so there is one register per room and each rate is out of that room\u2019s sessions.':'')+'</div>'+
+    presControl()+blocks;
   Array.prototype.forEach.call(el.querySelectorAll('.pcell'),function(c){
     c.addEventListener('click',function(){
       presToggle(c.getAttribute('data-sid'),c.getAttribute('data-ses'),c.getAttribute('data-on')!=='1');
     });
   });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-pcsv]'),function(b){
+    b.addEventListener('click',function(){presCsv(b.getAttribute('data-pcsv'));});
+  });
   wirePresControl();
   presPollTune();
-  $('bPresCsv').addEventListener('click',function(){
-    var lines=[['Student'].concat(S.map(function(x){return x.id;})).concat(['Present','Held','Rate %']).join(',')];
-    byName().forEach(function(r){
-      var here=0;
-      var cs=S.map(function(x){var on=!!x.marks[r.sid];if(on)here++;return on?'1':'0';});
-      lines.push(['"'+String(r.name).replace(/"/g,'""')+'"'].concat(cs).concat([here,held,Math.round(here/held*100)]).join(','));
-    });
-    var b=new Blob([lines.join('\n')],{type:'text/csv'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(b);
-    a.download=NS+'-presence.csv';a.click();
-  });
 }
 
 /* ---------- keeping the register live -------------------------------
@@ -1402,15 +1588,19 @@ function presPollTune(){
 }
 
 function wirePresControl(){
-  var sl=$('presSel'), bt=$('presBtn'); if(!sl||!bt)return;
+  var sl=$('presSel'), bt=$('presBtn'), gs=$('presGrp'); if(!sl||!bt)return;
+  if(gs)gs.addEventListener('change',function(){
+    PRESGRP=gs.value;PRESSEL=null;PRESMSG='';renderPresence();   /* the week list is the other room's now */
+  });
   sl.addEventListener('change',function(){PRESSEL=sl.value;PRESMSG='';renderPresence();});
   bt.addEventListener('click',function(){
-    var list=presSessionList(), cur=list.filter(function(x){return x.id===PRESSEL;})[0];
+    var grp=hasGroups()?PRESGRP:'';
+    var list=presSessionList(grp), cur=list.filter(function(x){return x.id===PRESSEL;})[0];
     if(!cur)return;
-    var openNow=presSessions().filter(function(x){return x.open;})[0];
+    var openNow=presSessions(grp).filter(function(x){return x.open;})[0];
     var willOpen=!(openNow&&openNow.id===PRESSEL);
     bt.disabled=true;bt.textContent=willOpen?'Opening…':'Closing…';PRESMSG='';
-    presSetWindow(cur.id,cur.label,willOpen)
+    presSetWindow(cur.id,cur.mod,cur.full||cur.label,willOpen,grp)
       .then(function(){PRESMSG='';},function(e){PRESMSG=esc(e.message||e);})
       .then(function(){renderPresence();renderTabs();});
   });
@@ -1573,14 +1763,15 @@ function renderAll(){
 /* ---------------------------------------------------------------- */
 function csv(v){v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function exportCSV(){
-  var head=['name','student_id','keeping_up_pct','course_pct','selfcheck_pct','total_sections','total_time_min','last_seen'];
+  var head=['name','student_id'].concat(hasGroups()?['group']:[]).concat(['keeping_up_pct','course_pct','selfcheck_pct','total_sections','total_time_min','last_seen']);
   MODULES.forEach(function(m){head.push(m.id+'_done');head.push(m.id+'_total');head.push(m.id+'_score');});
   if(PROJECT)projSections().forEach(function(s){head.push('sec'+s.id+'_filled');head.push('sec'+s.id+'_total');});
   var lines=[head.join(',')];
   visibleRows().forEach(function(s){
     var av=avgScore(s.node);
-    var r=[s.name,s.sid,keeping(s),coursePct(s.node),av==null?'':Math.round(av*100),
-           totalDone(s.node),Math.round(totalSecs(s.node)/60),s.ts?new Date(s.ts).toISOString():''];
+    var r=[s.name,s.sid].concat(hasGroups()?[grpLabel(s.grp)]:[]).concat(
+          [keeping(s),coursePct(s.node),av==null?'':Math.round(av*100),
+           totalDone(s.node),Math.round(totalSecs(s.node)/60),s.ts?new Date(s.ts).toISOString():'']);
     MODULES.forEach(function(m){var c=s.mod[m.id];r.push(c?doneCount(c):0);r.push(c?(c.total||0):0);r.push(c&&c.score?c.score:'');});
     if(PROJECT)projCounts(s.node).forEach(function(c){r.push(c.filled);r.push(c.total);});
     lines.push(r.map(csv).join(','));
@@ -1639,6 +1830,7 @@ function selectCourse(id){
   NS=COURSE.ns||'';MODULES=COURSE.modules||[];
   PROJECT=(COURSE.project&&COURSE.project.sections&&COURSE.project.sections.length)?COURSE.project:null;
   PJ_FIELD='';QUICK='all';FILTER='';$('filter').value='';
+  GRPSEL='';PRESGRP='';PRESSEL=null;PRESMSG='';   /* a group belongs to one course */
   try{localStorage.setItem('jem_admin_last',id);}catch(e){}
   applyTheme(REG.themes&&REG.themes[COURSE.theme]);
   var t=REG.themes&&REG.themes[COURSE.theme];
