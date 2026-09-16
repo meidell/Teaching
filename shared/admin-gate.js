@@ -5,7 +5,7 @@
      <script src="/shared/admin-gate.js"></script>
      AdminGate.mount({
        brand: 'OMBA401 · INSTRUCTOR',
-       logo:  '/omba401/sumas-logo.png',
+       logo:  '/SUMAS/omba401/sumas-logo.png',
        theme: CourseConfig.get('omba401').theme,
        onUnlock: start
      });
