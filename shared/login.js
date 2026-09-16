@@ -26,6 +26,23 @@
 
    Opt out of the automatic prompt on a page with:
      <script>window.COURSE_LOGIN_AUTO=false;</script>
+
+   SUBGROUPS. A course whose config.js entry carries `groups` is one
+   cohort taught twice a week in two rooms. A student registering for the
+   first time must pick their group; it is written to
+
+     <ns>/<sid>/grp        authoritative — the instructor can change it
+     <ns>/_roster/<sid>.grp  a copy, taken at registration
+
+   and cached in the auth blob. The node is authoritative because the
+   roster is create-once in the database rules: nobody, instructor
+   included, can rewrite _roster/<sid>, so a student who picks the wrong
+   group could never be moved. `mergeDown` re-reads `grp` on every load,
+   so a move made in the dashboard reaches the student silently.
+
+   A missing `grp` is the FIRST group in the list, not "unknown" — that is
+   what makes the whole cohort that registered before the split land in
+   group 1 with no migration.
    ===================================================================== */
 window.CourseLogin = (function () {
   "use strict";
@@ -54,6 +71,10 @@ window.CourseLogin = (function () {
       nofind:"No account under that name. Check the spelling — use exactly the name you registered with — or start under “First time”.",
       bad:"That code doesn't match. Lost it? Your instructor can look it up.",
       needName:"Please enter your first and last name.",
+      grpL:"Which group are you in?",
+      grpN:"Group",
+      grpHelp:"Pick the session you actually attend — your presence is recorded in that room. Tell your instructor if you need to change it later.",
+      needGrp:"Please choose your group.",
       needBoth:"Enter your name and your six-digit code.",
       net:"Network problem — try again in a moment.",
       merged:"Signed in. Bringing your progress across…"
@@ -74,6 +95,10 @@ window.CourseLogin = (function () {
       nofind:"Aucun compte à ce nom. Vérifiez l'orthographe — utilisez exactement le nom d'inscription — ou passez par « Première fois ».",
       bad:"Ce code ne correspond pas. Perdu ? Votre professeur peut le retrouver.",
       needName:"Veuillez entrer votre prénom et votre nom.",
+      grpL:"Dans quel groupe êtes-vous ?",
+      grpN:"Groupe",
+      grpHelp:"Choisissez la séance à laquelle vous assistez — votre présence est enregistrée dans cette salle. Prévenez votre enseignant si elle doit changer.",
+      needGrp:"Veuillez choisir votre groupe.",
       needBoth:"Entrez votre nom et votre code à six chiffres.",
       net:"Problème de réseau — réessayez dans un instant.",
       merged:"Connecté. Récupération de votre progression…"
@@ -81,6 +106,19 @@ window.CourseLogin = (function () {
   };
   function L(){ var l=document.documentElement.getAttribute('data-lang');
                 return STR[(l==='fr'||l==='en')?l:(C.lang==='fr'?'fr':'en')]; }
+
+  /* ---- subgroups ------------------------------------------------------
+     GROUPS is [] for every course that has none, and every branch below
+     short-circuits on that, so this file behaves exactly as it did for
+     omba401, e1410 and the rest. */
+  var GROUPS = (C.groups && C.groups.length) ? C.groups : [];
+  function hasGroups(){ return GROUPS.length > 1; }
+  function defGroup(){ return GROUPS.length ? GROUPS[0].id : ''; }
+  function groupOf(id){
+    for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].id===id) return GROUPS[i];
+    return GROUPS.length?GROUPS[0]:null;                 /* unknown = the default */
+  }
+  function groupLabel(id){ var g=groupOf(id); return g?(g.label||g.id):''; }
 
   function san(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -97,9 +135,18 @@ window.CourseLogin = (function () {
     return (a&&a.sid)?a:null;
   }
   function saveAuth(a){
+    if(hasGroups()&&!a.grp)a.grp=defGroup();
     var j=JSON.stringify(a);
     try{localStorage.setItem(K+'_auth',j);localStorage.setItem(K+'_name',a.name);localStorage.setItem(K+'_sid',a.sid);}catch(e){}
     setCookie(K+'_auth',j);setCookie(K+'_name',a.name);setCookie(K+'_sid',a.sid);
+  }
+  /* The group recorded on the server wins over the one cached here, so an
+     instructor moving a student between rooms takes effect on their next
+     load without them doing anything. */
+  function setGroup(g){
+    var a=auth(); if(!a||!g||a.grp===g)return;
+    a.grp=g; saveAuth(a);
+    try{ document.dispatchEvent(new CustomEvent('course-group',{detail:{grp:g}})); }catch(e){}
   }
   function logout(){
     try{localStorage.removeItem(K+'_auth');}catch(e){}
@@ -116,6 +163,7 @@ window.CourseLogin = (function () {
     return get(sid).then(function(node){
       if(!node)return false;
       var changed=false;
+      if(hasGroups()&&node.grp)setGroup(node.grp);
       var mods=node.mod||{};
       Object.keys(mods).forEach(function(mod){
         var m=mods[mod]||{};
@@ -189,6 +237,13 @@ window.CourseLogin = (function () {
     'color:'+T.ink+';font:15px "Helvetica Neue",Arial,sans-serif;padding:11px 13px;margin-bottom:12px;}'+
     '#cl-box input:focus{outline:none;border-color:'+T.main+';}'+
     '#cl-code{text-align:center;letter-spacing:10px;font-size:20px;}'+
+    '.cl-grps{display:flex;gap:8px;margin:0 0 6px;}'+
+    '.cl-grp{flex:1;background:'+T.surface+';border:1.5px solid '+T.main+'33;border-radius:12px;padding:11px 8px;'+
+    'cursor:pointer;text-align:center;color:'+T.ink+';font:700 14px "Helvetica Neue",Arial,sans-serif;}'+
+    '.cl-grp .n{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:'+T.grey+';font-weight:800;margin-bottom:2px;}'+
+    '.cl-grp.on{background:'+T.main+';border-color:'+T.main+';color:#fff;}'+
+    '.cl-grp.on .n{color:#fff;opacity:.85;}'+
+    '.cl-ghelp{font-size:11.5px;color:'+T.grey+';line-height:1.45;text-align:left;margin:0 0 12px;}'+
     '#cl-go{width:100%;background:'+T.main+';color:#fff;border:none;border-radius:30px;padding:12px;'+
     'font:bold 13px "Helvetica Neue",Arial,sans-serif;cursor:pointer;}'+
     '#cl-later{display:block;margin:12px auto 0;color:'+T.grey+';font-size:12px;cursor:pointer;background:none;border:none;}'+
@@ -206,7 +261,8 @@ window.CourseLogin = (function () {
     var a=auth(), t=L();
     var p=document.getElementById('cl-pill');
     if(!p){p=document.createElement('div');p.id='cl-pill';document.body.appendChild(p);p.addEventListener('click',open);}
-    if(a){p.className='';p.textContent='👤 '+a.name+t.synced;}
+    if(a){p.className='';
+          p.textContent='👤 '+a.name+(hasGroups()?' · '+groupLabel(a.grp):'')+t.synced;}
     else{p.className='unset';p.textContent=t.pill;}
   }
 
@@ -222,6 +278,8 @@ window.CourseLogin = (function () {
         '<div class="cl-tabs"><button class="cl-tab on" id="cl-tnew"></button><button class="cl-tab" id="cl-tback"></button></div>'+
         '<div id="cl-form">'+
           '<label for="cl-name" id="cl-nameL"></label><input id="cl-name" autocomplete="name">'+
+          '<div id="cl-grpwrap"><label id="cl-grpL"></label><div class="cl-grps" id="cl-grps"></div>'+
+            '<div class="cl-ghelp" id="cl-ghelp"></div></div>'+
           '<div id="cl-codewrap"><label for="cl-code" id="cl-codeL"></label><input id="cl-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>'+
           '<button id="cl-go"></button><div id="cl-err"></div>'+
           '<button id="cl-later"></button>'+
@@ -245,6 +303,21 @@ window.CourseLogin = (function () {
     document.getElementById('cl-name').placeholder=t.nameP;
     document.getElementById('cl-code').placeholder=t.codeP;
     document.getElementById('cl-later').textContent=t.later;
+    if(hasGroups()){
+      document.getElementById('cl-grpL').textContent=t.grpL;
+      document.getElementById('cl-ghelp').textContent=t.grpHelp;
+      var box=document.getElementById('cl-grps');
+      if(!box.childNodes.length){
+        box.innerHTML=GROUPS.map(function(g){
+          return '<button type="button" class="cl-grp" data-grp="'+esc(g.id)+'">'+
+                 '<span class="n">'+esc(g.n?(t.grpN+' '+g.n):'')+'</span>'+esc(g.label||g.id)+'</button>';
+        }).join('');
+        Array.prototype.forEach.call(box.querySelectorAll('[data-grp]'),function(b){
+          b.addEventListener('click',function(){ pickGroup(b.getAttribute('data-grp')); });
+        });
+      }
+      paintGroup();
+    }
     setMode(mode);
     m.classList.add('on');
     setTimeout(function(){document.getElementById('cl-name').focus();},50);
@@ -255,10 +328,25 @@ window.CourseLogin = (function () {
     document.getElementById('cl-tnew').classList.toggle('on',x==='new');
     document.getElementById('cl-tback').classList.toggle('on',x==='back');
     document.getElementById('cl-codewrap').style.display=(x==='back')?'block':'none';
+    /* Only a NEW student chooses. Coming back with a code, the group is
+       whatever the register says — asking again would let a student move
+       themselves out of the room they are marked absent in. */
+    document.getElementById('cl-grpwrap').style.display=(hasGroups()&&x==='new')?'block':'none';
     document.getElementById('cl-go').textContent=(x==='back')?t.back:t.go;
     document.getElementById('cl-err').textContent='';
   }
   function err(m){document.getElementById('cl-err').textContent=m;}
+
+  /* Nothing is pre-selected: a default here would quietly put half the
+     Wednesday room in the Monday register. */
+  var pickedGrp=null;
+  function pickGroup(g){ pickedGrp=g; paintGroup(); err(''); }
+  function paintGroup(){
+    var box=document.getElementById('cl-grps'); if(!box)return;
+    Array.prototype.forEach.call(box.querySelectorAll('[data-grp]'),function(b){
+      b.classList.toggle('on',b.getAttribute('data-grp')===pickedGrp);
+    });
+  }
 
   function submit(){
     var t=L();
@@ -272,6 +360,7 @@ window.CourseLogin = (function () {
         if(!rec||!rec.pass){err(t.nofind);return;}
         if(String(rec.pass)!==code){err(t.bad);return;}
         var a={sid:sid,name:rec.name||name,pass:code};
+        if(hasGroups())a.grp=rec.grp||defGroup();   /* mergeDown may correct it from the node */
         saveAuth(a);
         err(t.merged);
         mergeDown(sid).then(function(ch){
@@ -282,16 +371,26 @@ window.CourseLogin = (function () {
       return;
     }
     if(!name||name.indexOf(' ')<0||sid.length<3){err(t.needName);return;}
+    if(hasGroups()&&!pickedGrp){err(t.needGrp);return;}
     err('…');
     get('_roster/'+sid).then(function(existing){
       if(existing&&existing.pass){ setMode('back'); err(t.dupe); return; }
       var pass=String(Math.floor(100000+Math.random()*900000)), ts=Date.now();
-      return Promise.all([
-        put('_roster/'+sid,{name:name,pass:pass,ts:ts}),
+      var grp=hasGroups()?pickedGrp:null;
+      var rec={name:name,pass:pass,ts:ts};
+      if(grp)rec.grp=grp;
+      var writes=[
+        put('_roster/'+sid,rec),
         put(sid+'/name',name), put(sid+'/sid',sid),
         put(sid+'/createdAt',ts), put(sid+'/updatedAt',ts)
-      ]).then(function(){
+      ];
+      /* The node, not the roster, is where the group is read from: the
+         roster is create-once in the rules, so this copy can never be
+         corrected, and the node can. */
+      if(grp)writes.push(put(sid+'/grp',grp));
+      return Promise.all(writes).then(function(){
         var a={sid:sid,name:name,pass:pass};
+        if(grp)a.grp=grp;
         saveAuth(a);
         showCode(a);
         if(window.StatsTrack&&window.StatsTrack.setIdentity)window.StatsTrack.setIdentity(name,sid);
@@ -306,7 +405,9 @@ window.CourseLogin = (function () {
     var d=document.getElementById('cl-done');
     d.style.display='block';
     d.innerHTML='<div class="cl-pass"><div class="t">'+esc(t.madeH)+'</div><div class="v">'+esc(a.pass)+'</div>'+
-                '<p>'+esc(t.madeP)+'</p></div>'+
+                '<p>'+esc(t.madeP)+'</p>'+
+                (hasGroups()&&a.grp?'<p style="margin-top:9px;opacity:.9">'+esc(t.grpL)+' <b>'+esc(groupLabel(a.grp))+'</b></p>':'')+
+                '</div>'+
                 '<button id="cl-close" style="margin-top:14px;width:100%;background:'+T.main+';color:#fff;border:none;'+
                 'border-radius:30px;padding:12px;font:bold 13px \'Helvetica Neue\',Arial,sans-serif;cursor:pointer">OK</button>';
     document.getElementById('cl-close').addEventListener('click',function(){
@@ -329,5 +430,8 @@ window.CourseLogin = (function () {
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 
-  return { open:open, logout:logout, current:auth, sync:mergeDown };
+  return { open:open, logout:logout, current:auth, sync:mergeDown,
+           groups:function(){return GROUPS.slice();},
+           group:function(){var a=auth();return hasGroups()?((a&&a.grp)||defGroup()):'';},
+           groupLabel:groupLabel };
 })();

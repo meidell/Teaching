@@ -40,7 +40,13 @@ window.CourseConfig = (function () {
              changing it would orphan their saved progress.
      login — the course is on the shared roster (name + personal code, so a
              student resumes on any device). false = the older name-box
-             identity, where progress lives on one device only. */
+             identity, where progress lives on one device only.
+     groups— the course is ONE cohort taught in two (or more) subgroups: same
+             material, same week, different room. Omit it and nothing in the
+             runtime changes. THE FIRST ENTRY IS THE DEFAULT — a student
+             registered before the split has no group recorded and is read as
+             that one, and its presence sessions keep the bare module id, so
+             no mark already taken moves. */
   var COURSES = {
     "omba401":   { ns:"omba401",   theme:"sumas", lang:"en", login:true,
                    label:"OMBA401 · Quantitative Methods" },
@@ -51,7 +57,9 @@ window.CourseConfig = (function () {
     "umef407":   { ns:"umef407",   theme:"umef",  lang:"en", login:true,
                    label:"UMEF407 · Digital Innovation" },
     "statistics":{ ns:"statistics",theme:"heg",   lang:"en", login:true, key:"stats",
-                   label:"HEG · Applied Statistics" },
+                   label:"HEG · Applied Statistics",
+                   groups:[{id:"g1",label:"Monday",short:"Mon",n:1},
+                           {id:"g2",label:"Wednesday",short:"Wed",n:2}] },
     "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" }
   };
@@ -103,6 +111,7 @@ window.CourseConfig = (function () {
       lang:   c.lang || "en",
       label:  c.label || id,
       login:  !!c.login,
+      groups: c.groups || null,
       theme:  THEMES[c.theme] || THEMES.navy,
       themeName: c.theme,
       str:    STR[c.lang] || STR.en

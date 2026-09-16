@@ -36,15 +36,58 @@
 
      StatsPresence.mount({el, mod, label})   student button + instructor control
      StatsPresence.summary(root)             {sessions:[…], byStudent:{…}}
+
+   TWO SUBGROUPS, ONE CLASS. The cohort is taught twice a week — Monday
+   (g1) and Wednesday (g2) — so a week is TWO sessions and a student may
+   only mark themselves in their own. The session id carries the group:
+
+       w3       Monday      the default group keeps the bare module id
+       w3-g2    Wednesday
+
+   That is why g1 must stay first in `groups` and keep its id: every mark
+   recorded before the split is a bare `wN`, and it stays valid, in the
+   Monday register, with no migration. A student's group is read from
+   their own node (`<ns>/<sid>/grp`, cached in the auth blob by login.js);
+   no group recorded means the first group, which is what puts everyone
+   who registered before the split in Monday.
+
+   `_presence_now` is likewise per group — `{g1:{…}, g2:{…}}` — because
+   both rooms can have a window open on the same day and a student must
+   never see the other room's. The old flat `{mod,label,open,ts}` is still
+   read, as the default group's pointer, so nothing breaks mid-term.
    ===================================================================== */
 window.StatsPresence = (function () {
   "use strict";
   var DB = "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS = "statistics";
 
+  /* Kept here as well as in /shared/config.js and /courses.json because this
+     file is loaded BEFORE config.js on the hub — CourseConfig is preferred
+     when it happens to be there. Three copies is two too many; if you add a
+     group, change all three. */
+  var GROUPS=[{id:'g1',label:'Monday',short:'Mon',n:1},
+              {id:'g2',label:'Wednesday',short:'Wed',n:2}];
+  function groups(){
+    try{
+      var c=window.CourseConfig&&CourseConfig.get&&CourseConfig.get('statistics');
+      if(c&&c.groups&&c.groups.length)return c.groups;
+    }catch(e){}
+    return GROUPS;
+  }
+  function defGrp(){return groups()[0].id;}
+  function grpOf(id){var G=groups();for(var i=0;i<G.length;i++)if(G[i].id===id)return G[i];return G[0];}
+  function grpLabel(id){var g=grpOf(id);return g?(g.label||g.id):'';}
+
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem('stats_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}
+  /* the group this device is in — unknown is the default group, never "none" */
+  function myGrp(){var a=auth();return (a&&a.grp)||defGrp();}
+  /* module id + group → session id. The default group keeps the bare id. */
+  function sesId(mod,grp){
+    grp=grp||myGrp();
+    return (grp&&grp!==defGrp())?(mod+'-'+grp):mod;
+  }
   function node(mod){return DB+'/'+NS+'/_presence/'+encodeURIComponent(mod);}
 
   function css(){
@@ -89,6 +132,8 @@ window.StatsPresence = (function () {
     '.pres-mine .pm-lgd i.n{background:var(--accent);}'+
     '.pres-mine .pm-lgd i.u{background:repeating-linear-gradient(45deg,#eef1f5,#eef1f5 3px,#e4e8ee 3px,#e4e8ee 6px);}'+
     '.pres-mine .pm-f{font-size:11.5px;}'+
+    '.pres-grp{display:inline-block;margin-left:8px;background:var(--navy,#002C46);color:#fff;border-radius:20px;'+
+      'padding:2px 9px;font-size:10px;letter-spacing:1px;font-weight:800;vertical-align:1px;}'+
     '.pres-mini b{color:var(--accent-deep);}';
     document.head.appendChild(s);
   }
@@ -121,13 +166,22 @@ window.StatsPresence = (function () {
     var p=PEOPLE&&PEOPLE[sid];
     return (p&&p.n)||sid.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
   }
-  function readNow(){
+  /* One read, both shapes. `_presence_now` is now {g1:{…}, g2:{…}} — one
+     pointer per room — but a flat {mod,label,open,ts} left over from before
+     the split is still honoured, as the default group's pointer. Reading the
+     parent rather than `_presence_now/<grp>` costs the same one request and
+     survives either shape. */
+  function readNow(grp){
+    grp=grp||myGrp();
     return fetch(nowUrl()+'.json').then(function(r){
       if(!r.ok)throw new Error('HTTP '+r.status);
       return r.json();
     }).then(function(j){
       if(j&&j.error)throw new Error(j.error);
-      return j||null;
+      if(!j)return null;
+      if(j[grp])return j[grp];
+      if(j.mod&&grp===defGrp())return j;      /* pre-split pointer */
+      return null;
     });
   }
   /* w1…w15 — the fifteen taught sessions. Week 16 is the exam and is not
@@ -151,10 +205,15 @@ window.StatsPresence = (function () {
     if(!el)return;
     css();
     var a=auth(), state=null, timer=null, fails=0, blocked=false;
+    /* This week is taught twice. The button watches — and writes to — the
+       session of the group this student belongs to, and nothing else. */
+    var grp=myGrp(), ses=sesId(mod,grp);
 
     el.className='pres';
-    el.innerHTML='<h4>Presence · this session</h4>'+
-      '<div class="pd" id="presWhy">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens this button in the room; press it once while it is red.</div>'+
+    el.innerHTML='<h4>Presence · this session'+(a?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
+      '<div class="pd" id="presWhy">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens this button in the room; press it once while it is red. '+
+      (a?'You are in the <b>'+esc(grpLabel(grp))+'</b> group, so only that session\u2019s window turns it red.'
+        :'The class is taught twice, Monday and Wednesday — sign in and this will say which group you are in.')+'</div>'+
       '<button class="pres-btn" id="presBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="presState"></div>'+
       '';
@@ -188,7 +247,8 @@ window.StatsPresence = (function () {
         btn.className='pres-btn';btn.disabled=true;btn.innerHTML='Presence not open';
         st.innerHTML=(state&&state.closedAt)
           ? 'The window for this session is <b>closed</b>. If you were in the room and missed it, tell your instructor — they can mark you from the dashboard.'
-          : 'Your instructor opens this in the room. It turns red when you can press it.';
+          : 'Your instructor opens this in the room. It turns red when you can press it. '+
+            'A window open for the other group leaves it grey — that is correct.';
       }
     }
 
@@ -197,7 +257,7 @@ window.StatsPresence = (function () {
       var t=Date.now();
       state.marks=state.marks||{};state.marks[a.sid]=t;
       paint();
-      fetch(node(mod)+'/marks/'+encodeURIComponent(a.sid)+'.json',
+      fetch(node(ses)+'/marks/'+encodeURIComponent(a.sid)+'.json',
         {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(t)})
         .catch(function(){ st.innerHTML='Could not reach the server — tell your instructor, they can mark you by hand.'; });
     }
@@ -205,7 +265,7 @@ window.StatsPresence = (function () {
 
     function pull(){
       if(document.hidden)return;
-      fetch(node(mod)+'.json').then(function(r){
+      fetch(node(ses)+'.json').then(function(r){
         if(!r.ok)throw new Error('HTTP '+r.status);
         return r.json();
       }).then(function(j){
@@ -238,11 +298,14 @@ window.StatsPresence = (function () {
     var now=null, sess=null, selSess=null, blocked=false, fails=0, instMsg='';
     var scanning=false, lastScan=0;
     var weeks=allWeeks();
+    var grp=myGrp();
 
     el.className='pres';
     el.innerHTML=
-      '<h4>Presence · this session</h4>'+
-      '<div class="pd">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens the window in the room; press the button once while it is red.</div>'+
+      '<h4>Presence · this session'+(a?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
+      '<div class="pd">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens the window in the room; press the button once while it is red.'+
+      (a?' You are in the <b>'+esc(grpLabel(grp))+'</b> group — only that room\u2019s window opens this button. If that is the wrong day, tell your instructor: they can move you.'
+         :' The class is taught twice, Monday and Wednesday; sign in and this card will say which group you are in.')+'</div>'+
       '<button class="pres-btn" id="hubBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="hubState"></div>'+
       '<div id="hubMine"></div>'+
@@ -283,7 +346,7 @@ window.StatsPresence = (function () {
       var t=Date.now();
       sess=sess||{};sess.marks=sess.marks||{};sess.marks[a.sid]=t;
       paint();
-      fetch(node(m)+'/marks/'+encodeURIComponent(a.sid)+'.json',
+      fetch(node(sesId(m,grp))+'/marks/'+encodeURIComponent(a.sid)+'.json',
         {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(t)})
         .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);})
         .catch(function(){st.innerHTML='Could not reach the server — tell your instructor, they can mark you by hand.';});
@@ -292,14 +355,48 @@ window.StatsPresence = (function () {
 
     function pull(){
       if(document.hidden)return Promise.resolve();
-      return readNow().then(function(j){
+      return readNow(grp).then(function(j){
         fails=0;blocked=false;scanning=false;now=j;
         var m=(j&&j.mod)?j.mod:null;
         if(!m){sess=null;return;}
-        return fetch(node(m)+'.json').then(function(r){return r.ok?r.json():null;})
+        return fetch(node(sesId(m,grp))+'.json').then(function(r){return r.ok?r.json():null;})
           .then(function(k){sess=(k&&!k.error)?k:null;});
       }).then(function(){paint();})
       .catch(function(){return scan();});
+    }
+
+    /* ---- the fallback, for when `_presence_now` cannot be read ----------
+       That happens exactly once: when this course's rules block has not been
+       deployed yet, so the pointer is refused while the session nodes are
+       not. Ask each published session of THIS GROUP in turn and take the
+       first that reports itself open — fifteen small requests instead of
+       one, so it is throttled to once every 20 s however often pull() runs.
+       Presence is then slower, never broken.
+
+       ⚠ This function was referenced and never defined: every failed pull
+       threw a ReferenceError out of the catch, which is the opposite of a
+       fallback. */
+    function scan(){
+      var t=Date.now();
+      if(scanning||(t-lastScan)<20000){paint();return Promise.resolve();}
+      scanning=true;lastScan=t;
+      var list=weeks.length?weeks:allWeeks();
+      return Promise.all(list.map(function(w){
+        return fetch(node(sesId(w.mod,grp))+'.json').then(function(r){return r.ok?r.json():null;})
+          .then(function(j){return (j&&!j.error)?{w:w,j:j}:null;},function(){return null;});
+      })).then(function(rows){
+        scanning=false;
+        var hit=null,any=false;
+        rows.forEach(function(x){
+          if(!x)return; any=true;
+          if(x.j.open&&!hit)hit=x;
+        });
+        if(!any){ if(++fails>=2)blocked=true; now=null;sess=null;paint();return; }
+        fails=0;blocked=false;
+        now=hit?{mod:hit.w.mod,label:hit.j.label||hit.w.name,open:true,ts:hit.j.openedAt||t}:null;
+        sess=hit?hit.j:null;
+        paint();
+      },function(){scanning=false;if(++fails>=2)blocked=true;paint();});
     }
 
     paint();
@@ -330,8 +427,11 @@ window.StatsPresence = (function () {
   function mine(el){
     var a=auth(); if(!el||!a)return;
     var weeks=allWeeks(); if(!weeks.length)return;   /* w1…w15 — the exam is not a session */
+    /* A week the OTHER group sat is not a session this student missed, so
+       every id here carries their group. */
+    var grp=myGrp();
     Promise.all(weeks.map(function(w){
-      return fetch(node(w.mod)+'.json').then(function(r){
+      return fetch(node(sesId(w.mod,grp))+'.json').then(function(r){
         return r.ok?r.json():null;
       }).catch(function(){return null;});
     })).then(function(list){
@@ -352,14 +452,14 @@ window.StatsPresence = (function () {
          A student who has missed one of two sessions is at 50% and panicking;
          seeing thirteen grey weeks ahead is the honest context for that. */
       el.innerHTML='<div class="pres-mine">'+
-        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> session'+(held===1?'':'s')+
+        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> '+esc(grpLabel(grp))+' session'+(held===1?'':'s')+
           ' held so far'+(held?'<span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span>':'')+'</div>'+
         '<div class="pm-bar">'+segs+'</div>'+
         '<div class="pm-x">'+labs+'</div>'+
         '<div class="pm-lgd"><span><i class="y"></i>Present</span><span><i class="n"></i>Missed</span>'+
           '<span><i class="u"></i>Still to come</span></div>'+
         '<div class="pm-f">'+(!held
-          ? 'No session has been held yet — the bar fills as the term goes on.'
+          ? 'No '+esc(grpLabel(grp))+' session has been held yet — the bar fills as the term goes on.'
           : (missed.length
             ? 'Not marked for: <b>'+missed.map(esc).join(' · ')+'</b>. If you were in the room, tell your instructor — they can correct the register.'
             : 'Nothing missed so far.'))+
@@ -373,7 +473,7 @@ window.StatsPresence = (function () {
      sessions in week order and each student's marks. No extra request — and
      it is the INSTRUCTOR's fetch, made with a signed-in token, which is the
      only way the whole _presence node is readable at all. */
-  function summary(root){
+  function summary(root,grp){
     var p=(root&&root._presence)||{};
     var ids=Object.keys(p).filter(function(k){var s=p[k];return s&&(s.openedAt||s.closedAt||s.open);});
     function order(id){var m=/^w(\d+)/.exec(id);return m?parseInt(m[1],10):999;}
@@ -381,10 +481,14 @@ window.StatsPresence = (function () {
     var sessions=ids.map(function(id){
       var s=p[id]||{},n=0;
       for(var k in (s.marks||{}))n++;
-      return {id:id,label:s.label||id,open:!!s.open,openedAt:s.openedAt||0,closedAt:s.closedAt||0,marks:s.marks||{},count:n};
+      var m=/^(w\d+)(?:-(g\d+))?$/.exec(id);
+      return {id:id,mod:m?m[1]:id,grp:(m&&m[2])||defGrp(),
+              label:s.label||id,open:!!s.open,openedAt:s.openedAt||0,closedAt:s.closedAt||0,marks:s.marks||{},count:n};
     });
+    if(grp)sessions=sessions.filter(function(x){return x.grp===grp;});
     return {sessions:sessions, held:sessions.length};
   }
 
-  return {mount:mount, hub:hub, mine:mine, summary:summary};
+  return {mount:mount, hub:hub, mine:mine, summary:summary,
+          groups:groups, group:myGrp, groupLabel:grpLabel, sessionId:sesId};
 })();
