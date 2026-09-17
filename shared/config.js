@@ -61,7 +61,9 @@ window.CourseConfig = (function () {
                    groups:[{id:"g1",label:"Monday",short:"Mon",n:1},
                            {id:"g2",label:"Wednesday",short:"Wed",n:2}] },
     "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
-                   label:"HEG · Quantitative Methods I" }
+                   label:"HEG · Quantitative Methods I" },
+    "creator":   { ns:"creator",   theme:"gbs",   lang:"en", login:true,
+                   label:"GBS · Creator Economy & SEO 2.0" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
