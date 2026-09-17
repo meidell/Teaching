@@ -28,7 +28,7 @@
    `total` is the number of trackable steps on each session page. They are
    provisional until the page is written — set the real number when the
    page ships, in the same commit, or the bar reports a fraction of a
-   denominator that does not exist. Each session is a two-hour workshop
+   denominator that does not exist. Each session is a 1 h 45 workshop
    whose page is a run sheet plus the capture widgets (prediction, dataset
    row, artifact upload), NOT a slide deck, so the counts are small by
    design.
@@ -37,7 +37,7 @@ window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS="creator", K="creator";
   var CHAPTERS=[
-    {mod:'w1',  short:'W1', name:'Week 01 · Fifteen phones, one question',        total:5, live:false},
+    {mod:'w1',  short:'W1', name:'Week 01 · Fifteen phones, one question',        total:8, live:true, href:'week1.html'},
     {mod:'w2',  short:'W2', name:'Week 02 · Reverse-engineer a winner',           total:5, live:false},
     {mod:'w3',  short:'W3', name:'Week 03 · The intervention goes live',          total:6, live:false},
     {mod:'w4',  short:'W4', name:'Week 04 · The creator draft',                   total:5, live:false},
