@@ -31,7 +31,8 @@ window.CourseProgress=(function(){
     /* ---------------- FALL SEMESTER ---------------- */
     {mod:'w1',    short:'W1', name:'Fall W1 · Leveling up, functions and graphs',        total:9, live:true, href:'week1.html'},
     {mod:'w1-hw', short:'HW1',name:'Fall W1 · Homework — the ten printed problems', total:11,live:true,href:'week1-homework.html'},
-    {mod:'w2',    short:'W2', name:'Fall W2 · Operations on functions',                  total:8, live:false},
+    {mod:'w2',    short:'W2', name:'Fall W2 · Operations on functions',                  total:8, live:true, href:'week2.html'},
+    {mod:'w2-hw', short:'HW2',name:'Fall W2 · Homework — the twelve printed problems', total:12,live:true,href:'week2-homework.html'},
     {mod:'w3',    short:'W3', name:'Fall W3 · Lines, parabolas and systems',             total:8, live:false},
     {mod:'w4',    short:'W4', name:'Fall W4 · Rate of change and the derivative',        total:8, live:false},
     {mod:'w5',    short:'W5', name:'Fall W5 · Differentiation rules',                    total:8, live:false},
