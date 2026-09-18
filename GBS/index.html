@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Geneva Business School · Jan Erik Meidell</title>
+<meta name="description" content="Every course Jan Erik Meidell teaches at Geneva Business School, in one place — this term's cohort courses and the open ones you can work through any time.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<style>
+/* =====================================================================
+   GBS · school landing page.  The first school-level page in this repo —
+   /HEG/, /SUMAS/, /UMEF/, /ESM/ and /Kalaidos/ have nothing equivalent
+   yet, so if one is wanted later this is the template.
+
+   ⚠ EVERY CARD IS RENDERED FROM /courses.json. There is no second list
+   here and there must never be one: adding a GBS course to the registry
+   makes a card appear, and nothing on this page needs editing. That is
+   the whole reason it reads the registry instead of copying the root
+   catalogue's hand-written cards — six courses kept in sync by hand is
+   how a link rots.
+
+   ⚠ THIS PAGE DELIBERATELY SHOWS `listed:false` COURSES. creator, bi and
+   finmod are cohort courses and are unlisted on the public root
+   catalogue by design; the point of this page is to reach them, so it
+   shows them under a heading that says who they are for. The safeguard
+   is that THIS PAGE IS NOT LINKED FROM THE ROOT CATALOGUE — it is a URL
+   you hand out, exactly like the course links themselves, and it carries
+   `noindex` so it does not turn up in a search. If it is ever linked
+   from the root, the cohort courses become publicly advertised, which is
+   the thing `listed:false` exists to prevent.
+
+   ⚠ THE FILTER IS `school === 'GBS' || dir starts with 'GBS/'`. Both
+   halves are load-bearing. `blockchain`, `foresight` and `fintech` were
+   moved under GBS/ in Sept 2026 and their `school` field was left null
+   until this page was built — the dir half is what would have caught
+   that, and what will catch the next course whose `school` is forgotten.
+
+   ⚠ TWO REGISTRY SHAPES FOR "HOW BIG IS IT". The older courses carry
+   `moduleCount` (a number); the newer ones carry a `modules` array the
+   dashboard builds its columns from. count() reads whichever exists.
+   Do not "unify" them here — the dashboard depends on `modules`.
+
+   /shared/status.js is deliberately NOT loaded. Its decorate() matches
+   `a.course-card` hrefs against each course's root-relative `home`,
+   which these relative hrefs would never match, and its localhost drift
+   warning would then fire for every listed course in the whole repo.
+   This page has the registry in hand and badges archived courses itself.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:"Avenir Next","Avenir","Nunito Sans",Arial,sans-serif;color:var(--ink);background:var(--surface);line-height:1.6;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-weight:800;letter-spacing:-.2px;color:var(--navy);}
+
+/* the bar the white logotype sits on — see shared/themes/gbs.css */
+.nav{position:sticky;top:0;z-index:50;background:var(--navy-surface);border-bottom:1px solid rgba(255,255,255,.12);padding:10px 18px;display:flex;align-items:center;gap:12px;}
+.nav img{height:30px;width:auto;}
+.nav .navright{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.nav .tag{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.72);font-weight:800;white-space:nowrap;}
+.nav a.up{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8);text-decoration:none;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 11px;white-space:nowrap;}
+.nav a.up:hover{border-color:var(--accent-bright);color:#fff;}
+@media(max-width:640px){.nav .tag{display:none;}}
+
+.wrap{max-width:1000px;margin:0 auto;padding:40px 20px 70px;}
+.hero{text-align:center;margin-bottom:30px;}
+.eyebrow{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent-deep);font-weight:800;}
+.hero h1{font-size:clamp(30px,5.4vw,46px);line-height:1.06;margin:12px 0 10px;}
+.hero h1 em{font-style:normal;color:var(--accent-deep);}
+.hero .sub{color:var(--ink-soft);font-size:16px;max-width:66ch;margin:0 auto;}
+.hero .sub b{color:var(--ink);}
+
+.phase{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--navy);font-weight:800;margin:40px 0 4px;padding-top:14px;border-top:1px solid var(--line);}
+.phase:first-of-type{margin-top:22px;}
+.plead{font-size:13px;color:var(--grey);margin:0 0 14px;max-width:80ch;}
+.plead b{color:var(--ink-soft);}
+
+/* THE TEACHING DAY. Rendered only when two or more live courses fall on
+   the same weekday — otherwise it is a strip stating the obvious. */
+.day{background:var(--navy-surface);color:#fff;border-radius:16px;padding:20px 22px;margin:0 0 16px;box-shadow:var(--shadow);}
+.day h3{color:#fff;font-size:15.5px;margin-bottom:3px;}
+.day .dsub{font-size:12.5px;color:rgba(255,255,255,.7);margin-bottom:14px;}
+.day .slots{display:grid;gap:8px;}
+.dslot{display:grid;grid-template-columns:104px 1fr auto;gap:14px;align-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:10px 14px;text-decoration:none;}
+.dslot:hover{background:rgba(243,146,41,.16);border-color:var(--accent-bright);}
+@media(max-width:600px){.dslot{grid-template-columns:1fr;gap:3px;}}
+.dslot .dt{font-size:13px;font-weight:800;color:var(--accent-bright);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.dslot .dn{font-size:13.5px;color:#fff;font-weight:700;}
+.dslot .dl{font-size:11px;color:rgba(255,255,255,.62);white-space:nowrap;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:13px;}
+.card{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px;text-decoration:none;color:var(--ink);transition:.18s;}
+a.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow);}
+.card .top{display:flex;align-items:flex-start;gap:11px;margin-bottom:9px;}
+.card .em{font-size:26px;line-height:1;flex:none;}
+.card .hd{min-width:0;flex:1;}
+.card .kick{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--accent-deep);font-weight:800;}
+.card h3{font-size:16px;line-height:1.24;margin-top:2px;}
+.card .desc{font-size:12.5px;color:var(--ink-soft);line-height:1.5;flex:1;}
+.card .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);}
+.chip{font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--grey);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.chip.hot{color:var(--accent-deep);background:var(--accent-pale);border-color:rgba(213,133,23,.35);}
+.chip.lang{color:var(--navy);}
+.card .go{position:absolute;right:16px;bottom:14px;font-size:15px;color:var(--accent);opacity:0;transition:.18s;}
+a.card:hover .go{opacity:1;transform:translateX(3px);}
+.card.arch{background:var(--surface);}
+.card.arch h3,.card.arch .em{opacity:.62;}
+
+.empty{font-size:13px;color:var(--grey);background:#fff;border:1px dashed var(--line);border-radius:14px;padding:18px 20px;}
+.note{background:var(--accent-pale);border:1px solid rgba(213,133,23,.3);border-radius:12px;padding:12px 15px;font-size:13px;line-height:1.6;margin:16px 0 0;max-width:80ch;}
+.note b{color:var(--accent-deep);}
+.note .nt{display:block;font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent-deep);margin-bottom:5px;}
+
+/* instructor row — only drawn on a device where a dashboard is already
+   unlocked, the same test /shared/chat.html uses. A student handed this
+   link sees nothing here. It is a UI convenience, not a control: the
+   dashboards are protected by the gate and by the database rules. */
+#inst{display:none;margin-top:34px;padding-top:16px;border-top:1px solid var(--line);}
+#inst .ih{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);font-weight:800;margin-bottom:9px;}
+#inst .irow{display:flex;flex-wrap:wrap;gap:7px;}
+#inst a{font-size:12px;font-weight:700;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;text-decoration:none;}
+#inst a:hover{border-color:var(--accent);color:var(--accent-deep);}
+.foot{text-align:center;color:var(--grey);font-size:12.5px;margin-top:44px;}
+.foot a{color:var(--navy);text-decoration:none;font-weight:600;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img src="geneva-logo.svg" alt="Geneva Business School">
+  <div class="navright">
+    <a class="up" href="../index.html">← All courses</a>
+    <span class="tag">Jan Erik Meidell</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Geneva Business School</div>
+    <h1>Courses I teach at <em>GBS</em></h1>
+    <p class="sub">Everything in one place: the courses <b>running this term</b>, with the week they start and the room you meet in, and the <b>open ones</b> you can work through whenever you like. Each card goes straight to that course's own home page.</p>
+  </div>
+
+  <div id="out"></div>
+
+  <div id="inst">
+    <div class="ih">Instructor · this device is unlocked</div>
+    <div class="irow" id="instRow"></div>
+  </div>
+
+  <div class="foot">
+    © 2026 Jan Erik Meidell · Geneva Business School<br>
+    <span style="font-size:12px;"><a href="../index.html">all courses, all schools →</a></span>
+  </div>
+
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script>
+/* ---------------------------------------------------------------------
+   Render every GBS course from the registry. Nothing about a course is
+   written on this page — see the ⚠ notes in the <style> block above for
+   why, and for what the filter's two halves are each protecting against.
+   --------------------------------------------------------------------- */
+(function(){
+  var out=document.getElementById('out');
+
+  function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  /* a course's own language decides which title/desc it is shown in —
+     `fintech` is French and must not be advertised in English */
+  function pick(o,lang){ if(!o)return ''; return o[lang]||o.en||o[Object.keys(o)[0]]||''; }
+  /* the registry has two shapes for "how big is it" — see the ⚠ note */
+  function count(c){ return Array.isArray(c.modules)?c.modules.length:(typeof c.moduleCount==='number'?c.moduleCount:null); }
+  function isGBS(c){ return c.school==='GBS' || /^GBS\//.test(c.dir||''); }
+  /* `home` is root-relative ("GBS/x/index.html"); this page sits at /GBS/,
+     and <base href="/GBS/"> means a relative href resolves inside it. So
+     strip the leading GBS/ and let the base do the work — encodeURI for
+     the folders with a space in them, which leaves "/" alone. */
+  function href(c){ return encodeURI(String(c.home||'').replace(/^GBS\//,'')); }
+
+  var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DAYNAME={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
+  function firstLabel(iso){
+    if(!iso)return '';
+    var d=new Date(iso+'T12:00:00');
+    if(isNaN(d))return '';
+    return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();
+  }
+
+  function card(c){
+    var n=count(c), s=c.schedule||null, chips=[];
+    if(c.level)          chips.push('<span class="chip">'+esc(c.level)+'</span>');
+    if(c.lang)           chips.push('<span class="chip lang">'+esc(String(c.lang).toUpperCase())+'</span>');
+    if(s&&s.day&&s.time) chips.push('<span class="chip hot">'+esc((DAYNAME[s.day]||s.day)+'s '+s.time)+'</span>');
+    if(s&&s.sessions)    chips.push('<span class="chip">'+s.sessions+' sessions</span>');
+    else if(n)           chips.push('<span class="chip">'+n+' module'+(n===1?'':'s')+'</span>');
+    if(c.term)           chips.push('<span class="chip">'+esc(c.term)+'</span>');
+    if(c.status==='archived') chips.push('<span class="chip">Archived</span>');
+
+    /* the kick line is the course's own code, or nothing — naming the
+       school on the school's own page is three lines of noise. And there
+       is deliberately NO "not built yet" variant: whether a session page
+       happens to be written is an internal fact that will be untrue in a
+       week, and it is not something a student should be reading here. */
+    var kick = c.code || '';
+
+    return '<a class="card'+(c.status==='archived'?' arch':'')+'" href="'+href(c)+'">'+
+      '<div class="top">'+
+        (c.emoji?'<span class="em">'+esc(c.emoji)+'</span>':'')+
+        '<div class="hd">'+(kick?'<div class="kick">'+esc(kick)+'</div>':'')+
+        '<h3>'+esc(pick(c.title,c.lang))+'</h3></div>'+
+      '</div>'+
+      '<div class="desc">'+esc(pick(c.desc,c.lang))+'</div>'+
+      (chips.length?'<div class="chips">'+chips.join('')+'</div>':'')+
+      '<span class="go">→</span></a>';
+  }
+
+  function section(title,lead,list){
+    if(!list.length)return '';
+    return '<div class="phase">'+title+'</div>'+
+           (lead?'<p class="plead">'+lead+'</p>':'')+
+           '<div class="grid">'+list.map(card).join('')+'</div>';
+  }
+
+  /* the teaching-day strip — only when two or more live courses share a
+     weekday, because with one it says nothing the card has not said */
+  function dayStrip(live){
+    var withS=live.filter(function(c){return c.schedule&&c.schedule.day&&c.schedule.time;});
+    var byDay={};
+    withS.forEach(function(c){(byDay[c.schedule.day]=byDay[c.schedule.day]||[]).push(c);});
+    var html='';
+    Object.keys(byDay).forEach(function(day){
+      var g=byDay[day];
+      if(g.length<2)return;
+      g.sort(function(a,b){return String(a.schedule.time).localeCompare(String(b.schedule.time));});
+      var firsts=g.map(function(c){return c.schedule.first;}).filter(Boolean).sort();
+      html+='<div class="day"><h3>'+esc(DAYNAME[day]||day)+'s, '+esc(g[0].term||'')+'</h3>'+
+        '<div class="dsub">'+g.length+' courses back to back'+
+        (firsts.length?' · first one starts '+esc(firstLabel(firsts[0])):'')+'</div>'+
+        '<div class="slots">'+g.map(function(c){
+          return '<a class="dslot" href="'+href(c)+'">'+
+            '<span class="dt">'+esc(c.schedule.time)+'</span>'+
+            '<span class="dn">'+esc(pick(c.title,c.lang))+'</span>'+
+            '<span class="dl">'+esc(c.level||'')+(c.schedule.first?' · from '+esc(firstLabel(c.schedule.first)):'')+'</span>'+
+          '</a>';
+        }).join('')+'</div></div>';
+    });
+    return html;
+  }
+
+  function render(reg){
+    var all=(reg.courses||[]).filter(isGBS);
+    if(!all.length){out.innerHTML='<div class="empty">No Geneva Business School courses are in the registry yet.</div>';return;}
+
+    var live=all.filter(function(c){return c.status==='live';});
+    var open=all.filter(function(c){return c.status==='evergreen';});
+    var arch=all.filter(function(c){return c.status==='archived';});
+    /* any status we do not recognise still gets shown — a course must
+       never silently vanish from this page because of a typo in `status` */
+    var rest=all.filter(function(c){return ['live','evergreen','archived'].indexOf(c.status)<0;});
+
+    out.innerHTML =
+      (live.length?'<div class="phase">Running this term</div>'+
+        '<p class="plead">For students <b>enrolled on these courses</b>. Each one unlocks session by session as the term runs — there is nothing to read ahead, because the material is what the room produces on the day.</p>'+
+        dayStrip(live)+'<div class="grid">'+live.map(card).join('')+'</div>':'')+
+      section('Open — work through any time',
+        'No cohort, no deadlines and no sign-up. Built for GBS students and left up for anyone who finds them useful.', open)+
+      section('Also at GBS','', rest)+
+      section('Archived',
+        'Previous editions, kept online because the links are in the LMS and in people’s bookmarks. Each one points at whatever replaced it.', arch);
+
+    instructor(all);
+  }
+
+  /* dashboard shortcuts, only for a device that has already unlocked one */
+  function instructor(all){
+    if(!(window.AdminGate&&AdminGate.isUnlocked()))return;
+    var withNs=all.filter(function(c){return c.ns;});
+    if(!withNs.length)return;
+    document.getElementById('instRow').innerHTML=withNs.map(function(c){
+      return '<a href="/shared/admin2.html?course='+encodeURIComponent(c.id)+'">'+esc(c.code||c.id)+' →</a>';
+    }).join('')+'<a href="/shared/insights.html">Insights →</a>';
+    document.getElementById('inst').style.display='block';
+  }
+
+  window.CourseConfig.load().then(render).catch(function(){
+    /* the registry is a static same-origin file, so a failure here means
+       the site itself is broken. Say so and hand over the one link that
+       does not depend on it, rather than shipping a second copy of the
+       course list as a fallback. */
+    out.innerHTML='<div class="empty"><b>The course list could not be loaded.</b> '+
+      'Reload the page — and if it keeps happening, the catalogue at '+
+      '<a href="../index.html" style="color:var(--navy)">janerikmeidell.com</a> lists everything.</div>';
+  });
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
