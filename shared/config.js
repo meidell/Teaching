@@ -65,7 +65,9 @@ window.CourseConfig = (function () {
     "creator":   { ns:"creator",   theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Creator Economy & SEO 2.0" },
     "bi":        { ns:"bi",        theme:"gbs",   lang:"en", login:true,
-                   label:"GBS · Business Intelligence" }
+                   label:"GBS · Business Intelligence" },
+    "finmod":    { ns:"finmod",    theme:"gbs",   lang:"en", login:true,
+                   label:"GBS · Finance Modelling" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
