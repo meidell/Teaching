@@ -63,7 +63,9 @@ window.CourseConfig = (function () {
     "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { ns:"creator",   theme:"gbs",   lang:"en", login:true,
-                   label:"GBS · Creator Economy & SEO 2.0" }
+                   label:"GBS · Creator Economy & SEO 2.0" },
+    "bi":        { ns:"bi",        theme:"gbs",   lang:"en", login:true,
+                   label:"GBS · Business Intelligence" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
