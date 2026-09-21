@@ -498,6 +498,23 @@ listed; shared login, no class password.
   It was cut back on 21 Sep 2026. **`week1.html` still predates this** — 76
   slides against a 42-slide PDF — so trim it the same way before it is taught,
   or knowingly leave it.
+- **EXAMPLE FIRST, THEORY SECOND — on the slide, not just in the session.**
+  A first-year business cohort reads a slide top-left first, so that is where
+  the concrete goes: on a two-column slide the LEFT column is the worked case
+  with real numbers and the RIGHT is the same thing named and generalised,
+  under a red `.colh` heading. Rewritten this way in week 2: §2.2's four
+  operations (one day at XY Coffee, q = 60 → the four definitions), §2.3's
+  intercepts (read the three crossings off the curve → the definitions),
+  Properties (three things XY Coffee does → Id, associativity, ⚠ not
+  commutative), the inverse of ax + b (a CHF 3/hour + CHF 12 call-out bill →
+  the letters), and both rule lists in §2.6 (count the twos, log 1 000 → the
+  eight and seven rules). ⚠ Most of the printed deck is ALREADY example-first
+  — the cost lines before sums, the advertising chain before composition, the
+  demand curve before inverses — so this is about the handful of slides that
+  open with a definition, not a licence to restructure the deck. **It never
+  adds a slide.** See also the standing instruction above: a formula a student
+  would otherwise memorise gets derived, numbers first and then the identical
+  moves with letters.
 - **A figure on a slide is sized in `quant.css`, not inline on the `<svg>`.**
   `svgWrap()` emits `<svg class="fig">` and the rules live at the end of
   `quant.css`. The trap they fix: `.lect-body` carries a 60ch reading
