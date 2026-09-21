@@ -275,6 +275,24 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   text is still in the page source**, like every homework solution in this repo.
   The release stops a student racing ahead in class; it is not secrecy. Never
   put anything confidential in a `sol:`.
+  ⚠ **Releasing needs an ACCOUNT, not the gate** — the same lesson presence
+  learned, and qm1 after it. `_release` is instructor-token-only, so the week
+  page loads `/shared/fb-auth.js` and mints an ID token per write. Until Sept
+  2026 it was a bare `fetch` with a swallowing `.catch()` **and the local flag
+  flipped on the click rather than on the response**: the button said
+  "✓ Revealed", the instructor's own solution opened, the PUT came back 401,
+  and no student ever saw it — invisible from the front of the room, because
+  the only device that looked correct was the one doing the revealing. The
+  reveal buttons now report the *write*, and say what to do when it fails.
+  Never restore a silent catch, and never flip the flag before the response.
+  The course also carries `"releases"` in `features` now, so the dashboard's
+  Solutions tab is the fallback on a device that has never signed in; it
+  writes `_release/<mod>/_all`, which `isReleased()` honours alongside the
+  per-exercise ids. ⚠ **One PUT per exercise, never a PATCH at the module
+  node** — the rules grant `.write` at `_release/$mod/$ex` and nowhere above
+  it, so that exact path is the write the rule was written for; a multi-key
+  PATCH one level up depends on per-child evaluation, which is not a thing to
+  discover in front of a class.
 - ⚠ **ONE class, TWO subgroups — Monday (`g1`) and Wednesday (`g2`).** Declared
   in `courses.json → groups` *and* in `/shared/config.js` (the inline mirror,
   because `login.js` must not wait on a fetch) *and* in `presence.js`'s own
@@ -390,6 +408,21 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   (`COURSE_LOGIN_AUTO=false`), or it lands on top of a slide mid-lecture.
 - **Every `ans:` was verified in Python before shipping.** The answer key goes on
   a projector in front of thirty people. Do the same for any new set.
+- ⚠ **A section marked before `progress.js` has loaded never reaches the
+  database.** `markSection()` guards its write with `if(window.StatsTrack)`
+  and returns early on `progress.done[id]`, so a section completed while the
+  inline script is still parsing — before the *deferred* `/shared/progress.js`
+  defines `StatsTrack` — is written to localStorage, skipped in the DB, and
+  never retried. Week 1's 1.4 and 1.5 widgets call `markSection` from their own
+  auto-run (`draw(24)`, `run()`), so **s4 and s5 were done on every student's
+  device and missing from every student's record**: the week page said 9/9, the
+  hub said 7/9, and a student reported it in Sept 2026. `syncDoneSections()`,
+  called right after `StatsTrack.init()`, now pushes every locally-done section;
+  `complete()` has its own store and its own early return, so it is idempotent
+  and repairs an affected student the next time they open the page — no manual
+  database edit. Only `statistics/week1.html` auto-marked anything (week 2 and
+  both qm1 weeks mark nothing without interaction), but the trap is the load
+  order, not the widget: **never assume `StatsTrack` exists at parse time.**
 - **The progress denominator is `EXTRA_STEPS.length + .cl-row + .q + [data-work]`.**
   Same trap as E1410's `exercises.js`: any element added to a live week page with
   class `q` or `cl-row` or a `data-work` attribute silently lowers every

@@ -36,6 +36,22 @@
    set is open for revision.
 
      <ns>/_release/<mod>/<exId> = ts        instructor → cohort
+     <ns>/_release/<mod>/_all   = ts        the dashboard's Solutions tab
+
+   ⚠ THE GATE DECIDES WHAT IS SHOWN; THE ACCOUNT IS WHAT THE DATABASE
+   TRUSTS. `_release` is instructor-token-only in the deployed rules, so
+   the write needs a signed-in account — the gate alone is not enough.
+   This page therefore loads /shared/fb-auth.js and mints an ID token per
+   write; FBAuth picks the session up silently from IndexedDB, so it is
+   typed once per laptop on any instructor page, not once per class.
+   Until Sept 2026 this was a bare fetch with a swallowing .catch() and
+   the local flag flipped before the write returned: the button said
+   "✓ Revealed", the instructor's own solution opened, the PUT came back
+   401 and NO STUDENT EVER SAW IT. Same lesson presence learned. Never
+   restore a silent catch, and never flip the local flag on the click
+   rather than on the response. If the device is not signed in, the
+   dashboard's Solutions tab (features: "releases") releases the whole
+   session and does work.
 
    This is a soft gate on a soft flag, exactly like the rest of the
    instructor UI in this repo: it stops a student reading ahead in class,
@@ -68,34 +84,99 @@ window.StatsEx = (function () {
   function saveReleaseLocal(mod){
     try{localStorage.setItem(relKey(mod),JSON.stringify(released[mod]||{}));}catch(e){}
   }
+  /* `_all` is what the dashboard's Solutions tab writes: "every id in this
+     module". Per-exercise reveal from the deck still works alongside it. */
+  var ALL='_all';
   function isReleased(mod,id){
     if(isInstructor())return true;                     /* you always see it */
-    return !!(released[mod]&&released[mod][id]);
+    var r=released[mod];
+    return !!(r&&(r[ALL]||r[id]));
   }
   function notify(){listeners.forEach(function(f){try{f();}catch(e){}});}
 
-  /* instructor → cohort. Fire-and-forget; the local flag flips regardless,
-     so a reveal still works with no network in the room. */
+  /* instructor → cohort.
+
+     ⚠ THE GATE IS NOT A CREDENTIAL. AdminGate decides what this device
+     SHOWS; `_release` is instructor-token-only in the rules, so the write
+     needs a signed-in account. This used to be a bare fetch with a
+     swallowing .catch(), and the local flag flipped regardless — so the
+     button said "✓ Revealed", the instructor's own solution opened, the
+     PUT came back 401, and NO STUDENT EVER SAW IT. Same lesson presence
+     learned. Never restore a silent catch, and never flip the local flag
+     before the write has come back.
+
+     The token is minted per write: a session is three hours, a token
+     lasts one. FBAuth picks the session up silently from IndexedDB, so
+     it is typed once per laptop on any instructor page, not once a class. */
+  var relErr = null;
+  function releaseError(){return relErr;}
+  function token(){
+    if(!window.FBAuth||!FBAuth.restore)return Promise.resolve(null);
+    return new Promise(function(res){
+      var settled=false;
+      setTimeout(function(){if(!settled){settled=true;res(null);}},6000);
+      try{
+        FBAuth.restore(function(u){
+          if(settled)return; settled=true;
+          if(!u||!u.getIdToken){res(null);return;}
+          u.getIdToken().then(function(t){res(t||null);},function(){res(null);});
+        });
+      }catch(e){if(!settled){settled=true;res(null);}}
+    });
+  }
+  var SIGNIN_MSG='This device is not signed in, so it cannot release to the class. '+
+    'Open the dashboard (/shared/admin2.html?course=statistics), sign in with the '+
+    'instructor account once, then come back — or release the whole session from its '+
+    'Solutions tab.';
+  /* ⚠ ONE PUT PER EXERCISE, not one PATCH at the module node. The rules
+     grant .write at _release/$mod/$ex and nowhere above it, so a PUT at
+     that exact path is the write the rule was written for. A multi-key
+     PATCH one level up relies on per-child evaluation — probably fine,
+     but "probably" is not good enough for a thing that fails silently in
+     front of thirty people. A set is seven exercises; seven small PUTs
+     cost nothing and cannot be refused for the shape of the request. */
+  function pushRelease(mod,patch){
+    var ids=Object.keys(patch);
+    return token().then(function(t){
+      if(!t){relErr=SIGNIN_MSG;notify();return false;}
+      var q='.json?auth='+encodeURIComponent(t);
+      return Promise.all(ids.map(function(id){
+        return fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'/'+encodeURIComponent(id)+q,
+          {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch[id])})
+          .then(function(r){
+            if(!r.ok)throw new Error('HTTP '+r.status);
+            return r.json().catch(function(){return null;});
+          }).then(function(j){
+            if(j&&j.error)throw new Error(j.error);
+            return id;
+          });
+      })).then(function(){
+        /* only now is it true */
+        if(!released[mod])released[mod]={};
+        for(var k in patch)released[mod][k]=patch[k];
+        saveReleaseLocal(mod);relErr=null;notify();
+        return true;
+      });
+    }).catch(function(e){
+      var m=String((e&&e.message)||e);
+      relErr=(m.indexOf('401')>=0||m.indexOf('403')>=0)
+        ? 'The database refused the release ('+m+'). The signed-in account is not an '+
+          'instructor account, or the rules for statistics/_release are not deployed.'
+        : 'Could not reach the database ('+m+'). Nothing was released.';
+      notify();
+      return false;
+    });
+  }
   function release(mod,id){
-    if(!isInstructor())return false;
-    if(!released[mod])released[mod]={};
-    released[mod][id]=Date.now();
-    saveReleaseLocal(mod);
-    try{fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'/'+encodeURIComponent(id)+'.json',
-      {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())}).catch(function(){});}catch(e){}
-    notify();
-    return true;
+    if(!isInstructor())return Promise.resolve(false);
+    var p={};p[id]=Date.now();
+    return pushRelease(mod,p);
   }
   function releaseAll(mod,ids){
-    if(!isInstructor())return false;
-    if(!released[mod])released[mod]={};
+    if(!isInstructor())return Promise.resolve(false);
     var now=Date.now(),body={};
-    ids.forEach(function(id){released[mod][id]=now;body[id]=now;});
-    saveReleaseLocal(mod);
-    try{fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'.json',
-      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(){});}catch(e){}
-    notify();
-    return true;
+    ids.forEach(function(id){body[id]=now;});
+    return pushRelease(mod,body);
   }
   /* students: poll while the tab is visible. 8s is fast enough that the
      room unlocks together, cheap enough to leave running for two hours. */
@@ -152,9 +233,24 @@ window.StatsEx = (function () {
         '<span class="ei-d">Solutions below are visible to you only. Reveal releases them to the class — on their devices, within ~8 seconds.</span>'+
         '<button class="btn small" id="exRelAll">Release all '+EX.length+'</button>';
       root.appendChild(strip);
-      strip.querySelector('#exRelAll').addEventListener('click',function(){
-        if(confirm('Release all '+EX.length+' solutions to the class?'))releaseAll(mod,EX.map(function(x){return x.id;}));
+      var relMsg=document.createElement('div');relMsg.className='ei-msg';relMsg.hidden=true;
+      strip.appendChild(relMsg);
+      function relReport(ok,what){
+        relMsg.hidden=false;
+        relMsg.innerHTML=ok?('✅ '+what+' released — student devices unlock within ~8 s.')
+                           :('⚠ <b>Nothing was released.</b> '+esc(releaseError()||'The write failed.'));
+        relMsg.className='ei-msg'+(ok?' ok':' bad');
+      }
+      var allBtn=strip.querySelector('#exRelAll');
+      allBtn.addEventListener('click',function(){
+        if(!confirm('Release all '+EX.length+' solutions to the class?'))return;
+        allBtn.disabled=true;var was=allBtn.textContent;allBtn.textContent='Releasing…';
+        releaseAll(mod,EX.map(function(x){return x.id;})).then(function(ok){
+          allBtn.disabled=false;allBtn.textContent=was;
+          relReport(ok,'All '+EX.length);
+        });
       });
+      mount._relReport=relReport;
     }
 
     var cards={};
@@ -234,7 +330,15 @@ window.StatsEx = (function () {
       }
       c.querySelectorAll('[data-act]').forEach(function(btn){btn.addEventListener('click',function(){
         var act=btn.dataset.act;
-        if(act==='release'){release(mod,x.id);return;}
+        if(act==='release'){
+          btn.disabled=true;var wasR=btn.textContent;btn.textContent='Releasing…';
+          release(mod,x.id).then(function(ok){
+            btn.disabled=false;btn.textContent=ok?'✓ Released':wasR;
+            if(mount._relReport)mount._relReport(ok,'Exercise '+n);
+            if(!ok)show('hint','⚠ <b>Not released.</b> '+esc(releaseError()||'The write failed.'));
+          });
+          return;
+        }
         if(act==='hint'){show('hint','💡 <b>Hint.</b> '+x.hint);return;}
         if(act==='sol'){
           if(!inst&&!isReleased(mod,x.id)){
@@ -308,14 +412,24 @@ window.StatsEx = (function () {
     var btn=box.querySelector('.exs-btn'); if(!btn)return;
     btn.addEventListener('click',function(){
       var sol=box.querySelector('.exs-sol');
-      if(sol)sol.hidden=false;
-      release(box.dataset.mod,box.dataset.ex);
-      btn.textContent='✓ Revealed — the class can now open it';
-      btn.disabled=true;
+      if(sol)sol.hidden=false;        /* your own copy, whatever happens */
+      var was=btn.textContent;
+      btn.disabled=true;btn.textContent='Releasing…';
+      /* The button reports the WRITE, not the click. Saying "revealed"
+         before the PATCH returns is what hid the 401 for a whole term. */
+      release(box.dataset.mod,box.dataset.ex).then(function(ok){
+        if(ok){btn.textContent='✓ Revealed — the class can now open it';return;}
+        btn.disabled=false;btn.textContent=was;
+        var w=box.querySelector('.exs-relerr');
+        if(!w){w=document.createElement('div');w.className='exs-relerr';box.appendChild(w);}
+        w.innerHTML='⚠ <b>Not released.</b> '+esc(releaseError()||'The write failed.')+
+                    ' Your own copy is open above; the class cannot see it yet.';
+      });
     });
   }
 
   return {mount:mount, slides:slides, wireSlide:wireSlide, releaseBlocked:releaseBlocked,
+          releaseError:releaseError,
           isInstructor:isInstructor, release:release, releaseAll:releaseAll,
           isReleased:isReleased, onChange:function(f){listeners.push(f);}};
 })();

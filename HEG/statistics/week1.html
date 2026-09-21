@@ -55,6 +55,7 @@
 </style>
 <script src="/shared/admin-gate.js"></script>
 <script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
 <script src="exercises.js"></script>
 <script src="presence.js"></script>
 </head>
@@ -939,6 +940,27 @@ function markSection(id){
   progress.done[id]=true;save();updateBar();renderList();
   if(window.StatsTrack)StatsTrack.complete(id);
   if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+/* ⚠ LOAD-ORDER REPAIR — why this exists, so nobody deletes it.
+   The 1.4 (z) and 1.5 (ci) widgets call markSection() from their own
+   auto-run — draw(24) and run() at the foot of each IIFE — which happens
+   while THIS inline script is still parsing, and /shared/progress.js is
+   deferred, so window.StatsTrack does not exist yet. markSection's
+   `if(window.StatsTrack)` guard therefore skipped the database write
+   silently, and its `if(progress.done[id])return;` meant it was never
+   retried on any later visit: s4 and s5 were done on the student's device
+   and absent from the cohort record for ever. The week page said 9/9, the
+   hub said 7/9, and the student was right to complain.
+   So: once StatsTrack exists, push every locally-completed section. Its
+   own complete() keeps a separate done-store and returns early on ids it
+   has already sent, so this is idempotent, costs nothing when there is
+   nothing to repair, and fixes already-affected students on their next
+   visit without anyone touching the database by hand. */
+function syncDoneSections(){
+  if(!window.StatsTrack)return;
+  var d=progress.done||{},sent=0;
+  Object.keys(d).forEach(function(id){if(d[id]){StatsTrack.complete(id);sent++;}});
+  if(sent&&window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
 }
 document.addEventListener('click',function(e){
   var b=e.target.closest('[data-next],[data-prev],[data-home]');
@@ -2040,6 +2062,7 @@ var SLIDES=[
 renderList();updateBar();
 window.addEventListener('DOMContentLoaded',function(){
   if(window.StatsTrack)StatsTrack.init({module:MOD,title:'Week 1 · The whole chain, in one session',total:SECTIONS.length});
+  syncDoneSections();   /* see the note on syncDoneSections — repairs s4/s5 */
   /* Part 2 · the exercise forms. Same array as the deck's exercise slides. */
   /* presence · the button the room presses while the window is open */
   if(window.StatsPresence)StatsPresence.mount({el:document.getElementById('presSlot'),mod:MOD,label:'Week 1 · The whole chain, in one session'});
