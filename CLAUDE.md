@@ -511,8 +511,11 @@ listed; shared login, no class password.
   eight and seven rules). ⚠ Most of the printed deck is ALREADY example-first
   — the cost lines before sums, the advertising chain before composition, the
   demand curve before inverses — so this is about the handful of slides that
-  open with a definition, not a licence to restructure the deck. **It never
-  adds a slide.** See also the standing instruction above: a formula a student
+  open with a definition, not a licence to restructure the deck. **It does not add
+  slides** — with one deliberate exception, the VAT slide before week 2's
+  inverse definition, because a definition that IS a test needs a case where
+  the obvious answer is wrong (undoing +8.1% by taking 8.1% off lands on
+  99.34, not 100) or it reads as ceremony. See also the standing instruction above: a formula a student
   would otherwise memorise gets derived, numbers first and then the identical
   moves with letters.
 - **A figure on a slide is sized in `quant.css`, not inline on the `<svg>`.**
