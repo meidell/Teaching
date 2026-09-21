@@ -504,8 +504,9 @@ listed; shared login, no class password.
   measure that caps the **whole** body including a `.cols` grid inside it,
   so `.cols{max-width:none}` was not enough and every chart rendered about
   a third of the slide wide, unreadable from row four and in the printed
-  PDF. A slide with a figure now drops the cap, widens to 1400px and gives
-  the figure column 1.8fr. ⚠ Every figure in week 2 is full-width or in the
+  PDF — and squeezed every two-column TEXT slide into 30 characters a
+  column. A slide with a `.cols` grid now drops the cap; one with a figure
+  also widens to 1400px and gives the figure column 1.8fr. ⚠ Every figure in week 2 is full-width or in the
   SECOND column — a left-hand chart would come out narrower. `week1.html`
   still inlines its own sizing and is untouched.
 - ⚠ **A new namespace needs a block in `firebase-database-rules.json`, and a
