@@ -482,13 +482,22 @@ listed; shared login, no class password.
   **delete a week's SPEC entry once its page is hand-written** or the
   generator overwrites it. Spring weeks have no pages at all yet, and their
   hub cards deliberately carry no `href`.
-- **The deck must contain every slide of the printed deck, and more.** The
-  instructor's own PDF (`quantitativemethods_I_I_W1.pdf`, 42 slides) is the
-  floor, not the ceiling: Week 1's deck is 76 slides, every printed one
-  present and in order, with extra worked numbers so each technique is seen at
-  least twice, plus the business reasoning the printed version leaves to the
-  room. PDF overlay builds are flattened into one slide with the working
-  shown; the speaker notes say where to stop and ask the room first.
+- ⚠ **The deck mirrors the printed deck ONE FOR ONE — every slide of it, in
+  order, and nothing added.** The instructor stands in front of the room with
+  the printed deck in their head; a site deck twice its length is a different
+  lecture. Week 2's PDF (`quantitativemethods_I_I_W2.pdf`) is 38 slides and
+  `week2.html`'s deck is 38 plus the PDF's own five overlay builds, kept as a
+  question slide followed by its answer slide. **Extra teaching goes in the
+  speaker notes** of the printed slide it belongs to, marked `OFF-DECK`, and
+  in the week page's own sections and Part 2 exercises — never in a new slide.
+  The PDF's dividers are the deck's dividers, so a course with six page
+  sections and three printed dividers hangs its `site:'sX'` anchors on the
+  printed slide each section opens on.
+  This rule was learned by breaking it: the first build treated the PDF as
+  "the floor, not the ceiling" and week 2 came out at 72 slides against 38.
+  It was cut back on 21 Sep 2026. **`week1.html` still predates this** — 76
+  slides against a 42-slide PDF — so trim it the same way before it is taught,
+  or knowingly leave it.
 - ⚠ **A new namespace needs a block in `firebase-database-rules.json`, and a
   DEPLOY.** The rules enumerate namespaces (`omba401`, `statistics`, …) and the
   root is `.read:false, .write:false`, so a namespace with no block is **shut
