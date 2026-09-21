@@ -498,6 +498,16 @@ listed; shared login, no class password.
   It was cut back on 21 Sep 2026. **`week1.html` still predates this** — 76
   slides against a 42-slide PDF — so trim it the same way before it is taught,
   or knowingly leave it.
+- **A figure on a slide is sized in `quant.css`, not inline on the `<svg>`.**
+  `svgWrap()` emits `<svg class="fig">` and the rules live at the end of
+  `quant.css`. The trap they fix: `.lect-body` carries a 60ch reading
+  measure that caps the **whole** body including a `.cols` grid inside it,
+  so `.cols{max-width:none}` was not enough and every chart rendered about
+  a third of the slide wide, unreadable from row four and in the printed
+  PDF. A slide with a figure now drops the cap, widens to 1400px and gives
+  the figure column 1.8fr. ⚠ Every figure in week 2 is full-width or in the
+  SECOND column — a left-hand chart would come out narrower. `week1.html`
+  still inlines its own sizing and is untouched.
 - ⚠ **A new namespace needs a block in `firebase-database-rules.json`, and a
   DEPLOY.** The rules enumerate namespaces (`omba401`, `statistics`, …) and the
   root is `.read:false, .write:false`, so a namespace with no block is **shut
