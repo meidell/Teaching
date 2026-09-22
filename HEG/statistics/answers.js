@@ -1,6 +1,6 @@
 /* =====================================================================
    HEG · Applied Statistics — remembering what a student actually chose.
-   Port of ideas-e1410/answers.js (read that file's header for the full
+   Port of UMEF/ideas-e1410/answers.js (read that file's header for the full
    reasoning). Picks live in progress.picks, a key INSIDE the same
    localStorage blob the week page already writes, so nothing that counts
    (progress.steps, totalSteps) moves. First attempt wins: a replayed

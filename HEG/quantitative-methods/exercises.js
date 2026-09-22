@@ -113,25 +113,65 @@ window.QMEx = (function () {
      has actually accepted it. */
   var relErr=null;
   function releaseError(){return relErr;}
+
+  /* The gate decides what this device SHOWS; the account is what the database
+     TRUSTS. `_release` is instructor-token-only, so the write needs a signed-in
+     account — ported from HEG/statistics/exercises.js, which learned it first.
+     FBAuth picks the session up silently from IndexedDB, so the password is
+     typed once per laptop on any instructor page, not once per class. The token
+     is minted per write: a session is three hours, a token lasts one. */
+  function token(){
+    if(!window.FBAuth||!FBAuth.restore)return Promise.resolve(null);
+    return new Promise(function(res){
+      var settled=false;
+      setTimeout(function(){if(!settled){settled=true;res(null);}},6000);
+      try{
+        FBAuth.restore(function(u){
+          if(settled)return; settled=true;
+          if(!u||!u.getIdToken){res(null);return;}
+          u.getIdToken().then(function(t){res(t||null);},function(){res(null);});
+        });
+      }catch(e){if(!settled){settled=true;res(null);}}
+    });
+  }
+  var SIGNIN_MSG='This device is not signed in, so it cannot release to the class. '+
+    'Open the dashboard (/shared/admin2.html?course=qm1), sign in with the instructor '+
+    'account once, then come back — or release the whole session from its Solutions tab.';
+
+  /* ⚠ ONE PUT PER EXERCISE, not one PATCH at the module node. The rules grant
+     .write at _release/$mod/$ex and nowhere above it, so a PUT at that exact
+     path is the write the rule was written for. */
   function pushRelease(mod,patch){
-    return fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'.json',
-      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)})
-      .then(function(r){
-        if(!r.ok)throw new Error('HTTP '+r.status);
-        return r.json().catch(function(){return null;});
-      }).then(function(j){
-        if(j&&j.error)throw new Error(j.error);
+    var ids=Object.keys(patch);
+    return token().then(function(t){
+      if(!t){relErr=SIGNIN_MSG;notify();return false;}
+      var q='.json?auth='+encodeURIComponent(t);
+      return Promise.all(ids.map(function(id){
+        return fetch(DB+'/'+NS+'/_release/'+encodeURIComponent(mod)+'/'+encodeURIComponent(id)+q,
+          {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch[id])})
+          .then(function(r){
+            if(!r.ok)throw new Error('HTTP '+r.status);
+            return r.json().catch(function(){return null;});
+          }).then(function(j){
+            if(j&&j.error)throw new Error(j.error);
+            return id;
+          });
+      })).then(function(){
+        /* only now is it true */
         if(!released[mod])released[mod]={};
         for(var k in patch)released[mod][k]=patch[k];
         saveReleaseLocal(mod);relErr=null;notify();
         return true;
-      },function(e){
-        relErr=(String(e.message||e).indexOf('401')>=0)
-          ? 'This page is not signed in, so it cannot release to the class. Open the dashboard → Solutions and release it there.'
-          : 'Could not reach the database. Nothing was released.';
-        notify();
-        return false;
       });
+    }).catch(function(e){
+      var m=String((e&&e.message)||e);
+      relErr=(m.indexOf('401')>=0||m.indexOf('403')>=0)
+        ? 'The database refused the release ('+m+'). The signed-in account is not an '+
+          'instructor account, or the rules for qm1/_release are not deployed.'
+        : 'Could not reach the database ('+m+'). Nothing was released.';
+      notify();
+      return false;
+    });
   }
   function release(mod,id){
     if(!isInstructor())return Promise.resolve(false);

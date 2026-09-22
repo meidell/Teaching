@@ -1,7 +1,7 @@
 /* =====================================================================
    E1410 · course access gate (shared password).
    Students reach the course via a QR / link that carries the access
-   token, e.g.  .../ideas-e1410/index.html?auth=ideas1410x7k2
+   token, e.g.  .../UMEF/ideas-e1410/index.html?auth=ideas1410x7k2
    This script (loaded SYNCHRONOUSLY in <head>, before any other gate)
    verifies that token. If valid it is remembered on the device
    (localStorage + 1-year cookie) so the token is never needed again

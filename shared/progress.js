@@ -19,7 +19,7 @@
    always the source of truth.
 
    This is the union of the five copies it replaces (omba401, ombafr455,
-   ideas-e1410, umef407, statistics). Nothing was dropped; the per-course
+   UMEF/ideas-e1410, umef407, statistics). Nothing was dropped; the per-course
    differences are now config, not code.
    ===================================================================== */
 (function () {

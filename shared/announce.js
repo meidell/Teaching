@@ -13,7 +13,7 @@
    timestamp), so a new announcement reappears but an old one stays shut.
 
    Replaces the four near-identical copies in omba401/, ombafr455/,
-   ideas-e1410/ and umef407/.
+   UMEF/ideas-e1410/ and umef407/.
    ===================================================================== */
 (function () {
   "use strict";

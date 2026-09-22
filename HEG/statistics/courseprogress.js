@@ -1,6 +1,6 @@
 /* =====================================================================
    HEG · Applied Statistics — the course-progress ("mama") bar.
-   Ported from ideas-e1410/courseprogress.js; same two modes:
+   Ported from UMEF/ideas-e1410/courseprogress.js; same two modes:
      • full    — bar + per-week cards + caption, on index.html
      • compact — segmented bar only, in the top banner of every week page
    Overall % = mean of chapter fractions over the LIVE chapters that count.
