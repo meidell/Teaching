@@ -1,14 +1,14 @@
 /* =====================================================================
-   HEG · Applied Statistics — the course-progress ("mama") bar.
+   SUMAS · Applied Statistics — the course-progress ("mama") bar.
    Ported from UMEF/ideas-e1410/courseprogress.js; same two modes:
      • full    — bar + per-week cards + caption, on index.html
      • compact — segmented bar only, in the top banner of every week page
    Overall % = mean of chapter fractions over the LIVE chapters that count.
    Reads local progress instantly (stats_done_<mod>, written by
-   /shared/progress.js), then refines from Firebase statistics/<sid>/mod
+   /shared/progress.js), then refines from Firebase mba401/<sid>/mod
    when the student is signed in through /shared/login.js (stats_auth).
 
-   The sixteen weeks of the HEG syllabus are all listed so the bar has the
+   The sixteen weeks of the SUMAS syllabus are all listed so the bar has the
    shape of the whole semester from day one; a week that is not yet
    written is live:false — drawn hatched, excluded from the percentage —
    and flips to live:true the day its page ships. Homework is its own
@@ -19,7 +19,7 @@
    ===================================================================== */
 window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
-  var NS="statistics", K="stats";
+  var NS="mba401", K="mba401";
   var CHAPTERS=[
     {mod:'w1',    short:'W1', name:'Week 1 · The whole chain, in one session',          total:9,live:true, href:'week1.html'},
     {mod:'w1-hw', short:'HW1',name:'Week 1 · Homework — describe the market',       total:23,live:true,href:'week1-homework.html'},

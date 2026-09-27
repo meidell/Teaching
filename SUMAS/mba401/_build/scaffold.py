@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HEG · Applied Statistics — generator for the scaffold week pages (3–16).
+SUMAS · Applied Statistics — generator for the scaffold week pages (3–16).
 
 Each scaffold is a REAL page on the same chrome as week1/week2 (stats.css,
 top banner, course bar, ▶ Lecture) whose content is the plan for that week:
@@ -10,7 +10,7 @@ outline the Lecture button actually plays. It records NOTHING — no
 StatsTrack.init, no progress steps — and courseprogress.js lists it as
 live:false, so nobody's percentage moves until the week is written.
 
-Re-run after editing SPEC:   python3 HEG/statistics/_build/scaffold.py
+Re-run after editing SPEC:   python3 SUMAS/mba401/_build/scaffold.py
 When a week is written by hand, delete its entry from SPEC (or the
 generator will overwrite the hand-written file).
 """
@@ -291,7 +291,7 @@ SPEC=[
   reads=[('Exam cards — every archetype','exam-cards.html')],
   objectives=['Sit a full paper under the real constraints: 90 minutes, calculator, two hand-written sheets.','Find out what your summary sheets are missing, and fix them.','Correct your own paper against the worked solutions and score it.','Arrive at Week 16 knowing exactly which two question types to rehearse once more.'],
   sections=[
-   ('The blank test','Take it at home','90 minutes · six exercises · exam conditions',['The paper is distributed on Cyberlearn (and printable from here once written). Sit it in one go, timed, with only your sheets and a calculator.','A workbook field: your score by exercise, entered honestly, so the correction session can target the room\'s weak spots.'],'Test'),
+   ('The blank test','Take it at home','90 minutes · six exercises · exam conditions',['The paper is distributed on Moodle (and printable from here once written). Sit it in one go, timed, with only your sheets and a calculator.','A workbook field: your score by exercise, entered honestly, so the correction session can target the room\'s weak spots.'],'Test'),
    ('The correction','In class','Every exercise worked, every trap named',['Worked solutions, the marking scheme, and the pattern of what the class lost points on — from the dashboard.'],'Correction'),
    ('Your two sheets','What to write on them','Formulas, decision rules, the traps — not worked examples',['A card with the recommended contents of the two sheets, section by section: the formula list, the "which test?" tree, the n − 1 rule, the tail conventions.'],'Sheets'),
    ('Last pass','The two types you rehearse once more','Exam cards, targeted',['From your blank-test score: the two archetypes to redo with fresh numbers until Week 16.'],'Rehearse')],
@@ -304,14 +304,14 @@ SPEC=[
 
  dict(n=16,slug='Final exam',emoji='🎓',
   title='The final exam',
-  sub='Ninety minutes, closed book, six exercises. Everything below is the syllabus\'s own rules, so that nothing about the format is a surprise on the day. The date and room are on Cyberlearn.',
+  sub='Ninety minutes, closed book, six exercises. Everything below is the syllabus\'s own rules, so that nothing about the format is a surprise on the day. The date and room are on Moodle.',
   ch='Week 16 · exam week',
   reads=[],
-  objectives=['Know the format: 90 minutes, six exercises of ten points, graded to the half point, 60% of the course grade.','Bring exactly what is allowed: a simple non-programmable calculator and two hand-written sheets (both sides).','Leave at home what is not: computers, phones, communication devices of any kind.','Hand in the pizzeria file — the individual project — by the deadline on Cyberlearn.'],
+  objectives=['Know the format: 90 minutes, six exercises of ten points, graded to the half point, 60% of the course grade.','Bring exactly what is allowed: a simple non-programmable calculator and two hand-written sheets (both sides).','Leave at home what is not: computers, phones, communication devices of any kind.','Hand in the pizzeria file — the individual project — by the deadline on Moodle.'],
   sections=[
    ('The format','What the paper looks like','Six exercises · ten points each · 90 minutes',['One exercise per block of the course: describe · probability and the normal · sampling and estimation · a test · two samples or regression · chi-square or ANOVA. Each is one of the archetypes in the exam cards, with fresh numbers.'],'Format'),
    ('The rules','What you may bring','Calculator and two hand-written sheets',['A simple, non-programmable calculator. A personal summary of two sheets, two-sided (four pages), hand-written — printed or photocopied sheets are not allowed. No computers, smartphones or communication devices.'],'Rules'),
-   ('The project','Hand in the pizzeria file','15% · individual · graded to the half point',['The workshop pages from Weeks 1–12, finished and argued, as one document. The deadline and the upload are on Cyberlearn.'],'Project'),
+   ('The project','Hand in the pizzeria file','15% · individual · graded to the half point',['The workshop pages from Weeks 1–12, finished and argued, as one document. The deadline and the upload are on Moodle.'],'Project'),
    ('After','Results and the viva that never was','How the grade is built',['Final grade = 20% presence (pro rata) + 20% project + 60% exam. Results on the school\'s schedule.'],'Grade')],
   slides=['Applied Statistics · Week 16 — the final exam','The format: six exercises, 90 minutes','What you may bring','The project deadline','Good luck'],
   tools=[('exam-cards.html','Exam cards')]),
@@ -331,8 +331,8 @@ def page(w):
            badge='Part 2',part=2))
     for j,x in enumerate(_secs): x['num']='%d.%d'%(n,j+1)
   secs_js=json.dumps(_secs,ensure_ascii=False)
-  slides_js=json.dumps([dict(cls=('dk' if i==0 else None),k=('HEG Genève · Applied Statistics' if i==0 else 'Week %d · slide %d'%(n,i+1)),t=t,
-                             b=('<p style="font-size:1.15em"><b>Week %d · %s</b></p><p>Jan Erik Meidell · Haute école de gestion de Genève</p><div class="onproj"><b>Outline deck →</b> this week\'s slides are an outline. Each title becomes a full slide, with an "On the pizzeria →" callout and speaker notes, when the week is written.</div>'%(n,w['slug']) if i==0 else '<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1–2 pattern.</li></ul>'),
+  slides_js=json.dumps([dict(cls=('dk' if i==0 else None),k=('SUMAS · Applied Statistics' if i==0 else 'Week %d · slide %d'%(n,i+1)),t=t,
+                             b=('<p style="font-size:1.15em"><b>Week %d · %s</b></p><p>Jan Erik Meidell · SUMAS</p><div class="onproj"><b>Outline deck →</b> this week\'s slides are an outline. Each title becomes a full slide, with an "On the pizzeria →" callout and speaker notes, when the week is written.</div>'%(n,w['slug']) if i==0 else '<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1–2 pattern.</li></ul>'),
                              logo=(True if i==0 else None),n='Outline — speaker notes to write.') for i,t in enumerate(w['slides'])],ensure_ascii=False)
   reads=''.join('<div class="mi" data-read="r%d"><span class="box">✓</span><span><a href="%s"%s>%s%s</a></span></div>'%(i+1,esc(u),(' target="_blank" rel="noopener"' if u.startswith('http') else ''),esc(t),(' ↗' if u.startswith('http') else '')) for i,(t,u) in enumerate(w['reads']))
   objs=''.join('<li>%s</li>'%o for o in w['objectives'])
@@ -376,24 +376,24 @@ def page(w):
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<base href="/HEG/statistics/">
+<base href="/SUMAS/mba401/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Week %d · %s · Applied Statistics · HEG</title>
+<title>Week %d · %s · Applied Statistics · SUMAS</title>
 <meta name="description" content="Applied Statistics, Week %d — %s (%s). In preparation: objectives, planned sections and the lecture outline.">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#002C46">
+<meta name="theme-color" content="#2C5530">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%s</text></svg>">
-<link rel="stylesheet" href="/shared/themes/heg.css">
+<link rel="stylesheet" href="/shared/themes/sumas-stats.css">
 <script src="/shared/theme.js"></script>
 <link rel="stylesheet" href="stats.css">
 </head>
-<body data-course="statistics">
+<body data-course="mba401">
 <!-- GENERATED by _build/scaffold.py — edit the SPEC there, not this file.
      Delete this week's SPEC entry once the page is written by hand. -->
 
 <div class="topbar">
   <div class="topbar-inner">
-    <img class="brand" src="logo_heg-ge.svg" alt="HEG Genève">
+    <img class="brand" src="sumas-logo.png" alt="SUMAS">
     <span class="course">APPLIED STATISTICS · WEEK %d</span>
     <span class="tb-spacer"></span>
     <a class="home" href="index.html">← Course</a>
@@ -410,7 +410,7 @@ def page(w):
 
 <section class="screen active" id="home">
   <div class="hero">
-    <div class="eyebrow">Week %d · Applied Statistics · HEG Genève</div>
+    <div class="eyebrow">Week %d · Applied Statistics · SUMAS</div>
     <h1>%s</h1>
     <p class="sub">%s</p>
     <div class="liveinfo">
@@ -450,8 +450,8 @@ def page(w):
   </div>
   <div id="lectNotes"></div>
   <div class="lect-foot">
-    <img src="logo_heg-ge.svg" alt="HEG Genève">
-    <span class="lf-t">Applied Statistics · Week %d · %s · outline · Jan Erik Meidell · HEG Genève</span>
+    <img src="sumas-logo.png" alt="SUMAS">
+    <span class="lf-t">Applied Statistics · Week %d · %s · outline · Jan Erik Meidell · SUMAS</span>
     <button id="lectNotesBtn" title="Toggle speaker notes (N)">Notes</button>
     <button onclick="window.print()" title="Print / save the deck as PDF">PDF</button>
     <button id="lectClose" title="Exit (Esc)">✕ Exit</button>
@@ -495,7 +495,7 @@ var SLIDES=%s;
 (function lecture(){
   var idx=0,open=false,cur=null;
   var lect=document.getElementById('lect'),stage=document.getElementById('lectStage'),count=document.getElementById('lectCount'),notes=document.getElementById('lectNotes');
-  function slideHTML(s){return (s.logo?'<img class="lect-logo-big" src="logo_heg-ge.svg" alt="HEG Genève">':'')+'<div class="lect-kicker">'+s.k+'</div><h2>'+s.t+'</h2><div class="lect-body">'+s.b+'</div>';}
+  function slideHTML(s){return (s.logo?'<img class="lect-logo-big" src="sumas-logo.png" alt="SUMAS">':'')+'<div class="lect-kicker">'+s.k+'</div><h2>'+s.t+'</h2><div class="lect-body">'+s.b+'</div>';}
   function render(){var s=SLIDES[idx];if(cur)cur.remove();cur=document.createElement('div');cur.className='lect-slide'+(s.cls?' '+s.cls:'');cur.innerHTML=slideHTML(s);stage.appendChild(cur);lect.classList.toggle('dkbg',s.cls==='dk');count.textContent=(idx+1)+' / '+SLIDES.length;notes.innerHTML='<span class="nt">Speaker notes · slide '+(idx+1)+'</span>'+(s.n||'—');}
   function go(d){idx=Math.max(0,Math.min(SLIDES.length-1,idx+d));render();}
   function openLect(){open=true;lect.classList.add('on');render();if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(function(){});}}
