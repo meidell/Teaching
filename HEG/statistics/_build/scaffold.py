@@ -21,30 +21,6 @@ SAY='https://saylordotorg.github.io/text_introductory-statistics/'
 def S(u): return SAY+u
 
 SPEC=[
- dict(n=5,slug='Sampling distributions',emoji='🎲',
-  title='If you sampled again tomorrow, how different would the <em>mean</em> be?',
-  sub='The keystone of the course. Your thirty prices gave a mean of about CHF 19.6 — but another thirty would give another mean. This week is about the distribution <b>of the sample mean itself</b>: where it is centred, how wide it is (σ/√n), and why it is bell-shaped even when the population is not. Everything from Week 6 onward rests on it.',
-  ch='Saylor ch. 6',
-  reads=[('Saylor §6.1 — The mean and standard deviation of the sample mean',S('s10-01-the-mean-and-standard-deviatio.html')),('Saylor §6.2 — The sampling distribution of the sample mean',S('s10-02-the-sampling-distribution-of-t.html')),('Saylor §6.3 — The sample proportion',S('s10-03-the-sample-proportion.html'))],
-  objectives=['State the mean and standard deviation of the sample mean: µ_x̄ = µ and σ_x̄ = σ/√n — and explain the √n.','State the Central Limit Theorem and say when it applies.','Compute P(x̄ in a range) for a sample of size n from a population with known µ and σ.','Do the same for a sample proportion p̂, with µ_p̂ = p and σ_p̂ = √(pq/n).','Explain, in the pizzeria\'s words, why a sample of 30 says something about all of Geneva.'],
-  sections=[
-   ('The hook','Another thirty tomorrow','Estimate how far a second sample mean would land from the first',['Slider: "your thirty averaged CHF 19.6. Another thirty tomorrow — within how many francs would you bet the new mean lands?" Lock it.'],'Hook'),
-   ('The sampling machine','Watch the mean of the means','µ_x̄ = µ and σ_x̄ = σ/√n, made visible (§6.1)',['The existing <b>sampling-distribution simulator</b> embedded: a skewed population of prices, draw 1 / 100 / 1,000 samples, watch the means pile up. The σ/√n readout against the observed SD of the means is the whole section.','Slider n from 1 to 50: the pile narrows by √n, not by n — the single most-missed fact of the chapter.'],'Keystone'),
-   ('The Central Limit Theorem','Why the bell shows up','The sampling distribution of x̄ (§6.2)',['Widget: switch the population to bimodal and uniform; the means still go bell-shaped once n ≥ ~30.','Compute P(x̄ > 20) for n = 30 from µ = 19, σ = 4: standardise with σ/√n. Exam card c7.','Classify (6 rows): does the CLT apply? — n = 5 from a skewed population, n = 40 from anything, a normal population at any n, and two traps.'],'CLT'),
-   ('The sample proportion','Share above CHF 20, again','µ_p̂ = p, σ_p̂ = √(pq/n) (§6.3)',['Widget: the proportion of pizzerias over CHF 20 across repeated samples; the pile of p̂ values and its SD against √(pq/n).','P(p̂ in a range) for n = 30, p = 0.35. Exam card c8.'],'Proportion'),
-   ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: µ_x̄, σ_x̄, the √n, when the CLT applies, P(x̄ in a range), µ_p̂ and σ_p̂, and one "the population is not normal — so what?" trap.'],'Quiz'),
-   ('Workshop','The pizzeria file · instalment five','Workbook fields',['w5_se — the standard error of your sample mean for your n, and what halving it would cost in extra visits.','w5_clt — in two sentences, why thirty pizzerias can speak for Geneva — and the one situation where they could not.'],'Exercise')],
-  slides=['Applied Statistics · Week 5 — Sampling distributions','Recap → today: the keystone','Poll: how far would tomorrow\'s mean land?','The sampling machine — live','µ_x̄ = µ · σ_x̄ = σ/√n — the √n','The Central Limit Theorem','P(x̄ in a range): standardise with σ/√n','Bimodal, uniform, skewed — still a bell','The sample proportion p̂','Your turn — checkpoint live','Takeaways · homework · Week 6'],
-  ex=[('µ_x̄ and σ_x̄',12,'from a population with known µ and σ, at three sample sizes'),
-      ('The √n, felt',12,'how much must n grow to halve the standard error?'),
-      ('Does the CLT apply?',10,'five situations, yes or no, with the reason'),
-      ('P(x̄ in a range)',18,'n = 30 from µ = 19, σ = 4 — standardise with σ/√n'),
-      ('The same question at n = 10',12,'why the answer changes, and by how much'),
-      ('The sample proportion',15,'µ_p̂, σ_p̂ and P(p̂ > 0.4)'),
-      ('Sample mean vs single value',12,'the classic confusion: P(X > 22) against P(x̄ > 22)'),
-      ('Why thirty can speak for Geneva',12,'write it in two sentences')],
-  tools=[('sampling-sim.html','Where the sample mean lives — the simulator'),('sampling-machine.html','The sampling machine'),('exam-cards.html','Exam cards c7–c8')]),
-
  dict(n=6,slug='Estimation',emoji='📏',
   title='The Geneva price — <em>with a margin</em>',
   sub='Week 5 told you how far a sample mean wanders. Now turn that around: from one sample, build an interval that captures the true Geneva price with a stated confidence. Large samples use z; small samples use t; proportions have their own formula; and the last section asks the question a budget asks — how many pizzerias must we visit to be within one franc?',
