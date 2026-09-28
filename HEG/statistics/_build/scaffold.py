@@ -21,31 +21,6 @@ SAY='https://saylordotorg.github.io/text_introductory-statistics/'
 def S(u): return SAY+u
 
 SPEC=[
- dict(n=4,slug='Continuous random variables',emoji='🔔',
-  title='How long until the pizza <em>reaches the table</em>?',
-  sub='Counting things gave you the binomial. Measuring things — delivery time, dough weight, daily takings — needs a different object: a <b>density</b>, where probability is <b>area</b>. This week is the normal distribution end to end: the standard normal table, standardising, tails, and reading the table backwards to find the value behind a percentile.',
-  ch='Saylor ch. 5',
-  reads=[('Saylor §5.1 — Continuous random variables',S('s09-01-continuous-random-variables.html')),('Saylor §5.2 — The standard normal distribution',S('s09-02-the-standard-normal-distributi.html')),('Saylor §5.3 — Probability computations for general normal random variables',S('s09-03-probability-computations-for-g.html')),('Saylor §5.4 — Areas of tails of distributions',S('s09-04-areas-of-tails-of-distribution.html'))],
-  objectives=['Explain why P(X = x) is zero for a continuous variable and why probability is area under a density.','Use the standard normal table for P(Z < z), P(Z > z) and P(a < Z < b).','Standardise a general normal variable, z = (x − µ)/σ, and compute probabilities for delivery times.','Find the value x behind a tail area — the 95th percentile of delivery time — by reading the table backwards.','Recognise z₀.₀₅ and z₀.₀₂₅ as the numbers Weeks 6–7 will use constantly.'],
-  sections=[
-   ('The hook','Under twelve minutes?','Estimate the share of pizzas served within 12 minutes',['Slider: "delivery-to-table time averages 14 min with SD 3 — what share of pizzas arrive within 12?" Lock it; section 4.4 computes it.'],'Hook'),
-   ('Density','Probability is area','Continuous random variables and the uniform distribution (§5.1)',['Widget: a uniform distribution of oven temperature drift; drag two bounds and read the area.','Why P(X = 14.000…) = 0 and why "between 13.9 and 14.1" is the only kind of question that has an answer.'],'Concept'),
-   ('The standard normal','The one curve that fits all','P(Z < z) from the table (§5.2)',['Widget: the standard normal curve; drag z and watch the shaded area and the table row highlight together.','Classify (6 rows): which area is asked — left tail, right tail, between — and how to get it from a left-tail table.'],'Table'),
-   ('General normal','Standardise, then look up','z = (x − µ)/σ for delivery times N(14, 3) (§5.3)',['Widget: delivery times; type a time, see z, the area and the sentence "x% of pizzas arrive within…".','The hook closes: P(X < 12) with µ = 14, σ = 3. Exam card c6 ("normal distribution & inverse") is the drill.'],'Standardise'),
-   ('Tails and the inverse','The value behind a percentile','z_c, the 95th percentile, and the numbers Week 6 needs (§5.4)',['Widget: choose a tail area (0.05, 0.025, 0.01) and read z_c off the curve; then un-standardise to a delivery time the pizzeria can promise: "95% of pizzas within __ minutes".','Introduce z₀.₀₂₅ = 1.96 as a number to know by heart — it returns in every confidence interval.'],'Inverse'),
-   ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: area = probability, left/right/between areas, standardising, an inverse lookup, and one uniform-distribution question.'],'Quiz'),
-   ('Workshop','The pizzeria file · instalment four','Workbook fields',['w4_promise — the delivery promise you would print on the menu ("within __ minutes, 95% of the time") and the calculation behind it.','w4_normal — one quantity of your pizzeria you would model as normal, with a µ and σ you can justify, and one you would not.'],'Exercise')],
-  slides=['Applied Statistics · Week 4 — Continuous random variables','Recap → today: from counting to measuring','Poll: share of pizzas within 12 minutes?','Probability is area — the density','The standard normal: one curve, one table','Reading the table: left, right, between','Standardise: z = (x − µ)/σ','Delivery times N(14, 3): the hook closes','Tails: z₀.₀₅, z₀.₀₂₅ — numbers to know','The inverse: the value behind a percentile','Your turn — checkpoint live','Takeaways · homework · Week 5'],
-  ex=[('Area is probability',10,'a uniform density: read three areas'),
-      ('The z table, three ways',15,'P(Z < z), P(Z > z), P(a < Z < b)'),
-      ('Standardise',12,'delivery times N(14, 3): four probabilities'),
-      ('The hook closes: under twelve minutes',10,'P(X < 12), and what it means for the kitchen'),
-      ('Read the table backwards',15,'the 95th percentile of delivery time'),
-      ('z₀.₀₅ and z₀.₀₂₅',10,'the two numbers Weeks 6–7 use constantly'),
-      ('Normal or not?',10,'four quantities: which would you model as normal, and which not'),
-      ('The delivery promise',12,'write the menu line, with the calculation behind it')],
-  tools=[('distributions.html','The shape of uncertainty — the normal, the bell, the tails'),('exam-cards.html','Exam cards c2 and c6')]),
-
  dict(n=5,slug='Sampling distributions',emoji='🎲',
   title='If you sampled again tomorrow, how different would the <em>mean</em> be?',
   sub='The keystone of the course. Your thirty prices gave a mean of about CHF 19.6 — but another thirty would give another mean. This week is about the distribution <b>of the sample mean itself</b>: where it is centred, how wide it is (σ/√n), and why it is bell-shaped even when the population is not. Everything from Week 6 onward rests on it.',
