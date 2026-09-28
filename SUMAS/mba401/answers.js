@@ -1,5 +1,5 @@
 /* =====================================================================
-   SUMAS · Applied Statistics — remembering what a student actually chose.
+   SUMAS · Quantitative Methods — remembering what a student actually chose.
    Port of UMEF/ideas-e1410/answers.js (read that file's header for the full
    reasoning). Picks live in progress.picks, a key INSIDE the same
    localStorage blob the week page already writes, so nothing that counts

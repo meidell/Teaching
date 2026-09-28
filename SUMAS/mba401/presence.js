@@ -1,8 +1,11 @@
 /* =====================================================================
-   SUMAS · Applied Statistics — presence, marked in the room.
+   SUMAS · Quantitative Methods — presence, marked in the room.
 
-   Presence is 20% of the grade, pro rata: your mark is the share of the
-   sessions actually held that you were present for. So it has to be
+   SUMAS · MBA401: attendance is part of class participation (10% of the
+   grade), and a student absent from 5 or more sessions may not sit the
+   final oral exam. ONE class, ONE group (the HEG original had two), and
+   one session per SUMAS WEEK: w1…w9 — a week's Parts A and B share it,
+   see SESSIONS below. The group machinery below is kept but inert. So it has to be
    recorded honestly, in the room, at a moment the instructor controls —
    not by opening a web page from a café.
 
@@ -16,7 +19,7 @@
 
      <ns>/_presence/<sessionId>            sessionId = the week's module id
         open      true while the window is accepting marks
-        label     'Week 3 · Discrete random variables'
+        label     'Week 2A · Discrete random variables'
         openedAt  / closedAt   timestamps
         marks/<sid> = ts       one per student who pressed the button
 
@@ -65,8 +68,7 @@ window.StatsPresence = (function () {
      file is loaded BEFORE config.js on the hub — CourseConfig is preferred
      when it happens to be there. Three copies is two too many; if you add a
      group, change all three. */
-  var GROUPS=[{id:'g1',label:'Monday',short:'Mon',n:1},
-              {id:'g2',label:'Wednesday',short:'Wed',n:2}];
+  var GROUPS=[{id:'g1',label:'Class',short:'Class',n:1}];   /* one class */
   function groups(){
     try{
       var c=window.CourseConfig&&CourseConfig.get&&CourseConfig.get('mba401');
@@ -77,6 +79,8 @@ window.StatsPresence = (function () {
   function defGrp(){return groups()[0].id;}
   function grpOf(id){var G=groups();for(var i=0;i<G.length;i++)if(G[i].id===id)return G[i];return G[0];}
   function grpLabel(id){var g=grpOf(id);return g?(g.label||g.id):'';}
+  /* one group → no group talk anywhere on the page */
+  function multi(){return groups().length>1;}
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -97,7 +101,7 @@ window.StatsPresence = (function () {
      had not marked themselves was shown ABSENT from a session that never
      happened, and the week page told them they had missed it. That is the
      opposite of what a register is for. (It happened for real: a two-second
-     window on `w2-g2`, 16 Sep 2026, painted week 2 red for the whole
+     window on `w2-g2`, 16 Sep 2026, painted week 1B red for the whole
      Wednesday group.)
 
      So: a session counts once SOMEBODY WAS MARKED AT IT. A real session
@@ -209,20 +213,25 @@ window.StatsPresence = (function () {
       return null;
     });
   }
-  /* w1…w15 — the fifteen taught sessions. Week 16 is the exam and is not
+  /* w1…w15 — the fifteen taught sessions. Week 10 is the exam and is not
      marked here. Names come from CourseProgress so one list serves the
      dropdown, the student's running total and the dashboard alike. */
-  function allWeeks(){
-    var out=[];
-    try{
-      (window.CourseProgress&&CourseProgress.CHAPTERS||[]).forEach(function(c){
-        var m=/^w(\d+)$/.exec(c.mod||'');
-        if(m&&+m[1]<=15)out.push({mod:c.mod,n:+m[1],name:c.name||c.mod});
-      });
-    }catch(e){}
-    out.sort(function(a,b){return a.n-b.n;});
-    return out;
-  }
+  /* The register's sessions: one per SUMAS teaching week. A week with two
+     parts has two pages but ONE session; the pages mount presence with the
+     session id (w1), not their own module id (w1a). The final exam (Week 10)
+     is not a session. */
+  var SESSIONS=[
+    {mod:'w1',n:1,name:'Week 1 · Describing data',             pages:['w1a','w1b']},
+    {mod:'w2',n:2,name:'Week 2 · Probability and distributions',pages:['w2a','w2b']},
+    {mod:'w3',n:3,name:'Week 3 · Sampling and estimation',      pages:['w3a','w3b']},
+    {mod:'w4',n:4,name:'Week 4 · Testing hypotheses',           pages:['w4a','w4b']},
+    {mod:'w5',n:5,name:'Week 5 · Correlation and regression',   pages:['w5']},
+    {mod:'w6',n:6,name:'Week 6 · Chi-square tests and F-tests', pages:['w6']},
+    {mod:'w7',n:7,name:'Week 7 · PCA and non-parametric tests', pages:['w7']},
+    {mod:'w8',n:8,name:'Week 8 · Exercises and repetition',     pages:['w8']},
+    {mod:'w9',n:9,name:'Week 9 · Repetition and the blank test',pages:['w9a','w9b']}
+  ];
+  function allWeeks(){ return SESSIONS.slice(); }
 
   /* ---------- student + instructor widget on a week page ---------- */
   function mount(o){
@@ -235,10 +244,9 @@ window.StatsPresence = (function () {
     var grp=myGrp(), ses=sesId(mod,grp);
 
     el.className='pres';
-    el.innerHTML='<h4>Presence · this session'+(a?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
-      '<div class="pd" id="presWhy">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens this button in the room; press it once while it is red. '+
-      (a?'You are in the <b>'+esc(grpLabel(grp))+'</b> group, so only that session\u2019s window turns it red.'
-        :'The class is taught twice, Monday and Wednesday — sign in and this will say which group you are in.')+'</div>'+
+    el.innerHTML='<h4>Presence · this session'+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
+      '<div class="pd" id="presWhy">Attendance counts toward <b>class participation</b> (10% of your grade) — and if you miss <b>5 sessions or more</b> you may not sit the final oral exam. Your instructor opens this button in the room; press it once while it is red.'+
+      (a&&multi()?' You are in the <b>'+esc(grpLabel(grp))+'</b> group, so only that session\u2019s window turns it red.':'')+'</div>'+
       '<button class="pres-btn" id="presBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="presState"></div>'+
       '';
@@ -331,10 +339,9 @@ window.StatsPresence = (function () {
 
     el.className='pres';
     el.innerHTML=
-      '<h4>Presence · this session'+(a?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
-      '<div class="pd">Presence is <b>20% of your grade</b>, pro rata — the share of the sessions actually held that you attended. Your instructor opens the window in the room; press the button once while it is red.'+
-      (a?' You are in the <b>'+esc(grpLabel(grp))+'</b> group — only that room\u2019s window opens this button. If that is the wrong day, tell your instructor: they can move you.'
-         :' The class is taught twice, Monday and Wednesday; sign in and this card will say which group you are in.')+'</div>'+
+      '<h4>Presence · this session'+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
+      '<div class="pd">Attendance counts toward <b>class participation</b> (10% of your grade) — and if you miss <b>5 sessions or more</b> you may not sit the final oral exam. Your instructor opens the window in the room; press it once while it is red.'+
+      (a&&multi()?' You are in the <b>'+esc(grpLabel(grp))+'</b> group — only that room\u2019s window opens this button.':'')+'</div>'+
       '<button class="pres-btn" id="hubBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="hubState"></div>'+
       '<div id="hubMine"></div>'+
@@ -445,17 +452,14 @@ window.StatsPresence = (function () {
      this asks only about weeks the course actually has, and only about the
      ones already published. */
   function weekMods(){
-    var out=[];
-    try{
-      (window.CourseProgress&&CourseProgress.CHAPTERS||[]).forEach(function(c){
-        if(c.live && /^w\d+$/.test(c.mod)) out.push(c.mod);
-      });
-    }catch(e){}
-    return out;
+    var live={};
+    try{(window.CourseProgress&&CourseProgress.CHAPTERS||[]).forEach(function(c){if(c.live)live[c.mod]=1;});}catch(e){}
+    return SESSIONS.filter(function(s){return s.pages.some(function(p){return live[p];});}).map(function(s){return s.mod;});
   }
+
   function mine(el){
     var a=auth(); if(!el||!a)return;
-    var weeks=allWeeks(); if(!weeks.length)return;   /* w1…w15 — the exam is not a session */
+    var weeks=allWeeks(); if(!weeks.length)return;   /* w1…w9 — the exam is not a session */
     /* A week the OTHER group sat is not a session this student missed, so
        every id here carries their group. */
     var grp=myGrp();
@@ -481,18 +485,18 @@ window.StatsPresence = (function () {
          A student who has missed one of two sessions is at 50% and panicking;
          seeing thirteen grey weeks ahead is the honest context for that. */
       el.innerHTML='<div class="pres-mine">'+
-        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> '+esc(grpLabel(grp))+' session'+(held===1?'':'s')+
+        '<div class="pm-h">Your presence · <b>'+here+' of '+held+'</b> '+(multi()?esc(grpLabel(grp))+' ':'')+'session'+(held===1?'':'s')+
           ' held so far'+(held?'<span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span>':'')+'</div>'+
         '<div class="pm-bar">'+segs+'</div>'+
         '<div class="pm-x">'+labs+'</div>'+
         '<div class="pm-lgd"><span><i class="y"></i>Present</span><span><i class="n"></i>Missed</span>'+
           '<span><i class="u"></i>Still to come</span></div>'+
         '<div class="pm-f">'+(!held
-          ? 'No '+esc(grpLabel(grp))+' session has been held yet — the bar fills as the term goes on.'
+          ? 'No '+(multi()?esc(grpLabel(grp))+' ':'')+'session has been held yet — the bar fills as the term goes on.'
           : (missed.length
             ? 'Not marked for: <b>'+missed.map(esc).join(' · ')+'</b>. If you were in the room, tell your instructor — they can correct the register.'
             : 'Nothing missed so far.'))+
-          ' Presence is 20% of the grade, pro rata — counted only on the sessions actually held.</div></div>';
+          ' Absent from 5 sessions or more and you may not sit the final oral exam.</div></div>';
     });
   }
 

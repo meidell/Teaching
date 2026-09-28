@@ -1,5 +1,5 @@
 /* =====================================================================
-   SUMAS · Applied Statistics — the course-progress ("mama") bar.
+   SUMAS · Quantitative Methods — the course-progress ("mama") bar.
    Ported from UMEF/ideas-e1410/courseprogress.js; same two modes:
      • full    — bar + per-week cards + caption, on index.html
      • compact — segmented bar only, in the top banner of every week page
@@ -8,7 +8,7 @@
    /shared/progress.js), then refines from Firebase mba401/<sid>/mod
    when the student is signed in through /shared/login.js (stats_auth).
 
-   The sixteen weeks of the SUMAS syllabus are all listed so the bar has the
+   The ten weeks of the SUMAS syllabus are all listed so the bar has the
    shape of the whole semester from day one; a week that is not yet
    written is live:false — drawn hatched, excluded from the percentage —
    and flips to live:true the day its page ships. Homework is its own
@@ -20,31 +20,34 @@
 window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS="mba401", K="mba401";
+  /* SUMAS · MBA401: nine teaching weeks + the final exam. A week with two
+     parts (1A/1B…) has one chapter per part, because each part is its own
+     page and its own module on the dashboard. */
   var CHAPTERS=[
-    {mod:'w1',    short:'W1', name:'Week 1 · The whole chain, in one session',          total:9,live:true, href:'week1.html'},
-    {mod:'w1-hw', short:'HW1',name:'Week 1 · Homework — describe the market',       total:23,live:true,href:'week1-homework.html'},
-    {mod:'w2',    short:'W2', name:'Week 2 · Descriptive statistics',                total:9,live:true, href:'week2.html'},
-    {mod:'w2-hw', short:'HW2',name:'Week 2 · Homework — picture & place the data',  total:20,live:true,href:'week2-homework.html'},
-    {mod:'w3',    short:'W3', name:'Week 3 · Discrete random variables',             total:9,live:true, href:'week3.html'},
-    {mod:'w3-hw', short:'HW3',name:'Week 3 · Homework — thirteen exercises from the book', total:14,live:true,href:'week3-homework.html'},
-    {mod:'w4',    short:'W4', name:'Week 4 · Continuous random variables',           total:8,live:false},
-    {mod:'w5',    short:'W5', name:'Week 5 · Sampling distributions',                total:8,live:false},
-    {mod:'w6',    short:'W6', name:'Week 6 · Estimation',                            total:8,live:false},
-    {mod:'w7',    short:'W7', name:'Week 7 · Testing hypotheses',                    total:8,live:false},
-    {mod:'w8',    short:'W8', name:'Week 8 · Two-sample problems',                   total:8,live:false},
-    {mod:'w9',    short:'W9', name:'Week 9 · Correlation and regression',            total:8,live:false},
-    {mod:'w10',   short:'W10',name:'Week 10 · Chi-square tests and F-tests',         total:8,live:false},
-    {mod:'w11',   short:'W11',name:'Week 11 · PCA and non-parametric tests',         total:6,live:false},
-    {mod:'w12',   short:'W12',name:'Week 12 · Statistics in Python',                  total:6,live:false},
-    {mod:'w13',   short:'W13',name:'Week 13 · Exercises and repetition I',           total:4,live:false},
-    {mod:'w14',   short:'W14',name:'Week 14 · Exercises and repetition II',          total:4,live:false},
-    {mod:'w15',   short:'W15',name:'Week 15 · The blank test',                       total:2,live:false},
-    {mod:'w16',   short:'W16',name:'Week 16 · Final exam',                           total:1,live:false},
+    {mod:'w1a',   short:'1A', name:'Week 1A · The whole chain, in one session',     total:9, live:true, href:'week1a.html'},
+    {mod:'w1a-hw',short:'H1A',name:'Week 1A · Homework — describe the market',       total:23,live:true, href:'week1a-homework.html'},
+    {mod:'w1b',   short:'1B', name:'Week 1B · Descriptive statistics',               total:9, live:true, href:'week1b.html'},
+    {mod:'w1b-hw',short:'H1B',name:'Week 1B · Homework — picture & place the data',  total:20,live:true, href:'week1b-homework.html'},
+    {mod:'w2a',   short:'2A', name:'Week 2A · Discrete random variables',            total:9, live:true, href:'week2a.html'},
+    {mod:'w2a-hw',short:'H2A',name:'Week 2A · Homework — thirteen exercises from the book', total:14,live:true,href:'week2a-homework.html'},
+    {mod:'w2b',   short:'2B', name:'Week 2B · Continuous random variables',          total:8, live:false},
+    {mod:'w3a',   short:'3A', name:'Week 3A · Sampling distributions',               total:8, live:false},
+    {mod:'w3b',   short:'3B', name:'Week 3B · Estimation',                           total:8, live:false},
+    {mod:'w4a',   short:'4A', name:'Week 4A · Testing hypotheses',                   total:8, live:false},
+    {mod:'w4b',   short:'4B', name:'Week 4B · Two-sample problems',                  total:8, live:false},
+    {mod:'w5',    short:'W5', name:'Week 5 · Correlation and regression',            total:8, live:false},
+    {mod:'w6',    short:'W6', name:'Week 6 · Chi-square tests and F-tests',          total:8, live:false},
+    {mod:'w7',    short:'W7', name:'Week 7 · PCA and non-parametric tests',          total:6, live:false},
+    {mod:'w8',    short:'W8', name:'Week 8 · Exercises and repetition',              total:4, live:false},
+    {mod:'w9a',   short:'9A', name:'Week 9A · Exercises and repetition II',          total:4, live:false},
+    {mod:'w9b',   short:'9B', name:'Week 9B · The blank test',                       total:2, live:false},
+    {mod:'w10',   short:'W10',name:'Week 10 · Final oral exam',                      total:1, live:false},
     /* tools: listed and ticked, never part of the percentage */
     {mod:'practice',     short:'PA', name:'Practice arena — endless randomised problems', total:8,live:true,opt:true,href:'practice.html'},
     {mod:'sampling-sim', short:'SIM',name:'Sampling-distribution simulator',              total:1,live:true,opt:true,href:'sampling-sim.html'},
     {mod:'exam',         short:'EX', name:'Exam cards — every question from five real exams', total:28,live:true,opt:true,href:'exam-cards.html'}
   ];
+
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}
   /* build the chapter data straight from a student's Firebase mod object —

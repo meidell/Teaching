@@ -1,5 +1,5 @@
 /* =====================================================================
-   SUMAS · Applied Statistics — the in-class exercise engine.
+   SUMAS · Quantitative Methods — the in-class exercise engine.
 
    A 3-hour session is two parts. Part 1 (~1 h) is the lesson: the
    instructor presents the deck, the class follows the same numbered

@@ -473,31 +473,41 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   dashboard's assignment reader shows the pizzeria file; there is no
   `compile.html` yet (the E1410 one is the template).
 
-### SUMAS · MBA401 — `SUMAS/mba401/`
+### SUMAS · MBA401 Quantitative Methods — `SUMAS/mba401/`
 
-A **100% copy of `HEG/statistics`** made 27 Sep 2026 (Weeks 1–3 built, 4–16
-scaffolds, tools, homework, deck, presence, releases, the Monday/Wednesday
-groups), restyled for SUMAS. Everything in the HEG/statistics section above
-applies here too, with these differences:
+Started 27 Sep 2026 as a copy of `HEG/statistics` restyled for SUMAS, then
+**restructured on 28 Sep 2026 to the SUMAS syllabus**: 9 teaching weeks of
+3 h (Mondays 9–12, Gland) + Week 10, the final **oral** exam. Everything the
+HEG/statistics section says about the engine (exercises.js, answers.js,
+releases, the progress-denominator trap) still applies. What differs:
 
-- **Its own namespace, `mba401`, and its own localStorage prefix, `mba401_`**
-  (the HEG copy uses `stats_`). Every `'stats_…'` key, `NS="statistics"`,
-  `statistics/_presence…`, `course=statistics` and the base href were
-  rewritten, so the two courses share no data even in one browser.
-  ⚠ **The `mba401` rules block is in `firebase-database-rules.json` but must be
-  DEPLOYED** — until then the namespace is shut and nothing records.
-- **Theme is `/shared/themes/sumas-stats.css`**: heg.css with every colour
-  mapped to SUMAS (navy → deep green #2C5530, red → green #4A8B3A, grey-white
-  → sand #F4EDE0, and the dark palette to match). The same mapping was applied
-  to every hex literal in the copied pages, including deck SVGs and the tools'
-  own `:root`s. Headings are Georgia, as on OMBA401. Logo: `sumas-logo.png`.
-- "HEG Genève" / "Haute école de gestion de Genève" became "SUMAS" and
-  Cyberlearn became Moodle. The pizzeria-in-Geneva case, the office (B2.13),
-  office hours and the 60/20/20 grading were copied unchanged.
-- **The two folders are independent.** A fix made in one does not reach the
-  other — port it by hand, the way the qm1 runtime files are ported.
-- Unlisted (SUMAS cohort course); in `robots.txt`; config.js mirror carries
-  its groups (so the three-copies rule for groups now applies per course).
+- **Most weeks have two parts, each an HEG lesson page:** 1A/1B = HEG 1/2,
+  2A/2B = 3/4, 3A/3B = 5/6, 4A/4B = 7/8, 5 = 9, 6 = 10, 7 = 11, 8 = 13,
+  9A/9B = 14/15, 10 = 16. HEG's Week 12 (Python) was **dropped**. Files,
+  module ids and workbook ids follow the new labels (`week2a.html`, `w2a`,
+  `w2a_event`), and section numbers read `2A.3`.
+- ⚠ **Attendance is per WEEK, not per part.** Parts A and B share one
+  session: the pages mount presence with `mod:'w1'`, not `MOD`. presence.js
+  has its own `SESSIONS` list (w1…w9, with the pages each covers) because the
+  course-progress chapters are per part. `presenceSessions` is 9.
+- **One class, no groups** — removed from courses.json, the config.js mirror
+  and presence.js (whose group machinery is kept but inert: `multi()` is false).
+- **Grading is the syllabus's:** 10% participation (attendance a fifth of it;
+  5+ absences bar the student from the final exam) · 25% individual case study
+  (2,000 words, due 23 Jan 2027) · 30% weekly quizzes · 35% final oral exam.
+  The weekly workshop ("pizzeria file") is ungraded practice for the case
+  study, not a graded project. The site's per-week checkpoint is still labelled
+  a self-check, not the graded quiz.
+- **No scaffold generator in this folder** — the scaffolds were relabelled by
+  hand and `_build/` was removed; re-running HEG's generator here would undo it.
+- **Own namespace `mba401` and localStorage prefix `mba401_`**; its rules
+  block is in `firebase-database-rules.json` and must be deployed.
+- **Theme `/shared/themes/sumas-stats.css`** (heg.css colour-mapped to SUMAS
+  green/sand), Georgia headings, `sumas-logo.png`. Unlisted; in robots.txt;
+  reachable from the SUMAS landing page `/SUMAS/index.html` (a copy of
+  `/GBS/index.html` — never link it from the root catalogue).
+- **The two folders are independent.** A fix in one reaches the other only
+  if you port it by hand.
 
 ### HEG · Quantitative Methods I — `HEG/quantitative-methods/`
 
