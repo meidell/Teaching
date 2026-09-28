@@ -477,7 +477,7 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
 
 Started 27 Sep 2026 as a copy of `HEG/statistics` restyled for SUMAS, then
 **restructured on 28 Sep 2026 to the SUMAS syllabus**: 9 teaching weeks of
-3 h (Mondays 9–12, Gland) + Week 10, the final **oral** exam. Everything the
+3 h (Mondays 9–12, Gland) + Week 10, the final exam. Everything the
 HEG/statistics section says about the engine (exercises.js, answers.js,
 releases, the progress-denominator trap) still applies. What differs:
 
@@ -494,7 +494,7 @@ releases, the progress-denominator trap) still applies. What differs:
   and presence.js (whose group machinery is kept but inert: `multi()` is false).
 - **Grading is the syllabus's:** 10% participation (attendance a fifth of it;
   5+ absences bar the student from the final exam) · 25% individual case study
-  (2,000 words, due 23 Jan 2027) · 30% weekly quizzes · 35% final oral exam.
+  (2,000 words, due 23 Jan 2027) · 30% weekly quizzes · 35% final exam.
   The weekly workshop ("pizzeria file") is ungraded practice for the case
   study, not a graded project. The site's per-week checkpoint is still labelled
   a self-check, not the graded quiz.
@@ -893,6 +893,15 @@ device's work is lost and it does not matter which one is ahead.
 The storage shape is deliberately identical to the one E1410's `join.html` already
 used — `<key>_auth = {sid, name, pass}` and `_roster/<sid> = {name, pass, ts}` — so that
 course's existing roster kept working with no migration.
+
+⚠ **A refused write must not look like a registration.** `fetch` does not
+reject on 401, so until Sept 2026 a namespace whose rules were never
+published (mba401) let students "register": they were shown a code, their
+device saved it, and nothing reached the database — so they never appeared
+on the dashboard. `submit()` now checks every response and says so, and
+`healRoster()` on boot writes a missing `_roster/<sid>` from the device's
+saved identity (create-once, so it can only fill a gap). **A new course's
+rules block must be published before its link goes to students.**
 
 Turn it on for a course by setting `login:true` in [shared/config.js](shared/config.js)
 and loading `login.js` **before** `progress.js`. When it is on, `login.js` owns the

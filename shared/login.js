@@ -77,6 +77,7 @@ window.CourseLogin = (function () {
       needGrp:"Please choose your group.",
       needBoth:"Enter your name and your six-digit code.",
       net:"Network problem — try again in a moment.",
+      refused:"The course database refused this — nothing was saved. Tell your instructor (the course's database rules may not be published yet).",
       merged:"Signed in. Bringing your progress across…"
     },
     fr: {
@@ -101,6 +102,7 @@ window.CourseLogin = (function () {
       needGrp:"Veuillez choisir votre groupe.",
       needBoth:"Entrez votre nom et votre code à six chiffres.",
       net:"Problème de réseau — réessayez dans un instant.",
+      refused:"La base de données du cours a refusé l'enregistrement — rien n'a été sauvegardé. Prévenez votre enseignant (les règles de la base ne sont peut-être pas publiées).",
       merged:"Connecté. Récupération de votre progression…"
     }
   };
@@ -357,6 +359,7 @@ window.CourseLogin = (function () {
       if(!name||!code){err(t.needBoth);return;}
       err('…');
       get('_roster/'+sid).then(function(rec){
+        if(rec&&rec.error){err(t.refused);return;}
         if(!rec||!rec.pass){err(t.nofind);return;}
         if(String(rec.pass)!==code){err(t.bad);return;}
         var a={sid:sid,name:rec.name||name,pass:code};
@@ -374,6 +377,7 @@ window.CourseLogin = (function () {
     if(hasGroups()&&!pickedGrp){err(t.needGrp);return;}
     err('…');
     get('_roster/'+sid).then(function(existing){
+      if(existing&&existing.error){ err(t.refused); return; }
       if(existing&&existing.pass){ setMode('back'); err(t.dupe); return; }
       var pass=String(Math.floor(100000+Math.random()*900000)), ts=Date.now();
       var grp=hasGroups()?pickedGrp:null;
@@ -388,7 +392,13 @@ window.CourseLogin = (function () {
          roster is create-once in the rules, so this copy can never be
          corrected, and the node can. */
       if(grp)writes.push(put(sid+'/grp',grp));
-      return Promise.all(writes).then(function(){
+      /* ⚠ fetch() does not reject on 401. Until Sept 2026 a refused write
+         (a namespace whose rules were never published — mba401) came back
+         here as success: the student was shown a code, their device saved
+         it, and nothing reached the database, so they never appeared on the
+         dashboard. Check every response. */
+      return Promise.all(writes).then(function(rs){
+        if(rs.some(function(r){return !r.ok;})){ err(t.refused); return; }
         var a={sid:sid,name:name,pass:pass};
         if(grp)a.grp=grp;
         saveAuth(a);
@@ -415,12 +425,29 @@ window.CourseLogin = (function () {
     });
   }
 
+  /* A device can hold a code the database never received — see the ⚠ in
+     submit(). If the roster answers with a plain null (readable, absent),
+     write the record now: `_roster/$sid` is create-once, so this can only
+     ever fill a gap, never overwrite anyone. A refused read ({error}) is
+     left alone. Without this, the code on the student's screen would never
+     work on a second device. */
+  function healRoster(a){
+    if(!a||!a.sid||!a.pass)return;
+    get('_roster/'+a.sid).then(function(rec){
+      if(rec!==null)return;
+      var r={name:a.name||a.sid,pass:String(a.pass),ts:Date.now()};
+      if(a.grp)r.grp=a.grp;
+      put('_roster/'+a.sid,r);
+    }).catch(function(){});
+  }
+
   /* ---- boot ---- */
   function boot(){
     var a=auth();
     if(a){
       renderPill();
       mergeDown(a.sid).then(function(ch){ adopt(a,ch); });
+      healRoster(a);
     }else{
       renderPill();
       if(window.COURSE_LOGIN_AUTO!==false&&window.COURSE_ACCESS!==false&&window.E1410_ACCESS!==false){

@@ -41,7 +41,7 @@ window.CourseProgress=(function(){
     {mod:'w8',    short:'W8', name:'Week 8 · Exercises and repetition',              total:4, live:false},
     {mod:'w9a',   short:'9A', name:'Week 9A · Exercises and repetition II',          total:4, live:false},
     {mod:'w9b',   short:'9B', name:'Week 9B · The blank test',                       total:2, live:false},
-    {mod:'w10',   short:'W10',name:'Week 10 · Final oral exam',                      total:1, live:false},
+    {mod:'w10',   short:'W10',name:'Week 10 · Final exam',                      total:1, live:false},
     /* tools: listed and ticked, never part of the percentage */
     {mod:'practice',     short:'PA', name:'Practice arena — endless randomised problems', total:8,live:true,opt:true,href:'practice.html'},
     {mod:'sampling-sim', short:'SIM',name:'Sampling-distribution simulator',              total:1,live:true,opt:true,href:'sampling-sim.html'},
