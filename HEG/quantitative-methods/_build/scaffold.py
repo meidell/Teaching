@@ -20,8 +20,8 @@ Re-run after editing SPEC:
     python3 "HEG/quantitative-methods/_build/scaffold.py"
 
 ⚠ When a week is written by hand, DELETE its entry from SPEC — otherwise
-the next run silently overwrites the hand-written file. (Week 1 is not in
-SPEC for exactly this reason.)
+the next run silently overwrites the hand-written file. (Weeks 1–3 are not
+in SPEC for exactly this reason.)
 """
 import os, html, json
 ROOT=os.path.join(os.path.dirname(__file__),'..')
@@ -29,51 +29,6 @@ ROOT=os.path.join(os.path.dirname(__file__),'..')
 # Objectives and content below are taken from the 2026/2027 syllabus,
 # week by week; the framing and the exercises are this site's.
 SPEC=[
- dict(n=3,slug='Lines, parabolas and systems of linear equations',emoji='📐',
-  title='Break-even, and where <em>supply meets demand</em>',
-  sub='The single most-used shape in business is a straight line, and the second is a parabola. This week makes both precise: slope as a rate of change, the four ways to write a line, the vertex of a parabola, and systems of equations solved three ways — because break-even analysis and market equilibrium are the same piece of algebra.',
-  ch='Lines · parabolas · systems of equations',
-  reads=[('Gallo, "A Refresher on Break-even Quantity" (HBR, 2015) — on Cyberlearn','#')],
-  objectives=['Compute and interpret the slope of a line as a rate of change in a business context — cost per unit, marginal revenue.',
-              'Write and manipulate equations of lines (point-slope, slope-intercept, general form) and identify parallel and perpendicular lines.',
-              'Build and interpret linear business functions: cost, revenue, profit, demand, supply and linear depreciation.',
-              'Recognise quadratic functions and graph parabolas — vertex, axis of symmetry, intercepts, direction of opening.',
-              'Find maximum and minimum values using the vertex to solve revenue and profit problems.',
-              'Solve systems of two (and three) linear equations by substitution and elimination, and interpret consistent, inconsistent and dependent cases.',
-              'Apply systems to break-even analysis (cost = revenue) and market equilibrium (supply = demand).'],
-  sections=[
-   ('The hook','At what price does the market clear?','Drag supply and demand until they cross',
-    ['Two lines on one chart, both draggable. The crossing is the equilibrium price and quantity — and finding it is a system of two equations.',
-     'Lock a guess for the equilibrium price of a kilo of house blend; the section closes by solving it exactly.'],'Hook'),
-   ('The line','Slope is a rate of change','Point-slope, slope-intercept, general form · parallel and perpendicular',
-    ['Widget: drag two points, read the slope as "francs per unit" and see all three forms of the equation update together.',
-     'Horizontal and vertical lines, and why a vertical line is not a function.',
-     'Classify (6 rows): given a business sentence, which is the slope and which the intercept.'],'Lines'),
-   ('Linear business functions','Cost, revenue, profit, demand, supply, depreciation','Six shapes, one form',
-    ['Linear depreciation worked in full: a CHF 48 000 roaster over eight years, straight-line to a residual value.',
-     'Demand slopes down, supply slopes up — and the sign of the slope is the economics.'],'Build'),
-   ('Parabolas','The vertex is the decision','Axis of symmetry · intercepts · concavity · max and min',
-    ['Widget: a,b,c sliders with the vertex, axis and roots marked — the Week 1 discriminant lab, extended to read the vertex as an answer.',
-     'Revenue maximisation worked on XY Coffee\'s demand curve, then profit maximisation, and the difference between the two answers.'],'Parabolas'),
-   ('Systems','Two facts, two unknowns','Substitution · elimination · the graphical reading',
-    ['Consistent, inconsistent and dependent, each shown as a picture: one crossing, no crossing, the same line twice.',
-     'A three-variable system introduced briefly, and a first look at nonlinear systems (a line meeting a parabola — up to two answers).'],'Systems'),
-   ('Applications','Break-even and market equilibrium','Cost = revenue · supply = demand',
-    ['Break-even for the café, and then for the roastery with a second cost structure — the volume at which the new roaster becomes the cheaper option.',
-     'The hook closes: equilibrium price and quantity for the house blend, solved exactly and read back as a business sentence.'],'Apply'),
-   ('Review quiz','Prove it to yourself','Twelve questions · not graded',
-    ['Slopes, forms of a line, the vertex, consistent vs inconsistent systems, break-even and equilibrium.'],'Quiz')],
-  slides=['Quantitative Methods I · Session #3 — Lines, parabolas and systems','Recap: combining functions','Slope as a rate of change','Three forms of the equation of a line','Parallel and perpendicular','Horizontal and vertical lines','Linear cost, revenue and profit','Demand and supply as linear functions','Linear depreciation, worked','The quadratic function and its graph','Vertex, axis of symmetry, intercepts','Concavity: which way does it open?','Maximising revenue with the vertex','Systems: substitution','Systems: elimination','Consistent, inconsistent, dependent','Three variables, briefly','Nonlinear systems: a line meets a parabola','Break-even analysis','Market equilibrium: supply = demand','Part 2 · exercises','Takeaways · homework · Week 4'],
-  ex=[('Slope as francs per unit',10,'three business sentences → three slopes, with units'),
-      ('Write the line three ways',12,'one pair of points, three equivalent equations'),
-      ('Linear depreciation',12,'the roaster over eight years, and its book value in year five'),
-      ('Find the vertex',12,'a revenue parabola: peak price, peak revenue, and the two roots'),
-      ('Solve a system twice',14,'substitution and elimination on the same pair — the answers must agree'),
-      ('Consistent or not?',10,'three systems: one solution, none, or infinitely many'),
-      ('Break-even, two cost structures',15,'at what volume does the new roaster become cheaper?'),
-      ('Market equilibrium',12,'supply = demand for the house blend, solved and interpreted')],
-  tools=[]),
-
  dict(n=4,slug='Rate of change and the derivative',emoji='📈',
   title='What does <em>one more</em> cost us?',
   sub='Week 1 found the cost of the 61st tonne by subtracting two rows of a table. That only works when somebody hands you the table. The derivative is how you answer the same question from the formula, at any point, exactly — and "the cost of one more" is the number almost every business decision turns on.',
