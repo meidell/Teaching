@@ -222,8 +222,8 @@ window.StatsPresence = (function () {
      is not a session. */
   var SESSIONS=[
     {mod:'w1',n:1,name:'Week 1 · Describing data',             pages:['w1a','w1b']},
-    {mod:'w2',n:2,name:'Week 2 · Probability and distributions',pages:['w2a','w2b']},
-    {mod:'w3',n:3,name:'Week 3 · Sampling and estimation',      pages:['w3a','w3b']},
+    {mod:'w2',n:2,name:'Week 2 · The normal and sampling distributions',pages:['w2a','w2b']},
+    {mod:'w3',n:3,name:'Week 3 · Estimation',                   pages:['w3']},
     {mod:'w4',n:4,name:'Week 4 · Testing hypotheses',           pages:['w4a','w4b']},
     {mod:'w5',n:5,name:'Week 5 · Correlation and regression',   pages:['w5']},
     {mod:'w6',n:6,name:'Week 6 · Chi-square tests and F-tests', pages:['w6']},

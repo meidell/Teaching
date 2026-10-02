@@ -28,13 +28,15 @@ window.CourseProgress=(function(){
     {mod:'w1a-hw',short:'H1A',name:'Week 1A · Homework — describe the market',       total:23,live:true, href:'week1a-homework.html'},
     {mod:'w1b',   short:'1B', name:'Week 1B · Descriptive statistics',               total:9, live:true, href:'week1b.html'},
     {mod:'w1b-hw',short:'H1B',name:'Week 1B · Homework — picture & place the data',  total:20,live:true, href:'week1b-homework.html'},
-    {mod:'w2a',   short:'2A', name:'Week 2A · Discrete random variables',            total:9, live:true, href:'week2a.html'},
+    /* Week 2 was rebuilt on 2 Oct 2026: discrete random variables (Saylor
+       ch. 3–4) were dropped, so 2A is now the normal (ch. 5) and 2B the
+       sampling distributions (ch. 6) that used to be 3A. Week 3 is
+       estimation alone, one part. */
+    {mod:'w2a',   short:'2A', name:'Week 2A · Continuous random variables and the normal', total:9, live:true, href:'week2a.html'},
     {mod:'w2a-hw',short:'H2A',name:'Week 2A · Homework — thirteen exercises from the book', total:14,live:true,href:'week2a-homework.html'},
-    {mod:'w2b',   short:'2B', name:'Week 2B · Continuous random variables',          total:9, live:true, href:'week2b.html'},
+    {mod:'w2b',   short:'2B', name:'Week 2B · Sampling distributions',               total:9, live:true, href:'week2b.html'},
     {mod:'w2b-hw',short:'H2B',name:'Week 2B · Homework — thirteen exercises from the book', total:14,live:true,href:'week2b-homework.html'},
-    {mod:'w3a',   short:'3A', name:'Week 3A · Sampling distributions',               total:9, live:true, href:'week3a.html'},
-    {mod:'w3a-hw',short:'H3A',name:'Week 3A · Homework — thirteen exercises from the book', total:14,live:true,href:'week3a-homework.html'},
-    {mod:'w3b',   short:'3B', name:'Week 3B · Estimation',                           total:8, live:false},
+    {mod:'w3',    short:'W3', name:'Week 3 · Estimation',                            total:8, live:false},
     {mod:'w4a',   short:'4A', name:'Week 4A · Testing hypotheses',                   total:8, live:false},
     {mod:'w4b',   short:'4B', name:'Week 4B · Two-sample problems',                  total:8, live:false},
     {mod:'w5',    short:'W5', name:'Week 5 · Correlation and regression',            total:8, live:false},
