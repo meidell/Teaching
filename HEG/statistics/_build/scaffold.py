@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HEG · Applied Statistics — generator for the scaffold week pages (3–16).
+HEG · Applied Statistics — generator for the scaffold week pages (7–16).
 
 Each scaffold is a REAL page on the same chrome as week1/week2 (stats.css,
 top banner, course bar, ▶ Lecture) whose content is the plan for that week:
@@ -21,31 +21,6 @@ SAY='https://saylordotorg.github.io/text_introductory-statistics/'
 def S(u): return SAY+u
 
 SPEC=[
- dict(n=6,slug='Estimation',emoji='📏',
-  title='The Geneva price — <em>with a margin</em>',
-  sub='Week 5 told you how far a sample mean wanders. Now turn that around: from one sample, build an interval that captures the true Geneva price with a stated confidence. Large samples use z; small samples use t; proportions have their own formula; and the last section asks the question a budget asks — how many pizzerias must we visit to be within one franc?',
-  ch='Saylor ch. 7',
-  reads=[('Saylor §7.1 — Large-sample estimation of a population mean',S('s11-01-large-sample-estimation-of-a-p.html')),('Saylor §7.2 — Small-sample estimation of a population mean',S('s11-02-small-sample-estimation-of-a-p.html')),('Saylor §7.3 — Large-sample estimation of a population proportion',S('s11-03-large-sample-estimation-of-a-p.html')),('Saylor §7.4 — Sample size considerations',S('s11-04-sample-size-considerations.html'))],
-  objectives=['Build and interpret a confidence interval for a mean with a large sample: x̄ ± z·σ/√n.','Build one for a small sample with t and df = n − 1 — and say why t is wider.','Build a confidence interval for a proportion: p̂ ± z·√(p̂q̂/n).','Compute the sample size needed for a target margin of error.','Say what "95% confident" means — and what it does not.'],
-  sections=[
-   ('The hook','Give me a margin','Estimate the ± you would put on the Geneva price',['Slider: "the true Geneva Margherita price is CHF 19.6, plus or minus how much?" Lock it; section 6.2 computes it.'],'Hook'),
-   ('Large samples','x̄ ± z·σ/√n','The confidence interval for a mean (§7.1)',['Widget: the interval on the number line, confidence level 90/95/99 as a toggle, n as a slider; watch the interval widen with confidence and shrink with n.','<b>Catch the mean</b>: 100 samples, 100 intervals, about 95 of them capture µ — the meaning of "95% confident" as a picture. Exam card c9.'],'CI (z)'),
-   ('Small samples','When n is small, use t','df = n − 1 and the t table (§7.2)',['Widget: z versus t curves for df = 5, 10, 29 — the fatter tails and the wider interval.','Classify (6 rows): z or t? — n = 8 with unknown σ, n = 50, a normal population with known σ, and traps. Exam card c10.'],'CI (t)'),
-   ('Proportions','Share above CHF 20, with a margin','p̂ ± z·√(p̂q̂/n) (§7.3)',['Widget: the interval for the proportion over CHF 20 from 30 pizzerias, and why 30 is barely enough (np̂ ≥ 10 and nq̂ ≥ 10 check). Exam card c11.'],'Proportion'),
-   ('Sample size','How many pizzerias for ± 1 franc?','n = (z·σ/E)² and n = z²·p̂q̂/E² (§7.4)',['Widget: choose the margin E and confidence; read n. The budget question: each visit costs a Margherita — what does ±1 franc cost? Exam card c12.'],'Sample size'),
-   ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: a z-interval, a t-interval, a proportion interval, a sample-size calculation, two interpretation traps ("95% of pizzerias are inside the interval" is wrong), and the z-or-t choice.'],'Quiz'),
-   ('Workshop','The pizzeria file · instalment six','Workbook fields',['w6_ci — your 95% confidence interval for the Geneva price, written as a sentence a bank would accept.','w6_n — the sample size for the margin you would want, and whether it is worth the visits.'],'Exercise')],
-  slides=['Applied Statistics · Week 6 — Estimation','Recap → today: turning σ/√n around','Poll: the Geneva price ± how much?','The interval: x̄ ± z·σ/√n','What 95% means — 100 intervals, ~95 catches','Small samples: t and df = n − 1','z or t? the decision','A proportion: p̂ ± z·√(p̂q̂/n)','Sample size: n = (z·σ/E)²','Your turn — checkpoint live','Takeaways · homework · Week 7'],
-  ex=[('A 95% interval for the mean',15,'x̄ ± z·σ/√n on the Week 2 data'),
-      ('Change the confidence',10,'90, 95, 99 — what widens, and what it buys'),
-      ('z or t?',10,'six situations, the decision and the reason'),
-      ('A small-sample interval',18,'n = 8 lakeside pizzerias, t with df = 7'),
-      ('An interval for a proportion',15,'p̂ ± z·√(p̂q̂/n), with the np̂ ≥ 10 check'),
-      ('What does 95% mean?',10,'four statements, one correct — the misinterpretation clinic'),
-      ('Sample size for ± 1 franc',15,'n = (z·σ/E)², and what it costs in visits'),
-      ('Your interval, in a sentence',10,'the one a bank would accept')],
-  tools=[('catch-the-mean.html','Catch the mean — intervals that catch µ'),('exam-cards.html','Exam cards c9–c12')]),
-
  dict(n=7,slug='Testing hypotheses',emoji='⚖️',
   title='A competitor claims the Geneva average is CHF 20. <em>Is it?</em>',
   sub='Estimation says where the truth probably is; testing asks whether a specific claim survives the data. This week is the logic of hypothesis testing — null and alternative, test statistic, rejection region, the two kinds of error — then the one-sample z test, the p-value, the small-sample t test, and the test for a proportion.',
