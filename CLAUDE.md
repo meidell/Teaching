@@ -538,6 +538,70 @@ releases, the progress-denominator trap) still applies. What differs:
 - **The two folders are independent.** A fix in one reaches the other only
   if you port it by hand.
 
+### SUMAS · MBA406 Managerial Finance — `SUMAS/mba406/`
+
+Built 2 Oct 2026 on the **MBA401 pattern** — same engine, same page
+anatomy, same grading — for the SUMAS Fall 2026 syllabus: 9 teaching weeks
+of 3 h (Thursdays 9–12, Gland, Butterfly I) + Week 10, the final exam.
+Textbook: Brealey, Myers & Marcus, *Fundamentals of Corporate Finance*,
+11th ed. Everything the HEG/statistics and MBA401 sections say about the
+engine (exercises.js, answers.js, releases, the progress-denominator trap,
+presence needing an account) applies. What differs:
+
+- **One page per week, no A/B parts.** `week1.html`, `week2.html` …; module
+  ids `w1`, `w1-hw`, `w2`, `w2-hw`; attendance sessions `w1`…`w9`, one per
+  week, so presence mounts with `mod:MOD`. `presenceSessions` is 9. Weeks
+  3–10 have **no pages yet** — `live:false` in `courseprogress.js`, locked
+  on the hub, no scaffolds; the hub card is a `div` with no href.
+- **The runtime files are renamed ports of MBA401's**, byte-comparable apart
+  from the namespace, the `mba406_*` keys and the copy: `exercises.js`,
+  `answers.js`, `presence.js` (its `SESSIONS` list is the nine weeks),
+  `courseprogress.js`. `fin.css` is `stats.css` **unchanged, plus a block
+  at the END** (`.fs` statement tables, `.kpi` tiles, `.lea` the founder's
+  voice, `.timeline`, `.amort`, `.steps`/`.turn` walkers, `.lever`), so a
+  diff against `SUMAS/mba401/stats.css` shows exactly what was added.
+- ⚠ **The textbook is commercial, so nothing of it is quoted.** No `.book`
+  blocks, no end-of-chapter problems reproduced, no PDF mirrored. Chapters
+  are *referenced* ("BMM ch. 4"); exercises and homework are the course's
+  own, written in the textbook's style on the running case or a second
+  company. Keep it that way — the repo is the web root.
+- **The running case is Atelier Rochat SA**, a furniture workshop in Nyon
+  (founder Léa Rochat, 12 staff, CHF 2.4m sales, three hotel clients); the
+  student is its first finance manager. Every week is one decision from
+  the syllabus's "Decision:" line — Week 1 *healthy enough to expand?*,
+  Week 2 *lease or borrow the router?*, then the second site, its hurdle
+  rate, the firm's value, the cash squeeze, the low-carbon project's
+  financing, 30% growth. **The FY2025 statements are the canonical dataset**
+  (CHF 000: revenue 2,400 · NI 240 · total assets 2,000 · equity 1,000 ·
+  cash 150 → 90; CFO 230, capex 280, dividend 70) and later weeks should
+  build on them, not invent new ones. Week 2's quotes: lease 2,400 × 60 +
+  12,000 buy-back vs 120,000 at 6% (payment 2,319.94; PV lease 133,037.81;
+  break-even lease 2,147.94). The homework company is **Nyon Cycles SA**.
+- **Every number was verified in Python before shipping** — statements that
+  balance, a cash-flow statement that reconciles, the amortisation
+  schedule, every `ans:` in the exercises, quizzes and homework. The script
+  is not in the repo; recompute for any new week the same way.
+- **Slide ↔ section mapping is COMPUTED**, the qm1 way: Part 1 slides carry
+  `site:'sX'`, `wireSlides()` sets `SECTIONS[].slide` and paints the chips
+  on the section cards and headings. Never put a literal slide number in.
+  Part 2's slides come from `EXERCISES`; `SLIDES = P1 + [part2] + exercise
+  slides + P2END`.
+- **Ratios use year-end balances** (the book sometimes averages), stated on
+  the page and on the slide. Week 1's `ratios()` is the one definition for
+  the tiles, the what-if and the deck.
+- **Grading is the syllabus's and identical to MBA401:** 10% participation
+  (5+ absences bar the exam) · 25% individual case study (2,000 words, due
+  23 Jan 2027) · 30% weekly Moodle quizzes · 35% final exam, closed book.
+  The site's checkpoint is a self-check; the workshop ("the Rochat file")
+  is ungraded practice for the case study.
+- **Own namespace `mba406` and localStorage prefix `mba406_`.** Its rules
+  block in `firebase-database-rules.json` is a copy of `mba401`'s with the
+  one self-reference changed and **must be deployed** before the link goes
+  to students — until then registration silently fails (see *Cross-device
+  login*). Unlisted; in `robots.txt`; the mirror entry is in
+  `/shared/config.js`; reachable from `/SUMAS/index.html`. The hub has no
+  teaching-plan page and no toolkit section — there is nothing to link yet.
+
 ### HEG · Quantitative Methods I — `HEG/quantitative-methods/`
 
 The year-long Bachelor IBM module (2026/27 syllabus: Caboussat, Kirner, Meidell,

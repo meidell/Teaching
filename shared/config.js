@@ -62,6 +62,8 @@ window.CourseConfig = (function () {
                            {id:"g2",label:"Wednesday",short:"Wed",n:2}] },
     "mba401":    { ns:"mba401",    theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MBA401 Quantitative Methods" },
+    "mba406":    { ns:"mba406",    theme:"sumas", lang:"en", login:true,
+                   label:"SUMAS · MBA406 Managerial Finance" },
     "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { ns:"creator",   theme:"gbs",   lang:"en", login:true,
