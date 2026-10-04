@@ -529,6 +529,28 @@ releases, the progress-denominator trap) still applies. What differs:
   a self-check, not the graded quiz.
 - **No scaffold generator in this folder** — the scaffolds were relabelled by
   hand and `_build/` was removed; re-running HEG's generator here would undo it.
+- ⚠ **Week 2 was rebuilt again on 4 Oct 2026 to follow Saylor SECTION BY
+  SECTION** (Jan Erik: "follow the sequence of Saylor chapter 5–6 in the
+  slides and the sub cards … mix theory, explanations and examples … add
+  interactive widgets"). `week2a.html`'s six lesson sections are now §5.1
+  (density, Examples 1–2), §5.1 normal family (Example 3), §5.2 (Examples
+  4–8), §5.3 (Examples 9–11, the hook closes), §5.4 tails of Z (Examples
+  12–14) and §5.4 tails of X (Examples 15–18, the delivery promise); every
+  definition and Key Takeaways list is quoted in a `.book` block and
+  **all eighteen examples** are walked (`buildSteps`) or set as a "your
+  turn" (`buildTurn`). `week2b.html` kept its §6.1–6.3 order and gained
+  the book's Figures 6.1, 6.4 and 6.5/6.6 as widgets plus the Key
+  Takeaways. New widgets worth knowing: `revLook(p)` reads the table in
+  reverse the book's way (closer entry; **average on an exact tie**, so
+  0.9500 → 1.645) and drives the reverse-lookup finder, the middle-%
+  slider and the promise; `tableExcerpt(z)` prints the 3-row slice of
+  Figure 12.2 around a z. **Sections now complete by combination through
+  `secCheck()`** (the section's walked examples + its classify group), so
+  classify groups are built with `secId=null` — same pattern as qm1's
+  `SECDEPS`. The exercise sets, checkpoints and workshop fields are
+  unchanged (same `w2a_*` / `w2b_*` ids); the week totals stayed 9.
+  Verification: a headless probe plays every widget to 100 % and a Python
+  script recomputes every stated number the book's way (77 checks for 2A).
 - **Own namespace `mba401` and localStorage prefix `mba401_`**; its rules
   block is in `firebase-database-rules.json` and must be deployed.
 - **Theme `/shared/themes/sumas-stats.css`** (heg.css colour-mapped to SUMAS
