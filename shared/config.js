@@ -64,6 +64,8 @@ window.CourseConfig = (function () {
                    label:"SUMAS · MBA401 Quantitative Methods" },
     "mba406":    { ns:"mba406",    theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MBA406 Managerial Finance" },
+    "gen110":    { ns:"gen110",    theme:"umef",  lang:"fr", login:true,
+                   label:"SWISS UMEF · GEN 110 Intelligence artificielle" },
     "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { ns:"creator",   theme:"gbs",   lang:"en", login:true,

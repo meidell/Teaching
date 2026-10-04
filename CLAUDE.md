@@ -602,6 +602,82 @@ presence needing an account) applies. What differs:
   `/shared/config.js`; reachable from `/SUMAS/index.html`. The hub has no
   teaching-plan page and no toolkit section — there is nothing to link yet.
 
+### SWISS UMEF · GEN 110 Intelligence artificielle — `UMEF/gen110/`
+
+Built 4 Oct 2026 on the **MBA406 pattern** — same engine, same page anatomy — for
+the Swiss UMEF 2026–2027 syllabus: a Bachelor core course **in French**, for every
+programme, no maths, no code. Ten half-days of 3 h 15 (Tuesdays 13h30–16h45) on
+6 Oct, 20 Oct, 27 Oct, 3 Nov, 10 Nov, 24 Nov, 8 Dec, 15 Dec 2026, 5 Jan, 12 Jan
+2027; **final written exam Wed 3 Feb 2027, 09h45**. Everything the HEG/statistics
+and MBA406 sections say about the engine (releases needing an account, the
+progress-denominator trap, presence needing an account, one PUT per release
+id) applies. What differs:
+
+- **A séance is TWO BLOCKS of 90 min, not Part 1 + Part 2 exercises.** Each
+  block starts with a demonstration or a manipulation the students reproduce
+  on their own laptop, then a debrief and a *quiz synchronisé*. The section
+  list on a séance page is grouped `part:1` = Bloc 1, `part:2` = Bloc 2;
+  `EXERCISES` is **empty** in séance 1 and the exercise engine is loaded only
+  for its release half. Later séances may mount exercise sets (the tableur
+  workshop of séance 2 is the obvious one).
+- ⚠ **Module ids are `w1`…`w10` although the pages are `seance1.html`…**
+  The dashboard's presence picker builds `'w'+i` from `presenceSessions`
+  (`admin2.html → presSessionList`), so a `s1` id would never appear in it.
+  Labels say "Séance N"; ids say `wN`. Do not rename either.
+- **The séance quiz is the syllabus's "quiz synchronisé" and it COUNTS** —
+  in the 10 % participation mark, unlike every other course's self-check.
+  It is gated by a release flag, `_release/w1/quiz`, so the room starts
+  together: `StatsEx.watch(MOD)` polls it, `paintQuizLock()` locks
+  `#quizBox` until it appears, and the instructor launches it from §1.5 or
+  from the quiz slide (`[data-qrel]`, wired in the deck's `render()`). Same
+  account rule as every release: the gate shows the button, the signed-in
+  account is what lets the PUT through. ⚠ `watch()` must run **before** the
+  first `paintQuizLock()` — it is what reads the flags already on the device.
+- **Grading is the syllabus's: 10 % participation · 40 % team project · 50 %
+  final exam.** The project *« Une IA pour mon métier »* (teams of 3–4, a
+  no-code prototype, dossier ≤ 8 pages due Fri 15 Jan 2027 23h59, 8-min
+  presentation on 12 Jan) replaces the midterm. Attendance rule (§8 of the
+  syllabus): under 80 % presence the 10 % is lost, under 50 % no exam, two
+  latenesses = one absence. `presence.js`'s copy says exactly that; do not
+  paste MBA406's "5 absences" wording back in.
+- **Workbook fields feed the project, not a graded case.** Séance 1 has five
+  (`w1_demo`, `w1_tm_classes`, `w1_tm_echec`, `w1_equipe`, `w1_pistes`), listed
+  in `courses.json → project.sections` so the dashboard's assignment reader
+  shows them. Add a séance's fields there when you add the séance.
+- **Sections complete by combination, through `secCheck()`.** §1.2 needs the
+  three circles *and* the classify group; §1.3 the timeline (≥ 8 dates
+  opened) *and* its group; §1.6 the seven-step walk, the three sabotage tests
+  *and* both fields. Those classify groups are therefore built with
+  `secId=null`. The denominator is `EXTRA_STEPS (12) + EXERCISES (0) +
+  .cl-row (26) + .q (10) + [data-work] (5) = 53` — same trap as everywhere.
+- **No textbook is quoted.** Mitchell (2021) is the reference, not required;
+  no `.book` blocks. The timeline (`FRISE`, 17 entries) and every quiz answer
+  were fact-checked by hand (dates, names, the AI Act's staged application).
+  Quiz answer positions are mixed on purpose (`1 0 3 2 0 3 1 2 3 0`); keep
+  them that way when editing.
+- **Theme is `/shared/themes/umef-full.css`** — sumas-stats.css / heg.css with
+  every colour mapped to UMEF teal (`#0F4C60` headings and dark slides,
+  `#176B87` accents, `--terra #9B2335` for the h1 emphasis and the timeline's
+  "rupture" dots). `ia.css` is `fin.css` **minus its finance block** plus this
+  course's widgets (`.demo`, `.venn`, `.frise`, `.sab`, `.qlock`, `.grille`,
+  `.dates`, `.voix`) at the end, so a diff against `SUMAS/mba406/fin.css`
+  shows exactly what was added. Headings in Georgia, as on UMEF407.
+- **The runtime files are renamed ports of MBA406's with French copy** —
+  `exercises.js` (+ a `watch(mod)` export), `answers.js`, `presence.js`
+  (`SESSIONS` = the ten séances, 10-column presence bar), `courseprogress.js`.
+  Code comments stay English; every student- or instructor-facing string is
+  French. Only `seance1.html` exists; séances 2–10 are `live:false` in
+  `courseprogress.js` and locked `div`s on the hub.
+- **Own namespace `gen110` and localStorage prefix `gen110_`.** Its rules
+  block in `firebase-database-rules.json` is a copy of `mba406`'s with the one
+  self-reference changed and **must be deployed** before the link goes to
+  students — until then registration silently fails (see *Cross-device
+  login*). Unlisted; in `robots.txt`; the mirror entry is in
+  `/shared/config.js` with `lang:"fr"`, which is what makes `login.js`,
+  `progress.js` and `chat.js` speak French. There is no `/UMEF/index.html`
+  landing page yet; the course is reached by direct link from the UMEF
+  platform.
+
 ### HEG · Quantitative Methods I — `HEG/quantitative-methods/`
 
 The year-long Bachelor IBM module (2026/27 syllabus: Caboussat, Kirner, Meidell,
