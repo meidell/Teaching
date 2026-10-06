@@ -75,7 +75,9 @@ window.CourseConfig = (function () {
     "finmod":    { ns:"finmod",    theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Finance Modelling" },
     "wind":      { ns:"wind",      theme:"sumas", lang:"en", login:true,
-                   label:"SUMAS · MA/MBA500 Capstone — European wind to 2040" }
+                   label:"SUMAS · MA/MBA500 Capstone — European wind to 2040" },
+    "capstone-ba": { ns:"capstone-ba", theme:"sumas", lang:"en", login:true,
+                   label:"SUMAS · Capstone (Bachelors) — European wind to 2040" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */

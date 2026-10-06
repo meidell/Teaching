@@ -700,6 +700,51 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
   `/shared/config.js`; the SUMAS landing page picks the course up from
   `courses.json` by itself.
 
+### SUMAS · Capstone "AI for Good" — Bachelors — `SUMAS/capstone-ba/`
+
+The **Bachelors edition** of the capstone above, built 6 Oct 2026 from the
+SUMAS Moodle course "2026 - Milan & Gland - Capstone: AI for Good -
+Bachelors" (id 1447, printed 6 Oct 2026). That Moodle course is the Masters
+course copied into a Bachelors shell — same ten weeks, same forums, same
+three phases, same exam — so this folder is an **independent copy of
+`SUMAS/wind`** with its own namespace, start date and forums. Everything the
+`SUMAS/wind` section says about the engine (`capstone.js`, `schedule.js`,
+`forum.html`, `followup.html`, `_build/count.py`, the progress denominator)
+applies verbatim. What differs:
+
+- **Own id / ns / keyPrefix `capstone-ba`**, folder `SUMAS/capstone-ba/`,
+  rules block in `firebase-database-rules.json` (a copy of `wind`'s) that
+  **must be deployed before the link goes to students**; mirror entry in
+  `/shared/config.js`; in `robots.txt`. Unlisted; the SUMAS landing page
+  picks it up from `courses.json` by itself.
+- ⚠ **`START = 2026-10-19` is ASSUMED.** The Moodle page carried the Masters
+  run's April–June dates and said only "Available from 18 October 2026" — a
+  Sunday — so Week 1 was set to the Monday after. On that assumption the
+  exam window is 21–28 Dec 2026, Christmas week: confirm the calendar (a
+  break week would move everything) before announcing a single date.
+- **Grade weights are the same assumption as `wind`'s** (10/10/55/25). The
+  **undergraduate letter-grade scale** (A 93–100 … D 63–69, F 0–62) is in
+  `schedule.js → SCALE` and shown on the hub — it is the one block the
+  Bachelors Moodle page has that the Masters one does not.
+- **The Bachelors Moodle course has a "Zoom Link · Live-streaming lesson"**
+  the online Masters never had. Day and time are not on the page:
+  `schedule.js → LIVE` is `null` and the hub renders "to be announced";
+  set it to `{day, time, where}` once known.
+- **Bachelor-level framing** in Week 5 (the MAM/MBA "tracks" became "if
+  operations and infrastructure interest you / if finance interests you")
+  and Week 4 (the NGFS note no longer addresses "MBA students").
+- **`glossary.html`** — 89 terms in the course's own words, by the week
+  each first appears, with where it comes back; a search box; linked from
+  the hub and from every week page's top bar. Not a module and carries no
+  `data-step`/`data-work`, so it enters no denominator. It is meant to grow:
+  a term introduced on a week page gets its entry here the same day.
+- **Not copied:** the showcase page, the 2026 report PDF and the og-image
+  are linked from `/SUMAS/wind/` by absolute path. The old PIN-course stub
+  is `wind`'s alone.
+- ⚠ **The two folders are independent.** A fix in `wind` reaches
+  `capstone-ba` only if ported by hand, and vice versa — the same rule as
+  `HEG/statistics` ↔ `SUMAS/mba401`.
+
 ### SWISS UMEF · GEN 110 Intelligence artificielle — `UMEF/gen110/`
 
 A Bachelor core course for every programme at Swiss UMEF, **in French and in
