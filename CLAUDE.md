@@ -707,7 +707,7 @@ SUMAS Moodle course "2026 - Milan & Gland - Capstone: AI for Good -
 Bachelors" (id 1447, printed 6 Oct 2026). That Moodle course is the Masters
 course copied into a Bachelors shell — same ten weeks, same forums, same
 three phases, same exam — so this folder is an **independent copy of
-`SUMAS/wind`** with its own namespace, start date and forums. Everything the
+`SUMAS/wind`** with its own namespace and forums. Everything the
 `SUMAS/wind` section says about the engine (`capstone.js`, `schedule.js`,
 `forum.html`, `followup.html`, `_build/count.py`, the progress denominator)
 applies verbatim. What differs:
@@ -717,19 +717,33 @@ applies verbatim. What differs:
   **must be deployed before the link goes to students**; mirror entry in
   `/shared/config.js`; in `robots.txt`. Unlisted; the SUMAS landing page
   picks it up from `courses.json` by itself.
-- ⚠ **`START = 2026-10-19` is ASSUMED.** The Moodle page carried the Masters
-  run's April–June dates and said only "Available from 18 October 2026" — a
-  Sunday — so Week 1 was set to the Monday after. On that assumption the
-  exam window is 21–28 Dec 2026, Christmas week: confirm the calendar (a
-  break week would move everything) before announcing a single date.
+- ⚠ **This cohort MEETS WEEKLY; the Masters one never did.** Jan Erik, 6 Oct
+  2026: *"it starts tomorrow and then every Thursday 16:15–17:15 group
+  activity … and then 17:15–19:15 with me."* So `START = 2026-10-05` (Week 1
+  is the week it was said), `schedule.js → SESSION` is Thursday (day 3 from
+  the Monday) with the two time blocks, and `SESSION_DATES = {1:'2026-10-07'}`
+  puts the first session on **Wednesday 7 Oct** — the literal "tomorrow".
+  ⚠ If the first session is in fact Thursday 8 Oct, delete that one entry;
+  nothing else changes. `S.session(wk)` gives any page the week's real date.
+  The exam window then falls 7–14 Dec 2026, the same as the Masters.
+- **The group hour is designed, not left to them.** `thursday.html` holds
+  ten 60-minute plans (scribe + timekeeper, one shared page, timed steps,
+  the last ten minutes writing into the consulting file, one thing to bring
+  to 17:15) and a four-line outline of each 17:15–19:15 class. Every week
+  page opens with a `.thu` card — the session date (`[data-session]`,
+  filled by `capstone.js`), the hour's one-line brief, the class outline,
+  and a **`wN_group` consulting-file field** ("what we agreed and where I
+  disagree"). The cards and the page are generated from ONE Python dict in
+  the build that created them; if you edit a plan, edit both or regenerate.
+  ⚠ The `wN_group` fields are in every denominator (`WEEK_TOTALS` is one
+  higher than `wind`'s each week) and in `courses.json → project.sections`.
+- **Forum 1's deadline moved from Wednesday to Sunday** (`f1a` `day:6`),
+  because Week 1's session is itself on the Wednesday. Every other forum
+  keeps the Masters timing.
 - **Grade weights are the same assumption as `wind`'s** (10/10/55/25). The
   **undergraduate letter-grade scale** (A 93–100 … D 63–69, F 0–62) is in
   `schedule.js → SCALE` and shown on the hub — it is the one block the
   Bachelors Moodle page has that the Masters one does not.
-- **The Bachelors Moodle course has a "Zoom Link · Live-streaming lesson"**
-  the online Masters never had. Day and time are not on the page:
-  `schedule.js → LIVE` is `null` and the hub renders "to be announced";
-  set it to `{day, time, where}` once known.
 - **Bachelor-level framing** in Week 5 (the MAM/MBA "tracks" became "if
   operations and infrastructure interest you / if finance interests you")
   and Week 4 (the NGFS note no longer addresses "MBA students").

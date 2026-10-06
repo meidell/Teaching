@@ -14,6 +14,7 @@
      <div id="recall"></div>  + CAP.recall(...)    two questions on last week
      <div id="quiz"></div>    + CAP.quiz(...)      the self-check
      <textarea data-work="w3_rate">                a workbook field
+     <span data-session="day|group|cls">           the week's Thursday session, from schedule.js
 
    ⚠ THE PROGRESS DENOMINATOR is  .sec[data-step] + (#recall ? 1) +
    (#quiz ? 1) + [data-work]. courseprogress.js carries the same number
@@ -118,6 +119,7 @@ window.CAP = (function () {
       c.insertAdjacentHTML('afterbegin','<div class="due">On Moodle · due '+esc(p.dueText)+' CET · '+esc(p.words)+'</div>');
     });
     document.querySelectorAll('[data-week-dates]').forEach(function(e){ var w=S.week(WK); if(w)e.textContent=w.dates; });
+    document.querySelectorAll('[data-session]').forEach(function(e){ var w=S.week(WK); if(!w||!w.session)return; var k=e.getAttribute('data-session'); e.textContent=k==='day'?w.session.day:(k==='group'?w.session.group:(k==='cls'?w.session.cls:w.session.text)); });
     document.querySelectorAll('[data-due]').forEach(function(e){
       var id=e.getAttribute('data-due'), f=S.forum(id), p=S.phase(id);
       e.textContent=f?f.dueText:(p?p.dueText:'');

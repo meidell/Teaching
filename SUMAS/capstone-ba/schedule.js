@@ -12,18 +12,21 @@
    resolved to real dates here, with the Europe/Zurich offset baked in.
 
    ⚠ This is the BACHELORS edition (Moodle course id 1447, "2026 - Milan &
-   Gland - Capstone: AI for Good - Bachelors", printed 6 Oct 2026). That
-   Moodle page still carried the Masters run's dates (6 April – 15 June
-   2026) and said only "Available from 18 October 2026" — a Sunday. START =
-   Monday 19 Oct 2026 is therefore an ASSUMPTION; confirm it with the
-   programme office. The Masters edition is SUMAS/wind (START 5 Oct 2026);
-   the two folders are independent copies. Where a Moodle activity setting
-   disagrees, Moodle wins — it enforces the attempt.
+   Gland - Capstone: AI for Good - Bachelors", printed 6 Oct 2026). Unlike
+   the online Masters edition (SUMAS/wind, same START) it MEETS WEEKLY:
+   Jan Erik, 6 Oct 2026 — "it starts tomorrow and then every Thursday
+   16:15–17:15 group activity … and then 17:15–19:15 with me". So Week 1 is
+   the week of Mon 5 Oct 2026, the first session is Wed 7 Oct (the
+   SESSION_DATES override — delete it if the first session is really Thu 8
+   Oct) and every later session is the Thursday of its week. The group
+   hour's plan per week is thursday.html; the two folders are independent
+   copies. Where a Moodle activity setting disagrees, Moodle wins — it
+   enforces the attempt.
    ===================================================================== */
 (function (root) {
   'use strict';
 
-  var START = '2026-10-19';          /* Monday of Week 1 — the one line to change. ASSUMED: Moodle says "available from 18 Oct" (a Sunday) */
+  var START = '2026-10-05';          /* Monday of Week 1 — the one line to change (Jan Erik, 6 Oct 2026: "it starts tomorrow") */
   var TZ = '+02:00';                 /* CEST until 25 Oct 2026, then CET: see tzFor() */
 
   /* Grade weights. ⚠ ASSUMED from the Moodle gradebook items (Online
@@ -44,11 +47,15 @@
     ['C+','77–79'],['C','73–76'],['C−','70–72'],['D','63–69'],['F','0–62']
   ];
 
-  /* The Bachelors Moodle course carries a "Zoom Link · Live-streaming
-     lesson" the online Masters never had. Day and time are not on the page.
-     Set LIVE = {day:'Tuesday', time:'14:00–15:30', where:'Zoom — link on Moodle'}
-     once known; null renders as "to be announced" on the hub. */
-  var LIVE = null;
+  /* ---- the weekly session -------------------------------------------
+     Every Thursday: 16:15–17:15 the GROUP HOUR (students together online,
+     no instructor — the plan per week is in thursday.html and on each week
+     page), then 17:15–19:15 the class with Jan Erik. `day` is counted from
+     the week's Monday (3 = Thursday). SESSION_DATES overrides a single
+     week's date — Week 1 meets on Wednesday 7 Oct 2026, the day after the
+     course opened. The Zoom link is on Moodle. */
+  var SESSION = { day:3, group:['16:15','17:15'], cls:['17:15','19:15'], where:'Zoom — the link is on Moodle' };
+  var SESSION_DATES = { 1:'2026-10-07' };
 
   var WEEKS = [
     { n: 1,  role: 'Consultant',        title: 'Introduction to energy consulting & strategic frameworks' },
@@ -71,7 +78,7 @@
   ---------------------------------------------------------------------- */
   var FORUMS = [
     { id:'f1a', wk:1, short:'Introduce yourself',           title:'Forum 1 · Introduce yourself',
-      post:{min:200,max:300,day:2,time:'23:59'} },
+      post:{min:200,max:300,day:6,time:'23:59'} },   /* Sunday here, not Wednesday: Week 1's first session is Wednesday */
     { id:'f1b', wk:1, short:'Data scavenger hunt',          title:'Forum 2 · Data scavenger hunt',
       post:{min:150,max:350,day:6,time:'23:59'}, re:{n:1,min:50,day:6,time:'23:59'} },
     { id:'f1c', wk:1, short:'Stakeholder map',              title:'Forum 3 · Stakeholder map of European offshore wind',
@@ -151,9 +158,20 @@
   EXAM.openText = fmtFull(EXAM.open,EXAM.opens.time); EXAM.closeText = fmtFull(EXAM.close,EXAM.closes.time);
   WEEKS.forEach(function(w){ w.dates = weekRange(w.n); w.monday=weekMonday(w.n); });
 
+  /* the session of each week: a real date, and the strings the pages print */
+  function sessionOf(wk){
+    var d; if(SESSION_DATES[wk]){ d=new Date(SESSION_DATES[wk]+'T12:00:00Z'); } else { d=weekMonday(wk); d.setUTCDate(d.getUTCDate()+SESSION.day); }
+    var day=fmtDay(d);
+    return { date:d, day:day, group:SESSION.group[0]+'–'+SESSION.group[1], cls:SESSION.cls[0]+'–'+SESSION.cls[1], where:SESSION.where,
+             text: day+' · '+SESSION.group[0]+' group hour · '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik',
+             odd: !!SESSION_DATES[wk] };
+  }
+  WEEKS.forEach(function(w){ w.session=sessionOf(w.n); });
+
   var S = {
-    START:START, GRADES:GRADES, SCALE:SCALE, LIVE:LIVE, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
-    liveText: LIVE ? ('live lesson '+LIVE.day+(LIVE.time?' '+LIVE.time+' CET':'')+(LIVE.where?' · '+LIVE.where:'')) : 'live-streamed lesson on Zoom — link on Moodle, day and time to be announced',
+    START:START, GRADES:GRADES, SCALE:SCALE, SESSION:SESSION, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
+    session:sessionOf,
+    liveText: 'Thursdays on Zoom — '+SESSION.group[0]+'–'+SESSION.group[1]+' the group hour, '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik (the first session is Wed 7 Oct)',
     week:function(n){ for(var i=0;i<WEEKS.length;i++)if(WEEKS[i].n===n)return WEEKS[i]; return null; },
     forum:function(id){ for(var i=0;i<FORUMS.length;i++)if(FORUMS[i].id===id)return FORUMS[i]; return null; },
     forumsOf:function(wk){ return FORUMS.filter(function(f){return f.wk===wk;}); },
