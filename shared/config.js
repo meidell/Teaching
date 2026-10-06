@@ -122,13 +122,17 @@ window.CourseConfig = (function () {
       id:     id,
       ns:     c.ns,
       key:    c.key || id,
-      lang:   c.lang || "en",
+      /* A page may override the course language — window.COURSE_LANG, set
+         before this file loads — so a bilingual course (UMEF/gen110, whose
+         English pages set it to "en") gets login, progress and chat in the
+         language of the page the student chose, not the registry default. */
+      lang:   (window.COURSE_LANG && STR[window.COURSE_LANG]) ? window.COURSE_LANG : (c.lang || "en"),
       label:  c.label || id,
       login:  !!c.login,
       groups: c.groups || null,
       theme:  THEMES[c.theme] || THEMES.navy,
       themeName: c.theme,
-      str:    STR[c.lang] || STR.en
+      str:    STR[(window.COURSE_LANG && STR[window.COURSE_LANG]) ? window.COURSE_LANG : c.lang] || STR.en
     };
   }
 

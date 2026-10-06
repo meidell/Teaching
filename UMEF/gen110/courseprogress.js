@@ -26,17 +26,20 @@ window.CourseProgress=(function(){
   /* GEN 110: ten séances of 3 h 15 (Tuesdays 13h30–16h45, two blocks of
      90 min). One page per séance; `total` on a séance page is
      SECTIONS.length (8 for séance 1). */
+  /* Copy in both languages: T() (lang.js) picks the page's. The English
+     page of a séance is seanceN-en.html — same module id, same progress. */
+  var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
-    {mod:'w1', short:'S1', name:'Séance 1 · Qu’est-ce que l’intelligence artificielle ?',        total:8, live:true, href:'seance1.html'},
-    {mod:'w2', short:'S2', name:'Séance 2 · Comment une machine apprend',                       total:8, live:false},
-    {mod:'w3', short:'S3', name:'Séance 3 · Classer, se tromper, être biaisé',                  total:8, live:false},
-    {mod:'w4', short:'S4', name:'Séance 4 · Réseaux de neurones et apprentissage profond',      total:8, live:false},
-    {mod:'w5', short:'S5', name:'Séance 5 · IA générative I — les grands modèles de langage',   total:8, live:false},
-    {mod:'w6', short:'S6', name:'Séance 6 · IA générative II — images, voix, agents',           total:8, live:false},
-    {mod:'w7', short:'S7', name:'Séance 7 · L’IA dans les métiers',                             total:8, live:false},
-    {mod:'w8', short:'S8', name:'Séance 8 · Éthique, droit et société',                         total:8, live:false},
-    {mod:'w9', short:'S9', name:'Séance 9 · Mettre l’IA en œuvre dans une organisation',        total:8, live:false},
-    {mod:'w10',short:'S10',name:'Séance 10 · Présentations des projets et révision',            total:4, live:false}
+    {mod:'w1', short:'S1', name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                        total:8, live:true, href:T('seance1.html','seance1-en.html')},
+    {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:8, live:false},
+    {mod:'w3', short:'S3', name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),         total:8, live:false},
+    {mod:'w4', short:'S4', name:T('Séance 4 · Excel et Word avec l’IA — finance','Session 4 · Excel and Word with AI — finance'),                total:8, live:false},
+    {mod:'w5', short:'S5', name:T('Séance 5 · L’IA au travail — marketing, finance, RH','Session 5 · AI at work — marketing, finance, HR'),      total:8, live:false},
+    {mod:'w6', short:'S6', name:T('Séance 6 · Programmer sans être programmeur','Session 6 · Programming without being a programmer'),           total:8, live:false},
+    {mod:'w7', short:'S7', name:T('Séance 7 · Protection des données et IA','Session 7 · Data protection and AI'),                              total:8, live:false},
+    {mod:'w8', short:'S8', name:T('Séance 8 · Agents et assistants','Session 8 · Agents and assistants'),                                       total:8, live:false},
+    {mod:'w9', short:'S9', name:T('Séance 9 · Employable — les compétences IA, et l’avenir','Session 9 · Employable — AI skills, and the future'), total:8, live:false},
+    {mod:'w10',short:'S10',name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),      total:4, live:false}
   ];
 
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
@@ -50,6 +53,12 @@ window.CourseProgress=(function(){
     var live=counted().filter(function(c){return c.live;});
     var done=live.filter(function(c){return data[c.mod].done>=c.total;}).length;
     var up=counted().filter(function(c){return !c.live;}).length;
+    if(T('fr','en')==='en'){
+      return (done===live.length
+        ? '✓ You’re up to date — everything published so far is done.'
+        : 'You’ve completed '+done+' of '+live.length+' published session'+(live.length>1?'s':'')+'. The bar fills as you do each session’s work.')
+        + (up?' '+up+' more session'+(up>1?'s':'')+' to come — the hatched segments.':'');
+    }
     return (done===live.length
       ? '✓ Vous êtes à jour — tout ce qui est publié est terminé.'
       : 'Vous avez terminé '+done+' séance'+(done>1?'s':'')+' sur '+live.length+' publiée'+(live.length>1?'s':'')+'. La barre se remplit à mesure que vous faites le travail de chaque séance.')
@@ -59,11 +68,11 @@ window.CourseProgress=(function(){
     el.innerHTML='';
     CHAPTERS.forEach(function(c){
       var d=data[c.mod].done,st,cls;
-      if(!c.live){st='À venir';cls='up';}
-      else if(d>=c.total){st='Terminé ✓';cls='done';}
+      if(!c.live){st=T('À venir','Upcoming');cls='up';}
+      else if(d>=c.total){st=T('Terminé ✓','Done ✓');cls='done';}
       else if(d>0){st=d+'/'+c.total;cls='prog';}
-      else if(c.opt){st='Facultatif';cls='up';}
-      else{st='Pas commencé';cls='prog';}
+      else if(c.opt){st=T('Facultatif','Optional');cls='up';}
+      else{st=T('Pas commencé','Not started');cls='prog';}
       var ci=document.createElement('div');ci.className='ci'+(c.opt?' opt':'');
       ci.innerHTML='<span></span><span class="st '+cls+'"></span>';
       if(c.href&&c.live){
@@ -82,12 +91,12 @@ window.CourseProgress=(function(){
         var frac=c.total?Math.min(1,data[c.mod].done/c.total):0;
         if(opts.compact){
           var seg=document.createElement('div');seg.className='cseg'+(!c.live?' locked':'');
-          seg.title=c.name+' — '+(c.live?Math.round(frac*100)+'%':'à venir');
+          seg.title=c.name+' — '+(c.live?Math.round(frac*100)+'%':T('à venir','upcoming'));
           seg.innerHTML='<div class="cf" style="width:'+(frac*100)+'%"></div>';
           opts.bar.appendChild(seg);
         }else{
           var col=document.createElement('div');col.className='segcol';
-          col.title=c.name+' — '+(c.live?Math.round(frac*100)+'%':'à venir');
+          col.title=c.name+' — '+(c.live?Math.round(frac*100)+'%':T('à venir','upcoming'));
           col.innerHTML='<div class="seg'+(!c.live?' locked':'')+(frac>=1?' done':'')+'"><div class="fill" style="width:'+(frac*100)+'%"></div></div><span class="code"></span>';
           col.querySelector('.code').textContent=c.short;
           opts.bar.appendChild(col);

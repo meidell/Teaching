@@ -48,6 +48,9 @@ window.StatsPresence = (function () {
   "use strict";
   var DB = "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS = "gen110";
+  /* copy in both languages — T() from lang.js picks the page's */
+  var T=window.T||function(fr,en){return fr;};
+  var LOC=T('fr-CH','en-GB');
 
   /* Kept here as well as in /shared/config.js and /courses.json because this
      file is loaded BEFORE config.js on the hub — CourseConfig is preferred
@@ -204,16 +207,16 @@ window.StatsPresence = (function () {
   /* The register's sessions: one per SUMAS teaching week, one page each
      (MBA406 has no A/B parts). The final exam (Week 10) is not a session. */
   var SESSIONS=[
-    {mod:'w1', n:1, name:'Séance 1 · Qu’est-ce que l’IA ?',                 pages:['w1']},
-    {mod:'w2', n:2, name:'Séance 2 · Comment une machine apprend',          pages:['w2']},
-    {mod:'w3', n:3, name:'Séance 3 · Classer, se tromper, être biaisé',     pages:['w3']},
-    {mod:'w4', n:4, name:'Séance 4 · Réseaux de neurones',                  pages:['w4']},
-    {mod:'w5', n:5, name:'Séance 5 · IA générative I — le langage',         pages:['w5']},
-    {mod:'w6', n:6, name:'Séance 6 · IA générative II — images, agents',    pages:['w6']},
-    {mod:'w7', n:7, name:'Séance 7 · L’IA dans les métiers',                pages:['w7']},
-    {mod:'w8', n:8, name:'Séance 8 · Éthique, droit et société',            pages:['w8']},
-    {mod:'w9', n:9, name:'Séance 9 · Mettre l’IA en œuvre',                 pages:['w9']},
-    {mod:'w10',n:10,name:'Séance 10 · Présentations et révision',           pages:['w10']}
+    {mod:'w1', n:1, name:T('Séance 1 · Qu’est-ce que l’IA ?','Session 1 · What is AI?'),                 pages:['w1']},
+    {mod:'w2', n:2, name:T('Séance 2 · Comment une machine apprend','Session 2 · How a machine learns'),          pages:['w2']},
+    {mod:'w3', n:3, name:T('Séance 3 · Classer, se tromper, être biaisé','Session 3 · Classifying, erring, being biased'),     pages:['w3']},
+    {mod:'w4', n:4, name:T('Séance 4 · Réseaux de neurones','Session 4 · Neural networks'),                  pages:['w4']},
+    {mod:'w5', n:5, name:T('Séance 5 · IA générative I — le langage','Session 5 · Generative AI I — language'),         pages:['w5']},
+    {mod:'w6', n:6, name:T('Séance 6 · IA générative II — images, agents','Session 6 · Generative AI II — images, agents'),    pages:['w6']},
+    {mod:'w7', n:7, name:T('Séance 7 · L’IA dans les métiers','Session 7 · AI in the professions'),                pages:['w7']},
+    {mod:'w8', n:8, name:T('Séance 8 · Éthique, droit et société','Session 8 · Ethics, law and society'),            pages:['w8']},
+    {mod:'w9', n:9, name:T('Séance 9 · Mettre l’IA en œuvre','Session 9 · Putting AI to work'),                 pages:['w9']},
+    {mod:'w10',n:10,name:T('Séance 10 · Présentations et révision','Session 10 · Presentations and revision'),           pages:['w10']}
   ];
   function allWeeks(){ return SESSIONS.slice(); }
 
@@ -228,10 +231,11 @@ window.StatsPresence = (function () {
     var grp=myGrp(), ses=sesId(mod,grp);
 
     el.className='pres';
-    el.innerHTML='<h4>Présence · cette séance'+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+'</span>':'')+'</h4>'+
-      '<div class="pd" id="presWhy">La présence fait partie de la <b>note de participation</b> (10 % de la note) : en dessous de <b>80 % de présence</b>, ces 10 % sont perdus ; en dessous de <b>50 %</b>, vous ne pouvez pas vous présenter à l’examen. Deux retards comptent pour une absence. Votre enseignant ouvre ce bouton dans la salle ; appuyez une fois pendant qu’il est rouge.'+
-      (a&&multi()?' Vous êtes dans le groupe <b>'+esc(grpLabel(grp))+'</b> : seule la fenêtre de cette séance le rend rouge.':'')+'</div>'+
-      '<button class="pres-btn" id="presBtn" disabled>Présence non ouverte</button>'+
+    el.innerHTML='<h4>'+T('Présence · cette séance','Attendance · this session')+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+'</span>':'')+'</h4>'+
+      '<div class="pd" id="presWhy">'+T('La présence fait partie de la <b>note de participation</b> (10 % de la note) : en dessous de <b>80 % de présence</b>, ces 10 % sont perdus ; en dessous de <b>50 %</b>, vous ne pouvez pas vous présenter à l’examen. Deux retards comptent pour une absence. Votre enseignant ouvre ce bouton dans la salle ; appuyez une fois pendant qu’il est rouge.',
+        'Attendance is part of the <b>participation mark</b> (10% of the grade): below <b>80% attendance</b> those 10% are lost; below <b>50%</b> you cannot sit the exam. Two latenesses count as one absence. Your teacher opens this button in the room; press it once while it is red.')+
+      (a&&multi()?T(' Vous êtes dans le groupe <b>','You are in group <b>')+esc(grpLabel(grp))+T('</b> : seule la fenêtre de cette séance le rend rouge.','</b>: only that group’s window turns it red.'):'')+'</div>'+
+      '<button class="pres-btn" id="presBtn" disabled>'+T('Présence non ouverte','Attendance not open')+'</button>'+
       '<div class="pres-state" id="presState"></div>'+
       '';
 
@@ -245,30 +249,30 @@ window.StatsPresence = (function () {
       btn.classList.remove('live','marked');
       if(marked()){
         btn.className='pres-btn marked';btn.disabled=true;
-        btn.innerHTML='✓ Vous êtes marqué·e présent·e';
-        st.innerHTML='Enregistré à <b>'+new Date(state.marks[a.sid]).toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'})+'</b>. Rien d’autre à faire.';
+        btn.innerHTML=T('✓ Vous êtes marqué·e présent·e','✓ You are marked present');
+        st.innerHTML=T('Enregistré à <b>','Recorded at <b>')+new Date(state.marks[a.sid]).toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})+T('</b>. Rien d’autre à faire.','</b>. Nothing else to do.');
       }else if(!a){
-        btn.className='pres-btn';btn.disabled=true;btn.innerHTML='🔒 Connectez-vous d’abord';
-        st.innerHTML='La présence est rattachée à votre nom : il faut être connecté·e. Utilisez le bouton en bas à droite de la page, puis revenez ici.';
+        btn.className='pres-btn';btn.disabled=true;btn.innerHTML=T('🔒 Connectez-vous d’abord','🔒 Sign in first');
+        st.innerHTML=T('La présence est rattachée à votre nom : il faut être connecté·e. Utilisez le bouton en bas à droite de la page, puis revenez ici.','Attendance is tied to your name: you need to be signed in. Use the button at the bottom right of the page, then come back here.');
       }else if(open){
-        btn.className='pres-btn live';btn.disabled=false;btn.innerHTML='✋ Je suis là — marquer ma présence';
-        st.innerHTML='La fenêtre est <b>ouverte</b>. Appuyez sur le bouton.';
+        btn.className='pres-btn live';btn.disabled=false;btn.innerHTML=T('✋ Je suis là — marquer ma présence','✋ I’m here — mark my attendance');
+        st.innerHTML=T('La fenêtre est <b>ouverte</b>. Appuyez sur le bouton.','The window is <b>open</b>. Press the button.');
       }else if(blocked){
         /* The button can never turn red if we cannot read the session, so say
            so rather than looking like a closed window. This is what a student
            sees if the database rules block reads for this course. */
-        btn.className='pres-btn';btn.disabled=true;btn.innerHTML='⚠ Registre inaccessible';
-        st.innerHTML='Cet appareil ne parvient pas à lire la fenêtre de présence sur le serveur ; le bouton ne deviendra pas rouge. '+
-          '<b>Dites-le tout de suite à votre enseignant</b> — il peut vous marquer depuis le tableau de bord, et le problème concerne tout le monde.';
+        btn.className='pres-btn';btn.disabled=true;btn.innerHTML=T('⚠ Registre inaccessible','⚠ Register unreachable');
+        st.innerHTML=T('Cet appareil ne parvient pas à lire la fenêtre de présence sur le serveur ; le bouton ne deviendra pas rouge. <b>Dites-le tout de suite à votre enseignant</b> — il peut vous marquer depuis le tableau de bord, et le problème concerne tout le monde.',
+          'This device cannot read the attendance window on the server, so the button will not turn red. <b>Tell your teacher right away</b> — they can mark you from the dashboard, and the problem affects everyone.');
       }else{
-        btn.className='pres-btn';btn.disabled=true;btn.innerHTML='Présence non ouverte';
+        btn.className='pres-btn';btn.disabled=true;btn.innerHTML=T('Présence non ouverte','Attendance not open');
         /* Only say "you missed it" about a session that actually happened.
            A closed window nobody was marked at was opened by mistake, and
            telling thirty people they were absent from it is a message they
            will act on. */
         st.innerHTML=isHeld(state)
-          ? 'La fenêtre de cette séance est <b>fermée</b>. Si vous étiez dans la salle et l’avez manquée, dites-le à votre enseignant — il peut vous marquer depuis le tableau de bord.'
-          : 'Votre enseignant l’ouvre dans la salle. Le bouton devient rouge quand vous pouvez appuyer.';
+          ? T('La fenêtre de cette séance est <b>fermée</b>. Si vous étiez dans la salle et l’avez manquée, dites-le à votre enseignant — il peut vous marquer depuis le tableau de bord.','This session’s window is <b>closed</b>. If you were in the room and missed it, tell your teacher — they can mark you from the dashboard.')
+          : T('Votre enseignant l’ouvre dans la salle. Le bouton devient rouge quand vous pouvez appuyer.','Your teacher opens it in the room. The button turns red when you can press it.');
       }
     }
 
@@ -279,7 +283,7 @@ window.StatsPresence = (function () {
       paint();
       fetch(node(ses)+'/marks/'+encodeURIComponent(a.sid)+'.json',
         {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(t)})
-        .catch(function(){ st.innerHTML='Serveur injoignable — dites-le à votre enseignant, il peut vous marquer à la main.'; });
+        .catch(function(){ st.innerHTML=T('Serveur injoignable — dites-le à votre enseignant, il peut vous marquer à la main.','Server unreachable — tell your teacher, they can mark you by hand.'); });
     }
     btn.addEventListener('click',mark);
 
@@ -322,10 +326,11 @@ window.StatsPresence = (function () {
 
     el.className='pres';
     el.innerHTML=
-      '<h4>Présence · cette séance'+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+'</span>':'')+'</h4>'+
-      '<div class="pd">La présence fait partie de la <b>note de participation</b> (10 % de la note) : en dessous de <b>80 % de présence</b>, ces 10 % sont perdus ; en dessous de <b>50 %</b>, vous ne pouvez pas vous présenter à l’examen. Deux retards comptent pour une absence. Votre enseignant ouvre la fenêtre dans la salle ; appuyez une fois pendant qu’il est rouge.'+
-      (a&&multi()?' Vous êtes dans le groupe <b>'+esc(grpLabel(grp))+'</b> — seule la fenêtre de cette salle ouvre ce bouton.':'')+'</div>'+
-      '<button class="pres-btn" id="hubBtn" disabled>Présence non ouverte</button>'+
+      '<h4>'+T('Présence · cette séance','Attendance · this session')+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+'</span>':'')+'</h4>'+
+      '<div class="pd">'+T('La présence fait partie de la <b>note de participation</b> (10 % de la note) : en dessous de <b>80 % de présence</b>, ces 10 % sont perdus ; en dessous de <b>50 %</b>, vous ne pouvez pas vous présenter à l’examen. Deux retards comptent pour une absence. Votre enseignant ouvre la fenêtre dans la salle ; appuyez une fois pendant qu’il est rouge.',
+        'Attendance is part of the <b>participation mark</b> (10% of the grade): below <b>80% attendance</b> those 10% are lost; below <b>50%</b> you cannot sit the exam. Two latenesses count as one absence. Your teacher opens the window in the room; press once while the button is red.')+
+      (a&&multi()?T(' Vous êtes dans le groupe <b>','You are in group <b>')+esc(grpLabel(grp))+T('</b> — seule la fenêtre de cette salle ouvre ce bouton.','</b> — only that room’s window opens this button.'):'')+'</div>'+
+      '<button class="pres-btn" id="hubBtn" disabled>'+T('Présence non ouverte','Attendance not open')+'</button>'+
       '<div class="pres-state" id="hubState"></div>'+
       '<div id="hubMine"></div>'+
       '';
@@ -333,30 +338,30 @@ window.StatsPresence = (function () {
 
     function openMod(){return (now&&now.open&&now.mod)?now.mod:null;}
     function marked(){return !!(a&&sess&&sess.marks&&sess.marks[a.sid]);}
-    function lbl(){return (now&&now.label)?now.label:'cette séance';}
+    function lbl(){return (now&&now.label)?now.label:T('cette séance','this session');}
 
     function paint(){
       var m=openMod();
       if(marked()){
         btn.className='pres-btn marked';btn.disabled=true;
-        btn.innerHTML='✓ Vous êtes marqué·e présent·e';
-        st.innerHTML='Enregistré à <b>'+new Date(sess.marks[a.sid]).toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'})+
-          '</b> pour <b>'+esc(lbl())+'</b>. Rien d’autre à faire.';
+        btn.innerHTML=T('✓ Vous êtes marqué·e présent·e','✓ You are marked present');
+        st.innerHTML=T('Enregistré à <b>','Recorded at <b>')+new Date(sess.marks[a.sid]).toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})+
+          T('</b> pour <b>','</b> for <b>')+esc(lbl())+T('</b>. Rien d’autre à faire.','</b>. Nothing else to do.');
       }else if(!a){
-        btn.className='pres-btn';btn.disabled=true;btn.innerHTML='🔒 Connectez-vous d’abord';
-        st.innerHTML='La présence est rattachée à votre nom : il faut être connecté·e. Utilisez le bouton en bas à droite de la page, puis revenez ici.';
+        btn.className='pres-btn';btn.disabled=true;btn.innerHTML=T('🔒 Connectez-vous d’abord','🔒 Sign in first');
+        st.innerHTML=T('La présence est rattachée à votre nom : il faut être connecté·e. Utilisez le bouton en bas à droite de la page, puis revenez ici.','Attendance is tied to your name: you need to be signed in. Use the button at the bottom right of the page, then come back here.');
       }else if(m){
         btn.className='pres-btn live';btn.disabled=false;
-        btn.innerHTML='✋ Je suis là — marquer ma présence';
-        st.innerHTML='La fenêtre est <b>ouverte</b> pour <b>'+esc(lbl())+'</b>. Appuyez sur le bouton.';
+        btn.innerHTML=T('✋ Je suis là — marquer ma présence','✋ I’m here — mark my attendance');
+        st.innerHTML=T('La fenêtre est <b>ouverte</b> pour <b>','The window is <b>open</b> for <b>')+esc(lbl())+T('</b>. Appuyez sur le bouton.','</b>. Press the button.');
       }else if(blocked){
-        btn.className='pres-btn';btn.disabled=true;btn.innerHTML='Présence non ouverte';
-        st.innerHTML='Cet appareil n’atteint pas le registre pour l’instant. Si le bouton n’est pas devenu rouge une minute après l’ouverture de la fenêtre, dites-le dans la salle — votre enseignant peut vous marquer à la main.';
+        btn.className='pres-btn';btn.disabled=true;btn.innerHTML=T('Présence non ouverte','Attendance not open');
+        st.innerHTML=T('Cet appareil n’atteint pas le registre pour l’instant. Si le bouton n’est pas devenu rouge une minute après l’ouverture de la fenêtre, dites-le dans la salle — votre enseignant peut vous marquer à la main.','This device cannot reach the register right now. If the button has not turned red a minute after the window opened, say so in the room — your teacher can mark you by hand.');
       }else{
-        btn.className='pres-btn';btn.disabled=true;btn.innerHTML='Présence non ouverte';
+        btn.className='pres-btn';btn.disabled=true;btn.innerHTML=T('Présence non ouverte','Attendance not open');
         st.innerHTML=(now&&now.mod&&isHeld(sess))
-          ? 'La dernière fenêtre (<b>'+esc(lbl())+'</b>) est <b>fermée</b>. Si vous étiez dans la salle et l’avez manquée, dites-le à votre enseignant — il peut corriger le registre.'
-          : 'Votre enseignant l’ouvre dans la salle. Le bouton devient rouge quand vous pouvez appuyer.';
+          ? T('La dernière fenêtre (<b>','The last window (<b>')+esc(lbl())+T('</b>) est <b>fermée</b>. Si vous étiez dans la salle et l’avez manquée, dites-le à votre enseignant — il peut corriger le registre.','</b>) is <b>closed</b>. If you were in the room and missed it, tell your teacher — they can correct the register.')
+          : T('Votre enseignant l’ouvre dans la salle. Le bouton devient rouge quand vous pouvez appuyer.','Your teacher opens it in the room. The button turns red when you can press it.');
       }
     }
 
@@ -368,7 +373,7 @@ window.StatsPresence = (function () {
       fetch(node(sesId(m,grp))+'/marks/'+encodeURIComponent(a.sid)+'.json',
         {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(t)})
         .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);})
-        .catch(function(){st.innerHTML='Serveur injoignable — dites-le à votre enseignant, il peut vous marquer à la main.';});
+        .catch(function(){st.innerHTML=T('Serveur injoignable — dites-le à votre enseignant, il peut vous marquer à la main.','Server unreachable — tell your teacher, they can mark you by hand.');});
     }
     btn.addEventListener('click',mark);
 
@@ -457,9 +462,9 @@ window.StatsPresence = (function () {
         var run=isHeld(x&&!x.error?x:null);   /* no marks = it never happened */
         var on=run&&!!(x.marks&&x.marks[a.sid]);
         var cls,tip;
-        if(!run){ cls='u'; tip=esc(w.name)+' — pas encore tenue'; }
-        else if(on){ held++;here++; cls='y'; tip=esc(w.name)+' — présent·e'; }
-        else { held++; cls='n'; missed.push(w.name); tip=esc(w.name)+' — aucune marque pour vous'; }
+        if(!run){ cls='u'; tip=esc(w.name)+T(' — pas encore tenue',' — not held yet'); }
+        else if(on){ held++;here++; cls='y'; tip=esc(w.name)+T(' — présent·e',' — present'); }
+        else { held++; cls='n'; missed.push(w.name); tip=esc(w.name)+T(' — aucune marque pour vous',' — no mark for you'); }
         segs+='<span class="pm-seg '+cls+'" title="'+tip+'"></span>';
         labs+='<span>'+w.n+'</span>';
       });
@@ -467,19 +472,22 @@ window.StatsPresence = (function () {
       /* The whole term at a glance: what is behind you, what is still to come.
          A student who has missed one of two sessions is at 50% and panicking;
          seeing thirteen grey weeks ahead is the honest context for that. */
+      var EN=T('fr','en')==='en';
       el.innerHTML='<div class="pres-mine">'+
-        '<div class="pm-h">Votre présence · <b>'+here+' sur '+held+'</b> séance'+(held===1?'':'s')+
-          ' tenue'+(held===1?'':'s')+' jusqu’ici'+(held?'<span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span>':'')+'</div>'+
+        '<div class="pm-h">'+(EN
+          ? 'Your attendance · <b>'+here+' of '+held+'</b> session'+(held===1?'':'s')+' held so far'
+          : 'Votre présence · <b>'+here+' sur '+held+'</b> séance'+(held===1?'':'s')+' tenue'+(held===1?'':'s')+' jusqu’ici')+
+          (held?'<span class="pm-pct '+(pct>=80?'ok':pct>=50?'mid':'low')+'">'+pct+'%</span>':'')+'</div>'+
         '<div class="pm-bar">'+segs+'</div>'+
         '<div class="pm-x">'+labs+'</div>'+
-        '<div class="pm-lgd"><span><i class="y"></i>Présent·e</span><span><i class="n"></i>Manquée</span>'+
-          '<span><i class="u"></i>À venir</span></div>'+
+        '<div class="pm-lgd"><span><i class="y"></i>'+T('Présent·e','Present')+'</span><span><i class="n"></i>'+T('Manquée','Missed')+'</span>'+
+          '<span><i class="u"></i>'+T('À venir','Upcoming')+'</span></div>'+
         '<div class="pm-f">'+(!held
-          ? 'Aucune séance n’a encore été tenue — la barre se remplit au fil du semestre.'
+          ? T('Aucune séance n’a encore été tenue — la barre se remplit au fil du semestre.','No session has been held yet — the bar fills as the semester goes on.')
           : (missed.length
-            ? 'Aucune marque pour : <b>'+missed.map(esc).join(' · ')+'</b>. Si vous étiez dans la salle, dites-le à votre enseignant — il peut corriger le registre.'
-            : 'Rien de manqué jusqu’ici.'))+
-          ' Rappel : moins de 80 % de présence et la note de participation (10 %) est perdue ; moins de 50 % et l’examen est fermé.</div></div>';
+            ? T('Aucune marque pour : <b>','No mark for: <b>')+missed.map(esc).join(' · ')+T('</b>. Si vous étiez dans la salle, dites-le à votre enseignant — il peut corriger le registre.','</b>. If you were in the room, tell your teacher — they can correct the register.')
+            : T('Rien de manqué jusqu’ici.','Nothing missed so far.')))+
+          T(' Rappel : moins de 80 % de présence et la note de participation (10 %) est perdue ; moins de 50 % et l’examen est fermé.',' Reminder: below 80% attendance the participation mark (10%) is lost; below 50% the exam is closed.')+'</div></div>';
     });
   }
 

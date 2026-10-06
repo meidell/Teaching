@@ -73,6 +73,8 @@ window.StatsEx = (function () {
   "use strict";
   var DB = "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS = "gen110";
+  /* copy in both languages — T() from lang.js picks the page's */
+  var T=window.T||function(fr,en){return fr;};
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -129,10 +131,13 @@ window.StatsEx = (function () {
       }catch(e){if(!settled){settled=true;res(null);}}
     });
   }
-  var SIGNIN_MSG='Cet appareil n’est pas connecté : il ne peut rien diffuser à la classe. '+
+  var SIGNIN_MSG=T('Cet appareil n’est pas connecté : il ne peut rien diffuser à la classe. '+
     'Ouvrez le tableau de bord (/shared/admin2.html?course=gen110), connectez-vous une fois '+
     'avec le compte enseignant, puis revenez — ou diffusez toute la séance depuis son '+
-    'onglet Solutions.';
+    'onglet Solutions.',
+    'This device is not signed in: it cannot release anything to the class. '+
+    'Open the dashboard (/shared/admin2.html?course=gen110), sign in once with the '+
+    'instructor account, then come back — or release the whole session from its Solutions tab.');
   /* ⚠ ONE PUT PER EXERCISE, not one PATCH at the module node. The rules
      grant .write at _release/$mod/$ex and nowhere above it, so a PUT at
      that exact path is the write the rule was written for. A multi-key
@@ -165,9 +170,9 @@ window.StatsEx = (function () {
     }).catch(function(e){
       var m=String((e&&e.message)||e);
       relErr=(m.indexOf('401')>=0||m.indexOf('403')>=0)
-        ? 'La base de données a refusé la diffusion ('+m+'). Le compte connecté n’est pas un '+
-          'compte enseignant, ou les règles de gen110/_release ne sont pas déployées.'
-        : 'Base de données injoignable ('+m+'). Rien n’a été diffusé.';
+        ? T('La base de données a refusé la diffusion ('+m+'). Le compte connecté n’est pas un compte enseignant, ou les règles de gen110/_release ne sont pas déployées.',
+            'The database refused the release ('+m+'). The signed-in account is not an instructor account, or the gen110/_release rules are not deployed.')
+        : T('Base de données injoignable ('+m+'). Rien n’a été diffusé.','Database unreachable ('+m+'). Nothing was released.');
       notify();
       return false;
     });
@@ -234,25 +239,25 @@ window.StatsEx = (function () {
        because in a computer room the deck is not always the front screen */
     if(inst){
       var strip=document.createElement('div');strip.className='ex-inst';
-      strip.innerHTML='<span class="ei-t">👁 Vue enseignant</span>'+
-        '<span class="ei-d">Les solutions ci-dessous ne sont visibles que par vous. « Révéler » les diffuse à la classe — sur leurs appareils, en ~8 secondes.</span>'+
-        '<button class="btn small" id="exRelAll">Tout diffuser · '+EX.length+'</button>';
+      strip.innerHTML='<span class="ei-t">'+T('👁 Vue enseignant','👁 Instructor view')+'</span>'+
+        '<span class="ei-d">'+T('Les solutions ci-dessous ne sont visibles que par vous. « Révéler » les diffuse à la classe — sur leurs appareils, en ~8 secondes.','The solutions below are visible only to you. “Reveal” releases them to the class — on their devices, in ~8 seconds.')+'</span>'+
+        '<button class="btn small" id="exRelAll">'+T('Tout diffuser','Release all')+' · '+EX.length+'</button>';
       root.appendChild(strip);
       var relMsg=document.createElement('div');relMsg.className='ei-msg';relMsg.hidden=true;
       strip.appendChild(relMsg);
       function relReport(ok,what){
         relMsg.hidden=false;
-        relMsg.innerHTML=ok?('✅ '+what+' diffusé — les appareils des étudiants se déverrouillent en ~8 s.')
-                           :('⚠ <b>Rien n’a été diffusé.</b> '+esc(releaseError()||'L’écriture a échoué.'));
+        relMsg.innerHTML=ok?('✅ '+what+T(' diffusé — les appareils des étudiants se déverrouillent en ~8 s.',' released — students’ devices unlock in ~8 s.'))
+                           :(T('⚠ <b>Rien n’a été diffusé.</b> ','⚠ <b>Nothing was released.</b> ')+esc(releaseError()||T('L’écriture a échoué.','The write failed.')));
         relMsg.className='ei-msg'+(ok?' ok':' bad');
       }
       var allBtn=strip.querySelector('#exRelAll');
       allBtn.addEventListener('click',function(){
-        if(!confirm('Diffuser les '+EX.length+' solutions à la classe ?'))return;
-        allBtn.disabled=true;var was=allBtn.textContent;allBtn.textContent='Diffusion…';
+        if(!confirm(T('Diffuser les '+EX.length+' solutions à la classe ?','Release all '+EX.length+' solutions to the class?')))return;
+        allBtn.disabled=true;var was=allBtn.textContent;allBtn.textContent=T('Diffusion…','Releasing…');
         releaseAll(mod,EX.map(function(x){return x.id;})).then(function(ok){
           allBtn.disabled=false;allBtn.textContent=was;
-          relReport(ok,'Les '+EX.length+' solutions');
+          relReport(ok,T('Les '+EX.length+' solutions','All '+EX.length+' solutions'));
         });
       });
       mount._relReport=relReport;
@@ -262,7 +267,7 @@ window.StatsEx = (function () {
     EX.forEach(function(x,i){
       var n=i+1;
       var c=document.createElement('div');c.className='exq';c.id='ex-'+x.id;
-      var meta='<span class="exn">Exercice '+n+'</span>'+
+      var meta='<span class="exn">'+T('Exercice','Exercise')+' '+n+'</span>'+
         (x.mins?'<span class="exm">'+x.mins+' min</span>':'')+
         (x.pts?'<span class="exm">'+x.pts+' pt'+(x.pts>1?'s':'')+'</span>':'');
       var body='<div class="exh">'+meta+'<h4>'+x.title+'</h4></div>'+
@@ -281,10 +286,10 @@ window.StatsEx = (function () {
         body+='<textarea class="exopen" rows="3" placeholder="'+esc(x.open)+'"></textarea>';
       }
       body+='<div class="exbtns">'+
-            (x.asks||x.choice?'<button class="btn small" data-act="check">Vérifier</button>':'')+
-            (x.hint?'<button class="btn ghost small" data-act="hint">Indice</button>':'')+
+            (x.asks||x.choice?'<button class="btn small" data-act="check">'+T('Vérifier','Check')+'</button>':'')+
+            (x.hint?'<button class="btn ghost small" data-act="hint">'+T('Indice','Hint')+'</button>':'')+
             '<button class="btn dim small" data-act="sol"></button>'+
-            (inst?'<button class="btn small ei-rel" data-act="release">Révéler à la classe</button>':'')+
+            (inst?'<button class="btn small ei-rel" data-act="release">'+T('Révéler à la classe','Reveal to the class')+'</button>':'')+
             '</div><div class="exfb" data-fb></div>';
       c.innerHTML=body;
       root.appendChild(c);
@@ -293,8 +298,8 @@ window.StatsEx = (function () {
     });
 
     function solBtnLabel(x){
-      if(inst)return '📘 Solution (la vôtre)';
-      return isReleased(mod,x.id)?'📘 Voir la solution':'🔒 Solution';
+      if(inst)return T('📘 Solution (la vôtre)','📘 Solution (yours)');
+      return isReleased(mod,x.id)?T('📘 Voir la solution','📘 Show the solution'):'🔒 Solution';
     }
     function refresh(){
       EX.forEach(function(x){
@@ -302,7 +307,7 @@ window.StatsEx = (function () {
         b.textContent=solBtnLabel(x);
         b.classList.toggle('locked',!inst&&!isReleased(mod,x.id));
         var rb=c.querySelector('.ei-rel');
-        if(rb){var done=!!(released[mod]&&released[mod][x.id]);rb.textContent=done?'✓ Diffusé':'Révéler à la classe';rb.classList.toggle('ghost',done);}
+        if(rb){var done=!!(released[mod]&&released[mod][x.id]);rb.textContent=done?T('✓ Diffusé','✓ Released'):T('Révéler à la classe','Reveal to the class');rb.classList.toggle('ghost',done);}
       });
     }
     listeners.push(refresh);
@@ -336,23 +341,23 @@ window.StatsEx = (function () {
       c.querySelectorAll('[data-act]').forEach(function(btn){btn.addEventListener('click',function(){
         var act=btn.dataset.act;
         if(act==='release'){
-          btn.disabled=true;var wasR=btn.textContent;btn.textContent='Diffusion…';
+          btn.disabled=true;var wasR=btn.textContent;btn.textContent=T('Diffusion…','Releasing…');
           release(mod,x.id).then(function(ok){
-            btn.disabled=false;btn.textContent=ok?'✓ Diffusé':wasR;
-            if(mount._relReport)mount._relReport(ok,'L’exercice '+n);
-            if(!ok)show('hint','⚠ <b>Non diffusé.</b> '+esc(releaseError()||'L’écriture a échoué.'));
+            btn.disabled=false;btn.textContent=ok?T('✓ Diffusé','✓ Released'):wasR;
+            if(mount._relReport)mount._relReport(ok,T('L’exercice ','Exercise ')+n);
+            if(!ok)show('hint',T('⚠ <b>Non diffusé.</b> ','⚠ <b>Not released.</b> ')+esc(releaseError()||T('L’écriture a échoué.','The write failed.')));
           });
           return;
         }
-        if(act==='hint'){show('hint','💡 <b>Indice.</b> '+x.hint);return;}
+        if(act==='hint'){show('hint',T('💡 <b>Indice.</b> ','💡 <b>Hint.</b> ')+x.hint);return;}
         if(act==='sol'){
           if(!inst&&!isReleased(mod,x.id)){
             show('hint', releaseBlocked()
-              ? '⚠ <b>Cet appareil n’atteint pas le serveur des solutions</b> ; ce bouton ne se déverrouillera pas tout seul. Dites-le à votre enseignant — il peut lire la solution à voix haute, et le problème concerne tout le monde.'
-              : '🔒 <b>Pas encore.</b> Celui-ci se fait ensemble — la solution s’ouvre quand votre enseignant la révèle en classe. Essayez, prenez l’indice, vérifiez votre réponse en attendant.');
+              ? T('⚠ <b>Cet appareil n’atteint pas le serveur des solutions</b> ; ce bouton ne se déverrouillera pas tout seul. Dites-le à votre enseignant — il peut lire la solution à voix haute, et le problème concerne tout le monde.','⚠ <b>This device cannot reach the solutions server</b>; this button will not unlock by itself. Tell your teacher — they can read the solution aloud, and the problem affects everyone.')
+              : T('🔒 <b>Pas encore.</b> Celui-ci se fait ensemble — la solution s’ouvre quand votre enseignant la révèle en classe. Essayez, prenez l’indice, vérifiez votre réponse en attendant.','🔒 <b>Not yet.</b> This one is done together — the solution opens when your teacher reveals it in class. Try it, take the hint, check your answer meanwhile.'));
             return;
           }
-          show('sol',(inst?'<span class="ei-tag">vue enseignant</span>':'')+'📘 <b>Solution.</b> '+x.sol);
+          show('sol',(inst?'<span class="ei-tag">'+T('vue enseignant','instructor view')+'</span>':'')+'📘 <b>Solution.</b> '+x.sol);
           return;
         }
         /* check */
@@ -369,14 +374,14 @@ window.StatsEx = (function () {
           });
           st.v=vals;persist();
           if(allok){show('good','✅ <b>Correct.</b>');if(!st.ok){st.ok=true;persist();done();}record(mod,x.id,vals.join(' | '),true);}
-          else {show('bad','❌ Pas encore. Revérifiez le calcul, ou prenez l’indice.');record(mod,x.id,vals.join(' | '),false);}
+          else {show('bad',T('❌ Pas encore. Revérifiez le calcul, ou prenez l’indice.','❌ Not yet. Re-check the calculation, or take the hint.'));record(mod,x.id,vals.join(' | '),false);}
         }else if(x.choice){
-          if(chosen==null){show('hint','Choisissez d’abord une option.');return;}
+          if(chosen==null){show('hint',T('Choisissez d’abord une option.','Pick an option first.'));return;}
           c.querySelectorAll('.opt').forEach(function(b,j){b.classList.remove('ok','no');
             if(j===x.correct)b.classList.add('ok'); else if(j===chosen)b.classList.add('no');});
           var ok=chosen===x.correct;persist();
           if(ok){show('good','✅ <b>Correct.</b>');if(!st.ok){st.ok=true;persist();done();}}
-          else show('bad','❌ Pas celle-là. Prenez l’indice et réessayez.');
+          else show('bad',T('❌ Pas celle-là. Prenez l’indice et réessayez.','❌ Not that one. Take the hint and try again.'));
           record(mod,x.id,chosen,ok);
         }
       });});
@@ -398,15 +403,15 @@ window.StatsEx = (function () {
         (x.asks?'<div class="exs-ask">'+x.asks.map(function(f){return '<span>'+esc(f.label)+(f.unit?' ('+esc(f.unit)+')':'')+'</span>';}).join('')+'</div>':'')+
         (x.choice?'<div class="exs-opts">'+x.choice.map(function(c,j){return '<span>'+String.fromCharCode(65+j)+'. '+c+'</span>';}).join('')+'</div>':'')+
         '<div class="exs-sol" hidden>'+(inst?('📘 '+x.sol):'')+'</div>'+
-        (inst?'<button class="exs-btn">Afficher la solution — et la diffuser à la classe</button>'
-             :'<div class="exs-wait">À faire sur le site → <b>Exercice '+n+'</b>. Votre enseignant révèle la solution quand la salle est prête.</div>')+
+        (inst?'<button class="exs-btn">'+T('Afficher la solution — et la diffuser à la classe','Show the solution — and release it to the class')+'</button>'
+             :'<div class="exs-wait">'+T('À faire sur le site → <b>Exercice ','Do it on the site → <b>Exercise ')+n+T('</b>. Votre enseignant révèle la solution quand la salle est prête.','</b>. Your teacher reveals the solution when the room is ready.')+'</div>')+
         '</div>';
       return {
-        k:'Bloc 2 · Exercice '+n+(x.mins?' · '+x.mins+' min':''),
+        k:T('Bloc 2 · Exercice ','Block 2 · Exercise ')+n+(x.mins?' · '+x.mins+' min':''),
         t:x.title, cls:'wide', ex:x.id, b:body,
-        n:(inst?'SOLUTION (la vôtre, avant de révéler) : '+String(x.sol).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
-               :'Les solutions ne s’affichent que sur l’appareil de l’enseignant.')+
-          (x.hint?' — INDICE s’ils bloquent : '+String(x.hint).replace(/<[^>]*>/g,' ').trim():'')
+        n:(inst?T('SOLUTION (la vôtre, avant de révéler) : ','SOLUTION (yours, before revealing): ')+String(x.sol).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
+               :T('Les solutions ne s’affichent que sur l’appareil de l’enseignant.','Solutions only show on the instructor’s device.'))+
+          (x.hint?T(' — INDICE s’ils bloquent : ',' — HINT if they are stuck: ')+String(x.hint).replace(/<[^>]*>/g,' ').trim():'')
       };
     });
   }
@@ -419,16 +424,16 @@ window.StatsEx = (function () {
       var sol=box.querySelector('.exs-sol');
       if(sol)sol.hidden=false;        /* your own copy, whatever happens */
       var was=btn.textContent;
-      btn.disabled=true;btn.textContent='Diffusion…';
+      btn.disabled=true;btn.textContent=T('Diffusion…','Releasing…');
       /* The button reports the WRITE, not the click. Saying "revealed"
          before the PATCH returns is what hid the 401 for a whole term. */
       release(box.dataset.mod,box.dataset.ex).then(function(ok){
-        if(ok){btn.textContent='✓ Révélé — la classe peut maintenant l’ouvrir';return;}
+        if(ok){btn.textContent=T('✓ Révélé — la classe peut maintenant l’ouvrir','✓ Revealed — the class can open it now');return;}
         btn.disabled=false;btn.textContent=was;
         var w=box.querySelector('.exs-relerr');
         if(!w){w=document.createElement('div');w.className='exs-relerr';box.appendChild(w);}
-        w.innerHTML='⚠ <b>Non diffusé.</b> '+esc(releaseError()||'L’écriture a échoué.')+
-                    ' Votre propre copie est ouverte ci-dessus ; la classe ne la voit pas encore.';
+        w.innerHTML=T('⚠ <b>Non diffusé.</b> ','⚠ <b>Not released.</b> ')+esc(releaseError()||T('L’écriture a échoué.','The write failed.'))+
+                    T(' Votre propre copie est ouverte ci-dessus ; la classe ne la voit pas encore.',' Your own copy is open above; the class cannot see it yet.');
       });
     });
   }

@@ -702,79 +702,116 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
 
 ### SWISS UMEF · GEN 110 Intelligence artificielle — `UMEF/gen110/`
 
-Built 4 Oct 2026 on the **MBA406 pattern** — same engine, same page anatomy — for
-the Swiss UMEF 2026–2027 syllabus: a Bachelor core course **in French**, for every
-programme, no maths, no code. Ten half-days of 3 h 15 (Tuesdays 13h30–16h45) on
+A Bachelor core course for every programme at Swiss UMEF, **in French and in
+English**, no maths, no code. Ten half-days of 3 h 15 (Tuesdays 13h30–16h45) on
 6 Oct, 20 Oct, 27 Oct, 3 Nov, 10 Nov, 24 Nov, 8 Dec, 15 Dec 2026, 5 Jan, 12 Jan
-2027; **final written exam Wed 3 Feb 2027, 09h45**. Everything the HEG/statistics
-and MBA406 sections say about the engine (releases needing an account, the
-progress-denominator trap, presence needing an account, one PUT per release
-id) applies. What differs:
+2027; **final written exam Wed 3 Feb 2027, 09h45**. Built 4 Oct 2026 on the
+MBA406 engine, then **REBUILT on 6 Oct 2026 — the first teaching day — around
+what the class said it wanted**, in their words: prompt engineering (text,
+sound, video) · practical use in business · Excel/Word with AI (finance) · AI
+tools for marketing, finance, HR · programming sites and apps without being a
+programmer · data protection · employability, AI skills, training · the stakes
+and the future. Jan Erik's instruction that day: *"a lot of doing in class
+instead of slides — remove the slides and replace by 'let's do together'
+things; the project is 1 or 2 and of their choice instead of through the site;
+give nevertheless suggestions of things to hand in every two weeks — week 1:
+define their project and who participates."* Everything below follows from it.
 
-- **A séance is TWO BLOCKS of 90 min, not Part 1 + Part 2 exercises.** Each
-  block starts with a demonstration or a manipulation the students reproduce
-  on their own laptop, then a debrief and a *quiz synchronisé*. The section
-  list on a séance page is grouped `part:1` = Bloc 1, `part:2` = Bloc 2;
-  `EXERCISES` is **empty** in séance 1 and the exercise engine is loaded only
-  for its release half. Later séances may mount exercise sets (the tableur
-  workshop of séance 2 is the obvious one).
-- ⚠ **Module ids are `w1`…`w10` although the pages are `seance1.html`…**
-  The dashboard's presence picker builds `'w'+i` from `presenceSessions`
-  (`admin2.html → presSessionList`), so a `s1` id would never appear in it.
-  Labels say "Séance N"; ids say `wN`. Do not rename either.
-- **The séance quiz is the syllabus's "quiz synchronisé" and it COUNTS** —
-  in the 10 % participation mark, unlike every other course's self-check.
-  It is gated by a release flag, `_release/w1/quiz`, so the room starts
-  together: `StatsEx.watch(MOD)` polls it, `paintQuizLock()` locks
-  `#quizBox` until it appears, and the instructor launches it from §1.5 or
-  from the quiz slide (`[data-qrel]`, wired in the deck's `render()`). Same
-  account rule as every release: the gate shows the button, the signed-in
-  account is what lets the PUT through. ⚠ `watch()` must run **before** the
-  first `paintQuizLock()` — it is what reads the flags already on the device.
-- **Grading is the syllabus's: 10 % participation · 40 % team project · 50 %
-  final exam.** The project *« Une IA pour mon métier »* (teams of 3–4, a
-  no-code prototype, dossier ≤ 8 pages due Fri 15 Jan 2027 23h59, 8-min
-  presentation on 12 Jan) replaces the midterm. Attendance rule (§8 of the
-  syllabus): under 80 % presence the 10 % is lost, under 50 % no exam, two
-  latenesses = one absence. `presence.js`'s copy says exactly that; do not
-  paste MBA406's "5 absences" wording back in.
-- **Workbook fields feed the project, not a graded case.** Séance 1 has five
-  (`w1_demo`, `w1_tm_classes`, `w1_tm_echec`, `w1_equipe`, `w1_pistes`), listed
-  in `courses.json → project.sections` so the dashboard's assignment reader
-  shows them. Add a séance's fields there when you add the séance.
-- **Sections complete by combination, through `secCheck()`.** §1.2 needs the
-  three circles *and* the classify group; §1.3 the timeline (≥ 8 dates
-  opened) *and* its group; §1.6 the seven-step walk, the three sabotage tests
-  *and* both fields. Those classify groups are therefore built with
-  `secId=null`. The denominator is `EXTRA_STEPS (12) + EXERCISES (0) +
-  .cl-row (26) + .q (10) + [data-work] (5) = 53` — same trap as everywhere.
-- **No textbook is quoted.** Mitchell (2021) is the reference, not required;
-  no `.book` blocks. The timeline (`FRISE`, 17 entries) and every quiz answer
-  were fact-checked by hand (dates, names, the AI Act's staged application).
-  Quiz answer positions are mixed on purpose (`1 0 3 2 0 3 1 2 3 0`); keep
-  them that way when editing.
-- **Theme is `/shared/themes/umef-full.css`** — sumas-stats.css / heg.css with
-  every colour mapped to UMEF teal (`#0F4C60` headings and dark slides,
-  `#176B87` accents, `--terra #9B2335` for the h1 emphasis and the timeline's
-  "rupture" dots). `ia.css` is `fin.css` **minus its finance block** plus this
-  course's widgets (`.demo`, `.venn`, `.frise`, `.sab`, `.qlock`, `.grille`,
-  `.dates`, `.voix`) at the end, so a diff against `SUMAS/mba406/fin.css`
-  shows exactly what was added. Headings in Georgia, as on UMEF407.
-- **The runtime files are renamed ports of MBA406's with French copy** —
-  `exercises.js` (+ a `watch(mod)` export), `answers.js`, `presence.js`
-  (`SESSIONS` = the ten séances, 10-column presence bar), `courseprogress.js`.
-  Code comments stay English; every student- or instructor-facing string is
-  French. Only `seance1.html` exists; séances 2–10 are `live:false` in
-  `courseprogress.js` and locked `div`s on the hub.
-- **Own namespace `gen110` and localStorage prefix `gen110_`.** Its rules
-  block in `firebase-database-rules.json` is a copy of `mba406`'s with the one
-  self-reference changed and **must be deployed** before the link goes to
-  students — until then registration silently fails (see *Cross-device
-  login*). Unlisted; in `robots.txt`; the mirror entry is in
-  `/shared/config.js` with `lang:"fr"`, which is what makes `login.js`,
-  `progress.js` and `chat.js` speak French. There is no `/UMEF/index.html`
-  landing page yet; the course is reached by direct link from the UMEF
-  platform.
+- ⚠ **NO SLIDES. There is no deck, no `▶ Diapos` button, no `#lect`, no
+  `deck1.js`.** Every section of a séance page is something the room does
+  **at the same time**, each on their own laptop, the instructor in front —
+  the section badge says *Ensemble / Together*. The deck CSS in `ia.css` is
+  kept for a course that wants it; nothing here uses it. Do not put a lecture
+  deck back into this course.
+- ⚠ **Every page is GENERATED, from one bilingual template.**
+  `_build/<name>.tpl.html` carries every piece of copy as
+  `⟦texte français⫽English text⟧` (unicode brackets that never occur in HTML
+  or JS); `python3 _build/build.py` writes `<name>.html` (French) and
+  `<name>-en.html` (English), swapping only `<html lang>` — the sibling links
+  (`seance1.html ↔ seance1-en.html`, `index.html ↔ index-en.html`) are
+  written as markers like any other copy. Markers may not nest; the generator
+  refuses a stray bracket. **Edit the template, never the generated pages** —
+  the next build overwrites them. One source, two editions, no drift: that is
+  why the engine, the ids, the step keys and the `data-work` ids are identical
+  in both languages and a student may switch mid-course.
+- **The language switch** is `lang.js`, loaded first on every page: it reads
+  `<html lang>` into `GEN110_LANG`, exposes `T(fr,en)` for the runtime files
+  (`courseprogress.js`, `presence.js`, `exercises.js` wrap every visible string
+  in it) and sets `window.COURSE_LANG`, which `/shared/config.js` honours over
+  `courses.json`'s `lang` — so `login.js`, `progress.js` and `chat.js` speak
+  English on the EN pages. A `[data-lang-switch]` link records the choice in
+  `gen110_lang`; **only the hub redirects** to the remembered language, so a
+  pasted deep link always opens as pasted.
+- **Module ids are `w1`…`w10` although the pages are `seance1.html`…** The
+  dashboard's presence picker builds `'w'+i` from `presenceSessions`, so an
+  `s1` id would never appear in it. Labels say "Séance N"; ids say `wN`.
+- **The ten séances** (hub `SEANCES`, `courseprogress.js` `CHAPTERS` — keep
+  the two in step): 1 *L'IA, on commence par s'en servir* · 2 *Bien demander I —
+  texte* · 3 *Bien demander II — son, image, vidéo* · 4 *Excel et Word avec
+  l'IA* · 5 *L'IA au travail — marketing, finance, RH* · 6 *Programmer sans
+  être programmeur* · 7 *Protection des données* · 8 *Agents et assistants* ·
+  9 *Employable — compétences IA, et l'avenir* · 10 *Présentations et examen*.
+  Each hub card lists what is **done together** that day (`do[]`) and, every
+  other séance, the suggested hand-in (`hand`). The class's eight requests are
+  the `WISHES` array — on the hub (a grid) **and** in séance 1 §1.7 (clickable,
+  counted); change both.
+- ⚠ **The project is NOT on the site.** One or two students, topic of their
+  own choice ("something AI should do for you"), handed in on the Swiss UMEF
+  platform — syllabus deliverables kept: dossier ≤ 8 pages due Fri 15 Jan 2027
+  23h59, prototype, 8-min presentation on 12 Jan. The site carries a
+  **suggested rhythm of a hand-in every two séances** (`HANDINS` on the hub,
+  the `.dates` grid in §1.8): Remise 1 **before séance 2 — expected from
+  everyone** (project on half a page + who is in it) · R2 séance 3 (five tested
+  prompts) · R3 séance 5 (data, tools, a first result) · R4 séance 7
+  (prototype v1 + a "data and risks" page) · R5 séance 9 (final prototype +
+  presentation plan). Remises 2–5 are suggestions the instructor comments on.
+  So there are **no project workbook fields**: `courses.json → project` is
+  now the *carnet de séance* (the notes a student took in class — `w1_demo`,
+  `w1_faux`, `w1_tm_classes`, `w1_tm_echec`), labelled as such for the
+  dashboard's assignment reader. Do not add project fields back.
+- **Séance 1's sections**: 1.1 the same six tasks to two assistants with a
+  verdict each · 1.2 the **prompt builder** (`#pb`, five inputs → assembled
+  prompt → copy → verdict; fields in `gen110_w1_pb`) · 1.3 the error hunt
+  (`w1_faux`) + the *trust / check / don't ask* classify · 1.4 the three
+  circles + *rules or examples* · 1.5 the synchronised quiz (8 questions,
+  positions `1 0 3 1 2 3 3 0`) · 1.6 Teachable Machine + three sabotages ·
+  1.7 the wishes · 1.8 the project checklist. **Sections complete through
+  `secCheck()`** (classify groups are built with `secId=null`): s2 = prompt
+  verdict; s3 = classify + `w1_faux`; s4 = circles + classify; s6 = walk +
+  3 tests + 2 fields; s7 = all 8 wishes; s8 = 3 ticks. The denominator is
+  `EXTRA_STEPS (16) + EXERCISES (0) + .cl-row (12) + .q (8) + [data-work] (4)
+  = 40` — same trap as everywhere: any element added to the live page with
+  class `q` or `cl-row` or a `data-work` attribute lowers every student's bar.
+- **The séance quiz is the syllabus's "quiz synchronisé" and it COUNTS** in
+  the 10 % participation mark. Gated by `_release/w1/quiz`: `StatsEx.watch(MOD)`
+  polls it, `paintQuizLock()` locks `#quizBox` until it appears, the instructor
+  launches it from §1.5 on a gate-unlocked device. Same account rule as every
+  release: the gate shows the button, the signed-in account lets the PUT
+  through. `watch()` must run **before** the first `paintQuizLock()`.
+- **Grading is the syllabus's: 10 % participation · 40 % project · 50 % final
+  exam.** Attendance rule (§8): under 80 % presence the 10 % is lost, under
+  50 % no exam, two latenesses = one absence; `presence.js`'s copy says exactly
+  that in both languages.
+- **No textbook is quoted** (Mitchell is "to go further", not required); the
+  tools are the free tiers of ChatGPT / Claude / Gemini / Le Chat / Copilot,
+  ElevenLabs, Canva, Ideogram, CapCut, Excel/Word or Sheets/Docs, Lovable /
+  Bolt, Make / Zapier, Teachable Machine. Verify a tool still has a free tier
+  before a séance names it.
+- **Theme `/shared/themes/umef-full.css`**, `ia.css` = MBA406's `fin.css`
+  minus the finance block plus this course's widgets (`.demo`, `.venn`,
+  `.sab`, `.qlock`, `.dates`, `.voix`, and since the rebuild `.pb`, `.wish`,
+  `.chk`). Runtime files are renamed ports of MBA406's with `T()` copy.
+  Only séance 1 exists; 2–10 are `live:false` and locked `div`s on the hub.
+- **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
+  keep the engine, change the sections), add it to `PAGES` in `build.py`,
+  run the build, flip the chapter `live:true` in `courseprogress.js`, add the
+  module and its carnet fields to `courses.json`, and set `live:true` on the
+  hub's `SEANCES` entry (in the template). Run the headless probe on both
+  editions before pushing.
+- **Own namespace `gen110`, prefix `gen110_`**; the rules block in
+  `firebase-database-rules.json` must be deployed before the link goes to
+  students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`
+  has `lang:"fr"`, which the EN pages override through `COURSE_LANG`.
 
 ### HEG · Quantitative Methods I — `HEG/quantitative-methods/`
 
