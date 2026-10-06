@@ -650,8 +650,8 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
   computed from it, including the CET/CEST switch. The hub, the week
   pages, `forum.html`, `followup.html` and `courseprogress.js` all render
   from it. The Moodle export still carried the previous run's dates
-  (April–June 2026); **START = 12 Oct 2026 is an assumption** and the
-  **grade weights (10/10/55/25) are ASSUMED** from the gradebook items and
+  (April–June 2026); **START = 5 Oct 2026** was confirmed by Jan Erik on 6 Oct
+  2026; the **grade weights (10/10/55/25) are ASSUMED** from the gradebook items and
   Week 9's "55%" — the syllabus PDF is the authority. Confirm both.
 - ⚠ **The progress denominator is `.sec[data-step]` + `#recall` + `#quiz`
   + `[data-work]`**, counted by `capstone.js` at runtime and carried as

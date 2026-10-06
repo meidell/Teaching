@@ -13,14 +13,13 @@
 
    ⚠ The Moodle export this course was built from (printed 6 Oct 2026)
    still carried the previous run's dates (13 April – 15 June 2026).
-   START below is an ASSUMPTION for the GREEN term — confirm it against
-   the Moodle activity settings before the link goes to students; Moodle
-   is what enforces an attempt, so Moodle wins.
+   START = Monday 5 Oct 2026, confirmed by Jan Erik on 6 Oct 2026. Where a
+   Moodle activity setting disagrees, Moodle wins — it enforces the attempt.
    ===================================================================== */
 (function (root) {
   'use strict';
 
-  var START = '2026-10-12';          /* Monday of Week 1 — the one line to change */
+  var START = '2026-10-05';          /* Monday of Week 1 — the one line to change */
   var TZ = '+02:00';                 /* CEST until 25 Oct 2026, then CET: see tzFor() */
 
   /* Grade weights. ⚠ ASSUMED from the Moodle gradebook items (Online
