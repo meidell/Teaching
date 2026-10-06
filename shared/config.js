@@ -73,7 +73,9 @@ window.CourseConfig = (function () {
     "bi":        { ns:"bi",        theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Business Intelligence" },
     "finmod":    { ns:"finmod",    theme:"gbs",   lang:"en", login:true,
-                   label:"GBS · Finance Modelling" }
+                   label:"GBS · Finance Modelling" },
+    "wind":      { ns:"wind",      theme:"sumas", lang:"en", login:true,
+                   label:"SUMAS · MA/MBA500 Capstone — European wind to 2040" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
