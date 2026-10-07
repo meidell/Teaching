@@ -704,74 +704,106 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
 
 The **Bachelors edition** of the capstone above, built 6 Oct 2026 from the
 SUMAS Moodle course "2026 - Milan & Gland - Capstone: AI for Good -
-Bachelors" (id 1447, printed 6 Oct 2026). That Moodle course is the Masters
-course copied into a Bachelors shell — same ten weeks, same forums, same
-three phases, same exam — so this folder is an **independent copy of
-`SUMAS/wind`** with its own namespace and forums. Everything the
-`SUMAS/wind` section says about the engine (`capstone.js`, `schedule.js`,
-`forum.html`, `followup.html`, `_build/count.py`, the progress denominator)
-applies verbatim. What differs:
+Bachelors" (id 1447) as an **independent copy of `SUMAS/wind`** with its own
+namespace and forums — then **reshaped on 7 Oct 2026, the first teaching
+day**, on five instructions from Jan Erik: *forums and hand-ins on the site,
+not Moodle · no letter-grade list on the hub · the exam is open book · the
+capstone report is integrated into the site, modelled on last year's report
+PDF · Week 1 is only about organising the project — eight students, two
+teams of four · replace TotalEnergies with a similar Italian company active
+in wind.* Everything the `SUMAS/wind` section says about the engine
+(`capstone.js`, `schedule.js`, `forum.html`, `followup.html`,
+`_build/count.py`, the progress denominator) still applies. What differs:
 
 - **Own id / ns / keyPrefix `capstone-ba`**, folder `SUMAS/capstone-ba/`,
-  rules block in `firebase-database-rules.json` (a copy of `wind`'s) that
-  **must be deployed before the link goes to students**; mirror entry in
+  rules block in `firebase-database-rules.json`; mirror entry in
   `/shared/config.js`; in `robots.txt`. Unlisted; the SUMAS landing page
-  picks it up from `courses.json` by itself.
-- ⚠ **This cohort MEETS WEEKLY; the Masters one never did.** Jan Erik, 6 Oct
-  2026: *"it starts tomorrow and then every Thursday … group activity … and
-  then … with me"*; the hours were fixed on 7 Oct as **17:15–18:15 the group
-  hour, 18:15–20:15 the class**. So `START = 2026-10-05` (Week 1 is the week
-  it was said), `schedule.js → SESSION` is Thursday (day 3 from the Monday)
-  with the two time blocks, and `SESSION_DATES = {1:'2026-10-07'}`
-  puts the first session on **Wednesday 7 Oct** — the literal "tomorrow".
-  ⚠ If the first session is in fact Thursday 8 Oct, delete that one entry;
-  nothing else changes. `S.session(wk)` gives any page the week's real date.
-  The exam window then falls 7–14 Dec 2026, the same as the Masters.
-- **The group hour is designed, not left to them, and it is written on ONE
-  CANVAS.** `thursday.html` holds ten 60-minute plans (scribe + timekeeper,
-  timed steps, the last ten minutes writing into the consulting file, one
-  thing to bring to 18:15) and a four-line outline of each 18:15–20:15
-  class. Each plan and each week card carries a **"By 18:15 you have…"**
-  box — the hand-in is the canvas itself: a Google Doc in Jan Erik's Drive
-  ("Capstone · Thursday canvas", one block per group per week, created 7
-  Oct 2026 from HTML via the Drive connector), its URL in `schedule.js →
-  CANVAS`, painted into every `[data-canvas]` link by `capstone.js` and by
-  `thursday.html`'s own script. Sharing must be *anyone with the link ·
-  editor* — the connector could not set that, Jan Erik does. Every week
-  page opens with a `.thu` card — the session date (`[data-session]`,
-  filled by `capstone.js`), the hour's one-line brief, the class outline,
-  and a **`wN_group` consulting-file field** ("what we agreed and where I
-  disagree"). The cards and the page are generated from ONE Python dict in
-  the build that created them; if you edit a plan, edit both or regenerate.
-  ⚠ The `wN_group` fields are in every denominator (`WEEK_TOTALS` is one
-  higher than `wind`'s each week) and in `courses.json → project.sections`.
-- **Week 1 has a deck and a run sheet.** `week1-slides.html` is a
-  self-contained HTML deck (26 slides, ← →, **N** for speaker notes, **P**
-  prints one slide per page with notes) with a planned clock per slide and
-  a behind/ahead indicator; `_private/week1-runsheet.md` (gitignored) is the
-  same notes as a checklist, generated from the same list. Later weeks have
-  no deck yet — the four-line outline on the week card is the plan.
-- **Forum 1's deadline moved from Wednesday to Sunday** (`f1a` `day:6`),
-  because Week 1's session is itself on the Wednesday. Every other forum
-  keeps the Masters timing.
-- **Grade weights are the same assumption as `wind`'s** (10/10/55/25). The
-  **undergraduate letter-grade scale** (A 93–100 … D 63–69, F 0–62) is in
-  `schedule.js → SCALE` and shown on the hub — it is the one block the
-  Bachelors Moodle page has that the Masters one does not.
-- **Bachelor-level framing** in Week 5 (the MAM/MBA "tracks" became "if
-  operations and infrastructure interest you / if finance interests you")
-  and Week 4 (the NGFS note no longer addresses "MBA students").
-- **`glossary.html`** — 89 terms in the course's own words, by the week
-  each first appears, with where it comes back; a search box; linked from
-  the hub and from every week page's top bar. Not a module and carries no
-  `data-step`/`data-work`, so it enters no denominator. It is meant to grow:
-  a term introduced on a week page gets its entry here the same day.
-- **Not copied:** the showcase page, the 2026 report PDF and the og-image
-  are linked from `/SUMAS/wind/` by absolute path. The old PIN-course stub
-  is `wind`'s alone.
+  picks it up from `courses.json` by itself. ⚠ **The rules block grew three
+  nodes on 7 Oct 2026 — `_files`, `_submissions` (copied from `omba401`) and
+  `_teams` — and must be re-deployed** before the first group hour or every
+  team write is refused (the pages say so; nothing is swallowed).
+- ⚠ **Eight students, TWO TEAMS OF FOUR, ONE REPORT PER TEAM.** Declared in
+  `schedule.js → TEAMS / TEAM_SIZE` and mirrored as `teams` in
+  `courses.json`. Teams form on `week1.html#team` (the picker refuses a
+  fifth member, a student may move until the other team fills, may leave)
+  and live at `<ns>/_teams/<t1|t2>/{name, members/<sid>{n,role,ts}}` —
+  world-readable, names only; the hub paints both cards from it. The
+  student's `<sid>/team` and `localStorage capstone-ba_team` remember the
+  choice, but **the `_teams` node is authoritative** (`report.html`
+  re-derives it on every load). Forums, self-checks and the exam stay
+  individual; the three phase marks are the team's.
+- **The report is `report.html` — one document per team, written on the
+  site.** Eighteen sections (`r0`…`r18`) that mirror the June 2026 showcase
+  report section by section, each with a "last year:" note under its
+  heading, plus a four-answer **charter** (`c1`…`c4`, Week 1's work).
+  `schedule.js → PHASES[].secs` names which sections each phase covers, so
+  the hand-in panel counts words per phase from the same list. Data lives
+  at `_teams/<t>/report/<sec> = {v,by,n,ts,owner}` and `charter/<key>`.
+  **Editing model**: focus takes a lock (`lock/<sec> = {sid,n,ts}`,
+  heartbeat 25 s, stale after 75 s), typing saves 1.2 s after the last
+  keystroke, the page re-reads the team node every 8 s and refreshes every
+  box nobody here is in; a box someone else holds is read-only with their
+  name on it. Last save wins — the lock is what makes that safe; there is
+  no merge and no history. **A hand-in is a snapshot**: `POST
+  _teams/<t>/handin/<pid>` = `{ts,by,n,words,late,secs:{…}}` (create-once),
+  plus a one-line `work/handin_<pid>` summary written into **every member's**
+  node so each drawer shows it. `?team=t2` reads the other team (both teams
+  can; the gate makes the page read-only for the instructor); `&v=<id>`
+  reads a phase as handed in. Document view / Print renders the cover and
+  the sections as a document. `handin.html?p=<id>` is the side door for a
+  PDF (figures, an appendix) — the E1410 chunked uploader ported, recording
+  `k` (the phase id) and `team`.
+- **The dashboard's Handed in tab grew two axes** (`/shared/admin2.html`):
+  a file with `k` lands in a column per hand-in kind (`courses.json →
+  handins` fixes the order), and a course with `_teams` gets a team × phase
+  table of snapshots above it, linking to `report.html?team=&v=`. A course
+  with neither renders exactly as before.
+- ⚠ **Week 1 is ORGANISING THE PROJECT, nothing else**: the brief, the plan
+  table and grade weights (rendered from `schedule.js`), the team picker,
+  the charter, a tools checklist, Forum 1 (introduce yourself *and your
+  team role*), fields `w1_role · w1_question · w1_group`, a six-question
+  self-check on how the course works. The frameworks that used to open the
+  course — the cone, trends vs uncertainties, scenarios, loops, the
+  doughnut, the Ørsted case, the 2026 starting line — moved verbatim to
+  **`toolkit.html`** (`data-module="toolkit"`, no `data-step`, counts for
+  nothing; Week 2 assumes it has been read). The Thursday card on Week 1 is
+  the slim one-line strip (`.thu.slim`); weeks 2–10 keep the full card.
+  Forum **f1b was dropped** (Week 2's f2a is the same task) and **f1c moved
+  to Week 2** (`wk:2`; the id is a database path and was kept), so Week 2
+  has three required posts; forum titles were renumbered 1–16.
+- **The two companies are `schedule.js → COMPANIES`: Ørsted and Eni.**
+  Eni (through Plenitude, with minority offshore stakes in Dogger Bank and
+  Vårgrønn) is the hedged oil-and-gas major that TotalEnergies represented;
+  every page, forum brief, nudge, quiz and glossary entry says Eni, and the
+  Eni-specific numbers were rewritten (Plenitude ≈ 4 GW installed, 2024;
+  the Week 9 signal is Plenitude's capacity against Eni's own plan). The
+  showcase report and the `/SUMAS/wind/` course still say TotalEnergies —
+  the hub tells students so. **Verify Plenitude's figures against the
+  latest Eni report before Week 2; they were written from memory.**
+- **The exam is OPEN BOOK** (`schedule.js → EXAM.openBook`): notes, the
+  readings, the site, the team's report; not an AI, not a classmate. Stated
+  on the hub, Week 9's preview, Week 10's page and logistics lists, the
+  glossary ("Open book") and the Week 10 Thursday rehearsal. Its venue is
+  no longer named — "online, the link is posted here when the window
+  opens" — because nothing goes through Moodle; **there is no exam engine
+  on the site yet**.
+- **No letter-grade scale.** `SCALE` was removed from `schedule.js` and the
+  hub (7 Oct 2026); the Bachelors Moodle page's A 93–100 … F 0–62 block is
+  the only record of it.
+- **Meets weekly**: `START = 2026-10-05`, Thursday 17:15–18:15 the
+  student-run group hour (`thursday.html`, written on one Google Doc canvas
+  — `schedule.js → CANVAS`, sharing *anyone with the link · editor*),
+  18:15–20:15 the class; `SESSION_DATES = {1:'2026-10-07'}` puts the first
+  session on Wednesday 7 Oct. Week 1's group hour is *form the team*; its
+  deck `week1-slides.html` (16 slides, N = notes, P = print) and
+  `_private/week1-runsheet.md` were regenerated for the organising session.
+- **Grade weights are the same assumption as `wind`'s** (10/10/55/25).
+- **`glossary.html`** grows with the course; 7 Oct added *Team report ·
+  Charter · Hand-in · Plenitude* and turned *Closed book* into *Open book*.
+- **Still on Moodle, deliberately**: the Zoom link and Week 2's two reading
+  PDFs — real artefacts that live there. Everything else on the site.
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
-  `capstone-ba` only if ported by hand, and vice versa — the same rule as
-  `HEG/statistics` ↔ `SUMAS/mba401`.
+  `capstone-ba` only if ported by hand, and vice versa.
 
 ### SWISS UMEF · GEN 110 Intelligence artificielle — `UMEF/gen110/`
 
@@ -935,7 +967,7 @@ listed; shared login, no class password.
   costs fifteen small requests instead of one. The statistics copy had the bare
   `ReferenceError` until the Monday/Wednesday split went in; it now has the same
   fallback, scanning **its own group's** session ids.
-- **Weeks 1–3 are complete; fall weeks 4–16 are scaffolds** generated by
+- **Weeks 1–4 are complete; fall weeks 5–16 are scaffolds** generated by
   `_build/scaffold.py` from a `SPEC` — real pages with the syllabus's own
   objectives, planned sections, the week's reading and a slide outline,
   banner-marked "in preparation", `live:false` in `courseprogress.js` so they
@@ -963,6 +995,24 @@ listed; shared login, no class password.
   quiz has **six** questions (5 and 6 with six options, A–F) — verbatim as
   Q1–6, site's six after — and its homework is the printed sheet's twenty
   problems, 3.1–3.20, review problems included.
+  Week 4 (7 Oct 2026): the printed `quantitativemethods_I_W4_annotated.pdf`
+  is 29 slides and `week4.html`'s deck is those 29 plus fifteen of the PDF's
+  own question-then-answer builds, then Part 2 (55 in all). ⚠ **The
+  instructor's own annotations on the printed deck** — the yellow boxes
+  (why (ln x)′ = 1 ⁄ x, the board summary, what a log is, the three laws,
+  the plan before each solution, why each line) — are kept on the slides
+  they annotate as `.ann` panels and echoed in the notes; they are part of
+  the deck as taught, not site additions. Its printed quiz has **seven**
+  questions (Q7 has five numeric options and no "None"), verbatim as Q1–7,
+  the site's five after; its homework is the printed sheet's sixteen
+  problems, 4.1–4.16, with the fourteen parts of 4.3 as fourteen fields.
+  **Where the sheet says "differentiate", the field asks for the derivative
+  EVALUATED at a stated point** — a form cannot mark a function; 4.8 (a
+  proof) is a four-option choice. The running numbers are Week 2's roastery
+  (C = 10 000 + 200q + 5q², C′(60) = 800 against the subtraction's 805,
+  MR = MC at 60) and Week 3's café (R′ = 9 − 0.02q, zero at the vertex 450,
+  MR = MC at 400 = the profit peak); Week 1's "61st tonne" table has no
+  formula, so Week 4 refers to it and derives from the roastery.
   It was cut back on 21 Sep 2026. **`week1.html` still predates this** — 76
   slides against a 42-slide PDF — so trim it the same way before it is taught,
   or knowingly leave it.

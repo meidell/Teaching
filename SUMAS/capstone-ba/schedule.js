@@ -21,8 +21,14 @@
    SESSION_DATES override — delete it if the first session is really Thu 8
    Oct) and every later session is the Thursday of its week. The group
    hour's plan per week is thursday.html; the two folders are independent
-   copies. Where a Moodle activity setting disagrees, Moodle wins — it
-   enforces the attempt.
+   copies.
+
+   ⚠ NOTHING IS HANDED IN ON MOODLE (Jan Erik, 7 Oct 2026: "we will create
+   all forums and handings on my site, not in moodle"). The forums are
+   forum.html; the four hand-ins (three phase reports and the Phase 2
+   proposal) go through handin.html?p=<id>, which writes the file into the
+   database the way UMEF/ideas-e1410/submit.html does, and the dashboard's
+   "Handed in" tab lists them. The final exam is OPEN BOOK (same day).
    ===================================================================== */
 (function (root) {
   'use strict';
@@ -30,23 +36,33 @@
   var START = '2026-10-05';          /* Monday of Week 1 — the one line to change (Jan Erik, 6 Oct 2026: "it starts tomorrow") */
   var TZ = '+02:00';                 /* CEST until 25 Oct 2026, then CET: see tzFor() */
 
+  /* ---- the class: EIGHT students, TWO TEAMS OF FOUR (Jan Erik, 7 Oct 2026) ----
+     The capstone report is ONE PER TEAM, written on report.html; the forums
+     stay individual. Teams form in Week 1 on the site (week1.html) and live
+     at <ns>/_teams/<id>. The two companies are the brief's; the Italian
+     major replaced TotalEnergies on 7 Oct 2026 ("replace total with a
+     similar italian company also active in wind"): Eni, through Plenitude,
+     is the hedged oil-and-gas major with a renewables arm and minority
+     offshore-wind stakes — the same bet TotalEnergies represented. */
+  var TEAMS = [ { id:'t1', label:'Team 1' }, { id:'t2', label:'Team 2' } ];
+  var TEAM_SIZE = 4, CLASS_SIZE = 8;
+  var COMPANIES = {
+    a: { name:'Ørsted', country:'Denmark', bet:'pure-play', d:'Transformed from an oil & gas company into the world\'s largest offshore wind developer. A pure-play bet on renewables.' },
+    b: { name:'Eni', country:'Italy', bet:'hedged', d:'An integrated oil & gas major that has moved its renewables, retail and e-mobility into Plenitude, and holds minority stakes in offshore wind (Dogger Bank, Vårgrønn in Norway) rather than leading projects. A hedged transition strategy.' }
+  };
+
   /* Grade weights. ⚠ ASSUMED from the Moodle gradebook items (Online
      Discussion Forums · Case Study Written Analysis · Capstone: AI for
      Good · Capstone Final Results) and Week 9's "55% of your course
      grade". The MAM/MBA syllabus PDF is the authority — confirm. */
   var GRADES = [
     { pct: 10, name: 'Discussion forums',       d: 'posts and replies, on this site, every week' },
-    { pct: 10, name: 'Phase 1 + Phase 2 reports', d: 'system analysis (W5) · data analysis (W8) · on Moodle' },
+    { pct: 10, name: 'Phase 1 + Phase 2 reports', d: 'system analysis (W5) · data analysis (W8) · handed in on this site' },
     { pct: 55, name: 'Capstone report · Phase 3', d: '4,000–5,000 words · integrates all three phases · W9' },
-    { pct: 25, name: 'Final exam',              d: '60 MCQ · closed book · 2 h · W10' }
+    { pct: 25, name: 'Final exam',              d: '60 MCQ · open book · 2 h · W10' }
   ];
-
-  /* The letter-grade scale, from the Moodle "Grading" block (undergraduate
-     column). Shown on the hub so a mark out of 100 means something. */
-  var SCALE = [
-    ['A','93–100'],['A−','90–92'],['B+','87–89'],['B','83–86'],['B−','80–82'],
-    ['C+','77–79'],['C','73–76'],['C−','70–72'],['D','63–69'],['F','0–62']
-  ];
+  /* The letter-grade scale that used to sit here (A 93–100 … F 0–62) was
+     removed from the hub on 7 Oct 2026 at Jan Erik's request. */
 
   /* ---- the weekly session -------------------------------------------
      Every Thursday: 17:15–18:15 the GROUP HOUR (students together online,
@@ -61,7 +77,7 @@
   var SESSION_DATES = { 1:'2026-10-07' };
 
   var WEEKS = [
-    { n: 1,  role: 'Consultant',        title: 'Introduction to energy consulting & strategic frameworks' },
+    { n: 1,  role: 'Consultant',        title: 'Organising the project — the brief, the teams, the plan' },
     { n: 2,  role: 'Data analyst',      title: 'Understanding the European wind energy market' },
     { n: 3,  role: 'Data analyst',      title: 'AI tools for sustainability analysis' },
     { n: 4,  role: 'Foresight analyst', title: 'Strategic forecasting and scenario planning' },
@@ -80,50 +96,60 @@
      opt      true = optional, no deadline enforced, not in the 10%
   ---------------------------------------------------------------------- */
   var FORUMS = [
-    { id:'f1a', wk:1, short:'Introduce yourself',           title:'Forum 1 · Introduce yourself',
-      post:{min:200,max:300,day:6,time:'23:59'} },   /* Sunday here, not Wednesday: Week 1's first session is Wednesday */
-    { id:'f1b', wk:1, short:'Data scavenger hunt',          title:'Forum 2 · Data scavenger hunt',
-      post:{min:150,max:350,day:6,time:'23:59'}, re:{n:1,min:50,day:6,time:'23:59'} },
-    { id:'f1c', wk:1, short:'Stakeholder map',              title:'Forum 3 · Stakeholder map of European offshore wind',
-      post:{min:300,max:400,day:6,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f2a', wk:2, short:'Energy market data',           title:'Forum 4 · Three data points, and whether to trust them',
+    /* Week 1 is ORGANISING THE PROJECT (7 Oct 2026), so it carries one forum.
+       The old Forum 2 (data scavenger hunt, f1b) was dropped — Week 2's f2a is
+       the same task done properly — and the stakeholder map (f1c) moved to
+       Week 2. Ids are kept: they are database paths. */
+    { id:'f1a', wk:1, short:'Introduce yourself',           title:'Forum 1 · Introduce yourself, and what you bring to your team',
+      post:{min:200,max:300,day:6,time:'23:59'} },   /* Sunday: Week 1's session is Wednesday */
+    { id:'f2a', wk:2, short:'Energy market data',           title:'Forum 2 · Three data points, and whether to trust them',
       post:{min:300,max:400,day:3,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f2b', wk:2, short:'Ørsted vs TotalEnergies',      title:'Forum 5 · One metric, two companies',
+    { id:'f1c', wk:2, short:'Stakeholder map',              title:'Forum 3 · Stakeholder map of European offshore wind',
       post:{min:300,max:400,day:6,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f2c', wk:2, short:'2040 outlook debate',          title:'Forum 6 · The 2040 outlook debate (optional)',
+    { id:'f2b', wk:2, short:'Ørsted vs Eni',                title:'Forum 4 · One metric, two companies',
+      post:{min:300,max:400,day:6,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
+    { id:'f2c', wk:2, short:'2040 outlook debate',          title:'Forum 5 · The 2040 outlook debate (optional)',
       post:{min:80,max:300,day:6,time:'23:59'}, opt:true },
-    { id:'f3a', wk:3, short:'Learning curve',               title:'Forum 7 · Learning curve: your 2040 LCOE projections',
+    { id:'f3a', wk:3, short:'Learning curve',               title:'Forum 6 · Learning curve: your 2040 LCOE projections',
       post:{min:300,max:400,day:5,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f3b', wk:3, short:'The AI audit',                 title:'Forum 8 · The AI audit: where your assistant gets it wrong',
+    { id:'f3b', wk:3, short:'The AI audit',                 title:'Forum 7 · The AI audit: where your assistant gets it wrong',
       post:{min:250,max:350,day:6,time:'23:59'} },
-    { id:'f3c', wk:3, short:'AI meets the question',        title:'Forum 9 · AI meets the strategic question (optional)',
+    { id:'f3c', wk:3, short:'AI meets the question',        title:'Forum 8 · AI meets the strategic question (optional)',
       post:{min:150,max:400,day:6,time:'23:59'}, opt:true },
-    { id:'f4',  wk:4, short:'Share your 2×2',               title:'Forum 10 · Compare your 2×2 with your peers (optional)',
+    { id:'f4',  wk:4, short:'Share your 2×2',               title:'Forum 9 · Compare your 2×2 with your peers (optional)',
       post:{min:80,max:400,day:6,time:'23:59'}, opt:true },
-    { id:'f5',  wk:5, short:'Lock in your axes',            title:'Forum 11 · Lock in your axes',
+    { id:'f5',  wk:5, short:'Lock in your axes',            title:'Forum 10 · Lock in your axes',
       post:{min:60,max:200,day:0,time:'23:59'} },
-    { id:'f6',  wk:6, short:'Your AI footprint',            title:'Forum 12 · Your AI audit — the energy and carbon of Phase 1',
+    { id:'f6',  wk:6, short:'Your AI footprint',            title:'Forum 11 · Your AI audit — the energy and carbon of Phase 1',
       post:{min:250,max:350,day:6,time:'23:59'} },
-    { id:'f7a', wk:7, short:'Fit your curve',               title:'Forum 13 · Fit your curve',
+    { id:'f7a', wk:7, short:'Fit your curve',               title:'Forum 12 · Fit your curve',
       post:{min:350,max:450,day:5,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f7b', wk:7, short:'Where the curve breaks',       title:'Forum 14 · Where the curve breaks',
+    { id:'f7b', wk:7, short:'Where the curve breaks',       title:'Forum 13 · Where the curve breaks',
       post:{min:300,max:400,day:6,time:'23:59'} },
-    { id:'f7c', wk:7, short:'The water you didn\'t measure',title:'Forum 15 · The water you didn\'t measure (optional)',
+    { id:'f7c', wk:7, short:'The water you didn\'t measure',title:'Forum 14 · The water you didn\'t measure (optional)',
       post:{min:100,max:200,day:6,time:'23:59'}, opt:true },
-    { id:'f8',  wk:8, short:'Rolnick reflection',           title:'Forum 16 · Rolnick reflection (optional)',
+    { id:'f8',  wk:8, short:'Rolnick reflection',           title:'Forum 15 · Rolnick reflection (optional)',
       post:{min:150,max:200,day:6,time:'23:59'}, opt:true },
-    { id:'f9',  wk:9, short:'Draft recommendation & peer challenge', title:'Forum 17 · Draft recommendation and the peer challenge',
+    { id:'f9',  wk:9, short:'Draft recommendation & peer challenge', title:'Forum 16 · Draft recommendation and the peer challenge',
       post:{min:400,max:500,day:2,time:'23:59'}, re:{n:2,min:200,day:4,time:'23:59'} }
   ];
 
-  /* ---- the hand-ins, all on Moodle --------------------------------- */
+  /* ---- the hand-ins — all on THIS SITE ----------------------------------
+     Each phase is a set of sections of the TEAM REPORT (report.html); a
+     team hands a phase in from that page, which freezes a snapshot at
+     _teams/<team>/handin/<id>. handin.html?p=<id> is the side door for a
+     PDF (figures, an appendix, or the whole thing if a team insists);
+     `file` is the name it asks for. `secs` names the report sections the
+     phase covers — report.html reads it. */
   var PHASES = [
-    { id:'p1', wk:5, day:6, time:'23:59', name:'Phase 1 · Strategic system analysis', words:'1,500–2,000 words', file:'LASTNAME_Phase1_Capstone2026.pdf' },
-    { id:'p2p',wk:6, day:4, time:'23:59', name:'Phase 2 · Proposal', words:'≈ 600 words', file:'LASTNAME_Phase2proposal_Capstone2026.pdf' },
-    { id:'p2', wk:8, day:6, time:'23:59', name:'Phase 2 · Data analysis report', words:'2,000 words ± 10% + figures', file:'LASTNAME_Phase2_Capstone2026.pdf' },
-    { id:'p3', wk:9, day:6, time:'23:59', name:'Phase 3 · Final consulting report', words:'4,000–5,000 words + figures', file:'LASTNAME_Phase3_Capstone2026.pdf' }
+    { id:'p1', wk:5, day:6, time:'23:59', name:'Phase 1 · Strategic system analysis', words:'1,500–2,000 words', file:'TEAM_Phase1_Capstone2026.pdf', secs:['r1','r2','r3','r4','r5','r6','r7'], min:1500, max:2000 },
+    { id:'p2p',wk:6, day:4, time:'23:59', name:'Phase 2 · Proposal', words:'≈ 600 words', file:'TEAM_Phase2proposal_Capstone2026.pdf', secs:['r8'], min:400, max:800 },
+    { id:'p2', wk:8, day:6, time:'23:59', name:'Phase 2 · Data analysis report', words:'2,000 words ± 10% + figures', file:'TEAM_Phase2_Capstone2026.pdf', secs:['r9','r10','r11','r12'], min:1800, max:2200 },
+    { id:'p3', wk:9, day:6, time:'23:59', name:'Phase 3 · Final consulting report', words:'4,000–5,000 words + figures', file:'TEAM_Phase3_Capstone2026.pdf', secs:['r0','r13','r14','r15','r16','r17','r18'], min:4000, max:5000, whole:true }
   ];
-  var EXAM = { wk:10, opens:{day:0,time:'09:30'}, closes:{day:7,time:'09:30'}, minutes:120, questions:60 };
+  /* openBook: Jan Erik, 7 Oct 2026 — "final exam will be open book". The
+     week-10 page, the hub, the glossary and the Thursday plan all read it. */
+  var EXAM = { wk:10, opens:{day:0,time:'09:30'}, closes:{day:7,time:'09:30'}, minutes:120, questions:60, openBook:true };
 
   /* ---- date arithmetic --------------------------------------------- */
   function pad(n){return (n<10?'0':'')+n;}
@@ -156,7 +182,7 @@
     f.dueText = fmtFull(f.due,f.post.time);
     if(f.re){ f.reDue = at(f.wk,f.re.day,f.re.time); f.reDueText = fmtFull(f.reDue,f.re.time); }
   });
-  PHASES.forEach(function(p){ p.due=at(p.wk,p.day,p.time); p.dueText=fmtFull(p.due,p.time); });
+  PHASES.forEach(function(p){ p.due=at(p.wk,p.day,p.time); p.dueText=fmtFull(p.due,p.time); p.href='report.html#'+p.id; p.fileHref='handin.html?p='+p.id; });
   EXAM.open = at(EXAM.wk,EXAM.opens.day,EXAM.opens.time); EXAM.close = at(EXAM.wk,EXAM.closes.day,EXAM.closes.time);
   EXAM.openText = fmtFull(EXAM.open,EXAM.opens.time); EXAM.closeText = fmtFull(EXAM.close,EXAM.closes.time);
   WEEKS.forEach(function(w){ w.dates = weekRange(w.n); w.monday=weekMonday(w.n); });
@@ -172,12 +198,13 @@
   WEEKS.forEach(function(w){ w.session=sessionOf(w.n); });
 
   var S = {
-    START:START, GRADES:GRADES, SCALE:SCALE, SESSION:SESSION, CANVAS:CANVAS, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
+    START:START, GRADES:GRADES, TEAMS:TEAMS, TEAM_SIZE:TEAM_SIZE, CLASS_SIZE:CLASS_SIZE, COMPANIES:COMPANIES, SESSION:SESSION, CANVAS:CANVAS, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
     session:sessionOf,
     liveText: 'Thursdays on Zoom — '+SESSION.group[0]+'–'+SESSION.group[1]+' the group hour, '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik (the first session is Wed 7 Oct)',
     week:function(n){ for(var i=0;i<WEEKS.length;i++)if(WEEKS[i].n===n)return WEEKS[i]; return null; },
     forum:function(id){ for(var i=0;i<FORUMS.length;i++)if(FORUMS[i].id===id)return FORUMS[i]; return null; },
     forumsOf:function(wk){ return FORUMS.filter(function(f){return f.wk===wk;}); },
+    team:function(id){ for(var i=0;i<TEAMS.length;i++)if(TEAMS[i].id===id)return TEAMS[i]; return null; },
     phase:function(id){ for(var i=0;i<PHASES.length;i++)if(PHASES[i].id===id)return PHASES[i]; return null; },
     phasesOf:function(wk){ return PHASES.filter(function(p){return p.wk===wk;}); },
     fmtDay:fmtDay, fmtFull:fmtFull, weekRange:weekRange, weekOfToday:weekOfToday, at:at,

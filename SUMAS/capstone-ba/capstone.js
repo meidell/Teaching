@@ -10,7 +10,7 @@
      <body data-course="capstone-ba" data-module="w3" data-week="3">
      <section class="sec" data-step="s1">         a section that counts
      <div class="fcard" data-forum="f3a">          a forum activity card
-     <div class="pcard" data-phase="p1">           a hand-in on Moodle
+     <div class="pcard" data-phase="p1">           a phase of the team report (report.html)
      <div id="recall"></div>  + CAP.recall(...)    two questions on last week
      <div id="quiz"></div>    + CAP.quiz(...)      the self-check
      <textarea data-work="w3_rate">                a workbook field
@@ -116,10 +116,11 @@ window.CAP = (function () {
     });
     document.querySelectorAll('[data-phase]').forEach(function(c){
       var p=S.phase(c.getAttribute('data-phase')); if(!p)return;
-      c.insertAdjacentHTML('afterbegin','<div class="due">On Moodle · due '+esc(p.dueText)+' CET · '+esc(p.words)+'</div>');
+      c.insertAdjacentHTML('afterbegin','<div class="due">Team report · on this site · due '+esc(p.dueText)+' CET · '+esc(p.words)+'</div>');
+      if(!c.querySelector('.acts'))c.insertAdjacentHTML('beforeend','<p class="acts"><a href="report.html#'+p.id+'">Write it on the team report page →</a> <span>· one of you hands it in from there · figures that will not paste go as a PDF on <a href="handin.html?p='+p.id+'">the hand-in page</a></span></p>');
     });
     document.querySelectorAll('[data-week-dates]').forEach(function(e){ var w=S.week(WK); if(w)e.textContent=w.dates; });
-    document.querySelectorAll('[data-canvas]').forEach(function(e){ if(S.CANVAS){ e.href=S.CANVAS; e.target='_blank'; e.rel='noopener'; e.textContent=e.textContent==='link'?'Google Doc':e.textContent; } else { e.removeAttribute('href'); e.textContent=(e.textContent==='link'?'link follows on Moodle':e.textContent); } });
+    document.querySelectorAll('[data-canvas]').forEach(function(e){ if(S.CANVAS){ e.href=S.CANVAS; e.target='_blank'; e.rel='noopener'; e.textContent=e.textContent==='link'?'Google Doc':e.textContent; } else { e.removeAttribute('href'); e.textContent=(e.textContent==='link'?'link follows':e.textContent); } });
     document.querySelectorAll('[data-session]').forEach(function(e){ var w=S.week(WK); if(!w||!w.session)return; var k=e.getAttribute('data-session'); e.textContent=k==='day'?w.session.day:(k==='group'?w.session.group:(k==='cls'?w.session.cls:w.session.text)); });
     document.querySelectorAll('[data-due]').forEach(function(e){
       var id=e.getAttribute('data-due'), f=S.forum(id), p=S.phase(id);

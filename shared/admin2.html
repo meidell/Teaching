@@ -1239,6 +1239,10 @@ function closeDrawer(){
 
 /* ===================================================================
    PRESENCE + HANDED IN — carried over from the dashboard this one
+   (Handed in grew two axes on 7 Oct 2026: a file carries `k`, the hand-in
+   kind, and a course with `handins` in courses.json gets one column per
+   kind; a course with `_teams` — the capstone — gets a team × phase table
+   of report snapshots on top, linking to report.html?team=&v=.)
    replaced. The register is the only place the pro-rata presence mark
    is visible, so it had to come across intact; the cells stay clickable
    because somebody always arrives late.
@@ -1636,48 +1640,107 @@ function wirePresControl(){
 /* ---------- final project · section by section ---------- */
 
 function subsLatest(){
-  var all=(ROOT&&ROOT._submissions)||{}, out=[];
+  /* every file, grouped by student and then by hand-in kind (`k`); a file
+     with no `k` is the legacy single final assignment, kind '_'. */
+  var all=(ROOT&&ROOT._submissions)||{}, out={};
   for(var sid in all){
     if(!all.hasOwnProperty(sid))continue;
-    var best=null, ups=all[sid]||{};
-    for(var k in ups){
-      if(!ups.hasOwnProperty(k))continue;
-      var u=ups[k]; if(!u||!u.ts)continue;
-      if(!best||u.ts>best.ts)best=u;
-      }
-    if(best)out.push({sid:sid,n:best.n||sid,u:best,count:Object.keys(ups).length});
+    var ups=all[sid]||{};
+    for(var id in ups){
+      if(!ups.hasOwnProperty(id))continue;
+      var u=ups[id]; if(!u||!u.ts)continue;
+      var k=u.k||'_';
+      out[sid]=out[sid]||{n:u.n||sid,kinds:{}};
+      var cur=out[sid].kinds[k];
+      if(!cur||u.ts>cur.u.ts)out[sid].kinds[k]={u:u,count:(cur?cur.count:0)+1};
+      else cur.count++;
+      if(u.n)out[sid].n=u.n;
+    }
   }
-  out.sort(function(a,b){return b.u.ts-a.u.ts;});
   return out;
 }
-
+function teamHandins(){
+  /* the team report's phase hand-ins: <ns>/_teams/<t>/handin/<pid>/<pushId>
+     = {ts,by,n,words,late}. Latest per team × phase. */
+  var T=(ROOT&&ROOT._teams)||{}, out={};
+  for(var t in T){
+    if(!T.hasOwnProperty(t)||!T[t])continue;
+    var h=T[t].handin||{}, mem=T[t].members||{};
+    out[t]={name:T[t].name||t,members:Object.keys(mem).filter(function(m){return mem[m]&&mem[m].n;}).map(function(m){return mem[m].n;}),kinds:{}};
+    for(var pid in h){
+      if(!h.hasOwnProperty(pid))continue;
+      var best=null,n=0;
+      for(var id in h[pid]){ if(!h[pid].hasOwnProperty(id))continue; var x=h[pid][id]; if(!x||!x.ts)continue; n++; if(!best||x.ts>best.ts){best=x;best._id=id;} }
+      if(best)out[t].kinds[pid]={u:best,count:n};
+    }
+  }
+  return out;
+}
+function kindList(subs,teams){
+  var K=(COURSE&&COURSE.handins)||[], seen={}; K.forEach(function(k){seen[k.id]=1;});
+  var extra=[];
+  function add(k){ if(!seen[k]){seen[k]=1;extra.push({id:k,label:k==='_'?'Final assignment':k});} }
+  for(var s in subs)for(var k in subs[s].kinds)add(k);
+  for(var t in teams)for(var k2 in teams[t].kinds)add(k2);
+  return K.concat(extra);
+}
 function renderSubs(){
   var box=$('subsCard'); if(!box)return;
-  var subs=subsLatest();
-  if(!subs.length&&!(ROOT&&ROOT._submissions)){box.style.display='none';SUBS_N=0;return;}
-  box.style.display='';SUBS_N=subs.length;
-  var inSub={}; subs.forEach(function(x){inSub[x.sid]=1;});
-  var missing=ROWS.filter(function(r){return !inSub[r.sid];});
-  var rows=subs.map(function(x){
-    var u=x.u, kb=u.sz?(u.sz<1048576?Math.round(u.sz/1024)+' KB':(u.sz/1048576).toFixed(1)+' MB'):'';
-    return '<tr>'+
-      '<td style="font-weight:700"><span data-jump="'+esc(x.sid)+'" style="cursor:pointer;text-decoration:underline dotted">'+esc(x.n)+'</span></td>'+
-      '<td class="muted" style="word-break:break-all">'+esc(u.f||'')+(kb?' <span class="muted">· '+kb+'</span>':'')+
-        (x.count>1?' <span class="muted">· v'+x.count+'</span>':'')+'</td>'+
-      '<td class="muted" style="white-space:nowrap">'+esc(whenAgo(u.ts))+
-        (u.late?' <b style="color:#B91C1C">LATE</b>':'')+'</td>'+
-      '<td>'+(u.st==='db'
-        ? '<button class="btn" data-dl="'+esc(x.sid)+'" data-fid="'+esc(u.fid||'')+'" data-ch="'+(u.ch||0)+
-          '" data-fn="'+esc(u.f||'submission')+'" data-ct="'+esc(u.ct||'')+'">Download</button>'
-        : (u.u?'<a class="btn" href="'+esc(u.u)+'" target="_blank" rel="noopener" download>Download</a>'
-             : '<span class="muted">no link</span>'))+'</td>'+
-    '</tr>';
-  }).join('');
-  box.innerHTML='<h3>Handed in · final assignment</h3>'+
-    '<div class="sub"><b>'+subs.length+'</b> of '+ROWS.length+' students have handed a file in'+
-      (missing.length?' · still outstanding: '+missing.map(function(m){return esc(m.name);}).join(', '):' · everyone is in')+'</div>'+
-    (subs.length?'<div class="wrapx"><table style="width:100%"><tbody>'+rows+'</tbody></table></div>'
-                :'<div class="muted">Nothing uploaded yet.</div>');
+  var subs=subsLatest(), teams=teamHandins();
+  var tHas=Object.keys(teams).filter(function(t){return Object.keys(teams[t].kinds).length;});
+  var sHas=Object.keys(subs);
+  if(!sHas.length&&!tHas.length&&!(ROOT&&(ROOT._submissions||ROOT._teams))){box.style.display='none';SUBS_N=0;return;}
+  box.style.display='';SUBS_N=sHas.length+tHas.length;
+  var kinds=kindList(subs,teams), dir=COURSE?'/'+encodeURI(COURSE.dir)+'/':'';
+  var h='<h3>Handed in</h3>';
+  function kb(u){return u.sz?(u.sz<1048576?Math.round(u.sz/1024)+' KB':(u.sz/1048576).toFixed(1)+' MB'):'';}
+  /* --- the team report, phase by phase --- */
+  if(Object.keys(teams).length){
+    h+='<div class="sub" style="margin-top:4px"><b>Team report</b> · one hand-in per team and phase, from report.html; the most recent is the one to mark</div>'+
+       '<div class="wrapx"><table style="width:100%"><thead><tr><th>Team</th>'+kinds.map(function(k){return '<th>'+esc(k.label)+'</th>';}).join('')+'</tr></thead><tbody>';
+    Object.keys(teams).sort().forEach(function(t){
+      var T=teams[t];
+      h+='<tr><td style="font-weight:700">'+esc(T.name)+'<div class="muted" style="font-weight:400;font-size:12px">'+esc(T.members.join(', ')||'no members yet')+'</div>'+
+         '<a class="btn" style="margin-top:4px;display:inline-block" href="'+dir+'report.html?team='+encodeURIComponent(t)+'" target="_blank" rel="noopener">Read the live report</a></td>';
+      kinds.forEach(function(k){
+        var c=T.kinds[k.id];
+        if(!c){h+='<td class="muted">—</td>';return;}
+        var u=c.u;
+        h+='<td>'+esc(whenAgo(u.ts))+(u.late?' <b style="color:#B91C1C">LATE</b>':'')+'<div class="muted" style="font-size:12px">by '+esc(u.n||u.by||'')+(u.words?' · '+u.words+' words':'')+(c.count>1?' · v'+c.count:'')+'</div>'+
+           '<a class="btn" style="margin-top:4px;display:inline-block" href="'+dir+'report.html?team='+encodeURIComponent(t)+'&v='+encodeURIComponent(u._id)+'" target="_blank" rel="noopener">Read as handed in</a></td>';
+      });
+      h+='</tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  /* --- files, per student --- */
+  if(sHas.length||(ROOT&&ROOT._submissions)){
+    var inSub={}; sHas.forEach(function(x){inSub[x]=1;});
+    var missing=ROWS.filter(function(r){return !inSub[r.sid];});
+    var legacy=kinds.length===1&&kinds[0].id==='_';
+    h+='<div class="sub" style="margin-top:14px"><b>'+sHas.length+'</b> of '+ROWS.length+' students have handed a file in'+
+       (legacy&&missing.length?' · still outstanding: '+missing.map(function(m){return esc(m.name);}).join(', '):'')+'</div>';
+    if(sHas.length){
+      h+='<div class="wrapx"><table style="width:100%">'+(legacy?'':'<thead><tr><th>Student</th>'+kinds.map(function(k){return '<th>'+esc(k.label)+'</th>';}).join('')+'</tr></thead>')+'<tbody>';
+      sHas.sort(function(a,b){return subs[a].n.localeCompare(subs[b].n);}).forEach(function(sid){
+        var S=subs[sid];
+        h+='<tr><td style="font-weight:700"><span data-jump="'+esc(sid)+'" style="cursor:pointer;text-decoration:underline dotted">'+esc(S.n)+'</span></td>';
+        kinds.forEach(function(k){
+          var c=S.kinds[k.id];
+          if(!c){h+='<td class="muted">—</td>';return;}
+          var u=c.u;
+          h+='<td><div class="muted" style="word-break:break-all">'+esc(u.f||'')+(kb(u)?' · '+kb(u):'')+(c.count>1?' · v'+c.count:'')+'</div>'+
+             '<div class="muted" style="white-space:nowrap">'+esc(whenAgo(u.ts))+(u.late?' <b style="color:#B91C1C">LATE</b>':'')+'</div>'+
+             (u.st==='db'
+               ? '<button class="btn" data-dl="'+esc(sid)+'" data-fid="'+esc(u.fid||'')+'" data-ch="'+(u.ch||0)+'" data-fn="'+esc(u.f||'submission')+'" data-ct="'+esc(u.ct||'')+'">Download</button>'
+               : (u.u?'<a class="btn" href="'+esc(u.u)+'" target="_blank" rel="noopener" download>Download</a>':'<span class="muted">no link</span>'))+'</td>';
+        });
+        h+='</tr>';
+      });
+      h+='</tbody></table></div>';
+    } else h+='<div class="muted">No files uploaded yet.</div>';
+  }
+  box.innerHTML=h;
   Array.prototype.forEach.call(box.querySelectorAll('[data-jump]'),function(c){
     c.addEventListener('click',function(){openDrawer(c.getAttribute('data-jump'));});
   });
