@@ -824,6 +824,27 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   hides the frame and prints the link). `_private/week1-transcript.md` is
   the spoken script for that deck and `_private/week1-runsheet.md` is
   generated from the deck's notes — regenerate both if the deck changes.
+- **The shared canvas is `canvas.html` — on the site since 8 Oct 2026, not a
+  Google Doc.** The group hour's output (the scribe's table, the one line to
+  bring to 18:15) is written there: one block per team per week, both blocks
+  on the page, yours editable and the other team's read-only, so the class
+  compares them on the screen at 18:15. It is `report.html`'s editing engine
+  (lock per box with a 25 s heartbeat, stale after 75 s; save 1.2 s after the
+  last keystroke; an 8 s re-read of `_teams`) pointed at
+  `_teams/<t>/canvas/w<k>/<key>` — a **table row is one record** (`<box>_r<i>`,
+  cells tab-joined), so four people fill four rows at once, which is what the
+  Doc's tables were for. `BOXES` in `canvas.html` is the only definition of
+  each week's boxes and was written from `thursday.html`'s "By 18:15 you
+  have…" lists; change one and change the other. `schedule.js → CANVAS` is
+  now `'canvas.html'`; the `[data-canvas]` handler in `capstone.js` and
+  `thursday.html` appends `?w=<week>` and opens it in the same tab (an
+  `http(s)` value would be treated as an external document again). Week 5's
+  loops are written as `A → B (+)` lines; a sketch goes in the Phase 1 PDF.
+  No history and no undo: last save wins, as on the report page.
+  ⚠ **The `_teams` rules block grew a `canvas` node and must be re-deployed**
+  before the next group hour, or every canvas write is refused (reported on
+  the box, never swallowed). The instructor's device is read-only on both
+  blocks; `followup.html` and the hub link the page.
 - **The two companies are `schedule.js → COMPANIES`: Ørsted and Eni.**
   Eni (through Plenitude, with minority offshore stakes in Dogger Bank and
   Vårgrønn) is the hedged oil-and-gas major that TotalEnergies represented;
@@ -844,9 +865,8 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   hub (7 Oct 2026); the Bachelors Moodle page's A 93–100 … F 0–62 block is
   the only record of it.
 - **Meets weekly**: `START = 2026-10-05`, Thursday 17:15–18:15 the
-  student-run group hour (`thursday.html`, written on one Google Doc canvas
-  — `schedule.js → CANVAS`, sharing *anyone with the link · editor*),
-  18:15–20:15 the class; `SESSION_DATES = {1:'2026-10-07'}` puts the first
+  student-run group hour (`thursday.html`, written on **the shared canvas,
+  `canvas.html`**, see below), 18:15–20:15 the class; `SESSION_DATES = {1:'2026-10-07'}` puts the first
   session on Wednesday 7 Oct. Week 1's group hour is *form the team*; its
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.

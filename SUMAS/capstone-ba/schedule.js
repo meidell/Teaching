@@ -72,8 +72,12 @@
      week's date — Week 1 meets on Wednesday 7 Oct 2026, the day after the
      course opened. The Zoom link is on Moodle. */
   var SESSION = { day:3, group:['17:15','18:15'], cls:['18:15','20:15'], where:'Zoom — the link is on Moodle' };
-  /* The shared canvas the group hour is written on — a Google Doc Jan Erik owns, one block per group per week; link-editable. null = not created yet. */
-  var CANVAS = 'https://docs.google.com/document/d/1zx6ZK3LTskvNQpA9rKX7GAn3DYY0ju14XBgwk6YWiSU/edit';  /* created 7 Oct 2026 in Jan Erik's Drive; sharing must be 'anyone with the link · editor' */
+  /* The shared canvas the group hour is written on — canvas.html, ON THE SITE
+     since 8 Oct 2026 (one block per team per week, at _teams/<t>/canvas/w<k>).
+     It replaced the Google Doc of 7 Oct 2026; the pages append ?w=<week>.
+     An absolute http(s) value would be treated as an external document
+     again (opened in a new tab). null = not available. */
+  var CANVAS = 'canvas.html';
   var SESSION_DATES = { 1:'2026-10-07' };
 
   var WEEKS = [
