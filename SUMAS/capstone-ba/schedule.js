@@ -96,41 +96,43 @@
      opt      true = optional, no deadline enforced, not in the 10%
   ---------------------------------------------------------------------- */
   var FORUMS = [
-    /* Week 1 is ORGANISING THE PROJECT (7 Oct 2026), so it carries one forum.
-       The old Forum 2 (data scavenger hunt, f1b) was dropped — Week 2's f2a is
-       the same task done properly — and the stakeholder map (f1c) moved to
-       Week 2. Ids are kept: they are database paths. */
-    { id:'f1a', wk:1, short:'Introduce yourself',           title:'Forum 1 · Introduce yourself, and what you bring to your team',
-      post:{min:200,max:300,day:6,time:'23:59'} },   /* Sunday: Week 1's session is Wednesday */
-    { id:'f2a', wk:2, short:'Energy market data',           title:'Forum 2 · Three data points, and whether to trust them',
+    /* Week 1 is ORGANISING THE PROJECT (7 Oct 2026) and carries NO forum:
+       the teams present themselves LIVE on the call (Jan Erik, 7 Oct 2026:
+       "presentations to be done online — not in a forum"), and that is the
+       week's participation mark. f1a (introduce yourself) was removed that
+       day; the old data scavenger hunt (f1b) was dropped the day before —
+       Week 2's f2a is the same task done properly — and the stakeholder map
+       (f1c) moved to Week 2. Ids are kept: they are database paths. Titles
+       are numbered 1–15 in order. */
+    { id:'f2a', wk:2, short:'Energy market data',           title:'Forum 1 · Three data points, and whether to trust them',
       post:{min:300,max:400,day:3,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f1c', wk:2, short:'Stakeholder map',              title:'Forum 3 · Stakeholder map of European offshore wind',
+    { id:'f1c', wk:2, short:'Stakeholder map',              title:'Forum 2 · Stakeholder map of European offshore wind',
       post:{min:300,max:400,day:6,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f2b', wk:2, short:'Ørsted vs Eni',                title:'Forum 4 · One metric, two companies',
+    { id:'f2b', wk:2, short:'Ørsted vs Eni',                title:'Forum 3 · One metric, two companies',
       post:{min:300,max:400,day:6,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f2c', wk:2, short:'2040 outlook debate',          title:'Forum 5 · The 2040 outlook debate (optional)',
+    { id:'f2c', wk:2, short:'2040 outlook debate',          title:'Forum 4 · The 2040 outlook debate (optional)',
       post:{min:80,max:300,day:6,time:'23:59'}, opt:true },
-    { id:'f3a', wk:3, short:'Learning curve',               title:'Forum 6 · Learning curve: your 2040 LCOE projections',
+    { id:'f3a', wk:3, short:'Learning curve',               title:'Forum 5 · Learning curve: your 2040 LCOE projections',
       post:{min:300,max:400,day:5,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f3b', wk:3, short:'The AI audit',                 title:'Forum 7 · The AI audit: where your assistant gets it wrong',
+    { id:'f3b', wk:3, short:'The AI audit',                 title:'Forum 6 · The AI audit: where your assistant gets it wrong',
       post:{min:250,max:350,day:6,time:'23:59'} },
-    { id:'f3c', wk:3, short:'AI meets the question',        title:'Forum 8 · AI meets the strategic question (optional)',
+    { id:'f3c', wk:3, short:'AI meets the question',        title:'Forum 7 · AI meets the strategic question (optional)',
       post:{min:150,max:400,day:6,time:'23:59'}, opt:true },
-    { id:'f4',  wk:4, short:'Share your 2×2',               title:'Forum 9 · Compare your 2×2 with your peers (optional)',
+    { id:'f4',  wk:4, short:'Share your 2×2',               title:'Forum 8 · Compare your 2×2 with your peers (optional)',
       post:{min:80,max:400,day:6,time:'23:59'}, opt:true },
-    { id:'f5',  wk:5, short:'Lock in your axes',            title:'Forum 10 · Lock in your axes',
+    { id:'f5',  wk:5, short:'Lock in your axes',            title:'Forum 9 · Lock in your axes',
       post:{min:60,max:200,day:0,time:'23:59'} },
-    { id:'f6',  wk:6, short:'Your AI footprint',            title:'Forum 11 · Your AI audit — the energy and carbon of Phase 1',
+    { id:'f6',  wk:6, short:'Your AI footprint',            title:'Forum 10 · Your AI audit — the energy and carbon of Phase 1',
       post:{min:250,max:350,day:6,time:'23:59'} },
-    { id:'f7a', wk:7, short:'Fit your curve',               title:'Forum 12 · Fit your curve',
+    { id:'f7a', wk:7, short:'Fit your curve',               title:'Forum 11 · Fit your curve',
       post:{min:350,max:450,day:5,time:'23:59'}, re:{n:2,min:60,day:6,time:'23:59'} },
-    { id:'f7b', wk:7, short:'Where the curve breaks',       title:'Forum 13 · Where the curve breaks',
+    { id:'f7b', wk:7, short:'Where the curve breaks',       title:'Forum 12 · Where the curve breaks',
       post:{min:300,max:400,day:6,time:'23:59'} },
-    { id:'f7c', wk:7, short:'The water you didn\'t measure',title:'Forum 14 · The water you didn\'t measure (optional)',
+    { id:'f7c', wk:7, short:'The water you didn\'t measure',title:'Forum 13 · The water you didn\'t measure (optional)',
       post:{min:100,max:200,day:6,time:'23:59'}, opt:true },
-    { id:'f8',  wk:8, short:'Rolnick reflection',           title:'Forum 15 · Rolnick reflection (optional)',
+    { id:'f8',  wk:8, short:'Rolnick reflection',           title:'Forum 14 · Rolnick reflection (optional)',
       post:{min:150,max:200,day:6,time:'23:59'}, opt:true },
-    { id:'f9',  wk:9, short:'Draft recommendation & peer challenge', title:'Forum 16 · Draft recommendation and the peer challenge',
+    { id:'f9',  wk:9, short:'Draft recommendation & peer challenge', title:'Forum 15 · Draft recommendation and the peer challenge',
       post:{min:400,max:500,day:2,time:'23:59'}, re:{n:2,min:200,day:4,time:'23:59'} }
   ];
 

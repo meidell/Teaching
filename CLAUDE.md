@@ -733,9 +733,17 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   re-derives it on every load). Forums, self-checks and the exam stay
   individual; the three phase marks are the team's.
 - **The report is `report.html` — one document per team, written on the
-  site.** Eighteen sections (`r0`…`r18`) that mirror the June 2026 showcase
-  report section by section, each with a "last year:" note under its
-  heading, plus a four-answer **charter** (`c1`…`c4`, Week 1's work).
+  site.** Eighteen sections (`r0`…`r18`) of a consulting report, a short
+  guidance note under each heading, plus a four-answer **charter**
+  (`c1`…`c4`, Week 1's work). ⚠ **This course never links or names last
+  year's showcase report or its PDF** — Jan Erik, 7 Oct 2026: "they would
+  only copy it". The sections were originally modelled on it and every
+  page, the hub, the glossary, the report page and the deck notes carried
+  a "last year: …" pointer; all of those were removed, and the few
+  teaching passages that quoted the previous cohort's findings were
+  de-attributed. Don't put the link, the "June 2026 cohort" or a
+  "last year" note back into `SUMAS/capstone-ba/`. The showcase stays
+  public under `/SUMAS/wind/`, where the MBA course still links it.
   `schedule.js → PHASES[].secs` names which sections each phase covers, so
   the hand-in panel counts words per phase from the same list. Data lives
   at `_teams/<t>/report/<sec> = {v,by,n,ts,owner}` and `charter/<key>`.
@@ -760,8 +768,8 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   with neither renders exactly as before.
 - ⚠ **Week 1 is ORGANISING THE PROJECT, nothing else**: the brief, the plan
   table and grade weights (rendered from `schedule.js`), the team picker,
-  the charter, a tools checklist, Forum 1 (introduce yourself *and your
-  team role*), fields `w1_role · w1_question · w1_group`, a six-question
+  the charter, a tools checklist, the live team presentation (no forum —
+  see below), two films, fields `w1_role · w1_question · w1_group`, a six-question
   self-check on how the course works. The frameworks that used to open the
   course — the cone, trends vs uncertainties, scenarios, loops, the
   doughnut, the Ørsted case, the 2026 starting line — moved verbatim to
@@ -770,15 +778,35 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   the slim one-line strip (`.thu.slim`); weeks 2–10 keep the full card.
   Forum **f1b was dropped** (Week 2's f2a is the same task) and **f1c moved
   to Week 2** (`wk:2`; the id is a database path and was kept), so Week 2
-  has three required posts; forum titles were renumbered 1–16.
+  has three required posts. ⚠ **Week 1 has NO forum at all** (Jan Erik,
+  7 Oct 2026, the evening of the first session: "presentations to be done
+  online — not in a forum"): `f1a` (introduce yourself) was removed from
+  `schedule.js → FORUMS`, `forum.html`'s `BRIEFS`, `followup.html`'s
+  `NUDGES` and the `courses.json` modules, and the teams **present
+  themselves live on the call** instead — five minutes, four voices, the
+  card on `week1.html` §1.6 (`s6`, still a `data-step` so the week total
+  stayed 10). That presentation is Week 1's participation mark. Forum
+  titles are therefore numbered **1–15** (f2a is "Forum 1"); the literal
+  numbers in `report.html`'s section guidance, `thursday.html` and
+  `week5.html` were renumbered with them — grep `Forum [0-9]` after any
+  further change. `week1.html` also carries **two films** (a `.films` grid,
+  no `data-step`, so it counts for nothing): euronews, *Europe bets on
+  offshore wind and smart tech to cut energy costs* (May 2025, 8:00,
+  `ceH6_VVmaP0`) and DW News, *EU wind power deal: how much Russian energy
+  can it replace?* (Jan 2026, 6:46, `h0EgssV1i3E`) — runtimes read from
+  YouTube's own metadata, never guessed; they are played in class from
+  slides 6–7 of `week1-slides.html` (19 slides, embedded frames; print
+  hides the frame and prints the link). `_private/week1-transcript.md` is
+  the spoken script for that deck and `_private/week1-runsheet.md` is
+  generated from the deck's notes — regenerate both if the deck changes.
 - **The two companies are `schedule.js → COMPANIES`: Ørsted and Eni.**
   Eni (through Plenitude, with minority offshore stakes in Dogger Bank and
   Vårgrønn) is the hedged oil-and-gas major that TotalEnergies represented;
   every page, forum brief, nudge, quiz and glossary entry says Eni, and the
   Eni-specific numbers were rewritten (Plenitude ≈ 4 GW installed, 2024;
   the Week 9 signal is Plenitude's capacity against Eni's own plan). The
-  showcase report and the `/SUMAS/wind/` course still say TotalEnergies —
-  the hub tells students so. **Verify Plenitude's figures against the
+  `/SUMAS/wind/` course still says TotalEnergies; this course no longer
+  mentions it at all. **Verify Plenitude's figures against the
   latest Eni report before Week 2; they were written from memory.**
 - **The exam is OPEN BOOK** (`schedule.js → EXAM.openBook`): notes, the
   readings, the site, the team's report; not an AI, not a classmate. Stated
