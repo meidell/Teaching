@@ -119,6 +119,7 @@ window.CAP = (function () {
       c.insertAdjacentHTML('afterbegin','<div class="due">On Moodle · due '+esc(p.dueText)+' CET · '+esc(p.words)+'</div>');
     });
     document.querySelectorAll('[data-week-dates]').forEach(function(e){ var w=S.week(WK); if(w)e.textContent=w.dates; });
+    document.querySelectorAll('[data-canvas]').forEach(function(e){ if(S.CANVAS){ e.href=S.CANVAS; e.target='_blank'; e.rel='noopener'; e.textContent=e.textContent==='link'?'Google Doc':e.textContent; } else { e.removeAttribute('href'); e.textContent=(e.textContent==='link'?'link follows on Moodle':e.textContent); } });
     document.querySelectorAll('[data-session]').forEach(function(e){ var w=S.week(WK); if(!w||!w.session)return; var k=e.getAttribute('data-session'); e.textContent=k==='day'?w.session.day:(k==='group'?w.session.group:(k==='cls'?w.session.cls:w.session.text)); });
     document.querySelectorAll('[data-due]').forEach(function(e){
       var id=e.getAttribute('data-due'), f=S.forum(id), p=S.phase(id);

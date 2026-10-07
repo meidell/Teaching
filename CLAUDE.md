@@ -718,18 +718,26 @@ applies verbatim. What differs:
   `/shared/config.js`; in `robots.txt`. Unlisted; the SUMAS landing page
   picks it up from `courses.json` by itself.
 - ⚠ **This cohort MEETS WEEKLY; the Masters one never did.** Jan Erik, 6 Oct
-  2026: *"it starts tomorrow and then every Thursday 16:15–17:15 group
-  activity … and then 17:15–19:15 with me."* So `START = 2026-10-05` (Week 1
-  is the week it was said), `schedule.js → SESSION` is Thursday (day 3 from
-  the Monday) with the two time blocks, and `SESSION_DATES = {1:'2026-10-07'}`
+  2026: *"it starts tomorrow and then every Thursday … group activity … and
+  then … with me"*; the hours were fixed on 7 Oct as **17:15–18:15 the group
+  hour, 18:15–20:15 the class**. So `START = 2026-10-05` (Week 1 is the week
+  it was said), `schedule.js → SESSION` is Thursday (day 3 from the Monday)
+  with the two time blocks, and `SESSION_DATES = {1:'2026-10-07'}`
   puts the first session on **Wednesday 7 Oct** — the literal "tomorrow".
   ⚠ If the first session is in fact Thursday 8 Oct, delete that one entry;
   nothing else changes. `S.session(wk)` gives any page the week's real date.
   The exam window then falls 7–14 Dec 2026, the same as the Masters.
-- **The group hour is designed, not left to them.** `thursday.html` holds
-  ten 60-minute plans (scribe + timekeeper, one shared page, timed steps,
-  the last ten minutes writing into the consulting file, one thing to bring
-  to 17:15) and a four-line outline of each 17:15–19:15 class. Every week
+- **The group hour is designed, not left to them, and it is written on ONE
+  CANVAS.** `thursday.html` holds ten 60-minute plans (scribe + timekeeper,
+  timed steps, the last ten minutes writing into the consulting file, one
+  thing to bring to 18:15) and a four-line outline of each 18:15–20:15
+  class. Each plan and each week card carries a **"By 18:15 you have…"**
+  box — the hand-in is the canvas itself: a Google Doc in Jan Erik's Drive
+  ("Capstone · Thursday canvas", one block per group per week, created 7
+  Oct 2026 from HTML via the Drive connector), its URL in `schedule.js →
+  CANVAS`, painted into every `[data-canvas]` link by `capstone.js` and by
+  `thursday.html`'s own script. Sharing must be *anyone with the link ·
+  editor* — the connector could not set that, Jan Erik does. Every week
   page opens with a `.thu` card — the session date (`[data-session]`,
   filled by `capstone.js`), the hour's one-line brief, the class outline,
   and a **`wN_group` consulting-file field** ("what we agreed and where I
@@ -737,6 +745,12 @@ applies verbatim. What differs:
   the build that created them; if you edit a plan, edit both or regenerate.
   ⚠ The `wN_group` fields are in every denominator (`WEEK_TOTALS` is one
   higher than `wind`'s each week) and in `courses.json → project.sections`.
+- **Week 1 has a deck and a run sheet.** `week1-slides.html` is a
+  self-contained HTML deck (26 slides, ← →, **N** for speaker notes, **P**
+  prints one slide per page with notes) with a planned clock per slide and
+  a behind/ahead indicator; `_private/week1-runsheet.md` (gitignored) is the
+  same notes as a checklist, generated from the same list. Later weeks have
+  no deck yet — the four-line outline on the week card is the plan.
 - **Forum 1's deadline moved from Wednesday to Sunday** (`f1a` `day:6`),
   because Week 1's session is itself on the Wednesday. Every other forum
   keeps the Masters timing.

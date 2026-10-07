@@ -14,8 +14,9 @@
    ⚠ This is the BACHELORS edition (Moodle course id 1447, "2026 - Milan &
    Gland - Capstone: AI for Good - Bachelors", printed 6 Oct 2026). Unlike
    the online Masters edition (SUMAS/wind, same START) it MEETS WEEKLY:
-   Jan Erik, 6 Oct 2026 — "it starts tomorrow and then every Thursday
-   16:15–17:15 group activity … and then 17:15–19:15 with me". So Week 1 is
+   Jan Erik, 6 Oct 2026 — "it starts tomorrow and then every Thursday …
+   group activity … and then … with me"; the hours were fixed on 7 Oct as
+   17:15–18:15 (group hour) and 18:15–20:15 (class). So Week 1 is
    the week of Mon 5 Oct 2026, the first session is Wed 7 Oct (the
    SESSION_DATES override — delete it if the first session is really Thu 8
    Oct) and every later session is the Thursday of its week. The group
@@ -48,13 +49,15 @@
   ];
 
   /* ---- the weekly session -------------------------------------------
-     Every Thursday: 16:15–17:15 the GROUP HOUR (students together online,
+     Every Thursday: 17:15–18:15 the GROUP HOUR (students together online,
      no instructor — the plan per week is in thursday.html and on each week
-     page), then 17:15–19:15 the class with Jan Erik. `day` is counted from
+     page), then 18:15–20:15 the class with Jan Erik. `day` is counted from
      the week's Monday (3 = Thursday). SESSION_DATES overrides a single
      week's date — Week 1 meets on Wednesday 7 Oct 2026, the day after the
      course opened. The Zoom link is on Moodle. */
-  var SESSION = { day:3, group:['16:15','17:15'], cls:['17:15','19:15'], where:'Zoom — the link is on Moodle' };
+  var SESSION = { day:3, group:['17:15','18:15'], cls:['18:15','20:15'], where:'Zoom — the link is on Moodle' };
+  /* The shared canvas the group hour is written on — a Google Doc Jan Erik owns, one block per group per week; link-editable. null = not created yet. */
+  var CANVAS = 'https://docs.google.com/document/d/1zx6ZK3LTskvNQpA9rKX7GAn3DYY0ju14XBgwk6YWiSU/edit';  /* created 7 Oct 2026 in Jan Erik's Drive; sharing must be 'anyone with the link · editor' */
   var SESSION_DATES = { 1:'2026-10-07' };
 
   var WEEKS = [
@@ -169,7 +172,7 @@
   WEEKS.forEach(function(w){ w.session=sessionOf(w.n); });
 
   var S = {
-    START:START, GRADES:GRADES, SCALE:SCALE, SESSION:SESSION, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
+    START:START, GRADES:GRADES, SCALE:SCALE, SESSION:SESSION, CANVAS:CANVAS, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
     session:sessionOf,
     liveText: 'Thursdays on Zoom — '+SESSION.group[0]+'–'+SESSION.group[1]+' the group hour, '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik (the first session is Wed 7 Oct)',
     week:function(n){ for(var i=0;i<WEEKS.length;i++)if(WEEKS[i].n===n)return WEEKS[i]; return null; },
