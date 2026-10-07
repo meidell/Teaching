@@ -274,6 +274,31 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   3.090 for 99.8%, 2.807 for 99.5%, never a computed quantile. Interactive
   widgets are the course's own (the capture simulation, the interval builder,
   the t-table explorer, the which-formula tree); the textbook content is not.
+- ⚠ **The DECKS of Weeks 5 and 6 carry the chapter VERBATIM** (7 Oct 2026,
+  Jan Erik: "I want the full text from the examples and from the cards
+  (theory, etc.) in that book to be reflected in the slides … do not let
+  things out"; the first Week 6 deck paraphrased and he called it
+  incomprehensible). So `week5.html`'s Part 1 is Saylor chapter 6 passage
+  by passage (56 slides in all) and `week6.html`'s is chapter 7 (65):
+  the chapter introduction, every section's Learning Objectives, every
+  theory paragraph, every formula box, every margin definition, every Key
+  Takeaways list, the book's own tables (the rowers' sixteen samples, the
+  0/1 population at n = 1, 5, 10, 20) and **every Example as a question
+  slide followed by its solution slide** in the book's words — each in a
+  cited `.book` block (`bk()`), formula boxes in `.fbox` (`fx()`),
+  definitions in `.gl`, tables in `table.bk`; such a slide is `cls:'text'`.
+  The deck CSS for these lives at the END of `stats.css`. The pizzeria
+  slides (poll, sampling machine, √n, two dials, hook closes, the
+  magazine, the clinic) sit between the book's passages and are ours;
+  the `site:'sX'` anchors hang on each section's opening book slide, so
+  `wireSlides()` still computes the chips. One deliberate edit: §7.2's
+  sentence defining t<sub>c</sub> misprints "standard normal distribution";
+  the slide reads "Student's t-distribution" with a dotted `.corr` mark and
+  the speaker note says so. Every number on these slides was recomputed in
+  Python (forty checks, the book's z-to-two-decimals method); the probe
+  (strip network scripts, open the deck, count slides, screenshot, print to
+  PDF — one page per slide) is the test to rerun. Follow the same pattern
+  for later weeks' decks unless told otherwise.
 - Week 3 also moved the slide ↔ section mapping to the qm1 way: each slide
   carries `site:'sX'` and `wireSlides()` computes the chips. Weeks 1–2 still
   use the literal `map={3:'s1',…}`.
