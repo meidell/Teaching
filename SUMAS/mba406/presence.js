@@ -1,8 +1,8 @@
 /* =====================================================================
    SUMAS · Managerial Finance — presence, marked in the room.
 
-   SUMAS · MBA406: attendance is part of class participation (10% of the
-   grade), and a student absent from 5 or more sessions may not sit the
+   SUMAS · MBA406: attendance is part of class participation & homework (20%
+   of the grade), and a student absent from 5 or more sessions may not sit the
    final exam. ONE class, ONE group (the HEG original had two), and one
    session per teaching week: w1…w9, each a single page — see SESSIONS
    below. The group machinery is kept but inert. Attendance has to be
@@ -225,7 +225,7 @@ window.StatsPresence = (function () {
 
     el.className='pres';
     el.innerHTML='<h4>Presence · this session'+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
-      '<div class="pd" id="presWhy">Attendance counts toward <b>class participation</b> (10% of your grade) — and if you miss <b>5 sessions or more</b> you may not sit the final exam. Your instructor opens this button in the room; press it once while it is red.'+
+      '<div class="pd" id="presWhy">Attendance counts toward <b>class participation &amp; homework</b> (20% of your grade) — and if you miss <b>5 sessions or more</b> you may not sit the final exam. Your instructor opens this button in the room; press it once while it is red.'+
       (a&&multi()?' You are in the <b>'+esc(grpLabel(grp))+'</b> group, so only that session\u2019s window turns it red.':'')+'</div>'+
       '<button class="pres-btn" id="presBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="presState"></div>'+
@@ -320,7 +320,7 @@ window.StatsPresence = (function () {
     el.className='pres';
     el.innerHTML=
       '<h4>Presence · this session'+(a&&multi()?' <span class="pres-grp">'+esc(grpLabel(grp))+' group</span>':'')+'</h4>'+
-      '<div class="pd">Attendance counts toward <b>class participation</b> (10% of your grade) — and if you miss <b>5 sessions or more</b> you may not sit the final exam. Your instructor opens the window in the room; press it once while it is red.'+
+      '<div class="pd">Attendance counts toward <b>class participation &amp; homework</b> (20% of your grade) — and if you miss <b>5 sessions or more</b> you may not sit the final exam. Your instructor opens the window in the room; press it once while it is red.'+
       (a&&multi()?' You are in the <b>'+esc(grpLabel(grp))+'</b> group — only that room\u2019s window opens this button.':'')+'</div>'+
       '<button class="pres-btn" id="hubBtn" disabled>Presence not open</button>'+
       '<div class="pres-state" id="hubState"></div>'+

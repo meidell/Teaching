@@ -26,6 +26,8 @@ window.CourseProgress=(function(){
      week page is SECTIONS.length (9); on a homework page it is the number
      of problems. */
   var CHAPTERS=[
+    /* the tool: a learning path through Léa's business for students with no accounting — opt:true, so it never enters the percentage */
+    {mod:'acct', short:'ACC',name:'Crash course in accounting — optional, before Week 1',   total:7, live:true, opt:true, href:'crash-course.html'},
     {mod:'w1',   short:'W1', name:'Week 1 · Reading the numbers as a manager',          total:9, live:true, href:'week1.html'},
     {mod:'w1-hw',short:'H1', name:'Week 1 · Homework — Nyon Cycles SA',                 total:19,live:true, href:'week1-homework.html'},
     {mod:'w2',   short:'W2', name:'Week 2 · Time value of money',                       total:9, live:true, href:'week2.html'},

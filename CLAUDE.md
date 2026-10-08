@@ -636,11 +636,37 @@ presence needing an account) applies. What differs:
 - **Ratios use year-end balances** (the book sometimes averages), stated on
   the page and on the slide. Week 1's `ratios()` is the one definition for
   the tiles, the what-if and the deck.
-- **Grading is the syllabus's and identical to MBA401:** 10% participation
-  (5+ absences bar the exam) · 25% individual case study (2,000 words, due
-  23 Jan 2027) · 30% weekly Moodle quizzes · 35% final exam, closed book.
-  The site's checkpoint is a self-check; the workshop ("the Rochat file")
-  is ungraded practice for the case study.
+- ⚠ **Grading is NOT MBA401's** (changed 8 Oct 2026, Jan Erik): **20%
+  participation — attendance, contribution and the weekly homework** (5+
+  absences bar the exam) · **30% individual case study** (2,000 words, due
+  23 Jan 2027) · **50% final exam**, closed book. **There are no weekly
+  quizzes**: every "Moodle quiz" line was removed from the hub, the two
+  decks' closing slides and the self-check copy, and the homework pages'
+  eyebrow reads "counts toward participation" instead of "not graded".
+  The site's checkpoint is still a self-check; the workshop ("the Rochat
+  file") is ungraded practice for the case study. Stated in the hub's intro
+  modal, its assessment block, `presence.js` (two strings) and the decks.
+- **`crash-course.html` is the one tool (8 Oct 2026): a crash course in
+  accounting for the two students who never had any**, framed as a learning
+  path through Léa's 2025 — seven "stops" (her three questions · **the
+  year booked as twelve aggregated transactions from Week 1's 31 Dec 2024
+  balance sheet, with the income statement and the three cash buckets
+  filling in live, ending on Week 1's exact statements** — Jan Erik's ask:
+  show how Week 1's amounts arise from the underlying transactions · the
+  year's income statement · the hotel that pays in February (accrual) · the
+  router, 280 over seven years (depreciation) · where the 240 went (cash
+  flow, direct and indirect routes both give 230) · the whole set of books +
+  vocabulary + an 8-question self-check). The twelve: deliveries 2,400 ·
+  collections 2,300 · purchases on credit 1,510 · COGS 1,440 · suppliers
+  paid 1,470 · SG&A 480 · router 280 · depreciation 120 · interest 60 · tax
+  60 · bank line +60 · dividend 70. Change a Week 1 number and this path
+  must be re-derived. Module `acct`, `opt:true` in `courseprogress.js`
+  (listed, never counted), its own progress key `mba406_acct`, a column in
+  the dashboard via `courses.json → modules`; no deck, no release, no
+  presence, no `data-work`. Sections complete through `SECDEPS` like qm1.
+  Every number was recomputed in Python (the balance sheet balances after
+  each transaction and the path ends at 2,000 / NI 240 / cash 90).
+  Linked from the hub (`.primer` under the how-cards) and Week 1's home.
 - **Own namespace `mba406` and localStorage prefix `mba406_`.** Its rules
   block in `firebase-database-rules.json` is a copy of `mba401`'s with the
   one self-reference changed and **must be deployed** before the link goes
