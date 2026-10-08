@@ -47,36 +47,41 @@ window.CourseConfig = (function () {
              registered before the split has no group recorded and is read as
              that one, and its presence sessions keep the bare module id, so
              no mark already taken moves. */
+  /* `school` is the school FOLDER — the first segment of `dir` in
+     courses.json — and must agree with it: two courses with the same
+     `school` share a student's sign-in (login.js, "one school, one
+     sign-in"). Three copies of a course's facts live here, in courses.json
+     and in the course folder; a course that moves folders changes all. */
   var COURSES = {
-    "omba401":   { ns:"omba401",   theme:"sumas", lang:"en", login:true,
+    "omba401":   { school:"SUMAS", ns:"omba401",   theme:"sumas", lang:"en", login:true,
                    label:"OMBA401 · Quantitative Methods" },
-    "ombafr455": { ns:"ombafr455", theme:"sumas", lang:"en", login:true,
+    "ombafr455": { school:"SUMAS", ns:"ombafr455", theme:"sumas", lang:"en", login:true,
                    label:"OMBAFR455 · Marchés financiers durables" },
-    "e1410":     { ns:"e1410",     theme:"ideas", lang:"en", login:true,
+    "e1410":     { school:"UMEF", ns:"e1410",     theme:"ideas", lang:"en", login:true,
                    label:"E1410 · Advanced Project Management in AI" },
-    "umef407":   { ns:"umef407",   theme:"umef",  lang:"en", login:true,
+    "umef407":   { school:"UMEF", ns:"umef407",   theme:"umef",  lang:"en", login:true,
                    label:"UMEF407 · Digital Innovation" },
-    "statistics":{ ns:"statistics",theme:"heg",   lang:"en", login:true, key:"stats",
+    "statistics":{ school:"HEG", ns:"statistics",theme:"heg",   lang:"en", login:true, key:"stats",
                    label:"HEG · Applied Statistics",
                    groups:[{id:"g1",label:"Monday",short:"Mon",n:1},
                            {id:"g2",label:"Wednesday",short:"Wed",n:2}] },
-    "mba401":    { ns:"mba401",    theme:"sumas", lang:"en", login:true,
+    "mba401":    { school:"SUMAS", ns:"mba401",    theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MBA401 Quantitative Methods" },
-    "mba406":    { ns:"mba406",    theme:"sumas", lang:"en", login:true,
+    "mba406":    { school:"SUMAS", ns:"mba406",    theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MBA406 Managerial Finance" },
-    "gen110":    { ns:"gen110",    theme:"umef",  lang:"fr", login:true,
+    "gen110":    { school:"UMEF", ns:"gen110",    theme:"umef",  lang:"fr", login:true,
                    label:"SWISS UMEF · GEN 110 Intelligence artificielle" },
-    "qm1":       { ns:"qm1",       theme:"heg",   lang:"en", login:true,
+    "qm1":       { school:"HEG", ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
-    "creator":   { ns:"creator",   theme:"gbs",   lang:"en", login:true,
+    "creator":   { school:"GBS", ns:"creator",   theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Creator Economy & SEO 2.0" },
-    "bi":        { ns:"bi",        theme:"gbs",   lang:"en", login:true,
+    "bi":        { school:"GBS", ns:"bi",        theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Business Intelligence" },
-    "finmod":    { ns:"finmod",    theme:"gbs",   lang:"en", login:true,
+    "finmod":    { school:"GBS", ns:"finmod",    theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Finance Modelling" },
-    "wind":      { ns:"wind",      theme:"sumas", lang:"en", login:true,
+    "wind":      { school:"SUMAS", ns:"wind",      theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MA/MBA500 Capstone — European wind to 2040" },
-    "capstone-ba": { ns:"capstone-ba", theme:"sumas", lang:"en", login:true,
+    "capstone-ba": { school:"SUMAS", ns:"capstone-ba", theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · Capstone (Bachelors) — European wind to 2040" }
   };
 
@@ -131,6 +136,7 @@ window.CourseConfig = (function () {
       lang:   (window.COURSE_LANG && STR[window.COURSE_LANG]) ? window.COURSE_LANG : (c.lang || "en"),
       label:  c.label || id,
       login:  !!c.login,
+      school: c.school || "",     /* the school FOLDER (first segment of `dir` in courses.json) — what makes two courses siblings for sign-in */
       groups: c.groups || null,
       theme:  THEMES[c.theme] || THEMES.navy,
       themeName: c.theme,
@@ -146,6 +152,15 @@ window.CourseConfig = (function () {
     currentId: currentId,
     current: function () { return get(currentId()); },
     get: get,
+    /* The other courses in the same school folder that use the shared
+       sign-in — login.js looks in their saved identities before asking a
+       student who is already known to the school to register again. */
+    siblings: function (id) {
+      var me = COURSES[id]; if (!me || !me.school) return [];
+      return Object.keys(COURSES).filter(function (k) {
+        return k !== id && COURSES[k].login && COURSES[k].school === me.school;
+      }).map(function (k) { return { id:k, key:COURSES[k].key||k, ns:COURSES[k].ns, label:COURSES[k].label||k }; });
+    },
     /* the full /courses.json, for pages that need titles, modules, status */
     load: function () {
       /* `no-cache` = revalidate with the server every time (a conditional

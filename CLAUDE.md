@@ -898,6 +898,15 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.
 - **Grade weights are the same assumption as `wind`'s** (10/10/55/25).
+- **`stakeholders-to-systems-slides.html`** (8 Oct 2026) is a second deck on
+  the Week 1 deck's engine: a 30-slide, two-hour session (18:15–20:15,
+  `data-clock` per slide) on toolkit idea 4 — inventory → interactions →
+  dynamics — with three canvas exercises, the course's own two loops drawn
+  as SVG rings with signed arrows, the sign-counting rule, delays, Meadows'
+  ladder, the boundary, the doughnut, and how it all lands in report §5.
+  Not attached to a week and linked from nowhere yet; Ørsted and Eni, never
+  TotalEnergies. Numbers on it are the course's own (the 70% LCOE fall);
+  the Ørsted 2023 write-down is cited as a mechanism, not a figure.
 - **`glossary.html`** grows with the course; 7 Oct added *Team report ·
   Charter · Hand-in · Plenitude* and turned *Closed book* into *Open book*.
 - **Still on Moodle, deliberately**: the Zoom link and Week 2's two reading
@@ -1453,6 +1462,32 @@ today; see its section for what the split means for presence.
 `sid` is the slugified name (`jan-erik-meidell`). Progress is **always** written to
 `localStorage` first, named or not — so when a student finally identifies themselves,
 everything already done on that device is backfilled to the DB. Do not break that.
+
+**One school, one sign-in (8 Oct 2026).** A student who is signed in to one
+course is signed in to every other course of the **same school folder**
+(HEG, SUMAS, UMEF, GBS) with the same name and the same six-digit code, without
+being asked again — Jan Erik: "if a student logged in to one course (same
+folder, same name) then the login is automatic for other courses in that
+folder". `config.js` now carries `school` on every course (the first segment
+of `dir` in courses.json — keep the two in step) and exposes
+`CourseConfig.siblings(id)`. On a page with no identity of its own,
+`login.js`'s `adoptFromSibling()` looks at the siblings' saved
+`<key>_auth` (newest `ts` first — `saveAuth` stamps one now) and carries the
+sid, name and code across: if this course's roster has no such sid it
+**registers them silently** with the same code (the same five writes as a
+registration, every response checked); if it has the sid with the same code it
+**signs them in silently** and merges; a toast says which course the identity
+came from. Nothing is a cookie — `localStorage` is one origin for the whole
+site, so reading another course's key is all it takes. Three deliberate
+fall-backs to the ordinary prompt: a course with **subgroups** (the room is
+the student's to choose, so the prompt opens with the name filled in); a
+roster that already holds the sid with a **different code** (a namesake, or a
+student who registered twice — the "I have a code" tab opens, name filled,
+and says why); and a **refused** read or write (rules not deployed). Different
+schools never share: an HEG identity does nothing on a SUMAS page. Probed
+headlessly in eight scenarios with a stubbed database (new · same code ·
+different code · subgroups · no sibling · rules refused · writes refused ·
+other school).
 
 ### Messages — [shared/chat.js](shared/chat.js) + [shared/chat.html](shared/chat.html)
 

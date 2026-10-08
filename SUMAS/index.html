@@ -100,8 +100,15 @@ a.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:va
 .card .desc{font-size:12.5px;color:var(--ink-soft);line-height:1.5;flex:1;}
 .card .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);}
 .chip{font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--grey);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.card .chips .chip{max-width:100%;white-space:normal;}
 .chip.hot{color:var(--accent-deep);background:var(--accent-pale);border-color:rgba(74,139,58,.35);}
 .chip.lang{color:var(--navy);}
+/* programme accents — slight on purpose: a left edge, the code line and one chip.
+   OMBA = gold, MBA = SUMAS green, Bachelor = terracotta. */
+.card.p-omba{border-left:4px solid #C9A227;} .card.p-omba .kick{color:#8A6D12;} .chip.p-omba{color:#8A6D12;background:rgba(201,162,39,.12);border-color:rgba(201,162,39,.45);}
+.card.p-mba{border-left:4px solid #4A8B3A;}  .card.p-mba .kick{color:#2C5530;}  .chip.p-mba{color:#2C5530;background:rgba(74,139,58,.10);border-color:rgba(74,139,58,.40);}
+.card.p-ba{border-left:4px solid #B5542D;}   .card.p-ba .kick{color:#8E3F20;}   .chip.p-ba{color:#8E3F20;background:rgba(181,84,45,.10);border-color:rgba(181,84,45,.40);}
+.plegend{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 12px;}
 .card .go{position:absolute;right:16px;bottom:14px;font-size:15px;color:var(--accent);opacity:0;transition:.18s;}
 a.card:hover .go{opacity:1;transform:translateX(3px);}
 .card.arch{background:var(--surface);}
@@ -194,9 +201,18 @@ a.card:hover .go{opacity:1;transform:translateX(3px);}
     return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();
   }
 
+  /* Three programmes at SUMAS: the online MBA courses (code OMBA…), the
+     campus MBA courses, and the Bachelor courses (level "Bachelor"). */
+  var PROG={omba:{label:'Online MBA',ord:0},mba:{label:'MBA',ord:1},ba:{label:'Bachelor',ord:2}};
+  function prog(c){
+    if(/^OMBA/i.test(c.code||'')) return 'omba';
+    if(/^bach/i.test(c.level||'')) return 'ba';
+    return 'mba';
+  }
+  function byProg(a,b){ return PROG[prog(a)].ord-PROG[prog(b)].ord; }
   function card(c){
-    var n=count(c), s=c.schedule||null, chips=[];
-    if(c.level)          chips.push('<span class="chip">'+esc(c.level)+'</span>');
+    var n=count(c), s=c.schedule||null, chips=[], pg=prog(c);
+    chips.push('<span class="chip p-'+pg+'">'+PROG[pg].label+'</span>');
     if(c.lang)           chips.push('<span class="chip lang">'+esc(String(c.lang).toUpperCase())+'</span>');
     if(s&&s.day&&s.time) chips.push('<span class="chip hot">'+esc(dayLabel(s.day)+daySep(s.day)+s.time)+'</span>');
     if(s&&s.sessions)    chips.push('<span class="chip">'+s.sessions+' sessions</span>');
@@ -211,7 +227,7 @@ a.card:hover .go{opacity:1;transform:translateX(3px);}
        week, and it is not something a student should be reading here. */
     var kick = c.code || '';
 
-    return '<a class="card'+(c.status==='archived'?' arch':'')+'" href="'+href(c)+'">'+
+    return '<a class="card p-'+pg+(c.status==='archived'?' arch':'')+'" href="'+href(c)+'">'+
       '<div class="top">'+
         (c.emoji?'<span class="em">'+esc(c.emoji)+'</span>':'')+
         '<div class="hd">'+(kick?'<div class="kick">'+esc(kick)+'</div>':'')+
@@ -226,7 +242,7 @@ a.card:hover .go{opacity:1;transform:translateX(3px);}
     if(!list.length)return '';
     return '<div class="phase">'+title+'</div>'+
            (lead?'<p class="plead">'+lead+'</p>':'')+
-           '<div class="grid">'+list.map(card).join('')+'</div>';
+           '<div class="grid">'+list.slice().sort(byProg).map(card).join('')+'</div>';
   }
 
   /* the teaching-day strip — only when two or more live courses share a
@@ -255,6 +271,12 @@ a.card:hover .go{opacity:1;transform:translateX(3px);}
     return html;
   }
 
+  function legend(list){
+    var seen={}; list.forEach(function(c){seen[prog(c)]=1;});
+    var keys=Object.keys(PROG).filter(function(k){return seen[k];});
+    if(keys.length<2) return '';
+    return '<div class="plegend">'+keys.map(function(k){return '<span class="chip p-'+k+'">'+PROG[k].label+'</span>';}).join('')+'</div>';
+  }
   function render(reg){
     var all=(reg.courses||[]).filter(isSchool);
     if(!all.length){out.innerHTML='<div class="empty">No SUMAS courses are in the registry yet.</div>';return;}
@@ -269,7 +291,7 @@ a.card:hover .go{opacity:1;transform:translateX(3px);}
     out.innerHTML =
       (live.length?'<div class="phase">Running this term</div>'+
         '<p class="plead">For students <b>enrolled on these courses</b>. Each one unlocks session by session as the term runs — there is nothing to read ahead, because the material is what the room produces on the day.</p>'+
-        dayStrip(live)+'<div class="grid">'+live.map(card).join('')+'</div>':'')+
+        dayStrip(live)+legend(live)+'<div class="grid">'+live.slice().sort(byProg).map(card).join('')+'</div>':'')+
       section('Open — work through any time',
         'No cohort, no deadlines and no sign-up. Built for SUMAS students and left up for anyone who finds them useful.', open)+
       section('Also at SUMAS','', rest)+

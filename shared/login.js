@@ -56,6 +56,7 @@ window.CourseLogin = (function () {
 
   var STR = {
     en: {
+      sib:"Signed in as {name} — the same name and code as in {course}.", sibDiff:"You are {name} in {course}, but someone named {name} is already registered in this course with a different code. Enter the code you were given for this course.",
       pill:"Sign in to save your progress",
       synced:" · synced",
       h:"Your course account",
@@ -81,6 +82,7 @@ window.CourseLogin = (function () {
       merged:"Signed in. Bringing your progress across…"
     },
     fr: {
+      sib:"Connecté·e en tant que {name} — même nom et même code que dans {course}.", sibDiff:"Vous êtes {name} dans {course}, mais quelqu'un nommé {name} est déjà inscrit dans ce cours avec un autre code. Entrez le code reçu pour ce cours.",
       pill:"Connectez-vous pour enregistrer votre progression",
       synced:" · synchronisé",
       h:"Votre compte de cours",
@@ -138,6 +140,7 @@ window.CourseLogin = (function () {
   }
   function saveAuth(a){
     if(hasGroups()&&!a.grp)a.grp=defGroup();
+    a.ts=Date.now();
     var j=JSON.stringify(a);
     try{localStorage.setItem(K+'_auth',j);localStorage.setItem(K+'_name',a.name);localStorage.setItem(K+'_sid',a.sid);}catch(e){}
     setCookie(K+'_auth',j);setCookie(K+'_name',a.name);setCookie(K+'_sid',a.sid);
@@ -320,6 +323,15 @@ window.CourseLogin = (function () {
       }
       paintGroup();
     }
+    if(PREFILL){
+      document.getElementById('cl-name').value=PREFILL.name||'';
+      setMode(PREFILL.mode||mode);
+      if(PREFILL.hint)err(PREFILL.hint);
+      var pf=PREFILL; PREFILL=null;
+      m.classList.add('on');
+      setTimeout(function(){document.getElementById(pf.mode==='back'?'cl-code':'cl-name').focus();},50);
+      return;
+    }
     setMode(mode);
     m.classList.add('on');
     setTimeout(function(){document.getElementById('cl-name').focus();},50);
@@ -441,6 +453,65 @@ window.CourseLogin = (function () {
     }).catch(function(){});
   }
 
+  /* ---- one school, one sign-in (8 Oct 2026) ----
+     A student known to another course in the SAME SCHOOL FOLDER (HEG,
+     SUMAS, UMEF, GBS — `school` in config.js, the first segment of `dir`)
+     is not asked to register again. On a page with no identity of its own,
+     look at the sibling courses' saved identities (<key>_auth, newest
+     first), and carry the SAME sid, name and six-digit code into this
+     course: register them here silently if the roster has no such sid,
+     sign them in silently if it has it with the same code. One name, one
+     code, every course of the school. Two cases fall back to the prompt:
+     a course with subgroups (the student must choose a room — nothing may
+     choose for them), and a roster that already holds this sid with a
+     DIFFERENT code (a namesake, or a student who registered twice) — then
+     the "I have a code" tab opens with the name filled in and says why.
+     A refused read (rules not deployed) does nothing special. */
+  var PREFILL=null;
+  function fmt(t,v){return String(t).replace(/\{name\}/g,v.name).replace(/\{course\}/g,v.course);}
+  function toast(msg){
+    css();
+    var d=document.createElement('div'); d.id='cl-toast';
+    d.style.cssText='position:fixed;left:12px;bottom:70px;max-width:min(92vw,420px);z-index:9998;background:#1f2937;color:#fff;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:10px 14px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);';
+    d.textContent=msg; document.body.appendChild(d);
+    setTimeout(function(){ if(d.parentNode)d.parentNode.removeChild(d); },7000);
+  }
+  function siblingAuth(){
+    var sibs=(CFG.siblings&&CFG.siblings(C.id))||[], best=null;
+    sibs.forEach(function(sb){
+      var a=null;
+      try{a=JSON.parse(localStorage.getItem(sb.key+'_auth')||'null');}catch(e){}
+      if(!a){var c=getCookie(sb.key+'_auth'); if(c){try{a=JSON.parse(c);}catch(e){}}}
+      if(a&&a.sid&&a.pass&&(!best||(a.ts||0)>(best.a.ts||0)))best={a:a,from:sb};
+    });
+    return best;
+  }
+  function adoptFromSibling(){
+    var hit=siblingAuth(); if(!hit)return Promise.resolve(false);
+    var src=hit.a, from=hit.from, t=L(), sid=src.sid, name=src.name||sid, pass=String(src.pass);
+    if(hasGroups()){ PREFILL={name:name}; return Promise.resolve(false); }   /* the room is theirs to choose */
+    return get('_roster/'+sid).then(function(rec){
+      if(rec&&rec.error)return false;
+      if(rec&&rec.pass){
+        if(String(rec.pass)!==pass){ PREFILL={name:name,mode:'back',hint:fmt(t.sibDiff,{name:name,course:from.label})}; return false; }
+        var a={sid:sid,name:rec.name||name,pass:pass};
+        saveAuth(a); renderPill();
+        return mergeDown(sid).then(function(ch){ toast(fmt(t.sib,{name:a.name,course:from.label})); adopt(a,ch); return true; });
+      }
+      /* not known here yet: register with the same name and code */
+      var ts=Date.now(), recNew={name:name,pass:pass,ts:ts};
+      var writes=[ put('_roster/'+sid,recNew), put(sid+'/name',name), put(sid+'/sid',sid), put(sid+'/createdAt',ts), put(sid+'/updatedAt',ts) ];
+      return Promise.all(writes).then(function(rs){
+        if(rs.some(function(r){return !r.ok;}))return false;      /* refused: the prompt will say so */
+        var a={sid:sid,name:name,pass:pass};
+        saveAuth(a); renderPill();
+        if(window.StatsTrack&&window.StatsTrack.setIdentity)window.StatsTrack.setIdentity(name,sid);
+        toast(fmt(t.sib,{name:name,course:from.label}));
+        return true;
+      });
+    }).catch(function(){return false;});
+  }
+
   /* ---- boot ---- */
   function boot(){
     var a=auth();
@@ -450,9 +521,12 @@ window.CourseLogin = (function () {
       healRoster(a);
     }else{
       renderPill();
-      if(window.COURSE_LOGIN_AUTO!==false&&window.COURSE_ACCESS!==false&&window.E1410_ACCESS!==false){
-        setTimeout(function(){ if(!auth())open(); },1500);
-      }
+      adoptFromSibling().then(function(done){
+        if(done)return;
+        if(window.COURSE_LOGIN_AUTO!==false&&window.COURSE_ACCESS!==false&&window.E1410_ACCESS!==false){
+          setTimeout(function(){ if(!auth())open(); },PREFILL?200:1500);
+        }
+      });
     }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
