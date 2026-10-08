@@ -778,6 +778,16 @@ applies. What differs:
   cohort runs on other dates.
 - ⚠ **The two folders are independent.** A fix in `wind` reaches `omba500`
   only if ported by hand, and vice versa.
+- **Week 1 carries the Moodle course's own materials (8 Oct 2026, both
+  `omba500` and `wind`)**: the two reference PDFs from Jan Erik's archive
+  (`1.2 Strategic-Forecasting.pdf`, `2.2 From Stakeholders to Systems.pdf`)
+  are in `w1slides/` as downloads, and twelve of their pages, as JPEGs in
+  the same folder, sit inside the five concept-highlight blocks
+  (`.slidebox`, CSS at the end of `capstone.css`, no `data-step`, so the
+  week total is unchanged at 10). ⚠ **Every link on Moodle's Week 1 is on
+  the page**, next to the site's own, because Jan Erik asked that none be
+  left out. The Moodle Meadows PDF (research.fit.edu) answered 404 on
+  8 Oct 2026 and is kept anyway; donellameadows.org sits beside it.
 
 ### SUMAS · Capstone "AI for Good" — Bachelors — `SUMAS/capstone-ba/`
 
