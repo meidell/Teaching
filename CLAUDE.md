@@ -752,6 +752,33 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
   `/shared/config.js`; the SUMAS landing page picks the course up from
   `courses.json` by itself.
 
+### SUMAS · OMBA500 Capstone "AI for Good" — Online Masters — `SUMAS/omba500/`
+
+Built 8 Oct 2026 as an **independent copy of `SUMAS/wind`**, "as is", for the
+second Moodle course of the same capstone: *2026 - Online - Capstone: AI for
+Good - Online Masters* (id 1307). `SUMAS/wind` is the **Green Term** edition
+(id 1456); the two Moodle courses carry identical text and differ only in
+what is hidden. Everything the `SUMAS/wind` section says about the engine
+applies. What differs:
+
+- **Own id / ns / keyPrefix `omba500`**, code `OMBA500` (so the SUMAS
+  landing page files it under *Online MBA*), term "Online Masters 2026".
+  Registry entry in `courses.json` (same 27 modules, hrefs moved), mirror in
+  `/shared/config.js`, a copy of the `wind` rules block in
+  `firebase-database-rules.json` — ⚠ **must be deployed before the link goes
+  to students** — and `Disallow: /SUMAS/omba500/` in `robots.txt`.
+- **Its own forums, progress and messages** (`omba500/_forum/…`,
+  `omba500_auth`); nothing is shared with `wind` except the sign-in, which
+  the SUMAS school-wide sign-in carries across on the same device.
+- **The showcase and its PDF were NOT copied**: the hub, Week 2 and Week 4
+  link `/SUMAS/wind/SUMAS-Wind-2040-Showcase.html`. The old
+  `wind_energy_2040_course.html` redirect stub was not copied either.
+- **`schedule.js` is the wind one unchanged** (`START = 2026-10-05`), which
+  matches Moodle 1307's "Week 1 – 5-12 October 2026". Change it there if this
+  cohort runs on other dates.
+- ⚠ **The two folders are independent.** A fix in `wind` reaches `omba500`
+  only if ported by hand, and vice versa.
+
 ### SUMAS · Capstone "AI for Good" — Bachelors — `SUMAS/capstone-ba/`
 
 The **Bachelors edition** of the capstone above, built 6 Oct 2026 from the

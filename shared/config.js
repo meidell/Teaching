@@ -81,6 +81,8 @@ window.CourseConfig = (function () {
                    label:"GBS · Finance Modelling" },
     "wind":      { school:"SUMAS", ns:"wind",      theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MA/MBA500 Capstone — European wind to 2040" },
+    "omba500":   { school:"SUMAS", ns:"omba500",   theme:"sumas", lang:"en", login:true,
+                   label:"SUMAS · OMBA500 Capstone — European wind to 2040" },
     "capstone-ba": { school:"SUMAS", ns:"capstone-ba", theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · Capstone (Bachelors) — European wind to 2040" }
   };

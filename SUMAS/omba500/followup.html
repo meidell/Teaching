@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/SUMAS/omba500/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow">
+<title>Follow-up · Capstone forums · instructor</title>
+<meta name="theme-color" content="#2C5530">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link rel="stylesheet" href="/shared/themes/sumas.css">
+<link rel="stylesheet" href="capstone.css">
+<script src="schedule.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<style>
+.wrap{max-width:1180px;}
+.reg{overflow-x:auto;}
+.reg table{min-width:900px;font-size:12.5px;}
+.reg th{position:sticky;top:0;}
+.reg th.wk{background:var(--accent-deep);color:#fff;}
+.reg td.name{font-weight:700;color:var(--ink);white-space:nowrap;}
+.reg td.c{text-align:center;white-space:nowrap;}
+.reg .ok{color:var(--accent-deep);font-weight:700;}
+.reg .late{color:var(--gold-soft);font-weight:700;}
+.reg .miss{color:var(--terra);font-weight:700;}
+.reg .wait{color:var(--grey);}
+.reg .opt{opacity:.6;}
+.reg tfoot td{background:var(--accent-pale);font-weight:700;color:var(--accent-deep);}
+.todo{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:12px 0;}
+.td{background:#fff;border:1px solid var(--surface-2);border-left:4px solid var(--plum);border-radius:0 12px 12px 0;padding:12px 16px;font-size:13.5px;}
+.td.hot{border-left-color:var(--terra);}
+.td b{color:var(--ink);} .td .m{color:var(--grey);font-size:12px;}
+.td a{font-weight:700;}
+.nudge{background:var(--surface);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:13.5px;color:var(--ink-soft);display:flex;gap:10px;align-items:flex-start;}
+.nudge button{flex:none;}
+.legend{font-size:12px;color:var(--grey);margin-top:8px;}
+</style>
+</head>
+<body data-course="omba500">
+
+<div class="topbar"><div class="topbar-inner">
+  <img class="brand" src="sumas-logo.png" alt="SUMAS">
+  <span class="course">Capstone · follow-up · instructor</span>
+  <span class="sp"></span>
+  <a href="/shared/admin2.html?course=omba500">Dashboard →</a>
+  <a href="/shared/chat.html?course=omba500">Messages →</a>
+  <a href="index.html">← Course hub</a>
+</div></div>
+
+<div class="wrap">
+<div class="hero">
+  <div class="eyebrow">Instructor · the morning screen</div>
+  <h1>Who has posted, who is waiting, <em>what to ask next</em></h1>
+  <p class="sub">Every forum in the course on one page: a register of posts and replies per student, what is due this week, and three questions per forum to drop into the thread when it goes quiet. Reads the forums directly (they are world-readable); the roster is the people who have posted or opened the message panel. Reloads every minute.</p>
+</div>
+
+<section class="sec">
+  <span class="kicker due">This week</span>
+  <h2 id="nowH">Loading…</h2>
+  <div class="todo" id="todo"></div>
+</section>
+
+<section class="sec">
+  <span class="kicker">The register</span>
+  <h2>Posts and replies, student × forum</h2>
+  <div class="reg" id="reg">Loading the forums…</div>
+  <div class="legend">✓ posted on time · ⏰ posted after the deadline · ✗ due and missing · — not yet due · <i>r</i> = replies written to classmates (required count in the header) · optional forums greyed. Click a cell to open that forum. A student with no forum posts at all is listed only once they open the message panel; otherwise find them on the dashboard roster.</div>
+</section>
+
+<section class="sec">
+  <span class="kicker talk">Generating discussion</span>
+  <h2>Three questions per forum, for when a thread goes quiet</h2>
+  <p>Written for this cohort and this case. Copy one into the thread as a reply to the whole class, or aim it at a specific post. The best nudges name two students and a number they disagree on.</p>
+  <div id="nudges"></div>
+</section>
+
+<div class="foot">© 2026 Jan Erik Meidell · SUMAS</div>
+</div>
+
+<script>
+var NUDGES={
+ f1a:['Several of you come from finance and several from engineering — which of you expects the answer to be "Ørsted" today, and what would change your mind by Week 9?','Two of the questions posted here are the same question in different words. Who can see which two?','Pick one classmate\'s question and say what data would answer it. Where would you look first?'],
+ f1b:['Three of you quoted different numbers for EU offshore capacity. Who is counting the UK, and who is not?','Which of the data points posted so far is an industry estimate dressed as a statistic? Name it and say why.','Nobody has posted TotalEnergies\' renewable investment target. Who can find it, and in which document?'],
+ f1c:['Almost every map has the EU Commission at the centre. Is that where the power is — or is it the TSOs with the connection queue?','Who is missing from every map so far? (Hint: who builds the vessels, and who insures the projects?)','Two of you found the same "surprising connection". Is it surprising because it is unusual, or because the case had not mentioned it?'],
+ f2a:['Same metric, two different years, two different boundaries — can two of you reconcile your numbers in a reply?','Which source gave the cleanest answer: Eurostat, WindEurope or Ember? And which one did the AI point you to first?','Somebody rated a company press release as "authoritative". Challenge that.'],
+ f2b:['Capacity, investment, market cap — which of these metrics actually predicts 2040, and which just describes 2024?','TotalEnergies\' renewables number includes solar outside Europe. Does that make the comparison fair or meaningless?','What does the metric you chose NOT tell you? Three of you skipped that part.'],
+ f2c:['The class range so far is X% to Y%. Who is at the top and who is at the bottom, and what single assumption separates you?','Who has an enabler that is really a risk in disguise?','Would anyone revise their number after reading the Week 2 demand chart? Why not?'],
+ f3a:['Learning rates posted so far run from A% to B%. Is the spread data, method or interpretation? Pick one classmate and say which.','Who used the 2010 data point and who dropped it? Does it move your rate?','Everyone chose "central" as most plausible. Who will argue for aggressive — and what has to be true?'],
+ f3b:['Which failure mode is winning this week — outdated data, hallucination, or confirmation bias? Count the posts.','Did anyone get a DIFFERENT wrong answer from the same question in a new conversation? What does that tell you?','Who got a serious case against wind, and who got a strawman? Paste the best counter-argument the AI produced.'],
+ f3c:['Three risks per post, and nobody\'s AI mentioned the vessel fleet. Why might that be?','Is the risk your AI missed one it could not know, or one it was not asked?','Did anyone\'s preliminary view actually change? Say what moved it.'],
+ f4:['Two of you chose axes that are the same axis under different names. Who, and which?','Which posted matrix has the most plausible off-diagonal cells? Why those?','Who is willing to put a probability on their four cells, and who refuses? Both are defensible — argue it.'],
+ f5:['Three sets of axes pass the test cleanly; two pair a policy with its outcome. I have replied to each — but who can spot the correlated pair before reading my reply?','For the matrix that uses "capital cost" as an axis: which cell is hardest to write, and does that tell us something?','Whose four cells would make the CEO of Ørsted uncomfortable? That is the one to keep.'],
+ f6:['The cohort\'s Phase 1 footprint, added up, is about N kg CO₂e. Is that material? Compared with what?','Who would put the footprint in a client report, and who would not? Make the case against your own choice.','Did anyone\'s estimate differ by an order of magnitude from a classmate\'s? Where is the assumption that does it?'],
+ f7a:['Whose sanity check surprised them most? Share it — it is probably the most useful post of the week.','Two of you have a central 2040 LCOE below $45. What capacity path are you assuming, and does it survive Week 7\'s boundaries?','Who fitted a time series as well as a curve? Did they agree?'],
+ f7b:['Rare earths or biosphere — which boundary did more of you choose, and is that because it is bigger or because it is easier to quantify?','At what GW/year does your boundary bind? Nobody has posted a number yet.','Does the boundary you chose hurt Ørsted and TotalEnergies equally? Argue that it does not.'],
+ f7c:['Whose provider routes through a water-stressed region? What would you tell a client who asked?','Is off-site water really larger than on-site in your estimate? Show the two numbers.','Does this change your Week 6 answer on reporting the footprint?'],
+ f8:['Rolnick flags forecasting as promising and "AI for everything" as hype. Which side is your recommended company on?','Name one ML application in Section 2 you would fund as CFO, and one you would cut.','Is "AI-driven predictive maintenance" a moat or a commodity by 2035?'],
+ f9:['Two recommendations for Ørsted and two for TotalEnergies, from different client perspectives — would they swap if the client swapped?','Which draft has the strongest counter-argument against itself? That is the one I would hire.','Whose early-warning signal could actually be put on a quarterly dashboard tomorrow? Pick one and improve it.']
+};
+
+(function(){
+  var S=window.CAPSTONE_SCHEDULE, DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app', NS='omba500';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function words(s){s=String(s||'').trim();return s?s.split(/\s+/).length:0;}
+  function get(p){return fetch(DB+'/'+NS+'/'+p+'.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+
+  function run(){
+    var now=Date.now(), wk=S.weekOfToday();
+    Promise.all(S.FORUMS.map(function(f){return get('_forum/'+f.id+'/posts');}).concat([get('_chat/_people')])).then(function(res){
+      var people=res.pop()||{}, data={}; S.FORUMS.forEach(function(f,i){data[f.id]=res[i]||{};});
+      /* roster = everyone seen anywhere */
+      var names={}; Object.keys(people).forEach(function(s){names[s]=people[s].n||s;});
+      S.FORUMS.forEach(function(f){Object.keys(data[f.id]).forEach(function(s){if(s!=='i'){names[s]=names[s]||(data[f.id][s].p&&data[f.id][s].p.name)||s;}
+        Object.keys(data[f.id][s].re||{}).forEach(function(k){var r=data[f.id][s].re[k];if(r&&r.sid&&r.sid!=='i')names[r.sid]=names[r.sid]||r.name||r.sid;});});});
+      var sids=Object.keys(names).sort(function(a,b){return names[a].localeCompare(names[b]);});
+
+      /* per student × forum */
+      function cell(sid,f){
+        var node=data[f.id][sid], posted=!!(node&&node.p&&node.p.txt), ts=posted?node.p.ts:0;
+        var replies=0; Object.keys(data[f.id]).forEach(function(o){if(o===sid)return;var re=data[f.id][o].re||{};Object.keys(re).forEach(function(k){if(re[k]&&re[k].sid===sid)replies++;});});
+        var due=f.due.getTime(), open=now>=S.week(f.wk).monday.getTime();
+        var st,cls;
+        if(posted){ if(ts>due&&!(node.p.ed)){st='⏰';cls='late';} else {st='✓';cls='ok';} st+=' '+words(node.p.txt)+'w'; }
+        else if(now>due&&!f.opt){st='✗';cls='miss';}
+        else {st='—';cls='wait';}
+        if(f.re||replies){ var need=f.re?f.re.n:0; st+=' · <i>r'+replies+(need?'/'+need:'')+'</i>'; if(f.re&&replies<need&&now>f.reDue.getTime()&&posted)cls=cls==='ok'?'late':cls; }
+        return '<td class="c '+cls+(f.opt?' opt':'')+'" title="'+esc(names[sid])+' · '+esc(f.title)+'"><a href="forum.html?f='+f.id+'" style="text-decoration:none;color:inherit">'+st+'</a></td>';
+      }
+      var head='<tr><th>Student</th>'+S.FORUMS.map(function(f){return '<th class="c'+(f.opt?' opt':'')+'" title="'+esc(f.title)+'">W'+f.wk+' '+esc(f.short.split(' ').slice(0,2).join(' '))+(f.re?'<br><i>'+f.re.n+' re</i>':'')+'</th>';}).join('')+'</tr>';
+      var body=sids.map(function(s){return '<tr><td class="name">'+esc(names[s])+'</td>'+S.FORUMS.map(function(f){return cell(s,f);}).join('')+'</tr>';}).join('');
+      var foot='<tr><td>Posted / '+sids.length+'</td>'+S.FORUMS.map(function(f){var n=Object.keys(data[f.id]).filter(function(s){return s!=='i'&&data[f.id][s].p&&data[f.id][s].p.txt;}).length;var ri=0;Object.keys(data[f.id]).forEach(function(s){var re=data[f.id][s].re||{};Object.keys(re).forEach(function(k){if(re[k]&&re[k].sid==='i')ri++;});});return '<td class="c'+(f.opt?' opt':'')+'">'+n+(ri?'<br><span style="font-weight:400;font-size:11px">me: '+ri+'</span>':'')+'</td>';}).join('')+'</tr>';
+      document.getElementById('reg').innerHTML=sids.length?'<table><thead>'+head+'</thead><tbody>'+body+'</tbody><tfoot>'+foot+'</tfoot></table>':'<div class="empty"><b>No posts anywhere yet.</b>The register fills as students post or open the message panel.</div>';
+
+      /* this week's to-do */
+      var h=document.getElementById('nowH'), td=document.getElementById('todo'), items=[];
+      if(wk===0){h.textContent='The course opens '+S.fmtDay(S.week(1).monday)+'.';}
+      else if(wk>10){h.textContent='The course is over. Exam closed '+S.EXAM.closeText+'.';}
+      else {h.textContent='Week '+wk+' · '+S.week(wk).title+' · '+S.week(wk).dates;}
+      var wkF=S.FORUMS.filter(function(f){return f.wk===wk||(f.re&&f.reDue.getTime()>now&&f.due.getTime()<now);});
+      wkF.forEach(function(f){
+        var posted=sids.filter(function(s){return data[f.id][s]&&data[f.id][s].p&&data[f.id][s].p.txt;});
+        var missing=sids.filter(function(s){return posted.indexOf(s)<0;});
+        var unanswered=posted.filter(function(s){var re=data[f.id][s].re||{};return !Object.keys(re).some(function(k){return re[k]&&re[k].sid==='i';});});
+        var hot=now>f.due.getTime()&&missing.length&&!f.opt;
+        items.push('<div class="td'+(hot?' hot':'')+'"><b>'+esc(f.title)+'</b><div class="m">'+(f.opt?'optional · open until ':'post by ')+f.dueText+(f.re?' · replies by '+f.reDueText:'')+'</div>'+
+          '<div>'+posted.length+' posted'+(missing.length&&!f.opt?' · <span style="color:var(--terra)">'+missing.length+' not yet: '+esc(missing.map(function(s){return names[s].split(' ')[0];}).join(', '))+'</span>':'')+'</div>'+
+          (unanswered.length?'<div>'+unanswered.length+' post'+(unanswered.length>1?'s':'')+' without a reply from you: '+esc(unanswered.map(function(s){return names[s].split(' ')[0];}).join(', '))+'</div>':'<div style="color:var(--accent-deep)">Every post has a reply from you.</div>')+
+          '<a href="forum.html?f='+f.id+'">Open the forum →</a></div>');
+      });
+      S.phasesOf(wk).forEach(function(p){items.push('<div class="td"><b>'+esc(p.name)+'</b><div class="m">on Moodle · due '+p.dueText+'</div><div>'+esc(p.words)+' — feedback goes back before the next phase is due.</div></div>');});
+      if(S.EXAM.wk===wk)items.push('<div class="td"><b>Final exam</b><div class="m">opens '+S.EXAM.openText+' · closes '+S.EXAM.closeText+'</div><div>Post the revision guide once Phase 3 is in.</div></div>');
+      td.innerHTML=items.join('')||'<div class="td">Nothing due this week.</div>';
+
+      /* nudges */
+      document.getElementById('nudges').innerHTML=S.FORUMS.map(function(f){var n=NUDGES[f.id]||[];return '<h3>Week '+f.wk+' · '+esc(f.title.replace(/^Forum \d+ · /,''))+' <a href="forum.html?f='+f.id+'" style="font-size:12px">open →</a></h3>'+n.map(function(q){return '<div class="nudge"><span style="flex:1">'+esc(q)+'</span><button type="button" class="b sm ghost" data-copy="'+esc(q)+'">Copy</button></div>';}).join('');}).join('');
+      document.querySelectorAll('[data-copy]').forEach(function(b){b.addEventListener('click',function(){try{navigator.clipboard.writeText(b.getAttribute('data-copy'));b.textContent='Copied';setTimeout(function(){b.textContent='Copy';},1500);}catch(e){}});});
+    });
+  }
+  AdminGate.mount({brand:'SUMAS · CAPSTONE',title:'Forum follow-up',blurb:'Instructor password — the same one as the dashboards.',logo:'sumas-logo.png',
+    theme:{surface:'#F4EDE0',main:'#4A8B3A',deep:'#2C5530',ink:'#1A2B1C',grey:'#6B7A6C'},
+    onUnlock:function(){run();setInterval(function(){if(!document.hidden)run();},60000);}});
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
