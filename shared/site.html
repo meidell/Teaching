@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Site · statistics &amp; alerts</title>
+<!--
+  SHARED · the one page that is about the SITE rather than a course.
+      /shared/site.html
+
+  Two things live here, both site-wide:
+
+  1. THE EMAIL ALERT for student messages. /shared/chat.js, on every
+     student page of every course, POSTs a copy of each stored student
+     message to a Google Apps Script web app — IF the switch on this page
+     is on. The switch and the endpoint URL are one node at the ROOT of
+     the database, `_site/notify = {on, url, ts}`, world-readable (every
+     student page reads it) and instructor-write. The Apps Script is the
+     only thing that knows the destination address; it is deployed under
+     the instructor's own Google account from the code block below. No
+     server of ours is involved, which is why it is Apps Script and not a
+     Cloud Function (that would need the Blaze plan).
+
+  2. VISITOR STATISTICS, read from `analytics/<day>/<hit>` — what
+     /track.js has been writing on every page since the site began: path,
+     time, referrer, language, a random per-device id, coarse geo. The
+     node is instructor-read-only, so this page needs the signed-in
+     account like every other instructor view. Pages are mapped to courses
+     by the `dir` in courses.json; this device's own id is excluded by
+     default so the instructor's visits do not count.
+
+  Same gate, same sign-in, same look as insights.html.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--main:#152a5e;--deep:#0a1a3a;--glow:#f0b33d;--pale:#eef2f9;--ink:#0F172A;--ink2:#334155;--grey:#64748B;--paper:#fff;--wash:#F6F8FB;--line:#E2E8F0;
+--good:#15803D;--good-l:#DCFCE7;--warn:#B45309;--warn-l:#FEF3C7;--bad:#B91C1C;--bad-l:#FEE2E2;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);background:var(--wash);line-height:1.6;-webkit-font-smoothing:antialiased;}
+h1,h2,h3{font-weight:800;letter-spacing:-.3px;}
+header{background:var(--deep);color:#fff;padding:22px 0 20px;}
+header .in{max-width:1040px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+header .k{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--glow);font-weight:800;}
+header h1{font-size:22px;line-height:1.2;}
+header .sub{font-size:13px;color:rgba(255,255,255,.72);margin-top:2px;}
+header .grp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{font:inherit;font-size:13px;font-weight:700;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;text-decoration:none;}
+.btn:hover{background:rgba(255,255,255,.2);}
+.wrap{max-width:1040px;margin:0 auto;padding:22px 20px 60px;}
+section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:18px;}
+section h2{font-size:17px;margin-bottom:4px;}
+section .sub{font-size:13px;color:var(--grey);margin-bottom:14px;line-height:1.5;}
+.warn{display:none;background:var(--warn-l);border:1px solid #F5D08A;color:var(--warn);border-radius:10px;padding:12px 14px;font-size:13.5px;margin-bottom:16px;}
+.ok{background:var(--good-l);border-color:#A7F3D0;color:var(--good);}
+.bad{background:var(--bad-l);border-color:#FCA5A5;color:var(--bad);}
+/* the switch */
+.sw{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--wash);margin-bottom:14px;}
+.tog{position:relative;width:54px;height:30px;border-radius:15px;background:#CBD5E1;border:none;cursor:pointer;transition:.2s;flex:none;}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s;}
+.tog.on{background:var(--good);} .tog.on::after{left:27px;}
+.tog:disabled{opacity:.5;cursor:default;}
+.sw .st{font-weight:800;font-size:15px;}
+.sw .st.on{color:var(--good);} .sw .st.off{color:var(--grey);}
+.sw .d{font-size:13px;color:var(--grey);flex-basis:100%;}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;}
+.row label{font-size:12.5px;font-weight:700;color:var(--ink2);min-width:90px;}
+.row input[type=text],.row input[type=url]{flex:1;min-width:260px;font:inherit;font-size:13.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;}
+.b2{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;}
+.b2:hover{border-color:var(--main);color:var(--main);} .b2.pri{background:var(--main);color:#fff;border-color:var(--main);}
+.b2:disabled{opacity:.5;cursor:default;}
+.note{font-size:13px;color:var(--grey);line-height:1.55;margin-top:8px;}
+details{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--wash);}
+summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--main);}
+details ol{margin:10px 0 6px 20px;font-size:13.5px;color:var(--ink2);} details li{margin-bottom:6px;}
+pre{background:#0F172A;color:#E2E8F0;font-size:12px;line-height:1.5;border-radius:10px;padding:14px;overflow:auto;margin:10px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+/* statistics */
+.ctrls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.ctrls select{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;}
+.ctrls label.chk{font-size:13px;color:var(--ink2);display:flex;gap:6px;align-items:center;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;}
+.tile{background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+.tile .v{font-size:26px;font-weight:800;color:var(--main);line-height:1.1;font-variant-numeric:tabular-nums;}
+.tile .l{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);font-weight:700;margin-top:4px;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+th:first-child,td:first-child{text-align:left;white-space:normal;}
+th{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);background:var(--wash);}
+td .bar{display:inline-block;height:8px;background:var(--main);border-radius:4px;vertical-align:middle;margin-right:6px;opacity:.75;}
+td.dim{color:var(--grey);}
+.days{display:flex;align-items:flex-end;gap:2px;height:120px;margin:8px 0 2px;border-bottom:1px solid var(--line);padding-bottom:2px;overflow:hidden;}
+.days .d{flex:1;min-width:3px;background:var(--main);opacity:.75;border-radius:2px 2px 0 0;position:relative;}
+.days .d:hover{opacity:1;}
+.days .d.we{opacity:.4;}
+.dlab{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:760px){.two{grid-template-columns:1fr;}}
+.empty{color:var(--grey);font-size:13.5px;padding:10px 0;}
+.foot{font-size:12.5px;color:var(--grey);margin-top:14px;}
+.foot a{color:var(--main);}
+</style>
+</head>
+<body>
+
+<header><div class="in">
+  <div>
+    <div class="k">Site-wide · every course</div>
+    <h1>Statistics &amp; alerts</h1>
+    <div class="sub">Who visits the site, which courses they open — and whether a student message also lands in your inbox.</div>
+  </div>
+  <div class="grp">
+    <button class="btn" id="bAuth" style="display:none">🔑 Sign in</button>
+    <button class="btn" id="bRefresh" title="Re-read everything">↻</button>
+    <a class="btn" href="admin2.html">Dashboard</a>
+    <a class="btn" href="insights.html">Insights</a>
+    <a class="btn" href="chat.html">💬 Messages</a>
+    <button class="btn" id="bLock">Lock</button>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+
+  <section id="alerts">
+    <h2>Email alert for student messages</h2>
+    <div class="sub">When this is on, every message a student sends you from any course — a direct message, the cohort thread, or a group you made — is also emailed to you, with a link straight to the thread. Messages between students are never forwarded. The message itself is always stored on the site whether this is on or off; the email is an extra.</div>
+
+    <div class="sw">
+      <button class="tog" id="tog" disabled aria-label="Email alert"></button>
+      <span class="st off" id="togSt">—</span>
+      <span class="d" id="togD">Reading the current setting…</span>
+    </div>
+
+    <div class="row">
+      <label for="url">Endpoint</label>
+      <input type="url" id="url" placeholder="https://script.google.com/macros/s/…/exec" spellcheck="false">
+      <button class="b2 pri" id="bSave">Save</button>
+      <button class="b2" id="bTest" title="POST a test message to the endpoint — then check your inbox">Send a test email</button>
+    </div>
+    <div class="note" id="noteN">The endpoint is a Google Apps Script web app that you deploy once from your own Google account — it is the only thing that knows your address. Steps and the script are below; paste the URL it gives you here and switch the alert on.</div>
+
+    <details id="howto">
+      <summary>Set up the endpoint (once, about five minutes)</summary>
+      <ol>
+        <li>Go to <a href="https://script.google.com" target="_blank" rel="noopener">script.google.com</a>, signed in as the Gmail address you want the alerts at, and create a <b>New project</b>.</li>
+        <li>Replace everything in the editor with the script below (<b>Copy script</b>). If you want alerts at another address, change <code>TO</code> on the first line.</li>
+        <li><b>Deploy → New deployment → Web app.</b> Execute as: <b>Me</b>. Who has access: <b>Anyone</b>. Click Deploy and authorise it when asked (it only needs permission to send mail as you).</li>
+        <li>Copy the <b>Web app URL</b> (it ends in <code>/exec</code>), paste it in the Endpoint box above, <b>Save</b>, then <b>Send a test email</b> and check your inbox.</li>
+        <li>Switch the alert <b>on</b>. To stop the emails, switch it off here — no need to touch the script. If you ever edit the script, deploy it again as a <b>new version</b> of the same deployment so the URL stays.</li>
+      </ol>
+      <div class="row"><button class="b2" id="bCopyGs">⧉ Copy script</button><span class="note" style="margin:0">Rate-limited to 40 emails an hour inside the script, so a loop or a prank cannot flood you.</span></div>
+<pre id="gs">var TO = 'janerik.meidell@gmail.com';   // where the alerts go
+var MAX_PER_HOUR = 40;                   // a ceiling, not a target
+
+function doPost(e) {
+  try {
+    var d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    var cache = CacheService.getScriptCache();
+    var n = Number(cache.get('n') || 0);
+    if (n >= MAX_PER_HOUR) return out('rate-limited');
+    cache.put('n', String(n + 1), 3600);
+
+    var s = function (v, max) { return String(v == null ? '' : v).slice(0, max); };
+    var course = s(d.course || '?', 40), name = s(d.name || '?', 80), tid = s(d.tid, 80);
+    var txt = s(d.txt, 1500), link = s(d.link, 300), page = s(d.page, 300);
+    var where = tid.indexOf('dm-') === 0 ? 'in a direct message' : 'in thread ' + tid;
+    var subject = (d.test ? '[test] ' : '') + '[' + course + '] Message from ' + name;
+    var body = name + ' wrote to you ' + where + ' (' + course + '):\n\n' + txt +
+               '\n\n— Reply here: ' + link + (page ? '\n(sent from ' + page + ')' : '');
+    MailApp.sendEmail({ to: TO, subject: subject, body: body });
+    return out('ok');
+  } catch (err) {
+    return out('error: ' + err);
+  }
+}
+function doGet() { return out('notify endpoint up'); }
+function out(t) { return ContentService.createTextOutput(t); }</pre>
+    </details>
+  </section>
+
+  <section id="stats">
+    <h2>Visitors</h2>
+    <div class="sub">Pageviews recorded by every page of the site, grouped by course. A "visitor" is a device: a random id the browser keeps, not a person and not a student account — the same student on a laptop and a phone counts twice, and a cleared browser counts again.</div>
+    <div class="ctrls">
+      <label for="range" style="font-size:13px;font-weight:700;color:var(--ink2)">Period</label>
+      <select id="range">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 12 months</option>
+        <option value="all">Everything</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="exMe" checked> Exclude this device</label>
+      <span class="note" id="loaded" style="margin:0"></span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+
+    <h3 style="font-size:14px;margin:6px 0 4px">By day</h3>
+    <div class="days" id="days"></div>
+    <div class="dlab"><span id="dFrom"></span><span id="dTo"></span></div>
+
+    <h3 style="font-size:14px;margin:18px 0 6px">By course</h3>
+    <div id="byCourse" class="empty">—</div>
+
+    <div class="two" style="margin-top:18px">
+      <div>
+        <h3 style="font-size:14px;margin:0 0 6px">Most visited pages</h3>
+        <div id="byPage" class="empty">—</div>
+      </div>
+      <div>
+        <h3 style="font-size:14px;margin:0 0 6px">Where from</h3>
+        <div id="byCountry" class="empty">—</div>
+        <h3 style="font-size:14px;margin:16px 0 6px">Referrers</h3>
+        <div id="byRef" class="empty">—</div>
+      </div>
+    </div>
+    <div class="foot">Recorded by <code>/track.js</code> on every page: path, time, referrer, language, a random device id and country/city only — never an IP address. Instructor pages (<code>/shared/…</code>) are shown as their own row so they can be ignored.</div>
+  </section>
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
+function $(id){return document.getElementById(id);}
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function n(x){return Number(x||0).toLocaleString('en-US');}
+async function authQ(){ if(!window.__fbUser)return ''; try{return '?auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
+function warn(msg,cls){var w=$('warn');w.className='warn'+(cls?' '+cls:'');if(!msg){w.style.display='none';return;}w.style.display='block';w.innerHTML=msg;}
+
+/* ===================== 1 · the email alert ===================== */
+var NOTIFY=null;
+function paintNotify(){
+  var on=!!(NOTIFY&&NOTIFY.on), url=(NOTIFY&&NOTIFY.url)||'';
+  $('tog').className='tog'+(on?' on':'');$('tog').disabled=false;
+  $('togSt').className='st '+(on?'on':'off');$('togSt').textContent=on?'On':'Off';
+  $('togD').textContent= on ? (url?'Every student message is also emailed to you.':'On, but no endpoint is set — nothing is sent. Paste the Web app URL below and save.')
+                            : (url?'Off. Messages stay on the site; nothing is emailed. Switch on to start.':'Off. Set up the endpoint below first, then switch on.');
+  if(document.activeElement!==$('url'))$('url').value=url;
+  if(!url)$('howto').open=true;
+}
+async function loadNotify(){
+  try{var r=await fetch(DB+'/_site/notify.json',{cache:'no-cache'});var j=await r.json();if(j&&j.error)throw new Error(j.error);NOTIFY=j||{on:false,url:''};}
+  catch(e){NOTIFY={on:false,url:''};warn('The alert setting could not be read ('+esc(e.message)+'). If the <code>_site</code> rules block has not been deployed yet, that is why — deploy <code>firebase-database-rules.json</code>.','bad');}
+  paintNotify();
+}
+async function saveNotify(patch){
+  var next={on:!!(NOTIFY&&NOTIFY.on),url:(NOTIFY&&NOTIFY.url)||'',ts:Date.now()};
+  for(var k in patch)next[k]=patch[k];
+  if(next.url&&!/^https:\/\/script\.google\.com\/macros\/s\/[^ ]+\/exec$/.test(next.url)){warn('That does not look like an Apps Script Web app URL — it should start with <code>https://script.google.com/macros/s/</code> and end in <code>/exec</code>.','bad');return false;}
+  var q=await authQ();
+  if(!q){warn('Saving needs the signed-in instructor account — the 🔑 button at the top. The gate password only unlocks the page; the database trusts the account.','bad');$('bAuth').style.display='';return false;}
+  try{
+    var r=await fetch(DB+'/_site/notify.json'+q,{method:'PUT',body:JSON.stringify(next)});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    NOTIFY=next;paintNotify();warn('Saved.','ok');setTimeout(function(){warn('');},1800);return true;
+  }catch(e){warn('Not saved: '+esc(e.message)+'. A 401 here means the <code>_site</code> rules block is not deployed, or this account is not in it.','bad');return false;}
+}
+function wireNotify(){
+  $('tog').addEventListener('click',function(){ if(!NOTIFY)return; saveNotify({on:!NOTIFY.on}); });
+  $('bSave').addEventListener('click',function(){ saveNotify({url:$('url').value.trim()}); });
+  $('bTest').addEventListener('click',async function(){
+    var url=$('url').value.trim();
+    if(!url){warn('Paste the endpoint URL first.','bad');return;}
+    var b=this;b.disabled=true;b.textContent='Sending…';
+    var payload={test:true,course:'site',tid:'dm-test',name:'Site admin (test)',sid:'test',txt:'This is a test from /shared/site.html. If you can read it, the endpoint works.',ts:Date.now(),
+                 page:location.href,link:'https://janerikmeidell.com/shared/chat.html'};
+    try{ await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+         warn('Test sent. The browser cannot see the reply (that is normal for Apps Script), so the proof is the email — check your inbox, and the spam folder the first time.','ok'); }
+    catch(e){ warn('The POST failed: '+esc(e.message),'bad'); }
+    b.disabled=false;b.textContent='Send a test email';
+  });
+  $('bCopyGs').addEventListener('click',function(){
+    var b=this,txt=$('gs').textContent;
+    function ok(){b.textContent='✓ Copied';setTimeout(function(){b.textContent='⧉ Copy script';},1600);}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok).catch(ok);else ok();
+  });
+}
+
+/* ===================== 2 · visitors ===================== */
+var REG=null, HITS=null, MYVID='';
+try{MYVID=localStorage.getItem('site-vid')||'';}catch(e){}
+function isoDaysAgo(d){var x=new Date();x.setUTCDate(x.getUTCDate()-d);return x.toISOString().slice(0,10);}
+function courseOf(path){
+  var p=path.split('?')[0];
+  try{p=decodeURIComponent(p);}catch(e){}
+  if(p.indexOf('/shared/')===0)return {id:'_shared',label:'Instructor pages (/shared/)'};
+  if(p==='/'||p==='/index.html')return {id:'_root',label:'Root catalogue (/)'};
+  var best=null;
+  (REG&&REG.courses||[]).forEach(function(c){
+    var d='/'+String(c.dir||'').replace(/\/+$/,'')+'/';
+    if(d.length>1&&p.indexOf(d)===0&&(!best||d.length>best.d.length))best={d:d,c:c};
+  });
+  if(best){var c=best.c,t=(c.title&&(c.title.en||c.title.fr))||c.id,code=c.code||'';return {id:c.id,label:(code&&code.indexOf(t)<0?code+' · ':'')+(code.indexOf(t)>=0?code:t)+(c.school?' — '+c.school:'')};}
+  var m=p.match(/^\/([^\/]+)\/index\.html$/)||p.match(/^\/([^\/]+)\/?$/);
+  if(m&&/^(SUMAS|GBS|HEG|UMEF|ESM|Kalaidos)$/.test(m[1]))return {id:'_school_'+m[1],label:'School landing page · '+m[1]};
+  return {id:'_other',label:'Other pages'};
+}
+async function loadHits(){
+  var range=$('range').value, q=await authQ();
+  if(!q){HITS=null;renderStats();warn('Visitor statistics need the signed-in instructor account — the 🔑 button at the top.','bad');$('bAuth').style.display='';return;}
+  $('loaded').textContent='Loading…';
+  var url=DB+'/analytics.json'+q;
+  if(range!=='all')url+='&orderBy=%22%24key%22&startAt=%22'+isoDaysAgo(parseInt(range,10)-1)+'%22';
+  try{
+    var r=await fetch(url);var j=await r.json();
+    if(j&&j.error)throw new Error(j.error);
+    HITS=[];
+    Object.keys(j||{}).forEach(function(day){var o=j[day]||{};Object.keys(o).forEach(function(id){var h=o[id];if(h&&h.p)HITS.push({day:day,p:h.p,t:h.t||0,vid:h.vid||'',ref:h.ref||'',cc:h.cc||'',country:h.country||'',lang:h.lang||''});});});
+    $('bAuth').style.display='none';warn('');
+  }catch(e){HITS=null;warn('Could not read the analytics node: '+esc(e.message)+'.','bad');}
+  renderStats();
+}
+function renderStats(){
+  var ex=$('exMe').checked, all=HITS||[], hits=ex&&MYVID?all.filter(function(h){return h.vid!==MYVID;}):all;
+  $('loaded').textContent=HITS?n(all.length)+' hits read'+(ex&&MYVID?', '+n(all.length-hits.length)+' from this device hidden':''):'';
+  var days={},vids={},courses={},pages={},cc={},refs={};
+  var dmin=null,dmax=null;
+  hits.forEach(function(h){
+    days[h.day]=(days[h.day]||0)+1; if(h.vid)vids[h.vid]=1;
+    if(!dmin||h.day<dmin)dmin=h.day; if(!dmax||h.day>dmax)dmax=h.day;
+    var c=courseOf(h.p); var cc_=courses[c.id]||(courses[c.id]={label:c.label,views:0,vids:{},last:''}); cc_.views++; if(h.vid)cc_.vids[h.vid]=1; if(h.day>cc_.last)cc_.last=h.day;
+    var pp=h.p.split('?')[0]; var pg=pages[pp]||(pages[pp]={views:0,vids:{}}); pg.views++; if(h.vid)pg.vids[h.vid]=1;
+    var k=h.country||(h.cc?h.cc:'Unknown'); var kc=cc[k]||(cc[k]={views:0,vids:{}}); kc.views++; if(h.vid)kc.vids[h.vid]=1;
+    var rf=refHost(h.ref); refs[rf]=(refs[rf]||0)+1;
+  });
+  var nv=Object.keys(vids).length, nc=Object.keys(courses).filter(function(k){return k.charAt(0)!=='_';}).length, nd=Object.keys(days).length;
+  $('tiles').innerHTML=[['Pageviews',hits.length],['Visitors (devices)',nv],['Courses visited',nc],['Active days',nd],['Views per visitor',nv?(hits.length/nv).toFixed(1):'—']]
+    .map(function(t){return '<div class="tile"><div class="v">'+(typeof t[1]==='number'?n(t[1]):t[1])+'</div><div class="l">'+t[0]+'</div></div>';}).join('');
+  /* by day: every calendar day of the window, zero-filled */
+  var range=$('range').value, from=range==='all'?dmin:isoDaysAgo(parseInt(range,10)-1), to=isoDaysAgo(0), list=[];
+  if(from){var d=new Date(from+'T00:00:00Z');while(d.toISOString().slice(0,10)<=to){var k=d.toISOString().slice(0,10);list.push([k,days[k]||0,d.getUTCDay()]);d.setUTCDate(d.getUTCDate()+1);if(list.length>400)break;}}
+  var mx=Math.max.apply(null,list.map(function(x){return x[1];}).concat([1]));
+  $('days').innerHTML=list.map(function(x){return '<div class="d'+(x[2]===0||x[2]===6?' we':'')+'" style="height:'+Math.max(2,Math.round(x[1]/mx*100))+'%" title="'+x[0]+' · '+x[1]+' view'+(x[1]===1?'':'s')+'"></div>';}).join('');
+  $('dFrom').textContent=from||'';$('dTo').textContent=list.length?to:'';
+  /* by course */
+  var rows=Object.keys(courses).map(function(k){var c=courses[k];return {id:k,label:c.label,views:c.views,vids:Object.keys(c.vids).length,last:c.last};})
+    .sort(function(a,b){return (a.id.charAt(0)==='_')-(b.id.charAt(0)==='_')||b.views-a.views;});
+  var mv=Math.max.apply(null,rows.map(function(r){return r.views;}).concat([1]));
+  $('byCourse').className='';
+  $('byCourse').innerHTML=rows.length?'<table><tr><th>Course</th><th>Pageviews</th><th>Visitors</th><th>Last visit</th></tr>'+rows.map(function(r){
+    return '<tr'+(r.id.charAt(0)==='_'?' class="dim"':'')+'><td'+(r.id.charAt(0)==='_'?' class="dim"':'')+'>'+esc(r.label)+'</td><td><span class="bar" style="width:'+Math.round(r.views/mv*120)+'px"></span>'+n(r.views)+'</td><td>'+n(r.vids)+'</td><td class="dim">'+esc(r.last)+'</td></tr>';}).join('')+'</table>'
+    :'<div class="empty">'+(HITS?'No visits in this period.':'—')+'</div>';
+  /* pages, countries, referrers */
+  function top(obj,key,limit,fmt){var ks=Object.keys(obj).sort(function(a,b){return (obj[b][key]||obj[b])-(obj[a][key]||obj[a]);}).slice(0,limit);return ks.map(fmt).join('');}
+  $('byPage').className='';$('byPage').innerHTML=Object.keys(pages).length?'<table><tr><th>Page</th><th>Views</th><th>Visitors</th></tr>'+top(pages,'views',15,function(k){var p=pages[k];return '<tr><td style="font-size:12.5px;word-break:break-all">'+esc(k)+'</td><td>'+n(p.views)+'</td><td>'+n(Object.keys(p.vids).length)+'</td></tr>';})+'</table>':'<div class="empty">—</div>';
+  $('byCountry').className='';$('byCountry').innerHTML=Object.keys(cc).length?'<table><tr><th>Country</th><th>Views</th><th>Visitors</th></tr>'+top(cc,'views',10,function(k){var p=cc[k];return '<tr><td>'+esc(k)+'</td><td>'+n(p.views)+'</td><td>'+n(Object.keys(p.vids).length)+'</td></tr>';})+'</table>':'<div class="empty">—</div>';
+  $('byRef').className='';$('byRef').innerHTML=Object.keys(refs).length?'<table><tr><th>Referrer</th><th>Views</th></tr>'+top(refs,null,8,function(k){return '<tr><td>'+esc(k)+'</td><td>'+n(refs[k])+'</td></tr>';})+'</table>':'<div class="empty">—</div>';
+}
+function refHost(ref){
+  if(!ref)return 'Direct / bookmark';
+  try{var h=new URL(ref).hostname.replace(/^www\./,'');if(/janerikmeidell\.com$/.test(h))return 'Within the site';return h;}catch(e){return 'Other';}
+}
+
+/* ===================== boot ===================== */
+function start(){
+  wireNotify();
+  loadNotify();
+  $('range').addEventListener('change',loadHits);
+  $('exMe').addEventListener('change',renderStats);
+  $('bRefresh').addEventListener('click',function(){loadNotify();loadHits();});
+  $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
+  $('bAuth').addEventListener('click',function(){
+    var w=$('warn');w.style.display='block';w.className='warn';
+    if(!w.querySelector('.fba')){w.innerHTML='<div id="warnForm"></div>';FBAuth.form($('warnForm'),function(){warn('');loadHits();loadNotify();},'_site');}
+  });
+  window.CourseConfig.load().then(function(reg){REG=reg;if(HITS)renderStats();}).catch(function(){});
+}
+AdminGate.mount({ brand:'SITE · STATISTICS & ALERTS', title:'Instructor access',
+                  blurb:'Enter the instructor password. This device will remember it.',
+                  onUnlock:function(){
+                    start();
+                    FBAuth.restore(function(u){ if(u){loadHits();} else {$('bAuth').style.display='';loadHits();} });
+                  } });
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

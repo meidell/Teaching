@@ -778,6 +778,36 @@ window.CourseChat = (function () {
   /* ---------------------------------------------------------------- */
   /* sending                                                           */
   /* ---------------------------------------------------------------- */
+  /* EMAIL ALERT — switched on and off from /shared/site.html, which writes
+     `_site/notify = {on, url}` at the ROOT of the database (not under the
+     course). When it is on, a stored student message is also POSTed to that
+     URL — a Google Apps Script web app that emails the instructor. Read
+     once per page; best-effort; never touches the message itself, which is
+     already in the database by the time this runs. Only threads the
+     instructor is in: a DM, the cohort, or a group the instructor made —
+     never a peer (`p-`) or student-group (`sg-`) thread, which the
+     instructor does not read. `mode:'no-cors'` + text/plain is what makes
+     a cross-origin POST to Apps Script go through without a preflight; the
+     response is opaque and that is fine. */
+  var NOTIFY=null;
+  function notifyCfg(){
+    if(NOTIFY)return NOTIFY;
+    NOTIFY=fetch(DB+'/_site/notify.json',{cache:'no-cache'}).then(function(r){return r.json();}).catch(function(){return null;});
+    return NOTIFY;
+  }
+  function notifyInstructor(msg){
+    if(!msg||msg.by!=='s')return;
+    if(/^(p-|sg-)/.test(CUR))return;
+    notifyCfg().then(function(cfg){
+      if(!cfg||!cfg.on||!cfg.url||!/^https:\/\/script\.google\.com\//.test(cfg.url))return;
+      var cid=C.id||NS;
+      var payload={course:cid, ns:NS, tid:CUR, sid:msg.sid, name:msg.name, txt:String(msg.txt||'').slice(0,1500), ts:msg.ts,
+                   page:location.href.slice(0,300),
+                   link:'https://janerikmeidell.com/shared/chat.html?course='+encodeURIComponent(cid)+'&t='+encodeURIComponent(CUR)};
+      try{ fetch(cfg.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),keepalive:true}).catch(function(){}); }catch(e){}
+    });
+  }
+
   function send(){
     if(SENDING||!ME||!CUR)return;
     var th=THREADS.filter(function(x){return x.tid===CUR;})[0];
@@ -797,6 +827,7 @@ window.CourseChat = (function () {
 
     post('_chat/'+encodeURIComponent(CUR)+'/msgs',msg).then(function(){
       LAST[CUR]=msg.ts; markRead(CUR,msg.ts);
+      notifyInstructor(msg);
       /* so the instructor's thread list can show a DM that has no meta */
       if(CUR==='dm-'+ME.sid) put(ME.sid+'/chats/'+CUR,{t:ME.name||ME.sid,k:'dm',ts:msg.ts});
       document.getElementById('jc-note').className='';

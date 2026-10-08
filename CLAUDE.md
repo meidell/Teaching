@@ -85,6 +85,7 @@ same from `/SUMAS/omba401/week3.html` and `/ideas-e1410/session1.html`.
 | `admin2.html` | **the** dashboard for every course: `/shared/admin2.html?course=omba401`. Today → The cohort → The roster, plus Presence and Handed in, as tabs. The original `admin.html` was deleted in Sept 2026 once this one was chosen; its presence register and submissions panel were ported across first |
 | `insights.html` | the other instructor view: **where the cohort gets stuck** — section-level stall points, module drop-off, workbook fill rates. Same gate, same read path. Per-question quiz stats stay in the dashboards; don't duplicate them |
 | `chat.html` | the instructor's end of `chat.js`: read what came in and answer it — one student, a group, or the whole cohort |
+| `site.html` | **the one page about the SITE, not a course** (8 Oct 2026): the on/off switch for the **email alert** on student messages, and **visitor statistics** — pageviews and devices per course, per day, top pages, countries, referrers — read from `analytics/`. Same gate and sign-in as the others; linked from all three |
 
 ### The three instructor views, and what each is for
 
@@ -1556,7 +1557,39 @@ token, and `by:'i'` is refused without it. Do not "helpfully" re-add
 
 The chat is on **every** E1410 student page, not just the home page — 32 of them.
 A page joins by carrying `data-course` on `<body>` plus `config.js` and `chat.js`
-before `/track.js`; nothing else. The launcher stays bottom-right and steps up to
+before `/track.js`; nothing else.
+
+**Since 8 Oct 2026 it is on every student page of every live course that has a
+namespace** — Jan Erik: "messages are sent to me in any of all the courses".
+That added 62 pages: all of OMBA401, OMBAFR455 and UMEF407 (which had never
+carried it), and the tool and reference pages of HEG/statistics and
+SUMAS/mba401 (`practice`, `exam-cards`, the simulators, `teaching-plan`,
+`notation`/`glossary`), which got `data-course` on `<body>` and `config.js`
+where they lacked them. Deliberately left out: `admin.html` and other redirect
+stubs, the gated `followup.html` pages, `week1-slides.html`, and the public
+showcase pages. Evergreen courses with `ns:null` store nothing and cannot
+carry a chat. Messages arrive in `/shared/chat.html?course=<id>` (linked
+from every dashboard).
+
+**The email alert (8 Oct 2026).** There is no server, so the alert is a
+**Google Apps Script web app** deployed under Jan Erik's own account — the
+script and the five deployment steps are on `/shared/site.html`, and the
+script is the only thing that knows the destination address. `chat.js`
+reads **`_site/notify = {on, url, ts}`** (ROOT of the database, not under
+a course; world-readable, instructor-write, its own rules block) once per
+page, and after a student message has been **stored** it POSTs a copy —
+course, thread, name, text, a link to the thread in `chat.html` — to that
+URL with `mode:'no-cors'` and a text/plain body, which is what gets a
+cross-origin POST into Apps Script without a preflight. Best-effort by
+design: the message is already in the database; the email is an extra.
+Only threads the instructor is in (`dm-`, `all`, `g-`) — never `p-` or
+`sg-`. The script rate-limits itself to 40 mails an hour. The switch,
+the URL field and a "send a test email" button are on `site.html`;
+switching off is a database write, so it needs the signed-in account,
+not just the gate. ⚠ **Two deployments are needed before any of this
+works**: the `_site` rules block (`firebase-database-rules.json`) and the
+Apps Script itself; until the rules are deployed `site.html` says so and
+`chat.js` simply reads `null` and sends nothing. The launcher stays bottom-right and steps up to
 `bottom:62px` when `login.js` has drawn its pill there.
 
 ### Rules — [firebase-database-rules.json](firebase-database-rules.json)
