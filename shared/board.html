@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The room's answers</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0E1A33">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<style>
+/* =====================================================================
+   SHARED · the board. The room's answers on the big screen, ANONYMOUS.
+
+     /shared/board.html?course=creator&p=Brands|w1_pred_b1+w1_pred_b2;Source|w1_pred_src
+
+   `p` is a list of panels separated by `;`. Each panel is `Title|fields`,
+   and `+` merges several fields into one panel (three brand boxes → one
+   tally, each brand counted once per student). With no `p`, the page
+   lists every workbook field it finds, so ANY data-work field on any
+   course can be put on the screen without editing a page.
+
+   Course pages get a "📺 On the screen" button through
+   /shared/boardlink.js, on any element carrying data-board="<p value>",
+   and only on the instructor's device.
+
+   ⚠ NO NAME, SID OR TIMESTAMP IS EVER RENDERED. Cards are ordered by a
+   hash of the sid, so the order is stable across refreshes (a new answer
+   slots in, nothing jumps) and is not alphabetical, which would let the
+   room work out who wrote what. Keep it that way.
+
+   ⚠ SAME DOUBLE LOCK AS chat.html. The page opens only where a dashboard
+   has been unlocked (AdminGate, a UI flag), and the read needs the
+   signed-in instructor account, because `<ns>` cannot be listed
+   anonymously. The answers never pass through a world-readable node:
+   they are read from each student's own `work/`, which is where
+   progress.js already puts them.
+
+   It reads `<ns>.json?shallow=true` for the sids, then `<sid>/work.json`
+   per student — never the whole namespace, which carries every chat
+   thread of the term. Re-read every 10 s while auto-refresh is on.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0E1A33;--card:#17264A;--line:rgba(255,255,255,.14);--ink:#fff;--soft:rgba(255,255,255,.78);--dim:rgba(255,255,255,.5);--acc:#F39229;}
+html,body{height:100%;}
+body{font-family:"Avenir Next","Avenir","Nunito Sans","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+.bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 22px;background:rgba(14,26,51,.96);border-bottom:1px solid var(--line);}
+.bar .crs{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:var(--dim);margin-right:6px;}
+.tab{font:800 14px inherit;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:30px;padding:7px 15px;cursor:pointer;}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#0E1A33;}
+.sp{flex:1;}
+.ctl{font:700 13px inherit;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:30px;padding:7px 13px;cursor:pointer;}
+.ctl:hover{border-color:var(--acc);color:#fff;}
+.ctl.on{border-color:var(--acc);color:var(--acc);}
+body.tv .bar{opacity:0;transition:opacity .3s;}
+body.tv .bar:hover{opacity:1;}
+main{padding:28px 34px 60px;}
+h1{font-size:clamp(30px,3.6vw,54px);line-height:1.1;font-weight:800;letter-spacing:-.5px;}
+.meta{font-size:clamp(15px,1.4vw,20px);color:var(--dim);margin:8px 0 26px;font-weight:700;}
+.meta b{color:var(--acc);}
+/* the curtain: the count climbs, the answers stay hidden until Reveal */
+.curtain{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;text-align:center;gap:18px;}
+.curtain .n{font-size:clamp(90px,14vw,220px);font-weight:800;line-height:1;color:var(--acc);font-variant-numeric:tabular-nums;}
+.curtain .l{font-size:clamp(20px,2vw,30px);color:var(--soft);font-weight:700;}
+.curtain button{font:800 20px inherit;background:var(--acc);color:#0E1A33;border:none;border-radius:40px;padding:14px 36px;cursor:pointer;}
+/* cards */
+.cards{columns:3 340px;column-gap:18px;}
+.cardx{break-inside:avoid;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:0 0 18px;font-size:clamp(18px,1.55vw,26px);line-height:1.4;color:#fff;white-space:pre-wrap;word-wrap:break-word;animation:in .35s ease;}
+.cardx .sub{display:block;margin-top:8px;font-size:.62em;color:var(--dim);font-weight:700;letter-spacing:.3px;}
+@keyframes in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+/* tally */
+.tally{display:grid;gap:12px;max-width:1300px;}
+.tr{display:grid;grid-template-columns:minmax(160px,32%) 1fr 70px;gap:16px;align-items:center;font-size:clamp(20px,1.8vw,30px);font-weight:800;}
+.tr .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr .b{height:clamp(18px,2vw,30px);background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden;}
+.tr .b i{display:block;height:100%;background:var(--acc);border-radius:8px;transition:width .5s;}
+.tr .c{text-align:right;color:var(--acc);font-variant-numeric:tabular-nums;}
+.empty{font-size:26px;color:var(--dim);padding:60px 0;text-align:center;}
+/* the field picker (no p=) */
+.pick{display:grid;gap:22px;max-width:1100px;}
+.pick h2{font-size:15px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.pick a{display:inline-block;margin:0 8px 8px 0;color:#fff;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:15px;font-weight:700;}
+.pick a:hover{border-color:var(--acc);}
+.pick a i{font-style:normal;color:var(--acc);margin-left:6px;}
+.note{max-width:720px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 30px;font-size:16px;line-height:1.6;color:var(--soft);}
+.note h2{color:#fff;font-size:22px;margin-bottom:10px;}
+.note a{color:var(--acc);font-weight:800;}
+#auth .fba{color:#fff;}
+#auth .fba input{color:#111;}
+</style>
+</head>
+<body>
+
+<div class="bar" id="bar" style="display:none">
+  <span class="crs" id="crs"></span>
+  <span id="tabs"></span>
+  <span class="sp"></span>
+  <button class="ctl" id="bMode" title="Switch between cards and a tally">Tally</button>
+  <button class="ctl" id="bHide" title="Hide the answers again, show only the count">Hide</button>
+  <button class="ctl on" id="bAuto" title="Re-read every 10 seconds">Live</button>
+  <button class="ctl" id="bTv" title="Full screen; the bar hides until you hover">⛶ TV</button>
+</div>
+<main id="main"></main>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+(function(){
+var DB=CourseConfig.DB, Q=new URLSearchParams(location.search);
+var CID=Q.get('course')||'', C=CourseConfig.get(CID), NS=C&&C.ns;
+var main=document.getElementById('main');
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function hash(s){var h=2166136261;s=String(s);for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+
+/* ---- panels from ?p= ------------------------------------------------ */
+var PANELS=(Q.get('p')||'').split(';').map(function(x){
+  x=x.trim();if(!x)return null;
+  var i=x.indexOf('|'),t=i<0?'':x.slice(0,i),f=(i<0?x:x.slice(i+1)).split('+').map(function(s){return s.trim();}).filter(Boolean);
+  return f.length?{t:t,f:f}:null;
+}).filter(Boolean);
+var CUR=Math.max(0,Math.min(PANELS.length-1,parseInt(Q.get('i')||'0',10)||0));
+var REVEALED={}, MODE={}, AUTO=true, TIMER=null, WORK=null, LAST='';
+
+function dead(title,body){main.innerHTML='<div class="note"><h2>'+title+'</h2>'+body+'</div>';}
+
+/* ---- data ----------------------------------------------------------- */
+async function q(){ if(!window.__fbUser)return ''; try{return '?auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
+async function load(){
+  var a=await q();
+  var r=await fetch(DB+'/'+NS+'.json'+(a?a+'&':'?')+'shallow=true');
+  if(r.status===401||r.status===403){ needAuth(); return; }
+  var keys=Object.keys((await r.json())||{}).filter(function(k){return k.charAt(0)!=='_';});
+  var rows=await Promise.all(keys.map(function(sid){
+    return fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/work.json'+a).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;})
+      .then(function(w){return {sid:sid,w:w||{}};});
+  }));
+  WORK=rows; $('auth')&&($('auth').innerHTML='');
+  render();
+}
+function needAuth(){
+  stop();
+  main.innerHTML='<div class="note"><h2>Sign in to read the answers</h2><p style="margin-bottom:14px">The answers sit in each student\'s own record, which only the instructor account can read.</p><div id="auth"></div></div>';
+  FBAuth.form($('auth'),function(){load();start();},NS);
+}
+
+/* answers for one panel: one entry per student who wrote anything */
+function answers(p){
+  var out=[];
+  (WORK||[]).forEach(function(r){
+    var vals=p.f.map(function(f){var x=r.w[f];return x&&typeof x.v==='string'?x.v.trim():'';}).filter(Boolean);
+    if(vals.length)out.push({k:hash(r.sid+'|'+p.f.join('+')),vals:vals});
+  });
+  out.sort(function(a,b){return a.k-b.k;});
+  return out;
+}
+function labelOf(p){
+  if(p.t)return p.t;
+  for(var i=0;i<(WORK||[]).length;i++){var x=WORK[i].w[p.f[0]];if(x&&x.label)return x.label;}
+  return p.f.join(' + ');
+}
+/* short answers read best as a tally, long ones as cards */
+function autoMode(list){
+  var all=[];list.forEach(function(a){all=all.concat(a.vals);});
+  if(!all.length)return 'cards';
+  var lens=all.map(function(s){return s.length;}).sort(function(a,b){return a-b;});
+  return lens[Math.floor(lens.length/2)]<=32?'tally':'cards';
+}
+function norm(s){return s.toLowerCase().replace(/\s+/g,' ').replace(/^[\s"'“”.,;:!?-]+|[\s"'“”.,;:!?-]+$/g,'');}
+
+/* ---- render --------------------------------------------------------- */
+function tabs(){
+  $('tabs').innerHTML=PANELS.length>1?PANELS.map(function(p,i){
+    return '<button class="tab'+(i===CUR?' on':'')+'" data-i="'+i+'">'+(i+1)+' · '+esc(labelOf(p))+'</button>';}).join(' '):'';
+  Array.prototype.forEach.call($('tabs').children,function(b){b.onclick=function(){CUR=+b.dataset.i;LAST='';render();};});
+}
+function render(){
+  if(!WORK)return;
+  if(!PANELS.length){picker();return;}
+  tabs();
+  var p=PANELS[CUR],list=answers(p),mode=MODE[CUR]||autoMode(list);
+  $('bMode').textContent=mode==='tally'?'Cards':'Tally';
+  var sig=JSON.stringify([CUR,mode,!!REVEALED[CUR],list]);
+  if(sig===LAST)return; LAST=sig;
+  var head='<h1>'+esc(labelOf(p))+'</h1>';
+  if(!REVEALED[CUR]){
+    main.innerHTML=head+'<div class="curtain"><div class="n">'+list.length+'</div><div class="l">'+(list.length===1?'answer in':'answers in')+'</div><button id="rv">Reveal</button></div>';
+    $('rv').onclick=function(){REVEALED[CUR]=true;LAST='';render();};
+    return;
+  }
+  var body;
+  if(!list.length)body='<div class="empty">No answers yet.</div>';
+  else if(mode==='tally'){
+    var c={},show={},n=0;
+    list.forEach(function(a){
+      var seen={};
+      a.vals.forEach(function(v){
+        /* a merged panel may hold a list per box: "Sony, Bose" counts twice */
+        v.split(/\n|,|;/).map(function(s){return s.trim();}).filter(Boolean).forEach(function(s){
+          var k=norm(s);if(!k||seen[k])return;seen[k]=1;
+          c[k]=(c[k]||0)+1;if(!show[k])show[k]=s;n++;
+        });
+      });
+    });
+    var items=Object.keys(c).map(function(k){return {t:show[k],n:c[k]};}).sort(function(a,b){return b.n-a.n||a.t.localeCompare(b.t);});
+    var max=items.length?items[0].n:1;
+    body='<div class="tally">'+items.slice(0,24).map(function(it){
+      return '<div class="tr"><span class="t">'+esc(it.t)+'</span><span class="b"><i style="width:'+(it.n/max*100)+'%"></i></span><span class="c">'+it.n+'</span></div>';
+    }).join('')+'</div>'+(items.length>24?'<div class="meta">…and '+(items.length-24)+' more, each named once.</div>':'');
+  }else{
+    body='<div class="cards">'+list.map(function(a){
+      return '<div class="cardx">'+esc(a.vals[0])+(a.vals.length>1?'<span class="sub">'+a.vals.slice(1).map(esc).join(' · ')+'</span>':'')+'</div>';
+    }).join('')+'</div>';
+  }
+  main.innerHTML=head+'<div class="meta"><b>'+list.length+'</b> '+(list.length===1?'answer':'answers')+' · anonymous</div>'+body;
+}
+/* no ?p= : every field the class has written in, grouped by session */
+function picker(){
+  var f={};
+  WORK.forEach(function(r){for(var id in r.w){var x=r.w[id];if(!x||typeof x.v!=='string'||!x.v.trim())continue;
+    if(!f[id])f[id]={label:x.label||id,mod:x.mod||'—',n:0};f[id].n++;}});
+  var by={};Object.keys(f).forEach(function(id){(by[f[id].mod]=by[f[id].mod]||[]).push(id);});
+  var mods=Object.keys(by).sort();
+  main.innerHTML='<h1>Put an answer on the screen</h1><div class="meta">Every workbook field the class has written in. Pick one.</div>'+
+    (mods.length?'<div class="pick">'+mods.map(function(m){
+      return '<div><h2>'+esc(m)+'</h2>'+by[m].sort().map(function(id){
+        return '<a href="?course='+encodeURIComponent(CID)+'&p='+encodeURIComponent(f[id].label+'|'+id)+'">'+esc(f[id].label)+'<i>'+f[id].n+'</i></a>';
+      }).join('')+'</div>';}).join('')+'</div>':'<div class="empty">Nothing written yet.</div>');
+}
+
+/* ---- controls ------------------------------------------------------- */
+function start(){stop();if(AUTO)TIMER=setInterval(function(){if(!document.hidden)load().catch(function(){});},10000);}
+function stop(){if(TIMER){clearInterval(TIMER);TIMER=null;}}
+$('bAuto').onclick=function(){AUTO=!AUTO;this.classList.toggle('on',AUTO);AUTO?start():stop();};
+$('bHide').onclick=function(){REVEALED[CUR]=false;LAST='';render();};
+$('bMode').onclick=function(){var p=PANELS[CUR];if(!p)return;var m=MODE[CUR]||autoMode(answers(p));MODE[CUR]=m==='tally'?'cards':'tally';LAST='';render();};
+$('bTv').onclick=function(){
+  document.body.classList.toggle('tv');
+  try{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}catch(e){}
+};
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT')return;
+  var n=parseInt(e.key,10);
+  if(n>=1&&n<=PANELS.length){CUR=n-1;LAST='';render();}
+  else if(e.key===' '||e.key==='r'){if(PANELS.length){REVEALED[CUR]=!REVEALED[CUR];LAST='';render();e.preventDefault();}}
+  else if(e.key==='ArrowRight'&&CUR<PANELS.length-1){CUR++;LAST='';render();}
+  else if(e.key==='ArrowLeft'&&CUR>0){CUR--;LAST='';render();}
+});
+
+/* ---- boot ----------------------------------------------------------- */
+if(!AdminGate.isUnlocked()){dead('Instructor only','This screen opens on a device where an instructor dashboard has been unlocked.');return;}
+if(!C||!NS){dead('Unknown course','<code>?course='+esc(CID)+'</code> is not a course with student data.');return;}
+document.title='The room · '+(C.label||CID);
+$('crs').textContent=C.label||CID;$('bar').style.display='flex';
+main.innerHTML='<div class="empty">Reading the room…</div>';
+FBAuth.restore(function(u){
+  if(!u){needAuth();return;}
+  load().then(start).catch(function(){dead('Could not read','The database did not answer. Check the network and reload.');});
+});
+})();
+</script>
+</body>
+</html>
