@@ -43,8 +43,24 @@ window.AdminGate = (function () {
     var v=null; try{ v=localStorage.getItem(STORE_KEY); }catch(e){}
     return matches(v) ? v : null;
   }
-  function remember(pw){ try{ localStorage.setItem(STORE_KEY, pw); }catch(e){} }
+  function remember(pw){ try{ localStorage.setItem(STORE_KEY, pw); }catch(e){} mark(true); }
+
+  /* The instructor's own identity, for the COURSE pages. login.js and
+     progress.js do not load this file, so an unlocked device also carries
+     `jem_instructor` (localStorage + a 1-year cookie): there, the student
+     sign-in prompt never opens and the pill reads the instructor's name.
+     It unlocks nothing — it only stops a page asking who you are. */
+  var ME_KEY = "jem_instructor", ME_NAME = "Jan Erik Meidell";
+  function mark(on){
+    try{
+      if(on){ localStorage.setItem(ME_KEY, JSON.stringify({name:ME_NAME, ts:Date.now()}));
+              document.cookie = ME_KEY+"=1; path=/; max-age=31536000; SameSite=Lax"; }
+      else  { localStorage.removeItem(ME_KEY);
+              document.cookie = ME_KEY+"=; path=/; max-age=0; SameSite=Lax"; }
+    }catch(e){}
+  }
   function lock(){
+    mark(false);
     try{ localStorage.removeItem(STORE_KEY); }catch(e){}
     try{ LEGACY_KEYS.forEach(function(k){ sessionStorage.removeItem(k); localStorage.removeItem(k); }); }catch(e){}
   }
@@ -105,6 +121,10 @@ window.AdminGate = (function () {
     setTimeout(function(){pw.focus();},60);
     return { unlocked:false };
   }
+
+  /* keep the marker in step with the gate on every page that loads this
+     file — so a changed PASS_HASH also clears it */
+  mark(!!remembered());
 
   return { mount:mount, lock:lock, check:matches, isUnlocked:function(){return !!remembered();} };
 })();

@@ -1817,6 +1817,18 @@ remembered device automatically, because the stored value stops hashing to a mat
 Pages behind it: `/shared/admin2.html` (all course dashboards), `beyond-defi-dashboard`,
 `samedi-dashboard`, `samedi-tutorat`, `gauntlet-host`.
 
+**The instructor's own identity on course pages (9 Oct 2026).** Jan Erik: "let me just
+have my own login and cookie so that I will not have to login to admin and every course
+every time". An unlocked gate now also writes `jem_instructor` (localStorage + a 1-year
+`jem_instructor=1` cookie, path `/`); `admin-gate.js` keeps it in step on every page that
+loads it, and `lock()` or a changed `PASS_HASH` clears it. On a course page `login.js` and
+`progress.js` read it: **no student prompt, no sibling auto-registration**, and the pill is
+a faint "Jan Erik Meidell". It unlocks nothing; it only stops a page asking who you are. A
+student identity saved on the same device still wins, so testing as a student still works.
+The school landing pages (`/GBS/`, `/SUMAS/`) show the dashboard links as faint text under
+the footer, and link **neither** to the root catalogue — Jan Erik does not want the
+multi-school picture advertised.
+
 **Instructor gates and student PINs are deliberately different passwords.** Several
 student-facing pages — the Jeopardy games, the millionaire games, the wind course — have
 their own PIN that gets read out in class. Those must *never* be set to the instructor

@@ -155,6 +155,8 @@
     'color:'+T.deep+';font:700 12px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;border-radius:30px;padding:9px 14px;cursor:pointer;'+
     'box-shadow:0 10px 26px -12px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);max-width:240px;}'+
     '#st-pill.unset{animation:stpulse 2s infinite;}'+
+    '#st-pill.inst{border-color:transparent;background:transparent;box-shadow:none;font-weight:600;font-size:11px;opacity:.45;padding:6px 10px;}'+
+    '#st-pill.inst:hover{opacity:.9;}'+
     '@keyframes stpulse{0%,100%{box-shadow:0 0 0 0 '+T.main+'73;}50%{box-shadow:0 0 0 7px '+T.main+'00;}}'+
     '#st-modal{position:fixed;inset:0;z-index:301;background:rgba(20,25,20,.55);display:none;align-items:center;justify-content:center;padding:18px;}'+
     '#st-modal.on{display:flex;}'+
@@ -178,7 +180,13 @@
     var p=document.getElementById('st-pill');
     if(!p){p=document.createElement('div');p.id='st-pill';document.body.appendChild(p);p.addEventListener('click',openModal);}
     if(S.name){p.className='';p.textContent='👤 '+S.name+t.pillSynced;}
+    else if(isInstructor()){p.className='inst';p.textContent='Jan Erik Meidell';p.title='Instructor';}
     else{p.className='unset';p.textContent=t.pillUnset;}
+  }
+  /* the instructor's device — marked by /shared/admin-gate.js; see login.js */
+  function isInstructor(){
+    try{ if(localStorage.getItem('jem_instructor'))return true; }catch(e){}
+    return /(?:^|; )jem_instructor=1/.test(document.cookie||'');
   }
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -289,7 +297,7 @@
       startTimer();
       /* name-box courses nudge after a moment; roster courses are handled
          by login.js, which the page loads if it wants a prompt */
-      if(!S.name&&!C.login){ setTimeout(function(){ if(!S.name)openModal(); },1500); }
+      if(!S.name&&!C.login&&!isInstructor()){ setTimeout(function(){ if(!S.name)openModal(); },1500); }
     },
     quizAnswer:function(i,picked,ok){
       if(S.sid&&S.mod){

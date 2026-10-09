@@ -138,6 +138,15 @@ window.CourseLogin = (function () {
     if(!a){var c=getCookie(K+'_auth'); if(c){try{a=JSON.parse(c);}catch(e){}}}
     return (a&&a.sid)?a:null;
   }
+  /* The instructor's device (marked by /shared/admin-gate.js once the gate
+     has been given there): never prompted, the pill just says who it is.
+     A student identity saved on this device still wins, for testing. */
+  function instructor(){
+    if(window.AdminGate&&AdminGate.isUnlocked&&AdminGate.isUnlocked())return 'Jan Erik Meidell';
+    var m=null; try{m=JSON.parse(localStorage.getItem('jem_instructor')||'null');}catch(e){}
+    if(m&&m.name)return m.name;
+    return getCookie('jem_instructor')?'Jan Erik Meidell':'';
+  }
   function saveAuth(a){
     if(hasGroups()&&!a.grp)a.grp=defGroup();
     a.ts=Date.now();
@@ -225,6 +234,8 @@ window.CourseLogin = (function () {
     'color:var(--ink,'+T.deep+');font:700 12px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;border-radius:30px;padding:9px 14px;'+
     'cursor:pointer;box-shadow:0 10px 26px -12px rgba(0,0,0,.4);max-width:250px;}'+
     '#cl-pill.unset{animation:clp 2s infinite;}'+
+    '#cl-pill.inst{border-color:transparent;background:transparent;box-shadow:none;font-weight:600;font-size:11px;opacity:.45;padding:6px 10px;}'+
+    '#cl-pill.inst:hover{opacity:.9;}'+
     '@keyframes clp{0%,100%{box-shadow:0 0 0 0 '+T.main+'73;}50%{box-shadow:0 0 0 7px '+T.main+'00;}}'+
     '#cl-modal{position:fixed;inset:0;z-index:401;background:rgba(20,25,20,.6);display:none;align-items:center;justify-content:center;padding:18px;}'+
     '#cl-modal.on{display:flex;}'+
@@ -268,6 +279,7 @@ window.CourseLogin = (function () {
     if(!p){p=document.createElement('div');p.id='cl-pill';document.body.appendChild(p);p.addEventListener('click',open);}
     if(a){p.className='';
           p.textContent='👤 '+a.name+(hasGroups()?' · '+groupLabel(a.grp):'')+t.synced;}
+    else if(instructor()){p.className='inst';p.textContent=instructor();p.title='Instructor';}
     else{p.className='unset';p.textContent=t.pill;}
   }
 
@@ -521,6 +533,7 @@ window.CourseLogin = (function () {
       healRoster(a);
     }else{
       renderPill();
+      if(instructor())return;
       adoptFromSibling().then(function(done){
         if(done)return;
         if(window.COURSE_LOGIN_AUTO!==false&&window.COURSE_ACCESS!==false&&window.E1410_ACCESS!==false){
