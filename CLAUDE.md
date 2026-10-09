@@ -952,11 +952,55 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
   `capstone-ba` only if ported by hand, and vice versa.
 
+### GBS · The Creator Economy & SEO 2.0 — `GBS/creator-economy/`
+
+Bachelor specialisation, Thursdays 14:15–16:00 from 15 Oct 2026; the run-sheet
+archetype (`creator.css`, `wall.js`, `courseprogress.js`), one `.step` per timed
+block, progress = steps pressed. Two instructions from Jan Erik shape every page:
+
+- **Tone (9 Oct 2026): factual and instructional, never the instructor talking
+  to the room.** No "I", no asides, no chatty alerts; imperatives to the student
+  are fine. Session 1 and the hub were rewritten to this; the other GBS hubs
+  were not.
+- ⚠ **Mechanisms, in detail (9 Oct 2026): "be more specific to the mechanisms
+  and give more details to how the various procedures and algorithms for these
+  technologies are used."** `week1.html` Step 4 is the model: the search
+  engine's crawl → index → rank (robots.txt and the per-operator crawler
+  tokens, render queue, inverted index with a worked excerpt, BM25 with its
+  formula, PageRank with its formula, passage ranking, quality raters and
+  E-E-A-T) and the answer engine's RAG pipeline (query fan-out, hybrid
+  lexical + dense retrieval with cosine similarity and ANN, cross-encoder
+  reranking, grounded generation in the context window, citation
+  attribution), each stage with "eliminated here". Step 4 C is a **working
+  BM25 toy** (`TOYDOCS`, k₁ = 1.2, b = 0.75, four editable passages, the
+  lexical stage only, and it says so); its scores were checked against an
+  independent Python BM25. Step 4 D separates what is **established**
+  (Chen et al. 2025 on earned-media bias; Aggarwal et al. 2024, the GEO
+  paper, up to ~40 % visibility) from **hypotheses tied to a stage**, which
+  Session 2 tests. Every operator claim is from the operator's own docs
+  (Google How Search Works, the AI Mode query fan-out post, OpenAI's bots
+  page, Perplexity's bots page), linked at the foot of the page. Later
+  sessions should be built to this depth.
+- Session 1's cells are **dealt in arrival order** through `_wall/w1cells`
+  (see the comment in the page); the name hash is only the offline fallback.
+- `data-board` on the steps feeds `/shared/board.html` (the TV board).
+
 ### GBS · Enterprise Security, Cyber Warfare & Asset Protection — `GBS/enterprise-security/`
 
 Built 9 Oct 2026 from the module specification "ESCWA" (5 graduate credits;
 the PDF carries the **International Institute in Geneva** letterhead, Jan Erik
-filed it under GBS). Fridays **17:15–19:15**, first **16 Oct 2026**, **14
+filed it under GBS).
+⚠ **Branded IIG, not GBS (9 Oct 2026, Jan Erik: "change the icon and style to
+iig.ch")**: theme `/shared/themes/iig.css` (IIG's own palette from iig.ch's
+stylesheet — navy `#0a2540`, gold `#c9a961`, warm surface `#faf9f7` — plus
+its type: Cormorant Garamond headings, Montserrat labels, Avenir body, each
+with a system fallback because the repo ships no web fonts), the white
+`iig-logo.avif` with an `iig-logo.png` fallback in a `<picture>`, on a navy
+bar. Gold is a fill: readable gold text is `--accent-deep #86692c`, and gold
+buttons carry **navy** text (white on IIG gold is 2.25:1). `courses.json`
+has an `iig` theme and the `config.js` mirror an `iig` entry. The folder,
+`school:"GBS"` (shared sign-in with the GBS courses) and the listing on
+`/GBS/` were left as they were. Fridays **17:15–19:15**, first **16 Oct 2026**, **14
 sessions**. On the creator-economy run-sheet pattern (`esc.css` = `creator.css`
 + additions at the END; `wall.js` = creator's with the namespace changed,
 global `EscWall`; `courseprogress.js` a port).

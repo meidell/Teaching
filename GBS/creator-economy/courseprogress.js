@@ -37,7 +37,7 @@ window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS="creator", K="creator";
   var CHAPTERS=[
-    {mod:'w1',  short:'W1', name:'Week 01 · Fifteen phones, one question',        total:8, live:true, href:'week1.html'},
+    {mod:'w1',  short:'W1', name:'Week 01 · One question, fifteen phones, and the pipeline',        total:8, live:true, href:'week1.html'},
     {mod:'w2',  short:'W2', name:'Week 02 · Reverse-engineer a winner',           total:5, live:false},
     {mod:'w3',  short:'W3', name:'Week 03 · The intervention goes live',          total:6, live:false},
     {mod:'w4',  short:'W4', name:'Week 04 · The creator draft',                   total:5, live:false},
