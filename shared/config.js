@@ -79,6 +79,8 @@ window.CourseConfig = (function () {
                    label:"GBS · Business Intelligence" },
     "finmod":    { school:"GBS", ns:"finmod",    theme:"gbs",   lang:"en", login:true,
                    label:"GBS · Finance Modelling" },
+    "escwa":     { school:"GBS", ns:"escwa",     theme:"gbs",   lang:"en", login:true,
+                   label:"GBS · Enterprise Security & Cyber Warfare" },
     "wind":      { school:"SUMAS", ns:"wind",      theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · MA/MBA500 Capstone — European wind to 2040" },
     "omba500":   { school:"SUMAS", ns:"omba500",   theme:"sumas", lang:"en", login:true,

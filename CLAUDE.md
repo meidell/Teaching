@@ -951,6 +951,45 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
   `capstone-ba` only if ported by hand, and vice versa.
 
+### GBS · Enterprise Security, Cyber Warfare & Asset Protection — `GBS/enterprise-security/`
+
+Built 9 Oct 2026 from the module specification "ESCWA" (5 graduate credits;
+the PDF carries the **International Institute in Geneva** letterhead, Jan Erik
+filed it under GBS). Fridays **17:15–19:15**, first **16 Oct 2026**, **14
+sessions**. On the creator-economy run-sheet pattern (`esc.css` = `creator.css`
++ additions at the END; `wall.js` = creator's with the namespace changed,
+global `EscWall`; `courseprogress.js` a port).
+
+- ⚠ **Session 7 is the MIDTERM (27 Nov), Session 14 the FINAL.** Neither has a
+  page or a chapter; module ids are session numbers `w1`…`w6`, `w8`…`w13`, and
+  `w7`/`w14` must never be reused. **Dates after the winter break are
+  provisional** (15/22/29 Jan, final 5 Feb 2027); change `date` in the hub's
+  `TERM`, the only place the plan is written.
+- The syllabus's 17 slots are fitted into 14: topics 2+4 share Session 2,
+  12+13 share Session 11, revision is folded into Session 13. Readings on the
+  hub are proposals; Mazarr (Session 2) is "Summary and Chapter 1" — check the
+  pages before students are told.
+- **Assessment is the syllabus's: 10% weekly reflections · 45% midterm · 45%
+  final.** The reflection (quote 1–5 lines + max 300 words, before class, 3
+  picked at random, unsubmitted = 0) is collected **on the session page, not
+  Google Classroom** as the PDF says: `work/refl<N>_quote|_ref|_text|_ai|_submitted`,
+  `N` = the session it is DUE for (Session 1's page collects `refl2_*`). It is
+  not a step, so it never enters the bar. The random pick is done from the
+  dashboard by hand — there is no picker yet.
+- Session pages count `.step` blocks pressed (SECTIONS), like creator — the
+  `.q`/`.cl-row`/`[data-work]` trap does not apply, but `total` in
+  `courseprogress.js` must equal `SECTIONS.length` (w1 = 7).
+- Session 1's two walls: `_wall/w1p` (the sealed prediction, `T:<k>|K:<k>`)
+  and `_wall/w1` (the threshold game, an 8-letter string over `CESGWA-`).
+  No answer key on purpose. The Step 2 reveal stays hidden until the student
+  has sealed Step 1 (or presses "arrived late").
+- **Running case: Arvane Commodities SA**, fictional Geneva trader with a
+  Constanța terminal, twelve chartered vessels and a Singapore office; the
+  incidents around it (Viasat/Enercon, NotPetya, Balticconnector, ICRC,
+  CrowdStrike…) are real and kept to the public record.
+- ⚠ **The `escwa` rules block (a copy of `creator`'s) must be DEPLOYED** before
+  the link goes to students, or registration and the walls fail (both say so).
+
 ### SWISS UMEF · GEN 110 Intelligence artificielle — `UMEF/gen110/`
 
 A Bachelor core course for every programme at Swiss UMEF, **in French and in
