@@ -779,6 +779,13 @@ applies. What differs:
   cohort runs on other dates.
 - ⚠ **The two folders are independent.** A fix in `wind` reaches `omba500`
   only if ported by hand, and vice versa.
+- ⚠ **omba500's forums NEVER CLOSE** (12 Oct 2026, Jan Erik: "leave the
+  forums open all time", after a student travelling in Week 1 found Forum 1
+  shut). `closed()`/`reClosed()` in `forum.html` return false; deadlines are
+  still shown, the forum list and the week-page chips read "… · still open",
+  and a late post still carries the "after the deadline" tag (and ⏰ in
+  `followup.html`), so lateness stays visible for marking. `SUMAS/wind` and
+  `SUMAS/capstone-ba` still close at the deadline.
 - **Week 1 carries the Moodle course's own materials (8 Oct 2026, both
   `omba500` and `wind`)**: the two reference PDFs from Jan Erik's archive
   (`1.2 Strategic-Forecasting.pdf`, `2.2 From Stakeholders to Systems.pdf`)
@@ -1000,7 +1007,8 @@ bar. Gold is a fill: readable gold text is `--accent-deep #86692c`, and gold
 buttons carry **navy** text (white on IIG gold is 2.25:1). `courses.json`
 has an `iig` theme and the `config.js` mirror an `iig` entry. The folder,
 `school:"GBS"` (shared sign-in with the GBS courses) and the listing on
-`/GBS/` were left as they were. Fridays **17:15–19:15**, first **16 Oct 2026**, **14
+`/GBS/` stay as they are — Jan Erik confirmed 9 Oct 2026 that it remains on
+the GBS landing page. Fridays **17:15–19:15**, first **16 Oct 2026**, **14
 sessions**. On the creator-economy run-sheet pattern (`esc.css` = `creator.css`
 + additions at the END; `wall.js` = creator's with the namespace changed,
 global `EscWall`; `courseprogress.js` a port).

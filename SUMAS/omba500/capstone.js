@@ -93,8 +93,11 @@ window.CAP = (function () {
   }
 
   /* ---- dates on forum and phase cards ---- */
-  function dueChip(d, txt, label){
+  function dueChip(d, txt, label, stillOpen){
     var now=Date.now(), cls='due', t=label||'due';
+    /* forums never close in this course: a past forum date reads
+       "… · still open" instead of being struck through */
+    if(now>d.getTime()&&stillOpen)return '<span class="chip late">'+t+' '+esc(txt)+' · still open</span>';
     if(now>d.getTime())cls='closed';
     else if(d.getTime()-now<48*3600000)cls='soon';
     return '<span class="chip '+cls+'">'+t+' '+esc(txt)+'</span>';
@@ -106,9 +109,9 @@ window.CAP = (function () {
       if(f.opt)c.classList.add('opt');
       var chips='';
       if(f.opt)chips+='<span class="chip opt">optional · not graded</span>';
-      chips+=dueChip(f.due,f.dueText,f.opt?'open until':'post by');
+      chips+=dueChip(f.due,f.dueText,f.opt?'open until':'post by',true);
       chips+='<span class="chip">'+f.post.min+'–'+f.post.max+' words</span>';
-      if(f.re)chips+=dueChip(f.reDue,f.reDueText,f.re.n+' repl'+(f.re.n>1?'ies':'y')+' by')+'<span class="chip">'+f.re.min+'+ words each</span>';
+      if(f.re)chips+=dueChip(f.reDue,f.reDueText,f.re.n+' repl'+(f.re.n>1?'ies':'y')+' by',true)+'<span class="chip">'+f.re.min+'+ words each</span>';
       var head='<div class="fh"><span class="ft">'+esc(f.title)+'</span></div><div class="chips">'+chips+'</div>';
       c.insertAdjacentHTML('afterbegin',head);
       if(!c.querySelector('.go'))c.insertAdjacentHTML('beforeend','<a class="go" href="forum.html?f='+f.id+'">Open the forum →</a>');
