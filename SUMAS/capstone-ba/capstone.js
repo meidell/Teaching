@@ -126,7 +126,7 @@ window.CAP = (function () {
       var id=e.getAttribute('data-due'), f=S.forum(id), p=S.phase(id);
       e.textContent=f?f.dueText:(p?p.dueText:'');
     });
-    if(S.week(WK)&&Date.now()<S.week(WK).monday.getTime()){
+    if(S.week(WK)&&Date.now()<S.week(WK).opens.getTime()){
       var lb=$('lockbar'); if(lb){ lb.style.display='block'; lb.textContent='This week opens on '+S.fmtDay(S.week(WK).monday)+'. You can read ahead; the forums open then.'; }
     }
   }

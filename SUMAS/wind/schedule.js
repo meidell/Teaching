@@ -118,7 +118,7 @@
     return sa+' – '+sb;
   }
   function weekOfToday(){
-    var now=Date.now(), s=weekMonday(1).getTime();
+    var now=Date.now(), s=at(1,0,"00:00").getTime(); /* Monday 00:00 Geneva, not noon UTC */
     if(now<s)return 0;
     var w=Math.floor((now-s)/(7*86400000))+1; return w>10?11:w;
   }
@@ -132,7 +132,7 @@
   PHASES.forEach(function(p){ p.due=at(p.wk,p.day,p.time); p.dueText=fmtFull(p.due,p.time); });
   EXAM.open = at(EXAM.wk,EXAM.opens.day,EXAM.opens.time); EXAM.close = at(EXAM.wk,EXAM.closes.day,EXAM.closes.time);
   EXAM.openText = fmtFull(EXAM.open,EXAM.opens.time); EXAM.closeText = fmtFull(EXAM.close,EXAM.closes.time);
-  WEEKS.forEach(function(w){ w.dates = weekRange(w.n); w.monday=weekMonday(w.n); });
+  WEEKS.forEach(function(w){ w.dates = weekRange(w.n); w.monday=weekMonday(w.n); w.opens=at(w.n,0,"00:00"); });
 
   var S = {
     START:START, GRADES:GRADES, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,

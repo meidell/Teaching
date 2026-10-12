@@ -26,7 +26,7 @@ window.CourseProgress=(function(){
   WEEK_TOTALS={w1:10,w2:12,w3:13,w4:13,w5:13,w6:11,w7:10,w8:10,w9:12,w10:7};
   var CHAPTERS=[];
   (S?S.WEEKS:[]).forEach(function(w){
-    var live=Date.now()>=w.monday.getTime();
+    var live=Date.now()>=w.opens.getTime();
     CHAPTERS.push({mod:'w'+w.n, short:'W'+w.n, name:'Week '+w.n+' · '+w.title, total:WEEK_TOTALS['w'+w.n]||1, live:live, href:'week'+w.n+'.html', wk:w.n});
     S.forumsOf(w.n).forEach(function(f){
       CHAPTERS.push({mod:f.id, short:'F', name:'  ↳ '+f.title, total:f.re?2:1, live:live, href:'forum.html?f='+f.id, opt:!!f.opt, forum:true, wk:w.n});
