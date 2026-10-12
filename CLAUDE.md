@@ -796,6 +796,16 @@ applies. What differs:
   the page**, next to the site's own, because Jan Erik asked that none be
   left out. The Moodle Meadows PDF (research.fit.edu) answered 404 on
   8 Oct 2026 and is kept anyway; donellameadows.org sits beside it.
+- **Week 2 follows the same pattern (12 Oct 2026, both folders)**: reading
+  2.1 is `w2slides/week2-gas-wind-industrial-energy.pdf` with its slides 2–9
+  as `gw-N.jpg` slideboxes in s1/s2/s4; 2.2 is the Week 1 briefing, linked
+  from `w1slides/`. Slides 3–5 and 9 sit in a section **without
+  `data-step`** ("Gas, wind and the industrial energy fight"), so the week
+  total stays 12. Three `.soup` notes flag the deck's own errors, each checked
+  in Python: 400 TWh of industrial energy is ~2,700 TWh by Eurostat (gas 31%,
+  ≈ 870 TWh); "~70%" LCOE fall is 54–60%; the €65 ETS price does not cover
+  green steel's €180 premium; "10× EU capacity" is 24–30× offshore. The
+  energy-units video is a YouTube search link — the Moodle export had no link targets.
 
 ### SUMAS · Capstone "AI for Good" — Bachelors — `SUMAS/capstone-ba/`
 
