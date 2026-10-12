@@ -20,7 +20,7 @@ Re-run after editing SPEC:
     python3 "HEG/quantitative-methods/_build/scaffold.py"
 
 ⚠ When a week is written by hand, DELETE its entry from SPEC — otherwise
-the next run silently overwrites the hand-written file. (Weeks 1–3 are not
+the next run silently overwrites the hand-written file. (Weeks 1–5 are not
 in SPEC for exactly this reason.)
 """
 import os, html, json
@@ -29,43 +29,6 @@ ROOT=os.path.join(os.path.dirname(__file__),'..')
 # Objectives and content below are taken from the 2026/2027 syllabus,
 # week by week; the framing and the exercises are this site's.
 SPEC=[
- dict(n=5,slug='Differentiation rules',emoji='⚙️',
-  title='The toolkit, <em>drilled</em>',
-  sub='A short, honest week: the rules that let you differentiate anything this course will hand you. Product, quotient and chain — the chain rule most of all, because in business almost every function is a function of a function.',
-  ch='Product · quotient · chain rules · higher-order derivatives',
-  reads=[('Burns, "The Chain Rule Derivative Explained with Comics" (Medium, 2020) — on Cyberlearn','#')],
-  objectives=['Differentiate the standard functions quickly and correctly.',
-              'Apply the rules of differentiation to composite expressions.'],
-  sections=[
-   ('The standard functions','Power, exponential, logarithm','The three derivatives to know cold',
-    ['A reference card that stays on screen: xⁿ, eˣ, ln x, and a constant.',
-     'Widget: a drill that generates fresh functions and checks your derivative, endlessly.'],'Reference'),
-   ('Constant and sum rules','The easy two','Differentiating term by term',
-    ['Worked on a polynomial cost function, term by term, with the reasoning said out loud.'],'Rules'),
-   ('The product rule','When two things vary at once','(fg)′ = f′g + fg′',
-    ['Revenue = price × quantity, with both varying: the product rule IS the economics of a price change.',
-     'Worked: R(p) = p·q(p), and the derivative read as "the extra francs per unit minus the units lost".'],'Product'),
-   ('The quotient rule','Rates of rates','(f/g)′, and average cost',
-    ['Average cost A(q) = C(q)/q differentiated, and the classic result: average cost is flat exactly where marginal cost crosses it.',
-     'That is the Week 1 roastery table, proved rather than observed.'],'Quotient'),
-   ('The chain rule','A function of a function','The rule you will use most',
-    ['Worked slowly, three times, with the "outer × inner" phrasing.',
-     'Widget: peel a composite function layer by layer and differentiate each layer as you go.'],'Chain'),
-   ('Higher-order derivatives','The rate of the rate','f″ and what it will mean in Week 8',
-    ['Second derivative introduced as acceleration — costs rising, and rising faster.',
-     'Planted deliberately: in Week 8 the sign of f″ is what distinguishes a peak from a floor.'],'Second'),
-   ('Review quiz','Prove it to yourself','Twelve questions · not graded',
-    ['Twelve derivatives, mixed, timed the way the exam is timed.'],'Quiz')],
-  slides=['Quantitative Methods I · Session #5 — Differentiation rules','Recap: the derivative as a limit','The standard derivatives: xⁿ, eˣ, ln x','The constant rule','The sum rule, term by term','The product rule','Why revenue needs the product rule','The quotient rule','Average cost differentiated','Where marginal cost crosses average cost','The chain rule: outer × inner','Chain rule, worked three times','A composite cost function','Higher-order derivatives','f″ as acceleration — and a promise about Week 8','Part 2 · exercises','Takeaways · homework · Week 6 is self-study'],
-  ex=[('The standard four',8,'xⁿ, eˣ, ln x, constant — six quick derivatives'),
-      ('Term by term',10,'a polynomial cost function, differentiated'),
-      ('Product rule',14,'three products, including R(p) = p·q(p)'),
-      ('Quotient rule',14,'average cost, differentiated and interpreted'),
-      ('Chain rule',16,'four composites, peeled layer by layer'),
-      ('Mixed drill',14,'eight derivatives with no clue which rule applies'),
-      ('Second derivatives',10,'three functions: f, f′, f″, and what f″ says')],
-  tools=[]),
-
  dict(n=6,slug='Self-study week — the business case',emoji='📚',
   title='A week with no class, and <em>material that counts</em>',
   sub='Week 6 of the fall semester is a self-study week: there is no class on campus, but you continue your progress. For Quantitative Methods there is a <b>case study and a set of exercises</b> consolidating everything from the first five weeks, <b>with answers provided</b>. The topics covered are included in the evaluations — both the midterm and the end-of-semester exam.',
