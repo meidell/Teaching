@@ -16,12 +16,12 @@
    the online Masters edition (SUMAS/wind, same START) it MEETS WEEKLY:
    Jan Erik, 6 Oct 2026 — "it starts tomorrow and then every Thursday …
    group activity … and then … with me"; the hours were fixed on 7 Oct as
-   17:15–18:15 (group hour) and 18:15–20:15 (class). So Week 1 is
-   the week of Mon 5 Oct 2026, the first session is Wed 7 Oct (the
-   SESSION_DATES override — delete it if the first session is really Thu 8
-   Oct) and every later session is the Thursday of its week. The group
-   hour's plan per week is thursday.html; the two folders are independent
-   copies.
+   17:15–18:15 (group hour) and 18:15–20:15 (class). ⚠ CORRECTED 14 Oct
+   2026 (Jan Erik: "the sessions are on wednesdays not thursdays"): every
+   session is the WEDNESDAY of its week, Week 1 = Wed 7 Oct included, so
+   the SESSION_DATES override is empty. The group hour's plan per week is
+   wednesday.html (wednesday.html is now a redirect stub); the two folders
+   are independent copies.
 
    ⚠ NOTHING IS HANDED IN ON MOODLE (Jan Erik, 7 Oct 2026: "we will create
    all forums and handings on my site, not in moodle"). The forums are
@@ -65,20 +65,21 @@
      removed from the hub on 7 Oct 2026 at Jan Erik's request. */
 
   /* ---- the weekly session -------------------------------------------
-     Every Thursday: 17:15–18:15 the GROUP HOUR (students together online,
-     no instructor — the plan per week is in thursday.html and on each week
+     Every Wednesday: 17:15–18:15 the GROUP HOUR (students together online,
+     no instructor — the plan per week is in wednesday.html and on each week
      page), then 18:15–20:15 the class with Jan Erik. `day` is counted from
-     the week's Monday (3 = Thursday). SESSION_DATES overrides a single
-     week's date — Week 1 meets on Wednesday 7 Oct 2026, the day after the
-     course opened. The Zoom link is on Moodle. */
-  var SESSION = { day:3, group:['17:15','18:15'], cls:['18:15','20:15'], where:'Zoom — the link is on Moodle' };
+     the week's Monday (2 = Wednesday). SESSION_DATES overrides a single
+     week's date ({wk:'YYYY-MM-DD'}) — none today. The Zoom link is on
+     Moodle. Forum deadlines are NOT tied to the session day: they kept
+     their dates when the session moved from Thursday on 14 Oct 2026. */
+  var SESSION = { day:2, group:['17:15','18:15'], cls:['18:15','20:15'], where:'Zoom — the link is on Moodle' };
   /* The shared canvas the group hour is written on — canvas.html, ON THE SITE
      since 8 Oct 2026 (one block per team per week, at _teams/<t>/canvas/w<k>).
      It replaced the Google Doc of 7 Oct 2026; the pages append ?w=<week>.
      An absolute http(s) value would be treated as an external document
      again (opened in a new tab). null = not available. */
   var CANVAS = 'canvas.html';
-  var SESSION_DATES = { 1:'2026-10-07' };
+  var SESSION_DATES = {};
 
   var WEEKS = [
     { n: 1,  role: 'Consultant',        title: 'Organising the project — the brief, the teams, the plan' },
@@ -154,7 +155,7 @@
     { id:'p3', wk:9, day:6, time:'23:59', name:'Phase 3 · Final consulting report', words:'4,000–5,000 words + figures', file:'TEAM_Phase3_Capstone2026.pdf', secs:['r0','r13','r14','r15','r16','r17','r18'], min:4000, max:5000, whole:true }
   ];
   /* openBook: Jan Erik, 7 Oct 2026 — "final exam will be open book". The
-     week-10 page, the hub, the glossary and the Thursday plan all read it. */
+     week-10 page, the hub, the glossary and the Wednesday plan all read it. */
   var EXAM = { wk:10, opens:{day:0,time:'09:30'}, closes:{day:7,time:'09:30'}, minutes:120, questions:60, openBook:true };
 
   /* ---- date arithmetic --------------------------------------------- */
@@ -169,7 +170,10 @@
     return new Date(Date.parse(iso+tzFor(new Date(iso+TZ))));
   }
   var DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function fmtDay(d){ var z=new Date(d); return DAYS[(z.getDay()+6)%7]+' '+z.getDate()+' '+MONS[z.getMonth()]; }
+  /* A date is printed as it falls IN GENEVA, not in the reader's timezone:
+     23:59 CEST Saturday is Sunday morning in Asia, and the page used to say
+     "Sun" there (found 14 Oct 2026 on a +08:00 laptop). */
+  function fmtDay(d){ var t=new Date(d), z=new Date(t.getTime()+(tzFor(t)==='+02:00'?2:1)*3600000); return DAYS[(z.getUTCDay()+6)%7]+' '+z.getUTCDate()+' '+MONS[z.getUTCMonth()]; }
   function fmtFull(d,time){ return fmtDay(d)+(time?' · '+time:''); }
   function weekRange(wk){
     var a=weekMonday(wk), b=new Date(a); b.setUTCDate(b.getUTCDate()+6);
@@ -206,7 +210,7 @@
   var S = {
     START:START, GRADES:GRADES, TEAMS:TEAMS, TEAM_SIZE:TEAM_SIZE, CLASS_SIZE:CLASS_SIZE, COMPANIES:COMPANIES, SESSION:SESSION, CANVAS:CANVAS, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
     session:sessionOf,
-    liveText: 'Thursdays on Zoom — '+SESSION.group[0]+'–'+SESSION.group[1]+' the group hour, '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik (the first session is Wed 7 Oct)',
+    liveText: 'Wednesdays on Zoom — '+SESSION.group[0]+'–'+SESSION.group[1]+' the group hour, '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik',
     week:function(n){ for(var i=0;i<WEEKS.length;i++)if(WEEKS[i].n===n)return WEEKS[i]; return null; },
     forum:function(id){ for(var i=0;i<FORUMS.length;i++)if(FORUMS[i].id===id)return FORUMS[i]; return null; },
     forumsOf:function(wk){ return FORUMS.filter(function(f){return f.wk===wk;}); },

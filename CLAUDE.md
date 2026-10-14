@@ -784,8 +784,9 @@ applies. What differs:
   shut). `closed()`/`reClosed()` in `forum.html` return false; deadlines are
   still shown, the forum list and the week-page chips read "… · still open",
   and a late post still carries the "after the deadline" tag (and ⏰ in
-  `followup.html`), so lateness stays visible for marking. `SUMAS/wind` and
-  `SUMAS/capstone-ba` still close at the deadline.
+  `followup.html`), so lateness stays visible for marking. `SUMAS/wind`
+  still closes at the deadline; `SUMAS/capstone-ba` got the same never-close
+  rule on 14 Oct 2026.
 - **Week 1 carries the Moodle course's own materials (8 Oct 2026, both
   `omba500` and `wind`)**: the two reference PDFs from Jan Erik's archive
   (`1.2 Strategic-Forecasting.pdf`, `2.2 From Stakeholders to Systems.pdf`)
@@ -946,10 +947,39 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
 - **No letter-grade scale.** `SCALE` was removed from `schedule.js` and the
   hub (7 Oct 2026); the Bachelors Moodle page's A 93–100 … F 0–62 block is
   the only record of it.
-- **Meets weekly**: `START = 2026-10-05`, Thursday 17:15–18:15 the
-  student-run group hour (`thursday.html`, written on **the shared canvas,
-  `canvas.html`**, see below), 18:15–20:15 the class; `SESSION_DATES = {1:'2026-10-07'}` puts the first
-  session on Wednesday 7 Oct. Week 1's group hour is *form the team*; its
+- ⚠ **Meets weekly on WEDNESDAYS** (corrected 14 Oct 2026, Jan Erik: "the
+  sessions are on wednesdays not thursdays"): `START = 2026-10-05`,
+  `SESSION.day = 2`, `SESSION_DATES = {}`; 17:15–18:15 the student-run group
+  hour (`wednesday.html`, written on **the shared canvas, `canvas.html`**,
+  see below), 18:15–20:15 the class. `thursday.html` is a redirect stub that
+  keeps the `#wN` hash — keep it, links to it are in students' history. The
+  CSS class `.thu` on the session card was kept as an internal name. Forum
+  deadlines did **not** move with the session (Forum 1 is still due
+  Thursday of Week 2). Every "Thursday group hour" workbook label became
+  "Wednesday group hour", in the pages and in `courses.json`.
+- **Forums never close** (14 Oct 2026, Jan Erik: "write the deadline, but let
+  them be open") — `omba500`'s change ported verbatim: `closed()` and
+  `reClosed()` in `forum.html` return false, the chips read "… · still
+  open", a late post keeps its ⏰ in `followup.html`.
+- **Dates print in Geneva time.** `schedule.js → fmtDay()` shifts by the
+  Zurich offset before formatting; it used the reader's timezone, so on a
+  +08:00 laptop every 23:59 deadline showed one day late. Fixed here only —
+  `wind` and `omba500` still have the old `fmtDay`.
+- ⚠ **Week 3 is the TEAM's week (14 Oct 2026, "a logical continuation of
+  week 1 and week 2 · two teams × 4")**: the Moodle content stays, framed by
+  the roles from Week 1 and the numbers from Week 2. A bridge table (W1 → W2
+  → W3), four role cards (`s9`; coordinator = audit protocol + one change to
+  the charter's AI policy, data lead = verifies the 2010/2024 rows and picks
+  $79 vs $86, model lead = the fit and the sensitivity test, editor = the AI
+  log + report §3), highlighted for the signed-in student from `_teams`; a
+  numbers-first doubling ladder before the formula; the time-series widget
+  converts 2040 GW into a share of Week 2's 4,530 TWh; a four-assistant team
+  audit; `s10` "into the report" (§3, §4, the charter). New field
+  `w3_role`; the week total went 14 → 17 (count.py). Canvas BOXES[3] gained
+  `team`, `rows`, `policy`; `wednesday.html#w3` was rewritten to match.
+  Verified in Python: default rows fit **19.8% (R² 0.944)**, 2010/2024 move
+  it most (±20% → 17.5–21.6%), $86 → $54 and $79 → $50 at 15% / 600 GW. Weeks
+  4–10 are still the online-course copies; continue the same pattern. Week 1's group hour is *form the team*; its
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.
 - **Grade weights are the same assumption as `wind`'s** (10/10/55/25).
