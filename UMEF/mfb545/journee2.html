@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Journée 2 · Paiements et monnaie digitale · MFB 545 · Swiss UMEF</title>
+<meta name="description" content="MFB 545 Fintech, journée 2 — l’anatomie d’un paiement par carte et le simulateur d’interchange, IBAN et QR-facture, le mobile money et le réseau d’agents, 200 CHF de Genève à Dakar par quatre canaux, une API de paiement en mode test, la négociation à trois.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="fintech.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="mfb545">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">FINTECH · JOURNÉE 2</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">Cette journée</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Cours</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Journée 2 · vendredi 23 octobre 2026 · MFB 545</div>
+    <h1>Paiements et <em>monnaie digitale</em></h1>
+    <p class="sub">Un paiement par carte met cinq acteurs en jeu en moins de deux secondes ; un retrait de mobile money à Dakar dépend de la liquidité d’un agent de quartier ; un transfert de 200 CHF coûte de moins de 1 % à plus de 10 % selon le canal. Cette journée suit l’argent pas à pas : le circuit d’une carte et qui y gagne quoi, l’IBAN et la QR-facture, le réseau d’agents, quatre façons d’envoyer de l’argent à Dakar, une API de paiement en mode test — puis une négociation à trois, et le flux de paiement de votre fintech.</p>
+    <div class="liveinfo">
+      <span class="li">🕘 <b>09h00–12h15 · 13h30–16h45</b> · quatre blocs de 90 min</span>
+      <span class="li">💻 ordinateur portable · aucune programmation</span>
+      <span class="li">🎤 l’exposé est court — <b>🛠 l’essentiel du temps, c’est vous qui travaillez</b></span>
+    </div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="daytl"><h4>La journée en un coup d’œil · qui parle, qui travaille</h4><div id="dayTl"></div></div>
+
+  <div class="objectives">
+    <h4>À la fin de la journée 2, vous saurez</h4>
+    <ul>
+      <li>Suivre un paiement par carte de l’autorisation au règlement, et répartir la commission du commerçant entre émetteur, réseau et acquéreur.</li>
+      <li>Vérifier un IBAN, calculer le chiffre de contrôle d’une référence QR, et lire le contenu d’une QR-facture.</li>
+      <li>Expliquer comment la monnaie électronique est garantie, et gérer la liquidité d’un agent de mobile money.</li>
+      <li>Calculer le coût total d’un transfert international — frais affichés <em>et</em> marge de change — sur quatre canaux réels.</li>
+      <li>Envoyer des requêtes à une API de paiement en mode test et lire ses réponses, ses erreurs et ses webhooks.</li>
+      <li>Décrire le flux de paiement et le modèle de revenus de votre fintech.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Avant de commencer — cochez</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Connecté·e</b> sur ce site (le bouton en bas à droite).</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>Le travail de la journée 1</b> à portée de main : le problème et le client de votre équipe (<a href="journee1.html">journée 1, section 1.9</a>).</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>Un tableur ouvert</b> pour le bloc 2. Rien à installer : l’atelier API du bloc 3 se fait dans cette page.</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Page du cours</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">réinitialiser ma progression de la journée 2 sur cet appareil</a></div>
+  </div>
+</section>
+
+<!-- ============================ 2.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.1 · Bloc 1</div><span class="mode m-ex">🎤 Exposé · 20 min</span><h2>Anatomie d’un paiement</h2></div>
+  <p class="ex-note">Exposé de l’enseignant. S’il n’a pas lieu, lisez cette section seul·e, puis faites le classement en bas de page.</p>
+
+  <div class="card">
+    <span class="label def">Le modèle à quatre coins</span>
+    <h3>Cinq acteurs derrière chaque paiement par carte</h3>
+    <div class="flow">
+      <div class="node">Titulaire<small>vous, avec la carte</small></div>
+      <div class="node">Émetteur<small>la banque qui a émis la carte</small></div>
+      <div class="node hl">Réseau<small>Visa, Mastercard</small></div>
+      <div class="node">Acquéreur<small>la banque ou le PSP du commerçant</small></div>
+      <div class="node">Commerçant<small>le magasin, le site</small></div>
+    </div>
+    <p class="flow-arrows">« Quatre coins » : titulaire, émetteur, acquéreur, commerçant. Le réseau est au centre : il fixe les règles, achemine les messages et calcule les positions de chacun. Entre le commerçant et l’acquéreur s’intercale souvent un <span class="gloss" data-k="psp">prestataire de services de paiement</span> (Stripe, Adyen, Worldline…).</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Le mécanisme · de la carte au compte du commerçant</span>
+    <h3>Autorisation, compensation, règlement — huit étapes</h3>
+    <div class="lab">
+      <div class="lab-title">Un café payé 4,80 CHF sans contact</div>
+      <div class="steps" id="cardSteps"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="cardNext">Commencer →</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label def">Qui gagne quoi</span>
+    <h3>La commission du commerçant, découpée</h3>
+    <div class="formula">Commission du commerçant (MDR) = interchange + frais du réseau + marge de l’acquéreur</div>
+    <p>Sur un achat de 100 CHF avec une commission de 1,5 % : le commerçant reçoit 98,50 CHF. L’<b>interchange</b> (fixée par le réseau, versée par l’acquéreur à l’émetteur) rémunère l’émetteur pour le risque et le crédit qu’il porte ; les <b>frais du réseau</b> rémunèrent Visa ou Mastercard ; le reste est la <b>marge de l’acquéreur</b>, qui paie aussi le traitement technique.</p>
+    <ul>
+      <li><strong>Dans l’UE</strong>, le règlement 2015/751 plafonne l’interchange des cartes de particuliers à <b>0,2 %</b> (débit) et <b>0,3 %</b> (crédit).</li>
+      <li><strong>En Suisse</strong>, pas de loi : des accords avec la Commission de la concurrence (COMCO) ont ramené l’interchange domestique des cartes de crédit à <b>0,44 %</b> en moyenne (depuis 2017).</li>
+      <li>L’interchange est ce qui finance les cartes « gratuites » des néobanques : elles sont émettrices, et touchent l’interchange sur chaque paiement.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Sécurité et fraude</span>
+    <h3>Authentification forte, 3-D Secure, et qui paie la fraude</h3>
+    <p>La directive européenne <b>PSD2</b> impose l’<b>authentification forte</b> (SCA) pour la plupart des paiements en ligne : deux facteurs parmi <em>connaissance</em> (un code), <em>possession</em> (le téléphone) et <em>inhérence</em> (empreinte, visage). Pour les cartes, elle passe par <b>3-D Secure</b> : l’émetteur demande la validation dans son appli. La version 2 est <em>fondée sur le risque</em> : l’émetteur reçoit une centaine de données (appareil, historique, montant) et laisse passer sans friction les paiements peu risqués.</p>
+    <p><strong>Le transfert de responsabilité</strong> : quand un paiement a été authentifié par 3-D Secure, une fraude est à la charge de l’émetteur. Sans authentification, le titulaire conteste, l’émetteur fait une <em>rétrofacturation</em> (chargeback) et c’est le commerçant qui perd la vente.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Sans carte</span>
+    <h3>Virement instantané, TWINT, QR-facture</h3>
+    <ul>
+      <li><strong>Le virement instantané.</strong> En Suisse, le système SIC (exploité par SIX pour la Banque nationale) traite les virements instantanés depuis août 2024 : crédités en quelques secondes, 24 h sur 24, 7 jours sur 7, en messages ISO 20022. Dans l’UE, le règlement 2024/886 oblige les banques à recevoir puis à envoyer des virements SEPA instantanés (dix secondes au plus) au prix d’un virement ordinaire, avec vérification du nom du bénéficiaire.</li>
+      <li><strong>TWINT.</strong> L’appli est reliée au compte bancaire de l’utilisateur ; le paiement se fait en scannant un code QR (ou en le montrant), l’autorisation est donnée en temps réel, le commerçant est crédité par son acquéreur. Pas de réseau de cartes au milieu : TWINT est son propre schéma.</li>
+      <li><strong>La QR-facture.</strong> Depuis le 30 septembre 2022, elle a remplacé les bulletins de versement orange et rouges. Le code QR ne contient pas d’argent : il contient un <em>ordre de paiement prérempli</em> — IBAN, montant, référence — que l’appli bancaire du payeur lit et soumet après validation.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 3 min</span>
+    <h3>Qui fait quoi dans un paiement par carte ?</h3>
+    <div class="lab">
+      <div class="lab-title">Titulaire · émetteur · réseau · acquéreur · commerçant</div>
+      <div id="corRows"></div>
+      <div class="caption" id="corRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s1" data-need="Les huit étapes et le classement terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Suite : l’atelier →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.2 · Bloc 1</div><span class="mode m-do">🛠 Atelier · 55 min</span><h2>Simulateur d’interchange · IBAN et QR-facture</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 25 min · qui gagne, qui perd</span>
+    <h3>Faites varier la commission, l’interchange, la fraude et le volume</h3>
+    <p>Un commerçant en ligne à Genève. Chaque curseur change la répartition de l’argent entre les quatre coins. Répondez aux trois questions sous le tableau, puis expliquez ce que vous avez observé.</p>
+    <div class="calc" id="icCtrl"></div>
+    <div class="toggle-row" id="icTds" style="max-width:420px;"><button data-v="0" class="on">Sans 3-D Secure</button><button data-v="1">Avec 3-D Secure</button></div>
+    <div class="tblwrap"><table class="fx" id="icTab"></table></div>
+    <div id="icNum"></div>
+    <div class="wb" data-board="Qui gagne, qui perd ?|w2_interchange">
+      <div class="wq"><span class="qn">✍</span>Ce que vous avez observé : quel curseur déplace le plus d’argent, et vers qui ? Que change 3-D Secure, et pour qui ?</div>
+      <textarea data-work="w2_interchange" data-worklabel="Simulateur d’interchange — ce que j’ai observé" placeholder="p. ex. Baisser l’interchange à 0,2 % augmente la marge de l’acquéreur si la commission ne baisse pas ; avec 3-D Secure, la fraude passe du commerçant à l’émetteur…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 20 min · l’IBAN et la QR-facture</span>
+    <h3>Le contrôle qui évite de virer de l’argent au mauvais compte</h3>
+    <p>Un IBAN suisse a 21 caractères : <b>CH</b>, deux <b>chiffres de contrôle</b>, cinq chiffres d’<b>institution</b> (la banque), douze de <b>compte</b>. Pour le vérifier (norme ISO 13616) : on déplace les quatre premiers caractères à la fin, on remplace chaque lettre par un nombre (A = 10 … Z = 35 ; C = 12, H = 17), et on divise le grand nombre obtenu par 97. <b>Un IBAN est valable si le reste vaut 1.</b> Pour <em>calculer</em> les chiffres de contrôle, on fait la même chose avec « 00 » à leur place, et on prend 98 moins le reste.</p>
+    <div class="lab">
+      <div class="lab-title">Vérificateur d’IBAN, pas à pas</div>
+      <div class="trow" style="display:flex;gap:8px;flex-wrap:wrap;"><input class="numin" id="ibIn" style="width:280px;font-family:ui-monospace,Menlo,monospace" value="CH93 0076 2011 6238 5295 7"><button class="btn small" id="ibGo">Vérifier</button></div>
+      <div id="ibOut" class="srcnote" style="font-size:13px;color:var(--ink-soft);"></div>
+    </div>
+    <div id="ibNum"></div>
+    <p style="margin-top:14px;">La <b>référence QR</b> (27 chiffres) se termine par un chiffre de contrôle calculé « modulo 10 récursif » : on part d’un report de 0 ; pour chaque chiffre, le nouveau report est la case (report + chiffre) mod 10 du tableau <code>0 9 4 6 8 2 7 1 3 5</code> ; à la fin, le chiffre de contrôle est (10 − report) mod 10.</p>
+    <div class="lab">
+      <div class="lab-title">Calculateur de référence QR</div>
+      <div class="trow" style="display:flex;gap:8px;flex-wrap:wrap;"><input class="numin" id="qrIn" style="width:300px;font-family:ui-monospace,Menlo,monospace" placeholder="26 chiffres" value="21000000000313947143000901"><button class="btn small" id="qrGo">Calculer</button></div>
+      <div id="qrOut" class="srcnote" style="font-size:13px;color:var(--ink-soft);"></div>
+    </div>
+    <div id="qrNum"></div>
+    <p style="margin-top:14px;">Voici le contenu d’une QR-facture, tel que le code le transporte (exemple des directives de SIX). Une ligne par champ ; les lignes vides sont des champs facultatifs non remplis.</p>
+    <pre class="code" id="qrPayload"></pre>
+    <div class="lab">
+      <div class="lab-title">Vrai ou faux ?</div>
+      <div id="qrbRows"></div>
+      <div class="caption" id="qrbRowsCap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Mise en commun · 10 min</span>
+    <p>Deux questions : pourquoi l’interchange existe-t-il, et qui devrait la payer ? Pourquoi un paiement TWINT ou une QR-facture coûte-t-il moins cher au commerçant qu’un paiement par carte ?</p>
+  </div>
+  <div class="sec-status" data-sec="s2" data-need="Les six calculs, le vrai-ou-faux et le champ terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Retour</button>
+    <button class="btn" data-next="s3">Suite : bloc 2 · mobile money →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.3 · Bloc 2</div><span class="mode m-ex">🎤 Exposé · 15 min</span><h2>Mobile money et transferts</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome.</p>
+
+  <div class="card">
+    <span class="label def">Le mécanisme · la monnaie électronique</span>
+    <h3>D’où vient l’argent qui est dans un portefeuille Wave ou Orange Money ?</h3>
+    <ul>
+      <li><strong>Émission un pour un.</strong> Quand un client remet 10 000 FCFA en espèces à un agent, l’<span class="gloss" data-k="eme">établissement de monnaie électronique</span> inscrit 10 000 FCFA dans son portefeuille. En contrepartie, l’établissement détient 10 000 FCFA sur un <b>compte de cantonnement</b> dans une banque. La somme des portefeuilles est toujours égale à ce compte : la monnaie électronique n’est pas créée, elle est <em>convertie</em>.</li>
+      <li><strong>Le portefeuille est une créance</strong> du client sur l’établissement, et non un dépôt bancaire : l’établissement ne peut pas prêter cet argent. C’est la règle de la BCEAO dans l’UEMOA et de la directive 2009/110/CE dans l’UE.</li>
+      <li><strong>L’agent</strong> est un commerçant de quartier qui tient deux stocks : des <b>espèces</b> dans son tiroir et de la <b>monnaie électronique</b> (le <em>float</em>) sur son téléphone. Un <em>dépôt</em> (cash-in) lui fait recevoir des espèces et céder du float ; un <em>retrait</em> (cash-out), l’inverse. Il touche une commission par opération.</li>
+      <li><strong>Le rééquilibrage.</strong> Quand le float ou les espèces s’épuisent, l’agent doit aller à la banque ou chez un super-agent convertir l’un en l’autre — un déplacement, du temps, un risque de vol. Un agent à court refoule les clients : c’est le premier point de rupture d’un réseau.</li>
+    </ul>
+    <p><strong>L’effet mesuré.</strong> Au Kenya, l’accès à M-Pesa (lancé en 2007) a fait sortir de l’extrême pauvreté environ 2 % des ménages — quelque 194 000 — avec un effet plus fort pour les ménages dirigés par des femmes (Suri et Jack, <i>Science</i>, 2016).</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Le mécanisme · un transfert international</span>
+    <h3>Ce que coûte vraiment un envoi : les frais <em>et</em> le taux</h3>
+    <div class="formula">Coût total = montant envoyé − (montant reçu ÷ cours moyen du marché)</div>
+    <p>Le <b>cours moyen du marché</b> (mid-market) est le milieu entre achat et vente sur le marché des changes. Un prestataire qui affiche « 0 frais » se paie souvent dans le taux. Entre le franc CFA et l’euro, le cours est <b>fixe</b> : 1 € = 655,957 FCFA ; donc 1 CHF = 655,957 ÷ (prix d’un euro en francs) FCFA.</p>
+    <ul>
+      <li><strong>La banque (virement SWIFT)</strong> : l’argent passe par une chaîne de banques correspondantes, chacune peut prélever des frais ; un à trois jours ouvrés.</li>
+      <li><strong>Wise</strong> : l’argent ne traverse pas la frontière. Wise reçoit vos francs sur son compte suisse et paie le bénéficiaire depuis son compte local ; les flux dans les deux sens se compensent. Cours moyen du marché, frais affichés.</li>
+      <li><strong>Vers un portefeuille mobile</strong> : un service de transfert crédite directement le portefeuille Wave ou Orange Money du bénéficiaire, qui retire chez un agent ou paie avec.</li>
+      <li><strong>Un stablecoin</strong> : francs → USDC sur une plateforme d’échange (frais et écart), transfert sur la blockchain (frais de réseau), USDC → FCFA chez un intermédiaire local (écart). Chaque conversion a son coût (journée 4).</li>
+    </ul>
+    <p>L’objectif de développement durable 10.c des Nations unies : ramener le coût des envois à moins de <b>3 %</b> d’ici 2030. La moyenne mondiale mesurée par la Banque mondiale est d’environ <b>6 %</b> pour un envoi de 200 dollars, et l’Afrique subsaharienne est la région la plus chère.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 3 min</span>
+    <h3>Qu’arrive-t-il aux deux stocks de l’agent ?</h3>
+    <div class="lab">
+      <div class="lab-title">Espèces ↑ float ↓ · espèces ↓ float ↑ · rien ne change</div>
+      <div id="agRows"></div>
+      <div class="caption" id="agRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s3" data-need="Le classement termine cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Retour</button>
+    <button class="btn" data-next="s4">Suite : l’atelier →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.4 · Bloc 2</div><span class="mode m-do">🛠 Atelier · 50 min</span><h2>Une journée d’agent · 200 CHF de Genève à Dakar</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 20 min · le simulateur de réseau d’agents</span>
+    <h3>Vous tenez un point Wave à Dakar. Seize clients aujourd’hui.</h3>
+    <p>Vous commencez avec <b>150 000 FCFA</b> en espèces et <b>150 000 FCFA</b> de float. Chaque opération servie vous rapporte <b>1 %</b>. Avant chaque client, vous pouvez <b>rééquilibrer</b> (aller chez le super-agent répartir moitié-moitié) : <b>500 FCFA</b> de transport. Un client que vous ne pouvez pas servir part chez le concurrent : <b>−2 000 FCFA</b> (les commissions qu’il ne vous rapportera plus). Le maximum possible est de 4 950 FCFA.</p>
+    <div class="agent" id="agent"></div>
+    <div class="wb">
+      <div class="wq"><span class="qn">✍</span>Votre score, et votre stratégie en une phrase : quand avez-vous rééquilibré, et pourquoi à ce moment-là ?</div>
+      <textarea data-work="w2_agent" data-worklabel="Réseau d’agents — score et stratégie" placeholder="Le score s’insère à la fin de la partie ; ajoutez votre stratégie."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 30 min · avec les tarifs réels du jour</span>
+    <h3>Envoyer 200 CHF de Genève à Dakar par quatre canaux</h3>
+    <p>Par binôme. Pour chaque canal, allez sur le site ou le simulateur du prestataire <em>aujourd’hui</em>, simulez un envoi de 200 CHF vers le Sénégal, et relevez les frais, le taux de change proposé et le délai annoncé. Entrez d’abord le cours de l’euro en francs du jour (sur le site de la BNS, de Wise ou de votre banque) : le tableau en déduit le cours moyen CHF → FCFA.</p>
+    <div class="calc"><div class="ctrl"><label>Prix d’un euro en francs aujourd’hui <span class="val" id="rmMidLbl"></span></label><input type="number" id="rmEur" step="0.0001" value="0.93"></div></div>
+    <div class="tblwrap"><table class="fx" id="rmTab"></table></div>
+    <div class="btn-row"><button class="btn small" id="rmCopy">Copier le tableau dans mon carnet ↓</button><button class="btn small ghost" id="rmDemo">Remplir avec des valeurs d’exemple</button></div>
+    <div class="srcnote" id="rmNote">Les valeurs d’exemple sont fictives ; elles montrent seulement comment le tableau calcule. Le travail demandé est de relever les vraies.</div>
+    <div class="wb" data-board="Le meilleur canal, et pourquoi|w2_transfert">
+      <div class="wq"><span class="qn">✍</span>Le tableau, puis votre conclusion : quel canal pour quel client (qui a un compte, un smartphone, besoin d’espèces le jour même) ?</div>
+      <textarea data-work="w2_transfert" data-worklabel="Genève → Dakar, 200 CHF — coûts réels relevés et conclusion" style="min-height:140px"></textarea>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s4" data-need="La partie d’agent terminée, au moins trois canaux relevés et les deux champs terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Retour</button>
+    <button class="btn" data-next="s5">Suite : le quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.5 · Bloc 2</div><span class="mode m-quiz">✅ Quiz · 10 min</span><h2>Quiz de fin de matinée</h2></div>
+  <div class="card">
+    <span class="label play">Quiz interactif · compte dans la participation</span>
+    <h3>Huit questions, une tentative chacune, toutes expliquées</h3>
+    <p><strong>Lancé en classe</strong> ; cette page se déverrouille toute seule. Seul·e, sans assistant d’IA. Un quiz manqué vaut zéro, sauf disposition prise à l’avance.</p>
+    <div class="qlock" id="quizLock"></div>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Retour</button>
+    <button class="btn" data-next="s6">Suite : bloc 3 · API →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.6 · Bloc 3</div><span class="mode m-ex">🎤 Exposé · 20 min</span><h2>API et open banking</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome.</p>
+
+  <div class="card">
+    <span class="label def">Ce qu’est une API</span>
+    <h3>Une requête, une réponse — comme un formulaire rempli par un programme</h3>
+    <p>Une <b>API</b> (interface de programmation) permet à un programme d’en appeler un autre. Les API de paiement sont presque toutes <b>REST</b> : le programme envoie une <em>requête</em> HTTP à une adresse (l’<em>endpoint</em>) et reçoit une <em>réponse</em> en JSON.</p>
+<pre class="code"><span class="k">POST</span> https://api.stripe.com/v1/payment_intents          <span class="ln">←</span> méthode + endpoint
+<span class="k">Authorization:</span> Bearer sk_test_…                         <span class="ln">←</span> la clé secrète
+<span class="k">Idempotency-Key:</span> commande-2026-1043                     <span class="ln">←</span> anti-doublon
+{ <span class="s">"amount"</span>: 4990, <span class="s">"currency"</span>: <span class="s">"chf"</span> }                       <span class="ln">←</span> le corps
+
+<span class="k">200 OK</span>
+{ <span class="s">"id"</span>: <span class="s">"pi_3Q…"</span>, <span class="s">"status"</span>: <span class="s">"requires_payment_method"</span>, <span class="s">"amount"</span>: 4990 }</pre>
+    <ul>
+      <li><strong>Les méthodes</strong> : <code>GET</code> lit, <code>POST</code> crée ou déclenche, <code>DELETE</code> supprime.</li>
+      <li><strong>Les codes de statut</strong> : <code>200</code> réussi · <code>400</code> requête mal formée · <code>401</code> pas authentifié · <code>402</code> paiement refusé · <code>404</code> introuvable · <code>5xx</code> panne côté serveur.</li>
+      <li><strong>Les montants en plus petite unité</strong> : 49,90 CHF s’écrit <code>4990</code> (centimes) — sauf pour les monnaies sans décimales, comme le franc CFA : 10 000 FCFA s’écrit <code>10000</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Ce qui protège</span>
+    <h3>Clés, jetons, idempotence, webhooks</h3>
+    <ul>
+      <li><strong>Les clés.</strong> La <em>clé secrète</em> (<code>sk_test_…</code> en test, <code>sk_live_…</code> en production) donne tous les droits sur le compte : elle reste sur le serveur du commerçant, jamais dans une page web ni une appli. La <em>clé publiable</em> (<code>pk_…</code>) peut être dans la page ; elle ne permet que de transmettre des données de carte.</li>
+      <li><strong>Les jetons.</strong> Le numéro de carte va directement du navigateur au prestataire, qui renvoie au commerçant un <em>jeton</em> (<code>pm_…</code>). Le commerçant ne voit jamais la carte : il sort presque entièrement du périmètre de la norme de sécurité PCI DSS.</li>
+      <li><strong>L’idempotence.</strong> Si la connexion coupe pendant un paiement, le programme renvoie la requête. Avec la même <code>Idempotency-Key</code>, le prestataire renvoie le résultat de la première au lieu de débiter deux fois.</li>
+      <li><strong>Les webhooks.</strong> Certains résultats arrivent plus tard (validation 3-D Secure, virement). Au lieu de redemander sans cesse, le commerçant donne une adresse ; le prestataire l’appelle quand le statut change (<code>payment_intent.succeeded</code>). L’appel est signé, pour qu’un pirate ne puisse pas annoncer un faux paiement.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">L’open banking</span>
+    <h3>PSD2 : les banques doivent ouvrir les comptes à des tiers autorisés</h3>
+    <p>Depuis la PSD2 (directive 2015/2366, appliquée depuis 2018), une banque européenne doit donner accès aux comptes de paiement, <em>avec le consentement du client</em>, à deux types de prestataires agréés :</p>
+    <ul>
+      <li><strong>AISP</strong> — prestataire d’<em>information</em> sur les comptes : il <em>lit</em> soldes et transactions (agrégateur budgétaire, outil comptable, scoring de crédit).</li>
+      <li><strong>PISP</strong> — prestataire d’<em>initiation</em> de paiement : il <em>déclenche</em> un virement depuis le compte du client (payer en ligne par virement, sans carte).</li>
+    </ul>
+    <p>Le client donne son consentement dans l’appli de sa banque (flux OAuth 2.0, avec authentification forte) ; le tiers reçoit un <em>jeton d’accès</em> limité dans le temps et dans les droits, jamais le mot de passe. Les API suivent des standards comme NextGenPSD2 du Berlin Group. <strong>La Suisse n’a pas d’obligation légale</strong> : l’ouverture s’y fait par accords de marché, notamment par la plateforme bLink de SIX. Dans l’UE, la révision (PSD3 et règlement sur les services de paiement) est en cours d’adoption.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 3 min</span>
+    <h3>AISP, PISP, ou ni l’un ni l’autre ?</h3>
+    <div class="lab">
+      <div class="lab-title">Classez chaque service</div>
+      <div id="psdRows"></div>
+      <div class="caption" id="psdRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s6" data-need="Le classement termine cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Retour</button>
+    <button class="btn" data-next="s7">Suite : la console API →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.7 · Bloc 3</div><span class="mode m-do">🛠 Atelier · 55 min</span><h2>Atelier API · une plateforme de paiement en mode test</h2></div>
+
+  <div class="card">
+    <span class="label play">Par équipe · huit missions</span>
+    <h3>Créer un client, encaisser 49,90 CHF, se faire refuser, passer le 3-D Secure, rembourser</h3>
+    <p>La console ci-dessous imite l’API de Stripe en mode test, simplifiée : corps en JSON, identifiants fictifs, aucun argent réel, rien ne quitte votre navigateur. Choisissez un endpoint, cliquez « Modèle » pour préremplir le corps, modifiez-le, envoyez, lisez la réponse et le journal des webhooks. La confirmation et la lecture portent sur le dernier paiement créé (ou sur celui dont vous mettez l’<code>"id"</code> dans le corps). Les missions se cochent toutes seules.</p>
+    <div class="missions" id="apiMissions"></div>
+    <div class="api">
+      <div class="pane">
+        <h5>Requête</h5>
+        <select id="apiEp"></select>
+        <div class="row2"><span>Authorization</span><input id="apiKey" value="Bearer sk_test_mfb545_demo"></div>
+        <div class="row2"><span>Idempotency-Key</span><input id="apiIdem" placeholder="(facultatif)"></div>
+        <textarea id="apiBody" spellcheck="false"></textarea>
+        <div class="btn-row"><button class="btn small ghost" id="apiTpl">Modèle</button><button class="btn small" id="apiSend">Envoyer →</button><button class="btn small ghost" id="api3ds" style="display:none">Simuler : le client valide le 3-D Secure</button></div>
+        <div class="srcnote">Moyens de paiement de test : <code>pm_card_visa</code> (accepté) · <code>pm_card_chargeDeclinedInsufficientFunds</code> (refusé, fonds insuffisants) · <code>pm_card_authenticationRequired</code> (3-D Secure exigé). Ce sont ceux de la documentation de Stripe ; avec un vrai compte Stripe en mode test (gratuit), les mêmes requêtes marchent.</div>
+      </div>
+      <div class="pane">
+        <h5>Réponse</h5>
+        <div id="apiStatus"></div>
+        <pre class="code" id="apiResp" style="min-height:160px;white-space:pre-wrap;">—</pre>
+        <h5 style="margin-top:10px;">Webhooks reçus par votre serveur</h5>
+        <div class="hooks" id="apiHooks"><div style="color:var(--grey)">aucun pour l’instant</div></div>
+      </div>
+    </div>
+    <div class="wb" style="margin-top:12px;">
+      <div class="wq"><span class="qn">✍</span>Deux réponses courtes : pourquoi le commerçant attend-il le webhook avant d’expédier la commande ? Que pourrait faire quelqu’un qui trouve votre clé secrète dans le code de votre site ?</div>
+      <textarea data-work="w2_api" data-worklabel="Atelier API — webhook et clé secrète" placeholder="p. ex. Le statut final peut arriver après le 3-D Secure… ; avec la clé secrète on peut rembourser, lire les clients…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Mise en commun · 15 min</span>
+    <p>Quelle mission a posé problème, et quel message d’erreur vous a mis sur la voie ? Où, dans le parcours de votre propre fintech, une API d’un tiers fera-t-elle une partie du travail ?</p>
+  </div>
+  <div class="sec-status" data-sec="s7" data-need="Les huit missions et le champ terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Retour</button>
+    <button class="btn" data-next="s8">Suite : bloc 4 · la négociation →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.8 ============================ -->
+<section class="screen" id="s8">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.8 · Bloc 4</div><span class="mode m-ex">🎤 Consignes · 10 min</span><h2>Jeu de rôle · la négociation à trois</h2></div>
+
+  <div class="card">
+    <span class="label def">La situation</span>
+    <h3>Un commerçant en ligne, son prestataire de paiement et un réseau de cartes</h3>
+    <p><b>Teranga Market</b>, boutique en ligne genevoise (épicerie et cosmétiques pour la diaspora ouest-africaine), encaisse <b>1,2 million de CHF</b> par an par carte. Son prestataire, <b>PayLéman</b>, lui facture 1,8 %. Un concurrent propose 1,4 %. La fraude en ligne atteint 0,4 % des ventes, au-dessus du seuil de surveillance du réseau de cartes <b>Kora</b>. Les trois parties se rencontrent pour fixer : <b>la commission</b>, <b>qui paie la fraude</b>, et <b>l’activation de 3-D Secure</b>.</p>
+    <p><b>Les règles.</b> Les trois équipes du projet forment trois tables ; à chaque table, une personne par rôle (trois par table). Lisez <em>uniquement votre carte</em>. 20 minutes de négociation ; un accord se note dans le calculateur de la section suivante. Pas d’accord est un résultat possible — à comparer à votre solution de repli.</p>
+    <div class="roles" id="roles">
+      <div class="role" data-r="m"><div class="rh">🛒 Le commerçant</div><div class="rs">Teranga Market</div></div>
+      <div class="role" data-r="p"><div class="rh">🏦 Le prestataire</div><div class="rs">PayLéman SA, acquéreur</div></div>
+      <div class="role" data-r="n"><div class="rh">🌐 Le réseau</div><div class="rs">Kora, réseau de cartes</div></div>
+    </div>
+    <div class="rcard" id="rc_m"><div class="secret">Carte confidentielle · commerçant</div><h4>Teranga Market</h4><ul>
+      <li>Ventes par carte : 1 200 000 CHF par an, panier moyen 60 CHF, marge brute 30 %.</li>
+      <li>Aujourd’hui : commission 1,8 % (21 600 CHF) et fraude 0,4 % entièrement à votre charge (4 800 CHF) — <b>26 400 CHF par an</b>.</li>
+      <li>Solution de repli : le concurrent à 1,4 %, mais changer coûte 3 000 CHF et deux semaines ; la fraude resterait à votre charge — <b>24 600 CHF</b> la première année.</li>
+      <li>Vous craignez 3-D Secure : on vous a dit que ça fait fuir les clients. (Ce que vous ignorez : avec la version 2, la perte de ventes est d’environ 1 %.)</li>
+      <li><b>Votre objectif</b> : un coût total des paiements (commission + fraude + ventes perdues) sous <b>21 000 CHF par an</b>.</li></ul></div>
+    <div class="rcard" id="rc_p"><div class="secret">Carte confidentielle · prestataire</div><h4>PayLéman SA</h4><ul>
+      <li>Vos coûts : interchange et frais du réseau ≈ 0,65 % en moyenne, traitement 0,20 % — <b>0,85 %</b> au total. À 1,8 %, ce client vous rapporte 11 400 CHF par an.</li>
+      <li>Le réseau vous facture une pénalité de 0,10 % du volume (1 200 CHF) tant que la fraude de ce commerçant dépasse 0,3 %.</li>
+      <li>Vous pouvez offrir l’intégration de 3-D Secure (elle vous coûte 1 000 CHF une fois).</li>
+      <li>Perdre le client : 0 CHF.</li>
+      <li><b>Votre objectif</b> : garder le client avec au moins <b>4 800 CHF</b> de résultat par an, et faire activer 3-D Secure.</li></ul></div>
+    <div class="rcard" id="rc_n"><div class="secret">Carte confidentielle · réseau</div><h4>Kora</h4><ul>
+      <li>Vos frais : 0,10 % du volume (1 200 CHF par an sur ce commerçant), compris dans les 0,65 % du prestataire.</li>
+      <li>Vous ne pouvez pas changer l’interchange pour un seul commerçant : elle est fixée pour tout le réseau.</li>
+      <li>Vous pouvez offrir une remise de 0,05 % (600 CHF par an) au prestataire si 3-D Secure est activé.</li>
+      <li>Un commerçant mécontent peut pousser ses clients vers TWINT ou le virement instantané — qui ne passent pas par vous.</li>
+      <li><b>Votre objectif</b> : 3-D Secure activé, fraude sous 0,3 %, et le volume reste sur votre réseau.</li></ul></div>
+  </div>
+  <div class="sec-status" data-sec="s8" data-need="Choisir son rôle et lire sa carte terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Retour</button>
+    <button class="btn" data-next="s9">Suite : négocier, puis votre flux →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.9 ============================ -->
+<section class="screen" id="s9">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.9 · Bloc 4</div><span class="mode m-do">🛠 Négociation et projet · 65 min</span><h2>L’accord, puis le flux de paiement de votre fintech</h2></div>
+
+  <div class="card">
+    <span class="label play">20 min · négociation · 15 min · débriefing</span>
+    <h3>Entrez les termes de votre accord : le calculateur donne le résultat de chaque partie</h3>
+    <div class="timer" data-min="20" data-label="Négociation"></div>
+    <div class="calc" id="dealCtrl"></div>
+    <div class="tblwrap"><table class="fx" id="dealTab"></table></div>
+    <p class="caption" id="dealCap"></p>
+    <div class="wb" data-board="Les accords des trois tables|w2_nego">
+      <div class="wq"><span class="qn">✍</span>Votre rôle, les termes de l’accord (ou l’absence d’accord), et l’argument qui a fait bouger la table.</div>
+      <textarea data-work="w2_nego" data-worklabel="Négociation à trois — rôle, accord, argument décisif" placeholder="Le bouton du calculateur insère les termes ; ajoutez votre rôle et l’argument décisif."></textarea>
+    </div>
+    <p>Au débriefing, les trois tables comparent leurs accords. La question à se poser : <em>un accord meilleur pour les trois existait-il</em> ? Que fallait-il savoir, que seul un rôle savait ?</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">30 min · par équipe · le projet</span>
+    <h3>Le flux de paiement et le modèle de revenus de votre fintech</h3>
+    <p>Reprenez le problème de la journée 1. Dessinez d’abord le flux sur papier (qui paie qui, par quel moyen, combien de temps, qui détient l’argent entre-temps), puis décrivez-le ici. Chaque membre remplit son carnet — la même version pour toute l’équipe.</p>
+    <div class="wb" data-board="Les flux de paiement|w2_flux">
+      <div class="wq"><span class="qn">1.</span>Le flux : qui paie qui, par quel rail (carte, virement instantané, TWINT, mobile money, stablecoin…), en combien de temps, qui détient l’argent entre-temps, et sous quelle licence.</div>
+      <textarea data-work="w2_flux" data-worklabel="Projet — le flux de paiement" style="min-height:120px" placeholder="p. ex. L’étudiant paie en francs par TWINT → notre compte de cantonnement chez une banque partenaire (J+0) → conversion EUR/FCFA → crédit du portefeuille Wave du bénéficiaire par l’API d’un partenaire agréé BCEAO (quelques minutes)…"></textarea>
+    </div>
+    <div class="wb" data-board="Les modèles de revenus|w2_revenus">
+      <div class="wq"><span class="qn">2.</span>Le modèle de revenus : qui paie, le mécanisme (par transaction, marge de change, abonnement…), le prix, et un ARPU estimé avec votre calcul.</div>
+      <textarea data-work="w2_revenus" data-worklabel="Projet — le modèle de revenus et l’ARPU estimé" style="min-height:110px" placeholder="p. ex. 1,5 % par envoi, pas de marge de change ; 200 CHF par mois et par client → ARPU 3 CHF ; coût variable : …"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Avant la journée 3 · samedi 24 octobre (le lendemain)</span>
+    <ul>
+      <li>Vérifiez que votre compte Google ouvre <a href="https://colab.research.google.com" target="_blank" rel="noopener">Google Colab ↗</a> : le bloc 1 de demain est un notebook guidé de scoring de crédit.</li>
+      <li>La journée 3 ajoute au projet le produit de crédit ou d’épargne : notez de quoi votre client aurait besoin d’emprunter ou d’épargner, combien, pour combien de temps.</li>
+    </ul>
+  </div>
+  <div class="sec-status" data-sec="s9" data-need="L’accord enregistré dans le calculateur et les trois champs terminent cette section — et la journée."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Retour</button>
+    <button class="btn" data-home>Menu de la journée</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   JOURNÉE 2 — configuration + widgets. The engine is journee.js.
+   Every number was recomputed in Python before shipping: the interchange
+   tasks (0,66 · 1 600 · 0,90), the IBAN remainders (CH93… → 1, the typo
+   → 2, check digits 93), the QR reference (…0001 → 3; SIX's example → 7),
+   the agent game (no rebalancing 1 300, best 4 950 with two), and the
+   negotiation (status quo 26 400 / 10 200; the example deal 20 100 /
+   5 300 / 600; the merchant's fallback 24 600).
+   ===================================================================== */
+var GLOSSARY={
+  psp:['prestataire de services de paiement (PSP)','Une entreprise qui permet à un commerçant d’accepter des paiements — cartes, wallets, virements — par un seul contrat et une seule intégration technique. Il est souvent lui-même acquéreur, ou travaille avec un acquéreur.'],
+  eme:['établissement de monnaie électronique (EME)','Établissement agréé (par la BCEAO dans l’UEMOA) pour émettre de la monnaie électronique contre des fonds reçus, conservés un pour un sur un compte de cantonnement dans une banque. Il ne peut pas prêter ces fonds.']
+};
+var DAY={
+  mod:'w2', key:'mfb545_w2_progress_v1', title:'Journée 2 · Paiements et monnaie digitale',
+  blocks:[
+    {n:1,t:'09h00–10h30',name:'anatomie d’un paiement · interchange, IBAN, QR-facture',parts:[['ex',20],['do',55],['co',15]]},
+    {n:2,t:'10h45–12h15',name:'mobile money · Genève → Dakar · le quiz',parts:[['ex',15],['do',50],['quiz',10],['co',15]]},
+    {n:3,t:'13h30–15h00',name:'API et open banking · la console en mode test',parts:[['ex',20],['do',55],['co',15]]},
+    {n:4,t:'15h15–16h45',name:'la négociation à trois · le flux de votre fintech',parts:[['ex',10],['do',25],['co',15],['do',40]]}
+  ],
+  sections:[
+    {id:'s1',num:'2.1',name:'Anatomie d’un paiement',tag:'Quatre coins · autorisation, compensation, règlement · qui gagne quoi · 3-D Secure · virement instantané et QR-facture',mode:'ex',min:20,block:1},
+    {id:'s2',num:'2.2',name:'Interchange · IBAN · QR-facture',tag:'Le simulateur de répartition · vérifier un IBAN · la référence QR',mode:'do',min:55,block:1},
+    {id:'s3',num:'2.3',name:'Mobile money et transferts',tag:'La monnaie électronique · l’agent et ses deux stocks · le vrai coût d’un envoi',mode:'ex',min:15,block:2},
+    {id:'s4',num:'2.4',name:'Une journée d’agent · Genève → Dakar',tag:'Le simulateur d’agent · 200 CHF par quatre canaux, tarifs du jour',mode:'do',min:50,block:2},
+    {id:'s5',num:'2.5',name:'Quiz de fin de matinée',tag:'Huit questions · lancé en classe · compte dans la participation',mode:'quiz',min:10,block:2},
+    {id:'s6',num:'2.6',name:'API et open banking',tag:'Requête et réponse · clés, jetons, idempotence, webhooks · PSD2, AISP et PISP',mode:'ex',min:20,block:3},
+    {id:'s7',num:'2.7',name:'Atelier API en mode test',tag:'Huit missions dans une console de paiement',mode:'do',min:55,block:3},
+    {id:'s8',num:'2.8',name:'La négociation à trois',tag:'Commerçant, prestataire, réseau · trois cartes confidentielles',mode:'ex',min:10,block:4},
+    {id:'s9',num:'2.9',name:'L’accord · le flux de votre fintech',tag:'Le calculateur d’accord · flux de paiement et modèle de revenus du projet',mode:'do',min:65,block:4}
+  ],
+  secCheck:function(a){
+    if(a.st.card&&a.cls.corRows)a.mark('s1');
+    if(['i1','i2','i3','b1','b2','b3'].every(function(k){return a.st[k];})&&a.cls.qrbRows&&a.filled('w2_interchange'))a.mark('s2');
+    if(a.cls.agRows)a.mark('s3');
+    if(a.st.agent&&a.st.remit&&a.all(['w2_agent','w2_transfert']))a.mark('s4');
+    if(a.cls.psdRows)a.mark('s6');
+    if([1,2,3,4,5,6,7,8].every(function(k){return a.st['api'+k];})&&a.filled('w2_api'))a.mark('s7');
+    if(a.st.role)a.mark('s8');
+    if(a.st.deal&&a.all(['w2_nego','w2_flux','w2_revenus']))a.mark('s9');
+  }
+};
+</script>
+<script src="journee.js"></script>
+<script>
+/* ---- 2.1 the card payment walk ---- */
+buildSteps('cardSteps','cardNext',[
+  '<b>1 · Au terminal.</b> La carte (ou le téléphone) génère un <em>cryptogramme</em> à usage unique à partir d’une clé secrète gravée dans la puce : copier le numéro ne suffit pas pour cloner une carte à puce. Dans Apple Pay ou Google Pay, le vrai numéro est même remplacé par un <em>jeton</em> propre au téléphone.',
+  '<b>2 · Demande d’autorisation.</b> Le terminal envoie à l’acquéreur un message au format <b>ISO 8583</b> : montant (480 centimes), devise, numéro de carte ou jeton, cryptogramme, identifiant du commerçant.',
+  '<b>3 · Acheminement.</b> L’acquéreur transmet au réseau (VisaNet, Banknet chez Mastercard), qui lit les premiers chiffres de la carte — le <b>BIN</b>, 6 à 8 chiffres qui identifient l’émetteur — et route le message vers la bonne banque, n’importe où dans le monde.',
+  '<b>4 · La décision de l’émetteur.</b> En quelques millisecondes : carte valide ? cryptogramme juste ? solde ou limite suffisants ? Et un <b>modèle de détection de fraude</b> note la transaction (lieu, heure, montant, habitudes du client). Réponse codée : <code>00</code> accepté, <code>51</code> fonds insuffisants, <code>05</code> refusé.',
+  '<b>5 · Retour au terminal</b> en une à deux secondes : « Paiement accepté ». Aucun argent n’a encore bougé — l’émetteur a seulement <em>réservé</em> le montant sur le compte du titulaire.',
+  '<b>6 · Compensation (le soir).</b> Le commerçant ou son prestataire envoie le lot des transactions de la journée. Le réseau calcule, pour chaque banque, ce qu’elle doit et ce qu’on lui doit — interchange et frais du réseau compris.',
+  '<b>7 · Règlement (J+1).</b> Les positions nettes sont réglées entre banques de règlement : l’émetteur paie l’acquéreur le montant des achats <em>moins l’interchange</em>.',
+  '<b>8 · Le commerçant est crédité</b> par l’acquéreur, moins la commission (MDR), un à trois jours après. Pendant plusieurs semaines, le titulaire peut encore contester : c’est la fenêtre de la <em>rétrofacturation</em>.'
+],'card');
+buildClassify('corRows','corRowsCap',
+  [['T','Titulaire'],['E','Émetteur'],['R','Réseau'],['A','Acquéreur'],['C','Commerçant']],
+  [
+    {s:'Reçoit l’interchange',a:'E',w:'L’acquéreur la verse à l’émetteur ; elle rémunère le risque et le crédit portés par la banque de la carte.'},
+    {s:'Paie la commission (MDR)',a:'C',w:'Elle est retenue sur ce que l’acquéreur lui reverse.'},
+    {s:'Achemine la demande vers la bonne banque grâce au BIN',a:'R',w:'C’est le cœur du métier de Visa et Mastercard : un aiguillage mondial et des règles communes.'},
+    {s:'Accepte ou refuse le paiement',a:'E',w:'Seule la banque de la carte connaît le solde, la limite et les habitudes du client.'},
+    {s:'Crédite le commerçant, un à trois jours plus tard',a:'A',w:'L’acquéreur (souvent par l’intermédiaire d’un prestataire de paiement) a le contrat avec le commerçant.'},
+    {s:'Porte la fraude sur un paiement authentifié par 3-D Secure',a:'E',w:'Le transfert de responsabilité : l’authentification forte fait passer le risque du commerçant à l’émetteur.'},
+    {s:'Fixe le barème de l’interchange (sous le contrôle des autorités)',a:'R',w:'Le réseau fixe les barèmes ; l’UE les plafonne par règlement, la COMCO les encadre en Suisse.'}
+  ],
+  'cinq rôles ; la commission du commerçant finance les trois du milieu.',null);
+
+/* ---- 2.2 A · the interchange simulator ---- */
+(function icSim(){
+  var C=[['tk','Panier moyen (CHF)',10,300,5,50,''],['nb','Transactions par mois',100,10000,100,2000,''],['mdr','Commission du commerçant',0.5,3,0.05,1.5,'%'],
+         ['ic','Interchange',0,1.5,0.02,0.44,'%'],['sf','Frais du réseau',0,0.5,0.01,0.15,'%'],['pc','Coût de traitement de l’acquéreur',0,0.6,0.01,0.25,'%'],['fr','Taux de fraude',0,1,0.01,0.10,'%']];
+  var v={},tds=false,ctrl=document.getElementById('icCtrl'),tab=document.getElementById('icTab');
+  ctrl.innerHTML=C.map(function(c){v[c[0]]=c[5];return '<div class="ctrl"><label>'+c[1]+' <span class="val" id="iv_'+c[0]+'"></span></label><input type="range" min="'+c[2]+'" max="'+c[3]+'" step="'+c[4]+'" value="'+c[5]+'" data-k="'+c[0]+'"></div>';}).join('');
+  ctrl.querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){v[i.dataset.k]=parseFloat(i.value);paint();});});
+  document.getElementById('icTds').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;tds=b.dataset.v==='1';document.querySelectorAll('#icTds button').forEach(function(x){x.classList.toggle('on',x===b);});paint();});
+  function cl(x){return x>=0?'pos':'neg';}
+  function paint(){
+    C.forEach(function(c){document.getElementById('iv_'+c[0]).textContent=fmt(v[c[0]],c[4]<1?2:0)+(c[6]?' %':'');});
+    var V=v.tk*v.nb,mdr=V*v.mdr/100,ic=V*v.ic/100,sf=V*v.sf/100,pc=V*v.pc/100,fr=V*v.fr/100;
+    var acq=mdr-ic-sf-pc, iss=ic-(tds?fr:0), mer=-(mdr+(tds?0:fr));
+    var per=function(x){return fmt(x/V*100,2);};
+    tab.innerHTML='<tr><th>Par mois · volume '+fmt(V)+' CHF</th><th>CHF</th><th>pour 100 CHF</th></tr>'+
+      '<tr><td>Commerçant — commission'+(tds?'':' + fraude (rétrofacturations)')+'</td><td class="'+cl(mer)+'">'+fmt(mer,2)+'</td><td>'+per(mer)+'</td></tr>'+
+      '<tr><td>Émetteur — interchange'+(tds?' − fraude (transfert de responsabilité)':'')+'</td><td class="'+cl(iss)+'">'+fmt(iss,2)+'</td><td>'+per(iss)+'</td></tr>'+
+      '<tr><td>Réseau — frais</td><td class="pos">'+fmt(sf,2)+'</td><td>'+per(sf)+'</td></tr>'+
+      '<tr><td>Acquéreur — commission − interchange − frais du réseau − traitement</td><td class="'+cl(acq)+'">'+fmt(acq,2)+'</td><td>'+per(acq)+'</td></tr>'+
+      '<tr class="tot"><td>Fraude perdue, portée par '+(tds?'l’émetteur':'le commerçant')+'</td><td>'+fmt(fr,2)+'</td><td>'+per(fr)+'</td></tr>';
+  }
+  paint();
+})();
+buildNum('icNum',[
+  {id:'i1',q:'Avec les réglages de départ (commission 1,5 %, interchange 0,44 %, réseau 0,15 %, traitement 0,25 %), combien l’acquéreur garde-t-il sur un achat de <b>100 CHF</b> ?',a:0.66,tol:0.001,unit:'CHF',w:'1,50 − 0,44 − 0,15 − 0,25 = 0,66 CHF.',hint:'Ce que paie le commerçant, moins ce que l’acquéreur reverse ou dépense.'},
+  {id:'i2',q:'Toujours les réglages de départ, sans 3-D Secure : 2 000 transactions de 50 CHF par mois et 0,10 % de fraude. Coût total des paiements pour le commerçant, <b>par mois</b> ?',a:1600,unit:'CHF',w:'Volume 100 000 CHF : commission 1 500 + fraude 100 = 1 600 CHF.',hint:'Commission sur le volume, plus la fraude qu’il porte sans 3-D Secure.'},
+  {id:'i3',q:'L’interchange tombe à <b>0,20 %</b> (le plafond européen du débit) mais la commission du commerçant reste à 1,5 %. Combien l’acquéreur garde-t-il sur 100 CHF ?',a:0.90,tol:0.001,unit:'CHF',w:'1,50 − 0,20 − 0,15 − 0,25 = 0,90 CHF : sans concurrence entre acquéreurs, la baisse de l’interchange profite à l’acquéreur, pas au commerçant.',hint:'Seule l’interchange change.'}
+]);
+
+/* ---- 2.2 B · IBAN + QR reference ---- */
+function mod97(digits){var r=0;for(var i=0;i<digits.length;i+=7){r=parseInt(String(r)+digits.substr(i,7),10)%97;}return r;}
+function ibanDigits(s){return s.split('').map(function(c){return /[A-Z]/.test(c)?String(c.charCodeAt(0)-55):c;}).join('');}
+document.getElementById('ibGo').addEventListener('click',function(){
+  var s=document.getElementById('ibIn').value.toUpperCase().replace(/\s/g,''),out=document.getElementById('ibOut');
+  if(!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(s)){out.innerHTML='Format non reconnu : deux lettres, deux chiffres, puis le numéro de compte.';return;}
+  var r=s.slice(4)+s.slice(0,4),d=ibanDigits(r),m=mod97(d);
+  out.innerHTML='1. On déplace <b>'+s.slice(0,4)+'</b> à la fin : <code>'+r+'</code><br>2. Les lettres deviennent des nombres : <code>'+d+'</code><br>3. Reste de la division par 97 : <b>'+m+'</b> → '+(m===1?'<b style="color:var(--ok)">IBAN valable</b>':'<b style="color:#9B2335">IBAN non valable</b> (il faut 1)');
+});
+document.getElementById('ibGo').click();
+buildNum('ibNum',[
+  {id:'b1',q:'Calculez les deux chiffres de contrôle de l’IBAN suisse dont le reste est <code>0076 2011 6238 5295 7</code> : CH<b>??</b> 0076 2011 6238 5295 7. <i>(Astuce : vérifiez « CH00 0076 2011 6238 5295 7 » dans l’outil, puis 98 − reste.)</i>',a:93,tol:0,unit:'',w:'Avec 00, le reste vaut 5 ; 98 − 5 = 93. C’est l’IBAN d’exemple de la norme : CH93 0076 2011 6238 5295 7.',hint:'Mettez 00 à la place des chiffres de contrôle, lisez le reste, faites 98 moins ce reste.'},
+  {id:'b2',q:'Un client a interverti les deux derniers chiffres : <code>CH93 0076 2011 6238 5297 5</code>. Quel reste obtient-on ?',a:2,tol:0,unit:'',w:'Reste 2, pas 1 : l’IBAN est refusé avant même d’envoyer l’argent. Le contrôle modulo 97 détecte toutes les erreurs d’un seul caractère et presque toutes les inversions de deux chiffres voisins.',hint:'Collez-le dans l’outil.'}
+]);
+var QT=[0,9,4,6,8,2,7,1,3,5];
+function m10(s){var c=0,rows=[];for(var i=0;i<s.length;i++){var n=QT[(c+parseInt(s[i],10))%10];rows.push(c+'+'+s[i]+'→'+n);c=n;}return {cd:(10-c)%10,rows:rows};}
+document.getElementById('qrGo').addEventListener('click',function(){
+  var s=document.getElementById('qrIn').value.replace(/\s/g,''),out=document.getElementById('qrOut');
+  if(!/^\d{26}$/.test(s)){out.innerHTML='Il faut exactement 26 chiffres (la référence QR complète en a 27 : ces 26 plus le chiffre de contrôle).';return;}
+  var r=m10(s);out.innerHTML='Reports successifs : <code>'+r.rows.join(' · ')+'</code><br>Chiffre de contrôle : <b>'+r.cd+'</b> → référence complète <code>'+s+r.cd+'</code>';
+});
+document.getElementById('qrGo').click();
+buildNum('qrNum',[
+  {id:'b3',q:'Une PME numérote ses factures et en tire la référence <code>00000000000000202610230001</code> (26 chiffres). Quel est le 27<sup>e</sup>, le chiffre de contrôle ?',a:3,tol:0,unit:'',w:'Le report final vaut 7 ; (10 − 7) mod 10 = 3. Référence complète : 000000000000002026102300013.',hint:'Collez les 26 chiffres dans le calculateur et suivez les reports.'}
+]);
+(function payload(){
+  var L=['SPC','0200','1','CH4431999123000889012','S','Robert Schneider AG','Rue du Lac','1268','2501','Biel','CH','','','','','','','','1949.75','CHF','S','Pia-Maria Rutschmann-Schnyder','Grosse Marktgasse','28','9400','Rorschach','CH','QRR','210000000003139471430009017','Order of 15 June 2020','EPD'];
+  var N={1:'type',2:'version',3:'codage',4:'IBAN du créancier',5:'type d’adresse',6:'nom',7:'rue',8:'numéro',9:'NPA',10:'localité',11:'pays',12:'(créancier final, 7 lignes)',19:'montant',20:'monnaie',21:'débiteur : type d’adresse',22:'débiteur : nom',28:'type de référence',29:'référence',30:'communication',31:'fin des données'};
+  document.getElementById('qrPayload').innerHTML=L.map(function(x,i){return '<span class="ln">'+(i+1)+'</span>'+(x?esc(x):'<span style="color:#56707C">·</span>')+(N[i+1]?'   <span style="color:#6F8C99">← '+N[i+1]+'</span>':'');}).join('\n');
+})();
+buildClassify('qrbRows','qrbRowsCap',
+  [['V','Vrai'],['F','Faux']],
+  [
+    {s:'Ligne 4 : c’est un <b>QR-IBAN</b>, parce que son numéro d’institution (31999) est compris entre 30000 et 31999.',a:'V',w:'Un QR-IBAN se reconnaît à ce numéro d’institution ; il sert à recevoir des paiements avec référence, que la banque rapproche automatiquement des factures.'},
+    {s:'Avec un QR-IBAN, on peut mettre une référence libre au format international (SCOR) au lieu de la référence QR.',a:'F',w:'Un QR-IBAN exige une référence QR (QRR, 27 chiffres). La référence SCOR (ISO 11649, « RF… ») s’utilise avec un IBAN ordinaire.'},
+    {s:'Le dernier chiffre de la référence (ligne 29) est un chiffre de contrôle modulo 10 récursif.',a:'V',w:'C’est le 7 que le calculateur retrouve à partir des 26 premiers chiffres.'},
+    {s:'Scanner ce code avec l’appli de sa banque envoie l’argent immédiatement, sans confirmation.',a:'F',w:'Le code préremplit l’ordre ; le payeur vérifie et confirme. Le code QR ne contient que des données, pas d’argent ni d’autorisation.'},
+    {s:'La ligne du montant peut être laissée vide : le payeur saisit alors le montant lui-même.',a:'V',w:'Le montant est facultatif — utile pour les dons, par exemple.'},
+    {s:'La QR-facture a remplacé les bulletins de versement orange et rouges, qui ne sont plus acceptés depuis le 30 septembre 2022.',a:'V',w:'La place financière suisse a migré vers la QR-facture, alignée sur la norme ISO 20022 des virements.'}
+  ],
+  'un code QR de paiement est un formulaire prérempli, protégé par des chiffres de contrôle.',null);
+
+/* ---- 2.3 agent stocks ---- */
+buildClassify('agRows','agRowsCap',
+  [['CU','Espèces ↑ float ↓'],['CD','Espèces ↓ float ↑'],['N','Rien ne change']],
+  [
+    {s:'Une cliente dépose 10 000 FCFA pour les envoyer à sa mère',a:'CU',w:'Un dépôt (cash-in) : l’agent reçoit des espèces et transfère du float dans le portefeuille de la cliente.'},
+    {s:'Un client retire 25 000 FCFA reçus de son frère en France',a:'CD',w:'Un retrait (cash-out) : l’agent donne des espèces et reçoit du float.'},
+    {s:'Deux clients s’envoient de l’argent d’un téléphone à l’autre',a:'N',w:'Un transfert P2P ne passe pas par l’agent : seuls les deux portefeuilles bougent.'},
+    {s:'L’agent va à la banque déposer ses espèces en trop contre du float',a:'CD',w:'Le rééquilibrage : il convertit ses espèces en float pour pouvoir servir les prochains dépôts.'},
+    {s:'Une cliente paie le boutiquier d’à côté en scannant son code QR',a:'N',w:'Un paiement marchand : de portefeuille à portefeuille, sans espèces.'},
+    {s:'Fin de mois : un enseignant retire son salaire versé par l’État sur son portefeuille',a:'CD',w:'Les jours de paie, les retraits s’accumulent : les agents doivent avoir fait le plein d’espèces la veille.'}
+  ],
+  'un agent gère deux stocks qui bougent en sens inverse ; c’est sa liquidité, pas sa commission, qui limite le réseau.',null);
+
+/* ---- 2.4 A · the agent game ---- */
+(function agentGame(){
+  need('agent');
+  var EV=[['CI',20000],['CI',35000],['CO',10000],['CI',50000],['CI',40000],['CO',15000],['CI',30000],['CI',25000],['CO',60000],['CO',45000],['CO',80000],['CI',10000],['CO',50000],['CO',70000],['CI',15000],['CO',40000]];
+  var NAMES=['Awa','Moussa','Fatou','Ibrahima','Aminata','Cheikh','Mariama','Ousmane','Khady','Mamadou','Ndeye','Abdou','Coumba','Lamine','Astou','Babacar'];
+  var C0=150000,COM=0.01,REB=500,PEN=2000;
+  var root=document.getElementById('agent'),GK='mfb545_w2_agent';
+  var g;
+  function fresh(){return {i:0,cash:C0,fl:C0,earn:0,lost:0,rebs:[],log:[]};}
+  try{g=JSON.parse(localStorage.getItem(GK))||fresh();}catch(e){g=fresh();}
+  function persist(){try{localStorage.setItem(GK,JSON.stringify(g));}catch(e){}}
+  function draw(){
+    var done=g.i>=EV.length,ev=EV[g.i],max=300000;
+    root.innerHTML='<div class="wallets"><div class="wl"><div class="l">Espèces</div><div class="v">'+fmt(g.cash)+'</div><div class="bar"><i style="width:'+Math.min(100,g.cash/max*100)+'%"></i></div></div>'+
+      '<div class="wl"><div class="l">Float (monnaie électronique)</div><div class="v">'+fmt(g.fl)+'</div><div class="bar"><i style="width:'+Math.min(100,g.fl/max*100)+'%"></i></div></div>'+
+      '<div class="wl"><div class="l">Gain du jour</div><div class="v" style="color:'+(g.earn>=0?'var(--ok)':'#9B2335')+'">'+fmt(g.earn)+'</div><div class="l" style="margin-top:6px">'+g.lost+' client(s) perdu(s)</div></div></div>'+
+      (done?'<div class="cust">Fin de journée. Score : <b>'+fmt(g.earn)+' FCFA</b> sur 4 950 possibles · '+g.lost+' client(s) perdu(s) · rééquilibrages avant les clients '+(g.rebs.length?g.rebs.join(', '):'—')+'.</div><div class="btn-row"><button class="btn small" id="agCopy">Copier le score dans mon carnet ↓</button><button class="btn small ghost" id="agRe">Rejouer</button></div>'
+        :'<div class="cust">Client '+(g.i+1)+' sur 16 · <b>'+NAMES[g.i]+'</b> veut '+(ev[0]==='CI'?'<b>déposer</b>':'<b>retirer</b>')+' <b>'+fmt(ev[1])+' FCFA</b>.</div><div class="btn-row"><button class="btn small" id="agServe">Servir le client</button><button class="btn small ghost" id="agReb">Rééquilibrer d’abord (−500)</button></div>')+
+      '<div class="log">'+(g.log.length?g.log.slice().reverse().join(''):'<div>Le journal de la journée s’affiche ici.</div>')+'</div>';
+    var s=document.getElementById('agServe'),r=document.getElementById('agReb'),cp=document.getElementById('agCopy'),re=document.getElementById('agRe');
+    if(s)s.onclick=serve;if(r)r.onclick=reb;
+    if(cp)cp.onclick=function(){
+      var el=document.querySelector('[data-work="w2_agent"]'),rest=(el.value||'').replace(/^Score[^\n]*\n?/,'');
+      setWork('w2_agent','Score : '+g.earn+' FCFA sur 4 950 · '+g.lost+' client(s) perdu(s) · rééquilibrages avant les clients '+(g.rebs.join(', ')||'aucun')+'\n'+(rest||'Stratégie : '));
+    };
+    if(re)re.onclick=function(){g=fresh();persist();draw();};
+  }
+  function reb(){var t=g.cash+g.fl;g.cash=Math.floor(t/2);g.fl=t-g.cash;g.earn-=REB;g.rebs.push(g.i+1);g.log.push('<div class="reb">↻ Rééquilibrage avant le client '+(g.i+1)+' : '+fmt(g.cash)+' / '+fmt(g.fl)+' (−500)</div>');persist();draw();}
+  function serve(){
+    var ev=EV[g.i],ok=ev[0]==='CI'?g.fl>=ev[1]:g.cash>=ev[1];
+    if(ok){if(ev[0]==='CI'){g.fl-=ev[1];g.cash+=ev[1];}else{g.cash-=ev[1];g.fl+=ev[1];}g.earn+=ev[1]*COM;
+      g.log.push('<div>✓ '+NAMES[g.i]+' · '+(ev[0]==='CI'?'dépôt':'retrait')+' '+fmt(ev[1])+' (+'+fmt(ev[1]*COM)+')</div>');}
+    else{g.lost++;g.earn-=PEN;g.log.push('<div class="lost">✗ '+NAMES[g.i]+' · '+(ev[0]==='CI'?'dépôt':'retrait')+' '+fmt(ev[1])+' — pas assez de '+(ev[0]==='CI'?'float':'espèces')+', client perdu (−2 000)</div>');}
+    g.i++;persist();if(g.i>=EV.length)markStep('agent');draw();
+  }
+  if(g.i>=EV.length)markStep('agent');
+  draw();
+})();
+
+/* ---- 2.4 B · Geneva → Dakar ---- */
+(function remit(){
+  need('remit');
+  var CH=['Banque · virement international (SWIFT)','Wise','Vers un portefeuille Wave','Stablecoin (CHF → USDC → FCFA)'];
+  var RK='mfb545_w2_remit',st={eur:0.93,rows:CH.map(function(){return {fee:'',rate:'',delay:''};})};
+  try{var o=JSON.parse(localStorage.getItem(RK));if(o&&o.rows)st=o;}catch(e){}
+  var tab=document.getElementById('rmTab'),eur=document.getElementById('rmEur');eur.value=st.eur;
+  function mid(){var e=parseFloat(String(eur.value).replace(',','.'));return e>0?655.957/e:NaN;}
+  function persist(){try{localStorage.setItem(RK,JSON.stringify(st));}catch(e){}}
+  function calc(r){var f=num(r.fee),k=num(r.rate);if(isNaN(f)||isNaN(k)||k<=0)return null;var rec=(200-f)*k,cost=200-rec/mid();return {rec:rec,cost:cost,pct:cost/200*100};}
+  function build(){
+    tab.innerHTML='<tr><th>Canal</th><th>Frais (CHF)</th><th>Taux offert (FCFA pour 1 CHF)</th><th>Délai</th><th>Reçu (FCFA)</th><th>Coût total (CHF)</th><th>Coût %</th></tr>'+
+      CH.map(function(n,i){var r=st.rows[i];return '<tr><td>'+n+'</td><td><input data-i="'+i+'" data-f="fee" value="'+esc(r.fee)+'"></td><td><input data-i="'+i+'" data-f="rate" value="'+esc(r.rate)+'"></td><td><input data-i="'+i+'" data-f="delay" value="'+esc(r.delay)+'" style="text-align:left"></td><td id="rr'+i+'"></td><td id="rc'+i+'"></td><td id="rp'+i+'"></td></tr>';}).join('');
+    tab.querySelectorAll('input').forEach(function(inp){inp.addEventListener('input',function(){st.rows[+inp.dataset.i][inp.dataset.f]=inp.value;persist();paint();});});
+    paint();
+  }
+  function paint(){
+    var m=mid();document.getElementById('rmMidLbl').textContent=isNaN(m)?'':'→ cours moyen : 1 CHF = '+fmt(m,2)+' FCFA';
+    var n=0;
+    st.rows.forEach(function(r,i){var c=calc(r);
+      document.getElementById('rr'+i).textContent=c?fmt(c.rec):'';
+      document.getElementById('rc'+i).textContent=c?fmt(c.cost,2):'';
+      var p=document.getElementById('rp'+i);p.textContent=c?fmt(c.pct,1)+' %':'';p.className=c?(c.pct<=3?'pos':(c.pct>5?'neg':'')):'';
+      if(c)n++;});
+    if(n>=3)markStep('remit');
+  }
+  eur.addEventListener('input',function(){st.eur=eur.value;persist();paint();});
+  document.getElementById('rmDemo').addEventListener('click',function(){
+    if(st.rows.some(function(r){return r.fee||r.rate;})&&!confirm('Remplacer vos valeurs par l’exemple fictif ?'))return;
+    var m=mid();st.rows=[{fee:'25',rate:String(Math.round(m*0.97)),delay:'2–3 jours'},{fee:'4.50',rate:String(Math.round(m)),delay:'quelques heures'},{fee:'3',rate:String(Math.round(m*0.985)),delay:'minutes'},{fee:'2',rate:String(Math.round(m*0.975)),delay:'minutes à 1 h'}];
+    persist();build();document.getElementById('rmNote').innerHTML='⚠ <b>Valeurs d’exemple fictives</b> chargées : remplacez-les par celles relevées aujourd’hui.';
+  });
+  document.getElementById('rmCopy').addEventListener('click',function(){
+    var m=mid(),lines=['200 CHF Genève → Dakar · 1 € = '+eur.value+' CHF → 1 CHF = '+fmt(m,2)+' FCFA (cours moyen)'];
+    st.rows.forEach(function(r,i){var c=calc(r);lines.push('• '+CH[i]+' : frais '+(r.fee||'?')+' CHF, taux '+(r.rate||'?')+', délai '+(r.delay||'?')+(c?' → reçu '+fmt(c.rec)+' FCFA, coût '+fmt(c.cost,2)+' CHF ('+fmt(c.pct,1)+' %)':''));});
+    var el=document.querySelector('[data-work="w2_transfert"]'),rest=(el.value||'').split('\nConclusion :')[1];
+    setWork('w2_transfert',lines.join('\n')+'\nConclusion :'+(rest!=null?rest:' '));
+  });
+  build();
+})();
+
+/* ---- 2.5 the quiz · positions 1 3 0 2 0 3 1 2 ---- */
+buildQuiz([
+  {q:'Dans le modèle à quatre coins, l’interchange est versée…',
+   opts:['par le commerçant au réseau','par l’acquéreur à l’émetteur','par l’émetteur à l’acquéreur','par le titulaire à sa banque'],a:1,
+   w:'Elle est prélevée sur la commission du commerçant et rémunère la banque qui a émis la carte.'},
+  {q:'La commission du commerçant (MDR) se décompose en…',
+   opts:['frais du titulaire + taxe','interchange seulement','marge de l’émetteur + TVA','interchange + frais du réseau + marge de l’acquéreur'],a:3,
+   w:'Sur 100 CHF à 1,5 % : par exemple 0,44 + 0,15 + 0,91 (dont le traitement).'},
+  {q:'L’authentification forte de la PSD2 demande…',
+   opts:['deux facteurs parmi connaissance, possession et inhérence','un mot de passe de douze caractères','une signature manuscrite','la présence physique en agence'],a:0,
+   w:'Par exemple un code (connaissance) et le téléphone (possession), ou l’empreinte (inhérence) et le téléphone.'},
+  {q:'Un virement instantané (SIC en Suisse, SEPA Instant dans l’UE) est crédité…',
+   opts:['le jour ouvré suivant','en fin de journée, par lots','en quelques secondes, 24 h sur 24, 7 jours sur 7','après validation manuelle de la banque'],a:2,
+   w:'Dix secondes au plus pour SEPA Instant ; le système suisse les traite depuis août 2024.'},
+  {q:'La contrepartie de la monnaie électronique d’un établissement de monnaie électronique est…',
+   opts:['déposée un pour un sur un compte de cantonnement dans une banque','prêtée aux PME pour financer le réseau','investie en actions','inexistante : la monnaie électronique est créée par l’opérateur'],a:0,
+   w:'Somme des portefeuilles = solde du compte de cantonnement. L’établissement ne peut pas prêter ces fonds.'},
+  {q:'Pour un agent de mobile money, un retrait (cash-out) d’un client…',
+   opts:['augmente ses espèces et diminue son float','ne change rien à ses stocks','diminue ses espèces et son float','diminue ses espèces et augmente son float'],a:3,
+   w:'Il donne des espèces et reçoit de la monnaie électronique. Une série de retraits vide le tiroir.'},
+  {q:'Dans une API de paiement, un achat de 49,90 CHF s’envoie avec…',
+   opts:['"amount": 49.90','"amount": 4990','"amount": "49,90 CHF"','"amount": 49'],a:1,
+   w:'En plus petite unité (centimes) : pas de nombre à virgule, donc pas d’erreur d’arrondi.'},
+  {q:'Une appli qui déclenche un virement depuis votre compte bancaire, avec votre consentement, pour payer un achat en ligne est, au sens de la PSD2…',
+   opts:['un AISP','un émetteur de cartes','un PISP','un acquéreur'],a:2,
+   w:'Prestataire d’initiation de paiement. Un AISP ne fait que lire les comptes.'}
+],'s5',['Excellent — la matinée est acquise.','Bien. Relisez les explications des questions manquées.','Relisez les sections 2.1 et 2.3 : tout y est.']);
+
+/* ---- 2.6 AISP / PISP ---- */
+buildClassify('psdRows','psdRowsCap',
+  [['A','AISP'],['P','PISP'],['N','Ni l’un ni l’autre']],
+  [
+    {s:'Une appli de budget qui affiche ensemble vos comptes de trois banques',a:'A',w:'Elle lit soldes et transactions : information sur les comptes.'},
+    {s:'Un bouton « payer par virement » sur un site marchand qui débite votre compte après validation dans l’appli de votre banque',a:'P',w:'Initiation de paiement : le prestataire déclenche le virement, la banque authentifie.'},
+    {s:'Un prêteur en ligne qui analyse vos douze derniers mois de transactions pour décider d’un crédit',a:'A',w:'Une lecture des comptes, avec consentement, au service du scoring (journée 3).'},
+    {s:'Une néobanque qui vous émet une carte de débit',a:'N',w:'Elle est émettrice, sur ses propres comptes : la PSD2 n’intervient pas ici en tant qu’accès de tiers.'},
+    {s:'Un logiciel de comptabilité qui exécute les virements fournisseurs d’une PME depuis son compte bancaire',a:'P',w:'Il initie des paiements depuis un compte tenu ailleurs.'},
+    {s:'Payer en magasin avec une carte Visa',a:'N',w:'Le circuit carte du modèle à quatre coins, pas l’accès aux comptes.'}
+  ],
+  'lire ou déclencher : la PSD2 a ouvert les comptes à ces deux métiers, avec consentement et authentification forte.',null);
+
+/* ---- 2.7 the API console ---- */
+(function api(){
+  var MS=[['api1','Créer un client (<code>POST /v1/customers</code>)'],['api2','Créer un paiement de <b>49,90 CHF</b> pour ce client — attention à l’unité'],['api3','Confirmer ce paiement avec <code>pm_card_visa</code> et recevoir le webhook de succès'],
+    ['api4','Créer un autre paiement et le faire <b>refuser</b> pour fonds insuffisants — lire le <code>decline_code</code>'],['api5','Créer un paiement qui exige <b>3-D Secure</b>, puis le faire valider'],
+    ['api6','Envoyer deux fois la même création de paiement avec la même <code>Idempotency-Key</code> — un seul paiement doit exister'],['api7','Provoquer une erreur <b>401</b> en remplaçant la clé secrète par une clé publiable <code>pk_test_…</code>'],['api8','Rembourser le paiement réussi (<code>POST /v1/refunds</code>)']];
+  MS.forEach(function(m){need(m[0]);});
+  var mbox=document.getElementById('apiMissions');
+  function paintM(){mbox.innerHTML=MS.map(function(m,i){var on=progress.steps[m[0]];return '<div class="ms'+(on?' on':'')+'"><span class="mk">'+(on?'✓':(i+1))+'</span><span>'+m[1]+'</span></div>';}).join('');}
+  function done(k){if(!progress.steps[k]){markStep(k);paintM();}}
+  var EP=[['POST','/v1/customers'],['POST','/v1/payment_intents'],['POST','/v1/payment_intents/{id}/confirm'],['GET','/v1/payment_intents/{id}'],['POST','/v1/refunds']];
+  var sel=document.getElementById('apiEp'),body=document.getElementById('apiBody'),resp=document.getElementById('apiResp'),stat=document.getElementById('apiStatus'),hooks=document.getElementById('apiHooks'),b3=document.getElementById('api3ds');
+  sel.innerHTML=EP.map(function(e,i){return '<option value="'+i+'">'+e[0]+' '+e[1]+'</option>';}).join('');
+  var AK='mfb545_w2_api',S={cus:{},pi:{},idem:{},hooks:[],last:{cus:null,pi:null}};
+  try{var o=JSON.parse(localStorage.getItem(AK));if(o&&o.pi)S=o;}catch(e){}
+  function persist(){try{localStorage.setItem(AK,JSON.stringify(S));}catch(e){}}
+  function rid(p){var c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789',s=p+'_';for(var i=0;i<14;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
+  function tpl(){
+    var i=+sel.value,pi=S.last.pi||'pi_…',cu=S.last.cus||'cus_…';
+    body.value=[JSON.stringify({name:'Awa Diop',email:'awa.diop@example.com'},null,2),JSON.stringify({amount:0,currency:'chf',customer:cu,description:'Commande Teranga Market #1043'},null,2),
+      JSON.stringify({payment_method:'pm_card_visa'},null,2),'',JSON.stringify({payment_intent:pi},null,2)][i];
+    body.placeholder=i===3?'(pas de corps pour un GET — l’identifiant est celui du dernier paiement)':'';
+  }
+  function hook(type,obj){var t=Math.floor(Date.now()/1000);S.hooks.push({type:type,id:obj.id,t:t});persist();paintHooks();}
+  function paintHooks(){hooks.innerHTML=S.hooks.length?S.hooks.slice().reverse().map(function(h){return '<div>→ POST https://votre-serveur.example/webhook · <b>'+h.type+'</b> · '+h.id+' · Stripe-Signature t='+h.t+',v1=…</div>';}).join(''):'<div style="color:var(--grey)">aucun pour l’instant</div>';}
+  function out(code,obj,extra){
+    stat.innerHTML='<span class="status '+(code<300?'ok':'err')+'">HTTP '+code+'</span>'+(extra?' <span style="font-size:12px;color:var(--grey)">'+extra+'</span>':'');
+    resp.textContent=JSON.stringify(obj,null,2);
+  }
+  function err(code,type,msg,more){var e={error:Object.assign({type:type,message:msg},more||{})};out(code,e);return {code:code,obj:e};}
+  function piView(p){return {id:p.id,object:'payment_intent',amount:p.amount,currency:p.currency,customer:p.customer||null,status:p.status,payment_method:p.pm||null,next_action:p.status==='requires_action'?{type:'redirect_to_url',redirect_to_url:{url:'https://hooks.stripe.com/3d_secure_2/…'}}:null,last_payment_error:p.lastErr||null};}
+  function handle(i,b,key){
+    var ep=EP[i];
+    if(ep[0]==='POST'&&i===0){var c={id:rid('cus'),object:'customer',name:b.name||null,email:b.email||null,created:Math.floor(Date.now()/1000)};S.cus[c.id]=c;S.last.cus=c.id;hook('customer.created',c);done('api1');return {code:200,obj:c};}
+    if(i===1){
+      if(b.amount===undefined||b.amount===null)return err(400,'invalid_request_error','Missing required param: amount.',{param:'amount'});
+      if(typeof b.amount!=='number'||Math.floor(b.amount)!==b.amount)return err(400,'invalid_request_error','Invalid integer: '+b.amount+'. Amounts are in the smallest currency unit (4990 = 49.90 CHF).',{param:'amount',code:'parameter_invalid_integer'});
+      var cur=String(b.currency||'').toLowerCase();
+      if(['chf','eur','usd','xof'].indexOf(cur)<0)return err(400,'invalid_request_error','Invalid currency: '+b.currency+'.',{param:'currency'});
+      if(cur!=='xof'&&b.amount<50)return err(400,'invalid_request_error','Amount must be at least 50 (0.50 '+cur.toUpperCase()+').',{param:'amount',code:'amount_too_small'});
+      if(b.customer&&!S.cus[b.customer])return err(404,'invalid_request_error','No such customer: \''+b.customer+'\'',{param:'customer',code:'resource_missing'});
+      var p={id:rid('pi'),amount:b.amount,currency:cur,customer:b.customer||null,status:'requires_payment_method'};S.pi[p.id]=p;S.last.pi=p.id;hook('payment_intent.created',p);
+      if(p.amount===4990&&cur==='chf'&&p.customer)done('api2');
+      return {code:200,obj:piView(p)};
+    }
+    var id=(b&&b.id)||S.last.pi;   /* confirm / GET act on the latest PaymentIntent unless the body names one */
+    if(i===2||i===3){
+      var q=S.pi[id];if(!q)return err(404,'invalid_request_error','No such payment_intent: \''+id+'\'',{code:'resource_missing'});
+      if(i===3)return {code:200,obj:piView(q)};
+      if(q.status==='succeeded')return err(400,'invalid_request_error','This PaymentIntent has already succeeded.',{code:'payment_intent_unexpected_state'});
+      var pm=b.payment_method;q.pm=pm;
+      if(pm==='pm_card_visa'){q.status='succeeded';q.lastErr=null;hook('payment_intent.succeeded',q);hook('charge.succeeded',q);if(q.amount===4990&&q.currency==='chf')done('api3');return {code:200,obj:piView(q)};}
+      if(pm==='pm_card_chargeDeclinedInsufficientFunds'){q.status='requires_payment_method';q.lastErr={code:'card_declined',decline_code:'insufficient_funds'};hook('payment_intent.payment_failed',q);done('api4');
+        return err(402,'card_error','Your card has insufficient funds.',{code:'card_declined',decline_code:'insufficient_funds',payment_intent:{id:q.id,status:q.status}});}
+      if(pm==='pm_card_authenticationRequired'){q.status='requires_action';hook('payment_intent.requires_action',q);b3.style.display='';b3.setAttribute('data-id',q.id);return {code:200,obj:piView(q)};}
+      return err(400,'invalid_request_error','No such PaymentMethod: \''+pm+'\'',{param:'payment_method',code:'resource_missing'});
+    }
+    if(i===4){
+      var r=S.pi[b.payment_intent];if(!r)return err(404,'invalid_request_error','No such payment_intent: \''+b.payment_intent+'\'',{code:'resource_missing'});
+      if(r.status!=='succeeded')return err(400,'invalid_request_error','This PaymentIntent does not have a successful charge to refund.',{code:'charge_not_refundable'});
+      if(r.refunded)return err(400,'invalid_request_error','Charge has already been refunded.',{code:'charge_already_refunded'});
+      r.refunded=true;var rf={id:rid('re'),object:'refund',amount:r.amount,currency:r.currency,payment_intent:r.id,status:'succeeded'};hook('charge.refunded',r);done('api8');return {code:200,obj:rf};
+    }
+  }
+  sel.addEventListener('change',tpl);
+  document.getElementById('apiTpl').addEventListener('click',tpl);
+  document.getElementById('apiSend').addEventListener('click',function(){
+    var k=document.getElementById('apiKey').value.trim().replace(/^Bearer\s+/i,'');
+    if(!k){err(401,'invalid_request_error','You did not provide an API key.');return;}
+    if(/^pk_/.test(k)){err(401,'invalid_request_error','This API call cannot be made with a publishable API key. Please use a secret API key.');done('api7');return;}
+    if(/^sk_live_/.test(k)){err(401,'invalid_request_error','Clé live refusée : ce bac à sable n’accepte que des clés de test (sk_test_…). Une clé live ne s’écrit jamais dans un exercice.');return;}
+    if(!/^sk_test_/.test(k)){err(401,'invalid_request_error','Invalid API Key provided: '+k.slice(0,12)+'…');return;}
+    var i=+sel.value,b={};
+    if(EP[i][0]==='POST'){try{b=body.value.trim()?JSON.parse(body.value):{};}catch(e){err(400,'invalid_request_error','Corps illisible : JSON mal formé ('+e.message+').');return;}}
+    var idem=document.getElementById('apiIdem').value.trim(),ikey=idem?(i+'|'+idem):null;
+    if(ikey&&EP[i][0]==='POST'&&S.idem[ikey]){var sv=S.idem[ikey];out(sv.code,sv.obj,'Idempotent-Replayed: true — même clé, même réponse, aucun nouvel objet créé');if(i===1)done('api6');return;}
+    var r=handle(i,b);
+    if(r&&r.obj&&!r.obj.error)out(r.code,r.obj,(i===2||i===3)?'sur '+((b&&b.id)||S.last.pi):'');
+    if(ikey&&EP[i][0]==='POST'&&r)S.idem[ikey]=r;
+    persist();
+  });
+  b3.addEventListener('click',function(){
+    var q=S.pi[b3.getAttribute('data-id')];if(!q||q.status!=='requires_action')return;
+    q.status='succeeded';hook('payment_intent.succeeded',q);hook('charge.succeeded',q);done('api5');b3.style.display='none';persist();
+    out(200,piView(q),'le client a validé dans l’appli de sa banque — le webhook prévient votre serveur');
+  });
+  paintM();paintHooks();tpl();
+})();
+
+/* ---- 2.8 roles ---- */
+(function roles(){
+  need('role');
+  var RK='mfb545_w2_role',cur=null;try{cur=localStorage.getItem(RK);}catch(e){}
+  function pick(r,quiet){
+    cur=r;try{localStorage.setItem(RK,r);}catch(e){}
+    document.querySelectorAll('.role').forEach(function(x){x.classList.toggle('on',x.dataset.r===r);});
+    document.querySelectorAll('.rcard').forEach(function(x){x.classList.toggle('show',x.id==='rc_'+r);});
+    if(!quiet)markStep('role');
+  }
+  document.getElementById('roles').addEventListener('click',function(e){var b=e.target.closest('.role');if(b)pick(b.dataset.r,false);});
+  if(cur)pick(cur,true);
+})();
+
+/* ---- 2.9 the deal calculator ---- */
+(function dealCalc(){
+  need('deal');
+  var V=1200000,DK='mfb545_w2_deal',d={mdr:1.8,tds:0,share:100,reb:0,integ:0};
+  try{var o=JSON.parse(localStorage.getItem(DK));if(o)d=o;}catch(e){}
+  var ctrl=document.getElementById('dealCtrl'),tab=document.getElementById('dealTab'),cap=document.getElementById('dealCap');
+  ctrl.innerHTML='<div class="ctrl"><label>Commission convenue <span class="val" id="dv_mdr"></span></label><input type="range" min="0.9" max="2" step="0.05" data-k="mdr" value="'+d.mdr+'"></div>'+
+    '<div class="ctrl"><label>Part de la fraude restante payée par le commerçant <span class="val" id="dv_share"></span></label><input type="range" min="0" max="100" step="10" data-k="share" value="'+d.share+'"></div>'+
+    '<div class="ctrl"><label>3-D Secure activé</label><select data-k="tds"><option value="0">Non</option><option value="1">Oui</option></select></div>'+
+    '<div class="ctrl"><label>Remise du réseau (0,05 %) si 3-D Secure</label><select data-k="reb"><option value="0">Non</option><option value="1">Oui</option></select></div>'+
+    '<div class="ctrl"><label>Intégration de 3-D Secure payée par</label><select data-k="integ"><option value="0">le commerçant</option><option value="1">le prestataire</option></select></div>';
+  ctrl.querySelectorAll('select').forEach(function(s){s.value=String(d[s.dataset.k]);});
+  ctrl.querySelectorAll('input,select').forEach(function(x){x.addEventListener('input',function(){d[x.dataset.k]=parseFloat(x.value);try{localStorage.setItem(DK,JSON.stringify(d));}catch(e){}paint();});});
+  function res(){
+    var tds=d.tds===1,sh=d.share/100,F=V*(tds?0.0005:0.004),fine=tds?0:V*0.001,lost=tds?V*0.01*0.30:0,reb=(d.reb===1&&tds)?600:0;
+    var m=d.mdr/100*V+sh*F+lost+(tds&&d.integ!==1?1000:0);
+    var p=(d.mdr/100-0.0085)*V-(1-sh)*F-fine+reb-(tds&&d.integ===1?1000:0);
+    var n=0.001*V-reb;
+    return {m:m,p:p,n:n,F:F,lost:lost,fine:fine,fr:tds?0.05:0.40};
+  }
+  function paint(){
+    document.getElementById('dv_mdr').textContent=fmt(d.mdr,2)+' %';document.getElementById('dv_share').textContent=d.share+' %';
+    var r=res();
+    tab.innerHTML='<tr><th>Par an</th><th>Résultat</th><th>Objectif / repli</th><th></th></tr>'+
+      '<tr><td>🛒 Commerçant — coût total (commission + fraude + ventes perdues)</td><td>'+fmt(r.m)+' CHF</td><td>objectif &lt; 21 000 · repli 24 600</td><td class="'+(r.m<21000?'pos':(r.m<24600?'':'neg'))+'">'+(r.m<21000?'✓ objectif':(r.m<24600?'mieux que le repli':'✗ pire que le repli'))+'</td></tr>'+
+      '<tr><td>🏦 Prestataire — résultat</td><td>'+fmt(r.p)+' CHF</td><td>objectif ≥ 4 800 · repli 0</td><td class="'+(r.p>=4800?'pos':(r.p>0?'':'neg'))+'">'+(r.p>=4800?'✓ objectif':(r.p>0?'mieux que le repli':'✗ pire que le repli'))+'</td></tr>'+
+      '<tr><td>🌐 Réseau — frais nets</td><td>'+fmt(r.n)+' CHF</td><td>objectif : fraude &lt; 0,3 %</td><td class="'+(r.fr<0.3?'pos':'neg')+'">fraude '+fmt(r.fr,2)+' %</td></tr>';
+    cap.textContent=(d.tds===1?'Avec 3-D Secure : fraude résiduelle 0,05 % (paiements exemptés), le reste passe à l’émetteur ; ventes perdues ≈ 1 % × marge 30 % = 3 600 CHF ; plus de pénalité du réseau.':'Sans 3-D Secure : fraude 0,40 % (4 800 CHF), pénalité du réseau de 1 200 CHF pour le prestataire.')+' Dès que vous modifiez un terme, l’accord est enregistré.';
+  }
+  ctrl.addEventListener('input',function(){markStep('deal');});
+  var bt=document.createElement('button');bt.className='btn small';bt.textContent='Copier les termes dans mon carnet ↓';bt.style.marginTop='6px';
+  bt.addEventListener('click',function(){
+    var r=res(),el=document.querySelector('[data-work="w2_nego"]'),rest=(el.value||'').split('\nMon rôle')[1];
+    setWork('w2_nego','Accord : commission '+fmt(d.mdr,2)+' % · 3-D Secure '+(d.tds?'oui':'non')+' · fraude restante '+d.share+' % commerçant · remise réseau '+(d.reb?'oui':'non')+' · intégration payée par '+(d.integ?'le prestataire':'le commerçant')+
+      ' → commerçant '+fmt(r.m)+' CHF, prestataire '+fmt(r.p)+' CHF, réseau '+fmt(r.n)+' CHF'+'\nMon rôle'+(rest!=null?rest:' : \nArgument décisif : '));
+    markStep('deal');
+  });
+  ctrl.parentNode.insertBefore(bt,tab.parentNode);
+  paint();
+})();
+
+bootDay();
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

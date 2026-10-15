@@ -73,6 +73,8 @@ window.CourseConfig = (function () {
                    label:"SUMAS · MBA406 Managerial Finance" },
     "gen110":    { school:"UMEF", ns:"gen110",    theme:"umef",  lang:"fr", login:true,
                    label:"SWISS UMEF · GEN 110 Intelligence artificielle" },
+    "mfb545":    { school:"UMEF", ns:"mfb545",    theme:"umef",  lang:"fr", login:true,
+                   label:"SWISS UMEF · MFB 545 Fintech" },
     "qm1":       { school:"HEG", ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { school:"GBS", ns:"creator",   theme:"gbs",   lang:"en", login:true,

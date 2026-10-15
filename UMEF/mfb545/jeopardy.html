@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · MFB 545 Fintech · Swiss UMEF</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<style>
+/* =====================================================================
+   MFB 545 · Jeopardy for the room screen. ?set=j1 (Journée 1 —
+   fondamentaux). Day 6's synthesis set goes in SETS when that day is
+   written. Projector page: no progress, no sign-in, never counted;
+   team scores are kept in this browser only (mfb545_jeo_<set>).
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--navy-surface-deep,#0A3341);color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#9FD3E6;font-size:13px;}
+.top a{margin-left:auto;color:#9FD3E6;font-size:13px;text-decoration:none;}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 20px;}
+.cat{background:var(--navy-surface,#0F4C60);border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(12px,1.6vw,17px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cell{background:#176B87;border:none;border-radius:10px;color:#FFD58A;font:800 clamp(20px,3.4vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2A93B0;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:170px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#FFD58A;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(5,25,32,.94);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:980px;width:100%;text-align:center;}
+#modal .mc{color:#9FD3E6;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.8vw,44px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.4vw,28px);color:#FFD58A;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#0A3341;border:none;border-radius:30px;padding:11px 20px;font:800 15px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#9FD3E6;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#9FD3E6;text-decoration:underline;cursor:pointer;font:inherit;}
+</style>
+</head>
+<body data-course="mfb545">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="index.html">← Cours</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Cliquez une case · « Réponse » · puis l’équipe qui a répondu juste (+) ou faux (−). <button id="reset">Nouvelle partie</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  j1:{name:'Fintech — fondamentaux · journée 1',cats:[
+    ['La banque désagrégée',[
+      ['Les six briques de la banque universelle.','Compte, paiement, crédit, épargne, placement, conformité.'],
+      ['La brique qui demande le plus de capital — et pourquoi elle reste surtout aux banques.','Le crédit : prêter les dépôts (la transformation) exige des fonds propres et une licence bancaire.'],
+      ['Que signifie « BaaS » ?','Banque-en-tant-que-service : une banque agréée loue par API comptes, cartes et licence à des fintechs, qui font l’appli et la relation client.'],
+      ['Les trois lettres du « DNA » des bigtechs, selon la BRI.','Data, Network, Activities — données, réseau d’utilisateurs, activités imbriquées.'],
+      ['Pourquoi les fintechs ont-elles d’abord attaqué le paiement et le change ?','Très rentables, presque sans capital ; leurs marges subventionnaient le reste de la banque.']]],
+    ['Qui fait quoi ?',[
+      ['TWINT : quelle brique ?','Le paiement.'],
+      ['Qui tient les comptes des clients de neon ?','La Hypothekarbank Lenzburg, sa banque partenaire.'],
+      ['True Wealth : que fait-il, et comment se rémunère-t-il ?','Gestion de fortune automatisée ; des frais de gestion annuels en % des avoirs.'],
+      ['Flutterwave : que vend-il, et à qui ?','Une infrastructure de paiement aux commerçants africains : une seule API pour cartes, mobile money et virements.'],
+      ['Pourquoi le « payer plus tard » de Klarna est-il du crédit ?','Le client paie après avoir reçu le bien : c’est un prêt à court terme, rémunéré par la commission du commerçant (et des frais en cas de retard).']]],
+    ['Modèles économiques',[
+      ['La formule de l’ARPU.','Revenus du mois ÷ utilisateurs actifs du mois.'],
+      ['La formule du point mort, en utilisateurs.','Coûts fixes ÷ marge de contribution par utilisateur.'],
+      ['Pourquoi TWINT ne fait-il pas payer les envois entre particuliers ?','C’est le côté subventionné : il fait venir les utilisateurs, et le commerçant paie la commission.'],
+      ['Combien de paires d’utilisateurs peuvent s’envoyer de l’argent entre 100 utilisateurs ?','4 950 — n(n − 1) ÷ 2.'],
+      ['Données du bloc 3 : Wave passe de 1 % à 0,8 %. Nouveau point mort ?','10 millions d’utilisateurs actifs (ARPU 400, marge 150, 1,5 milliard ÷ 150).']]],
+    ['Régulation',[
+      ['Qui surveille les banques en Suisse ?','La FINMA, l’Autorité fédérale de surveillance des marchés financiers.'],
+      ['Licence fintech suisse : le plafond des dépôts du public.','100 millions de francs.'],
+      ['Le numéro de la circulaire FINMA sur l’identification par vidéo et en ligne.','2016/7.'],
+      ['Qui agrée les établissements de monnaie électronique au Sénégal ou en Côte d’Ivoire ?','La BCEAO, banque centrale des États de l’Afrique de l’Ouest.'],
+      ['Les deux interdits de la licence fintech.','Ne pas prêter les dépôts reçus, ne pas verser d’intérêts dessus.']]],
+    ['Onboarding et KYC',[
+      ['Que signifie « KYC » ?','Know Your Customer — connaître son client : l’identifier et comprendre l’origine de ses fonds.'],
+      ['À quoi sert la détection du vivant ?','À vérifier qu’une personne réelle est devant la caméra, pas une photo, une vidéo ou un masque.'],
+      ['Pourquoi la zone de lecture automatique d’un passeport porte-t-elle des chiffres de contrôle ?','Pour détecter une erreur de lecture ou une falsification : poids 7, 3, 1, somme, reste de la division par 10.'],
+      ['On baisse le seuil de la comparaison des visages. Qu’est-ce qui change ?','Moins de vrais clients refusés, mais plus de fraudeurs acceptés.'],
+      ['Qu’est-ce qu’une PPE, et a-t-elle le droit d’ouvrir un compte ?','Une personne politiquement exposée ; oui, mais avec une diligence renforcée.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'j1';
+var S=SETS[setId]||SETS.j1, SK='mfb545_jeo_'+setId;
+var st={used:{},teams:[['Équipe 1',0],['Équipe 2',0],['Équipe 3',0]]};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams)st=o;}catch(e){}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='';
+  S.cats.forEach(function(c){h+='<div class="cat">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Réponse</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Fermer</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Effacer les scores et recommencer ?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
