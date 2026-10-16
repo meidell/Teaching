@@ -66,7 +66,17 @@ window.EscWall=(function(){
   /* ---- write ----
      First call POSTs and keeps the returned push id; later calls PUT over
      the same row, so a student who fixes a typo does not appear twice. */
+  /* The instructor's device (jem_instructor, written by admin-gate.js) never
+     posts: a demo answer given in front of the room must not be counted in
+     the room's own tally (16 Oct 2026 — two instructor rows had to be
+     neutralised by hand). The row is still cached locally so the page
+     behaves exactly as it does for a student. */
+  function isInstructor(){
+    try{if(localStorage.getItem('jem_instructor'))return true;}catch(e){}
+    return /(?:^|; )jem_instructor=1/.test(document.cookie||'');
+  }
   function post(mod,row){
+    if(isInstructor()){row.ts=Date.now();cache(mod,row);return Promise.resolve({ok:false,reason:'instructor'});}
     row.ts=Date.now();
     var id=myRow(mod);
     var url=DB+'/'+NS+'/_wall/'+encodeURIComponent(mod)+(id?('/'+id):'')+'.json';

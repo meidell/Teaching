@@ -271,6 +271,7 @@
   <div class="foot">
     <div id="whoami" style="margin-bottom:8px;"></div>
     <a href="index.html">← Back to the course</a> · Session 1 of 14 · International Institute in Geneva
+    <div style="margin-top:8px;"><a href="#" id="resetLink" style="color:var(--grey);font-weight:400;">Reset my answers and progress for Session 1 on this device</a></div>
   </div>
 </div>
 
@@ -402,7 +403,20 @@ function paintSeal(){
   openReveal();
   lockChips('pTarget');lockChips('pKind');
   var w=document.getElementById('f_pwhy');if(w)w.disabled=true;
-  var b=document.getElementById('sealBtn');b.disabled=true;b.textContent='Sealed ✓';
+  var b=/* ---- reset this session on THIS device (16 Oct 2026) — for the instructor
+   demoing the page, or a student starting over. Local only: rows already on
+   the wall and records already in the database stay where they are. ---- */
+document.getElementById('resetLink').addEventListener('click',function(e){
+  e.preventDefault();
+  if(!confirm('Reset your Session 1 answers and progress on this device?'))return;
+  try{Object.keys(localStorage).forEach(function(k){
+    if(k.indexOf(K+'_')!==0||k===K+'_auth')return;
+    if(/_w1(_|$)/.test(k)||k.indexOf(K+'_work_refl2_')===0||k.indexOf(K+'_wall')===0)localStorage.removeItem(k);
+  });}catch(err){}
+  location.reload();
+});
+
+document.getElementById('sealBtn');b.disabled=true;b.textContent='Sealed ✓';
   document.getElementById('sealNote').textContent='';
   document.getElementById('sealed').innerHTML='<div class="sealed"><div class="sh">Sealed: your reading, before the facts</div><div class="sv">'+
     'Target: '+esc(labelOf(TARGETS,ls('w1_pt')))+'\nKind: '+esc(labelOf(KINDS,ls('w1_pk')))+
@@ -418,7 +432,7 @@ function distHTML(counts,order,labels,mine){
     return '<div class="dr'+(k===mine?' me':'')+'"><span>'+esc(labels[k])+(k===mine?' · you':'')+'</span><span class="bar"><i style="width:'+(n/tot*100)+'%"></i></span><span class="n">'+n+'</span></div>';
   }).join('');
 }
-function wallFail(res){return 'The wall could not be read'+(res.reason==='rules'?' (its database rules are not published yet)':'')+'. Your own answers are saved; your instructor can project the class from the dashboard.';}
+function wallFail(res){if(res.reason==='instructor')return 'Instructor device: a demo answer, not posted to the wall.';return 'The wall could not be read'+(res.reason==='rules'?' (its database rules are not published yet)':'')+'. Your own answers are saved; your instructor can project the class from the dashboard.';}
 
 function loadPredWall(){
   document.getElementById('predStat').textContent='loading…';
