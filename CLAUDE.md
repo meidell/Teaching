@@ -1048,7 +1048,7 @@ buttons carry **navy** text (white on IIG gold is 2.25:1). `courses.json`
 has an `iig` theme and the `config.js` mirror an `iig` entry. The folder,
 `school:"GBS"` (shared sign-in with the GBS courses) and the listing on
 `/GBS/` stay as they are — Jan Erik confirmed 9 Oct 2026 that it remains on
-the GBS landing page. Fridays **17:15–19:15**, first **16 Oct 2026**, **14
+the GBS landing page. Fridays **17:00–19:00** (corrected 16 Oct 2026; it was written as 17:15–19:15), first **16 Oct 2026**, **14
 sessions**. On the creator-economy run-sheet pattern (`esc.css` = `creator.css`
 + additions at the END; `wall.js` = creator's with the namespace changed,
 global `EscWall`; `courseprogress.js` a port).
