@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Day 2 · Payments and digital money · MFB 545 · Swiss UMEF</title>
+<meta name="description" content="MFB 545 Fintech, Day 2 — the anatomy of a card payment and the interchange simulator, IBAN and QR-bill, mobile money and the agent network, CHF 200 from Geneva to Dakar through four channels, a payment API in test mode, the three-way negotiation.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="fintech.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="mfb545">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">FINTECH · DAY 2</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="journee2.html" data-lang-switch="fr" title="Cette page en français">FR</a>
+    <a class="home" href="index-en.html">← Course</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This day</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Day 2 · Friday 23 October 2026 · MFB 545</div>
+    <h1>Payments and <em>digital money</em></h1>
+    <p class="sub">A card payment involves five parties in under two seconds; a mobile money withdrawal in Dakar depends on the liquidity of a neighbourhood agent; a CHF 200 transfer costs anything from under 1% to over 10% depending on the channel. This day follows the money step by step: the card circuit and who earns what, the IBAN and the QR-bill, the agent network, four ways to send money to Dakar, a payment API in test mode — then a three-way negotiation, and your fintech’s payment flow.</p>
+    <div class="liveinfo">
+      <span class="li">🕘 <b>09:00–12:15 · 13:30–16:45</b> · four 90-min blocks</span>
+      <span class="li">💻 laptop · no programming</span>
+      <span class="li">🎤 the talk is short — <b>🛠 most of the time, you do the work</b></span>
+    </div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="daytl"><h4>The day at a glance · who talks, who works</h4><div id="dayTl"></div></div>
+
+  <div class="objectives">
+    <h4>By the end of Day 2, you will be able to</h4>
+    <ul>
+      <li>Follow a card payment from authorisation to settlement, and split the merchant discount rate between issuer, scheme and acquirer.</li>
+      <li>Check an IBAN, compute the check digit of a QR reference, and read the content of a QR-bill.</li>
+      <li>Explain how electronic money is backed, and manage the liquidity of a mobile money agent.</li>
+      <li>Compute the total cost of an international transfer — displayed fees <em>and</em> exchange-rate margin — across four real channels.</li>
+      <li>Send requests to a payment API in test mode and read its responses, errors and webhooks.</li>
+      <li>Describe your fintech’s payment flow and revenue model.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Before you start — tick</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Signed in</b> on this site (the button at the bottom right).</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>Day 1’s work</b> at hand: your team’s problem and customer (<a href="journee1-en.html">Day 1, section 1.9</a>).</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>A spreadsheet open</b> for Block 2. Nothing to install: the API workshop in Block 3 runs on this page.</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index-en.html">← Course page</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">reset my Day 2 progress on this device</a></div>
+  </div>
+</section>
+
+<!-- ============================ 2.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.1 · Block 1</div><span class="mode m-ex">🎤 Talk · 20 min</span><h2>Anatomy of a payment</h2></div>
+  <p class="ex-note">Instructor’s talk. If it does not take place, read this section on your own, then do the sorting exercise at the bottom of the page.</p>
+
+  <div class="card">
+    <span class="label def">The four-corner model</span>
+    <h3>Five parties behind every card payment</h3>
+    <div class="flow">
+      <div class="node">Cardholder<small>you, with the card</small></div>
+      <div class="node">Issuer<small>the bank that issued the card</small></div>
+      <div class="node hl">Scheme<small>Visa, Mastercard</small></div>
+      <div class="node">Acquirer<small>the merchant’s bank or PSP</small></div>
+      <div class="node">Merchant<small>the shop, the website</small></div>
+    </div>
+    <p class="flow-arrows">“Four corners”: cardholder, issuer, acquirer, merchant. The scheme (card network) sits in the middle: it sets the rules, routes the messages and computes each party’s position. Between the merchant and the acquirer there is often a <span class="gloss" data-k="psp">payment service provider</span> (Stripe, Adyen, Worldline…).</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">The mechanism · from the card to the merchant’s account</span>
+    <h3>Authorisation, clearing, settlement — eight steps</h3>
+    <div class="lab">
+      <div class="lab-title">A coffee paid CHF 4.80 contactless</div>
+      <div class="steps" id="cardSteps"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="cardNext">Start →</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label def">Who earns what</span>
+    <h3>The merchant discount rate, broken down</h3>
+    <div class="formula">Merchant discount rate (MDR) = interchange + scheme fees + acquirer’s margin</div>
+    <p>On a CHF 100 purchase with a 1.5% MDR, the merchant receives CHF 98.50. The <b>interchange</b> (set by the scheme, paid by the acquirer to the issuer) pays the issuer for the risk and credit it carries; the <b>scheme fees</b> pay Visa or Mastercard; the rest is the <b>acquirer’s margin</b>, which also pays for the technical processing.</p>
+    <ul>
+      <li><strong>In the EU</strong>, Regulation 2015/751 caps interchange on consumer cards at <b>0.2%</b> (debit) and <b>0.3%</b> (credit).</li>
+      <li><strong>In Switzerland</strong>, there is no law: agreements with the Competition Commission (COMCO) brought domestic credit-card interchange down to <b>0.44%</b> on average (since 2017).</li>
+      <li>Interchange is what funds neobanks’ “free” cards: they are issuers, and earn the interchange on every payment.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Security and fraud</span>
+    <h3>Strong customer authentication, 3-D Secure, and who pays for fraud</h3>
+    <p>The European <b>PSD2</b> directive requires <b>strong customer authentication</b> (SCA) for most online payments: two factors out of <em>knowledge</em> (a code), <em>possession</em> (the phone) and <em>inherence</em> (fingerprint, face). For cards, it goes through <b>3-D Secure</b>: the issuer asks for confirmation in its app. Version 2 is <em>risk-based</em>: the issuer receives around a hundred data points (device, history, amount) and lets low-risk payments through without friction.</p>
+    <p><strong>The liability shift</strong>: when a payment has been authenticated with 3-D Secure, fraud is borne by the issuer. Without authentication, the cardholder disputes, the issuer raises a <em>chargeback</em> and the merchant loses the sale.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Without a card</span>
+    <h3>Instant payment, TWINT, QR-bill</h3>
+    <ul>
+      <li><strong>Instant payment.</strong> In Switzerland, the SIC system (operated by SIX for the Swiss National Bank) has processed instant payments since August 2024: credited within seconds, 24 hours a day, 7 days a week, as ISO 20022 messages. In the EU, Regulation 2024/886 requires banks to receive and then to send SEPA instant transfers (ten seconds at most) at the price of an ordinary transfer, with verification of the payee’s name.</li>
+      <li><strong>TWINT.</strong> The app is linked to the user’s bank account; payment is made by scanning a QR code (or showing one), authorisation is given in real time, and the merchant is credited by its acquirer. No card network in the middle: TWINT is its own scheme.</li>
+      <li><strong>The QR-bill.</strong> Since 30 September 2022, it has replaced the orange and red payment slips. The QR code contains no money: it contains a <em>pre-filled payment order</em> — IBAN, amount, reference — which the payer’s banking app reads and submits after confirmation.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 3 min</span>
+    <h3>Who does what in a card payment?</h3>
+    <div class="lab">
+      <div class="lab-title">Cardholder · issuer · scheme · acquirer · merchant</div>
+      <div id="corRows"></div>
+      <div class="caption" id="corRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s1" data-need="The eight steps and the sorting exercise complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.2 · Block 1</div><span class="mode m-do">🛠 Workshop · 55 min</span><h2>Interchange simulator · IBAN and QR-bill</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 25 min · who wins, who loses</span>
+    <h3>Vary the MDR, the interchange, the fraud and the volume</h3>
+    <p>An online merchant in Geneva. Each slider changes how the money is split between the four corners. Answer the three questions below the table, then explain what you observed.</p>
+    <div class="calc" id="icCtrl"></div>
+    <div class="toggle-row" id="icTds" style="max-width:420px;"><button data-v="0" class="on">Without 3-D Secure</button><button data-v="1">With 3-D Secure</button></div>
+    <div class="tblwrap"><table class="fx" id="icTab"></table></div>
+    <div id="icNum"></div>
+    <div class="wb" data-board="Who wins, who loses?|w2_interchange">
+      <div class="wq"><span class="qn">✍</span>What you observed: which slider moves the most money, and towards whom? What does 3-D Secure change, and for whom?</div>
+      <textarea data-work="w2_interchange" data-worklabel="Interchange simulator — what I observed" placeholder="e.g. Lowering interchange to 0.2% increases the acquirer’s margin if the MDR does not fall; with 3-D Secure, fraud shifts from the merchant to the issuer…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 20 min · the IBAN and the QR-bill</span>
+    <h3>The check that prevents sending money to the wrong account</h3>
+    <p>A Swiss IBAN has 21 characters: <b>CH</b>, two <b>check digits</b>, five <b>institution</b> digits (the bank), twelve <b>account</b> digits. To check it (ISO 13616 standard): move the first four characters to the end, replace each letter with a number (A = 10 … Z = 35; C = 12, H = 17), and divide the resulting large number by 97. <b>An IBAN is valid if the remainder is 1.</b> To <em>compute</em> the check digits, do the same with “00” in their place, and take 98 minus the remainder.</p>
+    <div class="lab">
+      <div class="lab-title">IBAN checker, step by step</div>
+      <div class="trow" style="display:flex;gap:8px;flex-wrap:wrap;"><input class="numin" id="ibIn" style="width:280px;font-family:ui-monospace,Menlo,monospace" value="CH93 0076 2011 6238 5295 7"><button class="btn small" id="ibGo">Check</button></div>
+      <div id="ibOut" class="srcnote" style="font-size:13px;color:var(--ink-soft);"></div>
+    </div>
+    <div id="ibNum"></div>
+    <p style="margin-top:14px;">The <b>QR reference</b> (27 digits) ends with a check digit computed by “recursive modulo 10”: start with a carry of 0; for each digit, the new carry is entry (carry + digit) mod 10 of the table <code>0 9 4 6 8 2 7 1 3 5</code>; at the end, the check digit is (10 − carry) mod 10.</p>
+    <div class="lab">
+      <div class="lab-title">QR reference calculator</div>
+      <div class="trow" style="display:flex;gap:8px;flex-wrap:wrap;"><input class="numin" id="qrIn" style="width:300px;font-family:ui-monospace,Menlo,monospace" placeholder="26 digits" value="21000000000313947143000901"><button class="btn small" id="qrGo">Compute</button></div>
+      <div id="qrOut" class="srcnote" style="font-size:13px;color:var(--ink-soft);"></div>
+    </div>
+    <div id="qrNum"></div>
+    <p style="margin-top:14px;">Here is the content of a QR-bill, as the code carries it (example from SIX’s implementation guidelines). One line per field; empty lines are optional fields left blank.</p>
+    <pre class="code" id="qrPayload"></pre>
+    <div class="lab">
+      <div class="lab-title">True or false?</div>
+      <div id="qrbRows"></div>
+      <div class="caption" id="qrbRowsCap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Debrief · 10 min</span>
+    <p>Two questions: why does interchange exist, and who should pay it? Why does a TWINT payment or a QR-bill cost the merchant less than a card payment?</p>
+  </div>
+  <div class="sec-status" data-sec="s2" data-need="The six calculations, the true-or-false and the field complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: Block 2 · mobile money →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.3 · Block 2</div><span class="mode m-ex">🎤 Talk · 15 min</span><h2>Mobile money and transfers</h2></div>
+  <p class="ex-note">Instructor’s talk, or self-study reading.</p>
+
+  <div class="card">
+    <span class="label def">The mechanism · electronic money</span>
+    <h3>Where does the money in a Wave or Orange Money wallet come from?</h3>
+    <ul>
+      <li><strong>One-for-one issuance.</strong> When a customer hands 10,000 FCFA in cash to an agent, the <span class="gloss" data-k="eme">electronic money issuer</span> records 10,000 FCFA in their wallet. In return, the issuer holds 10,000 FCFA in a <b>safeguarding account</b> at a bank. The sum of the wallets always equals this account: electronic money is not created, it is <em>converted</em>.</li>
+      <li><strong>The wallet is a claim</strong> of the customer on the issuer, not a bank deposit: the issuer cannot lend this money. That is the BCEAO rule in the WAEMU and the rule of Directive 2009/110/EC in the EU.</li>
+      <li><strong>The agent</strong> is a neighbourhood shopkeeper who keeps two stocks: <b>cash</b> in the drawer and <b>electronic money</b> (the <em>float</em>) on the phone. A <em>deposit</em> (cash-in) means receiving cash and giving up float; a <em>withdrawal</em> (cash-out), the reverse. The agent earns a commission per transaction.</li>
+      <li><strong>Rebalancing.</strong> When the float or the cash runs out, the agent must go to the bank or to a super-agent to convert one into the other — a trip, time, a risk of theft. An agent who runs short turns customers away: that is the first breaking point of a network.</li>
+    </ul>
+    <p><strong>The measured effect.</strong> In Kenya, access to M-Pesa (launched in 2007) lifted about 2% of households — some 194,000 — out of extreme poverty, with a stronger effect for female-headed households (Suri and Jack, <i>Science</i>, 2016).</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">The mechanism · an international transfer</span>
+    <h3>What a transfer really costs: the fees <em>and</em> the rate</h3>
+    <div class="formula">Total cost = amount sent − (amount received ÷ mid-market rate)</div>
+    <p>The <b>mid-market rate</b> is the midpoint between buy and sell on the foreign-exchange market. A provider advertising “zero fees” often makes its money on the rate. Between the CFA franc and the euro, the rate is <b>fixed</b>: €1 = 655.957 FCFA; so CHF 1 = 655.957 ÷ (price of one euro in francs) FCFA.</p>
+    <ul>
+      <li><strong>The bank (SWIFT transfer)</strong>: the money goes through a chain of correspondent banks, each of which may deduct fees; one to three business days.</li>
+      <li><strong>Wise</strong>: the money does not cross the border. Wise receives your francs in its Swiss account and pays the recipient from its local account; flows in both directions offset each other. Mid-market rate, displayed fees.</li>
+      <li><strong>To a mobile wallet</strong>: a transfer service credits the recipient’s Wave or Orange Money wallet directly; the recipient cashes out at an agent or pays with it.</li>
+      <li><strong>A stablecoin</strong>: francs → USDC on an exchange (fees and spread), transfer on the blockchain (network fees), USDC → FCFA with a local intermediary (spread). Each conversion has its cost (Day 4).</li>
+    </ul>
+    <p>United Nations Sustainable Development Goal 10.c: bring the cost of remittances below <b>3%</b> by 2030. The global average measured by the World Bank is about <b>6%</b> for a 200-dollar remittance, and sub-Saharan Africa is the most expensive region.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 3 min</span>
+    <h3>What happens to the agent’s two stocks?</h3>
+    <div class="lab">
+      <div class="lab-title">Cash ↑ float ↓ · cash ↓ float ↑ · nothing changes</div>
+      <div id="agRows"></div>
+      <div class="caption" id="agRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s3" data-need="The sorting exercise completes this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.4 · Block 2</div><span class="mode m-do">🛠 Workshop · 50 min</span><h2>A day as an agent · CHF 200 from Geneva to Dakar</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 20 min · the agent network simulator</span>
+    <h3>You run a Wave point in Dakar. Sixteen customers today.</h3>
+    <p>You start with <b>150,000 FCFA</b> in cash and <b>150,000 FCFA</b> of float. Each transaction served earns you <b>1%</b>. Before each customer, you can <b>rebalance</b> (go to the super-agent and split half-and-half): <b>500 FCFA</b> in transport. A customer you cannot serve goes to the competitor: <b>−2,000 FCFA</b> (the commissions they will no longer bring you). The maximum possible is 4,950 FCFA.</p>
+    <div class="agent" id="agent"></div>
+    <div class="wb">
+      <div class="wq"><span class="qn">✍</span>Your score, and your strategy in one sentence: when did you rebalance, and why at that moment?</div>
+      <textarea data-work="w2_agent" data-worklabel="Agent network — score and strategy" placeholder="The score is inserted at the end of the game; add your strategy."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 30 min · with today’s real rates</span>
+    <h3>Sending CHF 200 from Geneva to Dakar through four channels</h3>
+    <p>In pairs. For each channel, go to the provider’s website or simulator <em>today</em>, simulate sending CHF 200 to Senegal, and note the fees, the exchange rate offered and the announced delivery time. First enter today’s euro rate in francs (from the SNB, Wise or your bank’s website): the table derives the CHF → FCFA mid-market rate from it.</p>
+    <div class="calc"><div class="ctrl"><label>Price of one euro in francs today <span class="val" id="rmMidLbl"></span></label><input type="number" id="rmEur" step="0.0001" value="0.93"></div></div>
+    <div class="tblwrap"><table class="fx" id="rmTab"></table></div>
+    <div class="btn-row"><button class="btn small" id="rmCopy">Copy the table into my notebook ↓</button><button class="btn small ghost" id="rmDemo">Fill with example values</button></div>
+    <div class="srcnote" id="rmNote">The example values are fictitious; they only show how the table calculates. The task is to collect the real ones.</div>
+    <div class="wb" data-board="The best channel, and why|w2_transfert">
+      <div class="wq"><span class="qn">✍</span>The table, then your conclusion: which channel for which customer (who has an account, a smartphone, needs cash the same day)?</div>
+      <textarea data-work="w2_transfert" data-worklabel="Geneva → Dakar, CHF 200 — real costs collected and conclusion" style="min-height:140px"></textarea>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s4" data-need="A finished agent game, at least three channels collected and the two fields complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: the quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.5 · Block 2</div><span class="mode m-quiz">✅ Quiz · 10 min</span><h2>End-of-morning quiz</h2></div>
+  <div class="card">
+    <span class="label play">Interactive quiz · counts toward participation</span>
+    <h3>Eight questions, one attempt each, all explained</h3>
+    <p><strong>Launched in class</strong>; this page unlocks by itself. On your own, without an AI assistant. A missed quiz scores zero, unless arranged in advance.</p>
+    <div class="qlock" id="quizLock"></div>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: Block 3 · API →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.6 · Block 3</div><span class="mode m-ex">🎤 Talk · 20 min</span><h2>APIs and open banking</h2></div>
+  <p class="ex-note">Instructor’s talk, or self-study reading.</p>
+
+  <div class="card">
+    <span class="label def">What an API is</span>
+    <h3>A request, a response — like a form filled in by a program</h3>
+    <p>An <b>API</b> (application programming interface) lets one program call another. Payment APIs are almost all <b>REST</b>: the program sends an HTTP <em>request</em> to an address (the <em>endpoint</em>) and receives a <em>response</em> in JSON.</p>
+<pre class="code"><span class="k">POST</span> https://api.stripe.com/v1/payment_intents          <span class="ln">←</span> method + endpoint
+<span class="k">Authorization:</span> Bearer sk_test_…                         <span class="ln">←</span> the secret key
+<span class="k">Idempotency-Key:</span> order-2026-1043                        <span class="ln">←</span> duplicate guard
+{ <span class="s">"amount"</span>: 4990, <span class="s">"currency"</span>: <span class="s">"chf"</span> }                       <span class="ln">←</span> the body
+
+<span class="k">200 OK</span>
+{ <span class="s">"id"</span>: <span class="s">"pi_3Q…"</span>, <span class="s">"status"</span>: <span class="s">"requires_payment_method"</span>, <span class="s">"amount"</span>: 4990 }</pre>
+    <ul>
+      <li><strong>Methods</strong>: <code>GET</code> reads, <code>POST</code> creates or triggers, <code>DELETE</code> deletes.</li>
+      <li><strong>Status codes</strong>: <code>200</code> success · <code>400</code> malformed request · <code>401</code> not authenticated · <code>402</code> payment declined · <code>404</code> not found · <code>5xx</code> server-side failure.</li>
+      <li><strong>Amounts in the smallest unit</strong>: CHF 49.90 is written <code>4990</code> (centimes) — except for currencies without decimals, such as the CFA franc: 10,000 FCFA is written <code>10000</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">What protects</span>
+    <h3>Keys, tokens, idempotency, webhooks</h3>
+    <ul>
+      <li><strong>Keys.</strong> The <em>secret key</em> (<code>sk_test_…</code> in test, <code>sk_live_…</code> in production) gives full rights over the account: it stays on the merchant’s server, never in a web page or an app. The <em>publishable key</em> (<code>pk_…</code>) may be in the page; it only allows card data to be transmitted.</li>
+      <li><strong>Tokens.</strong> The card number goes directly from the browser to the provider, which returns a <em>token</em> (<code>pm_…</code>) to the merchant. The merchant never sees the card: it falls almost entirely outside the scope of the PCI DSS security standard.</li>
+      <li><strong>Idempotency.</strong> If the connection drops during a payment, the program resends the request. With the same <code>Idempotency-Key</code>, the provider returns the result of the first one instead of charging twice.</li>
+      <li><strong>Webhooks.</strong> Some results arrive later (3-D Secure confirmation, bank transfer). Instead of asking again and again, the merchant provides an address; the provider calls it when the status changes (<code>payment_intent.succeeded</code>). The call is signed, so that an attacker cannot announce a fake payment.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Open banking</span>
+    <h3>PSD2: banks must open accounts to authorised third parties</h3>
+    <p>Since PSD2 (Directive 2015/2366, applied since 2018), a European bank must give access to payment accounts, <em>with the customer’s consent</em>, to two types of licensed providers:</p>
+    <ul>
+      <li><strong>AISP</strong> — account <em>information</em> service provider: it <em>reads</em> balances and transactions (budget aggregator, accounting tool, credit scoring).</li>
+      <li><strong>PISP</strong> — payment <em>initiation</em> service provider: it <em>triggers</em> a transfer from the customer’s account (paying online by bank transfer, without a card).</li>
+    </ul>
+    <p>The customer gives consent in their bank’s app (OAuth 2.0 flow, with strong customer authentication); the third party receives an <em>access token</em> limited in time and in rights, never the password. The APIs follow standards such as the Berlin Group’s NextGenPSD2. <strong>Switzerland has no legal obligation</strong>: opening up happens through market agreements, notably via SIX’s bLink platform. In the EU, the revision (PSD3 and the Payment Services Regulation) is in the process of adoption.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 3 min</span>
+    <h3>AISP, PISP, or neither?</h3>
+    <div class="lab">
+      <div class="lab-title">Classify each service</div>
+      <div id="psdRows"></div>
+      <div class="caption" id="psdRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s6" data-need="The sorting exercise completes this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: the API console →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.7 · Block 3</div><span class="mode m-do">🛠 Workshop · 55 min</span><h2>API workshop · a payment platform in test mode</h2></div>
+
+  <div class="card">
+    <span class="label play">In teams · eight missions</span>
+    <h3>Create a customer, collect CHF 49.90, get declined, pass 3-D Secure, refund</h3>
+    <p>The console below imitates Stripe’s API in test mode, simplified: JSON body, fictitious ids, no real money, nothing leaves your browser. Choose an endpoint, click “Template” to pre-fill the body, edit it, send, read the response and the webhook log. Confirm and retrieve act on the last payment created (or on the one whose <code>"id"</code> you put in the body). The missions tick themselves off.</p>
+    <div class="missions" id="apiMissions"></div>
+    <div class="api">
+      <div class="pane">
+        <h5>Request</h5>
+        <select id="apiEp"></select>
+        <div class="row2"><span>Authorization</span><input id="apiKey" value="Bearer sk_test_mfb545_demo"></div>
+        <div class="row2"><span>Idempotency-Key</span><input id="apiIdem" placeholder="(optional)"></div>
+        <textarea id="apiBody" spellcheck="false"></textarea>
+        <div class="btn-row"><button class="btn small ghost" id="apiTpl">Template</button><button class="btn small" id="apiSend">Send →</button><button class="btn small ghost" id="api3ds" style="display:none">Simulate: the customer completes 3-D Secure</button></div>
+        <div class="srcnote">Test payment methods: <code>pm_card_visa</code> (accepted) · <code>pm_card_chargeDeclinedInsufficientFunds</code> (declined, insufficient funds) · <code>pm_card_authenticationRequired</code> (3-D Secure required). These are the ones from Stripe’s documentation; with a real Stripe account in test mode (free), the same requests work.</div>
+      </div>
+      <div class="pane">
+        <h5>Response</h5>
+        <div id="apiStatus"></div>
+        <pre class="code" id="apiResp" style="min-height:160px;white-space:pre-wrap;">—</pre>
+        <h5 style="margin-top:10px;">Webhooks received by your server</h5>
+        <div class="hooks" id="apiHooks"><div style="color:var(--grey)">none yet</div></div>
+      </div>
+    </div>
+    <div class="wb" style="margin-top:12px;">
+      <div class="wq"><span class="qn">✍</span>Two short answers: why does the merchant wait for the webhook before shipping the order? What could someone do who finds your secret key in your website’s code?</div>
+      <textarea data-work="w2_api" data-worklabel="API workshop — webhook and secret key" placeholder="e.g. The final status may arrive after 3-D Secure…; with the secret key one can issue refunds, read the customers…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Debrief · 15 min</span>
+    <p>Which mission caused trouble, and which error message put you on the right track? Where, in your own fintech’s customer journey, will a third-party API do part of the work?</p>
+  </div>
+  <div class="sec-status" data-sec="s7" data-need="The eight missions and the field complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <button class="btn" data-next="s8">Next: Block 4 · the negotiation →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.8 ============================ -->
+<section class="screen" id="s8">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.8 · Block 4</div><span class="mode m-ex">🎤 Instructions · 10 min</span><h2>Role play · the three-way negotiation</h2></div>
+
+  <div class="card">
+    <span class="label def">The situation</span>
+    <h3>An online merchant, its payment provider and a card network</h3>
+    <p><b>Teranga Market</b>, a Geneva online shop (groceries and cosmetics for the West African diaspora), collects <b>CHF 1.2 million</b> a year by card. Its provider, <b>PayLéman</b>, charges it 1.8%. A competitor offers 1.4%. Online fraud reaches 0.4% of sales, above the monitoring threshold of the card network <b>Kora</b>. The three parties meet to set: <b>the MDR</b>, <b>who pays for fraud</b>, and <b>whether 3-D Secure is activated</b>.</p>
+    <p><b>The rules.</b> The three project teams form three tables; at each table, one person per role (three per table). Read <em>only your own card</em>. 20 minutes of negotiation; a deal is recorded in the calculator in the next section. No deal is a possible outcome — to be compared with your fallback option.</p>
+    <div class="roles" id="roles">
+      <div class="role" data-r="m"><div class="rh">🛒 The merchant</div><div class="rs">Teranga Market</div></div>
+      <div class="role" data-r="p"><div class="rh">🏦 The provider</div><div class="rs">PayLéman SA, acquirer</div></div>
+      <div class="role" data-r="n"><div class="rh">🌐 The network</div><div class="rs">Kora, card network</div></div>
+    </div>
+    <div class="rcard" id="rc_m"><div class="secret">Confidential card · merchant</div><h4>Teranga Market</h4><ul>
+      <li>Card sales: CHF 1,200,000 a year, average basket CHF 60, gross margin 30%.</li>
+      <li>Today: MDR 1.8% (CHF 21,600) and fraud 0.4% borne entirely by you (CHF 4,800) — <b>CHF 26,400 a year</b>.</li>
+      <li>Fallback option: the competitor at 1.4%, but switching costs CHF 3,000 and two weeks; fraud would remain your burden — <b>CHF 24,600</b> in the first year.</li>
+      <li>You are wary of 3-D Secure: you have been told it drives customers away. (What you do not know: with version 2, the loss of sales is about 1%.)</li>
+      <li><b>Your objective</b>: a total payment cost (MDR + fraud + lost sales) below <b>CHF 21,000 a year</b>.</li></ul></div>
+    <div class="rcard" id="rc_p"><div class="secret">Confidential card · provider</div><h4>PayLéman SA</h4><ul>
+      <li>Your costs: interchange and scheme fees ≈ 0.65% on average, processing 0.20% — <b>0.85%</b> in total. At 1.8%, this customer earns you CHF 11,400 a year.</li>
+      <li>The network charges you a penalty of 0.10% of volume (CHF 1,200) as long as this merchant’s fraud exceeds 0.3%.</li>
+      <li>You can offer to integrate 3-D Secure (it costs you CHF 1,000 once).</li>
+      <li>Losing the customer: CHF 0.</li>
+      <li><b>Your objective</b>: keep the customer with at least <b>CHF 4,800</b> of profit a year, and get 3-D Secure activated.</li></ul></div>
+    <div class="rcard" id="rc_n"><div class="secret">Confidential card · network</div><h4>Kora</h4><ul>
+      <li>Your fees: 0.10% of volume (CHF 1,200 a year on this merchant), included in the provider’s 0.65%.</li>
+      <li>You cannot change the interchange for a single merchant: it is set for the whole network.</li>
+      <li>You can offer the provider a rebate of 0.05% (CHF 600 a year) if 3-D Secure is activated.</li>
+      <li>An unhappy merchant can push its customers towards TWINT or instant payments — which do not go through you.</li>
+      <li><b>Your objective</b>: 3-D Secure activated, fraud below 0.3%, and the volume stays on your network.</li></ul></div>
+  </div>
+  <div class="sec-status" data-sec="s8" data-need="Choosing your role and reading your card complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Back</button>
+    <button class="btn" data-next="s9">Next: negotiate, then your flow →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.9 ============================ -->
+<section class="screen" id="s9">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 2.9 · Block 4</div><span class="mode m-do">🛠 Negotiation and project · 65 min</span><h2>The deal, then your fintech’s payment flow</h2></div>
+
+  <div class="card">
+    <span class="label play">20 min · negotiation · 15 min · debriefing</span>
+    <h3>Enter the terms of your deal: the calculator gives each party’s result</h3>
+    <div class="timer" data-min="20" data-label="Negotiation"></div>
+    <div class="calc" id="dealCtrl"></div>
+    <div class="tblwrap"><table class="fx" id="dealTab"></table></div>
+    <p class="caption" id="dealCap"></p>
+    <div class="wb" data-board="The three tables’ deals|w2_nego">
+      <div class="wq"><span class="qn">✍</span>Your role, the terms of the deal (or the lack of one), and the argument that moved the table.</div>
+      <textarea data-work="w2_nego" data-worklabel="Three-way negotiation — role, deal, decisive argument" placeholder="The calculator’s button inserts the terms; add your role and the decisive argument."></textarea>
+    </div>
+    <p>At the debriefing, the three tables compare their deals. The question to ask: <em>was there a deal better for all three</em>? What did one need to know that only one role knew?</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">30 min · in teams · the project</span>
+    <h3>Your fintech’s payment flow and revenue model</h3>
+    <p>Go back to the problem from Day 1. First draw the flow on paper (who pays whom, by what means, how long it takes, who holds the money in the meantime), then describe it here. Each member fills in their notebook — the same version for the whole team.</p>
+    <div class="wb" data-board="The payment flows|w2_flux">
+      <div class="wq"><span class="qn">1.</span>The flow: who pays whom, on which rail (card, instant payment, TWINT, mobile money, stablecoin…), how fast, who holds the money in the meantime, and under which licence.</div>
+      <textarea data-work="w2_flux" data-worklabel="Project — the payment flow" style="min-height:120px" placeholder="e.g. The student pays in francs via TWINT → our safeguarding account at a partner bank (D+0) → EUR/FCFA conversion → the recipient’s Wave wallet is credited via the API of a BCEAO-licensed partner (a few minutes)…"></textarea>
+    </div>
+    <div class="wb" data-board="The revenue models|w2_revenus">
+      <div class="wq"><span class="qn">2.</span>The revenue model: who pays, the mechanism (per transaction, FX margin, subscription…), the price, and an estimated ARPU with your calculation.</div>
+      <textarea data-work="w2_revenus" data-worklabel="Project — the revenue model and estimated ARPU" style="min-height:110px" placeholder="e.g. 1.5% per transfer, no FX margin; CHF 200 per month per customer → ARPU CHF 3; variable cost: …"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Before Day 3 · Saturday 24 October (the next day)</span>
+    <ul>
+      <li>Check that your Google account opens <a href="https://colab.research.google.com" target="_blank" rel="noopener">Google Colab ↗</a>: tomorrow’s Block 1 is a guided credit-scoring notebook.</li>
+      <li>Day 3 adds the credit or savings product to the project: note what your customer would need to borrow or save, how much, and for how long.</li>
+    </ul>
+  </div>
+  <div class="sec-status" data-sec="s9" data-need="The deal recorded in the calculator and the three fields complete this section — and the day."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Back</button>
+    <button class="btn" data-home>Day menu</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   JOURNÉE 2 — configuration + widgets. The engine is journee.js.
+   Every number was recomputed in Python before shipping: the interchange
+   tasks (0,66 · 1 600 · 0,90), the IBAN remainders (CH93… → 1, the typo
+   → 2, check digits 93), the QR reference (…0001 → 3; SIX's example → 7),
+   the agent game (no rebalancing 1 300, best 4 950 with two), and the
+   negotiation (status quo 26 400 / 10 200; the example deal 20 100 /
+   5 300 / 600; the merchant's fallback 24 600).
+   ===================================================================== */
+var GLOSSARY={
+  psp:['payment service provider (PSP)','A company that lets a merchant accept payments — cards, wallets, transfers — through a single contract and a single technical integration. It is often an acquirer itself, or works with one.'],
+  eme:['electronic money issuer (EMI)','An institution licensed (by the BCEAO in the WAEMU) to issue electronic money against funds received, held one-for-one in a safeguarding account at a bank. It cannot lend these funds.']
+};
+var DAY={
+  mod:'w2', key:'mfb545_w2_progress_v1', title:'Day 2 · Payments and digital money',
+  blocks:[
+    {n:1,t:'09:00–10:30',name:'anatomy of a payment · interchange, IBAN, QR-bill',parts:[['ex',20],['do',55],['co',15]]},
+    {n:2,t:'10:45–12:15',name:'mobile money · Geneva → Dakar · the quiz',parts:[['ex',15],['do',50],['quiz',10],['co',15]]},
+    {n:3,t:'13:30–15:00',name:'APIs and open banking · the console in test mode',parts:[['ex',20],['do',55],['co',15]]},
+    {n:4,t:'15:15–16:45',name:'the three-way negotiation · your fintech’s flow',parts:[['ex',10],['do',25],['co',15],['do',40]]}
+  ],
+  sections:[
+    {id:'s1',num:'2.1',name:'Anatomy of a payment',tag:'Four corners · authorisation, clearing, settlement · who earns what · 3-D Secure · instant payment and QR-bill',mode:'ex',min:20,block:1},
+    {id:'s2',num:'2.2',name:'Interchange · IBAN · QR-bill',tag:'The split simulator · checking an IBAN · the QR reference',mode:'do',min:55,block:1},
+    {id:'s3',num:'2.3',name:'Mobile money and transfers',tag:'Electronic money · the agent and their two stocks · the true cost of a transfer',mode:'ex',min:15,block:2},
+    {id:'s4',num:'2.4',name:'A day as an agent · Geneva → Dakar',tag:'The agent simulator · CHF 200 through four channels, today’s rates',mode:'do',min:50,block:2},
+    {id:'s5',num:'2.5',name:'End-of-morning quiz',tag:'Eight questions · launched in class · counts toward participation',mode:'quiz',min:10,block:2},
+    {id:'s6',num:'2.6',name:'APIs and open banking',tag:'Request and response · keys, tokens, idempotency, webhooks · PSD2, AISP and PISP',mode:'ex',min:20,block:3},
+    {id:'s7',num:'2.7',name:'API workshop in test mode',tag:'Eight missions in a payment console',mode:'do',min:55,block:3},
+    {id:'s8',num:'2.8',name:'The three-way negotiation',tag:'Merchant, provider, network · three confidential cards',mode:'ex',min:10,block:4},
+    {id:'s9',num:'2.9',name:'The deal · your fintech’s flow',tag:'The deal calculator · the project’s payment flow and revenue model',mode:'do',min:65,block:4}
+  ],
+  secCheck:function(a){
+    if(a.st.card&&a.cls.corRows)a.mark('s1');
+    if(['i1','i2','i3','b1','b2','b3'].every(function(k){return a.st[k];})&&a.cls.qrbRows&&a.filled('w2_interchange'))a.mark('s2');
+    if(a.cls.agRows)a.mark('s3');
+    if(a.st.agent&&a.st.remit&&a.all(['w2_agent','w2_transfert']))a.mark('s4');
+    if(a.cls.psdRows)a.mark('s6');
+    if([1,2,3,4,5,6,7,8].every(function(k){return a.st['api'+k];})&&a.filled('w2_api'))a.mark('s7');
+    if(a.st.role)a.mark('s8');
+    if(a.st.deal&&a.all(['w2_nego','w2_flux','w2_revenus']))a.mark('s9');
+  }
+};
+</script>
+<script src="journee.js"></script>
+<script>
+/* ---- 2.1 the card payment walk ---- */
+buildSteps('cardSteps','cardNext',[
+  '<b>1 · At the terminal.</b> The card (or the phone) generates a single-use <em>cryptogram</em> from a secret key embedded in the chip: copying the number is not enough to clone a chip card. In Apple Pay or Google Pay, the real number is even replaced by a <em>token</em> specific to the phone.',
+  '<b>2 · Authorisation request.</b> The terminal sends the acquirer a message in <b>ISO 8583</b> format: amount (480 centimes), currency, card number or token, cryptogram, merchant identifier.',
+  '<b>3 · Routing.</b> The acquirer forwards to the scheme (VisaNet, Banknet at Mastercard), which reads the first digits of the card — the <b>BIN</b>, 6 to 8 digits that identify the issuer — and routes the message to the right bank, anywhere in the world.',
+  '<b>4 · The issuer’s decision.</b> In a few milliseconds: valid card? correct cryptogram? sufficient balance or limit? And a <b>fraud-detection model</b> scores the transaction (place, time, amount, customer habits). Coded response: <code>00</code> approved, <code>51</code> insufficient funds, <code>05</code> declined.',
+  '<b>5 · Back to the terminal</b> in one to two seconds: “Payment approved”. No money has moved yet — the issuer has only <em>reserved</em> the amount on the cardholder’s account.',
+  '<b>6 · Clearing (in the evening).</b> The merchant or its provider sends the batch of the day’s transactions. The scheme computes, for each bank, what it owes and what it is owed — interchange and scheme fees included.',
+  '<b>7 · Settlement (D+1).</b> Net positions are settled between settlement banks: the issuer pays the acquirer the amount of the purchases <em>minus the interchange</em>.',
+  '<b>8 · The merchant is credited</b> by the acquirer, minus the MDR, one to three days later. For several weeks, the cardholder can still dispute: that is the <em>chargeback</em> window.'
+],'card');
+buildClassify('corRows','corRowsCap',
+  [['T','Cardholder'],['E','Issuer'],['R','Scheme'],['A','Acquirer'],['C','Merchant']],
+  [
+    {s:'Receives the interchange',a:'E',w:'The acquirer pays it to the issuer; it rewards the risk and credit carried by the card’s bank.'},
+    {s:'Pays the merchant discount rate (MDR)',a:'C',w:'It is deducted from what the acquirer pays out to the merchant.'},
+    {s:'Routes the request to the right bank using the BIN',a:'R',w:'That is the core business of Visa and Mastercard: global routing and common rules.'},
+    {s:'Approves or declines the payment',a:'E',w:'Only the card’s bank knows the customer’s balance, limit and habits.'},
+    {s:'Credits the merchant, one to three days later',a:'A',w:'The acquirer (often through a payment service provider) holds the contract with the merchant.'},
+    {s:'Bears the fraud on a payment authenticated with 3-D Secure',a:'E',w:'The liability shift: strong customer authentication moves the risk from the merchant to the issuer.'},
+    {s:'Sets the interchange schedule (under the authorities’ oversight)',a:'R',w:'The scheme sets the schedules; the EU caps them by regulation, COMCO oversees them in Switzerland.'}
+  ],
+  'five roles; the merchant discount rate funds the three in the middle.',null);
+
+/* ---- 2.2 A · the interchange simulator ---- */
+(function icSim(){
+  var C=[['tk','Average basket (CHF)',10,300,5,50,''],['nb','Transactions per month',100,10000,100,2000,''],['mdr','Merchant discount rate',0.5,3,0.05,1.5,'%'],
+         ['ic','Interchange',0,1.5,0.02,0.44,'%'],['sf','Scheme fees',0,0.5,0.01,0.15,'%'],['pc','Acquirer’s processing cost',0,0.6,0.01,0.25,'%'],['fr','Fraud rate',0,1,0.01,0.10,'%']];
+  var v={},tds=false,ctrl=document.getElementById('icCtrl'),tab=document.getElementById('icTab');
+  ctrl.innerHTML=C.map(function(c){v[c[0]]=c[5];return '<div class="ctrl"><label>'+c[1]+' <span class="val" id="iv_'+c[0]+'"></span></label><input type="range" min="'+c[2]+'" max="'+c[3]+'" step="'+c[4]+'" value="'+c[5]+'" data-k="'+c[0]+'"></div>';}).join('');
+  ctrl.querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){v[i.dataset.k]=parseFloat(i.value);paint();});});
+  document.getElementById('icTds').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;tds=b.dataset.v==='1';document.querySelectorAll('#icTds button').forEach(function(x){x.classList.toggle('on',x===b);});paint();});
+  function cl(x){return x>=0?'pos':'neg';}
+  function paint(){
+    C.forEach(function(c){document.getElementById('iv_'+c[0]).textContent=fmt(v[c[0]],c[4]<1?2:0)+(c[6]?'%':'');});
+    var V=v.tk*v.nb,mdr=V*v.mdr/100,ic=V*v.ic/100,sf=V*v.sf/100,pc=V*v.pc/100,fr=V*v.fr/100;
+    var acq=mdr-ic-sf-pc, iss=ic-(tds?fr:0), mer=-(mdr+(tds?0:fr));
+    var per=function(x){return fmt(x/V*100,2);};
+    tab.innerHTML='<tr><th>Per month · volume CHF '+fmt(V)+'</th><th>CHF</th><th>per CHF 100</th></tr>'+
+      '<tr><td>Merchant — MDR'+(tds?'':' + fraud (chargebacks)')+'</td><td class="'+cl(mer)+'">'+fmt(mer,2)+'</td><td>'+per(mer)+'</td></tr>'+
+      '<tr><td>Issuer — interchange'+(tds?' − fraud (liability shift)':'')+'</td><td class="'+cl(iss)+'">'+fmt(iss,2)+'</td><td>'+per(iss)+'</td></tr>'+
+      '<tr><td>Scheme — fees</td><td class="pos">'+fmt(sf,2)+'</td><td>'+per(sf)+'</td></tr>'+
+      '<tr><td>Acquirer — MDR − interchange − scheme fees − processing</td><td class="'+cl(acq)+'">'+fmt(acq,2)+'</td><td>'+per(acq)+'</td></tr>'+
+      '<tr class="tot"><td>Fraud lost, borne by '+(tds?'the issuer':'the merchant')+'</td><td>'+fmt(fr,2)+'</td><td>'+per(fr)+'</td></tr>';
+  }
+  paint();
+})();
+buildNum('icNum',[
+  {id:'i1',q:'With the starting settings (MDR 1.5%, interchange 0.44%, scheme 0.15%, processing 0.25%), how much does the acquirer keep on a <b>CHF 100</b> purchase?',a:0.66,tol:0.001,unit:'CHF',w:'1.50 − 0.44 − 0.15 − 0.25 = CHF 0.66.',hint:'What the merchant pays, minus what the acquirer passes on or spends.'},
+  {id:'i2',q:'Still the starting settings, without 3-D Secure: 2,000 transactions of CHF 50 per month and 0.10% fraud. Total payment cost for the merchant, <b>per month</b>?',a:1600,unit:'CHF',w:'Volume CHF 100,000: MDR 1,500 + fraud 100 = CHF 1,600.',hint:'MDR on the volume, plus the fraud the merchant bears without 3-D Secure.'},
+  {id:'i3',q:'Interchange falls to <b>0.20%</b> (the EU debit cap) but the merchant discount rate stays at 1.5%. How much does the acquirer keep on CHF 100?',a:0.90,tol:0.001,unit:'CHF',w:'1.50 − 0.20 − 0.15 − 0.25 = CHF 0.90: without competition between acquirers, the fall in interchange benefits the acquirer, not the merchant.',hint:'Only the interchange changes.'}
+]);
+
+/* ---- 2.2 B · IBAN + QR reference ---- */
+function mod97(digits){var r=0;for(var i=0;i<digits.length;i+=7){r=parseInt(String(r)+digits.substr(i,7),10)%97;}return r;}
+function ibanDigits(s){return s.split('').map(function(c){return /[A-Z]/.test(c)?String(c.charCodeAt(0)-55):c;}).join('');}
+document.getElementById('ibGo').addEventListener('click',function(){
+  var s=document.getElementById('ibIn').value.toUpperCase().replace(/\s/g,''),out=document.getElementById('ibOut');
+  if(!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(s)){out.innerHTML='Format not recognised: two letters, two digits, then the account number.';return;}
+  var r=s.slice(4)+s.slice(0,4),d=ibanDigits(r),m=mod97(d);
+  out.innerHTML='1. Move <b>'+s.slice(0,4)+'</b> to the end: <code>'+r+'</code><br>2. Letters become numbers: <code>'+d+'</code><br>3. Remainder of division by 97: <b>'+m+'</b> → '+(m===1?'<b style="color:var(--ok)">valid IBAN</b>':'<b style="color:#9B2335">invalid IBAN</b> (it must be 1)');
+});
+document.getElementById('ibGo').click();
+buildNum('ibNum',[
+  {id:'b1',q:'Compute the two check digits of the Swiss IBAN whose remaining part is <code>0076 2011 6238 5295 7</code>: CH<b>??</b> 0076 2011 6238 5295 7. <i>(Tip: check “CH00 0076 2011 6238 5295 7” in the tool, then 98 − remainder.)</i>',a:93,tol:0,unit:'',w:'With 00, the remainder is 5; 98 − 5 = 93. This is the standard’s example IBAN: CH93 0076 2011 6238 5295 7.',hint:'Put 00 in place of the check digits, read the remainder, compute 98 minus that remainder.'},
+  {id:'b2',q:'A customer swapped the last two digits: <code>CH93 0076 2011 6238 5297 5</code>. What remainder do you get?',a:2,tol:0,unit:'',w:'Remainder 2, not 1: the IBAN is rejected before the money is even sent. The modulo 97 check detects all single-character errors and almost all swaps of two adjacent digits.',hint:'Paste it into the tool.'}
+]);
+var QT=[0,9,4,6,8,2,7,1,3,5];
+function m10(s){var c=0,rows=[];for(var i=0;i<s.length;i++){var n=QT[(c+parseInt(s[i],10))%10];rows.push(c+'+'+s[i]+'→'+n);c=n;}return {cd:(10-c)%10,rows:rows};}
+document.getElementById('qrGo').addEventListener('click',function(){
+  var s=document.getElementById('qrIn').value.replace(/\s/g,''),out=document.getElementById('qrOut');
+  if(!/^\d{26}$/.test(s)){out.innerHTML='Exactly 26 digits are needed (the full QR reference has 27: these 26 plus the check digit).';return;}
+  var r=m10(s);out.innerHTML='Successive carries: <code>'+r.rows.join(' · ')+'</code><br>Check digit: <b>'+r.cd+'</b> → full reference <code>'+s+r.cd+'</code>';
+});
+document.getElementById('qrGo').click();
+buildNum('qrNum',[
+  {id:'b3',q:'An SME numbers its invoices and derives the reference <code>00000000000000202610230001</code> (26 digits) from them. What is the 27<sup>th</sup>, the check digit?',a:3,tol:0,unit:'',w:'The final carry is 7; (10 − 7) mod 10 = 3. Full reference: 000000000000002026102300013.',hint:'Paste the 26 digits into the calculator and follow the carries.'}
+]);
+(function payload(){
+  var L=['SPC','0200','1','CH4431999123000889012','S','Robert Schneider AG','Rue du Lac','1268','2501','Biel','CH','','','','','','','','1949.75','CHF','S','Pia-Maria Rutschmann-Schnyder','Grosse Marktgasse','28','9400','Rorschach','CH','QRR','210000000003139471430009017','Order of 15 June 2020','EPD'];
+  var N={1:'type',2:'version',3:'coding',4:'creditor IBAN',5:'address type',6:'name',7:'street',8:'number',9:'postcode',10:'town',11:'country',12:'(ultimate creditor, 7 lines)',19:'amount',20:'currency',21:'debtor: address type',22:'debtor: name',28:'reference type',29:'reference',30:'message',31:'end of data'};
+  document.getElementById('qrPayload').innerHTML=L.map(function(x,i){return '<span class="ln">'+(i+1)+'</span>'+(x?esc(x):'<span style="color:#56707C">·</span>')+(N[i+1]?'   <span style="color:#6F8C99">← '+N[i+1]+'</span>':'');}).join('\n');
+})();
+buildClassify('qrbRows','qrbRowsCap',
+  [['V','True'],['F','False']],
+  [
+    {s:'Line 4: this is a <b>QR-IBAN</b>, because its institution number (31999) lies between 30000 and 31999.',a:'V',w:'A QR-IBAN is recognised by this institution number; it is used to receive payments with a reference, which the bank automatically matches to invoices.'},
+    {s:'With a QR-IBAN, you can use a free reference in the international format (SCOR) instead of the QR reference.',a:'F',w:'A QR-IBAN requires a QR reference (QRR, 27 digits). The SCOR reference (ISO 11649, “RF…”) is used with an ordinary IBAN.'},
+    {s:'The last digit of the reference (line 29) is a recursive modulo 10 check digit.',a:'V',w:'It is the 7 that the calculator recovers from the first 26 digits.'},
+    {s:'Scanning this code with your banking app sends the money immediately, without confirmation.',a:'F',w:'The code pre-fills the order; the payer checks and confirms. The QR code contains only data, neither money nor authorisation.'},
+    {s:'The amount line can be left empty: the payer then enters the amount themselves.',a:'V',w:'The amount is optional — useful for donations, for example.'},
+    {s:'The QR-bill replaced the orange and red payment slips, which have no longer been accepted since 30 September 2022.',a:'V',w:'The Swiss financial centre migrated to the QR-bill, aligned with the ISO 20022 standard for transfers.'}
+  ],
+  'a payment QR code is a pre-filled form, protected by check digits.',null);
+
+/* ---- 2.3 agent stocks ---- */
+buildClassify('agRows','agRowsCap',
+  [['CU','Cash ↑ float ↓'],['CD','Cash ↓ float ↑'],['N','Nothing changes']],
+  [
+    {s:'A customer deposits 10,000 FCFA to send to her mother',a:'CU',w:'A deposit (cash-in): the agent receives cash and transfers float into the customer’s wallet.'},
+    {s:'A customer withdraws 25,000 FCFA received from his brother in France',a:'CD',w:'A withdrawal (cash-out): the agent hands out cash and receives float.'},
+    {s:'Two customers send each other money from phone to phone',a:'N',w:'A P2P transfer does not go through the agent: only the two wallets move.'},
+    {s:'The agent goes to the bank to deposit surplus cash in exchange for float',a:'CD',w:'Rebalancing: the agent converts cash into float to be able to serve the next deposits.'},
+    {s:'A customer pays the shopkeeper next door by scanning his QR code',a:'N',w:'A merchant payment: wallet to wallet, without cash.'},
+    {s:'End of the month: a teacher withdraws the salary the State paid into his wallet',a:'CD',w:'On paydays, withdrawals pile up: agents must have stocked up on cash the day before.'}
+  ],
+  'an agent manages two stocks that move in opposite directions; it is liquidity, not commission, that limits the network.',null);
+
+/* ---- 2.4 A · the agent game ---- */
+(function agentGame(){
+  need('agent');
+  var EV=[['CI',20000],['CI',35000],['CO',10000],['CI',50000],['CI',40000],['CO',15000],['CI',30000],['CI',25000],['CO',60000],['CO',45000],['CO',80000],['CI',10000],['CO',50000],['CO',70000],['CI',15000],['CO',40000]];
+  var NAMES=['Awa','Moussa','Fatou','Ibrahima','Aminata','Cheikh','Mariama','Ousmane','Khady','Mamadou','Ndeye','Abdou','Coumba','Lamine','Astou','Babacar'];
+  var C0=150000,COM=0.01,REB=500,PEN=2000;
+  var root=document.getElementById('agent'),GK='mfb545_w2_agent';
+  var g;
+  function fresh(){return {i:0,cash:C0,fl:C0,earn:0,lost:0,rebs:[],log:[]};}
+  try{g=JSON.parse(localStorage.getItem(GK))||fresh();}catch(e){g=fresh();}
+  function persist(){try{localStorage.setItem(GK,JSON.stringify(g));}catch(e){}}
+  function draw(){
+    var done=g.i>=EV.length,ev=EV[g.i],max=300000;
+    root.innerHTML='<div class="wallets"><div class="wl"><div class="l">Cash</div><div class="v">'+fmt(g.cash)+'</div><div class="bar"><i style="width:'+Math.min(100,g.cash/max*100)+'%"></i></div></div>'+
+      '<div class="wl"><div class="l">Float (electronic money)</div><div class="v">'+fmt(g.fl)+'</div><div class="bar"><i style="width:'+Math.min(100,g.fl/max*100)+'%"></i></div></div>'+
+      '<div class="wl"><div class="l">Today’s earnings</div><div class="v" style="color:'+(g.earn>=0?'var(--ok)':'#9B2335')+'">'+fmt(g.earn)+'</div><div class="l" style="margin-top:6px">'+g.lost+' customer(s) lost</div></div></div>'+
+      (done?'<div class="cust">End of the day. Score: <b>'+fmt(g.earn)+' FCFA</b> out of 4,950 possible · '+g.lost+' customer(s) lost · rebalancing before customers '+(g.rebs.length?g.rebs.join(', '):'—')+'.</div><div class="btn-row"><button class="btn small" id="agCopy">Copy the score into my notebook ↓</button><button class="btn small ghost" id="agRe">Play again</button></div>'
+        :'<div class="cust">Customer '+(g.i+1)+' of 16 · <b>'+NAMES[g.i]+'</b> wants to '+(ev[0]==='CI'?'<b>deposit</b>':'<b>withdraw</b>')+' <b>'+fmt(ev[1])+' FCFA</b>.</div><div class="btn-row"><button class="btn small" id="agServe">Serve the customer</button><button class="btn small ghost" id="agReb">Rebalance first (−500)</button></div>')+
+      '<div class="log">'+(g.log.length?g.log.slice().reverse().join(''):'<div>The day’s log appears here.</div>')+'</div>';
+    var s=document.getElementById('agServe'),r=document.getElementById('agReb'),cp=document.getElementById('agCopy'),re=document.getElementById('agRe');
+    if(s)s.onclick=serve;if(r)r.onclick=reb;
+    if(cp)cp.onclick=function(){
+      var el=document.querySelector('[data-work="w2_agent"]'),rest=(el.value||'').replace(/^Score[^\n]*\n?/,'');
+      setWork('w2_agent','Score: '+g.earn+' FCFA out of 4,950 · '+g.lost+' customer(s) lost · rebalancing before customers '+(g.rebs.join(', ')||'none')+'\n'+(rest||'Strategy: '));
+    };
+    if(re)re.onclick=function(){g=fresh();persist();draw();};
+  }
+  function reb(){var t=g.cash+g.fl;g.cash=Math.floor(t/2);g.fl=t-g.cash;g.earn-=REB;g.rebs.push(g.i+1);g.log.push('<div class="reb">↻ Rebalancing before customer '+(g.i+1)+': '+fmt(g.cash)+' / '+fmt(g.fl)+' (−500)</div>');persist();draw();}
+  function serve(){
+    var ev=EV[g.i],ok=ev[0]==='CI'?g.fl>=ev[1]:g.cash>=ev[1];
+    if(ok){if(ev[0]==='CI'){g.fl-=ev[1];g.cash+=ev[1];}else{g.cash-=ev[1];g.fl+=ev[1];}g.earn+=ev[1]*COM;
+      g.log.push('<div>✓ '+NAMES[g.i]+' · '+(ev[0]==='CI'?'deposit':'withdrawal')+' '+fmt(ev[1])+' (+'+fmt(ev[1]*COM)+')</div>');}
+    else{g.lost++;g.earn-=PEN;g.log.push('<div class="lost">✗ '+NAMES[g.i]+' · '+(ev[0]==='CI'?'deposit':'withdrawal')+' '+fmt(ev[1])+' — not enough '+(ev[0]==='CI'?'float':'cash')+', customer lost (−2,000)</div>');}
+    g.i++;persist();if(g.i>=EV.length)markStep('agent');draw();
+  }
+  if(g.i>=EV.length)markStep('agent');
+  draw();
+})();
+
+/* ---- 2.4 B · Geneva → Dakar ---- */
+(function remit(){
+  need('remit');
+  var CH=['Bank · international transfer (SWIFT)','Wise','To a Wave wallet','Stablecoin (CHF → USDC → FCFA)'];
+  var RK='mfb545_w2_remit',st={eur:0.93,rows:CH.map(function(){return {fee:'',rate:'',delay:''};})};
+  try{var o=JSON.parse(localStorage.getItem(RK));if(o&&o.rows)st=o;}catch(e){}
+  var tab=document.getElementById('rmTab'),eur=document.getElementById('rmEur');eur.value=st.eur;
+  function mid(){var e=parseFloat(String(eur.value).replace(',','.'));return e>0?655.957/e:NaN;}
+  function persist(){try{localStorage.setItem(RK,JSON.stringify(st));}catch(e){}}
+  function calc(r){var f=num(r.fee),k=num(r.rate);if(isNaN(f)||isNaN(k)||k<=0)return null;var rec=(200-f)*k,cost=200-rec/mid();return {rec:rec,cost:cost,pct:cost/200*100};}
+  function build(){
+    tab.innerHTML='<tr><th>Channel</th><th>Fees (CHF)</th><th>Rate offered (FCFA per CHF 1)</th><th>Delivery time</th><th>Received (FCFA)</th><th>Total cost (CHF)</th><th>Cost %</th></tr>'+
+      CH.map(function(n,i){var r=st.rows[i];return '<tr><td>'+n+'</td><td><input data-i="'+i+'" data-f="fee" value="'+esc(r.fee)+'"></td><td><input data-i="'+i+'" data-f="rate" value="'+esc(r.rate)+'"></td><td><input data-i="'+i+'" data-f="delay" value="'+esc(r.delay)+'" style="text-align:left"></td><td id="rr'+i+'"></td><td id="rc'+i+'"></td><td id="rp'+i+'"></td></tr>';}).join('');
+    tab.querySelectorAll('input').forEach(function(inp){inp.addEventListener('input',function(){st.rows[+inp.dataset.i][inp.dataset.f]=inp.value;persist();paint();});});
+    paint();
+  }
+  function paint(){
+    var m=mid();document.getElementById('rmMidLbl').textContent=isNaN(m)?'':'→ mid-market rate: CHF 1 = '+fmt(m,2)+' FCFA';
+    var n=0;
+    st.rows.forEach(function(r,i){var c=calc(r);
+      document.getElementById('rr'+i).textContent=c?fmt(c.rec):'';
+      document.getElementById('rc'+i).textContent=c?fmt(c.cost,2):'';
+      var p=document.getElementById('rp'+i);p.textContent=c?fmt(c.pct,1)+'%':'';p.className=c?(c.pct<=3?'pos':(c.pct>5?'neg':'')):'';
+      if(c)n++;});
+    if(n>=3)markStep('remit');
+  }
+  eur.addEventListener('input',function(){st.eur=eur.value;persist();paint();});
+  document.getElementById('rmDemo').addEventListener('click',function(){
+    if(st.rows.some(function(r){return r.fee||r.rate;})&&!confirm('Replace your values with the fictitious example?'))return;
+    var m=mid();st.rows=[{fee:'25',rate:String(Math.round(m*0.97)),delay:'2–3 days'},{fee:'4.50',rate:String(Math.round(m)),delay:'a few hours'},{fee:'3',rate:String(Math.round(m*0.985)),delay:'minutes'},{fee:'2',rate:String(Math.round(m*0.975)),delay:'minutes to 1 h'}];
+    persist();build();document.getElementById('rmNote').innerHTML='⚠ <b>Fictitious example values</b> loaded: replace them with the ones collected today.';
+  });
+  document.getElementById('rmCopy').addEventListener('click',function(){
+    var m=mid(),lines=['CHF 200 Geneva → Dakar · €1 = CHF '+eur.value+' → CHF 1 = '+fmt(m,2)+' FCFA (mid-market rate)'];
+    st.rows.forEach(function(r,i){var c=calc(r);lines.push('• '+CH[i]+': fees CHF '+(r.fee||'?')+', rate '+(r.rate||'?')+', delivery '+(r.delay||'?')+(c?' → received '+fmt(c.rec)+' FCFA, cost CHF '+fmt(c.cost,2)+' ('+fmt(c.pct,1)+'%)':''));});
+    var el=document.querySelector('[data-work="w2_transfert"]'),rest=(el.value||'').split('\nConclusion:')[1];
+    setWork('w2_transfert',lines.join('\n')+'\nConclusion:'+(rest!=null?rest:' '));
+  });
+  build();
+})();
+
+/* ---- 2.5 the quiz · positions 1 3 0 2 0 3 1 2 ---- */
+buildQuiz([
+  {q:'In the four-corner model, interchange is paid…',
+   opts:['by the merchant to the scheme','by the acquirer to the issuer','by the issuer to the acquirer','by the cardholder to their bank'],a:1,
+   w:'It is taken out of the merchant discount rate and pays the bank that issued the card.'},
+  {q:'The merchant discount rate (MDR) breaks down into…',
+   opts:['cardholder fees + tax','interchange only','issuer’s margin + VAT','interchange + scheme fees + acquirer’s margin'],a:3,
+   w:'On CHF 100 at 1.5%: for example 0.44 + 0.15 + 0.91 (processing included).'},
+  {q:'PSD2 strong customer authentication requires…',
+   opts:['two factors out of knowledge, possession and inherence','a twelve-character password','a handwritten signature','physical presence at a branch'],a:0,
+   w:'For example a code (knowledge) and the phone (possession), or the fingerprint (inherence) and the phone.'},
+  {q:'An instant payment (SIC in Switzerland, SEPA Instant in the EU) is credited…',
+   opts:['the next business day','at the end of the day, in batches','within seconds, 24 hours a day, 7 days a week','after manual approval by the bank'],a:2,
+   w:'Ten seconds at most for SEPA Instant; the Swiss system has processed them since August 2024.'},
+  {q:'The funds backing an electronic money issuer’s electronic money are…',
+   opts:['deposited one-for-one in a safeguarding account at a bank','lent to SMEs to finance the network','invested in shares','non-existent: electronic money is created by the operator'],a:0,
+   w:'Sum of the wallets = balance of the safeguarding account. The issuer cannot lend these funds.'},
+  {q:'For a mobile money agent, a customer’s withdrawal (cash-out)…',
+   opts:['increases their cash and decreases their float','does not change their stocks','decreases both their cash and their float','decreases their cash and increases their float'],a:3,
+   w:'The agent hands out cash and receives electronic money. A run of withdrawals empties the drawer.'},
+  {q:'In a payment API, a CHF 49.90 purchase is sent with…',
+   opts:['"amount": 49.90','"amount": 4990','"amount": "CHF 49.90"','"amount": 49'],a:1,
+   w:'In the smallest unit (centimes): no decimal number, so no rounding error.'},
+  {q:'An app that triggers a transfer from your bank account, with your consent, to pay for an online purchase is, in PSD2 terms…',
+   opts:['an AISP','a card issuer','a PISP','an acquirer'],a:2,
+   w:'Payment initiation service provider. An AISP only reads accounts.'}
+],'s5',['Excellent — the morning is mastered.','Good. Reread the explanations of the questions you missed.','Reread sections 2.1 and 2.3: everything is there.']);
+
+/* ---- 2.6 AISP / PISP ---- */
+buildClassify('psdRows','psdRowsCap',
+  [['A','AISP'],['P','PISP'],['N','Neither']],
+  [
+    {s:'A budgeting app that shows your accounts at three banks together',a:'A',w:'It reads balances and transactions: account information.'},
+    {s:'A “pay by bank transfer” button on a merchant website that debits your account after confirmation in your bank’s app',a:'P',w:'Payment initiation: the provider triggers the transfer, the bank authenticates.'},
+    {s:'An online lender that analyses your last twelve months of transactions to decide on a loan',a:'A',w:'Reading the accounts, with consent, for credit scoring (Day 3).'},
+    {s:'A neobank that issues you a debit card',a:'N',w:'It is the issuer, on its own accounts: PSD2 third-party access does not come into play here.'},
+    {s:'Accounting software that executes an SME’s supplier payments from its bank account',a:'P',w:'It initiates payments from an account held elsewhere.'},
+    {s:'Paying in a shop with a Visa card',a:'N',w:'The card circuit of the four-corner model, not account access.'}
+  ],
+  'read or trigger: PSD2 opened accounts to these two businesses, with consent and strong customer authentication.',null);
+
+/* ---- 2.7 the API console ---- */
+(function api(){
+  var MS=[['api1','Create a customer (<code>POST /v1/customers</code>)'],['api2','Create a payment of <b>CHF 49.90</b> for this customer — mind the unit'],['api3','Confirm this payment with <code>pm_card_visa</code> and receive the success webhook'],
+    ['api4','Create another payment and get it <b>declined</b> for insufficient funds — read the <code>decline_code</code>'],['api5','Create a payment that requires <b>3-D Secure</b>, then have it confirmed'],
+    ['api6','Send the same payment creation twice with the same <code>Idempotency-Key</code> — only one payment must exist'],['api7','Trigger a <b>401</b> error by replacing the secret key with a publishable key <code>pk_test_…</code>'],['api8','Refund the successful payment (<code>POST /v1/refunds</code>)']];
+  MS.forEach(function(m){need(m[0]);});
+  var mbox=document.getElementById('apiMissions');
+  function paintM(){mbox.innerHTML=MS.map(function(m,i){var on=progress.steps[m[0]];return '<div class="ms'+(on?' on':'')+'"><span class="mk">'+(on?'✓':(i+1))+'</span><span>'+m[1]+'</span></div>';}).join('');}
+  function done(k){if(!progress.steps[k]){markStep(k);paintM();}}
+  var EP=[['POST','/v1/customers'],['POST','/v1/payment_intents'],['POST','/v1/payment_intents/{id}/confirm'],['GET','/v1/payment_intents/{id}'],['POST','/v1/refunds']];
+  var sel=document.getElementById('apiEp'),body=document.getElementById('apiBody'),resp=document.getElementById('apiResp'),stat=document.getElementById('apiStatus'),hooks=document.getElementById('apiHooks'),b3=document.getElementById('api3ds');
+  sel.innerHTML=EP.map(function(e,i){return '<option value="'+i+'">'+e[0]+' '+e[1]+'</option>';}).join('');
+  var AK='mfb545_w2_api',S={cus:{},pi:{},idem:{},hooks:[],last:{cus:null,pi:null}};
+  try{var o=JSON.parse(localStorage.getItem(AK));if(o&&o.pi)S=o;}catch(e){}
+  function persist(){try{localStorage.setItem(AK,JSON.stringify(S));}catch(e){}}
+  function rid(p){var c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789',s=p+'_';for(var i=0;i<14;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
+  function tpl(){
+    var i=+sel.value,pi=S.last.pi||'pi_…',cu=S.last.cus||'cus_…';
+    body.value=[JSON.stringify({name:'Awa Diop',email:'awa.diop@example.com'},null,2),JSON.stringify({amount:0,currency:'chf',customer:cu,description:'Teranga Market order #1043'},null,2),
+      JSON.stringify({payment_method:'pm_card_visa'},null,2),'',JSON.stringify({payment_intent:pi},null,2)][i];
+    body.placeholder=i===3?'(no body for a GET — the id is that of the last payment)':'';
+  }
+  function hook(type,obj){var t=Math.floor(Date.now()/1000);S.hooks.push({type:type,id:obj.id,t:t});persist();paintHooks();}
+  function paintHooks(){hooks.innerHTML=S.hooks.length?S.hooks.slice().reverse().map(function(h){return '<div>→ POST https://your-server.example/webhook · <b>'+h.type+'</b> · '+h.id+' · Stripe-Signature t='+h.t+',v1=…</div>';}).join(''):'<div style="color:var(--grey)">none yet</div>';}
+  function out(code,obj,extra){
+    stat.innerHTML='<span class="status '+(code<300?'ok':'err')+'">HTTP '+code+'</span>'+(extra?' <span style="font-size:12px;color:var(--grey)">'+extra+'</span>':'');
+    resp.textContent=JSON.stringify(obj,null,2);
+  }
+  function err(code,type,msg,more){var e={error:Object.assign({type:type,message:msg},more||{})};out(code,e);return {code:code,obj:e};}
+  function piView(p){return {id:p.id,object:'payment_intent',amount:p.amount,currency:p.currency,customer:p.customer||null,status:p.status,payment_method:p.pm||null,next_action:p.status==='requires_action'?{type:'redirect_to_url',redirect_to_url:{url:'https://hooks.stripe.com/3d_secure_2/…'}}:null,last_payment_error:p.lastErr||null};}
+  function handle(i,b,key){
+    var ep=EP[i];
+    if(ep[0]==='POST'&&i===0){var c={id:rid('cus'),object:'customer',name:b.name||null,email:b.email||null,created:Math.floor(Date.now()/1000)};S.cus[c.id]=c;S.last.cus=c.id;hook('customer.created',c);done('api1');return {code:200,obj:c};}
+    if(i===1){
+      if(b.amount===undefined||b.amount===null)return err(400,'invalid_request_error','Missing required param: amount.',{param:'amount'});
+      if(typeof b.amount!=='number'||Math.floor(b.amount)!==b.amount)return err(400,'invalid_request_error','Invalid integer: '+b.amount+'. Amounts are in the smallest currency unit (4990 = 49.90 CHF).',{param:'amount',code:'parameter_invalid_integer'});
+      var cur=String(b.currency||'').toLowerCase();
+      if(['chf','eur','usd','xof'].indexOf(cur)<0)return err(400,'invalid_request_error','Invalid currency: '+b.currency+'.',{param:'currency'});
+      if(cur!=='xof'&&b.amount<50)return err(400,'invalid_request_error','Amount must be at least 50 (0.50 '+cur.toUpperCase()+').',{param:'amount',code:'amount_too_small'});
+      if(b.customer&&!S.cus[b.customer])return err(404,'invalid_request_error','No such customer: \''+b.customer+'\'',{param:'customer',code:'resource_missing'});
+      var p={id:rid('pi'),amount:b.amount,currency:cur,customer:b.customer||null,status:'requires_payment_method'};S.pi[p.id]=p;S.last.pi=p.id;hook('payment_intent.created',p);
+      if(p.amount===4990&&cur==='chf'&&p.customer)done('api2');
+      return {code:200,obj:piView(p)};
+    }
+    var id=(b&&b.id)||S.last.pi;   /* confirm / GET act on the latest PaymentIntent unless the body names one */
+    if(i===2||i===3){
+      var q=S.pi[id];if(!q)return err(404,'invalid_request_error','No such payment_intent: \''+id+'\'',{code:'resource_missing'});
+      if(i===3)return {code:200,obj:piView(q)};
+      if(q.status==='succeeded')return err(400,'invalid_request_error','This PaymentIntent has already succeeded.',{code:'payment_intent_unexpected_state'});
+      var pm=b.payment_method;q.pm=pm;
+      if(pm==='pm_card_visa'){q.status='succeeded';q.lastErr=null;hook('payment_intent.succeeded',q);hook('charge.succeeded',q);if(q.amount===4990&&q.currency==='chf')done('api3');return {code:200,obj:piView(q)};}
+      if(pm==='pm_card_chargeDeclinedInsufficientFunds'){q.status='requires_payment_method';q.lastErr={code:'card_declined',decline_code:'insufficient_funds'};hook('payment_intent.payment_failed',q);done('api4');
+        return err(402,'card_error','Your card has insufficient funds.',{code:'card_declined',decline_code:'insufficient_funds',payment_intent:{id:q.id,status:q.status}});}
+      if(pm==='pm_card_authenticationRequired'){q.status='requires_action';hook('payment_intent.requires_action',q);b3.style.display='';b3.setAttribute('data-id',q.id);return {code:200,obj:piView(q)};}
+      return err(400,'invalid_request_error','No such PaymentMethod: \''+pm+'\'',{param:'payment_method',code:'resource_missing'});
+    }
+    if(i===4){
+      var r=S.pi[b.payment_intent];if(!r)return err(404,'invalid_request_error','No such payment_intent: \''+b.payment_intent+'\'',{code:'resource_missing'});
+      if(r.status!=='succeeded')return err(400,'invalid_request_error','This PaymentIntent does not have a successful charge to refund.',{code:'charge_not_refundable'});
+      if(r.refunded)return err(400,'invalid_request_error','Charge has already been refunded.',{code:'charge_already_refunded'});
+      r.refunded=true;var rf={id:rid('re'),object:'refund',amount:r.amount,currency:r.currency,payment_intent:r.id,status:'succeeded'};hook('charge.refunded',r);done('api8');return {code:200,obj:rf};
+    }
+  }
+  sel.addEventListener('change',tpl);
+  document.getElementById('apiTpl').addEventListener('click',tpl);
+  document.getElementById('apiSend').addEventListener('click',function(){
+    var k=document.getElementById('apiKey').value.trim().replace(/^Bearer\s+/i,'');
+    if(!k){err(401,'invalid_request_error','You did not provide an API key.');return;}
+    if(/^pk_/.test(k)){err(401,'invalid_request_error','This API call cannot be made with a publishable API key. Please use a secret API key.');done('api7');return;}
+    if(/^sk_live_/.test(k)){err(401,'invalid_request_error','Live key rejected: this sandbox only accepts test keys (sk_test_…). A live key is never written into an exercise.');return;}
+    if(!/^sk_test_/.test(k)){err(401,'invalid_request_error','Invalid API Key provided: '+k.slice(0,12)+'…');return;}
+    var i=+sel.value,b={};
+    if(EP[i][0]==='POST'){try{b=body.value.trim()?JSON.parse(body.value):{};}catch(e){err(400,'invalid_request_error','Unreadable body: malformed JSON ('+e.message+').');return;}}
+    var idem=document.getElementById('apiIdem').value.trim(),ikey=idem?(i+'|'+idem):null;
+    if(ikey&&EP[i][0]==='POST'&&S.idem[ikey]){var sv=S.idem[ikey];out(sv.code,sv.obj,'Idempotent-Replayed: true — same key, same response, no new object created');if(i===1)done('api6');return;}
+    var r=handle(i,b);
+    if(r&&r.obj&&!r.obj.error)out(r.code,r.obj,(i===2||i===3)?'on '+((b&&b.id)||S.last.pi):'');
+    if(ikey&&EP[i][0]==='POST'&&r)S.idem[ikey]=r;
+    persist();
+  });
+  b3.addEventListener('click',function(){
+    var q=S.pi[b3.getAttribute('data-id')];if(!q||q.status!=='requires_action')return;
+    q.status='succeeded';hook('payment_intent.succeeded',q);hook('charge.succeeded',q);done('api5');b3.style.display='none';persist();
+    out(200,piView(q),'the customer confirmed in their bank’s app — the webhook notifies your server');
+  });
+  paintM();paintHooks();tpl();
+})();
+
+/* ---- 2.8 roles ---- */
+(function roles(){
+  need('role');
+  var RK='mfb545_w2_role',cur=null;try{cur=localStorage.getItem(RK);}catch(e){}
+  function pick(r,quiet){
+    cur=r;try{localStorage.setItem(RK,r);}catch(e){}
+    document.querySelectorAll('.role').forEach(function(x){x.classList.toggle('on',x.dataset.r===r);});
+    document.querySelectorAll('.rcard').forEach(function(x){x.classList.toggle('show',x.id==='rc_'+r);});
+    if(!quiet)markStep('role');
+  }
+  document.getElementById('roles').addEventListener('click',function(e){var b=e.target.closest('.role');if(b)pick(b.dataset.r,false);});
+  if(cur)pick(cur,true);
+})();
+
+/* ---- 2.9 the deal calculator ---- */
+(function dealCalc(){
+  need('deal');
+  var V=1200000,DK='mfb545_w2_deal',d={mdr:1.8,tds:0,share:100,reb:0,integ:0};
+  try{var o=JSON.parse(localStorage.getItem(DK));if(o)d=o;}catch(e){}
+  var ctrl=document.getElementById('dealCtrl'),tab=document.getElementById('dealTab'),cap=document.getElementById('dealCap');
+  ctrl.innerHTML='<div class="ctrl"><label>Agreed MDR <span class="val" id="dv_mdr"></span></label><input type="range" min="0.9" max="2" step="0.05" data-k="mdr" value="'+d.mdr+'"></div>'+
+    '<div class="ctrl"><label>Share of remaining fraud paid by the merchant <span class="val" id="dv_share"></span></label><input type="range" min="0" max="100" step="10" data-k="share" value="'+d.share+'"></div>'+
+    '<div class="ctrl"><label>3-D Secure activated</label><select data-k="tds"><option value="0">No</option><option value="1">Yes</option></select></div>'+
+    '<div class="ctrl"><label>Network rebate (0.05%) if 3-D Secure</label><select data-k="reb"><option value="0">No</option><option value="1">Yes</option></select></div>'+
+    '<div class="ctrl"><label>3-D Secure integration paid by</label><select data-k="integ"><option value="0">the merchant</option><option value="1">the provider</option></select></div>';
+  ctrl.querySelectorAll('select').forEach(function(s){s.value=String(d[s.dataset.k]);});
+  ctrl.querySelectorAll('input,select').forEach(function(x){x.addEventListener('input',function(){d[x.dataset.k]=parseFloat(x.value);try{localStorage.setItem(DK,JSON.stringify(d));}catch(e){}paint();});});
+  function res(){
+    var tds=d.tds===1,sh=d.share/100,F=V*(tds?0.0005:0.004),fine=tds?0:V*0.001,lost=tds?V*0.01*0.30:0,reb=(d.reb===1&&tds)?600:0;
+    var m=d.mdr/100*V+sh*F+lost+(tds&&d.integ!==1?1000:0);
+    var p=(d.mdr/100-0.0085)*V-(1-sh)*F-fine+reb-(tds&&d.integ===1?1000:0);
+    var n=0.001*V-reb;
+    return {m:m,p:p,n:n,F:F,lost:lost,fine:fine,fr:tds?0.05:0.40};
+  }
+  function paint(){
+    document.getElementById('dv_mdr').textContent=fmt(d.mdr,2)+'%';document.getElementById('dv_share').textContent=d.share+'%';
+    var r=res();
+    tab.innerHTML='<tr><th>Per year</th><th>Result</th><th>Objective / fallback</th><th></th></tr>'+
+      '<tr><td>🛒 Merchant — total cost (MDR + fraud + lost sales)</td><td>CHF '+fmt(r.m)+'</td><td>objective &lt; 21,000 · fallback 24,600</td><td class="'+(r.m<21000?'pos':(r.m<24600?'':'neg'))+'">'+(r.m<21000?'✓ objective':(r.m<24600?'better than the fallback':'✗ worse than the fallback'))+'</td></tr>'+
+      '<tr><td>🏦 Provider — profit</td><td>CHF '+fmt(r.p)+'</td><td>objective ≥ 4,800 · fallback 0</td><td class="'+(r.p>=4800?'pos':(r.p>0?'':'neg'))+'">'+(r.p>=4800?'✓ objective':(r.p>0?'better than the fallback':'✗ worse than the fallback'))+'</td></tr>'+
+      '<tr><td>🌐 Network — net fees</td><td>CHF '+fmt(r.n)+'</td><td>objective: fraud &lt; 0.3%</td><td class="'+(r.fr<0.3?'pos':'neg')+'">fraud '+fmt(r.fr,2)+'%</td></tr>';
+    cap.textContent=(d.tds===1?'With 3-D Secure: residual fraud 0.05% (exempted payments), the rest shifts to the issuer; lost sales ≈ 1% × 30% margin = CHF 3,600; no more network penalty.':'Without 3-D Secure: fraud 0.40% (CHF 4,800), network penalty of CHF 1,200 for the provider.')+' As soon as you change a term, the deal is recorded.';
+  }
+  ctrl.addEventListener('input',function(){markStep('deal');});
+  var bt=document.createElement('button');bt.className='btn small';bt.textContent='Copy the terms into my notebook ↓';bt.style.marginTop='6px';
+  bt.addEventListener('click',function(){
+    var r=res(),el=document.querySelector('[data-work="w2_nego"]'),rest=(el.value||'').split('\nMy role')[1];
+    setWork('w2_nego','Deal: MDR '+fmt(d.mdr,2)+'% · 3-D Secure '+(d.tds?'yes':'no')+' · remaining fraud '+d.share+'% merchant · network rebate '+(d.reb?'yes':'no')+' · integration paid by '+(d.integ?'the provider':'the merchant')+
+      ' → merchant CHF '+fmt(r.m)+', provider CHF '+fmt(r.p)+', network CHF '+fmt(r.n)+'\nMy role'+(rest!=null?rest:': \nDecisive argument: '));
+    markStep('deal');
+  });
+  ctrl.parentNode.insertBefore(bt,tab.parentNode);
+  paint();
+})();
+
+bootDay();
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

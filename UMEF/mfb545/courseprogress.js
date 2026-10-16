@@ -25,12 +25,12 @@ window.CourseProgress=(function(){
   var NS="mfb545", K="mfb545";
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
-    {mod:'w1', short:'J1', name:'Journée 1 · La fintech, ou la banque désagrégée',              total:9, live:true,  href:'journee1.html'},
-    {mod:'w2', short:'J2', name:'Journée 2 · Paiements et monnaie digitale',                      total:9, live:true,  href:'journee2.html'},
-    {mod:'w3', short:'J3', name:'Journée 3 · Crédit digital, néobanques et inclusion financière', total:9, live:false},
-    {mod:'w4', short:'J4', name:'Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation',     total:9, live:false},
-    {mod:'w5', short:'J5', name:'Journée 5 · IA, données, regtech et conformité',                 total:9, live:false},
-    {mod:'w6', short:'J6', name:'Journée 6 · Stratégie, financement et présentations finales',    total:9, live:false}
+    {mod:'w1', short:T('J1','D1'), name:T('Journée 1 · La fintech, ou la banque désagrégée','Day 1 · Fintech, or the unbundled bank'), total:9, live:true,  href:T('journee1.html','journee1-en.html')},
+    {mod:'w2', short:T('J2','D2'), name:T('Journée 2 · Paiements et monnaie digitale','Day 2 · Payments and digital money'), total:9, live:true,  href:T('journee2.html','journee2-en.html')},
+    {mod:'w3', short:T('J3','D3'), name:T('Journée 3 · Crédit digital, néobanques et inclusion financière','Day 3 · Digital credit, neobanks and financial inclusion'), total:9, live:false},
+    {mod:'w4', short:T('J4','D4'), name:T('Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation','Day 4 · Blockchain, crypto-assets, DeFi and tokenisation'),     total:9, live:false},
+    {mod:'w5', short:T('J5','D5'), name:T('Journée 5 · IA, données, regtech et conformité','Day 5 · AI, data, regtech and compliance'),                 total:9, live:false},
+    {mod:'w6', short:T('J6','D6'), name:T('Journée 6 · Stratégie, financement et présentations finales','Day 6 · Strategy, funding and final presentations'),    total:9, live:false}
   ];
 
 
@@ -48,8 +48,8 @@ window.CourseProgress=(function(){
     if(T('fr','en')==='en'){
       return (done===live.length
         ? '✓ You’re up to date — everything published so far is done.'
-        : 'You’ve completed '+done+' of '+live.length+' published day'+(live.length>1?'s':'')+'. The bar fills as you do each session’s work.')
-        + (up?' '+up+' more session'+(up>1?'s':'')+' to come — the hatched segments.':'');
+        : 'You’ve completed '+done+' of '+live.length+' published day'+(live.length>1?'s':'')+'. The bar fills as you do each day’s work.')
+        + (up?' '+up+' more day'+(up>1?'s':'')+' to come — the hatched segments.':'');
     }
     return (done===live.length
       ? '✓ Vous êtes à jour — tout ce qui est publié est terminé.'

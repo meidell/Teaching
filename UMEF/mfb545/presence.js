@@ -207,12 +207,12 @@ window.StatsPresence = (function () {
   /* The register's sessions: one per SUMAS teaching week, one page each
      (MBA406 has no A/B parts). The final exam (Week 10) is not a session. */
   var SESSIONS=[
-    {mod:'w1', n:1, name:'Journée 1 · La fintech, ou la banque désagrégée',                 pages:['w1']},
-    {mod:'w2', n:2, name:'Journée 2 · Paiements et monnaie digitale',                         pages:['w2']},
-    {mod:'w3', n:3, name:'Journée 3 · Crédit digital, néobanques et inclusion financière',    pages:['w3']},
-    {mod:'w4', n:4, name:'Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation',        pages:['w4']},
-    {mod:'w5', n:5, name:'Journée 5 · IA, données, regtech et conformité',                    pages:['w5']},
-    {mod:'w6', n:6, name:'Journée 6 · Stratégie, financement et présentations finales',       pages:['w6']}
+    {mod:'w1', n:1, name:T('Journée 1 · La fintech, ou la banque désagrégée','Day 1 · Fintech, or the unbundled bank'),                 pages:['w1']},
+    {mod:'w2', n:2, name:T('Journée 2 · Paiements et monnaie digitale','Day 2 · Payments and digital money'),                         pages:['w2']},
+    {mod:'w3', n:3, name:T('Journée 3 · Crédit digital, néobanques et inclusion financière','Day 3 · Digital credit, neobanks and financial inclusion'),    pages:['w3']},
+    {mod:'w4', n:4, name:T('Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation','Day 4 · Blockchain, crypto-assets, DeFi and tokenisation'),        pages:['w4']},
+    {mod:'w5', n:5, name:T('Journée 5 · IA, données, regtech et conformité','Day 5 · AI, data, regtech and compliance'),                    pages:['w5']},
+    {mod:'w6', n:6, name:T('Journée 6 · Stratégie, financement et présentations finales','Day 6 · Strategy, funding and final presentations'),       pages:['w6']}
   ];
   function allWeeks(){ return SESSIONS.slice(); }
 

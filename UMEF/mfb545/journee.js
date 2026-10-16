@@ -25,6 +25,7 @@
    this repo. Numeric checks use `.nq`, never `.q`, for exactly that reason.
    ===================================================================== */
 
+var T=window.T||function(fr){return fr;};
 var MOD=DAY.mod, KEY=DAY.key, SECTIONS=DAY.sections;
 var EXTRA=[];                       /* step ids that count, registered by widgets */
 function need(id){if(EXTRA.indexOf(id)<0)EXTRA.push(id);}
@@ -33,9 +34,9 @@ var clsDone={};
 function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};return p;}catch(e){return{done:{},steps:{}};}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch(e){}}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-function fmt(n,d){return Number(n).toLocaleString('fr-CH',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+function fmt(n,d){return Number(n).toLocaleString(T('fr-CH','en-GB'),{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
 
-var MODES={ex:['🎤','Exposé'],do:['🛠','Atelier'],quiz:['✅','Quiz'],co:['🔁','Mise en commun']};
+var MODES={ex:['🎤',T('Exposé','Talk')],do:['🛠',T('Atelier','Workshop')],quiz:['✅','Quiz'],co:['🔁',T('Mise en commun','Debrief')]};
 function modeChip(s){var m=MODES[s.mode]||MODES.do;return '<span class="mode m-'+s.mode+'">'+m[0]+' '+m[1]+(s.min?' · '+s.min+' min':'')+'</span>';}
 
 function renderList(){
@@ -45,7 +46,7 @@ function renderList(){
     if(s.block!==blk){
       blk=s.block;var b=DAY.blocks[blk-1];
       var h=document.createElement('div');h.className='part-head';
-      h.innerHTML='<span class="pt">Bloc '+b.n+' · '+b.t+'</span><span class="pd">'+b.name+'</span>';
+      h.innerHTML='<span class="pt">'+T('Bloc ','Block ')+b.n+' · '+b.t+'</span><span class="pd">'+b.name+'</span>';
       list.appendChild(h);
     }
     var done=!!progress.done[s.id];
@@ -61,12 +62,15 @@ function renderTimeline(){
   el.innerHTML=DAY.blocks.map(function(b){
     var sum=b.parts.reduce(function(a,p){return a+p[1];},0);
     b.parts.forEach(function(p){tot[p[0]]=(tot[p[0]]||0)+p[1];});
-    return '<div class="tl-row"><div class="tl-h"><b>Bloc '+b.n+'</b> · '+b.t+'<span>'+b.name+'</span></div><div class="tl-bar">'+
+    return '<div class="tl-row"><div class="tl-h"><b>'+T('Bloc ','Block ')+b.n+'</b> · '+b.t+'<span>'+b.name+'</span></div><div class="tl-bar">'+
       b.parts.map(function(p){var m=MODES[p[0]];return '<div class="tl-seg s-'+p[0]+'" style="flex:'+p[1]+'" title="'+m[1]+' · '+p[1]+' min">'+m[0]+' '+p[1]+'′</div>';}).join('')+
       '</div></div>';
   }).join('')+
-  '<div class="tl-sum">Sur la journée : <b>🎤 '+tot.ex+' min</b> d’exposé · <b>🛠 '+(tot.do+tot.quiz)+' min</b> d’atelier et de quiz où vous travaillez · <b>🔁 '+tot.co+' min</b> de mise en commun. '+
-  'Chaque exposé est écrit sur cette page : s’il n’a pas lieu, lisez la section seul·e — elle est faite pour ça.</div>';
+  (T('fr','en')==='en'
+   ?'<div class="tl-sum">Over the day: <b>🎤 '+tot.ex+' min</b> of talks · <b>🛠 '+(tot.do+tot.quiz)+' min</b> of workshops and quizzes where you work · <b>🔁 '+tot.co+' min</b> of debriefs. '+
+    'Every talk is written out on this page: if it does not take place, read the section on your own — it is written for that.</div>'
+   :'<div class="tl-sum">Sur la journée : <b>🎤 '+tot.ex+' min</b> d’exposé · <b>🛠 '+(tot.do+tot.quiz)+' min</b> d’atelier et de quiz où vous travaillez · <b>🔁 '+tot.co+' min</b> de mise en commun. '+
+    'Chaque exposé est écrit sur cette page : s’il n’a pas lieu, lisez la section seul·e — elle est faite pour ça.</div>');
 }
 function totalSteps(){return EXTRA.length+document.querySelectorAll('.cl-row').length+document.querySelectorAll('.q').length+document.querySelectorAll('[data-work]').length;}
 function doneSteps(){
@@ -114,7 +118,7 @@ function secCheck(){
   /* per-section status lines: <div class="sec-status" data-sec="s4" data-need="…"> */
   document.querySelectorAll('.sec-status').forEach(function(el){
     var s=el.getAttribute('data-sec');
-    el.textContent=progress.done[s]?'✓ Section terminée.':(el.getAttribute('data-need')||'');
+    el.textContent=progress.done[s]?T('✓ Section terminée.','✓ Section complete.'):(el.getAttribute('data-need')||'');
     el.classList.toggle('ok',!!progress.done[s]);
   });
 }
@@ -128,7 +132,7 @@ document.addEventListener('click',function(e){
 /* ---- shared classify builder (secId may be null → secCheck decides) ---- */
 function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
   var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;if(!box)return;
-  function capText(n,full){if(cap)cap.textContent=n+' sur '+VARS.length+' classé'+(n>1?'s':'')+(full?' — '+doneMsg:'');}
+  function capText(n,full){if(cap)cap.textContent=n+T(' sur ',' of ')+VARS.length+T(' classé'+(n>1?'s':''),' sorted')+(full?' — '+doneMsg:'');}
   capText(0,false);
   var replaying=false;
   VARS.forEach(function(v,i){
@@ -141,7 +145,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
       if(val===v.a){
         row.dataset.done='1';
         row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});
-        var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Exact.</b> '+v.w;w.classList.add('show');
+        var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>'+T('Exact.','Correct.')+'</b> '+v.w;w.classList.add('show');
         done++;capText(done,done===VARS.length);
         if(!replaying){if(window.StatsAns)StatsAns.push(progress,save,pid,val);updateBar();}
         if(done===VARS.length){if(!replaying)report();clsDone[rowsId]=true;if(secId)markSection(secId);secCheck();}
@@ -172,8 +176,8 @@ function buildSteps(boxId,btnId,steps,stepKey,onDone){
   function showN(n){
     for(var j=0;j<n&&j<rows.length;j++)rows[j].classList.add('on');
     i=Math.min(n,rows.length);
-    if(i>=rows.length){btn.textContent='✓ Les '+rows.length+' étapes sont affichées';btn.disabled=true;markStep(stepKey);if(onDone)onDone();}
-    else btn.textContent=(i===0?'Commencer →':'Étape suivante ('+(i+1)+' sur '+rows.length+') →');
+    if(i>=rows.length){btn.textContent=T('✓ Les '+rows.length+' étapes sont affichées','✓ All '+rows.length+' steps are shown');btn.disabled=true;markStep(stepKey);if(onDone)onDone();}
+    else btn.textContent=(i===0?T('Commencer →','Start →'):T('Étape suivante (','Next step (')+(i+1)+T(' sur ',' of ')+rows.length+') →');
   }
   btn.addEventListener('click',function(){showN(i+1);});
   showN(progress.steps&&progress.steps[stepKey]?rows.length:0);
@@ -188,14 +192,14 @@ function buildNum(boxId,ITEMS){
   ITEMS.forEach(function(it){
     need(it.id);
     var d=document.createElement('div');d.className='nq';
-    d.innerHTML='<div class="tq">'+it.q+'</div><div class="trow"><input class="numin" inputmode="decimal" placeholder="…"><span class="u">'+(it.unit||'')+'</span><button class="btn small">Vérifier</button></div><div class="tfb"></div>';
+    d.innerHTML='<div class="tq">'+it.q+'</div><div class="trow"><input class="numin" inputmode="decimal" placeholder="…"><span class="u">'+(it.unit||'')+'</span><button class="btn small">'+T('Vérifier','Check')+'</button></div><div class="tfb"></div>';
     var inp=d.querySelector('input'),fb=d.querySelector('.tfb'),bt=d.querySelector('button');
-    function good(quiet){d.classList.add('ok');inp.disabled=true;bt.disabled=true;fb.className='tfb show ok';fb.innerHTML='<b>✓ Juste.</b> '+(it.w||'');if(!quiet)markStep(it.id);}
+    function good(quiet){d.classList.add('ok');inp.disabled=true;bt.disabled=true;fb.className='tfb show ok';fb.innerHTML='<b>'+T('✓ Juste.','✓ Right.')+'</b> '+(it.w||'');if(!quiet)markStep(it.id);}
     bt.addEventListener('click',function(){
-      var v=num(inp.value);if(isNaN(v)){fb.className='tfb show no';fb.textContent='Entrez un nombre.';return;}
+      var v=num(inp.value);if(isNaN(v)){fb.className='tfb show no';fb.textContent=T('Entrez un nombre.','Enter a number.');return;}
       var tol=it.tol==null?0.005:it.tol, ok=Math.abs(v-it.a)<=Math.max(Math.abs(it.a)*tol,1e-9);
       if(window.StatsAns)StatsAns.set(progress,save,'n_'+it.id,v);
-      if(ok)good(false);else{fb.className='tfb show no';fb.innerHTML='<b>Pas encore.</b> '+(it.hint||'Reprenez le calcul pas à pas.');}
+      if(ok)good(false);else{fb.className='tfb show no';fb.innerHTML='<b>'+T('Pas encore.','Not yet.')+'</b> '+(it.hint||T('Reprenez le calcul pas à pas.','Redo the calculation step by step.'));}
     });
     inp.addEventListener('keydown',function(e){if(e.key==='Enter')bt.click();});
     box.appendChild(d);
@@ -207,7 +211,7 @@ function buildNum(boxId,ITEMS){
    [{id,s,opts:[[val,label,feedback]]}] — each row is a counted step. ---- */
 function buildPick(boxId,capId,ROWS,doneMsg){
   var box=document.getElementById(boxId),cap=document.getElementById(capId),n=0;if(!box)return;
-  function paint(){if(cap)cap.textContent=n+' sur '+ROWS.length+(n===ROWS.length&&doneMsg?' — '+doneMsg:'');}
+  function paint(){if(cap)cap.textContent=n+T(' sur ',' of ')+ROWS.length+(n===ROWS.length&&doneMsg?' — '+doneMsg:'');}
   ROWS.forEach(function(r){
     need(r.id);
     var row=document.createElement('div');row.className='sr';
@@ -239,15 +243,15 @@ function paintQuizLock(){
   if(inst){
     var rel=isRemoteReleased();
     box.style.display='';
-    box.innerHTML='<b>👁 Vue enseignant.</b> Le quiz est ouvert pour vous. '+(rel?'<b>Il est lancé pour la classe.</b>':'La classe attend qu’il soit lancé.')+
-      '<div class="qlb"><button class="btn small" id="quizRelBtn"'+(rel?' disabled':'')+'>'+(rel?'✓ Quiz lancé pour la classe':'Lancer le quiz pour la classe')+'</button><span id="quizRelMsg" style="font-size:13px;"></span></div>';
+    box.innerHTML=T('<b>👁 Vue enseignant.</b> Le quiz est ouvert pour vous. ','<b>👁 Instructor view.</b> The quiz is open for you. ')+(rel?T('<b>Il est lancé pour la classe.</b>','<b>It is launched for the class.</b>'):T('La classe attend qu’il soit lancé.','The class is waiting for it to be launched.'))+
+      '<div class="qlb"><button class="btn small" id="quizRelBtn"'+(rel?' disabled':'')+'>'+(rel?T('✓ Quiz lancé pour la classe','✓ Quiz launched for the class'):T('Lancer le quiz pour la classe','Launch the quiz for the class'))+'</button><span id="quizRelMsg" style="font-size:13px;"></span></div>';
     var b=box.querySelector('#quizRelBtn');
     if(b&&!rel)b.addEventListener('click',function(){
-      b.disabled=true;var was=b.textContent;b.textContent='Lancement…';
+      b.disabled=true;var was=b.textContent;b.textContent=T('Lancement…','Launching…');
       StatsEx.release(MOD,QUIZ_ID).then(function(ok){
         var m=box.querySelector('#quizRelMsg');
-        if(ok){b.textContent='✓ Quiz lancé pour la classe';m.innerHTML='✅ Lancé — les pages des étudiants se déverrouillent en ~8 s.';remoteRel=true;return;}
-        b.disabled=false;b.textContent=was;m.innerHTML='⚠ <b>Pas lancé.</b> '+(StatsEx.releaseError()||'L’écriture a échoué.');
+        if(ok){b.textContent=T('✓ Quiz lancé pour la classe','✓ Quiz launched for the class');m.innerHTML=T('✅ Lancé — les pages des étudiants se déverrouillent en ~8 s.','✅ Launched — students’ pages unlock in ~8 s.');remoteRel=true;return;}
+        b.disabled=false;b.textContent=was;m.innerHTML=T('⚠ <b>Pas lancé.</b> ','⚠ <b>Not launched.</b> ')+(StatsEx.releaseError()||T('L’écriture a échoué.','The write failed.'));
       });
     });
     return;
@@ -255,8 +259,8 @@ function paintQuizLock(){
   if(open){box.style.display='none';return;}
   box.style.display='';
   box.innerHTML=(window.StatsEx&&StatsEx.releaseBlocked())
-    ?'<b>⚠ Cet appareil n’atteint pas le serveur</b> : le quiz ne se déverrouillera pas tout seul. Signalez-le.'
-    :'<b>🔒 Le quiz démarre ensemble.</b> Il est lancé en classe ; cette page se déverrouille toute seule, en quelques secondes, sans recharger.';
+    ?T('<b>⚠ Cet appareil n’atteint pas le serveur</b> : le quiz ne se déverrouillera pas tout seul. Signalez-le.','<b>⚠ This device cannot reach the server</b>: the quiz will not unlock by itself. Report it.')
+    :T('<b>🔒 Le quiz démarre ensemble.</b> Il est lancé en classe ; cette page se déverrouille toute seule, en quelques secondes, sans recharger.','<b>🔒 The quiz starts together.</b> It is launched in class; this page unlocks by itself within seconds, without reloading.');
 }
 /* ⚠ On the instructor's device StatsEx.isReleased() is ALWAYS true ("you
    always see it"), so it cannot say whether the CLASS has the quiz — gen110
@@ -279,7 +283,7 @@ function buildQuiz(QUIZ,secId,msgs){
       res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
   if(!box)return;
   window.COURSE_QUIZ=QUIZ;
-  var answered=0,correct=0;chip.textContent='0 / '+QUIZ.length+' répondues';
+  var answered=0,correct=0;chip.textContent='0 / '+QUIZ.length+T(' répondues',' answered');
   var replaying=false,replayQ=[];
   QUIZ.forEach(function(item,i){
     var q=document.createElement('div');q.className='q';
@@ -288,10 +292,10 @@ function buildQuiz(QUIZ,secId,msgs){
       if(q.dataset.done)return;q.dataset.done='1';
       var ok=j===item.a;
       q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(xj===j)x.classList.add('wrong');});
-      var w=document.getElementById('qw'+i);w.innerHTML=(ok?'<b>Exact.</b> ':'<b>Pas tout à fait.</b> ')+item.w;w.classList.add('show');
+      var w=document.getElementById('qw'+i);w.innerHTML=(ok?T('<b>Exact.</b> ','<b>Correct.</b> '):T('<b>Pas tout à fait.</b> ','<b>Not quite.</b> '))+item.w;w.classList.add('show');
       answered++;if(ok)correct++;
       if(!replaying){if(window.StatsAns)StatsAns.set(progress,save,'q'+i,j);if(window.StatsTrack&&StatsTrack.quizAnswer)StatsTrack.quizAnswer(i,j,ok);updateBar();}
-      chip.textContent=answered+' / '+QUIZ.length+' répondues';
+      chip.textContent=answered+' / '+QUIZ.length+T(' répondues',' answered');
       if(answered===QUIZ.length)finish();
     }
     q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){if(!quizOpen())return;apply(parseInt(b.dataset.j,10));});});
@@ -315,16 +319,16 @@ function buildQuiz(QUIZ,secId,msgs){
 function initTimers(){
   document.querySelectorAll('.timer[data-min]').forEach(function(el){
     var total=Math.round(parseFloat(el.getAttribute('data-min'))*60),left=total,iv=null;
-    el.innerHTML='<span class="tl">⏱ '+esc(el.getAttribute('data-label')||'Minuteur')+'</span><span class="td">'+mmss(left)+'</span>'+
-      '<button class="btn small" data-a="go">Démarrer</button><button class="btn small ghost" data-a="rs">↺</button>';
+    el.innerHTML='<span class="tl">⏱ '+esc(el.getAttribute('data-label')||T('Minuteur','Timer'))+'</span><span class="td">'+mmss(left)+'</span>'+
+      '<button class="btn small" data-a="go">'+T('Démarrer','Start')+'</button><button class="btn small ghost" data-a="rs">↺</button>';
     var d=el.querySelector('.td'),go=el.querySelector('[data-a=go]');
-    function tick(){left--;d.textContent=mmss(Math.max(0,left));if(left<=30)el.classList.add('warn');if(left<=0){clearInterval(iv);iv=null;el.classList.add('end');go.textContent='Terminé';}}
+    function tick(){left--;d.textContent=mmss(Math.max(0,left));if(left<=30)el.classList.add('warn');if(left<=0){clearInterval(iv);iv=null;el.classList.add('end');go.textContent=T('Terminé','Done');}}
     go.addEventListener('click',function(){
       if(left<=0)return;
-      if(iv){clearInterval(iv);iv=null;go.textContent='Reprendre';}
+      if(iv){clearInterval(iv);iv=null;go.textContent=T('Reprendre','Resume');}
       else{iv=setInterval(tick,1000);go.textContent='Pause';}
     });
-    el.querySelector('[data-a=rs]').addEventListener('click',function(){clearInterval(iv);iv=null;left=total;d.textContent=mmss(left);el.classList.remove('warn','end');go.textContent='Démarrer';});
+    el.querySelector('[data-a=rs]').addEventListener('click',function(){clearInterval(iv);iv=null;left=total;d.textContent=mmss(left);el.classList.remove('warn','end');go.textContent=T('Démarrer','Start');});
   });
 }
 function mmss(s){var m=Math.floor(s/60),r=s%60;return m+':'+(r<10?'0':'')+r;}
@@ -366,7 +370,7 @@ function bootDay(){
   var rl=document.getElementById('resetLink');
   if(rl)rl.addEventListener('click',function(e){
     e.preventDefault();
-    if(!confirm('Réinitialiser votre progression et vos réponses de cette journée sur cet appareil ?'))return;
+    if(!confirm(T('Réinitialiser votre progression et vos réponses de cette journée sur cet appareil ?','Reset your progress and answers for this day on this device?')))return;
     try{
       var pre='mfb545_'+MOD+'_';
       Object.keys(localStorage).forEach(function(k){if(k.indexOf(pre)===0||k.indexOf('mfb545_work_'+MOD+'_')===0)localStorage.removeItem(k);});

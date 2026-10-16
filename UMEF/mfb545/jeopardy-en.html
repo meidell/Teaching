@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · MFB 545 Fintech · Swiss UMEF</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="lang.js"></script>
+<style>
+/* =====================================================================
+   MFB 545 · Jeopardy for the room screen. ?set=j1 (Journée 1 —
+   fondamentaux). Day 6's synthesis set goes in SETS when that day is
+   written. Projector page: no progress, no sign-in, never counted;
+   team scores are kept in this browser only (mfb545_jeo_<set>).
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--navy-surface-deep,#0A3341);color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#9FD3E6;font-size:13px;}
+.top a{color:#9FD3E6;font-size:13px;text-decoration:none;}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 20px;}
+.cat{background:var(--navy-surface,#0F4C60);border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(12px,1.6vw,17px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cell{background:#176B87;border:none;border-radius:10px;color:#FFD58A;font:800 clamp(20px,3.4vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2A93B0;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:170px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#FFD58A;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(5,25,32,.94);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:980px;width:100%;text-align:center;}
+#modal .mc{color:#9FD3E6;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.8vw,44px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.4vw,28px);color:#FFD58A;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#0A3341;border:none;border-radius:30px;padding:11px 20px;font:800 15px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#9FD3E6;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#9FD3E6;text-decoration:underline;cursor:pointer;font:inherit;}
+</style>
+</head>
+<body data-course="mfb545">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="jeopardy.html" data-lang-switch="fr" style="margin-left:auto">FR</a><a href="index-en.html" style="margin-left:14px">← Course</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Click a square · “Answer” · then the team that answered right (+) or wrong (−). <button id="reset">New game</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  j1:{name:'Fintech — fundamentals · Day 1',cats:[
+    ['The unbundled bank',[
+      ['The six building blocks of the universal bank.','Account, payments, credit, savings, investment, compliance.'],
+      ['The building block that needs the most capital — and why it stays mostly with banks.','Credit: lending out deposits (maturity transformation) requires equity capital and a banking licence.'],
+      ['What does “BaaS” stand for?','Banking-as-a-Service: a licensed bank rents out accounts, cards and its licence through an API to fintechs, which build the app and own the customer relationship.'],
+      ['The three letters of the big techs’ “DNA”, according to the BIS.','Data, Network, Activities — data, a network of users, interwoven activities.'],
+      ['Why did fintechs attack payments and foreign exchange first?','Highly profitable and almost capital-free; their margins subsidised the rest of the bank.']]],
+    ['Who does what?',[
+      ['TWINT: which building block?','Payments.'],
+      ['Who holds the accounts of neon’s customers?','Hypothekarbank Lenzburg, its partner bank.'],
+      ['True Wealth: what does it do, and how does it earn money?','Automated wealth management; an annual management fee as a % of assets.'],
+      ['Flutterwave: what does it sell, and to whom?','Payment infrastructure for African merchants: a single API for cards, mobile money and bank transfers.'],
+      ['Why is Klarna’s “pay later” a form of credit?','The customer pays after receiving the goods: it is a short-term loan, paid for by the merchant’s fee (and by late fees).']]],
+    ['Business models',[
+      ['The formula for ARPU.','Revenue for the month ÷ active users in the month.'],
+      ['The break-even formula, in users.','Fixed costs ÷ contribution margin per user.'],
+      ['Why does TWINT not charge for person-to-person transfers?','That is the subsidised side: it brings in the users, and the merchant pays the fee.'],
+      ['Among 100 users, how many pairs of users can send each other money?','4,950 — n(n − 1) ÷ 2.'],
+      ['Block 3 data: Wave goes from 1% to 0.8%. New break-even?','10 million active users (ARPU 400, margin 150, 1.5 billion ÷ 150).']]],
+    ['Regulation',[
+      ['Who supervises banks in Switzerland?','FINMA, the Swiss Financial Market Supervisory Authority.'],
+      ['Swiss fintech licence: the cap on public deposits.','100 million francs.'],
+      ['The number of the FINMA circular on video and online identification.','2016/7.'],
+      ['Who licenses electronic money issuers in Senegal or Côte d’Ivoire?','The BCEAO, the Central Bank of West African States.'],
+      ['The two prohibitions of the fintech licence.','No lending out the deposits received, no paying interest on them.']]],
+    ['Onboarding and KYC',[
+      ['What does “KYC” stand for?','Know Your Customer: identifying the customer and understanding where their funds come from.'],
+      ['What is liveness detection for?','To check that a real person is in front of the camera, not a photo, a video or a mask.'],
+      ['Why does a passport’s machine-readable zone carry check digits?','To detect a misread or a forgery: weights 7, 3, 1, sum, remainder of division by 10.'],
+      ['The face-matching threshold is lowered. What changes?','Fewer genuine customers rejected, but more fraudsters accepted.'],
+      ['What is a PEP, and may they open an account?','A politically exposed person; yes, but with enhanced due diligence.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'j1';
+/* one score sheet per language, so the English board does not inherit « Équipe 1 » */
+var S=SETS[setId]||SETS.j1, SK='mfb545_jeo_'+setId+(window.MFB545_LANG==='en'?'_en':'');
+var st={used:{},teams:[['Team 1',0],['Team 2',0],['Team 3',0]]};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams)st=o;}catch(e){}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='';
+  S.cats.forEach(function(c){h+='<div class="cat">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Answer</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Close</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Clear the scores and start again?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
