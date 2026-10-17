@@ -64,19 +64,26 @@ window.JEMPush = (function(){
     var s=String(b64).replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='=';
     var raw=atob(s), out=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i); return out;
   }
+  /* The permission prompt is the FIRST thing that happens, synchronously
+     in the click that called this: Safari drops a request that arrives
+     after an await, and then the button appears to do nothing. */
   function subscribe(){
     if(!supported()) return Promise.reject(new Error('unsupported'));
-    return cfg().then(function(c){
+    var perm;
+    try{ perm = Notification.permission==='granted' ? Promise.resolve('granted') : Promise.resolve(Notification.requestPermission()); }
+    catch(e){ perm = new Promise(function(res){ Notification.requestPermission(res); }); }   /* the old callback form */
+    var C;
+    return perm.then(function(pm){
+      if(pm!=='granted') throw new Error('denied');
+      return cfg();
+    }).then(function(c){
       if(!c || !c.url || !c.key) throw new Error('notconfigured');
       if(!c.on) throw new Error('off');
-      return Notification.requestPermission().then(function(p){
-        if(p!=='granted') throw new Error('denied');
-        return reg();
-      }).then(function(r){
-        return r.pushManager.getSubscription().then(function(s){
-          if(s) return s;
-          return r.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:u8(c.key)});
-        });
+      C=c; return reg();
+    }).then(function(r){
+      return r.pushManager.getSubscription().then(function(s){
+        if(s) return s;
+        return r.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:u8(C.key)});
       });
     });
   }

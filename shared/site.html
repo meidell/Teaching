@@ -338,7 +338,8 @@ function wireNotify(){
 var PUSH=null, MYSUB=null;
 function plat(){ var p=JEMPush.platform(); return p.ios?(p.ipad?'iPad':'iPhone'):p.android?'Android':p.mac?'Mac':p.windows?'Windows':'device'; }
 async function subId(endpoint){ var h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(endpoint)); return [...new Uint8Array(h)].map(function(b){return b.toString(16).padStart(2,'0');}).join('').slice(0,32); }
-function paintPush(){
+function say(msg,cls){ var el=$('pHere'); el.innerHTML=msg; el.style.color=cls==='bad'?'var(--bad)':cls==='ok'?'var(--good)':''; el.style.fontWeight='700'; }
+function paintPush(keep){
   var on=!!(PUSH&&PUSH.on), url=(PUSH&&PUSH.url)||'', key=(PUSH&&PUSH.key)||'';
   $('ptog').className='tog'+(on?' on':'');$('ptog').disabled=false;
   $('ptogSt').className='st '+(on?'on':'off');$('ptogSt').textContent=on?'On':'Off';
@@ -348,6 +349,8 @@ function paintPush(){
   if(!url)$('phow').open=true;
   var sup=JEMPush.supported(), need=JEMPush.needsInstall();
   $('bPEnable').disabled=!sup||need||!url||!key; $('bPTest').disabled=!url; $('bPOff').disabled=!MYSUB;
+  if(keep) return;
+  $('pHere').style.color='';$('pHere').style.fontWeight='';
   $('pHere').innerHTML= !sup ? 'This browser cannot receive push notifications.'+(JEMPush.platform().ios?' On an iPhone, open this page in Safari and add it to the Home Screen first — see below.':'')
     : need ? 'On an iPhone, notifications only reach a site on the Home Screen: <b>Share → Add to Home Screen</b>, then open it from there and press Enable.'
     : MYSUB ? '✓ This '+plat()+' is subscribed.' : 'This '+plat()+' is not subscribed yet.';
@@ -395,21 +398,24 @@ async function refreshDevices(){
 function wirePush(){
   $('ptog').addEventListener('click',function(){ if(!PUSH)return; savePush({on:!PUSH.on}); });
   $('bPSave').addEventListener('click',function(){ savePush({url:$('purl').value.trim()}); });
-  $('bPEnable').addEventListener('click',async function(){
+  $('bPEnable').addEventListener('click',function(){
     var b=this;b.disabled=true;b.textContent='Asking…';
-    try{
-      var t=await token(); if(!t)throw new Error('Sign in first (🔑) — subscribing a device needs your account, so a student cannot add theirs to your list.');
-      var sub=await JEMPush.subscribe();
-      await JEMPush.post('/subscribe',{sub:sub.toJSON(),ua:navigator.userAgent,label:plat()},t);
-      MYSUB=sub; warn('This '+plat()+' is subscribed. Press <b>Send a test notification</b>.','ok');
-    }catch(e){ warn(esc(JEMPush.explain(e)),'bad'); }
-    b.disabled=false;b.textContent='🔔 Enable on this device'; paintPush(); refreshDevices();
+    /* subscribe() first — it must ask for permission inside this click;
+       the account token is fetched afterwards */
+    var sub=null;
+    JEMPush.subscribe().then(function(s){ sub=s; return token(); }).then(function(t){
+      if(!t)throw new Error('Sign in first (🔑 at the top) — subscribing a device needs your account, so a student cannot add theirs to your list.');
+      return JEMPush.post('/subscribe',{sub:sub.toJSON(),ua:navigator.userAgent,label:plat()},t);
+    }).then(function(){
+      MYSUB=sub; say('✓ This '+plat()+' is subscribed. Now press <b>Send a test notification</b>.','ok');
+    }).catch(function(e){ say('✗ '+esc(JEMPush.explain(e))+(Notification.permission==='denied'?' (The browser has notifications for this site set to Block — change it in the site settings next to the address bar, then reload.)':''),'bad'); })
+    .then(function(){ b.disabled=false;b.textContent='🔔 Enable on this device'; paintPush(true); refreshDevices(); });
   });
   $('bPTest').addEventListener('click',async function(){
     var b=this;b.disabled=true;b.textContent='Sending…';
-    try{ var t=await token(); if(!t)throw new Error('Sign in first (🔑).'); var j=await JEMPush.post('/test',{},t);
-         warn('Test sent to '+j.devices+' device'+(j.devices===1?'':'s')+' · delivered '+j.sent+(j.dead?' · '+j.dead+' expired and removed':'')+(j.failed?' · '+j.failed+' failed':'')+'. If nothing appears, see the troubleshooting lines under “On your iPhone”.','ok'); }
-    catch(e){ warn('The test failed: '+esc(String(e.message||e)),'bad'); }
+    try{ var t=await token(); if(!t)throw new Error('Sign in first (🔑 at the top).'); var j=await JEMPush.post('/test',{},t);
+         say((j.devices?'Test sent to '+j.devices+' device'+(j.devices===1?'':'s')+' · delivered '+j.sent:'Test sent to nobody — no device is subscribed yet. Press Enable on this device first.')+(j.dead?' · '+j.dead+' expired and removed':'')+(j.failed?' · '+j.failed+' failed':'')+'.', j.sent?'ok':'bad'); }
+    catch(e){ say('The test failed: '+esc(String(e.message||e)),'bad'); }
     b.disabled=false;b.textContent='Send a test notification';
   });
   $('bPOff').addEventListener('click',async function(){
