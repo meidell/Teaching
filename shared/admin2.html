@@ -496,6 +496,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
+<script src="/shared/pushapp.js"></script>
 <script src="/shared/fb-auth.js"></script>
 <script>
 "use strict";
@@ -1884,6 +1885,12 @@ async function postAnnounce(){
       {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:true,text:t,ts:Date.now()})});
     if(!r.ok)throw new Error('write refused');
     $('annStatus').textContent='Posted.';loadAnnounce();$('annEdit').style.display='none';
+    /* and to the phones of students who use the "Courses" app */
+    if(window.JEMPushApp&&window.__fbUser){
+      window.__fbUser.getIdToken().then(function(t){return JEMPushApp.post('/send',{kind:'announce',ns:NS},t);})
+        .then(function(j){ var d=JEMPushApp.describe(j); if(d)$('annStatus').textContent='Posted · '+d+'.'; })
+        .catch(function(){});
+    }
   }catch(e){ $('annStatus').textContent='Could not post — sign in first.'; $('bAuth').style.display=''; }
 }
 async function clearAnnounce(){

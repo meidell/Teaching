@@ -108,7 +108,7 @@ td.dim{color:var(--grey);}
   <div>
     <div class="k">Site-wide · every course</div>
     <h1>Statistics &amp; alerts</h1>
-    <div class="sub">Who visits the site, which courses they open — and whether a student message also lands in your inbox.</div>
+    <div class="sub">Who visits the site, which courses they open — and whether a student message also lands in your inbox or on your phone.</div>
   </div>
   <div class="grp">
     <button class="btn" id="bAuth" style="display:none">🔑 Sign in</button>
@@ -180,6 +180,31 @@ function out(t) { return ContentService.createTextOutput(t); }</pre>
     </details>
   </section>
 
+  <section id="pushapp">
+    <h2>Push · the app</h2>
+    <div class="sub">The <b>Courses</b> app (iPhone and Android) registers each phone in the database. When this is on, a student message from any course is pushed to <em>your</em> phone, and an announcement or a reply of yours is pushed to <em>theirs</em> — a direct-message reply never carries the text, only "your instructor replied". Messages between students are never pushed. The sender is a Cloudflare Worker; its URL goes below.</div>
+
+    <div class="sw">
+      <button class="tog" id="togP" disabled aria-label="Push notifications"></button>
+      <span class="st off" id="togPSt">—</span>
+      <span class="d" id="togPD">Reading the current setting…</span>
+    </div>
+
+    <div class="row"><label for="purl">Sender URL</label><input type="url" id="purl" placeholder="https://teaching-push.<account>.workers.dev" spellcheck="false"><button class="b2 pri" id="bSaveP">Save</button></div>
+    <div class="row"><button class="b2" id="bTestP">Send a test to my devices</button><button class="b2" id="bCountP">Count devices</button><span class="note" id="pcount" style="margin:0"></span></div>
+    <div class="note" id="pnote"></div>
+
+    <details id="phowto" style="margin-top:12px">
+      <summary style="cursor:pointer;font-weight:700;font-size:13.5px">Setting it up (once)</summary>
+      <ol style="font-size:13px;line-height:1.6;margin:8px 0 0 18px">
+        <li><b>Publish the rules.</b> <code>firebase-database-rules.json</code> carries <code>_site/push</code> and a <code>_push</code> block per course; until it is published in the Firebase console this page shows a 401 and the app says "rules not published".</li>
+        <li><b>Deploy the sender.</b> In <code>Teaching App/sender</code>: <code>npx wrangler secret put EXPO_ACCESS_TOKEN</code> (expo.dev → Access tokens), then <code>npx wrangler deploy</code>. Paste the printed URL above and <b>Save</b>.</li>
+        <li><b>Sign this phone in.</b> In the app: Settings → Instructor → the <code>presence@</code> account. "Count devices" should then show 1 instructor device.</li>
+        <li><b>Send a test</b>, then switch <b>on</b>. Switching off here stops every push — the app, the worker and the site need no other change.</li>
+      </ol>
+    </details>
+  </section>
+
   <section id="stats">
     <h2>Visitors</h2>
     <div class="sub">Pageviews recorded by every page of the site, grouped by course. A "visitor" is a device: a random id the browser keeps, not a person and not a student account — the same student on a laptop and a phone counts twice, and a cleared browser counts again.</div>
@@ -222,6 +247,7 @@ function out(t) { return ContentService.createTextOutput(t); }</pre>
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
+<script src="/shared/pushapp.js"></script>
 <script src="/shared/fb-auth.js"></script>
 <script>
 var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
@@ -277,6 +303,66 @@ function wireNotify(){
     var b=this,txt=$('gs').textContent;
     function ok(){b.textContent='✓ Copied';setTimeout(function(){b.textContent='⧉ Copy script';},1600);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok).catch(ok);else ok();
+  });
+}
+
+/* ===================== 1b · push to the app ===================== */
+var PUSH=null;
+function paintPush(){
+  var on=!!(PUSH&&PUSH.on), url=(PUSH&&PUSH.url)||'';
+  $('togP').className='tog'+(on?' on':'');$('togP').disabled=false;
+  $('togPSt').className='st '+(on?'on':'off');$('togPSt').textContent=on?'On':'Off';
+  $('togPD').textContent= on ? (url?'Student messages reach your phone; announcements and replies reach theirs.':'On, but no sender URL is set — nothing is sent. Paste the worker URL below and save.')
+                             : (url?'Off. Nothing is pushed. Switch on to start.':'Off. Deploy the sender and paste its URL first, then switch on.');
+  if(document.activeElement!==$('purl'))$('purl').value=url;
+  var ins=PUSH&&PUSH.instructor?Object.keys(PUSH.instructor).length:0;
+  $('pnote').textContent=ins?('This account has '+ins+' phone'+(ins===1?'':'s')+' registered as the instructor.'):'No phone is signed in as the instructor yet (app → Settings → Instructor).';
+  if(!url)$('phowto').open=true;
+}
+async function loadPush(){
+  try{var r=await fetch(DB+'/_site/push.json',{cache:'no-cache'});var j=await r.json();if(j&&j.error)throw new Error(j.error);PUSH=j||{on:false,url:''};}
+  catch(e){PUSH={on:false,url:''};warn('The push setting could not be read ('+esc(e.message)+'). If the <code>_site/push</code> rules block has not been published yet, that is why — publish <code>firebase-database-rules.json</code>.','bad');}
+  paintPush();
+}
+async function savePush(patch){
+  var next={on:!!(PUSH&&PUSH.on),url:(PUSH&&PUSH.url)||'',ts:Date.now()};
+  for(var k in patch)next[k]=patch[k];
+  if(next.url&&!/^https:\/\/[^\s\/]+(\/[^\s]*)?$/.test(next.url)){warn('That does not look like a worker URL — it should start with <code>https://</code>.','bad');return false;}
+  next.url=next.url.replace(/\/+$/,'');
+  var q=await authQ();
+  if(!q){warn('Saving needs the signed-in instructor account — the 🔑 button at the top.','bad');$('bAuth').style.display='';return false;}
+  try{
+    /* PATCH, not PUT: the node also holds the registered phones under instructor/ */
+    var r=await fetch(DB+'/_site/push.json'+q,{method:'PATCH',body:JSON.stringify(next)});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    PUSH=Object.assign({},PUSH||{},next);paintPush();if(window.JEMPushApp)JEMPushApp.reset();warn('Saved.','ok');setTimeout(function(){warn('');},1800);return true;
+  }catch(e){warn('Not saved: '+esc(e.message)+'. A 401 here means the <code>_site/push</code> rules block is not published, or this account is not in it.','bad');return false;}
+}
+function wirePush(){
+  $('togP').addEventListener('click',function(){ if(!PUSH)return; savePush({on:!PUSH.on}); });
+  $('bSaveP').addEventListener('click',function(){ savePush({url:$('purl').value.trim()}); });
+  $('bCountP').addEventListener('click',async function(){
+    var url=$('purl').value.trim().replace(/\/+$/,'');
+    if(!url){warn('Paste the sender URL first.','bad');return;}
+    var b=this;b.disabled=true;$('pcount').textContent='Counting…';
+    try{ var r=await fetch(url+'/count');var j=await r.json();if(j.error)throw new Error(j.error);
+         var per=Object.keys(j.students||{}).map(function(k){return k+' '+j.students[k];}).join(', ');
+         $('pcount').textContent=j.instructor+' instructor device'+(j.instructor===1?'':'s')+' · '+(j.studentsTotal||0)+' student device'+(j.studentsTotal===1?'':'s')+(per?' ('+per+')':''); }
+    catch(e){ $('pcount').textContent='';warn('Could not reach the sender: '+esc(e.message),'bad'); }
+    b.disabled=false;
+  });
+  $('bTestP').addEventListener('click',async function(){
+    var url=$('purl').value.trim().replace(/\/+$/,'');
+    if(!url){warn('Paste the sender URL first.','bad');return;}
+    if(!window.__fbUser){warn('A test needs the signed-in instructor account — the 🔑 button at the top.','bad');$('bAuth').style.display='';return;}
+    var b=this;b.disabled=true;b.textContent='Sending…';
+    try{ var t=await window.__fbUser.getIdToken();
+         var r=await fetch(url+'/test',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:'{}'});
+         var j=await r.json(); if(j.error)throw new Error(j.error);
+         if(j.dead&&j.dead.length&&window.JEMPushApp)JEMPushApp.cleanup(j.dead,t);
+         warn(j.devices?('Test sent to '+j.sent+' of '+j.devices+' device'+(j.devices===1?'':'s')+'.'+(j.dead&&j.dead.length?' '+j.dead.length+' stale token'+(j.dead.length===1?'':'s')+' removed.':'')):'No instructor device is registered yet — sign in to the app first (Settings → Instructor).', j.devices?'ok':'bad'); }
+    catch(e){ warn('The test failed: '+esc(e.message),'bad'); }
+    b.disabled=false;b.textContent='Send a test to my devices';
   });
 }
 
@@ -359,13 +445,15 @@ function refHost(ref){
 function start(){
   wireNotify();
   loadNotify();
+  wirePush();
+  loadPush();
   $('range').addEventListener('change',loadHits);
   $('exMe').addEventListener('change',renderStats);
-  $('bRefresh').addEventListener('click',function(){loadNotify();loadHits();});
+  $('bRefresh').addEventListener('click',function(){loadNotify();loadPush();loadHits();});
   $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
   $('bAuth').addEventListener('click',function(){
     var w=$('warn');w.style.display='block';w.className='warn';
-    if(!w.querySelector('.fba')){w.innerHTML='<div id="warnForm"></div>';FBAuth.form($('warnForm'),function(){warn('');loadHits();loadNotify();},'_site');}
+    if(!w.querySelector('.fba')){w.innerHTML='<div id="warnForm"></div>';FBAuth.form($('warnForm'),function(){warn('');loadHits();loadNotify();loadPush();},'_site');}
   });
   window.CourseConfig.load().then(function(reg){REG=reg;if(HITS)renderStats();}).catch(function(){});
 }

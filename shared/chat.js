@@ -808,6 +808,27 @@ window.CourseChat = (function () {
     });
   }
 
+  /* PUSH NOTIFICATION to the instructor's phone — the "Courses" app. Switched
+     on from /shared/site.html, which writes `_site/push = {on, url}` at the
+     root of the database. Unlike the email this carries no text: the sender
+     (Teaching App/sender/worker.js, a Cloudflare Worker) reads the message
+     back from the database by its id and only then pushes, so the endpoint
+     can be public without being a spam cannon. Best-effort, like the email;
+     never for a peer (`p-`) or student-group (`sg-`) thread. */
+  var PUSHCFG=null;
+  function pushCfg(){
+    if(PUSHCFG)return PUSHCFG;
+    PUSHCFG=fetch(DB+'/_site/push.json',{cache:'no-cache'}).then(function(r){return r.json();}).catch(function(){return null;});
+    return PUSHCFG;
+  }
+  function pushInstructor(id){
+    if(!id||/^(p-|sg-)/.test(CUR))return;
+    pushCfg().then(function(cfg){
+      if(!cfg||cfg.error||!cfg.on||!cfg.url||!/^https:\/\//.test(cfg.url))return;
+      try{ fetch(String(cfg.url).replace(/\/+$/,'')+'/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ns:NS,tid:CUR,id:String(id)}),keepalive:true}).catch(function(){}); }catch(e){}
+    });
+  }
+
   function send(){
     if(SENDING||!ME||!CUR)return;
     var th=THREADS.filter(function(x){return x.tid===CUR;})[0];
@@ -825,9 +846,10 @@ window.CourseChat = (function () {
     ta.value=''; ta.style.height='auto';
     renderMsgs(false);
 
-    post('_chat/'+encodeURIComponent(CUR)+'/msgs',msg).then(function(){
+    post('_chat/'+encodeURIComponent(CUR)+'/msgs',msg).then(function(res){
       LAST[CUR]=msg.ts; markRead(CUR,msg.ts);
       notifyInstructor(msg);
+      pushInstructor(res&&res.name);
       /* so the instructor's thread list can show a DM that has no meta */
       if(CUR==='dm-'+ME.sid) put(ME.sid+'/chats/'+CUR,{t:ME.name||ME.sid,k:'dm',ts:msg.ts});
       document.getElementById('jc-note').className='';

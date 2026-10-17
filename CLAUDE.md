@@ -2049,3 +2049,47 @@ you are, and no account password is ever typed into a page or stored.
 - **Test by opening the file**, or `python3 -m http.server` from the repo root when a
   page needs absolute `/shared/…` paths to resolve.
 - Commit messages in this repo are terse by convention.
+
+## 8. The Courses app and push notifications (17 Oct 2026)
+
+The site has a native companion: **"Courses"** (iOS + Android, Expo), built in
+`~/Documents/Sites/Teaching App` — its own repo, never inside this one; read its
+`BRIEF.md` and `README.md`. It is a thin shell: a course list from
+`courses.json`, the course itself in a WebView of the **live site**, an inbox,
+and real push notifications. The site stays the product; nothing here is
+rewritten for the app, and a weekly course edit never touches it.
+
+**What the app adds to the database — push tokens, nothing else:**
+
+```
+_site/push/                       {on, url, ts}   the switch and the sender URL (site.html)
+_site/push/instructor/<key>       {t, p, ts, v}   Jan Erik's phones — written with the presence@ ID token
+<ns>/<sid>/push/<key>             {t, p, ts, v}   a student's phone, under their own node ($sid rule, no change)
+<ns>/_push/<sid>/<key>            the same, mirrored so the sender can list a cohort
+```
+
+`key` is the inner id of the `ExponentPushToken[…]`. The dashboards never read
+`push/`. ⚠ `_site/push` and every course's `_push` are **new rules blocks** in
+`firebase-database-rules.json` (added by `Teaching App/scripts/patch-rules.mjs`,
+idempotent) — until Jan Erik **publishes** the file, the mirror write returns
+401, the app's Settings says "rules not published", and `site.html` says so too.
+
+**The sender** is a Cloudflare Worker, `teaching-push`
+(`Teaching App/sender/worker.js`, deployed with `npx wrangler deploy` from that
+folder, one secret: `EXPO_ACCESS_TOKEN`). No Firebase credential: it reads the
+database anonymously and verifies the instructor's Firebase ID token itself.
+Three hooks on this site talk to it, all best-effort and all gated on
+`_site/push.on`, which is the one switch (`/shared/site.html` → "Push · the app"):
+
+| Where | After | Calls |
+|---|---|---|
+| `chat.js` (every student page) | a student message is **stored** | `POST /notify {ns, tid, id}` — open; the worker reads the message back by id, requires `by:'s'` and a fresh `ts`, dedupes, rate-limits, then pushes Jan Erik's phones |
+| `chat.html` | a reply is stored | `POST /send {kind:'reply', ns, tid, text}` — Bearer ID token; `dm-` → that student **without the text**, `all` → everyone, `g-` → the members |
+| `admin2.html` | an announcement is posted | `POST /send {kind:'announce', ns}` — reads `_announce`, pushes every device under `<ns>/_push` |
+
+`/shared/pushapp.js` is the helper the three instructor pages share
+(`cfg`, `post`, `describe`, and `cleanup`, which deletes the dead-token paths
+the worker reports — the worker itself cannot delete anything). Student pages
+do not load it; `chat.js` has its own inline hook. Never for `p-`/`sg-`
+threads, in either direction. `privacy.html` at the web root is what both
+stores link to.
