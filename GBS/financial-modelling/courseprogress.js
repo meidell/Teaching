@@ -108,7 +108,11 @@ window.CourseProgress=(function(){
     if(opts.pct)opts.pct.textContent=pctOf(data)+'%';
     if(opts.cap)opts.cap.textContent=caption(data);
     if(opts.list)buildList(data,opts.list);
-    if(opts.reveal)opts.reveal.style.display='block';
+    /* the bar is shown only once SOMETHING has been logged: an empty bar
+       on a first visit says "you have done nothing" to a student who has
+       not been asked to yet. Until then the hub's next-session card is
+       the top of the page. (17 Oct 2026) */
+    if(opts.reveal){var any=counted().some(function(c){return data[c.mod]&&data[c.mod].done>0;});opts.reveal.style.display=any?'block':'none';}
   }
   function render(opts){
     var data={};CHAPTERS.forEach(function(c){data[c.mod]={done:Math.min(c.total,localDone(c.mod))};});

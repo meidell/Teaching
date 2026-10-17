@@ -999,6 +999,57 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
   `capstone-ba` only if ported by hand, and vice versa.
 
+### GBS · the school page and its seven hubs — what changed on 17 Oct 2026
+
+Jan Erik asked for the GBS landing page and the GBS courses to be taken
+"up a notch". Four things were done, in this order, and each has a rule:
+
+- **The three open hubs (`blockchain`, `foresight`, `fintech`) are on the GBS
+  chrome.** They used to carry a pre-theme dark navy/gold palette of their
+  own; now they load `/shared/themes/gbs.css` plus **`/GBS/open-hub.css`**
+  (one stylesheet for the three, the only school-level CSS in the repo),
+  the dark bar with the white logotype, their own FR/EN switch (`siteLang`),
+  a "Start here" panel above the sections, and a back link to **`/GBS/`**,
+  never to the root catalogue. The card markup and every link are the ones
+  they always had — only the chrome changed. `.card.inst` (a host
+  scoreboard, an instructor dashboard) is drawn only where `AdminGate` is
+  unlocked; the games stay visible, labelled "played in class".
+- **`/GBS/index.html` opens with the next session, computed.** Each live
+  GBS course now carries **`schedule.dates`** in `courses.json` — one ISO
+  date per session, in order, exams included — and the page picks the first
+  one not yet over (a session is "next" on its own day until the slot's end
+  time). ⚠ **`schedule.dates` MIRRORS the hub's `TERM` array**; change a date
+  in one and change it in the other. It is a list, not "weekly from `first`",
+  because creator skips the school's week 09 and all four skip the winter
+  break. Cards print **`outcome`** (one "you leave with…" line, `{en}` or
+  `{fr,en}`) instead of the syllabus-length `desc`, and an open course's
+  **`start`** `{href,label}` is a second, real link on the card (the card is
+  a `div` with a stretched main link, not an `<a>` inside an `<a>`). The
+  week strip shows every weekday with a live course, not only days with two.
+- **The four live hubs lost their first-visit modal.** The five points are
+  an in-page `.works` strip under the hero (the 👁 button scrolls to it);
+  `COURSE_LOGIN_AUTO` is no longer touched, so `login.js` prompts as it does
+  everywhere else. A **`#nextCard`** is rendered from the hub's own `TERM`
+  (never a literal date) with the slot, the session title, what to bring
+  and a link once the page exists. **The progress bar (`.mama`) is shown only
+  once something has been logged** — `paint()` in each hub's
+  `courseprogress.js` checks `data[*].done>0` — because an empty bar on a
+  first visit says "you have done nothing" to a student who has not been
+  asked to yet.
+- **Each live hub has an opening figure, inline SVG in the hero.** The stack
+  (finmod), five sources → warehouse → decision (bi), the seven-stage
+  pipeline from the published page to the cited answer (creator), Arvane
+  inside the ring of shared infrastructure (escwa). Colours are classes
+  bound to the theme's variables (`.fig .nv`, `.gd`, `.pale`…), the layers
+  rise in with a CSS animation that `prefers-reduced-motion` disables, and
+  on a phone the figure **scrolls sideways** (`min-width:720px`) rather than
+  shrinking to 5px type. Nothing on a figure is a number the course does
+  not already state; session references on it must match `TERM`.
+- **Probe trick:** headless Chrome refuses a window under 500px, and the
+  sign-in prompt fires at 1.5 s — so a hero screenshot is
+  `--force-prefers-reduced-motion --virtual-time-budget=900` (every layer
+  drawn, no prompt yet).
+
 ### GBS · The Creator Economy & SEO 2.0 — `GBS/creator-economy/`
 
 Bachelor specialisation, Thursdays 14:15–16:00 from 15 Oct 2026; the run-sheet
