@@ -1864,6 +1864,72 @@ Apps Script itself; until the rules are deployed `site.html` says so and
 `chat.js` simply reads `null` and sends nothing. The launcher stays bottom-right and steps up to
 `bottom:62px` when `login.js` has drawn its pill there.
 
+### Push notifications (17 Oct 2026) — `push/`, `/sw.js`, `/shared/push.js`, `/shared/notifications.html`
+
+Jan Erik: "install this so that I can receive a notification both on my mac
+and on my iphone", then "one generic page that walks the students through
+… and a reference on each school and course landing page". Both directions
+run through **one sender**: `push/worker.js`, a Cloudflare Worker on the
+free plan, because a static site cannot sign (VAPID) or encrypt (RFC 8291)
+a push itself and Cloud Functions would need the Blaze plan. Deployed with
+five `npx wrangler` commands listed in `push/README.md` and on `site.html`.
+⚠ **Not deployed by me — Jan Erik deploys it**, plus the `_site/push` rules
+block; until both are done `_site/push` reads null, `push.js` reports
+"not set up", the nudge strips stay silent and nothing is sent.
+
+- **The worker holds ONE secret, the VAPID private key.** No Firebase
+  credential: it reads the database anonymously through the world-readable
+  paths and **verifies the instructor's Firebase ID token itself** (RS256
+  against Google's JWKs, iss/aud/exp, email on the allow-list) before it
+  accepts an instructor device, lists them or pushes to a cohort. Device
+  subscriptions live in the worker's KV (`ins:<hash>`, `stu:<ns>:<sid>:<hash>`),
+  never in the database. `node push/test.mjs` checks the encryption against
+  RFC 8291 Appendix A and must print `OK` twice.
+- **To the instructor:** `chat.js`, after a student message is stored,
+  POSTs `{ns, tid, id}` to `/notify`; the worker **reads the message back by
+  id** and only then pushes (so the open endpoint cannot be used to spam),
+  deduped per id, 120/hour cap, never a `p-`/`sg-` thread. `_site/push =
+  {on, url, key, ts}` is the switch, written from `site.html`.
+- **To students:** `admin2.html` after an announcement (`/send
+  kind:announce` → everyone subscribed in that ns, text included: it is
+  public) and `chat.html` after a reply (`kind:reply`; `dm-<sid>` → that
+  student only, **never with the text** — a device can be registered for
+  any sid that exists, the same residual as `<ns>/<sid>`; `all` and `g-`
+  threads carry the text). Both need the signed-in token.
+- **`/sw.js` at the web root** is the receiver — a service worker can only
+  cover paths at or below where it is served. **It has no fetch handler**:
+  nothing is cached, no page changes. `/shared/app.webmanifest` has **no
+  `start_url` on purpose**: the Home Screen icon opens the page it was
+  added from. `/assets/icon-*.png` are rendered from a 🎓 on navy.
+- ⚠ **iOS delivers web push only from a site on the Home Screen, and the
+  Home Screen app has its own storage** — gate, sign-in and the device's
+  own push record start empty there. `JEMPush.needsInstall()` is the test
+  every page makes before promising anything.
+- **`/shared/notifications.html?course=<id>[&lang=fr]` is the student's
+  page**, and on an iPhone the page they add to the Home Screen: it sets
+  `data-course` from the URL before `config.js`, loads `login.js` with
+  `COURSE_LOGIN_AUTO=false` so sign-in happens on the page, lists every
+  course the device is signed in to (`<keyPrefix>_auth`), subscribes once
+  and registers the device per ticked course, records it in
+  `jem_push_subs`, and — in standalone mode, once subscribed — sends the
+  student on to the course (`&stay=1` stops it). EN and FR from one `T`.
+- **`/shared/push-nudge.js`** is the one-line opt-in on every live course
+  hub with login (17, including gen110's template and both mfb545
+  editions) and the three school landing pages: a strip after `.hero`
+  linking to the page with the course and the page's language. Silent when
+  `_site/push` is off, when this device already subscribed (per ns, or at
+  all), on the instructor's device, or after ✕.
+- **`site.html` → Push notifications**: sender URL (Save fetches `/vapid`
+  and stores the key), on/off, Enable on this device (needs the 🔑
+  account — so a student cannot add a device to the instructor's list),
+  Send a test, the device list with Remove, students-subscribed counts, and
+  the deploy and iPhone steps. `chat.html` and `admin2.html` load
+  `/shared/push.js` for the two sends.
+- **Probe:** headless Chrome cannot subscribe to push, so the pages were
+  tested with a stub of `JEMPush.cfg`/`current` on a scratch server
+  (symlinks into the repo); the worker's crypto with the RFC vector; the
+  real delivery only on Jan Erik's devices after deploy.
+
 ### Rules — [firebase-database-rules.json](firebase-database-rules.json)
 
 ⚠️ **This file is a copy. Editing it changes nothing until you deploy it** — paste it
