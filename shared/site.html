@@ -5,11 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
 <title>Site · statistics &amp; alerts</title>
-<link rel="manifest" href="/shared/app.webmanifest">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Courses · admin">
-<meta name="theme-color" content="#0a1a3a">
-<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <!--
   SHARED · the one page that is about the SITE rather than a course.
       /shared/site.html
@@ -185,54 +180,6 @@ function out(t) { return ContentService.createTextOutput(t); }</pre>
     </details>
   </section>
 
-  <section id="pushsec">
-    <h2>Push notifications · your phone and your Mac</h2>
-    <div class="sub">A student message reaches your devices as a notification, with the message and a link to the thread. The same sender pushes <b>to students</b> who turn it on at <a href="notifications.html" target="_blank" rel="noopener">/shared/notifications.html</a>: an announcement you post, a reply you send. Set up once; then each device is one button.</div>
-
-    <div class="sw">
-      <button class="tog" id="ptog" disabled aria-label="Push notifications"></button>
-      <span class="st off" id="ptogSt">—</span>
-      <span class="d" id="ptogD">Reading the current setting…</span>
-    </div>
-
-    <div class="row">
-      <label for="purl">Sender URL</label>
-      <input type="url" id="purl" placeholder="https://teaching-push.….workers.dev" spellcheck="false">
-      <button class="b2 pri" id="bPSave">Save</button>
-    </div>
-    <div class="note" id="pNote">The sender is a Cloudflare Worker you deploy once from the <code>push/</code> folder of the repo (five commands, below). Saving fetches its public key and stores both in <code>_site/push</code>.</div>
-
-    <div class="row" style="margin-top:14px;">
-      <button class="b2 pri" id="bPEnable">🔔 Enable on this device</button>
-      <button class="b2" id="bPTest">Send a test notification</button>
-      <button class="b2" id="bPOff" title="Stop notifications on this device only">Turn off here</button>
-    </div>
-    <div class="note" id="pHere"></div>
-    <div id="pDevices" class="note"></div>
-
-    <details id="phow">
-      <summary>Set up the sender (once, about ten minutes)</summary>
-      <ol>
-        <li>Open a terminal in the repo's <code>push/</code> folder. A free Cloudflare account is enough; <code>npx</code> downloads the tool.</li>
-        <li><code>npx wrangler login</code> — opens the browser once.</li>
-        <li><code>npx wrangler kv namespace create SUBS</code> — prints an <b>id</b>; paste it into <code>wrangler.toml</code> where it says so.</li>
-        <li><code>node keys.mjs</code> — prints the private key as one JSON line. Then <code>npx wrangler secret put VAPID_PRIVATE_JWK</code> and paste that line when asked. This is the only secret; it never goes in the repo.</li>
-        <li><code>npx wrangler deploy</code> — prints the worker URL. Paste it above, <b>Save</b>, switch <b>on</b>, <b>Enable on this device</b>, <b>Send a test</b>.</li>
-      </ol>
-      <div class="note">The <code>_site/push</code> rules block must be deployed first (<code>firebase-database-rules.json</code>), like every rules change. To change the worker later: edit <code>push/worker.js</code> and run <code>npx wrangler deploy</code> again; the URL stays.</div>
-    </details>
-    <details>
-      <summary>On your iPhone</summary>
-      <ol>
-        <li>Open this page in <b>Safari</b> (not from inside another app).</li>
-        <li>Tap <b>Share</b> → <b>Add to Home Screen</b> → <b>Add</b>. iPhones receive web notifications only from a site on the Home Screen.</li>
-        <li>Open it <b>from the Home Screen icon</b>. It has its own storage, so unlock the gate and sign in once more there.</li>
-        <li>Press <b>Enable on this device</b>, allow notifications, then <b>Send a test</b>.</li>
-      </ol>
-      <div class="note">On a Mac, Safari, Chrome, Edge and Firefox all work from a normal tab — press <b>Enable on this device</b> here. If Chrome's notifications never appear, check macOS System Settings → Notifications → Google Chrome.</div>
-    </details>
-  </section>
-
   <section id="stats">
     <h2>Visitors</h2>
     <div class="sub">Pageviews recorded by every page of the site, grouped by course. A "visitor" is a device: a random id the browser keeps, not a person and not a student account — the same student on a laptop and a phone counts twice, and a cleared browser counts again.</div>
@@ -275,7 +222,6 @@ function out(t) { return ContentService.createTextOutput(t); }</pre>
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
-<script src="/shared/push.js"></script>
 <script src="/shared/fb-auth.js"></script>
 <script>
 var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
@@ -331,97 +277,6 @@ function wireNotify(){
     var b=this,txt=$('gs').textContent;
     function ok(){b.textContent='✓ Copied';setTimeout(function(){b.textContent='⧉ Copy script';},1600);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok).catch(ok);else ok();
-  });
-}
-
-/* ===================== 1b · push notifications ===================== */
-var PUSH=null, MYSUB=null;
-function plat(){ var p=JEMPush.platform(); return p.ios?(p.ipad?'iPad':'iPhone'):p.android?'Android':p.mac?'Mac':p.windows?'Windows':'device'; }
-async function subId(endpoint){ var h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(endpoint)); return [...new Uint8Array(h)].map(function(b){return b.toString(16).padStart(2,'0');}).join('').slice(0,32); }
-function say(msg,cls){ var el=$('pHere'); el.innerHTML=msg; el.style.color=cls==='bad'?'var(--bad)':cls==='ok'?'var(--good)':''; el.style.fontWeight='700'; }
-function paintPush(keep){
-  var on=!!(PUSH&&PUSH.on), url=(PUSH&&PUSH.url)||'', key=(PUSH&&PUSH.key)||'';
-  $('ptog').className='tog'+(on?' on':'');$('ptog').disabled=false;
-  $('ptogSt').className='st '+(on?'on':'off');$('ptogSt').textContent=on?'On':'Off';
-  $('ptogD').textContent= on ? (url&&key?'Student messages are pushed to your subscribed devices; announcements and replies to students who turned it on.':'On, but no sender is set — nothing is sent. Paste the worker URL below and save.')
-                             : (url?'Off. Nothing is pushed to anyone. Switch on to start.':'Off. Deploy the sender (below), paste its URL and save, then switch on.');
-  if(document.activeElement!==$('purl'))$('purl').value=url;
-  if(!url)$('phow').open=true;
-  var sup=JEMPush.supported(), need=JEMPush.needsInstall();
-  $('bPEnable').disabled=!sup||need||!url||!key; $('bPTest').disabled=!url; $('bPOff').disabled=!MYSUB;
-  if(keep) return;
-  $('pHere').style.color='';$('pHere').style.fontWeight='';
-  $('pHere').innerHTML= !sup ? 'This browser cannot receive push notifications.'+(JEMPush.platform().ios?' On an iPhone, open this page in Safari and add it to the Home Screen first — see below.':'')
-    : need ? 'On an iPhone, notifications only reach a site on the Home Screen: <b>Share → Add to Home Screen</b>, then open it from there and press Enable.'
-    : MYSUB ? '✓ This '+plat()+' is subscribed.' : 'This '+plat()+' is not subscribed yet.';
-}
-async function loadPush(){
-  PUSH=(await JEMPush.cfg(true))||{on:false,url:'',key:''};
-  try{ MYSUB=await JEMPush.current(); }catch(e){ MYSUB=null; }
-  paintPush(); refreshDevices();
-}
-async function savePush(patch){
-  var next={on:!!(PUSH&&PUSH.on),url:(PUSH&&PUSH.url)||'',key:(PUSH&&PUSH.key)||'',ts:Date.now()};
-  for(var k in patch)next[k]=patch[k];
-  if(next.url){
-    next.url=next.url.replace(/\/+$/,'');
-    if(!/^https:\/\/[^\s/]+$/.test(next.url)){warn('The sender URL should be just the origin, like <code>https://teaching-push.xxx.workers.dev</code>.','bad');return false;}
-    if(next.url!==(PUSH&&PUSH.url)||!next.key){
-      try{ var r=await fetch(next.url+'/vapid'); var j=await r.json(); if(!j.key)throw new Error('no key'); next.key=j.key; }
-      catch(e){ warn('That URL did not answer like the sender (no <code>/vapid</code> key). Is it deployed, and is the secret set? '+esc(String(e.message||e)),'bad'); return false; }
-    }
-  }
-  var q=await authQ();
-  if(!q){warn('Saving needs the signed-in instructor account — the 🔑 button at the top.','bad');$('bAuth').style.display='';return false;}
-  try{
-    var r2=await fetch(DB+'/_site/push.json'+q,{method:'PUT',body:JSON.stringify(next)});
-    if(!r2.ok)throw new Error('HTTP '+r2.status);
-    PUSH=next;JEMPush.cfg(true);paintPush();warn('Saved.','ok');setTimeout(function(){warn('');},1800);return true;
-  }catch(e){warn('Not saved: '+esc(e.message)+'. A 401 here means the <code>_site</code> rules block (with <code>push</code>) is not deployed, or this account is not in it.','bad');return false;}
-}
-async function token(){ if(!window.__fbUser)return null; try{return await window.__fbUser.getIdToken();}catch(e){return null;} }
-async function refreshDevices(){
-  var el=$('pDevices'); if(!PUSH||!PUSH.url){el.innerHTML='';return;}
-  var t=await token(); if(!t){el.innerHTML='Sign in (🔑) to see which devices are subscribed.';return;}
-  try{
-    var j=await JEMPush.get('/subs',t);
-    var mine=MYSUB?await subId(MYSUB.endpoint):'';
-    var devs=(j.devices||[]).map(function(d){
-      var when=new Date(d.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      return '<div class="row" style="margin:4px 0"><span>'+(d.id===mine?'<b>This device</b>':esc(d.label||'Device'))+' · <span style="color:var(--grey)">'+esc(d.host)+' · since '+when+'</span></span><button class="b2" data-rm="'+esc(d.id)+'">Remove</button></div>';
-    }).join('');
-    var stu=Object.keys(j.students||{}).map(function(ns){return esc(ns)+' '+j.students[ns];}).join(' · ');
-    el.innerHTML='<b>Your devices ('+(j.devices||[]).length+')</b>'+(devs||' — none yet')+(stu?'<div style="margin-top:6px"><b>Students subscribed</b> · '+stu+'</div>':'<div style="margin-top:6px">No student has turned notifications on yet.</div>');
-    el.querySelectorAll('[data-rm]').forEach(function(b){b.addEventListener('click',async function(){ var tk=await token(); try{ await JEMPush.post('/unsubscribe',{id:b.getAttribute('data-rm')},tk); if(b.getAttribute('data-rm')===mine){await JEMPush.unsubscribe();MYSUB=null;} refreshDevices(); paintPush(); }catch(e){warn('Could not remove: '+esc(e.message),'bad');} });});
-  }catch(e){ el.innerHTML='Could not list devices: '+esc(String(e.message||e))+'.'; }
-}
-function wirePush(){
-  $('ptog').addEventListener('click',function(){ if(!PUSH)return; savePush({on:!PUSH.on}); });
-  $('bPSave').addEventListener('click',function(){ savePush({url:$('purl').value.trim()}); });
-  $('bPEnable').addEventListener('click',function(){
-    var b=this;b.disabled=true;b.textContent='Asking…';
-    /* subscribe() first — it must ask for permission inside this click;
-       the account token is fetched afterwards */
-    var sub=null;
-    JEMPush.subscribe().then(function(s){ sub=s; return token(); }).then(function(t){
-      if(!t)throw new Error('Sign in first (🔑 at the top) — subscribing a device needs your account, so a student cannot add theirs to your list.');
-      return JEMPush.post('/subscribe',{sub:sub.toJSON(),ua:navigator.userAgent,label:plat()},t);
-    }).then(function(){
-      MYSUB=sub; say('✓ This '+plat()+' is subscribed. Now press <b>Send a test notification</b>.','ok');
-    }).catch(function(e){ say('✗ '+esc(JEMPush.explain(e))+(Notification.permission==='denied'?' (The browser has notifications for this site set to Block — change it in the site settings next to the address bar, then reload.)':''),'bad'); })
-    .then(function(){ b.disabled=false;b.textContent='🔔 Enable on this device'; paintPush(true); refreshDevices(); });
-  });
-  $('bPTest').addEventListener('click',async function(){
-    var b=this;b.disabled=true;b.textContent='Sending…';
-    try{ var t=await token(); if(!t)throw new Error('Sign in first (🔑 at the top).'); var j=await JEMPush.post('/test',{},t);
-         say((j.devices?'Test sent to '+j.devices+' device'+(j.devices===1?'':'s')+' · delivered '+j.sent:'Test sent to nobody — no device is subscribed yet. Press Enable on this device first.')+(j.dead?' · '+j.dead+' expired and removed':'')+(j.failed?' · '+j.failed+' failed':'')+'.', j.sent?'ok':'bad'); }
-    catch(e){ say('The test failed: '+esc(String(e.message||e)),'bad'); }
-    b.disabled=false;b.textContent='Send a test notification';
-  });
-  $('bPOff').addEventListener('click',async function(){
-    try{ var t=await token(); if(MYSUB&&t){ await JEMPush.post('/unsubscribe',{id:await subId(MYSUB.endpoint)},t); } await JEMPush.unsubscribe(); MYSUB=null; warn('This device no longer receives notifications.','ok'); }
-    catch(e){ warn(esc(String(e.message||e)),'bad'); }
-    paintPush(); refreshDevices();
   });
 }
 
@@ -504,15 +359,13 @@ function refHost(ref){
 function start(){
   wireNotify();
   loadNotify();
-  wirePush();
-  loadPush();
   $('range').addEventListener('change',loadHits);
   $('exMe').addEventListener('change',renderStats);
-  $('bRefresh').addEventListener('click',function(){loadNotify();loadPush();loadHits();});
+  $('bRefresh').addEventListener('click',function(){loadNotify();loadHits();});
   $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
   $('bAuth').addEventListener('click',function(){
     var w=$('warn');w.style.display='block';w.className='warn';
-    if(!w.querySelector('.fba')){w.innerHTML='<div id="warnForm"></div>';FBAuth.form($('warnForm'),function(){warn('');loadHits();loadNotify();loadPush();},'_site');}
+    if(!w.querySelector('.fba')){w.innerHTML='<div id="warnForm"></div>';FBAuth.form($('warnForm'),function(){warn('');loadHits();loadNotify();},'_site');}
   });
   window.CourseConfig.load().then(function(reg){REG=reg;if(HITS)renderStats();}).catch(function(){});
 }
@@ -520,7 +373,7 @@ AdminGate.mount({ brand:'SITE · STATISTICS & ALERTS', title:'Instructor access'
                   blurb:'Enter the instructor password. This device will remember it.',
                   onUnlock:function(){
                     start();
-                    FBAuth.restore(function(u){ if(u){loadHits();refreshDevices();} else {$('bAuth').style.display='';loadHits();} });
+                    FBAuth.restore(function(u){ if(u){loadHits();} else {$('bAuth').style.display='';loadHits();} });
                   } });
 </script>
 <script src="/track.js" defer></script>

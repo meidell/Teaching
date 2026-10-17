@@ -808,25 +808,6 @@ window.CourseChat = (function () {
     });
   }
 
-  /* PUSH NOTIFICATION to the instructor's phone — switched on from the same
-     page, `_site/push = {on, url, key}`. Unlike the email this carries no
-     text: the worker (push/worker.js) reads the message back from the
-     database by its id and only then pushes, so the endpoint can be public
-     without being a spam cannon. Best-effort, like the email. */
-  var PUSHCFG=null;
-  function pushCfg(){
-    if(PUSHCFG)return PUSHCFG;
-    PUSHCFG=fetch(DB+'/_site/push.json',{cache:'no-cache'}).then(function(r){return r.json();}).catch(function(){return null;});
-    return PUSHCFG;
-  }
-  function pushInstructor(id){
-    if(!id||/^(p-|sg-)/.test(CUR))return;
-    pushCfg().then(function(cfg){
-      if(!cfg||!cfg.on||!cfg.url||!/^https:\/\//.test(cfg.url))return;
-      try{ fetch(String(cfg.url).replace(/\/+$/,'')+'/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ns:NS,tid:CUR,id:String(id)}),keepalive:true}).catch(function(){}); }catch(e){}
-    });
-  }
-
   function send(){
     if(SENDING||!ME||!CUR)return;
     var th=THREADS.filter(function(x){return x.tid===CUR;})[0];
@@ -844,10 +825,9 @@ window.CourseChat = (function () {
     ta.value=''; ta.style.height='auto';
     renderMsgs(false);
 
-    post('_chat/'+encodeURIComponent(CUR)+'/msgs',msg).then(function(res){
+    post('_chat/'+encodeURIComponent(CUR)+'/msgs',msg).then(function(){
       LAST[CUR]=msg.ts; markRead(CUR,msg.ts);
       notifyInstructor(msg);
-      pushInstructor(res&&res.name);
       /* so the instructor's thread list can show a DM that has no meta */
       if(CUR==='dm-'+ME.sid) put(ME.sid+'/chats/'+CUR,{t:ME.name||ME.sid,k:'dm',ts:msg.ts});
       document.getElementById('jc-note').className='';

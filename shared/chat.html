@@ -247,7 +247,6 @@ line-height:1.55;margin-top:14px;}
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
-<script src="/shared/push.js"></script>
 <script src="/shared/fb-auth.js"></script>
 <script>
 "use strict";
@@ -524,7 +523,6 @@ async function send(){
     /* a thread the instructor started needs its meta, so students can find it */
     if(!CHAT[CUR]||!CHAT[CUR].meta) await writeMeta(CUR,{kind:t.kind,title:t.title,ro:!!t.ro,members:t.members||null});
     ta.value='';ta.style.height='auto';note('');
-    pushStudents({kind:'reply',ns:NS,tid:CUR,text:txt});
     await poll();
     $('stream').scrollTop=$('stream').scrollHeight;
   }catch(e){
@@ -532,19 +530,6 @@ async function send(){
     needSignIn('Sending as the instructor needs Google sign-in — the rules only accept a message marked as yours from your own token.');
   }
   $('send').disabled=false;ta.focus();
-}
-
-/* PUSH to the student(s) in this thread — their phones, if they turned it
-   on at /shared/notifications.html. The worker decides who: a DM goes to
-   that one student (and never carries the text), `all` to the cohort, a
-   group to its members. Best-effort; the message is already stored. */
-function pushStudents(ev){
-  if(!window.JEMPush||!window.__fbUser)return;
-  JEMPush.cfg().then(function(c){
-    if(!c||!c.on||!c.url)return;
-    return window.__fbUser.getIdToken().then(function(t){return JEMPush.post('/send',ev,t);})
-      .then(function(j){ if(j&&j.sent) note('Sent · pushed to '+j.sent+' device'+(j.sent===1?'':'s')+'.'); });
-  }).catch(function(){});
 }
 
 async function del(id){
