@@ -1133,6 +1133,26 @@ global `EscWall`; `courseprogress.js` a port).
   CrowdStrike…) are real and kept to the public record.
 - ⚠ **The `escwa` rules block (a copy of `creator`'s) must be DEPLOYED** before
   the link goes to students, or registration and the walls fail (both say so).
+- **Session 2 (`week2.html`, 23 Oct 2026) — seven steps, `total:7`.** Opens
+  Session 1's sealed `w1_nx` pick from localStorage and boards `w1_next`; a
+  six-case classify against Mazarr's four marks (answers 1,0,3,2,0,0, mixed
+  on purpose, first attempt wins, a reason per pick); the **salami game**
+  (eight fictional slices against the Constanța terminal arriving one at a
+  time, absorb/act, the first "act" is the line → `_wall/w2` as `L:<n>`, 9 =
+  never acted); the **GNSS mechanism in detail** with a live link-budget
+  widget (FSPL = 20 log d + 20 log f − 147.55 at 1575.42 MHz; a 1 W jammer
+  at 10 km arrives at −86 dBm, ≈ 23,000× the −130 dBm signal — recomputed in
+  Python), jamming vs spoofing, C4ADS 2019 (9,883 instances / 1,311
+  vessels), Finnair–Tartu April 2024, five defender checks; the **asymmetry
+  table** (six instruments × attacker/Arvane cost, five orders of magnitude →
+  `_wall/w2a` as `A:dddddd|D:dddddd`, medians per instrument); **Arvane's
+  tripwires** (`w2_absorb`, `w2_act`, `w2_tell` — the first page of the
+  crisis protocol Session 9 plays); the close seals `w2_nx` on Rid and
+  collects **Reflection 2 as `refl3_*`** (Rid 2012, DOI verified on
+  Crossref). Team and the ROTATED role are prefilled from `work_w1_team`
+  (Analyst → Adversary → Scribe → Analyst). Written in the factual register
+  (no instructor first person); Session 1 and the hub still carry the older
+  voice. The `_wall/$mod` wildcard covers both new nodes — no rules change.
 
 ### SWISS UMEF · GEN 110 Intelligence artificielle — `UMEF/gen110/`
 
