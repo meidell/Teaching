@@ -2143,3 +2143,25 @@ the worker reports — the worker itself cannot delete anything). Student pages
 do not load it; `chat.js` has its own inline hook. Never for `p-`/`sg-`
 threads, in either direction. `privacy.html` at the web root is what both
 stores link to.
+
+### Passwords, join codes and the hand-off (18 Oct 2026)
+
+- **A student chooses their own password** at registration — 2–10 characters,
+  no spaces, anything — instead of being issued a random six-digit code. The
+  roster still stores it as `pass`; a code issued before this date is just a
+  short password and keeps working. `login.js`'s "I have a code" tab is now
+  "I have a password" and accepts up to 10 characters of anything.
+- **`joinCode` in courses.json** — four upper-case letters, unique across the
+  file — is what a student types into the Insights app to find the course.
+  Change it there and nowhere else; the app reads the registry live.
+- **The hand-off.** `?jemauth=<URL-encoded JSON {sid,name,pass}>` on any
+  course page signs that page in silently (verified against `_roster` the
+  way a sibling identity is: same password → signed in and merged; unknown
+  → registered; different → the prompt opens on the password tab) and is
+  stripped from the address bar first. The app appends it when it opens a
+  course it already knows the student of, and when it opens the browser
+  (the ⧉ button); the browser's own "📱 Open in the app" link (drawn by
+  `login.js` on phones, never inside the app, whose user agent carries
+  `JEMCourses`) does the reverse through `jemcourses://open?url=…`.
+  `CourseLogin.handoffUrl(url)` and `CourseLogin.inApp()` are public for
+  pages that want their own link.

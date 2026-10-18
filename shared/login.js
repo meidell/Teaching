@@ -61,22 +61,25 @@ window.CourseLogin = (function () {
       synced:" · synced",
       h:"Your course account",
       lead:"Sign in so your progress follows you between your laptop and your phone, and so your professor can see it.",
-      tabNew:"First time", tabBack:"I have a code",
+      tabNew:"First time", tabBack:"I have a password",
       nameL:"Full name", nameP:"First and last name",
-      codeL:"Your six-digit code", codeP:"••••••",
+      codeL:"Your password", codeP:"your password",
+      pwL:"Choose a password", pwP:"2–10 letters or digits — anything easy to remember",
+      needPw:"Choose a password of 2 to 10 characters, without spaces.",
+      app:"Open in the app",
       go:"Continue", back:"Sign in",
       later:"not now",
       madeH:"You're all set",
-      madeP:"This is your course code. Write it down — you only need it to sign in on another device.",
-      dupe:"That name is already registered. If it's you, use “I have a code”. A different student with the same name? Add your middle name.",
+      madeP:"This is your password. You only need it to sign in on another device.",
+      dupe:"That name is already registered. If it's you, use “I have a password”. A different student with the same name? Add your middle name.",
       nofind:"No account under that name. Check the spelling — use exactly the name you registered with — or start under “First time”.",
-      bad:"That code doesn't match. Lost it? Your instructor can look it up.",
+      bad:"That password doesn't match. Forgotten? Your instructor can look it up.",
       needName:"Please enter your first and last name.",
       grpL:"Which group are you in?",
       grpN:"Group",
       grpHelp:"Pick the session you actually attend — your presence is recorded in that room. Tell your instructor if you need to change it later.",
       needGrp:"Please choose your group.",
-      needBoth:"Enter your name and your six-digit code.",
+      needBoth:"Enter your name and your password.",
       net:"Network problem — try again in a moment.",
       refused:"The course database refused this — nothing was saved. Tell your instructor (the course's database rules may not be published yet).",
       merged:"Signed in. Bringing your progress across…"
@@ -87,22 +90,25 @@ window.CourseLogin = (function () {
       synced:" · synchronisé",
       h:"Votre compte de cours",
       lead:"Connectez-vous pour que votre progression vous suive entre votre ordinateur et votre téléphone, et que votre professeur puisse la voir.",
-      tabNew:"Première fois", tabBack:"J'ai un code",
+      tabNew:"Première fois", tabBack:"J'ai un mot de passe",
       nameL:"Nom complet", nameP:"Prénom et nom",
-      codeL:"Votre code à six chiffres", codeP:"••••••",
+      codeL:"Votre mot de passe", codeP:"votre mot de passe",
+      pwL:"Choisissez un mot de passe", pwP:"2 à 10 lettres ou chiffres — quelque chose de facile à retenir",
+      needPw:"Choisissez un mot de passe de 2 à 10 caractères, sans espace.",
+      app:"Ouvrir dans l'app",
       go:"Continuer", back:"Se connecter",
       later:"plus tard",
       madeH:"C'est fait",
-      madeP:"Voici votre code de cours. Notez-le — il ne sert qu'à vous connecter sur un autre appareil.",
-      dupe:"Ce nom est déjà enregistré. Si c'est vous, utilisez « J'ai un code ». Un autre étudiant du même nom ? Ajoutez votre deuxième prénom.",
+      madeP:"Voici votre mot de passe. Il ne sert qu'à vous connecter sur un autre appareil.",
+      dupe:"Ce nom est déjà enregistré. Si c'est vous, utilisez « J'ai un mot de passe ». Un autre étudiant du même nom ? Ajoutez votre deuxième prénom.",
       nofind:"Aucun compte à ce nom. Vérifiez l'orthographe — utilisez exactement le nom d'inscription — ou passez par « Première fois ».",
-      bad:"Ce code ne correspond pas. Perdu ? Votre professeur peut le retrouver.",
+      bad:"Ce mot de passe ne correspond pas. Oublié ? Votre professeur peut le retrouver.",
       needName:"Veuillez entrer votre prénom et votre nom.",
       grpL:"Dans quel groupe êtes-vous ?",
       grpN:"Groupe",
       grpHelp:"Choisissez la séance à laquelle vous assistez — votre présence est enregistrée dans cette salle. Prévenez votre enseignant si elle doit changer.",
       needGrp:"Veuillez choisir votre groupe.",
-      needBoth:"Entrez votre nom et votre code à six chiffres.",
+      needBoth:"Entrez votre nom et votre mot de passe.",
       net:"Problème de réseau — réessayez dans un instant.",
       refused:"La base de données du cours a refusé l'enregistrement — rien n'a été sauvegardé. Prévenez votre enseignant (les règles de la base ne sont peut-être pas publiées).",
       merged:"Connecté. Récupération de votre progression…"
@@ -252,7 +258,10 @@ window.CourseLogin = (function () {
     '#cl-box input{width:100%;background:var(--wash,'+T.surface+');border:1px solid '+T.main+'40;border-radius:10px;'+
     'color:var(--ink,'+T.ink+');font:15px "Helvetica Neue",Arial,sans-serif;padding:11px 13px;margin-bottom:12px;}'+
     '#cl-box input:focus{outline:none;border-color:'+T.main+';}'+
-    '#cl-code{text-align:center;letter-spacing:10px;font-size:20px;}'+
+    '#cl-code{text-align:center;letter-spacing:2px;font-size:17px;}'+
+    '#cl-app{position:fixed;left:14px;bottom:14px;z-index:300;background:var(--card,rgba(255,255,255,.95));border:1.5px solid '+T.main+';'+
+    'color:var(--ink,'+T.deep+');font:700 12px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;border-radius:30px;padding:9px 14px;text-decoration:none;'+
+    'box-shadow:0 10px 26px -12px rgba(0,0,0,.4);}'+
     '.cl-grps{display:flex;gap:8px;margin:0 0 6px;}'+
     '.cl-grp{flex:1;background:var(--wash,'+T.surface+');border:1.5px solid '+T.main+'33;border-radius:12px;padding:11px 8px;'+
     'cursor:pointer;text-align:center;color:var(--ink,'+T.ink+');font:700 14px "Helvetica Neue",Arial,sans-serif;}'+
@@ -266,12 +275,36 @@ window.CourseLogin = (function () {
     '#cl-err{color:#B3402A;font-size:12.5px;margin-top:10px;min-height:16px;line-height:1.45;}'+
     '.cl-pass{background:'+T.deep+';border-radius:16px;color:#fff;padding:22px 18px;margin-top:6px;}'+
     '.cl-pass .t{font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:800;opacity:.85;}'+
-    '.cl-pass .v{font-size:38px;font-weight:800;letter-spacing:9px;margin:8px 0 6px;padding-left:9px;}'+
+    '.cl-pass .v{font-size:32px;font-weight:800;letter-spacing:3px;margin:8px 0 6px;word-break:break-all;}'+
     '.cl-pass p{font-size:12.5px;opacity:.92;margin:0;}';
     document.head.appendChild(s);
   }
 
+  /* ---- the app (18 Oct 2026) ----
+     The "Insights" app shows these same pages in a WebView and identifies
+     itself with "JEMCourses" in the user agent. A signed-in student on a
+     phone's BROWSER gets a small "Open in the app" link that carries their
+     identity across (jemcourses://open?url=<this page>?jemauth=...), so the
+     app signs them in without asking; the app does the reverse with the
+     same jemauth parameter — see readHandoff(). */
+  function inApp(){ return /JEMCourses/.test(navigator.userAgent||''); }
+  function handoffUrl(a,url){
+    try{ var u=new URL(url||location.href); u.searchParams.delete('jemauth');
+         u.searchParams.set('jemauth',JSON.stringify({sid:a.sid,name:a.name,pass:a.pass})); return u.toString(); }
+    catch(e){ return url||location.href; }
+  }
+  function appLink(){
+    var a=auth(), el=document.getElementById('cl-app');
+    var want=a&&!inApp()&&/Android|iPhone|iPad/i.test(navigator.userAgent||'');
+    if(!want){ if(el&&el.parentNode)el.parentNode.removeChild(el); return; }
+    css();
+    if(!el){ el=document.createElement('a'); el.id='cl-app'; document.body.appendChild(el); }
+    el.textContent='📱 '+L().app;
+    el.href='jemcourses://open?url='+encodeURIComponent(handoffUrl(a));
+  }
+
   function renderPill(){
+    appLink();
     if(document.getElementById('topWho'))return;   /* page has its own chip */
     css();
     var a=auth(), t=L();
@@ -297,7 +330,8 @@ window.CourseLogin = (function () {
           '<label for="cl-name" id="cl-nameL"></label><input id="cl-name" autocomplete="name">'+
           '<div id="cl-grpwrap"><label id="cl-grpL"></label><div class="cl-grps" id="cl-grps"></div>'+
             '<div class="cl-ghelp" id="cl-ghelp"></div></div>'+
-          '<div id="cl-codewrap"><label for="cl-code" id="cl-codeL"></label><input id="cl-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>'+
+          '<div id="cl-pwwrap"><label for="cl-pw" id="cl-pwL"></label><input id="cl-pw" autocomplete="new-password" maxlength="10" autocapitalize="none"></div>'+
+          '<div id="cl-codewrap"><label for="cl-code" id="cl-codeL"></label><input id="cl-code" autocomplete="current-password" maxlength="10" autocapitalize="none"></div>'+
           '<button id="cl-go"></button><div id="cl-err"></div>'+
           '<button id="cl-later"></button>'+
         '</div>'+
@@ -310,6 +344,7 @@ window.CourseLogin = (function () {
       document.getElementById('cl-later').addEventListener('click',function(){m.classList.remove('on');});
       document.getElementById('cl-name').addEventListener('keydown',function(e){if(e.key==='Enter')submit();});
       document.getElementById('cl-code').addEventListener('keydown',function(e){if(e.key==='Enter')submit();});
+      document.getElementById('cl-pw').addEventListener('keydown',function(e){if(e.key==='Enter')submit();});
     }
     document.getElementById('cl-h').textContent=t.h;
     document.getElementById('cl-lead').textContent=t.lead;
@@ -319,6 +354,8 @@ window.CourseLogin = (function () {
     document.getElementById('cl-codeL').textContent=t.codeL;
     document.getElementById('cl-name').placeholder=t.nameP;
     document.getElementById('cl-code').placeholder=t.codeP;
+    document.getElementById('cl-pwL').textContent=t.pwL;
+    document.getElementById('cl-pw').placeholder=t.pwP;
     document.getElementById('cl-later').textContent=t.later;
     if(hasGroups()){
       document.getElementById('cl-grpL').textContent=t.grpL;
@@ -354,6 +391,7 @@ window.CourseLogin = (function () {
     document.getElementById('cl-tnew').classList.toggle('on',x==='new');
     document.getElementById('cl-tback').classList.toggle('on',x==='back');
     document.getElementById('cl-codewrap').style.display=(x==='back')?'block':'none';
+    document.getElementById('cl-pwwrap').style.display=(x==='new')?'block':'none';
     /* Only a NEW student chooses. Coming back with a code, the group is
        whatever the register says — asking again would let a student move
        themselves out of the room they are marked absent in. */
@@ -399,11 +437,15 @@ window.CourseLogin = (function () {
     }
     if(!name||name.indexOf(' ')<0||sid.length<3){err(t.needName);return;}
     if(hasGroups()&&!pickedGrp){err(t.needGrp);return;}
+    var pw=(document.getElementById('cl-pw').value||'').trim();
+    if(!/^\S{2,10}$/.test(pw)){err(t.needPw);return;}
     err('…');
     get('_roster/'+sid).then(function(existing){
       if(existing&&existing.error){ err(t.refused); return; }
       if(existing&&existing.pass){ setMode('back'); err(t.dupe); return; }
-      var pass=String(Math.floor(100000+Math.random()*900000)), ts=Date.now();
+      /* the student's own choice since 18 Oct 2026 (it used to be a random
+         six-digit code; those still sign in — a code is just a short password) */
+      var pass=pw, ts=Date.now();
       var grp=hasGroups()?pickedGrp:null;
       var rec={name:name,pass:pass,ts:ts};
       if(grp)rec.grp=grp;
@@ -524,8 +566,49 @@ window.CourseLogin = (function () {
     }).catch(function(){return false;});
   }
 
+  /* ---- hand-off from the app or the browser: ?jemauth=<JSON {sid,name,pass}> ----
+     Verified against the roster exactly like a sibling identity: same
+     password → signed in and merged; unknown here → registered silently;
+     a different password → the prompt opens on the password tab. The
+     parameter is removed from the address bar before anything else runs. */
+  function readHandoff(){
+    var m=/[?&]jemauth=([^&#]+)/.exec(location.search||''); if(!m)return null;
+    var src=null; try{ src=JSON.parse(decodeURIComponent(m[1])); }catch(e){}
+    try{ var u=new URL(location.href); u.searchParams.delete('jemauth'); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(e){}
+    return (src&&src.sid&&src.pass)?src:null;
+  }
+  function adoptHandoff(src){
+    var t=L(), sid=san(src.sid)||String(src.sid), name=src.name||sid, pass=String(src.pass);
+    var cur=auth(); if(cur&&cur.sid===sid)return Promise.resolve(false);   /* already this person: the normal boot merges */
+    return get('_roster/'+sid).then(function(rec){
+      if(rec&&rec.error)return false;
+      if(rec&&rec.pass){
+        if(String(rec.pass)!==pass){ PREFILL={name:name,mode:'back',hint:t.bad}; return false; }
+        var a={sid:sid,name:rec.name||name,pass:pass};
+        if(hasGroups())a.grp=rec.grp||defGroup();
+        saveAuth(a); renderPill();
+        return mergeDown(sid).then(function(ch){ adopt(a,ch); return true; });
+      }
+      if(hasGroups()){ PREFILL={name:name}; return false; }          /* the room is theirs to choose */
+      var ts=Date.now(), recNew={name:name,pass:pass,ts:ts};
+      var writes=[ put('_roster/'+sid,recNew), put(sid+'/name',name), put(sid+'/sid',sid), put(sid+'/createdAt',ts), put(sid+'/updatedAt',ts) ];
+      return Promise.all(writes).then(function(rs){
+        if(rs.some(function(r){return !r.ok;}))return false;
+        var a={sid:sid,name:name,pass:pass};
+        saveAuth(a); renderPill();
+        if(window.StatsTrack&&window.StatsTrack.setIdentity)window.StatsTrack.setIdentity(name,sid);
+        return true;
+      });
+    }).catch(function(){return false;});
+  }
+
   /* ---- boot ---- */
   function boot(){
+    var h=readHandoff();
+    if(h){ adoptHandoff(h).then(function(done){ if(!done)boot2(); }); return; }
+    boot2();
+  }
+  function boot2(){
     var a=auth();
     if(a){
       renderPill();
@@ -544,7 +627,7 @@ window.CourseLogin = (function () {
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 
-  return { open:open, logout:logout, current:auth, sync:mergeDown,
+  return { open:open, logout:logout, current:auth, sync:mergeDown, handoffUrl:function(url){var a=auth();return a?handoffUrl(a,url):(url||location.href);}, inApp:inApp,
            groups:function(){return GROUPS.slice();},
            group:function(){var a=auth();return hasGroups()?((a&&a.grp)||defGroup()):'';},
            groupLabel:groupLabel };
