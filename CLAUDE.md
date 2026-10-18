@@ -1285,13 +1285,38 @@ define their project and who participates."* Everything below follows from it.
   minus the finance block plus this course's widgets (`.demo`, `.venn`,
   `.sab`, `.qlock`, `.dates`, `.voix`, and since the rebuild `.pb`, `.wish`,
   `.chk`). Runtime files are renamed ports of MBA406's with `T()` copy.
-  Only séance 1 exists; 2–10 are `live:false` and locked `div`s on the hub.
+  Séances 1 and 2 exist; 3–10 are `live:false` and locked `div`s on the hub.
+- **Séance 2 — *Bien demander I, le texte* (`seance2.tpl.html`, 18 Oct
+  2026, for Tuesday 20 Oct)** follows séance 1's engine section for
+  section: 2.1 the five-part builder on the student's OWN project (remise
+  1) with a **rule-based vagueness detector** (`lintPrompt()`: five parts
+  filled · context ≥ 12 words · a digit in the format · an explicit
+  example/prohibition · no vague word from `VAGUE`, one list per language)
+  that syncs the assembled prompt into `w2_prompt` · 2.2 the **scoring
+  grid** (`buildGrid`, five `CRIT` × three assistants, cells cycle 0→1→2,
+  totals and 🏆; state in `gen110_w2_cmp`) · 2.3 the four iteration moves
+  walked (`buildSteps`, each with a copyable sentence in `.calc`) + the
+  "quelle relance ?" classify · 2.4 **ten minutes of mechanism**: a token
+  splitter (an imitation, labelled), the next-token bars with a REAL
+  temperature softmax over five fixed logits and a ten-draw sampler, the
+  context-window gauge (16 turns fit, the brief falls out first), and a
+  phenomenon→mechanism classify · 2.5 the synchronised quiz, gated by
+  `_release/w2/quiz` exactly like séance 1 · 2.6 the **prompt library**
+  (`w2_p1…w2_p5` + "tested" ticks `lib0…lib4`; five written and two
+  tested complete it — the seed of remise 2) · 2.7 the duel (the grid
+  again, one column, `gen110_w2_duel`) · 2.8 remise 2 + what to bring to
+  séance 3. Denominator `EXTRA_STEPS (16) + .cl-row (12) + .q (8) +
+  [data-work] (9) = 45`; `total:8`. CSS at the END of `ia.css`
+  (`.lint`, `.cmpg`, `.tokens`, `.nxt`, `.ctxg`, `.lib`). Carnet fields
+  for the dashboard are the nine `w2_*` in `courses.json → project`.
+  Probed headlessly in both editions (quiz refuses clicks while locked;
+  T = 0.2 gives the favourite 99.9 %).
 - **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
   keep the engine, change the sections), add it to `PAGES` in `build.py`,
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the
   module and its carnet fields to `courses.json`, and set `live:true` on the
   hub's `SEANCES` entry (in the template). Run the headless probe on both
-  editions before pushing.
+  editions before pushing. Séances 1–2 exist; 3–10 are `live:false`.
 - **Own namespace `gen110`, prefix `gen110_`**; the rules block in
   `firebase-database-rules.json` must be deployed before the link goes to
   students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`

@@ -25,13 +25,13 @@ window.CourseProgress=(function(){
   var NS="gen110", K="gen110";
   /* GEN 110: ten séances of 3 h 15 (Tuesdays 13h30–16h45, two blocks of
      90 min). One page per séance; `total` on a séance page is
-     SECTIONS.length (8 for séance 1). */
+     SECTIONS.length (8 for séances 1 and 2). */
   /* Copy in both languages: T() (lang.js) picks the page's. The English
      page of a séance is seanceN-en.html — same module id, same progress. */
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
     {mod:'w1', short:'S1', name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                        total:8, live:true, href:T('seance1.html','seance1-en.html')},
-    {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:8, live:false},
+    {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:8, live:true, href:T('seance2.html','seance2-en.html')},
     {mod:'w3', short:'S3', name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),         total:8, live:false},
     {mod:'w4', short:'S4', name:T('Séance 4 · Excel et Word avec l’IA — finance','Session 4 · Excel and Word with AI — finance'),                total:8, live:false},
     {mod:'w5', short:'S5', name:T('Séance 5 · L’IA au travail — marketing, finance, RH','Session 5 · AI at work — marketing, finance, HR'),      total:8, live:false},
