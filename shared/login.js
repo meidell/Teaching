@@ -66,7 +66,6 @@ window.CourseLogin = (function () {
       codeL:"Your password", codeP:"your password",
       pwL:"Choose a password", pwP:"2–10 letters or digits — anything easy to remember",
       needPw:"Choose a password of 2 to 10 characters, without spaces.",
-      app:"Open in the app",
       go:"Continue", back:"Sign in",
       later:"not now",
       madeH:"You're all set",
@@ -95,7 +94,6 @@ window.CourseLogin = (function () {
       codeL:"Votre mot de passe", codeP:"votre mot de passe",
       pwL:"Choisissez un mot de passe", pwP:"2 à 10 lettres ou chiffres — quelque chose de facile à retenir",
       needPw:"Choisissez un mot de passe de 2 à 10 caractères, sans espace.",
-      app:"Ouvrir dans l'app",
       go:"Continuer", back:"Se connecter",
       later:"plus tard",
       madeH:"C'est fait",
@@ -259,9 +257,6 @@ window.CourseLogin = (function () {
     'color:var(--ink,'+T.ink+');font:15px "Helvetica Neue",Arial,sans-serif;padding:11px 13px;margin-bottom:12px;}'+
     '#cl-box input:focus{outline:none;border-color:'+T.main+';}'+
     '#cl-code{text-align:center;letter-spacing:2px;font-size:17px;}'+
-    '#cl-app{position:fixed;left:14px;bottom:14px;z-index:300;background:var(--card,rgba(255,255,255,.95));border:1.5px solid '+T.main+';'+
-    'color:var(--ink,'+T.deep+');font:700 12px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;border-radius:30px;padding:9px 14px;text-decoration:none;'+
-    'box-shadow:0 10px 26px -12px rgba(0,0,0,.4);}'+
     '.cl-grps{display:flex;gap:8px;margin:0 0 6px;}'+
     '.cl-grp{flex:1;background:var(--wash,'+T.surface+');border:1.5px solid '+T.main+'33;border-radius:12px;padding:11px 8px;'+
     'cursor:pointer;text-align:center;color:var(--ink,'+T.ink+');font:700 14px "Helvetica Neue",Arial,sans-serif;}'+
@@ -282,29 +277,18 @@ window.CourseLogin = (function () {
 
   /* ---- the app (18 Oct 2026) ----
      The "Insights" app shows these same pages in a WebView and identifies
-     itself with "JEMCourses" in the user agent. A signed-in student on a
-     phone's BROWSER gets a small "Open in the app" link that carries their
-     identity across (jemcourses://open?url=<this page>?jemauth=...), so the
-     app signs them in without asking; the app does the reverse with the
-     same jemauth parameter — see readHandoff(). */
+     itself with "JEMCourses" in the user agent. It signs a page in without
+     asking by appending ?jemauth=... — see readHandoff(). There is no link
+     from the web back into the app: the same name and password work on
+     both sides, and that is the whole story for a student. */
   function inApp(){ return /JEMCourses/.test(navigator.userAgent||''); }
   function handoffUrl(a,url){
     try{ var u=new URL(url||location.href); u.searchParams.delete('jemauth');
          u.searchParams.set('jemauth',JSON.stringify({sid:a.sid,name:a.name,pass:a.pass})); return u.toString(); }
     catch(e){ return url||location.href; }
   }
-  function appLink(){
-    var a=auth(), el=document.getElementById('cl-app');
-    var want=a&&!inApp()&&/Android|iPhone|iPad/i.test(navigator.userAgent||'');
-    if(!want){ if(el&&el.parentNode)el.parentNode.removeChild(el); return; }
-    css();
-    if(!el){ el=document.createElement('a'); el.id='cl-app'; document.body.appendChild(el); }
-    el.textContent='📱 '+L().app;
-    el.href='jemcourses://open?url='+encodeURIComponent(handoffUrl(a));
-  }
 
   function renderPill(){
-    appLink();
     if(document.getElementById('topWho'))return;   /* page has its own chip */
     css();
     var a=auth(), t=L();

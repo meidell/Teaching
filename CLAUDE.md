@@ -2160,8 +2160,7 @@ stores link to.
   → registered; different → the prompt opens on the password tab) and is
   stripped from the address bar first. The app appends it when it opens a
   course it already knows the student of, and when it opens the browser
-  (the ⧉ button); the browser's own "📱 Open in the app" link (drawn by
-  `login.js` on phones, never inside the app, whose user agent carries
-  `JEMCourses`) does the reverse through `jemcourses://open?url=…`.
-  `CourseLogin.handoffUrl(url)` and `CourseLogin.inApp()` are public for
-  pages that want their own link.
+  (the ⧉ button). There is deliberately **no link from the web into the
+  app** (Jan Erik, 18 Oct 2026): the same name and password work on both
+  sides, and a student uses whichever they have open. `CourseLogin.handoffUrl(url)`
+  and `CourseLogin.inApp()` stay public for pages that need them.
