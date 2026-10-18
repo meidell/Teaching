@@ -578,6 +578,36 @@ releases, the progress-denominator trap) still applies. What differs:
   unchanged (same `w2a_*` / `w2b_*` ids); the week totals stayed 9.
   Verification: a headless probe plays every widget to 100 % and a Python
   script recomputes every stated number the book's way (77 checks for 2A).
+- **Week 3 (estimation, Saylor ch. 7) was built on 17 Oct 2026** (Jan Erik:
+  "keep it close to the saylor on github — but add a lot of interactivity")
+  as a **port of `HEG/statistics/week6.html`** (scripted HEG→SUMAS transform:
+  chrome, `mba401_w3_*` keys, colours, week/section relabels — the book's
+  own cross-references such as 'Section 6.3 "The Sample Proportion"' were
+  protected from the relabel) **upgraded to the Week 2B standard**: the
+  page follows ch. 7 section by section — each section opens on the book's
+  Learning Objectives and closes on its Key Takeaways, every definition and
+  formula box is quoted, **all eleven Examples are walked** (`buildSteps`,
+  one step per press, in the book's words), and after each group a numeric
+  **"your turn" on the book's even-numbered exercises** (`buildTurn`: §7.1
+  #2 and #4, §7.2 #4, §7.3 #2, §7.4 #2 and #4 — no key in the book, every
+  answer recomputed in Python). The book's figures are widgets: 7.1 (one
+  winged dot on a slider), 7.2 (the capture simulation), 7.3–7.4 (α split
+  between the tails, eight levels from Figure 12.3's last line), 7.5 (t
+  against z), plus the HEG widgets (interval builder, t-table explorer, the
+  lakeside eight, the proportion check, the two sample-size dials, the
+  misinterpretation clinic, the which-formula tree). **Sections complete by
+  combination through `secCheck()`**; classify groups are built with
+  `secId=null`. Denominator = 30 `EXTRA_STEPS` + 10 exercises + 23 `.cl-row`
+  + 10 `.q` + 3 `[data-work]` = 76. The deck (65 slides) is HEG's verbatim
+  ch. 7 deck; **`stats.css` gained the deck's textbook-block CSS at its
+  END** (`.lect-body .book/.fbox/.gl/table.bk`, `.lect-slide.text`) because
+  the SUMAS copy predated it — without it the quoted slides render unstyled.
+  Part 2 and `week3-homework.html` are the book's own exercises (ten in
+  class, thirteen at home, all odd-numbered). Workbook fields `w3_ci`,
+  `w3_t`, `w3_n` are in `courses.json → project.sections`; modules `w3`
+  and `w3-hw`; `courseprogress.js` totals 9 and 14. The headless probe
+  (strip network scripts, stub `fetch`, play every walker, your-turn,
+  widget, classify and quiz to 8/8 sections) is the test to rerun.
 - **Own namespace `mba401` and localStorage prefix `mba401_`**; its rules
   block is in `firebase-database-rules.json` and must be deployed.
 - **Theme `/shared/themes/sumas-stats.css`** (heg.css colour-mapped to SUMAS
