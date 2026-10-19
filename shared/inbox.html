@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Inbox · all courses</title>
+<!--
+  SHARED · the instructor's inbox across EVERY course (19 Oct 2026).
+      /shared/inbox.html
+
+  One screen that answers "is anybody waiting for me?" — chat.html is one
+  course at a time, which meant eighteen course switches to find out.
+
+  What it does: for every course in courses.json that has a namespace it
+  reads <ns>/_chat (the threads, their messages, the read receipts and the
+  class list — one small read per course, never the whole namespace),
+  works out which threads hold a student message you have not seen, and
+  lists them, newest first, each row a link into chat.html at that thread.
+  Courses with nothing new fold into one quiet line each.
+
+  "Seen" is the most generous of three marks, so a message is never shown
+  as new on one device after it was answered on another:
+      · the read mark chat.html keeps per device   (localStorage jem_chat_read_<ns>_<tid>)
+      · the read receipt chat.html writes to the DB (_chat/<tid>/rcpt/i.r — 1:1 threads)
+      · your own last message in the thread        (a reply reads everything before it)
+  "Mark as read" here writes the same localStorage key chat.html reads, so
+  the two pages agree on this device.
+
+  Student-to-student threads (p-, sg-) are not counted, for the reason
+  chat.html gives: a deliberate decision not to look. Open them there.
+
+  Same gate and the same sign-in as the other instructor pages: the gate is
+  the UI lock, the account is what the database trusts. Reading _chat whole
+  needs the instructor token; a course whose rules were never published
+  refuses even that, and is named as such rather than hidden.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--main:#152a5e;--deep:#0a1a3a;--glow:#f0b33d;--pale:#eef2f9;--ink:#0F172A;--grey:#64748B;
+--paper:#fff;--wash:#F6F8FB;--line:#E2E8F0;--bad:#B91C1C;--good:#15803D;--new:#B45309;--newbg:#FEF3C7;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);
+background:var(--wash);line-height:1.6;-webkit-font-smoothing:antialiased;}
+h1,h2,h3{font-weight:800;letter-spacing:-.3px;}
+
+header{background:var(--deep);color:#fff;padding:20px 0 18px;}
+header .in{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+header .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--glow);font-weight:800;}
+header h1{font-size:23px;margin-top:2px;}
+header .sp{flex:1;}
+.hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:20px;
+padding:6px 13px;font:800 12px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;text-decoration:none;display:inline-block;}
+.hbtn:hover{background:rgba(255,255,255,.2);}
+
+.wrap{max-width:980px;margin:0 auto;padding:18px 20px 40px;}
+.warn{background:#FEF3C7;border:1px solid rgba(180,83,9,.3);border-radius:12px;padding:14px 16px;
+font-size:13.5px;color:#78350F;margin-bottom:16px;display:none;}
+.btn{background:var(--main);color:#fff;border:none;border-radius:20px;padding:7px 14px;
+font:800 12.5px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer;text-decoration:none;display:inline-block;}
+.btn:hover{background:var(--deep);}
+.btn.ghost{background:#fff;color:var(--main);border:1px solid var(--line);}
+.btn.ghost:hover{background:var(--pale);}
+.btn.sm{padding:4px 11px;font-size:11.5px;}
+
+/* ---- the summary line ---- */
+.sum{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.sum .big{font-size:22px;font-weight:800;letter-spacing:-.4px;}
+.sum .big b{color:var(--new);}
+.sum .meta{font-size:12.5px;color:var(--grey);flex:1;min-width:200px;}
+.sum .meta.loading::after{content:"…";}
+
+/* ---- course cards ---- */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px;}
+.card.fresh{border-color:rgba(180,83,9,.45);box-shadow:0 6px 24px -14px rgba(180,83,9,.5);}
+.chd{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap;}
+.chd .code{font:800 11px 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--main);
+background:var(--pale);border-radius:20px;padding:2px 9px;flex:none;}
+.chd .ttl{font-weight:800;font-size:15px;flex:1;min-width:160px;}
+.chd .ttl small{font-weight:600;color:var(--grey);font-size:12px;margin-left:6px;}
+.chd .pill{font:800 11.5px 'Plus Jakarta Sans',Arial,sans-serif;border-radius:20px;padding:3px 10px;flex:none;}
+.chd .pill.new{color:var(--new);background:var(--newbg);}
+.chd .pill.quiet{color:var(--grey);background:var(--wash);border:1px solid var(--line);}
+.chd .pill.bad{color:var(--bad);background:#FEE2E2;}
+.chd .acts{display:flex;gap:6px;flex:none;}
+.chd .acts a,.chd .acts button{white-space:nowrap;}
+
+.rows{border-top:1px solid var(--line);}
+a.row{display:block;text-decoration:none;color:inherit;padding:10px 16px;border-bottom:1px solid var(--line);}
+a.row:last-child{border-bottom:none;}
+a.row:hover{background:var(--wash);}
+.row .r1{display:flex;align-items:baseline;gap:8px;}
+.row .nm{font-weight:800;font-size:13.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.row .nm::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--glow);margin-left:7px;vertical-align:middle;}
+.row .kind{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--main);
+background:var(--pale);border-radius:20px;padding:1px 7px;flex:none;}
+.row .n{font-size:10.5px;font-weight:800;color:var(--new);flex:none;}
+.row .ago{font-size:10.5px;color:var(--grey);flex:none;}
+.row .pv{font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.row .pv .who{font-weight:700;color:var(--grey);}
+
+.quiet .chd{padding:9px 16px;}
+.quiet .ttl{font-size:13.5px;}
+.last{font-size:12px;color:var(--grey);padding:0 16px 10px;}
+.last b{color:var(--ink);font-weight:600;}
+
+.sec{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--grey);margin:20px 0 8px;}
+.empty{color:var(--grey);font-size:13.5px;text-align:center;padding:36px 20px;line-height:1.6;background:#fff;
+border:1px dashed var(--line);border-radius:14px;}
+.empty b{color:var(--good);}
+
+#locked{position:fixed;inset:0;background:var(--wash);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+#locked .lk{background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px 30px;max-width:420px;text-align:center;
+  box-shadow:0 18px 50px -20px rgba(0,0,0,.3);}
+#locked .ico{font-size:30px;margin-bottom:10px;}
+#locked h2{font-size:20px;margin-bottom:8px;}
+#locked p{font-size:13.5px;color:var(--grey);margin-bottom:12px;line-height:1.6;}
+#locked .btn{margin-top:4px;}
+@media(max-width:560px){ .chd .ttl small{display:block;margin:0;} .row .pv{white-space:normal;} }
+</style>
+</head>
+<body>
+
+<header><div class="in">
+  <div>
+    <div class="eyebrow">Instructor · all courses</div>
+    <h1>Inbox</h1>
+  </div>
+  <span class="sp"></span>
+  <button class="hbtn" id="bAuth" style="display:none">🔑 Sign in</button>
+  <button class="hbtn" id="bRefresh">↻ Refresh</button>
+  <a class="hbtn" href="chat.html" title="One course at a time: read and answer">💬 Messages</a>
+  <a class="hbtn" href="admin2.html">Dashboard</a>
+  <a class="hbtn" href="site.html" title="Alerts, push and visitor statistics">Site</a>
+  <button class="hbtn" id="bLock">Lock</button>
+</div></header>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+
+  <div class="sum">
+    <div class="big" id="big">Inbox</div>
+    <div class="meta loading" id="meta">Reading every course</div>
+    <button class="btn ghost sm" id="bAll" style="display:none" title="Mark every new message, in every course, as read on this device">Mark all as read</button>
+  </div>
+
+  <div id="fresh"></div>
+  <div id="quietHd" class="sec" style="display:none">Nothing new</div>
+  <div id="quiet"></div>
+  <div id="brokenHd" class="sec" style="display:none">Could not read</div>
+  <div id="broken"></div>
+</div>
+
+<div id="locked">
+  <div class="lk">
+    <div class="ico">🔒</div>
+    <h2>Instructor inbox</h2>
+    <p>This page opens from the instructor dashboard, on a device that has already
+       been unlocked there. It has no password box of its own.</p>
+    <a class="btn" href="admin2.html">Go to the dashboard</a>
+  </div>
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+"use strict";
+var DB=window.CourseConfig.DB;
+var REG=null, COURSES=[], STATE={}, TIMER=null, LOADING=false;
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function whenAgo(ts){if(!ts)return '';var s=Math.round((Date.now()-ts)/1000);if(s<60)return 'now';
+  var m=Math.round(s/60);if(m<60)return m+' min';var h=Math.round(m/60);if(h<24)return h+' h';
+  var d=Math.round(h/24);return d<14?d+' d':Math.round(d/7)+' wk';}
+function unslug(s){return String(s||'').split('-').map(function(w){return w?w.charAt(0).toUpperCase()+w.slice(1):'';}).join(' ');}
+
+/* ---- auth: the same account every instructor page uses ---- */
+async function authQ(){ if(!window.__fbUser)return ''; try{return '?auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
+function needSignIn(){
+  $('warn').style.display='block'; $('bAuth').style.display='';
+  $('meta').className='meta'; $('meta').textContent='Signed out — the threads cannot be read until you sign in.';
+  if(!$('warn').querySelector('.fba')){
+    $('warn').innerHTML='<div style="margin-bottom:9px">Reading the inbox needs the signed-in instructor account.</div><div id="warnForm"></div>';
+    FBAuth.form($('warnForm'),function(){ $('warn').style.display='none'; $('bAuth').style.display='none'; loadAll(); },'');
+  }
+}
+
+/* ---- the read marks chat.html keeps, so the two pages agree ---- */
+function readKey(ns,tid){return 'jem_chat_read_'+ns+'_'+tid;}
+function lastRead(ns,tid){var v=0;try{v=parseInt(localStorage.getItem(readKey(ns,tid))||'0',10)||0;}catch(e){}return v;}
+function markRead(ns,tid,ts){try{localStorage.setItem(readKey(ns,tid),String(ts||Date.now()));}catch(e){}}
+
+/* ---- one course: read _chat, work out what is new ---- */
+function analyse(ns,chat){
+  var people=(chat&&chat._people)||{};
+  function nameOf(sid){ var p=people[sid]; return (p&&p.n)||unslug(sid); }
+  var threads=[], newest=0, newestNew=0, total=0;
+  Object.keys(chat||{}).forEach(function(tid){
+    if(tid.charAt(0)==='_')return;                                   /* _people, _presence */
+    if(tid.indexOf('p-')===0||tid.indexOf('sg-')===0)return;         /* not the instructor's inbox */
+    var t=chat[tid]||{}, meta=t.meta||{};
+    if(meta.off)return;
+    var o=t.msgs||{};
+    var list=Object.keys(o).map(function(k){var m=o[k]||{};m._id=k;return m;})
+      .filter(function(m){return m.txt;}).sort(function(a,b){return (a.ts||0)-(b.ts||0);});
+    if(!list.length)return;
+    var last=list[list.length-1], mine=0;
+    list.forEach(function(m){ if(m.by==='i'&&(m.ts||0)>mine)mine=m.ts||0; });
+    var rcpt=(t.rcpt&&t.rcpt.i&&t.rcpt.i.r)||0;
+    var seen=Math.max(lastRead(ns,tid),rcpt,mine);
+    var fresh=list.filter(function(m){return m.by==='s'&&(m.ts||0)>seen;});
+    var kind=tid==='all'?'all':tid.indexOf('dm-')===0?'dm':(meta.kind||'group');
+    var title=meta.title||(kind==='dm'?nameOf(tid.slice(3)):kind==='all'?'Everyone':tid.replace(/^g-/,''));
+    var lastTs=last.ts||0;
+    if(lastTs>newest)newest=lastTs;
+    if(fresh.length){ total+=fresh.length; var fts=fresh[fresh.length-1].ts||0; if(fts>newestNew)newestNew=fts; }
+    threads.push({tid:tid,kind:kind,title:title,last:last,ts:lastTs,n:fresh.length,
+                  firstNew:fresh.length?fresh[0]:null});
+  });
+  threads.sort(function(a,b){ if(!!a.n!==!!b.n)return a.n?-1:1; return b.ts-a.ts; });
+  return {threads:threads,total:total,newest:newest,newestNew:newestNew};
+}
+
+async function readCourse(c){
+  var st=STATE[c.id]||(STATE[c.id]={course:c});
+  try{
+    var r=await fetch(DB+'/'+c.ns+'/_chat.json'+(await authQ()));
+    var j=await r.json();
+    if(j&&j.error){ st.error=j.error; st.data=null; return; }
+    st.error=null; st.data=analyse(c.ns,j||{}); st.at=Date.now();
+  }catch(e){ st.error=String(e&&e.message||e); st.data=null; }
+}
+
+async function loadAll(){
+  if(LOADING)return; LOADING=true;
+  if(!window.__fbUser){ LOADING=false; needSignIn(); render(); return; }
+  $('meta').className='meta loading'; $('meta').textContent='Reading '+COURSES.length+' courses';
+  /* a handful at a time — eighteen simultaneous reads is fine for the
+     database but not for a phone on a slow connection */
+  var queue=COURSES.slice();
+  async function worker(){ while(queue.length){ await readCourse(queue.shift()); } }
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  LOADING=false;
+  /* every course refused → the account is not what the rules want, or we
+     are not signed in after all. One refused course is that course's rules. */
+  var refused=COURSES.filter(function(c){return STATE[c.id]&&STATE[c.id].error;});
+  if(refused.length===COURSES.length&&COURSES.length){ needSignIn(); }
+  render();
+}
+
+/* ---- paint ---- */
+function previewOf(m,kind){
+  var who=m.by==='i'?'You':(kind==='dm'?'':(m.name||''));
+  return (who?'<span class="who">'+esc(who)+': </span>':'')+esc(String(m.txt).replace(/\s+/g,' ').slice(0,160));
+}
+function kindLabel(k){return k==='all'?'cohort':k==='group'?'group':'';}
+function chatHref(c,tid){return 'chat.html?course='+encodeURIComponent(c.id)+'&t='+encodeURIComponent(tid);}
+
+function render(){
+  var fresh=[],quiet=[],broken=[],total=0,courses=0;
+  COURSES.forEach(function(c){
+    var st=STATE[c.id]; if(!st)return;
+    if(st.error){broken.push(st);return;}
+    if(!st.data)return;
+    if(st.data.total){fresh.push(st);total+=st.data.total;courses++;}
+    else quiet.push(st);
+  });
+  fresh.sort(function(a,b){return b.data.newestNew-a.data.newestNew;});
+  quiet.sort(function(a,b){return b.data.newest-a.data.newest;});
+
+  /* the one line that answers the question */
+  if(total){ $('big').innerHTML='<b>'+total+' new</b> message'+(total===1?'':'s')+' in '+courses+' course'+(courses===1?'':'s');
+             document.title='('+total+') Inbox · all courses'; }
+  else if(COURSES.length&&Object.keys(STATE).length){ $('big').textContent='Nothing waiting'; document.title='Inbox · all courses'; }
+  $('meta').className='meta';
+  var when=0; COURSES.forEach(function(c){var s=STATE[c.id];if(s&&s.at>when)when=s.at;});
+  $('meta').textContent=(when?(whenAgo(when)==='now'?'Read just now':'Read '+whenAgo(when)+' ago')+' · ':'')+COURSES.length+' courses with messages · re-reads every 30 s while open'+
+    (broken.length?' · '+broken.length+' could not be read':'');
+  $('bAll').style.display=total?'':'none';
+
+  $('fresh').innerHTML=fresh.map(function(st){
+    var c=st.course,d=st.data;
+    var rows=d.threads.filter(function(t){return t.n;}).map(function(t){
+      var m=t.firstNew||t.last;
+      return '<a class="row" href="'+chatHref(c,t.tid)+'">'+
+        '<div class="r1"><span class="nm">'+esc(t.title)+'</span>'+
+        (kindLabel(t.kind)?'<span class="kind">'+kindLabel(t.kind)+'</span>':'')+
+        (t.n>1?'<span class="n">'+t.n+' new</span>':'')+
+        '<span class="ago">'+esc(whenAgo(t.ts))+'</span></div>'+
+        '<div class="pv">'+previewOf(m,t.kind)+'</div></a>';
+    }).join('');
+    return '<div class="card fresh">'+
+      '<div class="chd"><span class="code">'+esc(c.code||c.id)+'</span>'+
+      '<span class="ttl">'+esc(c.title)+'<small>'+esc(c.school||'')+'</small></span>'+
+      '<span class="pill new">'+d.total+' new</span>'+
+      '<span class="acts"><a class="btn sm" href="chat.html?course='+encodeURIComponent(c.id)+'">Open</a>'+
+      '<button class="btn ghost sm" data-read="'+esc(c.id)+'" type="button">Mark as read</button></span></div>'+
+      '<div class="rows">'+rows+'</div></div>';
+  }).join('');
+
+  if(!fresh.length&&!broken.length&&quiet.length){
+    $('fresh').innerHTML='<div class="empty"><b>Nothing new.</b> Every student message in every course has been read or answered.</div>';
+  }
+
+  $('quietHd').style.display=quiet.length?'':'none';
+  $('quiet').innerHTML=quiet.map(function(st){
+    var c=st.course,d=st.data,t=d.threads[0];
+    return '<div class="card quiet">'+
+      '<div class="chd"><span class="code">'+esc(c.code||c.id)+'</span>'+
+      '<span class="ttl">'+esc(c.title)+'<small>'+esc(c.school||'')+'</small></span>'+
+      '<span class="pill quiet">'+(d.threads.length?d.threads.length+' thread'+(d.threads.length===1?'':'s'):'no messages yet')+'</span>'+
+      '<span class="acts"><a class="btn ghost sm" href="chat.html?course='+encodeURIComponent(c.id)+'">Open</a></span></div>'+
+      (t?'<div class="last">Last: <b>'+esc(t.title)+'</b> · '+esc(whenAgo(t.ts))+' ago · '+previewOf(t.last,t.kind)+'</div>':'')+
+      '</div>';
+  }).join('');
+
+  $('brokenHd').style.display=broken.length?'':'none';
+  $('broken').innerHTML=broken.map(function(st){
+    var c=st.course, why=/permission/i.test(st.error)
+      ?'Refused. If every other course reads, this namespace has no block in the <i>deployed</i> rules — publish firebase-database-rules.json.'
+      :esc(st.error);
+    return '<div class="card quiet"><div class="chd"><span class="code">'+esc(c.code||c.id)+'</span>'+
+      '<span class="ttl">'+esc(c.title)+'<small>'+esc(c.school||'')+'</small></span><span class="pill bad">not read</span>'+
+      '<span class="acts"><a class="btn ghost sm" href="admin2.html?course='+encodeURIComponent(c.id)+'">Dashboard</a></span></div>'+
+      '<div class="last">'+why+'</div></div>';
+  }).join('');
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-read]'),function(b){
+    b.addEventListener('click',function(){ markCourse(b.getAttribute('data-read')); });
+  });
+}
+
+function markCourse(id){
+  var st=STATE[id]; if(!st||!st.data)return;
+  st.data.threads.forEach(function(t){ if(t.n){ markRead(st.course.ns,t.tid,t.ts); t.n=0; t.firstNew=null; } });
+  st.data.total=0; st.data.newestNew=0;
+  render();
+}
+
+/* ---- boot ---- */
+function start(){
+  window.CourseConfig.load().then(function(reg){
+    REG=reg;
+    COURSES=reg.courses.filter(function(c){return c.ns&&c.status!=='archived';}).map(function(c){
+      return {id:c.id,ns:c.ns,code:c.code||c.id,school:c.school||'',
+              title:(c.title&&(c.title.en||c.title.fr))||c.id};
+    });
+    FBAuth.restore(function(u){ if(u)loadAll(); else needSignIn(); });
+  });
+  $('bRefresh').addEventListener('click',function(){loadAll();});
+  $('bLock').addEventListener('click',function(){AdminGate.lock();location.reload();});
+  $('bAuth').addEventListener('click',function(){
+    $('warn').style.display='block';
+    FBAuth.form($('warn'),function(){$('warn').style.display='none';$('bAuth').style.display='none';loadAll();},'');
+  });
+  $('bAll').addEventListener('click',function(){ COURSES.forEach(function(c){markCourse(c.id);}); });
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden)loadAll(); });
+  TIMER=setInterval(function(){ if(!document.hidden)loadAll(); },30000);
+}
+
+/* Same rule as chat.html: no password box here. The gate is a UI lock on a
+   localStorage flag; what keeps a student out is that reading _chat needs
+   the instructor's token. */
+(function(){
+  if(AdminGate.isUnlocked()){ start(); return; }
+  document.getElementById('locked').style.display='flex';
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
