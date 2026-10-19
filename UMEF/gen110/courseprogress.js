@@ -39,7 +39,9 @@ window.CourseProgress=(function(){
     {mod:'w7', short:'S7', name:T('Séance 7 · Protection des données et IA','Session 7 · Data protection and AI'),                              total:8, live:false},
     {mod:'w8', short:'S8', name:T('Séance 8 · Agents et assistants','Session 8 · Agents and assistants'),                                       total:8, live:false},
     {mod:'w9', short:'S9', name:T('Séance 9 · Employable — les compétences IA, et l’avenir','Session 9 · Employable — AI skills, and the future'), total:8, live:false},
-    {mod:'w10',short:'S10',name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),      total:4, live:false}
+    {mod:'w10',short:'S10',name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),      total:4, live:false},
+    /* the project page: listed and ticked, never in the percentage (opt) — 5 fields + 5 PDFs */
+    {mod:'projet',short:'PJ',name:T('Le projet · remise 1 et les remises, sur ce site','The project · hand-in 1 and the hand-ins, on this site'), total:10, live:true, opt:true, href:T('projet.html','projet-en.html')}
   ];
 
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}

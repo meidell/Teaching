@@ -1317,20 +1317,43 @@ define their project and who participates."* Everything below follows from it.
   other séance, the suggested hand-in (`hand`). The class's eight requests are
   the `WISHES` array — on the hub (a grid) **and** in séance 1 §1.7 (clickable,
   counted); change both.
-- ⚠ **The project is NOT on the site.** One or two students, topic of their
-  own choice ("something AI should do for you"), handed in on the Swiss UMEF
-  platform — syllabus deliverables kept: dossier ≤ 8 pages due Fri 15 Jan 2027
-  23h59, prototype, 8-min presentation on 12 Jan. The site carries a
-  **suggested rhythm of a hand-in every two séances** (`HANDINS` on the hub,
-  the `.dates` grid in §1.8): Remise 1 **before séance 2 — expected from
-  everyone** (project on half a page + who is in it) · R2 séance 3 (five tested
-  prompts) · R3 séance 5 (data, tools, a first result) · R4 séance 7
-  (prototype v1 + a "data and risks" page) · R5 séance 9 (final prototype +
-  presentation plan). Remises 2–5 are suggestions the instructor comments on.
-  So there are **no project workbook fields**: `courses.json → project` is
-  now the *carnet de séance* (the notes a student took in class — `w1_demo`,
-  `w1_faux`, `w1_tm_classes`, `w1_tm_echec`), labelled as such for the
-  dashboard's assignment reader. Do not add project fields back.
+- ⚠ **The project IS on the site — `projet.html` / `projet-en.html`** (19 Oct
+  2026, Jan Erik: "le projet doit se faire sur mon site"; until then it was
+  "handed in on the Swiss UMEF platform"). One or two students, topic of
+  their own choice ("something AI should do for you"); syllabus
+  deliverables kept: dossier ≤ 8 pages due Fri 15 Jan 2027 23h59, prototype
+  shown in class, 8-min presentation on 12 Jan. Generated from
+  `_build/projet.tpl.html` like every page. **Remise 1 is FIVE `data-work`
+  FIELDS** on that page (`p_qui`, `p_probleme`, `p_change`, `p_donnees`,
+  `p_outils` — who, the problem without the word "AI", what it changes,
+  what you have, which tools; ≥ 10 characters each), saved by
+  `/shared/progress.js` like a carnet field and listed first in
+  `courses.json → project.sections`, so the dashboard's assignment reader
+  shows them. **Remises 2–5 and the dossier are ONE PDF EACH**, handed in
+  on the same page with the `capstone-ba` uploader ported: chunks to
+  `gen110/_files/<sid>/<fid>/<n>`, a record in `gen110/_submissions/<sid>`
+  with `k` = `r2|r3|r4|r5|dossier` (`courses.json → handins` fixes the
+  dashboard's column order), and one summary line in `<sid>/work/handin_<id>`
+  so the student drawer shows it and a new device knows it is already in.
+  Deadlines are in the page's `HANDINS` (séance day 13h30 for r2–r5, the
+  dossier 15 Jan 23:59, Geneva offsets written out); `?p=r3` preselects a
+  hand-in. Module `projet`, `opt:true` in `courseprogress.js` (listed, never
+  counted), total 10 = 5 fields + 5 files, own done-store
+  `gen110_projet_done`. ⚠ **The `gen110` rules block gained `_files` and
+  `_submissions` (copies of capstone-ba's) and must be DEPLOYED** before
+  the first PDF, or every chunk PUT returns 401 — the page says so, never
+  swallows it. The hub's 🎯 line, its project panel (now with an "Ouvrir la
+  page Projet" button), séance 1 §1.8 and séance 2's checklist and 2.8 all
+  say "sur ce site"; the one remaining "plateforme Swiss UMEF" on the hub
+  is about where schedule changes are announced, and is correct.
+- **The course menu — `nav.js` + `nav.css` (19 Oct 2026), the mba401 drawer
+  ported bilingual.** Every label goes through `T()`, every link through
+  `pg()` (which turns `seance1.html` into `seance1-en.html` on an English
+  page); the tree is séances 1–10 (1–2 with their eight sections, 3–10 "en
+  préparation") plus the project page with its three anchors. Loaded by
+  the hub, both séances and the project page — the `<script>` tag is in
+  the TEMPLATES, so the build carries it. `NAV` mirrors `SEANCES`/`CHAPTERS`
+  and each séance's `SECTIONS`; a new séance is added there too.
 - **Séance 1's sections**: 1.1 the same six tasks to two assistants with a
   verdict each · 1.2 the **prompt builder** (`#pb`, five inputs → assembled
   prompt → copy → verdict; fields in `gen110_w1_pb`) · 1.3 the error hunt
