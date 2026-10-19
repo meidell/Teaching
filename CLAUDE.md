@@ -630,8 +630,9 @@ releases, the progress-denominator trap) still applies. What differs:
   link on the SAME page calls the page's `show(id)` and sets `#<id>`; on
   another page it is `weekX.html#<id>`, which `nav.js` turns into `show(id)`
   on arrival (`#lecture` stays the deck's). It wraps `show()` to keep the
-  hash current, so a reload lands on the section. Styles at the END of
-  `stats.css` (`.nav-*`). ⚠ **Every page here carries
+  hash current, so a reload lands on the section. Styles in **`nav.css`,
+  which `nav.js` injects itself** — so the hub, which does not load
+  `stats.css`, carries the menu too (19 Oct 2026). ⚠ **Every page here carries
   `<base href="/SUMAS/mba401/">`**, so a file:// probe of a week page loads
   no relative script at all — `nav.js`, `presence.js`, `courseprogress.js`
   all 404 silently; probe over `python3 -m http.server` from the repo root,

@@ -91,6 +91,10 @@
   var btn, scrim, panel, body;
   function build() {
     if (!document.body) return;
+    /* the stylesheet travels with the script: the hub does not load stats.css */
+    if (!document.querySelector('link[href$="nav.css"]')) {
+      var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'nav.css'; document.head.appendChild(l);
+    }
     /* Bottom-left, the mirror of the 💬 Messages launcher bottom-right
        (Jan Erik, 19 Oct 2026): same pill, same height — and the same lift
        to 62px when login.js has drawn its pill, read off the launcher
