@@ -617,7 +617,10 @@ releases, the progress-denominator trap) still applies. What differs:
   reachable from the SUMAS landing page `/SUMAS/index.html` (a copy of
   `/GBS/index.html` — never link it from the root catalogue).
 - **The course menu — `nav.js` (19 Oct 2026, a test, this course only).** A ☰
-  Menu button in the top bar of every week and homework page opens a drawer
+  Menu pill **bottom-left, the mirror of the 💬 Messages launcher** (same
+  pill, and its `bottom` is copied from `#jc-btn` every second so the two
+  stay level when login.js lifts the launcher to 62px) on every week and
+  homework page opens a drawer
   with the whole course as a tree: week ▸ part ▸ section, done ticks from
   each part's `mba401_<mod>_progress_v1` blob, the open section highlighted,
   locked weeks greyed "in preparation", the homework as an `HW` chip, and the

@@ -90,13 +90,21 @@
   /* ---- DOM ---- */
   var btn, scrim, panel, body;
   function build() {
-    var inner = document.querySelector('.topbar-inner');
-    if (!inner) return;
+    if (!document.body) return;
+    /* Bottom-left, the mirror of the 💬 Messages launcher bottom-right
+       (Jan Erik, 19 Oct 2026): same pill, same height — and the same lift
+       to 62px when login.js has drawn its pill, read off the launcher
+       itself so the two can never sit at different heights. */
     btn = document.createElement('button');
     btn.className = 'nav-btn'; btn.type = 'button'; btn.setAttribute('aria-label', 'Course menu');
     btn.innerHTML = '<span class="nav-ico">☰</span><span class="nav-lbl">Menu</span>';
-    var home = inner.querySelector('a.home');
-    if (home) inner.insertBefore(btn, home); else inner.appendChild(btn);
+    document.body.appendChild(btn);
+    function level() {
+      var jc = document.getElementById('jc-btn');
+      var b = jc ? jc.style.bottom : (document.getElementById('cl-pill') ? '62px' : '14px');
+      if (b && btn.style.bottom !== b) btn.style.bottom = b;
+    }
+    level(); setInterval(level, 1000);
 
     scrim = document.createElement('div'); scrim.className = 'nav-scrim';
     panel = document.createElement('nav'); panel.className = 'nav-panel'; panel.setAttribute('aria-label', 'Course menu');
