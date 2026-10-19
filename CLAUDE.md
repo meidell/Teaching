@@ -616,6 +616,24 @@ releases, the progress-denominator trap) still applies. What differs:
   green/sand), Georgia headings, `sumas-logo.png`. Unlisted; in robots.txt;
   reachable from the SUMAS landing page `/SUMAS/index.html` (a copy of
   `/GBS/index.html` — never link it from the root catalogue).
+- **The course menu — `nav.js` (19 Oct 2026, a test, this course only).** A ☰
+  Menu button in the top bar of every week and homework page opens a drawer
+  with the whole course as a tree: week ▸ part ▸ section, done ticks from
+  each part's `mba401_<mod>_progress_v1` blob, the open section highlighted,
+  locked weeks greyed "in preparation", the homework as an `HW` chip, and the
+  tools at the foot. `NAV` in `nav.js` is the one copy of that tree — it
+  mirrors the hub's `WEEKS` and each page's `SECTIONS`, and nothing checks
+  it, so a renamed section or a shipped week is changed there too. A section
+  link on the SAME page calls the page's `show(id)` and sets `#<id>`; on
+  another page it is `weekX.html#<id>`, which `nav.js` turns into `show(id)`
+  on arrival (`#lecture` stays the deck's). It wraps `show()` to keep the
+  hash current, so a reload lands on the section. Styles at the END of
+  `stats.css` (`.nav-*`). ⚠ **Every page here carries
+  `<base href="/SUMAS/mba401/">`**, so a file:// probe of a week page loads
+  no relative script at all — `nav.js`, `presence.js`, `courseprogress.js`
+  all 404 silently; probe over `python3 -m http.server` from the repo root,
+  with `COURSE_LOGIN_AUTO=false` and `--force-prefers-reduced-motion` so the
+  drawer's slide-in is not frozen mid-way by virtual time.
 - **The two folders are independent.** A fix in one reaches the other only
   if you port it by hand.
 
