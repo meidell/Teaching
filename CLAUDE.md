@@ -1346,6 +1346,36 @@ define their project and who participates."* Everything below follows from it.
   page Projet" button), séance 1 §1.8 and séance 2's checklist and 2.8 all
   say "sur ce site"; the one remaining "plateforme Swiss UMEF" on the hub
   is about where schedule changes are announced, and is correct.
+- ⚠ **The project page has FOUR STEPS (20 Oct 2026)** — Jan Erik: the
+  students (first-year BBA, from Senegal) could not see what kind of
+  project to do. Step 1 **six ready-made projects** (`PROJECTS[]` in the
+  template, + "your own idea"): a boutique's WhatsApp answerer (GPT/Gem),
+  the tontine notebook (Sheets + Gemini), my internship letters (Gem with
+  the CV), a braiding salon's booking page (Lovable/Bolt), the tailor's
+  fabric sorter (Teachable Machine), the shop's voice of the week
+  (ElevenLabs + Canva). Each card: problem · build · measure · need ·
+  risk; "Je prends ce projet" stores `gen110_pj.proj`, mirrors it as
+  `work/p_projet`, and swaps the remise-1 placeholders for that project's
+  examples. Step 2 **the team**: a partner picker fed by `_chat/_people`
+  (the names-only directory chat.js keeps — this page joins it too);
+  `PAIR_MAX = 1`. Picking writes `<partner>/team/<me> = {n,p,pn,ts}`
+  (allowed by the `$sid` rule) so the partner's page shows "X chose you"
+  with accept / decline; accepting copies the project. Mirrored as
+  `work/p_equipe`; field 1 (`p_qui`) is prefilled once if empty. Step 3
+  remise 1, unchanged. Step 4 **the plan**: one block per séance 2–10
+  (`WEEKS[]`: the séance's date and what it gives, the chosen project's
+  two or three tasks for that week with ticks → `work/pl_ticks`, one
+  `data-work` textarea `pl_w2`…`pl_w10` saved by progress.js, and the
+  hand-in due before the next séance with its `?p=` link). The week in
+  progress is framed by date; future blocks open on click. ⚠ In
+  `courses.json → project.sections` the nine plan fields are **one
+  section each** (`plan2`…`plan10`), because the dashboard's "keeping
+  up" counts every field of a section as soon as anyone fills one — one
+  nine-field section would punish the whole class in week 2. `nav.js`
+  lists the four steps under the project and ticks them from
+  `gen110_pj` / `gen110_work_pl_w*`; the module total stays 10 (the
+  steps are never counted). Hub project panel and "Un bon projet" note
+  name the six.
 - **The course menu — `nav.js` + `nav.css` (19 Oct 2026), the mba401 drawer
   ported bilingual.** Every label goes through `T()`, every link through
   `pg()` (which turns `seance1.html` into `seance1-en.html` on an English

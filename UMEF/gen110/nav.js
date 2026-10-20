@@ -43,7 +43,10 @@
     { n: 10, mod: 'w10', t: T('Présentations et préparation de l’examen', 'Presentations and exam preparation'), locked: true }
   ];
   var PROJECT = { mod: 'projet', href: 'projet.html', t: T('Le projet · 40 %', 'The project · 40%'),
-    secs: [['r1', T('Remise 1', 'Hand-in 1'), T('Mon projet, en cinq champs', 'My project, in five fields')],
+    secs: [['choix', T('Étape 1', 'Step 1'), T('Six projets au choix', 'Six projects to choose from')],
+           ['equipe', T('Étape 2', 'Step 2'), T('Seul·e, ou avec qui', 'Alone, or with whom')],
+           ['r1', T('Étape 3', 'Step 3'), T('Remise 1 · cinq champs', 'Hand-in 1 · five fields')],
+           ['plan', T('Étape 4', 'Step 4'), T('Le plan, séance par séance', 'The plan, session by session')],
            ['remises', T('Remises 2–5', 'Hand-ins 2–5'), T('Les PDF à déposer', 'The PDFs to hand in')],
            ['final', T('Janvier', 'January'), T('Dossier, prototype, présentation', 'Dossier, prototype, presentation')]] };
 
@@ -63,7 +66,10 @@
     var d = {}; try { d = JSON.parse(localStorage.getItem('gen110_projet_done') || '{}') || {}; } catch (e) {}
     var f = ['p_qui', 'p_probleme', 'p_change', 'p_donnees', 'p_outils'].filter(function (k) { return d[k]; }).length;
     var h = ['r2', 'r3', 'r4', 'r5', 'dossier'].filter(function (k) { return d['handin_' + k]; }).length;
-    return { r1: f === 5, remises: h >= 4, final: !!d.handin_dossier, n: f + h };
+    /* steps 1, 2 and 4 live in gen110_pj (the page's own store) and the pl_w* work fields — ticked here, never counted */
+    var pj = {}; try { pj = JSON.parse(localStorage.getItem('gen110_pj') || '{}') || {}; } catch (e) {}
+    var plan = false; for (var w = 2; w <= 10; w++) { try { if ((localStorage.getItem('gen110_work_pl_w' + w) || '').trim().length >= 10) plan = true; } catch (e) {} }
+    return { choix: !!pj.proj, equipe: !!(pj.alone || (pj.team && pj.team.length)), r1: f === 5, plan: plan, remises: h >= 4, final: !!d.handin_dossier, n: f + h };
   }
   function activeId() { var a = document.querySelector('.screen.active'); return a ? a.id : ''; }
   function canShow() { return typeof window.show === 'function' && !!CUR; }
