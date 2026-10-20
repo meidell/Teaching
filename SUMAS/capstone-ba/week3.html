@@ -380,7 +380,12 @@ CAP.wright('wright',{title:'Wright\'s Law fitter · offshore wind, global',data:
   var hist=[[2000,13],[2005,40],[2010,85],[2015,142],[2020,180],[2024,220]];
   var CF=450/(220*8.76), DEM=4530;  /* Week 2: ~450 TWh from ~220 GW → fleet CF ≈ 23%; 2040 demand ≈ 4,530 TWh */
   var modes=[{n:'Linear · +10 GW a year',f:function(y){return 220+10*(y-2024);}},
-             {n:'S-curve, saturating near 600 GW',f:function(y){return 600/(1+Math.exp(-0.18*(y-2031)));}},
+             /* anchored at the last historical point: the midpoint year t0 is
+                solved from L/(1+e^(-k(2024-t0))) = 220, so the curve leaves
+                2024 at 220 GW whatever the ceiling. It used to hard-code
+                t0 = 2031 and left 2024 at 133 GW — a student spotted it,
+                20 Oct 2026. */
+             {n:'S-curve, saturating near 600 GW',f:(function(L,k){var t0=2024+Math.log(L/220-1)/k;return function(y){return L/(1+Math.exp(-k*(y-t0)));};})(600,0.18)},
              {n:'Exponential · 5% a year, no limit',f:function(y){return 220*Math.pow(1.05,y-2024);}}];
   var r=document.getElementById('ts'),l=document.getElementById('tsLbl'),svg=document.getElementById('tsSvg'),out=document.getElementById('tsOut');
   function draw(){
