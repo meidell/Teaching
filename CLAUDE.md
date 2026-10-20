@@ -821,7 +821,12 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
   arithmetic error, now a teaching point in Week 2), the three
   learning-rate projections ($64/$54/$45 from $86 at 83 → 600 GW), the
   footprint and water calculators, the OLS fit of the fitter's default
-  rows. The fitter's defaults are rounded IRENA/GWEC figures and every
+  rows. ⚠ One slipped through until a student caught it (20 Oct 2026):
+  Week 3's time-series widget hard-coded the S-curve's midpoint (2031),
+  so the projection left 2024 at 133 GW while the series ended at 220.
+  The midpoint is now solved from the anchor in all three copies (`wind`,
+  `omba500`, `capstone-ba`): L = 600, k = 0.18 → t0 ≈ 2027, 2040 ≈ 547 GW.
+  A projection "from today" must leave the last historical point. The fitter's defaults are rounded IRENA/GWEC figures and every
   page says so; they are a check on the student's AI, not a source.
 - **Rules:** the `wind` block in `firebase-database-rules.json` is
   `mba406`'s minus presence/release plus `omba401`'s `_forum`, and **must
@@ -1310,7 +1315,7 @@ global `EscWall`; `courseprogress.js` a port).
 
 A Bachelor core course for every programme at Swiss UMEF, **in French and in
 English**, no maths, no code. Ten half-days of 3 h 15 (Tuesdays 13h30–16h45) on
-6 Oct, 20 Oct, 27 Oct, 3 Nov, 10 Nov, 24 Nov, 8 Dec, 15 Dec 2026, 5 Jan, 12 Jan
+6 Oct, 20 Oct, **Wed 21 Oct 09h15–12h00** (séance 3; no session on 27 Oct), 3 Nov, 10 Nov, 24 Nov, 8 Dec, 15 Dec 2026, 5 Jan, 12 Jan
 2027; **final written exam Wed 3 Feb 2027, 09h45**. Built 4 Oct 2026 on the
 MBA406 engine, then **REBUILT on 6 Oct 2026 — the first teaching day — around
 what the class said it wanted**, in their words: prompt engineering (text,
@@ -1506,7 +1511,11 @@ define their project and who participates."* Everything below follows from it.
   at load if cells exist, so the dashboard's **Comparisons** tab can say
   who won across the class and why — see §3. No denominator change.
 - **Séance 3 — *Bien demander II, son, image, vidéo* (`seance3.tpl.html`,
-  20 Oct 2026, for Tuesday 27 Oct).** ⚠ **Built on two instructions from Jan
+  20 Oct 2026, for **Wednesday 21 Oct, 09h15–12h00** — 2 h 45, the
+  timetable is 09h15 → 12h00 with the break at 10h40; no session on 27 Oct,
+  **remise 2 moved to séance 4, Tue 3 Nov 13h30** — hub card 4 carries it, the
+  project page's `HANDINS.r2` and `WEEKS[3].hand` too, and séances 1–3 all
+  print 3 Nov).** ⚠ **Built on two instructions from Jan
   Erik after séance 2 — "the students did not clearly understand what to do
   or how", and "more interactivity, not just fields to fill in" — and the
   pattern for séances 4–10.** (1) **Every section opens on a `.card.todo`**
