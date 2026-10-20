@@ -838,9 +838,10 @@ applies. What differs:
   shut). `closed()`/`reClosed()` in `forum.html` return false; deadlines are
   still shown, the forum list and the week-page chips read "… · still open",
   and a late post still carries the "after the deadline" tag (and ⏰ in
-  `followup.html`), so lateness stays visible for marking. `SUMAS/wind`
-  still closes at the deadline; `SUMAS/capstone-ba` got the same never-close
-  rule on 14 Oct 2026.
+  `followup.html`), so lateness stays visible for marking. `SUMAS/capstone-ba` got the same never-close
+  rule on 14 Oct 2026, and **`SUMAS/wind` on 20 Oct 2026** (Horst had found
+  Forum 1 shut there on 8 Oct while its week page said "still open"); its
+  `capstone.js` is again a namespace-substituted copy of omba500's.
 - **Week 1 carries the Moodle course's own materials (8 Oct 2026, both
   `omba500` and `wind`)**: the two reference PDFs from Jan Erik's archive
   (`1.2 Strategic-Forecasting.pdf`, `2.2 From Stakeholders to Systems.pdf`)

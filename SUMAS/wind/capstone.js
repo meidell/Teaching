@@ -82,8 +82,26 @@ window.CAP = (function () {
     });
   }
 
+  /* ---- "these notes feed Phase N" — one line under the consulting file's
+     heading, so a student sees the report being built (Aman Patel, OMBA500, 20 Oct
+     2026: "unclear on how to start the main assignment parallel to what we
+     are doing"). Phase and date from schedule.js; the plan is on the hub. */
+  function wireFeeds(){
+    if(!S||!WK)return;
+    var f=document.querySelector('[data-work]'); if(!f)return;
+    var sec=f.closest('.sec'); if(!sec||sec.querySelector('.feeds'))return;
+    var pid=WK<=5?'p1':(WK<=8?'p2':(WK===9?'p3':null)); if(!pid)return;
+    var p=S.phase(pid); if(!p)return;
+    var part=WK<=5?'the Week '+WK+' section of ':(WK<=8?'':'');
+    var el=document.createElement('p'); el.className='feeds';
+    el.innerHTML='<b>Where this goes:</b> these notes are '+(WK<=5?'the Week '+WK+' section of <b>'+esc(p.name)+'</b>':'the material of <b>'+esc(p.name)+'</b>')+', due '+esc(p.dueText)+'. Keep one document open with a heading per week and paste them in as you go — the plan is on the <a href="index.html#buildplan">course page</a>.';
+    var h=sec.querySelector('h2'); var after=h&&h.nextElementSibling&&h.nextElementSibling.tagName==='P'?h.nextElementSibling:h;
+    if(after&&after.parentNode)after.parentNode.insertBefore(el,after.nextSibling); else sec.insertBefore(el,sec.firstChild);
+  }
+
   /* ---- workbook fields: a filled field is a step ---- */
   function wireWork(){
+    wireFeeds();
     document.querySelectorAll('[data-work]').forEach(function(f){
       var id='wb-'+f.getAttribute('data-work');
       function chk(){ var v=(f.value||'').trim(); if(v.length>=20)step(id); }
@@ -93,8 +111,11 @@ window.CAP = (function () {
   }
 
   /* ---- dates on forum and phase cards ---- */
-  function dueChip(d, txt, label){
+  function dueChip(d, txt, label, stillOpen){
     var now=Date.now(), cls='due', t=label||'due';
+    /* forums never close in this course: a past forum date reads
+       "… · still open" instead of being struck through */
+    if(now>d.getTime()&&stillOpen)return '<span class="chip late">'+t+' '+esc(txt)+' · still open</span>';
     if(now>d.getTime())cls='closed';
     else if(d.getTime()-now<48*3600000)cls='soon';
     return '<span class="chip '+cls+'">'+t+' '+esc(txt)+'</span>';
@@ -106,9 +127,9 @@ window.CAP = (function () {
       if(f.opt)c.classList.add('opt');
       var chips='';
       if(f.opt)chips+='<span class="chip opt">optional · not graded</span>';
-      chips+=dueChip(f.due,f.dueText,f.opt?'open until':'post by');
+      chips+=dueChip(f.due,f.dueText,f.opt?'open until':'post by',true).replace('<span class="chip','<span data-k="post" class="chip');
       chips+='<span class="chip">'+f.post.min+'–'+f.post.max+' words</span>';
-      if(f.re)chips+=dueChip(f.reDue,f.reDueText,f.re.n+' repl'+(f.re.n>1?'ies':'y')+' by')+'<span class="chip">'+f.re.min+'+ words each</span>';
+      if(f.re)chips+=dueChip(f.reDue,f.reDueText,f.re.n+' repl'+(f.re.n>1?'ies':'y')+' by',true).replace('<span class="chip','<span data-k="re" class="chip')+'<span class="chip">'+f.re.min+'+ words each</span>';
       var head='<div class="fh"><span class="ft">'+esc(f.title)+'</span></div><div class="chips">'+chips+'</div>';
       c.insertAdjacentHTML('afterbegin',head);
       if(!c.querySelector('.go'))c.insertAdjacentHTML('beforeend','<a class="go" href="forum.html?f='+f.id+'">Open the forum →</a>');
@@ -122,9 +143,42 @@ window.CAP = (function () {
       var id=e.getAttribute('data-due'), f=S.forum(id), p=S.phase(id);
       e.textContent=f?f.dueText:(p?p.dueText:'');
     });
+    markPosted(); window.addEventListener('statstrack:named',markPosted);
     if(S.week(WK)&&Date.now()<S.week(WK).opens.getTime()){
       var lb=$('lockbar'); if(lb){ lb.style.display='block'; lb.textContent='This week opens on '+S.fmtDay(S.week(WK).monday)+'. You can read ahead; the forums open then.'; }
     }
+  }
+
+
+  /* ---- "✓ posted" — the forum chip turns green once THIS student's post
+     exists (Aman Patel, OMBA500, 20 Oct 2026 — ported to wind the same day: "once we upload the post —
+     in red is still highlighted. Can we figure something where we get to
+     know that it's already done"). Reads <ns>/_forum/<fid>/posts, which is
+     world-readable and small, finds the signed-in sid's post and counts
+     the replies they left under other posts. Best-effort: no identity or
+     no network → the chips stay as rendered. */
+  function markPosted(){
+    if(!S)return;
+    var a=null; try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}
+    var sid=a&&a.sid; if(!sid)return;
+    var DB=(window.CourseConfig&&window.CourseConfig.DB)||'https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app';
+    document.querySelectorAll('[data-forum]').forEach(function(c){
+      var f=S.forum(c.getAttribute('data-forum')); if(!f)return;
+      fetch(DB+'/'+K+'/_forum/'+encodeURIComponent(f.id)+'/posts.json').then(function(r){return r.ok?r.json():null;}).then(function(posts){
+        if(!posts||typeof posts!=='object')return;
+        var mine=posts[sid]&&posts[sid].p, pc=c.querySelector('[data-k="post"]'), rc=c.querySelector('[data-k="re"]');
+        if(mine&&pc){
+          var late=!!(mine.ts&&f.due&&mine.ts>f.due.getTime());
+          pc.className='chip on'; pc.textContent='✓ posted'+(mine.ts?' · '+S.fmtDay(new Date(mine.ts)):'')+(late?' · after the date':'');
+        }
+        if(rc&&f.re){
+          var n=0; Object.keys(posts).forEach(function(s){ if(s===sid)return; var re=posts[s]&&posts[s].re; if(!re)return;
+            Object.keys(re).forEach(function(k){ if(re[k]&&re[k].sid===sid)n++; }); });
+          if(n>=f.re.n){ rc.className='chip on'; rc.textContent='✓ '+n+' repl'+(n>1?'ies':'y'); }
+          else if(n>0){ rc.textContent=n+' of '+f.re.n+' repl'+(f.re.n>1?'ies':'y')+' · '+rc.textContent; }
+        }
+      }).catch(function(){});
+    });
   }
 
   /* ---- the quiz engine (self-check and the retrieval opener) --------

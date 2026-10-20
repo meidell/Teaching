@@ -97,9 +97,9 @@ textarea.ta.sm{min-height:88px;font-size:14px;}
   <ul>
     <li><b>This page is visible to the whole class and to me.</b> It is not private. Post nothing you would not put on a slide in front of your employer.</li>
     <li><b>Name your sources.</b> A link, a page number, a year. Document which AI tools you used and what you verified yourself.</li>
-    <li><b>You can edit your post until the deadline, but you cannot delete it.</b> Replies, once posted, stand. Write it as you mean it.</li>
+    <li><b>You can edit your post at any time, but you cannot delete it.</b> Replies, once posted, stand. Write it as you mean it.</li>
     <li><b>Disagree freely.</b> Challenge the analysis, never the person. Nobody loses marks for being challenged — or for changing their mind in the thread.</li>
-    <li>The deadline check is on this page only; if something got in the way, message me rather than just leaving it.</li>
+    <li>Forums stay open after their deadline, so a late post is still possible; it is marked as posted after the deadline.</li>
   </ul>
 </section>
 
@@ -158,7 +158,7 @@ var BRIEFS={
      · a post is keyed by sid — one post per student, by construction;
        editing is a PATCH, replies are POSTed and create-once
      · identity is the one login.js gave them (wind_auth)
-     · the deadline check is client-side; the database still accepts
+     · deadlines are shown but never enforced here (see closed() below)
      · completion is reported to module <fid> (total 1 or 2)
    What is new: the INSTRUCTOR. A device where the gate is unlocked
    replies as sid 'i' (name "Jan Erik · instructor"), never posts, and
@@ -181,8 +181,13 @@ var BRIEFS={
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function words(s){s=String(s||'').trim();return s?s.split(/\s+/).length:0;}
   function now(){return Date.now();}
-  function closed(){return now()>DEADLINE;}
-  function reClosed(){return now()>RE_DEADLINE;}
+  /* ⚠ WIND FORUMS NEVER CLOSE EITHER (ported from OMBA500 on 20 Oct 2026, after
+     Horst found Forum 1 shut here on 8 Oct; the week page already said
+     "still open" while this page refused the post). The deadline is still
+     shown and a late post carries the "after the deadline" tag; nothing is refused. */
+  function past(){return now()>DEADLINE;}
+  function closed(){return false;}
+  function reClosed(){return false;}
   function el(id){return document.getElementById(id);}
   function when(ts){ if(!ts)return ''; var d=new Date(ts),diff=(now()-ts)/1000; if(diff<60)return 'just now'; if(diff<3600)return Math.round(diff/60)+' min ago'; if(diff<86400)return Math.round(diff/3600)+' h ago'; return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
   function get(){return fetch(DB+'/'+PATH+'.json').then(function(r){return r.json();}).catch(function(){return null;});}
@@ -202,7 +207,7 @@ var BRIEFS={
     '<div class="fact"><div class="n">'+MIN_W+'–'+MAX_W+'</div><div class="l">words, one post</div></div>'+
     (F.re?'<div class="fact"><div class="n">+ '+RE_NEEDED+' repl'+(RE_NEEDED>1?'ies':'y')+'</div><div class="l">'+RE_MIN_W+'+ words · by '+S.fmtDay(F.reDue)+'</div></div>':'');
   if(now()<S.week(F.wk).opens.getTime()){ el('lockbar').style.display='block'; el('lockbar').textContent='This forum opens with Week '+F.wk+' on '+S.fmtDay(S.week(F.wk).monday)+'. You can read the brief now.'; }
-  el('fnav').innerHTML=S.FORUMS.map(function(f){var st=now()>f.due.getTime()?'closed':(now()>=S.week(f.wk).opens.getTime()?'open':'');return '<a class="'+(f.id===FID?'cur ':'')+st+'" href="forum.html?f='+f.id+'"><span class="w">Week '+f.wk+(f.opt?' · optional':'')+'</span><br>'+esc(f.title.replace(/^Forum \d+ · /,''))+'<div class="d">'+(st==='closed'?'closed '+f.dueText:(f.opt?'open until ':'post by ')+f.dueText)+'</div></a>';}).join('');
+  el('fnav').innerHTML=S.FORUMS.map(function(f){var st=now()>f.due.getTime()?'past':(now()>=S.week(f.wk).opens.getTime()?'open':'');return '<a class="'+(f.id===FID?'cur ':'')+st+'" href="forum.html?f='+f.id+'"><span class="w">Week '+f.wk+(f.opt?' · optional':'')+'</span><br>'+esc(f.title.replace(/^Forum \d+ · /,''))+'<div class="d">'+(st==='past'?'deadline was '+f.dueText+' · still open':(f.opt?'open until ':'post by ')+f.dueText)+'</div></a>';}).join('');
 
   /* ---- who am I ---- */
   function auth(){
@@ -244,7 +249,7 @@ var BRIEFS={
     box.innerHTML='<h3 style="font-family:Georgia,serif;font-size:17px;color:var(--accent-deep);margin-bottom:8px;">'+(has?'Edit your post':'Write your post')+'</h3>'+
       '<textarea class="ta" id="fTa" placeholder="'+MIN_W+'–'+MAX_W+' words. Sources with links; AI use declared at the end.">'+esc(val)+'</textarea>'+
       '<div class="crow"><button class="b" id="fSave">'+(has?'Update my post':'Post to the forum')+'</button><span class="wc" id="fWc"></span><span class="sp" style="flex:1"></span><span class="msg" id="fMsg">'+esc(FLASH)+'</span></div>'+
-      '<p style="font-size:12.5px;color:var(--grey);margin-top:9px;">Visible to the whole class the moment you post it. You can come back and edit it until '+esc(F.dueText)+'.</p>';
+      '<p style="font-size:12.5px;color:var(--grey);margin-top:9px;">Visible to the whole class the moment you post it, and editable at any time. '+(past()?'The deadline was '+esc(F.dueText)+'; the forum is still open, and a post made now is shown as posted after the deadline.':'Deadline: '+esc(F.dueText)+'.')+'</p>';
     var ta=el('fTa'),wc=el('fWc'),msg=el('fMsg'),save=el('fSave');
     function tick(){var n=words(ta.value);DRAFT=ta.value;wc.textContent=n+' words'+(n<MIN_W?' · '+(MIN_W-n)+' to go':(n>MAX_W?' · '+(n-MAX_W)+' over':' ✓'));wc.className='wc'+(n>MAX_W?' over':(n>=MIN_W?' ok':''));}
     ta.addEventListener('input',tick);tick();
@@ -253,7 +258,7 @@ var BRIEFS={
       if(n<Math.min(50,MIN_W*0.4)){msg.textContent='That is too short to mark — aim for '+MIN_W+'–'+MAX_W+' words.';msg.className='msg bad';return;}
       save.disabled=true;msg.className='msg';msg.textContent='Saving…';
       var rec={name:ME.name,txt:txt,ts:now()}; if(has)rec.ed=now();
-      patch(ME.sid,rec).then(function(){DRAFT=null;FLASH=has?'Updated — your post below is what I will mark.':'Posted. It is now visible to the class, and you can edit it until the deadline.';setTimeout(function(){FLASH='';var m=el('fMsg');if(m)m.textContent='';},8000);return load(true);})
+      patch(ME.sid,rec).then(function(){DRAFT=null;FLASH=has?'Updated. The post below is the version that is marked.':'Posted. It is now visible to the class, and you can edit it at any time.';setTimeout(function(){FLASH='';var m=el('fMsg');if(m)m.textContent='';},8000);return load(true);})
       .catch(function(){msg.textContent='That did not save. Check your connection and try again — your text is still in the box.';msg.className='msg bad';})
       .then(function(){save.disabled=false;});
     });
