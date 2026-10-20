@@ -438,10 +438,18 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   password typed on a laptop in front of thirty students now opens every cohort's
   data. If that is not wanted, the fix is a second account for the dashboards, not
   a UI change. `CTRL_EMAIL` in `presence.js` and the `.write` rules must agree. The
-  password is never stored by us: Firebase keeps its own session in IndexedDB and
-  `restore()` picks it up silently, so it is typed once per laptop, not once per
-  class. The ID token is re-minted on every write, because a session is three
-  hours and a token lasts one.
+  password is never stored by us. ⚠ **The session is ours, not the SDK's (20 Oct
+  2026).** `fb-auth.js` signs in with one REST call and keeps the **refresh
+  token** in `localStorage.jem_fb_session` — the instructor "cookie" — minting
+  ID tokens from Firebase's token endpoint on demand; `window.__fbUser` is set
+  synchronously at load, so a page's first read already carries the token. Until
+  then the SDK held the session in IndexedDB and `restore()` imported it from the
+  CDN with a 5 s timeout, and a slow link or a cleared store meant the password
+  again on every refresh (Jan Erik: "allow an instructor cookie on a device").
+  A device signed in the old way is migrated once (the SDK's `refreshToken`
+  copied across, its copy signed out). The session ends only on Sign out or a
+  change of the account password. The ID token is re-minted when stale,
+  because a session is three hours and a token lasts one.
 - **The signed-out console contains a password field and the hub polls every 7 s** —
   so `paintInst()` skips the re-render unless its signature (signed-in, open,
   selected week, tally, message) actually changed. Remove that guard and the
@@ -2211,8 +2219,8 @@ trusts. The two are not the same thing and one cannot replace the other.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
-  `/shared/admin2.html` `import()`s lazily *only* if a namespace refuses an anonymous
-  read and the instructor has to sign in with Google.
+  `/shared/fb-auth.js` `import()`s *only* once per device, to migrate a session a
+  pre-20 Oct 2026 sign-in left in IndexedDB; sign-in and token refresh are REST.
 - **French courses are French throughout** — UI strings, error messages, the identity
   modal. Check `lang` in courses.json.
 - **Videos:** real runtimes only. Never invent a duration.

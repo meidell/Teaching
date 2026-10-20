@@ -1,100 +1,201 @@
 /* =====================================================================
-   HEG / SUMAS · remembering an instructor sign-in.
+   SHARED · the instructor's account session, remembered per device.
 
-   Every instructor page (admin, admin2, insights, chat) signs in with a
-   Google popup and stashes the user on `window.__fbUser`, which its own
-   authQ() turns into `?auth=<token>`. What none of them did was ask
-   Firebase, on the next page load, whether that session still exists —
-   so a reload always started logged out and the 🔑 button had to be
-   pressed again, every single time.
+   Every instructor page (admin2, insights, chat, inbox, site, board) and
+   every week page that releases solutions or opens a presence window
+   needs the signed-in instructor ACCOUNT — the gate hides the UI, the
+   account is what the database trusts. This file is where that account
+   is signed in and where its session is kept.
 
-   Firebase already persists the session itself (IndexedDB, the web
-   default). This just picks it up. No cookie of our own, no password
-   stored anywhere: the SDK holds a refresh token and mints a fresh ID
-   token on demand.
+   THE SESSION IS OURS, NOT THE SDK'S (20 Oct 2026). Until then the
+   Firebase SDK held the session in IndexedDB and `restore()` imported
+   the SDK from the CDN on every load to ask for it, with a five-second
+   timeout — on a slow link, a cleared IndexedDB or a browser that
+   refused the module import the answer was "null", and the password
+   had to be typed again on every refresh. Now the sign-in is one REST
+   call, the REFRESH TOKEN it returns is written to localStorage
+   (`jem_fb_session`, the instructor "cookie"), and an ID token is
+   minted from it on demand through Firebase's token endpoint. No SDK on
+   the instructor pages, no timeout, nothing to lose on a reload: the
+   session exists until "Sign out" or a change of the account password.
+   That is the same thing the SDK stored, in a place we control.
 
-       FBAuth.restore(function(user){ ... })   silent; user or null
-       FBAuth.mark()                           call after a real sign-in
+       FBAuth.restore(function(user){ ... })   user or null; no UI, never throws
+       user.getIdToken()                       Promise<string>, refreshed when stale
+       FBAuth.form(el, cb, ns)                 the inline password form
+       FBAuth.signOut(cb)                      forget this device's session
 
-   The SDK is a CDN import (the one exception in this repo — see
-   CLAUDE.md §6), so we only pay for it on a device that has signed in
-   before: `mark()` sets the flag that makes `restore()` bother at all.
+   `window.__fbUser` is set SYNCHRONOUSLY at load when a session is
+   stored, so a page's very first read already carries the token —
+   `restore()` only confirms it (and mints a fresh token first when the
+   hour is up). A device that signed in with the SDK-based version is
+   migrated once: the SDK is imported one last time, its refresh token
+   copied across, and its own copy signed out.
    ===================================================================== */
 window.FBAuth = (function () {
   "use strict";
-  var FLAG = 'jem_fb_seen';
-  var CFG = {apiKey:"AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw",
-             authDomain:"teaching-70f1c.firebaseapp.com",
+  var KEY = 'jem_fb_session';          /* {rt, it, exp, email, uid, ts} */
+  var LEGACY_FLAG = 'jem_fb_seen';     /* set by the SDK-based version; read once, for migration */
+  var API_KEY = "AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw";   /* public: the same key every page sends */
+  var EMAIL = 'presence@janerikmeidell.com';                /* must match the rules */
+  var SIGNIN  = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+API_KEY;
+  var REFRESH = 'https://securetoken.googleapis.com/v1/token?key='+API_KEY;
+  var MARGIN = 120*1000;               /* mint a new token when under two minutes remain */
+  var CFG = {apiKey:API_KEY, authDomain:"teaching-70f1c.firebaseapp.com",
              databaseURL:"https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",
              projectId:"teaching-70f1c",storageBucket:"teaching-70f1c.firebasestorage.app",
              messagingSenderId:"1026356553251",
              appId:"1:1026356553251:web:d23a4c30af7e6983463396"};
-  var sdk=null, authObj=null;
 
-  function seen(){try{return localStorage.getItem(FLAG)==='1';}catch(e){return false;}}
-  function mark(){try{localStorage.setItem(FLAG,'1');}catch(e){}}
-  function forget(){try{localStorage.removeItem(FLAG);}catch(e){}}
+  var S=null, inflight=null;
 
-  /* a named app, so a page that also calls initializeApp() for its own
-     popup does not collide with this one */
-  function load(){
-    if(sdk)return sdk;
-    sdk=Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js")
-    ]).then(function(m){
-      authObj=m[1].getAuth(m[0].initializeApp(CFG,'jemrestore'));
-      return m[1];
-    });
-    return sdk;
+  function read(){ try{ var v=JSON.parse(localStorage.getItem(KEY)||'null'); return (v&&v.rt)?v:null; }catch(e){ return null; } }
+  function save(s){ S=s; try{ if(s)localStorage.setItem(KEY,JSON.stringify(s)); else localStorage.removeItem(KEY); }catch(e){} }
+  function drop(){ save(null); window.__fbUser=null; }
+  function legacySeen(){ try{ return localStorage.getItem(LEGACY_FLAG)==='1'; }catch(e){ return false; } }
+  function forgetLegacy(){ try{ localStorage.removeItem(LEGACY_FLAG); }catch(e){} }
+
+  function apiError(j){ return (j&&j.error&&(j.error.message||j.error.status))||''; }
+  /* these mean the session itself is gone (password changed, account
+     disabled or deleted); anything else — a network blip, a 5xx — is
+     not a reason to throw the session away */
+  var DEAD = /TOKEN_EXPIRED|USER_DISABLED|USER_NOT_FOUND|INVALID_REFRESH_TOKEN|MISSING_REFRESH_TOKEN|INVALID_GRANT_TYPE/;
+
+  function post(url,headers,body){
+    return fetch(url,{method:'POST',headers:headers,body:body})
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; },function(){ return {ok:r.ok,j:null}; }); });
+  }
+
+  /* one refresh at a time: twenty parallel reads share the same call */
+  function refresh(){
+    if(inflight)return inflight;
+    if(!S)return Promise.reject(new Error('signed-out'));
+    var rt=S.rt;
+    inflight=post(REFRESH,{'Content-Type':'application/x-www-form-urlencoded'},
+                  'grant_type=refresh_token&refresh_token='+encodeURIComponent(rt))
+      .then(function(x){
+        if(!x.ok||!x.j||!x.j.id_token){
+          var m=apiError(x.j);
+          if(DEAD.test(m))drop();
+          throw new Error(m||'refresh-failed');
+        }
+        if(!S)throw new Error('signed-out');          /* signed out while this was in flight */
+        var now=Date.now();
+        save({rt:x.j.refresh_token||rt, it:x.j.id_token,
+              exp:now+(parseInt(x.j.expires_in,10)||3600)*1000,
+              email:S.email, uid:x.j.user_id||S.uid, ts:S.ts||now});
+        return S.it;
+      });
+    inflight.then(function(){inflight=null;},function(){inflight=null;});
+    return inflight;
+  }
+
+  function fresh(){ return !!(S&&S.it&&S.exp-Date.now()>MARGIN); }
+
+  /* the object every page keeps on window.__fbUser — the two members
+     they use are .email and .getIdToken() */
+  function user(){
+    if(!S)return null;
+    return {email:S.email, uid:S.uid,
+      getIdToken:function(force){
+        if(!S)return Promise.reject(new Error('signed-out'));
+        if(!force&&fresh())return Promise.resolve(S.it);
+        return refresh().catch(function(e){
+          /* could not reach the token endpoint, but the one we hold is
+             still valid for a while: use it rather than fail the read */
+          if(S&&S.it&&S.exp>Date.now())return S.it;
+          throw e;
+        });
+      }};
   }
 
   /* Calls back exactly once, with the signed-in user or null. Never
      throws and never shows UI — a page can call it unconditionally. */
   function restore(cb){
-    if(!seen()){setTimeout(function(){cb(null);},0);return;}
     var done=false;
-    function finish(u){if(done)return;done=true;try{cb(u||null);}catch(e){}}
-    load().then(function(au){
-      au.onAuthStateChanged(authObj,function(u){
-        if(u){window.__fbUser=u;}
-        finish(u);
-      },function(){finish(null);});
-    }).catch(function(){finish(null);});
-    /* if the SDK never resolves, do not leave the page waiting on it */
-    setTimeout(function(){finish(null);},5000);
+    function finish(u){ if(done)return; done=true; try{cb(u||null);}catch(e){} }
+    if(S){
+      window.__fbUser=user();
+      if(fresh()){ setTimeout(function(){finish(window.__fbUser);},0); return; }
+      /* the hour is up: mint a token first, so the page's first read
+         carries it; the answer is null only if the session is really dead */
+      refresh().then(function(){finish(S?user():null);},function(){finish(S?user():null);});
+      return;
+    }
+    if(!legacySeen()){ setTimeout(function(){finish(null);},0); return; }
+    migrate(finish);
+  }
+
+  /* ---------- one-time migration from the SDK's IndexedDB session -----
+     The SDK's User carries its refresh token in the open (`refreshToken`),
+     so a device that signed in before 20 Oct 2026 is carried across
+     without typing the password again. The SDK's own copy is then signed
+     out — client-side only, which revokes nothing — so the session lives
+     in exactly one place. Five seconds, then give up: the flag is cleared
+     either way, so the CDN import happens at most once per device.
+     -------------------------------------------------------------------- */
+  function migrate(finish){
+    var timer=setTimeout(function(){ forgetLegacy(); finish(null); },5000);
+    Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js")
+    ]).then(function(m){
+      var au=m[1], a=au.getAuth(m[0].initializeApp(CFG,'jemrestore'));
+      var seenState=false;
+      au.onAuthStateChanged(a,function(u){
+        if(seenState)return; seenState=true; clearTimeout(timer);
+        forgetLegacy();
+        if(!u||!u.refreshToken){ finish(null); return; }
+        save({rt:u.refreshToken, it:'', exp:0, email:u.email||EMAIL, uid:u.uid, ts:Date.now()});
+        au.signOut(a).catch(function(){});
+        refresh().then(function(){ window.__fbUser=user(); finish(window.__fbUser); },
+                       function(){ finish(S?(window.__fbUser=user()):null); });
+      },function(){ clearTimeout(timer); forgetLegacy(); finish(null); });
+    }).catch(function(){ clearTimeout(timer); forgetLegacy(); finish(null); });
   }
 
   function signOut(cb){
-    forget();
-    load().then(function(au){return au.signOut(authObj);})
-      .then(function(){window.__fbUser=null;if(cb)cb();},function(){if(cb)cb();});
+    drop();
+    var legacy=legacySeen(); forgetLegacy();
+    if(!legacy){ if(cb)setTimeout(cb,0); return; }
+    /* a pre-migration device may still hold the SDK's copy: clear it too */
+    Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js")
+    ]).then(function(m){ return m[1].signOut(m[1].getAuth(m[0].initializeApp(CFG,'jemrestore'))); })
+      .then(function(){ if(cb)cb(); },function(){ if(cb)cb(); });
   }
 
-
-  /* ---------- signing in without a popup ------------------------------
+  /* ---------- signing in: one REST call, no popup -----------------------
      Safari blocks the Google popup, and signInWithRedirect is unreliable
-     there too: Safari's storage rules break it whenever the auth domain
-     differs from the site's. Email+password is neither — it is a plain
-     API call — so it is what the instructor pages use.
+     there too. Email+password is a plain API call — and the response
+     carries the refresh token that becomes this device's session.
      -------------------------------------------------------------------- */
-  var EMAIL = 'presence@janerikmeidell.com';   /* must match the rules */
-
   function signInPassword(email,pw){
-    return load().then(function(au){
-      return au.signInWithEmailAndPassword(authObj,email,pw);
-    }).then(function(res){ window.__fbUser=res.user; mark(); return res.user; });
+    return post(SIGNIN,{'Content-Type':'application/json'},
+                JSON.stringify({email:email,password:pw,returnSecureToken:true}))
+      .then(function(x){
+        if(!x.ok||!x.j||!x.j.idToken)throw new Error(apiError(x.j)||'sign-in-failed');
+        var now=Date.now();
+        save({rt:x.j.refreshToken, it:x.j.idToken,
+              exp:now+(parseInt(x.j.expiresIn,10)||3600)*1000,
+              email:x.j.email||email, uid:x.j.localId, ts:now});
+        forgetLegacy();
+        window.__fbUser=user();
+        return window.__fbUser;
+      });
   }
 
   function explain(e){
     var m=String((e&&(e.code||e.message))||e||'');
-    if(/operation-not-allowed|password-login-disabled/i.test(m))
+    if(/OPERATION_NOT_ALLOWED|PASSWORD_LOGIN_DISABLED|operation-not-allowed/i.test(m))
       return 'Email sign-in is switched off for this project. Firebase Console → Authentication → Sign-in method → Email/Password → Enable.';
-    if(/user-not-found/i.test(m))
+    if(/EMAIL_NOT_FOUND|user-not-found/i.test(m))
       return 'No such account. Create it in Firebase Console → Authentication → Users → Add user.';
-    if(/wrong-password|invalid-credential|invalid-login/i.test(m)) return 'Wrong password.';
-    if(/too-many-requests/i.test(m)) return 'Too many attempts — Firebase has paused sign-in here for a few minutes.';
-    if(/network/i.test(m)) return 'No network. Nothing changed.';
+    if(/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|wrong-password|invalid-credential/i.test(m)) return 'Wrong password.';
+    if(/TOO_MANY_ATTEMPTS|too-many-requests/i.test(m)) return 'Too many attempts — Firebase has paused sign-in here for a few minutes.';
+    if(/USER_DISABLED/i.test(m)) return 'This account is disabled in Firebase Console → Authentication → Users.';
+    if(/network|Failed to fetch|Load failed|NetworkError/i.test(m)) return 'No network. Nothing changed.';
     return 'Sign-in failed: '+m;
   }
 
@@ -181,6 +282,15 @@ window.FBAuth = (function () {
     setTimeout(function(){pw.focus();},50);
   }
 
-  return {restore:restore, mark:mark, forget:forget, signOut:signOut, seen:seen,
-          form:form, blocked:blocked, signInPassword:signInPassword, email:function(){return EMAIL;}};
+  /* the session is read, and the user set, before any page script runs */
+  S=read();
+  if(S)window.__fbUser=user();
+
+  return {restore:restore, signOut:signOut, form:form, blocked:blocked,
+          signInPassword:signInPassword, email:function(){return EMAIL;},
+          user:function(){return window.__fbUser||null;},
+          token:function(){ return window.__fbUser?window.__fbUser.getIdToken():Promise.reject(new Error('signed-out')); },
+          seen:function(){return !!S;},
+          /* kept for callers of the old API; the session is stored by signInPassword itself */
+          mark:function(){}, forget:forgetLegacy};
 })();
