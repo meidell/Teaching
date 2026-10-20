@@ -1241,6 +1241,25 @@ global `EscWall`; `courseprogress.js` a port).
   CrowdStrike…) are real and kept to the public record.
 - ⚠ **The `escwa` rules block (a copy of `creator`'s) must be DEPLOYED** before
   the link goes to students, or registration and the walls fail (both say so).
+- **`roles.html` — "Who answers" (20 Oct 2026), a reference page, not a
+  session.** Written from the job profile of the practitioner who was first
+  meant to teach this course (the top incident seat at a large technology
+  company); the person is **never named and nothing is quoted** — each duty
+  is rewritten as what the role does, with an "at Arvane" line under it.
+  Five blocks: the **incident director** role card (eight duties: decides
+  the approach · designs and runs dry-runs · leads the investigation and
+  keeps the CISO informed · expertise to projects · oversees the security
+  services incl. **automated validation** at the scale of tens of thousands
+  of launches · product-issue mitigation · sets the team up to the third
+  line · FIRST); the **three lines of defence** with Arvane examples and a
+  six-case "which line failed?" self-check (local only, answers 1,0,2,1,2,0,
+  mixed on purpose); **FIRST** (CVSS, TLP, first.org); where Sessions 5, 9,
+  10 and 12 use it; and the **Session 9 scorecard** (three 0–2 questions =
+  duties 1–3), published in advance. No `.step`, no ticks, nothing counted.
+  The hub's plan entries for S5/S9/S10/S12 and its References block link
+  it, and **Session 2's tripwire step gained a fourth part, `w2_owner`
+  "who decides"** (the seat, not a person) — on the board too; the hand-in
+  still requires only the first three.
 - **Session 2 (`week2.html`, 23 Oct 2026) — seven steps, `total:7`.** Opens
   Session 1's sealed `w1_nx` pick from localStorage and boards `w1_next`; a
   six-case classify against Mazarr's four marks (answers 1,0,3,2,0,0, mixed
