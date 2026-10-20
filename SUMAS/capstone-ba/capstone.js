@@ -110,9 +110,9 @@ window.CAP = (function () {
       if(f.opt)c.classList.add('opt');
       var chips='';
       if(f.opt)chips+='<span class="chip opt">optional · not graded</span>';
-      chips+=dueChip(f.due,f.dueText,f.opt?'open until':'post by',true);
+      chips+=dueChip(f.due,f.dueText,f.opt?'open until':'post by',true).replace('<span class="chip','<span data-k="post" class="chip');
       chips+='<span class="chip">'+f.post.min+'–'+f.post.max+' words</span>';
-      if(f.re)chips+=dueChip(f.reDue,f.reDueText,f.re.n+' repl'+(f.re.n>1?'ies':'y')+' by',true)+'<span class="chip">'+f.re.min+'+ words each</span>';
+      if(f.re)chips+=dueChip(f.reDue,f.reDueText,f.re.n+' repl'+(f.re.n>1?'ies':'y')+' by',true).replace('<span class="chip','<span data-k="re" class="chip')+'<span class="chip">'+f.re.min+'+ words each</span>';
       var head='<div class="fh"><span class="ft">'+esc(f.title)+'</span></div><div class="chips">'+chips+'</div>';
       c.insertAdjacentHTML('afterbegin',head);
       if(!c.querySelector('.go'))c.insertAdjacentHTML('beforeend','<a class="go" href="forum.html?f='+f.id+'">Open the forum →</a>');
@@ -129,9 +129,42 @@ window.CAP = (function () {
       var id=e.getAttribute('data-due'), f=S.forum(id), p=S.phase(id);
       e.textContent=f?f.dueText:(p?p.dueText:'');
     });
+    markPosted(); window.addEventListener('statstrack:named',markPosted);
     if(S.week(WK)&&Date.now()<S.week(WK).opens.getTime()){
       var lb=$('lockbar'); if(lb){ lb.style.display='block'; lb.textContent='This week opens on '+S.fmtDay(S.week(WK).monday)+'. You can read ahead; the forums open then.'; }
     }
+  }
+
+
+  /* ---- "✓ posted" — the forum chip turns green once THIS student's post
+     exists (Aman Patel, OMBA500, 20 Oct 2026: "once we upload the post —
+     in red is still highlighted. Can we figure something where we get to
+     know that it's already done"). Reads <ns>/_forum/<fid>/posts, which is
+     world-readable and small, finds the signed-in sid's post and counts
+     the replies they left under other posts. Best-effort: no identity or
+     no network → the chips stay as rendered. */
+  function markPosted(){
+    if(!S)return;
+    var a=null; try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}
+    var sid=a&&a.sid; if(!sid)return;
+    var DB=(window.CourseConfig&&window.CourseConfig.DB)||'https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app';
+    document.querySelectorAll('[data-forum]').forEach(function(c){
+      var f=S.forum(c.getAttribute('data-forum')); if(!f)return;
+      fetch(DB+'/'+K+'/_forum/'+encodeURIComponent(f.id)+'/posts.json').then(function(r){return r.ok?r.json():null;}).then(function(posts){
+        if(!posts||typeof posts!=='object')return;
+        var mine=posts[sid]&&posts[sid].p, pc=c.querySelector('[data-k="post"]'), rc=c.querySelector('[data-k="re"]');
+        if(mine&&pc){
+          var late=!!(mine.ts&&f.due&&mine.ts>f.due.getTime());
+          pc.className='chip on'; pc.textContent='✓ posted'+(mine.ts?' · '+S.fmtDay(new Date(mine.ts)):'')+(late?' · after the date':'');
+        }
+        if(rc&&f.re){
+          var n=0; Object.keys(posts).forEach(function(s){ if(s===sid)return; var re=posts[s]&&posts[s].re; if(!re)return;
+            Object.keys(re).forEach(function(k){ if(re[k]&&re[k].sid===sid)n++; }); });
+          if(n>=f.re.n){ rc.className='chip on'; rc.textContent='✓ '+n+' repl'+(n>1?'ies':'y'); }
+          else if(n>0){ rc.textContent=n+' of '+f.re.n+' repl'+(f.re.n>1?'ies':'y')+' · '+rc.textContent; }
+        }
+      }).catch(function(){});
+    });
   }
 
   /* ---- the quiz engine (self-check and the retrieval opener) --------
