@@ -232,6 +232,31 @@ a.btn{text-decoration:none;display:inline-block;}
 .sec .s em{font-style:normal;color:var(--grey);font-weight:600;}
 .sec .bar{height:7px;border-radius:4px;background:var(--wash);overflow:hidden;}
 .sec .bar i{display:block;height:100%;background:var(--good);}
+/* Comparisons tab — a scoring grid tallied across the class */
+.gcard{margin-bottom:14px;}
+.gtally{display:grid;grid-template-columns:max-content 1fr max-content;gap:6px 10px;align-items:center;margin:8px 0 4px;font-size:13px;}
+.gtally .bar{height:12px;border-radius:6px;background:var(--wash);overflow:hidden;}
+.gtally .bar i{display:block;height:100%;background:var(--accent);}
+.gtally .bar i.tie{background:var(--faint);}
+table.gheat{border-collapse:collapse;font-size:12.5px;margin-top:8px;}
+table.gheat th,table.gheat td{border-bottom:1px solid var(--line);padding:5px 9px;text-align:center;white-space:nowrap;}
+table.gheat th{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);}
+table.gheat td.cr,table.gheat th.cr{text-align:left;}
+table.gheat td.m{font-weight:700;}
+table.gheat tr.tot td{border-top:2px solid var(--line);font-weight:800;}
+table.gheat td.lo{color:var(--bad);}
+.greading{margin:10px 0 4px;padding:9px 12px;border-left:3px solid var(--accent);background:var(--wash);border-radius:0 10px 10px 0;font-size:13px;line-height:1.5;}
+table.gstu{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px;}
+table.gstu th{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);}
+table.gstu td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+table.gstu td.nm{font-weight:700;white-space:nowrap;cursor:pointer;}
+table.gstu td.why{color:var(--ink2);max-width:520px;}
+table.gstu .w{font-weight:800;color:var(--accent);}
+.ghist{display:flex;gap:3px;align-items:flex-end;height:54px;margin:8px 0 2px;}
+.ghist div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
+.ghist div span{position:absolute;bottom:100%;left:0;right:0;text-align:center;font-size:10px;color:var(--grey);}
+.ghist-x{display:flex;gap:3px;font-size:10px;color:var(--grey);}
+.ghist-x span{flex:1;text-align:center;}
 .sec .n{font-size:11px;color:var(--grey);text-align:right;font-weight:700;white-space:nowrap;}
 .sec .n b{color:var(--ink);}
 .sec.idle{opacity:.45;}
@@ -463,6 +488,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
   <div class="pane" data-pane="presence"><div class="card" id="presenceCard"></div></div>
   <div class="pane" data-pane="solutions"><div class="card" id="solCard"></div></div>
   <div class="pane" data-pane="subs"><div class="card" id="subsCard"></div></div>
+  <div class="pane" data-pane="grids"><div id="gridsCard"></div></div>
 
   <!-- ======================= LEVEL 3 ======================= -->
   <div class="pane" data-pane="roster">
@@ -1783,6 +1809,141 @@ async function dlFromDB(btn){
   btn.disabled=false;
 }
 
+/* ---------- Comparisons ---------------------------------------------
+   A page that lets a student SCORE several things on a shared grid —
+   gen110 séance 2's "the same prompt on three assistants", its duel —
+   writes the grid whole to <sid>/mod/<m>/grid/<id>:
+     {t, cols:[names], crit:[labels], cells:{"r-c":0|1|2}, tot:[…],
+      n, win:name|null, tie, why:<work field id>|null, ts}
+   This tab tallies every such grid across the cohort: who won, on
+   which criteria, and each student's own "why" (the carnet field the
+   record names). Assistant names are typed by the students, so they are
+   normalised before counting — "chat gpt", "GPT" and "ChatGPT" are one
+   column. A grid with one column (the duel) gets a histogram instead
+   of a winners' tally. Nothing here is a key: the scores are the
+   students' judgements. */
+var GRIDS_N=0;
+function normAsst(s){
+  s=String(s||'').trim(); var l=s.toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(/chatgpt|gpt|openai/.test(l))return 'ChatGPT';
+  if(/claude|anthropic/.test(l))return 'Claude';
+  if(/gemini|bard/.test(l))return 'Gemini';
+  if(/lechat|mistral/.test(l))return 'Le Chat';
+  if(/copilot|bing/.test(l))return 'Copilot';
+  if(/perplexity/.test(l))return 'Perplexity';
+  if(/deepseek/.test(l))return 'DeepSeek';
+  if(/grok/.test(l))return 'Grok';
+  if(/llama|meta/.test(l))return 'Llama';
+  return s||'?';
+}
+function gridRecords(){
+  var out={};
+  ROWS.forEach(function(r){
+    var mods=r.mod||{};
+    Object.keys(mods).forEach(function(m){
+      var g=mods[m]&&mods[m].grid; if(!g||typeof g!=='object')return;
+      Object.keys(g).forEach(function(id){
+        var rec=g[id]; if(!rec||!rec.cells||!rec.cols)return;
+        var k=m+'/'+id;
+        if(!out[k])out[k]={mod:m,id:id,t:rec.t||id,crit:rec.crit||[],recs:[]};
+        if((rec.crit||[]).length>out[k].crit.length)out[k].crit=rec.crit;
+        var why=rec.why&&r.node.work&&r.node.work[rec.why]&&r.node.work[rec.why].v;
+        out[k].recs.push({sid:r.sid,name:r.name,rec:rec,why:why?String(why):''});
+      });
+    });
+  });
+  return out;
+}
+function renderGrids(){
+  var box=$('gridsCard'); if(!box)return;
+  var G=gridRecords(), keys=Object.keys(G);
+  GRIDS_N=keys.length;
+  if(!keys.length){box.innerHTML='';return;}
+  var modLabel={}; MODULES.forEach(function(m){modLabel[m.id]=m.label||m.id;});
+  box.innerHTML=keys.sort().map(function(k){
+    var g=G[k], crit=g.crit, nC=crit.length||5;
+    var recs=g.recs.slice().sort(function(a,b){return (b.rec.ts||0)-(a.rec.ts||0);});
+    var multi=recs.some(function(x){return (x.rec.cols||[]).length>1;});
+    var complete=recs.filter(function(x){return (x.rec.n||0)>=nC*(x.rec.cols||[]).length;});
+    var h='<div class="card gcard"><h3>'+esc(g.t)+'</h3>'+
+      '<div class="sub">'+esc(modLabel[g.mod]||g.mod)+' · '+recs.length+(recs.length>1?' students':' student')+
+      ' · '+complete.length+' complete grid'+(complete.length===1?'':'s')+' · scores 0–2 on '+nC+' criteria, the students’ own judgement</div>';
+    /* per assistant × criterion means, over every grid that scored the cell */
+    var A={};   /* name -> {sum:[per crit], cnt:[per crit], totSum, totN, wins} */
+    function acc(name){ if(!A[name]){A[name]={sum:[],cnt:[],totSum:0,totN:0,wins:0}; for(var i=0;i<nC;i++){A[name].sum[i]=0;A[name].cnt[i]=0;}} return A[name]; }
+    var ties=0;
+    recs.forEach(function(x){
+      var rec=x.rec, cols=rec.cols||[];
+      cols.forEach(function(c,j){
+        var a=acc(multi?normAsst(c):c), full=true;
+        for(var i=0;i<nC;i++){ var v=rec.cells[i+'-'+j]; if(v==null){full=false;continue;} a.sum[i]+=v; a.cnt[i]++; }
+        if(full&&rec.tot&&rec.tot[j]!=null){a.totSum+=rec.tot[j];a.totN++;}
+      });
+      if(multi){ if(rec.win)acc(normAsst(rec.win)).wins++; else if(rec.tie)ties++; }
+    });
+    var names=Object.keys(A).sort(function(a,b){return (A[b].wins-A[a].wins)||((A[b].totN?A[b].totSum/A[b].totN:0)-(A[a].totN?A[a].totSum/A[a].totN:0));});
+    var mean=function(a,i){return a.cnt[i]?a.sum[i]/a.cnt[i]:null;};
+    if(multi){
+      /* who wins */
+      var decided=complete.length;
+      h+='<div class="sub" style="margin-top:10px"><b>Who wins</b> · outright winners among the complete grids</div><div class="gtally">';
+      names.forEach(function(n){ var w=A[n].wins; if(!w&&!A[n].totN)return;
+        h+='<div>'+esc(n)+'</div><div class="bar"><i style="width:'+(decided?Math.round(w/decided*100):0)+'%"></i></div><div>'+w+(decided?' <span class="muted">· '+Math.round(w/decided*100)+'%</span>':'')+'</div>'; });
+      if(ties)h+='<div>tie</div><div class="bar"><i class="tie" style="width:'+(decided?Math.round(ties/decided*100):0)+'%"></i></div><div>'+ties+'</div>';
+      h+='</div>';
+    }
+    /* the criteria table */
+    var classMean=[]; for(var i=0;i<nC;i++){ var s=0,c=0; names.forEach(function(n){s+=A[n].sum[i];c+=A[n].cnt[i];}); classMean[i]=c?s/c:null; }
+    var lo=-1; classMean.forEach(function(v,i){ if(v!=null&&(lo<0||v<classMean[lo]))lo=i; });
+    h+='<div class="sub" style="margin-top:12px"><b>On which criteria</b> · mean score per cell, 0–2'+(multi?'; the lowest class mean is marked':'')+'</div>'+
+       '<div class="wrapx"><table class="gheat"><thead><tr><th class="cr">Criterion</th>'+(multi?names.map(function(n){return '<th>'+esc(n)+'</th>';}).join('')+'<th>All</th>':'<th>Class</th>')+'</tr></thead><tbody>';
+    for(var i=0;i<nC;i++){
+      h+='<tr><td class="cr">'+esc(crit[i]||('Criterion '+(i+1)))+'</td>';
+      if(multi)names.forEach(function(n){ var m=mean(A[n],i); h+='<td class="m" style="background:'+heat(m)+'">'+(m==null?'–':m.toFixed(1))+'</td>'; });
+      h+='<td class="m'+(i===lo&&multi?' lo':'')+'" style="background:'+heat(classMean[i])+'">'+(classMean[i]==null?'–':classMean[i].toFixed(1))+(i===lo&&multi?' ▼':'')+'</td></tr>';
+    }
+    h+='<tr class="tot"><td class="cr">Mean total / '+(nC*2)+'</td>';
+    var allTot=0,allN=0; names.forEach(function(n){allTot+=A[n].totSum;allN+=A[n].totN;});
+    if(multi)names.forEach(function(n){ var a=A[n]; h+='<td>'+(a.totN?(a.totSum/a.totN).toFixed(1):'–')+'<div class="muted" style="font-weight:400">n = '+a.totN+'</div></td>'; });
+    h+='<td>'+(allN?(allTot/allN).toFixed(1):'–')+'<div class="muted" style="font-weight:400">n = '+allN+'</div></td></tr></tbody></table></div>';
+    /* the reading */
+    var read=[];
+    if(lo>=0&&classMean[lo]!=null)read.push('<b>'+esc(crit[lo]||'Criterion '+(lo+1))+'</b> is the criterion the class scores lowest ('+classMean[lo].toFixed(1)+' / 2)'+(multi?' — across every assistant.':'.'));
+    if(multi&&names.length>1&&complete.length){
+      var top=names[0];
+      if(A[top].wins){
+        var gap=null,gi=-1;
+        for(var i2=0;i2<nC;i2++){ var mt=mean(A[top],i2); if(mt==null)continue; var best=null; names.forEach(function(n){ if(n===top)return; var m=mean(A[n],i2); if(m!=null&&(best==null||m>best))best=m; }); if(best==null)continue; var d=mt-best; if(gap==null||d>gap){gap=d;gi=i2;} }
+        read.push('<b>'+esc(top)+'</b> wins most often ('+A[top].wins+' of '+complete.length+')'+(gi>=0?(gap>0?' and leads most on <b>'+esc(crit[gi]||'criterion '+(gi+1))+'</b> (+'+gap.toFixed(1)+' over the next)':gap<0?' — yet on no criterion does it lead; its wins come from being second-best everywhere':', with no criterion where it is clearly ahead'):'')+'.');
+      }
+    }
+    if(!multi&&allN){ var below=complete.filter(function(x){return x.rec.tot&&x.rec.tot[0]!=null&&x.rec.tot[0]<8;}).length; read.push(below+' of '+complete.length+' scored under 8 / 10 — the page says a part of the prompt was missing for each of them.'); }
+    if(read.length)h+='<div class="greading">'+read.join(' ')+'</div>';
+    /* single-column: the histogram of totals */
+    if(!multi&&complete.length){
+      var hist=[]; for(var b=0;b<=nC*2;b++)hist[b]=0;
+      complete.forEach(function(x){ var t=x.rec.tot&&x.rec.tot[0]; if(t!=null)hist[t]++; });
+      var mx=Math.max.apply(null,hist)||1;
+      h+='<div class="ghist">'+hist.map(function(v){return '<div style="height:'+Math.round(v/mx*100)+'%"><span>'+(v||'')+'</span></div>';}).join('')+'</div>'+
+         '<div class="ghist-x">'+hist.map(function(v,b){return '<span>'+b+'</span>';}).join('')+'</div>';
+    }
+    /* every student */
+    h+='<table class="gstu"><thead><tr><th>Student</th><th>'+(multi?'Totals':'Total')+'</th>'+(multi?'<th>Winner</th>':'')+'<th>Why — in their words</th><th>When</th></tr></thead><tbody>';
+    recs.forEach(function(x){
+      var rec=x.rec, cols=rec.cols||[];
+      var tots=cols.map(function(c,j){ var t=rec.tot&&rec.tot[j]; var full=(function(){for(var i=0;i<nC;i++)if(rec.cells[i+'-'+j]==null)return false;return true;})(); return esc(c)+' <b>'+(t==null?'–':t)+(full?'':'<span class="muted">*</span>')+'</b>'; }).join(' · ');
+      h+='<tr><td class="nm" data-sid="'+esc(x.sid)+'">'+esc(x.name)+'</td><td>'+tots+'</td>'+
+         (multi?'<td>'+(rec.win?'<span class="w">'+esc(normAsst(rec.win))+'</span>':rec.tie?'<span class="muted">tie</span>':'<span class="muted">not finished</span>')+'</td>':'')+
+         '<td class="why">'+(x.why?esc(x.why):'<span class="muted">nothing written yet'+(rec.why?' in '+esc(rec.why):'')+'</span>')+'</td>'+
+         '<td class="muted">'+esc(whenAgo(rec.ts))+'</td></tr>';
+    });
+    h+='</tbody></table>'+(recs.some(function(x){return (x.rec.n||0)<nC*(x.rec.cols||[]).length;})?'<div class="muted" style="margin-top:6px">* a column not fully scored; its total is partial and it is left out of the means</div>':'')+'</div>';
+    return h;
+  }).join('');
+  Array.prototype.forEach.call(box.querySelectorAll('td.nm[data-sid]'),function(td){ td.addEventListener('click',function(){openDrawer(td.getAttribute('data-sid'));}); });
+  function heat(m){ if(m==null)return 'transparent'; var a=Math.max(0,Math.min(1,m/2)); return 'rgba(21,128,61,'+(a*0.28).toFixed(2)+')'; }
+}
+
 /* ---------- tabs ----------------------------------------------------
    The three levels this dashboard was designed around are the tabs;
    Presence and Handed in appear only for a course that has them. */
@@ -1792,7 +1953,8 @@ var TABS=[
   {id:'roster',   label:'The roster', always:true},
   {id:'presence', label:'Presence',   show:function(){return hasPresence();}, n:function(){return PRES_N;}},
   {id:'solutions',label:'Solutions',  show:function(){return hasReleases();},  n:function(){return SOL_N;}},
-  {id:'subs',     label:'Handed in',  show:function(){return SUBS_N>0;},       n:function(){return SUBS_N;}}
+  {id:'subs',     label:'Handed in',  show:function(){return SUBS_N>0;},       n:function(){return SUBS_N;}},
+  {id:'grids',    label:'Comparisons',show:function(){return GRIDS_N>0;},      n:function(){return GRIDS_N;}}
 ];
 var TAB=null;
 try{TAB=localStorage.getItem('jem_admin2_tab');}catch(e){}
@@ -1829,12 +1991,12 @@ function renderAll(){
     $('kpis').innerHTML=tile('Cohort',0,'nobody yet');
     $('acts').innerHTML='<li class="clear">No students have identified themselves yet.</li>';
     $('empty').style.display='block';
-    renderSolutions();renderTabs();
+    GRIDS_N=0;renderSolutions();renderTabs();
     return;
   }
   renderKpis();renderActs();renderPulse();renderDist();renderFunnel();
   renderSections();renderQuiz();renderReader();renderRoster();
-  renderPresence();renderSubs();renderSolutions();renderTabs();
+  renderPresence();renderSubs();renderGrids();renderSolutions();renderTabs();
   /* a half-width card with nothing beside it should take the whole row */
   $('row2').classList.toggle('solo',$('secCard').style.display==='none');
   $('row3').classList.toggle('solo',$('readerCard').style.display==='none'||$('quizCard').style.display==='none');

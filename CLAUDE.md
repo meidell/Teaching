@@ -125,6 +125,22 @@ Five things worth knowing before editing any of them:
   `CourseConfig.load()` now fetches `courses.json` with `cache:"no-cache"` for
   the same reason: a stale registry makes a new course simply not exist.
 - **Flags in `admin2.html` are relative, not absolute.** "Behind" means well under *this cohort's* median at *this point* in the course. The original used fixed thresholds (under 60%, under 50%), which mid-term flagged 13 of 18 students — a flag on two thirds of the cohort is not a flag. Don't reintroduce a constant here.
+- **The Comparisons tab (20 Oct 2026) tallies a scoring grid across the class.**
+  A page that lets a student score several things on one grid — gen110
+  séance 2's *Le même prompt sur trois assistants — qui gagne, et pourquoi*,
+  and its duel — writes the grid whole to `<sid>/mod/<m>/grid/<id>` =
+  `{t, cols, crit, cells, tot, n, win, tie, why, ts}` (`StatsEx.grid()` in
+  gen110's `exercises.js`, debounced; `why` names the carnet field holding
+  the student's reason, `w2_gagnant`). `renderGrids()` offers the tab when
+  any such record exists and, per grid: who wins (outright winners among
+  complete grids, ties apart), a criterion × assistant table of mean
+  scores with the class's weakest criterion marked, a computed reading
+  ("X wins most often and leads most on Y"), every student's totals, winner
+  and reason in their words. Assistant names are typed by students and are
+  **normalised** (`normAsst`: "chat gpt" = "GPT" = ChatGPT) before counting;
+  a one-column grid gets a histogram instead of a tally. Nothing is a key —
+  the scores are the students' judgements. Any course can use it by
+  writing the same shape; a partial column is left out of the means.
 - **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. The old `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. `applyTheme()` maps the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `theme.js` | light / dark, one switch per device. **Loaded in `<head>`, not deferred** — it sets `data-theme` before first paint, or the page flashes white. Opt-in, one `<script>` per page; only `HEG/statistics` uses it today |
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
@@ -1484,7 +1500,11 @@ define their project and who participates."* Everything below follows from it.
   (`.lint`, `.cmpg`, `.tokens`, `.nxt`, `.ctxg`, `.lib`). Carnet fields
   for the dashboard are the nine `w2_*` in `courses.json → project`.
   Probed headlessly in both editions (quiz refuses clicks while locked;
-  T = 0.2 gives the favourite 99.9 %).
+  T = 0.2 gives the favourite 99.9 %). **Both grids reach the database**
+  (20 Oct 2026): `buildGrid()` syncs `mod/w2/grid/cmp` and `grid/duel`
+  through `StatsEx.grid()` on every cell click (debounced 900 ms) and once
+  at load if cells exist, so the dashboard's **Comparisons** tab can say
+  who won across the class and why — see §3. No denominator change.
 - **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
   keep the engine, change the sections), add it to `PAGES` in `build.py`,
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the

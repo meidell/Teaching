@@ -224,6 +224,24 @@ window.StatsEx = (function () {
        body:JSON.stringify({a:answer,c:ok?1:0,ts:Date.now()})}).catch(function(){});}catch(e){}
   }
 
+  /* ---------- grid recording ---------------------------------------
+     A scoring grid (séance 2's three assistants, the duel) is the
+     student's own judgement, not an answer with a key, so it is not an
+     `ex` record: it goes to <sid>/mod/<mod>/grid/<id> whole —
+     {t, cols, crit, cells, tot, n, win, ts} — and the dashboard's
+     Comparisons tab tallies the class from it. Debounced, because every
+     click on a cell changes it. */
+  var gridTimers={};
+  function grid(mod,id,rec){
+    var a=auth(); if(!a)return;
+    clearTimeout(gridTimers[mod+'/'+id]);
+    gridTimers[mod+'/'+id]=setTimeout(function(){
+      try{fetch(DB+'/'+NS+'/'+a.sid+'/mod/'+encodeURIComponent(mod)+'/grid/'+encodeURIComponent(id)+'.json',
+        {method:'PUT',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify(rec)}).catch(function(){});}catch(e){}
+    },900);
+  }
+
   /* ---------- the site form ---------------------------------------- */
   /* opts: {el, mod, exercises, progress, save, markStep, markSection, secId, week} */
   function mount(opts){
@@ -441,5 +459,5 @@ window.StatsEx = (function () {
   return {mount:mount, watch:function(mod){loadReleaseLocal(mod);startPolling(mod);}, slides:slides, wireSlide:wireSlide, releaseBlocked:releaseBlocked,
           releaseError:releaseError,
           isInstructor:isInstructor, release:release, releaseAll:releaseAll,
-          isReleased:isReleased, onChange:function(f){listeners.push(f);}};
+          isReleased:isReleased, grid:grid, onChange:function(f){listeners.push(f);}};
 })();

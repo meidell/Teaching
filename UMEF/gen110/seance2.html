@@ -718,10 +718,25 @@ var CRIT=[
   ['Ton juste','vous l’enverriez tel quel'],
   ['Rien d’inventé','aucun chiffre, nom ou règle que vous n’avez pas donnés']
 ];
-function buildGrid(gridId,capId,storeKey,cols,stepKey,doneMsg){
+function buildGrid(gridId,capId,storeKey,cols,stepKey,doneMsg,title,whyField){
   var box=document.getElementById(gridId),cap=document.getElementById(capId);if(!box)return;
   var st=lsGet(storeKey,{names:cols.slice(),cells:{}});
   function total(c){var t=0,n=0;CRIT.forEach(function(x,r){var v=st.cells[r+'-'+c];if(v!=null){t+=v;n++;}});return {t:t,n:n};}
+  /* the grid goes to the database whole — <sid>/mod/w2/grid/<step> —
+     so the dashboard's Comparisons tab can tally the class: who won,
+     on which criteria, and (from w2_gagnant) why. The student's own
+     judgement, never an answer with a key. */
+  function sync(){
+    if(!window.StatsEx||!StatsEx.grid)return;
+    var tots=cols.map(function(c,j){return total(j);}),full=tots.filter(function(t){return t.n===CRIT.length;});
+    var best=-1;full.forEach(function(t){if(t.t>best)best=t.t;});
+    var winners=cols.map(function(c,j){return j;}).filter(function(j){return tots[j].n===CRIT.length&&tots[j].t===best;});
+    StatsEx.grid(MOD,stepKey,{t:title||stepKey,cols:cols.map(function(c,j){return (st.names[j]||'').trim()||c;}),
+      crit:CRIT.map(function(x){return x[0];}),cells:st.cells,
+      tot:tots.map(function(t){return t.n?t.t:null;}),n:Object.keys(st.cells).length,
+      win:(cols.length>1&&winners.length===1)?((st.names[winners[0]]||'').trim()||cols[winners[0]]):null,
+      tie:cols.length>1&&winners.length>1,why:whyField||null,ts:Date.now()});
+  }
   function paint(){
     var html='<table><thead><tr><th>Critère</th>'+cols.map(function(c,j){return '<th><input type="text" data-col="'+j+'" value="'+(st.names[j]||'').replace(/"/g,'&quot;')+'" placeholder="assistant"></th>';}).join('')+'</tr></thead><tbody>';
     CRIT.forEach(function(x,r){html+='<tr><td class="cr"><b>'+x[0]+'</b><small>'+x[1]+'</small></td>'+cols.map(function(c,j){var v=st.cells[r+'-'+j];return '<td><button class="cell v'+(v==null?'':v)+'" data-r="'+r+'" data-c="'+j+'">'+(v==null?'–':v)+'</button></td>';}).join('')+'</tr>';});
@@ -731,13 +746,16 @@ function buildGrid(gridId,capId,storeKey,cols,stepKey,doneMsg){
     var done=Object.keys(st.cells).length;
     cap.textContent=done+' sur '+(CRIT.length*cols.length)+' cases notées'+(done===CRIT.length*cols.length?' — '+doneMsg:'');
     if(done===CRIT.length*cols.length)markStep(stepKey);
-    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){var k=b.dataset.r+'-'+b.dataset.c,v=st.cells[k];st.cells[k]=(v==null?0:(v+1)%3);lsSet(storeKey,st);paint();});});
-    box.querySelectorAll('input[data-col]').forEach(function(i){i.addEventListener('input',function(){st.names[+i.dataset.col]=i.value;lsSet(storeKey,st);});});
+    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){var k=b.dataset.r+'-'+b.dataset.c,v=st.cells[k];st.cells[k]=(v==null?0:(v+1)%3);lsSet(storeKey,st);paint();sync();});});
+    box.querySelectorAll('input[data-col]').forEach(function(i){i.addEventListener('input',function(){st.names[+i.dataset.col]=i.value;lsSet(storeKey,st);if(Object.keys(st.cells).length)sync();});});
   }
   paint();
+  /* a grid filled before the student signed in reaches the database on
+     the next visit: one sync at load, if there is anything to send */
+  if(Object.keys(st.cells).length)setTimeout(sync,2500);
 }
-buildGrid('cmpGrid','cmpCap','gen110_w2_cmp',['ChatGPT','Claude','Gemini'],'cmp','le gagnant est celui qui a le total le plus haut — dites pourquoi dans votre carnet.');
-buildGrid('duelGrid','duelCap','gen110_w2_duel',['Mon prompt, exécuté par mon voisin·e'],'duel','en dessous de 8, une partie du prompt manquait : laquelle ?');
+buildGrid('cmpGrid','cmpCap','gen110_w2_cmp',['ChatGPT','Claude','Gemini'],'cmp','le gagnant est celui qui a le total le plus haut — dites pourquoi dans votre carnet.','Le même prompt sur trois assistants','w2_gagnant');
+buildGrid('duelGrid','duelCap','gen110_w2_duel',['Mon prompt, exécuté par mon voisin·e'],'duel','en dessous de 8, une partie du prompt manquait : laquelle ?','Le duel : mon prompt, exécuté par mon voisin·e','w2_duel');
 function renderCmpRecall(){
   var box=document.getElementById('cmpRecall');if(!box)return;
   var st=lsGet('gen110_w2_cmp',null);
