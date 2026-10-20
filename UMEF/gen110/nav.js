@@ -29,7 +29,7 @@
              ['s5', '1.5', T('Le quiz de départ', 'The opening quiz')], ['s6', '1.6', T('Ma première IA', 'My first AI')],
              ['s7', '1.7', T('Ce que vous avez demandé', 'What you asked for')], ['s8', '1.8', T('Votre projet', 'Your project')]] },
     { n: 2, mod: 'w2', href: 'seance2.html', t: T('Bien demander I — le texte', 'Asking well I — text'),
-      secs: [['s1', '2.1', T('Votre projet, en cinq parties', 'Your project, in five parts')], ['s2', '2.2', T('Trois assistants, un prompt', 'Three assistants, one prompt')],
+      secs: [['s0', '2.0', T('Votre projet — la première heure', 'Your project — the first hour')], ['s1', '2.1', T('Votre projet, en cinq parties', 'Your project, in five parts')], ['s2', '2.2', T('Trois assistants, un prompt', 'Three assistants, one prompt')],
              ['s3', '2.3', T('Itérer', 'Iterate')], ['s4', '2.4', T('Comment la machine écrit', 'How the machine writes')],
              ['s5', '2.5', T('Le quiz de la séance 2', 'The Session 2 quiz')], ['s6', '2.6', T('Votre bibliothèque de prompts', 'Your prompt library')],
              ['s7', '2.7', T('Le duel des prompts', 'The prompt duel')], ['s8', '2.8', T('La remise 2', 'Hand-in 2')]] },

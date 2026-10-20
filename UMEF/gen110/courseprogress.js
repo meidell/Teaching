@@ -31,7 +31,7 @@ window.CourseProgress=(function(){
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
     {mod:'w1', short:'S1', name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                        total:8, live:true, href:T('seance1.html','seance1-en.html')},
-    {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:8, live:true, href:T('seance2.html','seance2-en.html')},
+    {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:9, live:true, href:T('seance2.html','seance2-en.html')},
     {mod:'w3', short:'S3', name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),         total:8, live:false},
     {mod:'w4', short:'S4', name:T('Séance 4 · Excel et Word avec l’IA — finance','Session 4 · Excel and Word with AI — finance'),                total:8, live:false},
     {mod:'w5', short:'S5', name:T('Séance 5 · L’IA au travail — marketing, finance, RH','Session 5 · AI at work — marketing, finance, HR'),      total:8, live:false},

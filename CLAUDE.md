@@ -1419,7 +1419,23 @@ define their project and who participates."* Everything below follows from it.
   Séances 1 and 2 exist; 3–10 are `live:false` and locked `div`s on the hub.
 - **Séance 2 — *Bien demander I, le texte* (`seance2.tpl.html`, 18 Oct
   2026, for Tuesday 20 Oct)** follows séance 1's engine section for
-  section: 2.1 the five-part builder on the student's OWN project (remise
+  section. ⚠ **Restructured the morning of 20 Oct 2026** (Jan Erik: the
+  students had not prepared the project — do it in the first hour): a
+  new **section 2.0 *Votre projet — la première heure*** (`s0`, 60 min)
+  opens the séance — the Project page in another tab, 13h30 choose among
+  the six, 13h50 the team, 14h00 remise 1 — with three boxes that **tick
+  themselves** from the project page's state (`gen110_pj.proj`,
+  `gen110_pj.alone|team`, five `gen110_work_p_*` ≥ 10 chars; repainted on
+  the `storage` event and every 2 s while shown; steps `prep0..2`,
+  section `s0`) and the student's problem sentence echoed for 2.1.
+  Block 1 is now 2.0 + 2.1; block 2 is 2.2–2.8, with 2.4 and 2.7
+  "si le temps le permet, sinon à la maison" in the block head. Remise 1
+  is therefore *filled in during séance 2*, no longer due before it —
+  the hub's S1 `hand`, its dates list, the project panel, séance 1 §1.8
+  and the project page's kicker/`r1Status` (R1_DUE = 16h45) all say so.
+  Denominator with 2.0: `EXTRA_STEPS (19) + .cl-row (12) + .q (8) +
+  [data-work] (9) = 48`; `total:9` (SECTIONS.length, courseprogress w2,
+  nav.js). Then: 2.1 the five-part builder on the student's OWN project (remise
   1) with a **rule-based vagueness detector** (`lintPrompt()`: five parts
   filled · context ≥ 12 words · a digit in the format · an explicit
   example/prohibition · no vague word from `VAGUE`, one list per language)
@@ -1436,8 +1452,7 @@ define their project and who participates."* Everything below follows from it.
   (`w2_p1…w2_p5` + "tested" ticks `lib0…lib4`; five written and two
   tested complete it — the seed of remise 2) · 2.7 the duel (the grid
   again, one column, `gen110_w2_duel`) · 2.8 remise 2 + what to bring to
-  séance 3. Denominator `EXTRA_STEPS (16) + .cl-row (12) + .q (8) +
-  [data-work] (9) = 45`; `total:8`. CSS at the END of `ia.css`
+  séance 3. (Denominator before 2.0: `EXTRA_STEPS (16) + .cl-row (12) + .q (8) + [data-work] (9) = 45`, `total:8`.) CSS at the END of `ia.css`
   (`.lint`, `.cmpg`, `.tokens`, `.nxt`, `.ctxg`, `.lib`). Carnet fields
   for the dashboard are the nine `w2_*` in `courses.json → project`.
   Probed headlessly in both editions (quiz refuses clicks while locked;
