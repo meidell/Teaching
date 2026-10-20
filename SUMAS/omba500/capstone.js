@@ -82,8 +82,26 @@ window.CAP = (function () {
     });
   }
 
+  /* ---- "these notes feed Phase N" — one line under the consulting file's
+     heading, so a student sees the report being built (Aman Patel, 20 Oct
+     2026: "unclear on how to start the main assignment parallel to what we
+     are doing"). Phase and date from schedule.js; the plan is on the hub. */
+  function wireFeeds(){
+    if(!S||!WK)return;
+    var f=document.querySelector('[data-work]'); if(!f)return;
+    var sec=f.closest('.sec'); if(!sec||sec.querySelector('.feeds'))return;
+    var pid=WK<=5?'p1':(WK<=8?'p2':(WK===9?'p3':null)); if(!pid)return;
+    var p=S.phase(pid); if(!p)return;
+    var part=WK<=5?'the Week '+WK+' section of ':(WK<=8?'':'');
+    var el=document.createElement('p'); el.className='feeds';
+    el.innerHTML='<b>Where this goes:</b> these notes are '+(WK<=5?'the Week '+WK+' section of <b>'+esc(p.name)+'</b>':'the material of <b>'+esc(p.name)+'</b>')+', due '+esc(p.dueText)+'. Keep one document open with a heading per week and paste them in as you go — the plan is on the <a href="index.html#buildplan">course page</a>.';
+    var h=sec.querySelector('h2'); var after=h&&h.nextElementSibling&&h.nextElementSibling.tagName==='P'?h.nextElementSibling:h;
+    if(after&&after.parentNode)after.parentNode.insertBefore(el,after.nextSibling); else sec.insertBefore(el,sec.firstChild);
+  }
+
   /* ---- workbook fields: a filled field is a step ---- */
   function wireWork(){
+    wireFeeds();
     document.querySelectorAll('[data-work]').forEach(function(f){
       var id='wb-'+f.getAttribute('data-work');
       function chk(){ var v=(f.value||'').trim(); if(v.length>=20)step(id); }
