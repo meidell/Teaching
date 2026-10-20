@@ -1423,7 +1423,7 @@ define their project and who participates."* Everything below follows from it.
 - **The course menu — `nav.js` + `nav.css` (19 Oct 2026), the mba401 drawer
   ported bilingual.** Every label goes through `T()`, every link through
   `pg()` (which turns `seance1.html` into `seance1-en.html` on an English
-  page); the tree is séances 1–10 (1–2 with their eight sections, 3–10 "en
+  page); the tree is séances 1–10 (1–3 with their sections, 4–10 "en
   préparation") plus the project page with its three anchors. Loaded by
   the hub, both séances and the project page — the `<script>` tag is in
   the TEMPLATES, so the build carries it. `NAV` mirrors `SEANCES`/`CHAPTERS`
@@ -1460,7 +1460,7 @@ define their project and who participates."* Everything below follows from it.
   minus the finance block plus this course's widgets (`.demo`, `.venn`,
   `.sab`, `.qlock`, `.dates`, `.voix`, and since the rebuild `.pb`, `.wish`,
   `.chk`). Runtime files are renamed ports of MBA406's with `T()` copy.
-  Séances 1 and 2 exist; 3–10 are `live:false` and locked `div`s on the hub.
+  Séances 1–3 exist; 4–10 are `live:false` and locked `div`s on the hub.
 - **Séance 2 — *Bien demander I, le texte* (`seance2.tpl.html`, 18 Oct
   2026, for Tuesday 20 Oct)** follows séance 1's engine section for
   section. ⚠ **Restructured the morning of 20 Oct 2026** (Jan Erik: the
@@ -1505,12 +1505,57 @@ define their project and who participates."* Everything below follows from it.
   through `StatsEx.grid()` on every cell click (debounced 900 ms) and once
   at load if cells exist, so the dashboard's **Comparisons** tab can say
   who won across the class and why — see §3. No denominator change.
+- **Séance 3 — *Bien demander II, son, image, vidéo* (`seance3.tpl.html`,
+  20 Oct 2026, for Tuesday 27 Oct).** ⚠ **Built on two instructions from Jan
+  Erik after séance 2 — "the students did not clearly understand what to do
+  or how", and "more interactivity, not just fields to fill in" — and the
+  pattern for séances 4–10.** (1) **Every section opens on a `.card.todo`**
+  ("À faire maintenant · 13h40–14h15 · 35 min": numbered steps naming the
+  exact tool, menu, button, what to paste and what one then sees) **and
+  closes on a `.donewhen[data-sec]` checklist painted from `REQ`** — one
+  table of `step:` / `cls:` / `wb:` requirements per section that
+  `secCheck()` also reads, so the checklist and the completion rule cannot
+  drift. The home carries a `.howto` strip (the prof does the step on the
+  big screen, the red box says what to click, the done-when box ticks
+  itself; lost → raise a hand or 💬), a legend of the three block kinds
+  (`.label.do` · `.label.try` · `.label.case`) and a `.plan` timetable
+  computed from `SECTIONS[].at/min` — the times on the todo labels are typed
+  by hand and must match it. (2) **The widgets act**: 3.0 a browser
+  recorder (`MediaRecorder`, play back + download, never uploaded) and the
+  Wax & Co sample text (written for the eye on purpose, so the linter has
+  something to flag); 3.1 the browser's own voice (`speechSynthesis`,
+  rate/pitch) as the point of comparison, an **ear linter** (`lintEar`:
+  60–160 words · no digits · sentences ≤ 20 words · no 4-letter caps or
+  URL · addresses someone) and the grid with `CRIT_VOX` (Navigateur vs
+  ElevenLabs); 3.2 a **live spectrogram** (Web Audio `AnalyserNode`, step
+  after 3 s) and a **word-error-rate counter** (four kinds of wrong word,
+  writes `w3_transcript`); 3.3 an **image-prompt builder** (`lintImg`, six
+  parts) with an aspect-ratio preview, an **SVG defect hunt** (five
+  hotspots: garbled sign, six fingers, shadow toward the sun, O for zero,
+  bag logo ≠ sign; misses counted), a **denoising canvas** (pixel mix from
+  noise to the picture over 50 eased steps) and the grid with `CRIT_IMG`
+  (Gemini · Ideogram · Canva); 3.4 a **20-second storyboard** (shots ×
+  source / text ≤ 6 words / voice line / duration, the timeline must sum
+  to 20, writes `w3_story`); 3.5 the four provenance questions walked, a
+  Lens button, an 8-clue classify. `buildGrid()` here takes the criteria
+  as a parameter (séance 2's reads a global); both grids reach the
+  Comparisons tab. Tools named, free tiers checked 20 Oct 2026: ElevenLabs
+  (~10k credits/month, non-commercial), Gemini (audio upload ≤ 10 min;
+  image generation), Ideogram (≈ 10 slow credits/week, **images public**),
+  Canva Magic Media, CapCut (1080p + auto-captions free). Denominator
+  `EXTRA_STEPS (19) + .cl-row (26) + .q (8) + [data-work] (8) = 61`;
+  `total:8`. Quiz on `_release/w3/quiz`, positions `1 3 0 2 3 1 0 2`. Eight
+  `w3_*` carnet fields in `courses.json → project`. `presence.js`'s
+  `SESSIONS` names were refreshed to the rebuilt titles the same day (they
+  still said "Classer, se tromper, être biaisé" from the 4 Oct build).
+  Probed headlessly in both editions: every widget to its step, 8/8
+  sections, the quiz refusing clicks while locked.
 - **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
   keep the engine, change the sections), add it to `PAGES` in `build.py`,
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the
   module and its carnet fields to `courses.json`, and set `live:true` on the
   hub's `SEANCES` entry (in the template). Run the headless probe on both
-  editions before pushing. Séances 1–2 exist; 3–10 are `live:false`.
+  editions before pushing. Séances 1–3 exist; 4–10 are `live:false`.
 - **Own namespace `gen110`, prefix `gen110_`**; the rules block in
   `firebase-database-rules.json` must be deployed before the link goes to
   students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`

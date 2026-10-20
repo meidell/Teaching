@@ -207,16 +207,16 @@ window.StatsPresence = (function () {
   /* The register's sessions: one per SUMAS teaching week, one page each
      (MBA406 has no A/B parts). The final exam (Week 10) is not a session. */
   var SESSIONS=[
-    {mod:'w1', n:1, name:T('Séance 1 · Qu’est-ce que l’IA ?','Session 1 · What is AI?'),                 pages:['w1']},
-    {mod:'w2', n:2, name:T('Séance 2 · Comment une machine apprend','Session 2 · How a machine learns'),          pages:['w2']},
-    {mod:'w3', n:3, name:T('Séance 3 · Classer, se tromper, être biaisé','Session 3 · Classifying, erring, being biased'),     pages:['w3']},
-    {mod:'w4', n:4, name:T('Séance 4 · Réseaux de neurones','Session 4 · Neural networks'),                  pages:['w4']},
-    {mod:'w5', n:5, name:T('Séance 5 · IA générative I — le langage','Session 5 · Generative AI I — language'),         pages:['w5']},
-    {mod:'w6', n:6, name:T('Séance 6 · IA générative II — images, agents','Session 6 · Generative AI II — images, agents'),    pages:['w6']},
-    {mod:'w7', n:7, name:T('Séance 7 · L’IA dans les métiers','Session 7 · AI in the professions'),                pages:['w7']},
-    {mod:'w8', n:8, name:T('Séance 8 · Éthique, droit et société','Session 8 · Ethics, law and society'),            pages:['w8']},
-    {mod:'w9', n:9, name:T('Séance 9 · Mettre l’IA en œuvre','Session 9 · Putting AI to work'),                 pages:['w9']},
-    {mod:'w10',n:10,name:T('Séance 10 · Présentations et révision','Session 10 · Presentations and revision'),           pages:['w10']}
+    {mod:'w1', n:1, name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                 pages:['w1']},
+    {mod:'w2', n:2, name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),          pages:['w2']},
+    {mod:'w3', n:3, name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),     pages:['w3']},
+    {mod:'w4', n:4, name:T('Séance 4 · Excel et Word avec l’IA — finance','Session 4 · Excel and Word with AI — finance'),                  pages:['w4']},
+    {mod:'w5', n:5, name:T('Séance 5 · L’IA au travail — marketing, finance, RH','Session 5 · AI at work — marketing, finance, HR'),         pages:['w5']},
+    {mod:'w6', n:6, name:T('Séance 6 · Programmer sans être programmeur','Session 6 · Programming without being a programmer'),    pages:['w6']},
+    {mod:'w7', n:7, name:T('Séance 7 · Protection des données et IA','Session 7 · Data protection and AI'),                pages:['w7']},
+    {mod:'w8', n:8, name:T('Séance 8 · Agents et assistants','Session 8 · Agents and assistants'),            pages:['w8']},
+    {mod:'w9', n:9, name:T('Séance 9 · Employable — les compétences IA, et l’avenir','Session 9 · Employable — AI skills, and the future'),                 pages:['w9']},
+    {mod:'w10',n:10,name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),           pages:['w10']}
   ];
   function allWeeks(){ return SESSIONS.slice(); }
 
