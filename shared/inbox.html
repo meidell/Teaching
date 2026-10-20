@@ -143,7 +143,7 @@ border:1px dashed var(--line);border-radius:14px;}
   <div class="sum">
     <div class="big" id="big">Inbox</div>
     <div class="meta loading" id="meta">Reading every course</div>
-    <button class="btn ghost sm" id="bAll" style="display:none" title="Mark every new message, in every course, as read on this device">Mark all as read</button>
+    <button class="btn ghost sm" id="bAll" style="display:none" title="Hide every waiting message, in every course, on this device — until a newer one arrives">Mark all as handled</button>
   </div>
 
   <div id="fresh"></div>
@@ -188,8 +188,8 @@ function needSignIn(){
   }
 }
 
-/* ---- the read marks chat.html keeps, so the two pages agree ---- */
-function readKey(ns,tid){return 'jem_chat_read_'+ns+'_'+tid;}
+/* ---- "handled" marks: per device, this page's own; reading a thread in chat.html does NOT set one ---- */
+function readKey(ns,tid){return 'jem_inbox_handled_'+ns+'_'+tid;}
 function lastRead(ns,tid){var v=0;try{v=parseInt(localStorage.getItem(readKey(ns,tid))||'0',10)||0;}catch(e){}return v;}
 function markRead(ns,tid,ts){try{localStorage.setItem(readKey(ns,tid),String(ts||Date.now()));}catch(e){}}
 
@@ -209,8 +209,8 @@ function analyse(ns,chat){
     if(!list.length)return;
     var last=list[list.length-1], mine=0;
     list.forEach(function(m){ if(m.by==='i'&&(m.ts||0)>mine)mine=m.ts||0; });
-    var rcpt=(t.rcpt&&t.rcpt.i&&t.rcpt.i.r)||0;
-    var seen=Math.max(lastRead(ns,tid),rcpt,mine);
+    /* answered = your own later message, or handled here; a read receipt is NOT an answer */
+    var seen=Math.max(lastRead(ns,tid),mine);
     var fresh=list.filter(function(m){return m.by==='s'&&(m.ts||0)>seen;});
     var kind=tid==='all'?'all':tid.indexOf('dm-')===0?'dm':(meta.kind||'group');
     var title=meta.title||(kind==='dm'?nameOf(tid.slice(3)):kind==='all'?'Everyone':tid.replace(/^g-/,''));
@@ -272,12 +272,12 @@ function render(){
   quiet.sort(function(a,b){return b.data.newest-a.data.newest;});
 
   /* the one line that answers the question */
-  if(total){ $('big').innerHTML='<b>'+total+' new</b> message'+(total===1?'':'s')+' in '+courses+' course'+(courses===1?'':'s');
+  if(total){ $('big').innerHTML='<b>'+total+' message'+(total===1?'':'s')+'</b> waiting for an answer in '+courses+' course'+(courses===1?'':'s');
              document.title='('+total+') Inbox · all courses'; }
-  else if(COURSES.length&&Object.keys(STATE).length){ $('big').textContent='Nothing waiting'; document.title='Inbox · all courses'; }
+  else if(COURSES.length&&Object.keys(STATE).length){ $('big').textContent='Nothing waiting for an answer'; document.title='Inbox · all courses'; }
   $('meta').className='meta';
   var when=0; COURSES.forEach(function(c){var s=STATE[c.id];if(s&&s.at>when)when=s.at;});
-  $('meta').textContent=(when?(whenAgo(when)==='now'?'Read just now':'Read '+whenAgo(when)+' ago')+' · ':'')+COURSES.length+' courses with messages · re-reads every 30 s while open'+
+  $('meta').textContent=(when?(whenAgo(when)==='now'?'Read just now':'Read '+whenAgo(when)+' ago')+' · ':'')+COURSES.length+' courses · a thread waits until you reply in it, or mark it handled here · re-reads every 30 s while open'+
     (broken.length?' · '+broken.length+' could not be read':'');
   $('bAll').style.display=total?'':'none';
 
@@ -288,21 +288,21 @@ function render(){
       return '<a class="row" href="'+chatHref(c,t.tid)+'">'+
         '<div class="r1"><span class="nm">'+esc(t.title)+'</span>'+
         (kindLabel(t.kind)?'<span class="kind">'+kindLabel(t.kind)+'</span>':'')+
-        (t.n>1?'<span class="n">'+t.n+' new</span>':'')+
+        (t.n>1?'<span class="n">'+t.n+' unanswered</span>':'')+
         '<span class="ago">'+esc(whenAgo(t.ts))+'</span></div>'+
         '<div class="pv">'+previewOf(m,t.kind)+'</div></a>';
     }).join('');
     return '<div class="card fresh">'+
       '<div class="chd"><span class="code">'+esc(c.code||c.id)+'</span>'+
       '<span class="ttl">'+esc(c.title)+'<small>'+esc(c.school||'')+'</small></span>'+
-      '<span class="pill new">'+d.total+' new</span>'+
+      '<span class="pill new">'+d.total+' waiting</span>'+
       '<span class="acts"><a class="btn sm" href="chat.html?course='+encodeURIComponent(c.id)+'">Open</a>'+
-      '<button class="btn ghost sm" data-read="'+esc(c.id)+'" type="button">Mark as read</button></span></div>'+
+      '<button class="btn ghost sm" data-read="'+esc(c.id)+'" type="button" title="Answered elsewhere, or no reply needed — hides them on this device until a newer message arrives">Mark as handled</button></span></div>'+
       '<div class="rows">'+rows+'</div></div>';
   }).join('');
 
   if(!fresh.length&&!broken.length&&quiet.length){
-    $('fresh').innerHTML='<div class="empty"><b>Nothing new.</b> Every student message in every course has been read or answered.</div>';
+    $('fresh').innerHTML='<div class="empty"><b>Nothing waiting.</b> In every course, the last word in every thread is yours.</div>';
   }
 
   $('quietHd').style.display=quiet.length?'':'none';
