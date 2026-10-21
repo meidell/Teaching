@@ -141,6 +141,16 @@ Five things worth knowing before editing any of them:
   a one-column grid gets a histogram instead of a tally. Nothing is a key —
   the scores are the students' judgements. Any course can use it by
   writing the same shape; a partial column is left out of the means.
+- **The Activity tab (21 Oct 2026) counts what students actually did on a
+  page.** Jan Erik: "I need to see if students actually do this session,
+  e.g. if they fill in the grid." A page writes each widget step once to
+  `<sid>/mod/<m>/steps/<key> = {t:label, ts}` (gen110's séance 3 was the
+  first: `STEP_T` labels, `pushStep()` on a new step, `syncSteps()` at
+  boot for steps done before sign-in); `renderActivity()` offers the tab
+  when any record exists and draws, per module, a tally per step (how
+  many of the cohort) and a student × step matrix with the last time and
+  the students who have nothing. No map in the dashboard — the label
+  travels with the record, in English. Any course can write the shape.
 - **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. The old `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. `applyTheme()` maps the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `theme.js` | light / dark, one switch per device. **Loaded in `<head>`, not deferred** — it sets `data-theme` before first paint, or the page flashes white. Opt-in, one `<script>` per page; only `HEG/statistics` uses it today |
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
@@ -1539,9 +1549,17 @@ define their project and who participates."* Everything below follows from it.
   ElevenLabs); 3.2 a **live spectrogram** (Web Audio `AnalyserNode`, step
   after 3 s) and a **word-error-rate counter** (four kinds of wrong word,
   writes `w3_transcript`); 3.3 an **image-prompt builder** (`lintImg`, six
-  parts) with an aspect-ratio preview, an **SVG defect hunt** (five
-  hotspots: garbled sign, six fingers, shadow toward the sun, O for zero,
-  bag logo ≠ sign; misses counted), a **denoising canvas** (pixel mix from
+  parts) with an aspect-ratio preview, an **image checker** (the
+  student's own 1–3 images, read with `FileReader` and never uploaded,
+  inside the chosen format with the app's chrome as a grey veil, four
+  dominant colours per image by canvas quantisation, and a verdict on
+  whether the palettes make one campaign) plus a publish / fix in Canva /
+  regenerate / never classify on the 2026 flaws — invented details, a
+  place from nowhere, a face that changes between images, borrowed
+  logos, the wrong format. ⚠ It **replaced a "find the five flaws"
+  poster** (six fingers, garbled sign…) on 21 Oct 2026: Jan Erik,
+  "gemini and canva no longer do these errors". Don't teach 2023's
+  defects. A **denoising canvas** (pixel mix from
   noise to the picture over 50 eased steps) and the grid with `CRIT_IMG`
   (Gemini · Ideogram · Canva); 3.4 a **20-second storyboard** (shots ×
   source / text ≤ 6 words / voice line / duration, the timeline must sum
@@ -1552,13 +1570,15 @@ define their project and who participates."* Everything below follows from it.
   (~10k credits/month, non-commercial), Gemini (audio upload ≤ 10 min;
   image generation), Ideogram (≈ 10 slow credits/week, **images public**),
   Canva Magic Media, CapCut (1080p + auto-captions free). Denominator
-  `EXTRA_STEPS (19) + .cl-row (26) + .q (8) + [data-work] (8) = 61`;
+  `EXTRA_STEPS (19) + .cl-row (32) + .q (8) + [data-work] (8) = 67`;
   `total:8`. Quiz on `_release/w3/quiz`, positions `1 3 0 2 3 1 0 2`. Eight
   `w3_*` carnet fields in `courses.json → project`. `presence.js`'s
   `SESSIONS` names were refreshed to the rebuilt titles the same day (they
   still said "Classer, se tromper, être biaisé" from the 4 Oct build).
-  Probed headlessly in both editions: every widget to its step, 8/8
-  sections, the quiz refusing clicks while locked.
+  Every `EXTRA_STEP` is also written to `<sid>/mod/w3/steps/<key>` for
+  the dashboard's **Activity** tab (§3). Probed headlessly in both
+  editions: every widget to its step, 8/8 sections, the quiz refusing
+  clicks while locked.
 - **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
   keep the engine, change the sections), add it to `PAGES` in `build.py`,
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the

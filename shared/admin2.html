@@ -234,6 +234,16 @@ a.btn{text-decoration:none;display:inline-block;}
 .sec .bar i{display:block;height:100%;background:var(--good);}
 /* Comparisons tab — a scoring grid tallied across the class */
 .gcard{margin-bottom:14px;}
+/* the Activity tab: a student × step matrix per module */
+table.amx{border-collapse:collapse;font-size:12px;margin-top:10px;}
+table.amx th,table.amx td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:center;white-space:nowrap;}
+table.amx th{font-weight:700;color:var(--muted);font-size:11px;}
+table.amx td:first-child,table.amx th:first-child{text-align:left;position:sticky;left:0;background:var(--card);}
+table.amx td.y{color:var(--accent);font-weight:800;} table.amx td.n{color:var(--faint);}
+table.amx td.tot{font-weight:800;}
+.amx-wrap{overflow-x:auto;}
+.alegend{columns:2;font-size:12px;color:var(--muted);margin:8px 0 0;padding-left:18px;} .alegend li{break-inside:avoid;margin:1px 0;}
+@media(max-width:700px){.alegend{columns:1;}}
 .gtally{display:grid;grid-template-columns:max-content 1fr max-content;gap:6px 10px;align-items:center;margin:8px 0 4px;font-size:13px;}
 .gtally .bar{height:12px;border-radius:6px;background:var(--wash);overflow:hidden;}
 .gtally .bar i{display:block;height:100%;background:var(--accent);}
@@ -489,6 +499,7 @@ table.roster th.r,table.roster td.r{text-align:right;}
   <div class="pane" data-pane="solutions"><div class="card" id="solCard"></div></div>
   <div class="pane" data-pane="subs"><div class="card" id="subsCard"></div></div>
   <div class="pane" data-pane="grids"><div id="gridsCard"></div></div>
+  <div class="pane" data-pane="activity"><div id="activityCard"></div></div>
 
   <!-- ======================= LEVEL 3 ======================= -->
   <div class="pane" data-pane="roster">
@@ -1823,6 +1834,60 @@ async function dlFromDB(btn){
    of a winners' tally. Nothing here is a key: the scores are the
    students' judgements. */
 var GRIDS_N=0;
+/* ---------- the Activity tab ---------------------------------------
+   A page that wants its widget use counted writes
+   <sid>/mod/<m>/steps/<key> = {t:label, ts} once per step (gen110's
+   séance 3 was the first, 21 Oct 2026: recorder used, grid filled,
+   storyboard valid…). This tab needs no map: it reads the label from
+   the records and draws, per module, how many did each step and a
+   student × step matrix. Any course can write the same shape. */
+var ACT_N=0;
+function stepRecords(){
+  var out={};   /* mod -> {steps:{key:{t,sids:{}}}, students:{sid:{name,keys:{},n,last}}} */
+  ROWS.forEach(function(r){
+    var mods=r.mod||{};
+    Object.keys(mods).forEach(function(m){
+      var st=mods[m]&&mods[m].steps; if(!st||typeof st!=='object')return;
+      if(!out[m])out[m]={steps:{},students:{}};
+      var me=out[m].students[r.sid]={name:r.name,keys:{},n:0,last:0};
+      Object.keys(st).forEach(function(k){
+        var rec=st[k]; if(!rec)return;
+        var t=(rec&&rec.t)||k;
+        if(!out[m].steps[k])out[m].steps[k]={t:t,sids:{}};
+        out[m].steps[k].sids[r.sid]=1; me.keys[k]=1; me.n++;
+        if(rec.ts>me.last)me.last=rec.ts;
+      });
+    });
+  });
+  return out;
+}
+function renderActivity(){
+  var box=$('activityCard'); if(!box)return;
+  var A=stepRecords(), mods=Object.keys(A);
+  ACT_N=0; mods.forEach(function(m){ACT_N+=Object.keys(A[m].students).length;});
+  if(!mods.length){box.innerHTML='';return;}
+  var modLabel={}; MODULES.forEach(function(x){modLabel[x.id]=x.label||x.id;});
+  var N=ROWS.length;
+  box.innerHTML=mods.sort().map(function(m){
+    var M=A[m], keys=Object.keys(M.steps).sort(function(a,b){return M.steps[a].t.localeCompare(M.steps[b].t);});
+    var studs=Object.keys(M.students).map(function(sid){return {sid:sid,s:M.students[sid]};}).sort(function(a,b){return b.s.n-a.s.n||String(a.s.name).localeCompare(String(b.s.name));});
+    var h='<div class="card gcard"><h3>'+esc(modLabel[m]||m)+' · what they actually did</h3>'+
+      '<div class="sub">'+studs.length+' of '+N+' student'+(N===1?'':'s')+' did at least one step on the page · '+keys.length+' steps counted · a step is written the first time it is done, on any device the student is signed in on</div>';
+    /* per step: how many */
+    h+='<div class="gtally">'+keys.map(function(k){var c=Object.keys(M.steps[k].sids).length,p=N?Math.round(c/N*100):0;
+      return '<span>'+esc(M.steps[k].t)+'</span><span class="bar"><i style="width:'+p+'%"></i></span><span><b>'+c+'</b> / '+N+'</span>';}).join('')+'</div>';
+    /* student × step */
+    h+='<div class="amx-wrap"><table class="amx"><thead><tr><th>Student</th>'+keys.map(function(k,i){return '<th title="'+esc(M.steps[k].t)+'">'+(i+1)+'</th>';}).join('')+'<th>Steps</th><th>Last</th></tr></thead><tbody>';
+    studs.forEach(function(x){
+      h+='<tr><td>'+esc(x.s.name)+'</td>'+keys.map(function(k){return x.s.keys[k]?'<td class="y">✓</td>':'<td class="n">·</td>';}).join('')+'<td class="tot">'+x.s.n+'/'+keys.length+'</td><td>'+(x.s.last?ago(x.s.last):'')+'</td></tr>';
+    });
+    /* students with nothing at all on this module */
+    var missing=ROWS.filter(function(r){return !M.students[r.sid];});
+    if(missing.length)h+='<tr><td colspan="'+(keys.length+3)+'" style="text-align:left;color:var(--muted);">Nothing yet: '+missing.map(function(r){return esc(r.name);}).join(', ')+'</td></tr>';
+    h+='</tbody></table></div><ol class="alegend">'+keys.map(function(k){return '<li>'+esc(M.steps[k].t)+'</li>';}).join('')+'</ol></div>';
+    return h;
+  }).join('');
+}
 function normAsst(s){
   s=String(s||'').trim(); var l=s.toLowerCase().replace(/[^a-z0-9]/g,'');
   if(/chatgpt|gpt|openai/.test(l))return 'ChatGPT';
@@ -1954,7 +2019,8 @@ var TABS=[
   {id:'presence', label:'Presence',   show:function(){return hasPresence();}, n:function(){return PRES_N;}},
   {id:'solutions',label:'Solutions',  show:function(){return hasReleases();},  n:function(){return SOL_N;}},
   {id:'subs',     label:'Handed in',  show:function(){return SUBS_N>0;},       n:function(){return SUBS_N;}},
-  {id:'grids',    label:'Comparisons',show:function(){return GRIDS_N>0;},      n:function(){return GRIDS_N;}}
+  {id:'grids',    label:'Comparisons',show:function(){return GRIDS_N>0;},      n:function(){return GRIDS_N;}},
+  {id:'activity', label:'Activity',   show:function(){return ACT_N>0;},        n:function(){return ACT_N;}}
 ];
 var TAB=null;
 try{TAB=localStorage.getItem('jem_admin2_tab');}catch(e){}
@@ -1991,12 +2057,12 @@ function renderAll(){
     $('kpis').innerHTML=tile('Cohort',0,'nobody yet');
     $('acts').innerHTML='<li class="clear">No students have identified themselves yet.</li>';
     $('empty').style.display='block';
-    GRIDS_N=0;renderSolutions();renderTabs();
+    GRIDS_N=0;ACT_N=0;renderSolutions();renderTabs();
     return;
   }
   renderKpis();renderActs();renderPulse();renderDist();renderFunnel();
   renderSections();renderQuiz();renderReader();renderRoster();
-  renderPresence();renderSubs();renderGrids();renderSolutions();renderTabs();
+  renderPresence();renderSubs();renderGrids();renderActivity();renderSolutions();renderTabs();
   /* a half-width card with nothing beside it should take the whole row */
   $('row2').classList.toggle('solo',$('secCard').style.display==='none');
   $('row3').classList.toggle('solo',$('readerCard').style.display==='none'||$('quizCard').style.display==='none');
