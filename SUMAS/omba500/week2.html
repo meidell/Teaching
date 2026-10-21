@@ -91,7 +91,7 @@
   <div class="widget"><div class="wt">The one calculation you will do fifty times</div>
     <div class="row">
       <div><label>Capacity (GW)</label><input type="number" id="uGw" value="1" step="0.1" min="0"></div>
-      <div><label>Capacity factor (%)</label><input type="number" id="uCf" value="50" step="1" min="0" max="100"></div>
+      <div><label>Capacity factor (%)</label><input type="number" id="uCf" value="50" step="any" min="0" max="100"></div>
       <div><label>Hours in a year</label><input type="number" id="uH" value="8760" readonly></div>
     </div>
     <div class="out" id="uOut"></div>
@@ -103,6 +103,15 @@
   <span class="kicker">Core concepts · 2</span>
   <h2>Capacity factor — the critical metric</h2>
   <p class="lead">Capacity factor = actual energy produced ÷ maximum possible energy. Why it matters: <b>1 GW of wind ≠ 1 GW of coal or nuclear.</b></p>
+  <div class="widget"><div class="wt">Compute a capacity factor · actual ÷ maximum</div>
+    <div class="row">
+      <div><label>Rated capacity (MW)</label><input type="number" id="cfMw" value="1000" step="any" min="0"></div>
+      <div><label>Energy actually produced in the year (GWh)</label><input type="number" id="cfGwh" value="4000" step="any" min="0"></div>
+      <div><label>Hours in a year</label><input type="number" value="8760" readonly></div>
+    </div>
+    <div class="out" id="cfOut"></div>
+    <p class="note">Maximum possible energy = capacity × 8,760 h, as if the turbines ran flat out every hour of the year. A farm's actual output is in its owner's annual report or on the grid operator's site; divide, and you have the number the whole course turns on. Try a real one: a farm's rated MW and its published GWh for 2024.</p>
+  </div>
   <div class="widget"><div class="wt">Typical capacity factors</div>
     <div class="bars">
       <div class="bar"><span>Offshore wind</span><span class="tr"><span class="fl" style="display:block;width:48%"></span></span><span class="v">45–50%</span></div>
@@ -112,7 +121,7 @@
       <div class="bar"><span>Coal / gas</span><span class="tr"><span class="fl alt" style="display:block;width:60%"></span></span><span class="v">50–70%</span></div>
     </div>
     <p class="note">Good offshore sites hit 55–60%. Coal and gas can run higher; they are limited by demand and economics, not by the weather.</p>
-    <div class="row" style="margin-top:10px"><div><label>Replace this much nuclear (GW)</label><input type="number" id="rNuc" value="10" step="1"></div><div><label>Nuclear CF (%)</label><input type="number" id="rNcf" value="90"></div><div><label>Offshore wind CF (%)</label><input type="number" id="rWcf" value="47.5"></div></div>
+    <div class="row" style="margin-top:10px"><div><label>Replace this much nuclear (GW)</label><input type="number" id="rNuc" value="10" step="any"></div><div><label>Nuclear CF (%)</label><input type="number" id="rNcf" value="90" step="any"></div><div><label>Offshore wind CF (%)</label><input type="number" id="rWcf" value="47.5" step="any"></div></div>
     <div class="out" id="rOut"></div>
   </div>
   <p><b>What this means for your analysis:</b> to replace 10 GW of nuclear with wind you need roughly 18–20 GW of wind capacity. Offshore beats onshore because its capacity factor is higher — which is exactly why Ørsted's pure-offshore strategy and TotalEnergies' mixed portfolio are different bets, not just different sizes.</p>
@@ -299,16 +308,26 @@ CAP.recall([
   {q:'"Deployment → grid congestion → curtailment → lower revenues → slower investment" is a:',opts:['Reinforcing loop','Balancing loop','Trend','Doughnut'],a:1,why:'It pushes back against growth — the constraint loop from Week 1\'s systems section.'}
 ]);
 
+/* a capacity factor typed as 0.5 is read as 50 % — a student entering the
+   fraction used to get 0.04 TWh with no explanation (21 Oct 2026) */
+function pct(el){var v=+el.value||0;return (v>0&&v<=1)?{f:v,note:' (read '+el.value+' as '+(v*100).toFixed(1).replace(/\.0$/,'')+' %)'}:{f:v/100,note:''};}
+/* capacity factor from actual output */
+(function(){
+  var m=document.getElementById('cfMw'),e=document.getElementById('cfGwh'),o=document.getElementById('cfOut');if(!m)return;
+  function f(){var mw=+m.value||0,gwh=+e.value||0,max=mw*8760/1000,cf=max?gwh/max:0;
+    o.innerHTML=max?'<span class="big">'+CAP.fmt(cf*100,1)+' %</span> capacity factor &nbsp;= '+CAP.fmt(gwh,0)+' GWh ÷ '+CAP.fmt(max,0)+' GWh. <br><span class="note">Maximum = '+CAP.fmt(mw,0)+' MW × 8,760 h = '+CAP.fmt(mw*8760,0)+' MWh = '+CAP.fmt(max,0)+' GWh.'+(cf>1?' <b>Above 100 %: the output cannot exceed the maximum — check the units (GWh, not MWh) or the capacity.</b>':cf>0.65?' Very high for wind — check the units, or it is not a wind farm.':'')+'</span>':'Enter a capacity.';}
+  m.addEventListener('input',f);e.addEventListener('input',f);f();
+})();
 /* unit converter */
 (function(){
   var g=document.getElementById('uGw'),c=document.getElementById('uCf'),o=document.getElementById('uOut');
-  function f(){var gw=+g.value||0,cf=(+c.value||0)/100,gwh=gw*cf*8760;o.innerHTML='<span class="big">'+CAP.fmt(gwh/1000,2)+' TWh</span> per year &nbsp;= '+CAP.fmt(gwh,0)+' GWh = '+CAP.fmt(gwh*1000,0)+' MWh. <br><span class="note">'+gw+' GW × '+CAP.fmt(cf,2)+' × 8,760 h. Enough for roughly '+CAP.fmt(gwh*1000/3.5,0)+' European households at 3.5 MWh each.</span>';}
+  function f(){var gw=+g.value||0,P=pct(c),cf=P.f,gwh=gw*cf*8760;o.innerHTML='<span class="big">'+CAP.fmt(gwh/1000,2)+' TWh</span> per year &nbsp;= '+CAP.fmt(gwh,0)+' GWh = '+CAP.fmt(gwh*1000,0)+' MWh. <br><span class="note">'+gw+' GW × '+CAP.fmt(cf,2)+' × 8,760 h'+P.note+'. Enough for roughly '+CAP.fmt(gwh*1000/3.5,0)+' European households at 3.5 MWh each.</span>';}
   g.addEventListener('input',f);c.addEventListener('input',f);f();
 })();
 /* nuclear replacement */
 (function(){
   var n=document.getElementById('rNuc'),a=document.getElementById('rNcf'),w=document.getElementById('rWcf'),o=document.getElementById('rOut');
-  function f(){var need=(+n.value||0)*(+a.value||0)/((+w.value)||1);o.innerHTML='<span class="big">'+CAP.fmt(need,1)+' GW</span> of offshore wind produces the same annual energy as '+n.value+' GW of nuclear — '+CAP.fmt((+n.value)*(+a.value)/100*8.76,1)+' TWh a year. <span class="note">Same energy, not the same power at 7 pm on a windless January evening: that is the storage and grid question for Week 5.</span>';}
+  function f(){var A=pct(a),W=pct(w),need=(+n.value||0)*A.f/(W.f||1);o.innerHTML='<span class="big">'+CAP.fmt(need,1)+' GW</span> of offshore wind at '+CAP.fmt(W.f*100,1)+' % produces the same annual energy as '+n.value+' GW of nuclear at '+CAP.fmt(A.f*100,1)+' % — '+CAP.fmt((+n.value||0)*A.f*8.76,1)+' TWh a year'+A.note+W.note+'. <span class="note">Same energy, not the same power at 7 pm on a windless January evening: that is the storage and grid question for Week 5.</span>';}
   [n,a,w].forEach(function(x){x.addEventListener('input',f);});f();
 })();
 /* LCOE ranges */
