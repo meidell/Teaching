@@ -926,7 +926,11 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   team write is refused (the pages say so; nothing is swallowed).
 - ⚠ **Eight students, TWO TEAMS OF FOUR, ONE REPORT PER TEAM.** Declared in
   `schedule.js → TEAMS / TEAM_SIZE` and mirrored as `teams` in
-  `courses.json`. Teams form on `week1.html#team` (the picker refuses a
+  `courses.json`. **Team 1 may hold FIVE** since 21 Oct 2026 (Jan Erik: a
+  ninth student, Tatiana): `schedule.js → TEAM_CAP = {t1:5}` and `S.cap(id)`,
+  which the Week 1 picker reads instead of `TEAM_SIZE`. She was not in
+  `_chat/_people`, `_teams` or any forum when the seat was opened, so she
+  joins herself from `week1.html#team` once signed in. Teams form on `week1.html#team` (the picker refuses a
   fifth member, a student may move until the other team fills, may leave)
   and live at `<ns>/_teams/<t1|t2>/{name, members/<sid>{n,role,ts}}` —
   world-readable, names only; the hub paints both cards from it. The

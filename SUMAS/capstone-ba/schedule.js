@@ -46,6 +46,10 @@
      offshore-wind stakes — the same bet TotalEnergies represented. */
   var TEAMS = [ { id:'t1', label:'Team 1' }, { id:'t2', label:'Team 2' } ];
   var TEAM_SIZE = 4, CLASS_SIZE = 8;
+  /* a per-team exception to TEAM_SIZE (21 Oct 2026, Jan Erik: a fifth member
+     in Team 1 — Tatiana). The picker and the hub read cap(id), never TEAM_SIZE. */
+  var TEAM_CAP = { t1: 5 };
+  function cap(id){ return TEAM_CAP[id] || TEAM_SIZE; }
   var COMPANIES = {
     a: { name:'Ørsted', country:'Denmark', bet:'pure-play', d:'Transformed from an oil & gas company into the world\'s largest offshore wind developer. A pure-play bet on renewables.' },
     b: { name:'Eni', country:'Italy', bet:'hedged', d:'An integrated oil & gas major that has moved its renewables, retail and e-mobility into Plenitude, and holds minority stakes in offshore wind (Dogger Bank, Vårgrønn in Norway) rather than leading projects. A hedged transition strategy.' }
@@ -208,7 +212,7 @@
   WEEKS.forEach(function(w){ w.session=sessionOf(w.n); });
 
   var S = {
-    START:START, GRADES:GRADES, TEAMS:TEAMS, TEAM_SIZE:TEAM_SIZE, CLASS_SIZE:CLASS_SIZE, COMPANIES:COMPANIES, SESSION:SESSION, CANVAS:CANVAS, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
+    START:START, GRADES:GRADES, TEAMS:TEAMS, TEAM_SIZE:TEAM_SIZE, TEAM_CAP:TEAM_CAP, cap:cap, CLASS_SIZE:CLASS_SIZE, COMPANIES:COMPANIES, SESSION:SESSION, CANVAS:CANVAS, WEEKS:WEEKS, FORUMS:FORUMS, PHASES:PHASES, EXAM:EXAM,
     session:sessionOf,
     liveText: 'Wednesdays on Zoom — '+SESSION.group[0]+'–'+SESSION.group[1]+' the group hour, '+SESSION.cls[0]+'–'+SESSION.cls[1]+' with Jan Erik',
     week:function(n){ for(var i=0;i<WEEKS.length;i++)if(WEEKS[i].n===n)return WEEKS[i]; return null; },
