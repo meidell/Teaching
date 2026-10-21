@@ -1088,8 +1088,10 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   the Ørsted 2023 write-down is cited as a mechanism, not a figure.
 - **`glossary.html`** grows with the course; 7 Oct added *Team report ·
   Charter · Hand-in · Plenitude* and turned *Closed book* into *Open book*.
-- **Still on Moodle, deliberately**: the Zoom link and Week 2's two reading
-  PDFs — real artefacts that live there. Everything else on the site.
+- **Still on Moodle, deliberately**: the Zoom link. Week 2's two slide decks
+  are on the site since 21 Oct 2026 (`w2slides/`, copied from `wind`'s
+  `w2slides/` and `w1slides/`, linked as downloads from `week2.html` with a
+  note that their "TotalEnergies" reads Eni here). Everything else on the site.
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
   `capstone-ba` only if ported by hand, and vice versa.
 
