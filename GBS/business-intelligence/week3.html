@@ -111,6 +111,11 @@
     <p>A metric tree runs from the strategic priority at the top to inputs at the bottom that one person can move by Friday. Each level answers "what drives the level above?" ÒRBITA's example, for the retention priority, is drawn first; then build your team's tree for the sentence sealed last week.</p>
     <div class="tree" id="treeEx"></div>
     <div class="cap">
+      <label>Your team</label>
+      <div class="hint">The tree, the red-team verdict and the contract are your team's: what one member writes appears on every member's page. Not in a team yet? Join one here.</div>
+      <div id="teamsBox" class="teams"></div>
+    </div>
+    <div class="cap">
       <label for="f_tp">1 · The strategic priority the sealed decision serves</label>
       <input type="text" id="f_tp" data-work="w3_tree_priority" data-worklabel="W3 · tree · strategic priority" autocomplete="off" placeholder="e.g. Keep subscribers past month three">
     </div>
@@ -412,10 +417,11 @@ function paintGh(){
 /* ---- step 5 grid ---- */
 function buildGrid(gridId,capId,storeKey){
   var box=document.getElementById(gridId),cap=document.getElementById(capId);if(!box)return;var st=lsGet(storeKey,{});
+  if(window.BiTeams)BiTeams.state(storeKey,function(v){try{st=JSON.parse(v)||{};}catch(e){st={};}lsSet(storeKey,st);paint();});
   function paint(){var tot=0,n=0;
     box.innerHTML='<table><thead><tr><th>Question</th><th>0 · 1 · 2</th></tr></thead><tbody>'+RTQ.map(function(q,r){var v=st[r];if(v!=null){tot+=v;n++;}return '<tr><td class="cr"><b>'+q[0]+'</b><small>'+q[1]+'</small></td><td><button type="button" class="cell v'+(v==null?'':v)+'" data-r="'+r+'">'+(v==null?'–':v)+'</button></td></tr>';}).join('')+'<tr class="tot"><td>Total / 8</td><td>'+(n?tot:'–')+'</td></tr></tbody></table>';
     cap.textContent=n+' of 4 scored'+(n===4?(' — '+(tot>=7?'a definition that survives contact.':tot>=5?'one field short of a contract.':'a name, not a KPI.')):'. Click a cell to cycle 0 → 1 → 2.');
-    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){var r=b.dataset.r,v=st[r];st[r]=(v==null?0:(v+1)%3);lsSet(storeKey,st);paint();});});}
+    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){var r=b.dataset.r,v=st[r];st[r]=(v==null?0:(v+1)%3);lsSet(storeKey,st);paint();if(window.BiTeams)BiTeams.share(storeKey,JSON.stringify(st));});});}
   paint();
 }
 
@@ -430,7 +436,13 @@ function contractText(){var v=contractVals(),cols=['Outcome KPI','Driver KPI 1',
 function paintKTab(){
   var box=document.getElementById('kTab'),v=contractVals();
   box.innerHTML=ktabHTML(['Outcome KPI','Driver KPI 1','Driver KPI 2'],v,true);
-  box.querySelectorAll('textarea').forEach(function(t){t.addEventListener('input',function(){var vv=contractVals();if(!vv[+t.dataset.c])vv[+t.dataset.c]=[];vv[+t.dataset.c][+t.dataset.r]=t.value;lsSet('w3_k',vv);kNote();});});
+  box.querySelectorAll('textarea').forEach(function(t){
+    var tm=null,key='w3_k_'+t.dataset.c+'_'+t.dataset.r;t.setAttribute('maxlength','500');
+    function flush(){if(tm===null)return;clearTimeout(tm);tm=null;if(window.BiTeams)BiTeams.share(key,t.value);}
+    t.addEventListener('input',function(){var vv=contractVals();if(!vv[+t.dataset.c])vv[+t.dataset.c]=[];vv[+t.dataset.c][+t.dataset.r]=t.value;lsSet('w3_k',vv);kNote();clearTimeout(tm);tm=setTimeout(flush,900);});
+    t.addEventListener('blur',flush);
+    t._pending=function(){return tm!==null;};
+  });
   kNote();
 }
 function kCount(){var v=contractVals();return [0,1,2].map(function(j){var n=0;for(var r=0;r<8;r++)if(v[j]&&(v[j][r]||'').trim())n++;return n;});}
@@ -445,12 +457,28 @@ window.addEventListener('DOMContentLoaded',function(){
   paintMine();paintSw();paintProgress();
   document.getElementById('treeEx').innerHTML=TREE.map(function(l,i){return '<div class="tl l'+i+'"><span class="tk">'+l[0]+'</span><span class="tv">'+l[1]+'</span></div>';}).join('');
   document.getElementById('kEx').innerHTML='<div class="sh">ÒRBITA\'s example · the retention tree, as contracts</div>'+ktabHTML(['90-day retention','Rides in first 14 days','Time to first resolution'],KEX,false);
-  chips('pAttack',TEAMS.map(function(t){return {k:t,t:'Team '+t};}),'w3_attack');
+  chips('pAttack',TEAMS.map(function(t){return {k:t,t:'Team '+t};}),'w3_attack',function(o){if(window.BiTeams)BiTeams.share('w3_attack',o.k);});
   chips('pNext',NEXTS,'w3_nx',function(o){setWork('f_next',o.t);});
   buildGrid('rtGrid','rtCap','w3_rt');paintKTab();paintGh();paintTreeLint();
   if(ls('w3_nx_sealed')==='1'){lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Sealed ✓';}
   if(ls('w3_def_posted')==='1'){var db=document.getElementById('defBtn');db.disabled=true;db.textContent='On the wall ✓';}
-  var teamSel=document.createElement('input');teamSel.type='hidden';teamSel.id='f_teamsel';teamSel.value=ls('w2_dec_team')||((ls('work_w2_team')||'').split(' · ')[0]||'').replace('Team ','');document.body.appendChild(teamSel);
+  var teamSel=document.createElement('input');teamSel.type='hidden';teamSel.id='f_teamsel';teamSel.value=(window.BiTeams&&BiTeams.myTeam())||ls('w2_dec_team')||((ls('work_w2_team')||'').split(' · ')[0]||'').replace('Team ','');document.body.appendChild(teamSel);
+  /* TEAM answers (teams.js): the tree, the red team and the contract are filled once per team and
+     appear, with the step ticked, on every member's page. The definition machine and the prediction stay individual. */
+  if(window.BiTeams){
+    BiTeams.mount(document.getElementById('teamsBox'),{onChange:function(t){if(t)teamSel.value=t;}});
+    BiTeams.onLoad(function(){Array.prototype.forEach.call(document.getElementById('pAttack').children,function(b){if(b.dataset.k)b.textContent=BiTeams.label(b.dataset.k);});});
+    [['f_tp','w3_tp'],['f_to','w3_to'],['f_td','w3_td'],['f_ti','w3_ti'],['f_defence','w3_def_txt']].forEach(function(p){BiTeams.field(p[0],p[1]);});
+    BiTeams.state('w3_tree_done',function(v){if(v!=='1')return;paintTreeLint();document.getElementById('treeNote').textContent='Saved ✓ by your team';markDone('s3');});
+    BiTeams.state('w3_attack',function(v){if(!v)return;ls('w3_attack',v);Array.prototype.forEach.call(document.getElementById('pAttack').children,function(x){x.classList.toggle('on',x.dataset.k===v);});});
+    BiTeams.state('w3_rt_done',function(v){if(v!=='1')return;document.getElementById('rtNote').textContent='Handed in ✓ by your team — '+(val('f_defence').match(/^\[Team [A-E] · \d\/8\]/)||[''])[0];markDone('s5');});
+    for(var kc=0;kc<3;kc++)for(var kr=0;kr<8;kr++)(function(c,r){
+      function cell(){return document.querySelector('#kTab textarea[data-c="'+c+'"][data-r="'+r+'"]');}
+      BiTeams.state('w3_k_'+c+'_'+r,function(v){var vv=contractVals();if(!vv[c])vv[c]=[];vv[c][r]=v;lsSet('w3_k',vv);var t=cell();if(t)t.value=v;kNote();},
+        function(){var t=cell();return !!t&&(document.activeElement===t||(t._pending&&t._pending()));});
+    })(kc,kr);
+    BiTeams.state('w3_k_done',function(v){if(v!=='1')return;setWork('f_contract',contractText());document.getElementById('kMsg').textContent='Saved ✓ by your team';markDone('s6');});
+  }
 
   document.getElementById('kWallBtn').addEventListener('click',loadKWall);
   document.getElementById('openBtn').addEventListener('click',function(){if(!val('f_gap')){alert('One line on the definition choice.');return;}document.getElementById('openReveal').style.display='block';markDone('s1');});
@@ -470,7 +498,7 @@ window.addEventListener('DOMContentLoaded',function(){
     var n=paintTreeLint();
     if(!val('f_tp')||!val('f_to')||!val('f_td')||!val('f_ti')){alert('All four levels.');return;}
     if(n<4&&!confirm('The tree check gives '+n+' / 5. Save anyway?'))return;
-    document.getElementById('treeNote').textContent='Saved ✓';markDone('s3');
+    document.getElementById('treeNote').textContent='Saved ✓';markDone('s3');if(window.BiTeams)BiTeams.share('w3_tree_done','1');
   });
 
   buildClassify('llRows','llCap',LL,LLR,'two leading, two lagging, two that look busy. A tree needs the first two kinds and none of the third.','s4');
@@ -485,12 +513,13 @@ window.addEventListener('DOMContentLoaded',function(){
     var tot=0;for(var r in st)tot+=st[r];
     var t=document.getElementById('f_defence');t.value='[Team '+ls('w3_attack')+' · '+tot+'/8] '+t.value.replace(/^\[Team [A-E] · \d\/8\]\s*/,'');t.dispatchEvent(new Event('input',{bubbles:true}));
     document.getElementById('rtNote').textContent='Handed in ✓ — Team '+ls('w3_attack')+' scores '+tot+'/8.';markDone('s5');
+    if(window.BiTeams){BiTeams.share('w3_def_txt',val('f_defence'));BiTeams.share('w3_rt_done','1');}
   });
 
   document.getElementById('kBtn').addEventListener('click',function(){
     var c=kCount();
     if(c[0]<8||(c[1]<8&&c[2]<8)){alert('The outcome column and at least one driver column, all eight fields.');return;}
-    setWork('f_contract',contractText());document.getElementById('kMsg').textContent='Saved ✓';markDone('s6');
+    setWork('f_contract',contractText());document.getElementById('kMsg').textContent='Saved ✓';markDone('s6');if(window.BiTeams)BiTeams.share('w3_k_done','1');
   });
   document.getElementById('kCopy').addEventListener('click',function(){var t=contractText(),m=document.getElementById('kMsg');function ok(){m.textContent='✓ Copied.';}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,function(){m.textContent='Select the text and copy it.';});else m.textContent='Select the text and copy it.';});
 
@@ -533,6 +562,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
 
 <script src="courseprogress.js"></script>
 <script src="wall.js"></script>
+<script src="teams.js"></script>
 <script src="/shared/config.js"></script>
 <script src="/shared/login.js" defer></script>
 <script src="/shared/progress.js" defer></script>

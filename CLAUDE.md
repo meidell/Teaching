@@ -1276,6 +1276,22 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   block, no `workbook` feature — same as creator/escwa.
 - The hub's `TERM` carries `href` for `w2` and `w3`; `courseprogress.js`
   has them `live:true`; `courses.json → modules` lists both.
+- ⚠ **Teams and TEAM ANSWERS — `teams.js` (22 Oct 2026).** Five teams A–E
+  (the ids every page uses). Students join, move or leave on a team board
+  (hub `#teams`, Session 1 Step 3, Session 2 Step 3); any member renames
+  the team. A **team field** is shared: one member writes, every member's
+  page fills in that field (so progress.js saves it to each member's own
+  node) and ticks the step. Shared: S1 the decision + maker + cadence +
+  "what they would decide differently" + sealed state (s3), the one number,
+  the red-team target, grid and verdict (s5); S2 the tree (s3), the red
+  team (s5), the contract cell by cell (s6). Individual on purpose: the
+  predictions, the churn guess, the dashboard reading, the definition
+  machine. **No rules change**: it all lives on the wall —
+  `_wall/teams` (J:<team>), `_wall/tn_<T>` (names),
+  `_wall/tt_<T>_<key>` (answers, ≤ 500 chars, newest row wins); one GET of
+  `_wall` every 8 s. Tamperable by design, like every wall. A new session
+  page with a team artifact calls `BiTeams.field(id,key)` /
+  `BiTeams.state(key,apply)` and `BiTeams.share()` on its hand-in button.
 
 ### GBS · Finance Modelling — `GBS/financial-modelling/`
 

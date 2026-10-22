@@ -108,11 +108,14 @@
     <h2>Teams, roles, and the sealed sentence</h2>
     <p>Teams of three or four, for the term. Roles rotate every session. <b>Analyst</b> drives the tool and keeps the team on the question. <b>Skeptic</b> must argue against the team's own conclusion before it leaves the table, out loud, every session. <b>Scribe</b> produces the artifact and the assumptions log; what the Scribe does not write down did not happen.</p>
     <div class="cap">
-      <label>Your team and your role, for today</label>
+      <label>Your team, for the term</label>
+      <div class="hint">Join a team below; the members appear as they join. Anyone in a team can rename it. You can move to another team or leave.</div>
+      <div id="teamsBox" class="teams"></div>
+      <label style="margin-top:14px;">Your role, for today</label>
       <div class="row">
-        <select id="f_teamsel"><option value="">Team…</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
         <select id="f_rolesel"><option value="">Role…</option><option>Analyst</option><option>Skeptic</option><option>Scribe</option></select>
-        <input type="text" id="f_mates" placeholder="your team-mates" autocomplete="off">
+        <select id="f_teamsel" hidden><option value="">Team…</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+        <input type="hidden" id="f_mates">
       </div>
       <input type="hidden" id="f_team" data-work="w2_team" data-worklabel="W2 · team and role">
     </div>
@@ -459,17 +462,19 @@ function loadDecWall(){
     if(!res.ok){box.innerHTML='<div class="wh">The sealed sentences <span class="st">unavailable</span></div><div class="empty">'+wallFail(res)+'</div>';return;}
     var byT={};res.rows.forEach(function(r){var m=/^T:([A-E])\|([\s\S]*)$/.exec(r.src||'');if(!m)return;byT[m[1]]=m[2];});
     var ks=Object.keys(byT).sort();
-    box.innerHTML='<div class="wh">The sealed sentences <span class="st">'+ks.length+' teams</span></div>'+(ks.length?'<table><tr><th>Team</th><th>The decision</th></tr>'+ks.map(function(t){return '<tr><td class="dom">'+t+'</td><td>'+esc(byT[t])+'</td></tr>';}).join('')+'</table>':'<div class="empty">No sentence sealed yet.</div>');
+    box.innerHTML='<div class="wh">The sealed sentences <span class="st">'+ks.length+' teams</span></div>'+(ks.length?'<table><tr><th>Team</th><th>The decision</th></tr>'+ks.map(function(t){return '<tr><td class="dom">'+esc(window.BiTeams?BiTeams.label(t):'Team '+t)+'</td><td>'+esc(byT[t])+'</td></tr>';}).join('')+'</table>':'<div class="empty">No sentence sealed yet.</div>');
   });
 }
 function buildGrid(gridId,capId,storeKey,stepKey){
   var box=document.getElementById(gridId),cap=document.getElementById(capId);if(!box)return;
   var st=lsGet(storeKey,{});
+  /* the scores are the team's: shared through teams.js, and repainted when a team-mate changes one */
+  if(window.BiTeams)BiTeams.state(storeKey,function(v){try{st=JSON.parse(v)||{};}catch(e){st={};}lsSet(storeKey,st);paint();});
   function paint(){
     var tot=0,n=0;
     box.innerHTML='<table><thead><tr><th>Question</th><th>0 · 1 · 2</th></tr></thead><tbody>'+RTQ.map(function(q,r){var v=st[r];if(v!=null){tot+=v;n++;}return '<tr><td class="cr"><b>'+q[0]+'</b><small>'+q[1]+'</small></td><td><button type="button" class="cell v'+(v==null?'':v)+'" data-r="'+r+'">'+(v==null?'–':v)+'</button></td></tr>';}).join('')+'<tr class="tot"><td>Total / 8</td><td>'+(n?tot:'–')+'</td></tr></tbody></table>';
     cap.textContent=n+' of 4 scored'+(n===4?(' — '+(tot>=7?'a decision.':tot>=5?'nearly a decision; one question needs a rewrite.':'a goal wearing a decision\'s clothes.')):'. Click a cell to cycle 0 → 1 → 2.');
-    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){var r=b.dataset.r,v=st[r];st[r]=(v==null?0:(v+1)%3);lsSet(storeKey,st);paint();});});
+    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){var r=b.dataset.r,v=st[r];st[r]=(v==null?0:(v+1)%3);lsSet(storeKey,st);paint();if(window.BiTeams)BiTeams.share(storeKey,JSON.stringify(st));});});
   }
   paint();
 }
@@ -491,7 +496,7 @@ window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('life').innerHTML=LIFE.map(function(l){return '<div class="lc"><span class="ln">'+l[0]+'</span><b>'+l[1]+'</b><span class="ld">'+l[2]+'</span><span class="ls">'+l[3]+'</span></div>';}).join('');
   chips('pWhy',WHYS,'w2_why');
   chips('pNext',NEXTS,'w2_nx',function(o){setWork('f_next',o.t);});
-  chips('pAttack',TEAMS.map(function(t){return {k:t,t:'Team '+t};}),'w2_attack');
+  chips('pAttack',TEAMS.map(function(t){return {k:t,t:'Team '+t};}),'w2_attack',function(o){if(window.BiTeams)BiTeams.share('w2_attack',o.k);});
   paintProgress();paintSeal();paintSrc();paintLint();paintDecSealed();buildGrid('rtGrid','rtCap','w2_rt','rt');paintBrief();
   if(ls('w2_nx_sealed')==='1'){lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Sealed ✓';}
   if(ls('w2_num_sealed')==='1'){var nm=document.getElementById('numBtn');nm.disabled=true;nm.textContent='Sealed ✓';document.getElementById('f_churn').disabled=true;}
@@ -508,7 +513,25 @@ window.addEventListener('DOMContentLoaded',function(){
 
   function syncTeam(){setWork('f_team',[val('f_teamsel')?('Team '+val('f_teamsel')):'',val('f_rolesel'),val('f_mates')].filter(Boolean).join(' · '));}
   ['f_teamsel','f_rolesel','f_mates'].forEach(function(id){var e=document.getElementById(id);e.addEventListener('change',syncTeam);e.addEventListener('input',syncTeam);});
+  /* the team board (teams.js) sets the team and the team-mates; the role stays a choice per session */
+  if(window.BiTeams){
+    BiTeams.mount(document.getElementById('teamsBox'),{onChange:function(t,mates){
+      if(!t&&!val('f_teamsel'))return;
+      document.getElementById('f_teamsel').value=t||'';document.getElementById('f_mates').value=mates.join(', ');syncTeam();
+    }});
+    BiTeams.onLoad(function(){Array.prototype.forEach.call(document.getElementById('pAttack').children,function(b){if(b.dataset.k)b.textContent=BiTeams.label(b.dataset.k);});});
+  }
   (function(){var v=ls('work_w2_team')||'';if(!v)return;var p=v.split(' · ');if(p[0])document.getElementById('f_teamsel').value=p[0].replace('Team ','');if(p[1])document.getElementById('f_rolesel').value=p[1];if(p[2])document.getElementById('f_mates').value=p.slice(2).join(' · ');})();
+  /* a team picked from the old dropdown, before the board existed: put the student on the board once */
+  if(window.BiTeams&&!BiTeams.myTeam()&&val('f_teamsel'))BiTeams.join(val('f_teamsel'),true);
+  /* TEAM answers (teams.js): one member fills them in, every member's page and progress follow.
+     The prediction, the churn guess, the dashboard reading and the trap stay individual. */
+  if(window.BiTeams){
+    [['f_decision','w2_dec'],['f_maker','w2_maker'],['f_cadence','w2_cad'],['f_monday','w2_chg'],['f_number','w2_num'],['f_redteam','w2_rt_txt']].forEach(function(p){BiTeams.field(p[0],p[1]);});
+    BiTeams.state('w2_sealed',function(v){if(v!=='1'||ls('w2_dec_sealed')==='1')return;ls('w2_dec_sealed','1');ls('w2_dec_team',BiTeams.myTeam());paintDecSealed();markDone('s3');paintBrief();});
+    BiTeams.state('w2_attack',function(v){if(!v)return;ls('w2_attack',v);Array.prototype.forEach.call(document.getElementById('pAttack').children,function(x){x.classList.toggle('on',x.dataset.k===v);});});
+    BiTeams.state('w2_rt_done',function(v){if(v!=='1')return;document.getElementById('rtNote').textContent='Handed in ✓ by your team — '+(val('f_redteam').match(/^\[Team [A-E] · \d\/8\]/)||[''])[0];markDone('s5');});
+  }
   document.getElementById('f_decision').addEventListener('input',function(){paintLint();paintBrief();});
   ['f_maker','f_cadence','f_monday','f_number','f_churn'].forEach(function(id){document.getElementById(id).addEventListener('input',paintBrief);});
   document.getElementById('decBtn').addEventListener('click',function(){
@@ -517,6 +540,7 @@ window.addEventListener('DOMContentLoaded',function(){
     var n=lintDecision(val('f_decision')).filter(function(x){return x.ok;}).length;
     if(n<3&&!confirm('The detector gives this sentence '+n+' / 4. Seal it anyway?'))return;
     syncTeam();ls('w2_dec_sealed','1');ls('w2_dec_team',val('f_teamsel'));paintDecSealed();markDone('s3');paintBrief();
+    if(window.BiTeams)BiTeams.share('w2_sealed','1');
     if(val('f_rolesel')==='Scribe'){BiWall.post('w2d',{n:firstName()||'someone',src:('T:'+val('f_teamsel')+'|'+val('f_decision')).slice(0,500),meta:'Team '+val('f_teamsel')});}
   });
 
@@ -533,6 +557,7 @@ window.addEventListener('DOMContentLoaded',function(){
     setWork('f_redteam',val('f_redteam').replace(/^\[Team [A-E] · \d\/8\]\s*/,''));
     document.getElementById('f_redteam').value='[Team '+ls('w2_attack')+' · '+tot+'/8] '+val('f_redteam');document.getElementById('f_redteam').dispatchEvent(new Event('input',{bubbles:true}));
     document.getElementById('rtNote').textContent='Handed in ✓ — Team '+ls('w2_attack')+' scores '+tot+'/8.';markDone('s5');
+    if(window.BiTeams){BiTeams.share('w2_rt_txt',val('f_redteam'));BiTeams.share('w2_rt_done','1');}
   });
 
   document.getElementById('numBtn').addEventListener('click',function(){
@@ -588,6 +613,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
 
 <script src="courseprogress.js"></script>
 <script src="wall.js"></script>
+<script src="teams.js"></script>
 <script src="/shared/config.js"></script>
 <script src="/shared/login.js" defer></script>
 <script src="/shared/progress.js" defer></script>
