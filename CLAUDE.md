@@ -1332,6 +1332,28 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
 - Session 1's cells are **dealt in arrival order** through `_wall/w1cells`
   (see the comment in the page); the name hash is only the offline fallback.
 - `data-board` on the steps feeds `/shared/board.html` (the TV board).
+- ⚠ **Session 2 was REWRITTEN in plain language the same morning** (Jan
+  Erik: "this language is to complicated. these are business students …
+  give more interactions and examples they can click on"). Every check in
+  Step 2 now has one fixed shape — *one question · why it matters · Do
+  this (clicks) · Try it (a toy) · What the real page showed · Write down*
+  — and six toys: a **robots.txt tester** on the two real files (rtings,
+  tomsguide; `parseRobots`/`evalRobots`: a named robot obeys every block
+  naming it, else the `*` blocks; longest path wins, Allow on ties), a
+  **JavaScript on/off switch** showing the winner's page as a browser and
+  as a simple robot see it, the **chunker** with three one-click samples
+  (review site · brand page · forum thread), a **label finder** that
+  highlights JSON-LD in a mock product page and in the real rtings header,
+  a **PageRank toy** (five sites, tick links, d = 0.85, 40 rounds —
+  Retailer → Review moves it 7 → 21, the news-site link barely moves it),
+  and a **link builder** (Wayback · `-site:` mentions · Rich Results Test ·
+  robots.txt for any URL). Business vocabulary throughout ("quoted", "the
+  robots", "pieces", "labels", "votes"); the eight pipeline stage names
+  stay only in the Step 1 bet. ⚠ Probe gotcha: the label finder's sample
+  source contains `</body>`, so a probe must inject at the LAST `</body>`
+  (`rfind`), or it cuts the string and reports a syntax error that the
+  real page does not have. Run sheets on both session pages print step
+  numbers, not clock times (same morning).
 - **Session 2 — *Reverse-engineer a winner* (`week2.html`, built 22 Oct
   2026, the morning of the session), seven steps, `total:7`.** Step 1 reads
   the Session 1 wall back from `_wall/w1` (21 Oct: rtings.com 9 of 14
