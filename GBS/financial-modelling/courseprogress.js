@@ -37,7 +37,7 @@ window.CourseProgress=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
   var NS="finmod", K="finmod";
   var CHAPTERS=[
-    {mod:'w2',  short:'W2', name:'Week 02 · The model nobody can audit',      total:6, live:false},
+    {mod:'w2',  short:'W2', name:'Week 02 · The model nobody can audit',      total:7, live:true, href:'week2.html'},
     {mod:'w3',  short:'W3', name:'Week 03 · Error-checking as architecture',  total:6, live:false},
     {mod:'w4',  short:'W4', name:'Week 04 · The three statements, linked',    total:6, live:false},
     {mod:'w5',  short:'W5', name:'Week 05 · Forecast, plug, circularity',     total:6, live:false},
