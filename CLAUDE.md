@@ -1329,6 +1329,15 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   (Google How Search Works, the AI Mode query fan-out post, OpenAI's bots
   page, Perplexity's bots page), linked at the foot of the page. Later
   sessions should be built to this depth.
+- **Attendance (22 Oct 2026)** — `presence.js` is a renamed port of
+  `UMEF/mfb545/presence.js` (ns `creator`, English only, the GBS rule: at
+  most two absences, so the student's summary is coloured by absences, not
+  a % band). Card on the hub (`hub()`) and on each session page
+  (`mount({mod:'wN'})` above the progress strip — add it to every new
+  session page). `features` has `"presence"`, `presenceSessions` is 11, so
+  the dashboard picker offers w1…w11: **never open w9** (Specialization
+  Module); `wp` is not in the register. The `_presence` rules were already
+  in the deployed `creator` block.
 - Session 1's cells are **dealt in arrival order** through `_wall/w1cells`
   (see the comment in the page); the name hash is only the offline fallback.
 - `data-board` on the steps feeds `/shared/board.html` (the TV board).
