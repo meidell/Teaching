@@ -1291,6 +1291,40 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
 - Session 1's cells are **dealt in arrival order** through `_wall/w1cells`
   (see the comment in the page); the name hash is only the offline fallback.
 - `data-board` on the steps feeds `/shared/board.html` (the TV board).
+- **Session 2 — *Reverse-engineer a winner* (`week2.html`, built 22 Oct
+  2026, the morning of the session), seven steps, `total:7`.** Step 1 reads
+  the Session 1 wall back from `_wall/w1` (21 Oct: rtings.com 9 of 14
+  rows, youtube 4, reddit 3) and the student's own `w1_next`; a revised
+  bet on the stage (`w2_bet`). Step 2 is the instructor's 20 minutes: **six
+  audit checks, one per pipeline stage, each with its browser procedure** —
+  robots.txt block semantics and the AI tokens (OAI-SearchBot ≠ GPTBot,
+  Google-Extended ≠ Search, noindex/nosnippet, llms.txt is a proposal) ·
+  the HTML before JavaScript (View Source, Disable JavaScript, Network →
+  Doc, Google's Web Rendering Service) · chunking and the **stand-alone
+  test**, with a working chunker (`chunkText`/`testChunk`: slider length,
+  cut at headings; subject / number-or-comparison / query-term) · JSON-LD
+  and schema.org types · referring domains (Ahrefs/Moz, `-site:` mentions,
+  Wikipedia) · freshness (dateModified, Wayback). Each check carries an
+  **"Observed · 22 Oct 2026"** box with what a Googlebot-UA fetch actually
+  returned: rtings allows all crawlers; tomsguide names 11 AI bots but none
+  of OpenAI's/Perplexity's; soundguys blocks SEO bots; **reddit answered
+  with a network-policy "Blocked" page**; the rtings best-budget page is
+  304 KB with ~190 visible words before JS, its claim in the meta
+  description, JSON-LD = WebSite + Organization only. Re-fetch before
+  reusing — sites change. Step 3: one cited URL per team (A and B both
+  rtings, to compare two records), six-line record posted to **`_wall/w2`**
+  (`n` = "Team X · first name", `meta` = the six lines "·"-joined) and
+  saved per student as `w2_url … w2_fresh`; roles rotate from `w1_team`
+  (Operator → Skeptic → Scribe). Step 4 the audit wall + three reasons
+  (`w2_r1..3`, stage first). Step 5 **the falsification round**: a control
+  page with the same properties and no citation, posted to **`_wall/w2ctrl`**.
+  Step 6 findings v1 (`w2_f_keep`, `w2_f_dead`, `w2_f_open`). Step 7 terms,
+  the open claim's verdict (`w2_claim`), the Session 3 prediction
+  (`w2_next`). The `_wall/$mod` wildcard covers both new nodes — no rules
+  change. Factual register throughout. Probed headlessly: every step
+  completes, no errors; the walls degrade to "unavailable (rules not
+  published)" when the database refuses. Run sheet:
+  `_private/week2-runsheet.md`.
 
 ### GBS · Enterprise Security, Cyber Warfare & Asset Protection — `GBS/enterprise-security/`
 
