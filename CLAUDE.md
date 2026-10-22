@@ -764,6 +764,61 @@ presence needing an account) applies. What differs:
   login*). Unlisted; in `robots.txt`; the mirror entry is in
   `/shared/config.js`; reachable from `/SUMAS/index.html`. The hub has no
   teaching-plan page and no toolkit section — there is nothing to link yet.
+- ⚠ **The course runs one session behind the syllabus** (22 Oct 2026, Jan
+  Erik: "I missed the 8 October as I was in China and did week 2 on
+  15 October"). Week 1 was 1 Oct, Week 2 15 Oct, Week 3 22 Oct; the hub's
+  `DATES` runs the remaining teaching Thursdays in order (29 Oct, 26 Nov,
+  10 Dec, 14 Jan, 21 Jan), so **Week 9 prints "date to be confirmed"**
+  until a make-up date is agreed with SUMAS (Giorgia offered a project or
+  study week). `courses.json → schedule.first` is still `2026-10-01` and
+  right. The syllabus Jan Erik sent on 28 Sep is
+  `~/Documents/Jan Erik/SUMAS/MBA406_…Part2_Fall2026_1.docx`.
+- ⚠ **SUMAS has changed the grading and the site has not followed yet**
+  (Giorgia, 24 Sep, repeated 18 Oct; Jan Erik: "Excellent news. Love
+  that"): participation is **no longer graded** at all, and the final is
+  an **oral exam** (≈15 min per student, 3–4 questions) **or an individually
+  assessed presentation** — not a written closed-book paper. The hub's
+  grade block, the two homework eyebrows ("counts toward participation"),
+  `presence.js`'s two strings and the decks' closing slides still print
+  20 / 30 / 50 and "closed book". **The new weights are Jan Erik's to set**;
+  when he does, change all of those in one pass. The five-absence rule is
+  SUMAS policy and stays.
+- **Week 2 was checked on 21 Oct 2026** (every number recomputed — 120+
+  checks — a headless probe of every widget, exercise, quiz and the
+  workbook to 9/9 and 52/52, the homework to 18/18, the deck printed one
+  page per slide). Two multipliers in the homework solutions were
+  misprinted ((1 + 0.035⁄12)²⁴⁰ is 2.011702, not 2.011570; 1.004²⁴ is
+  1.100548, not 1.100553) — the answers were right.
+- **Week 3 — capital budgeting (`week3.html`, `week3-homework.html`, built
+  22 Oct 2026, the morning of the session)** on the Week 2 engine: the
+  engine blocks (SVG palette, navigation, glossary, classify/steps/turn
+  builders, quiz and deck engines) are byte-copies of week2's with the
+  `w2`→`w3` keys swapped; everything else is new. **The Lausanne plan is
+  the canonical project** (CHF 000): fit-out 400 straight-line over five
+  years, working capital 60 back in year 5, sales 650, cash costs 480,
+  lost contribution at Nyon 20, resale 50 taxed at 20%, hurdle 10% *given*
+  (Week 4 must derive something near it) → OCF 136, stream −460 · 136 × 4 ·
+  236, **NPV +117.64, IRR 18.80%, payback 3.38, discounted 4.20, PI 0.256,
+  break-even sales 611.21** (accounting break-even 580); the showroom
+  alternative −150 / 55 × 5 (NPV 58.49, IRR 24.32%) is the scale trap, the
+  kiln rental −100 / +230 / −132 the two-IRR trap (10% and 20%), +100 / −115
+  the borrowing trap. `lausanne(o)` in the page is the one definition the
+  walkers, the profile, the sliders and the captions all read. Later weeks
+  should build on these numbers (Week 4's WACC, Week 6's cash budget,
+  Week 7's financing of the 460). Homework: **Nyon Cycles' Morges shop**
+  (180 + 30, sales 420, costs 330, 9%: OCF 79.2, NPV 117.56, IRR 27.83%,
+  break-even sales 382.22), eighteen problems. Its eyebrow reads
+  "practice for the case study and the exam", not "counts toward
+  participation" — see the grading note. Denominator `EXTRA_STEPS (12) +
+  EXERCISES (9) + .cl-row (20) + .q (10) + [data-work] (4) = 55`; deck 28
+  slides; `w3`/`w3-hw` in `courseprogress.js` (totals 9 and 18),
+  `courses.json` modules and `project.sections` (`w3_npv`, `w3_cf`,
+  `w3_sens`, `w3_verdict`). Every number recomputed in Python; the probe
+  pattern (copy the folder, strip the network scripts, stub `fetch`, serve
+  from a root that holds `/shared` because the pages carry `<base href>`,
+  `--dump-dom` with a probe that writes `<pre id="RESULT">`) is the test
+  to rerun. The instructor's timed run sheet is
+  `_private/week3-runsheet.md`.
 
 ### SUMAS · MA/MBA500 Capstone "AI for Good" — `SUMAS/wind/`
 
