@@ -1205,6 +1205,24 @@ Jan Erik asked for the GBS landing page and the GBS courses to be taken
   `--force-prefers-reduced-motion --virtual-time-budget=900` (every layer
   drawn, no prompt yet).
 
+### GBS · attendance on every cohort hub (22 Oct 2026)
+
+Jan Erik: "a presence button on every one of the GBS courses, on the landing
+page". `creator`, `bi`, `finmod` and `escwa` each carry a `presence.js` — a
+renamed port of `UMEF/mfb545/presence.js` (namespace, session list, English
+copy) — mounted with `StatsPresence.hub()` in a `#presSlot` under
+`#nextCard` on the hub, and **nowhere else**: the button turns red for
+whichever window `<ns>/_presence_now` points at. Each course has
+`"presence"` in `features` and `presenceSessions` (11, 11, 11, 14), which is
+what makes the dashboard's Presence tab appear. The `_presence` rules were
+already in all four deployed blocks. Copy: the GBS rule (at most two
+absences) on creator/bi/finmod; escwa states no rule (its syllabus has
+none) and its live button carries navy text on IIG gold. The dashboard's
+picker offers w1…wN: **never open w1 on bi/finmod** (their ids start at
+w2) **nor w9 on creator** (Specialization Module). The open hubs
+(blockchain, foresight, fintech) have no namespace and no sign-in, so they
+cannot carry a register.
+
 ### GBS · Business Intelligence — `GBS/business-intelligence/`
 
 MIM core course, `id`/`ns`/`keyPrefix` `bi`, Thursdays 16:30–18:30 from
@@ -1332,9 +1350,9 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
 - **Attendance (22 Oct 2026)** — `presence.js` is a renamed port of
   `UMEF/mfb545/presence.js` (ns `creator`, English only, the GBS rule: at
   most two absences, so the student's summary is coloured by absences, not
-  a % band). Card on the hub (`hub()`) and on each session page
-  (`mount({mod:'wN'})` above the progress strip — add it to every new
-  session page). `features` has `"presence"`, `presenceSessions` is 11, so
+  a % band). The button is on the HUB ONLY (`hub()`; Jan Erik, 22 Oct 2026:
+  "add it on the landing page") — it turns red for whichever window
+  `_presence_now` points at, so session pages do not carry it. `features` has `"presence"`, `presenceSessions` is 11, so
   the dashboard picker offers w1…w11: **never open w9** (Specialization
   Module); `wp` is not in the register. The `_presence` rules were already
   in the deployed `creator` block.
