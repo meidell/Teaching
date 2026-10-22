@@ -22,3 +22,37 @@
     }catch(e){ clearTimeout(to); fin(null); }
   }catch(e){}
 })();
+
+/* The school logo, top left, opens the school's landing page (22 Oct 2026,
+   Jan Erik: "when you click on a logo (top, left), it should open that
+   school's landing page"). Lives here because track.js is the one script
+   every course page loads. Only schools with a landing page are linked;
+   HEG has none, so its logos stay plain. A logo already inside a link is
+   left alone, and the landing page itself is not linked to itself. */
+(function(){
+  try{
+    var LAND={GBS:1,SUMAS:1,UMEF:1};
+    var seg=(location.pathname.split('/')[1]||'');
+    if(!LAND[seg])return;
+    var home='/'+seg+'/';
+    if(location.pathname===home||location.pathname===home+'index.html')return;
+    function go(){
+      var sel=['.topbar picture','.topbar img.brand','.topbar img.logo','nav.nav picture','nav.nav > img','header picture','header img.logo','header img.brand','img.brand','img.logo'];
+      var el=null;
+      for(var i=0;i<sel.length&&!el;i++){
+        var c=document.querySelector(sel[i]);
+        if(c&&c.getBoundingClientRect().top<140)el=c;
+      }
+      /* hubs that put the logo at the top of the hero rather than in a bar */
+      if(!el){var imgs=document.querySelectorAll('img[src*="logo"]');for(var j=0;j<imgs.length&&!el;j++){if(imgs[j].getBoundingClientRect().top<220)el=imgs[j];}}
+      if(!el)return;
+      if(el.tagName==='IMG'&&el.parentNode&&el.parentNode.tagName==='PICTURE')el=el.parentNode;
+      if(el.closest&&el.closest('a'))return;
+      var a=document.createElement('a');
+      a.href=home;a.title=seg+' · all courses';a.setAttribute('aria-label',seg+' · all courses');
+      a.style.cssText='display:inline-flex;align-items:center;line-height:0;';
+      el.parentNode.insertBefore(a,el);a.appendChild(el);
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+  }catch(e){}
+})();

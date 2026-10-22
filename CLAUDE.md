@@ -2469,6 +2469,14 @@ trusts. The two are not the same thing and one cannot replace the other.
   archetype stylesheet and adds only what is its own — never paste a `:root` palette or
   the standard chrome into it again.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
+  ⚠ Since 22 Oct 2026 it also **makes the top-left school logo a link to
+  the school's landing page** (`/GBS/`, `/SUMAS/`, `/UMEF/` — the first
+  path segment; HEG has no landing page and is left alone). It looks for
+  `.topbar picture/img.brand/img.logo`, then `nav.nav` (the open hubs),
+  `header`, and finally any `img[src*=logo]` in the top 220 px (the SUMAS
+  hubs with the logo in the hero); a logo already inside a link is
+  skipped. Lives in track.js because it is the one script every course
+  page loads — no page was edited.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
   `/shared/fb-auth.js` `import()`s *only* once per device, to migrate a session a
