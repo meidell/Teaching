@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Day 3 · Digital credit, neobanks and financial inclusion · MFB 545 · Swiss UMEF</title>
+<meta name="description" content="MFB 545 Fintech, Day 3 — a credit score built live on 1,000 real loans, threshold versus profitability, the economics of neobanks (CAC, LTV, churn), crowdfunding, peer-to-peer lending and the BNPL debate, digital credit in Africa, and your fintech’s credit product.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="fintech.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="mfb545">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">FINTECH · DAY 3</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="journee3.html" data-lang-switch="fr" title="Cette page en français">FR</a>
+    <a class="home" href="index-en.html">← Course</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This day</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Day 3 · Saturday 24 October 2026 · MFB 545</div>
+    <h1>Digital credit, neobanks and <em>financial inclusion</em></h1>
+    <p class="sub">A loan granted in thirty seconds in an app rests on a model that turns data into a probability of default, and on a threshold someone chose. A neobank with fifty million customers can earn more than a billion; another, with more revenue per customer, loses money. This day opens both black boxes: you build a score on 1,000 real loans, set the threshold, redo a neobank’s accounts, lend to strangers on a simulated platform, debate buy now, pay later — then design your fintech’s credit or savings product.</p>
+    <div class="liveinfo">
+      <span class="li">🕘 <b>09:00–12:15 · 13:30–16:45</b> · four 90-min blocks</span>
+      <span class="li">💻 laptop · a Google account for Colab</span>
+      <span class="li">🎤 the talk is short — <b>🛠 most of the time, you are the ones working</b></span>
+    </div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="daytl"><h4>The day at a glance · who talks, who works</h4><div id="dayTl"></div></div>
+
+  <div class="objectives">
+    <h4>By the end of Day 3, you will be able to</h4>
+    <ul>
+      <li>Explain how a credit score turns data into a probability of default, and read an AUC and a Gini.</li>
+      <li>Choose an acceptance threshold by trading off default rate, volume and result — and calculate an expected loss.</li>
+      <li>Calculate a neobank’s ARPU, customer lifetime value and acquisition-cost payback period.</li>
+      <li>Bring a neobank’s published income statement down to one customer, and say why some lose money.</li>
+      <li>Tell the forms of crowdfunding apart, measure the risk of a peer-to-peer loan portfolio, and argue the status of buy now, pay later.</li>
+      <li>Design your fintech’s credit or savings product and its scoring logic, with its safeguards.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Before you start — tick</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Signed in</b> on this site (the button at the bottom right).</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>Signed in to Google</b> in the same browser: the Block 1 notebook opens in <a href="https://colab.research.google.com" target="_blank" rel="noopener">Google Colab ↗</a>. Without an account, the simulator in section 3.2 is enough.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>Your work from Days 1 and 2</b> at hand: your team’s problem, customer, payment flow and revenue model (<a href="journee2-en.html">Day 2, section 2.9</a>).</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index-en.html">← Course page</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">reset my Day 3 progress on this device</a></div>
+  </div>
+</section>
+
+<!-- ============================ 3.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.1 · Block 1</div><span class="mode m-ex">🎤 Talk · 20 min</span><h2>How a credit score works</h2></div>
+  <p class="ex-note">Instructor’s talk. If it does not take place, read this section on your own, then do the sorting exercise at the bottom of the page.</p>
+
+  <div class="card">
+    <span class="label def">The lender’s question</span>
+    <h3>How much will this loan cost me, on average?</h3>
+    <div class="formula">Expected loss (EL) = PD × LGD × EAD</div>
+    <ul>
+      <li><strong>PD</strong> — <em>probability of default</em>: the probability that the borrower stops paying (usually: more than 90 days late) over the life of the loan or over one year. This is what the score estimates.</li>
+      <li><strong>LGD</strong> — <em>loss given default</em>: the share of the amount the lender does not get back, after collection. For unsecured consumer credit, often 40 to 70%.</li>
+      <li><strong>EAD</strong> — <em>exposure at default</em>: the amount owed at the moment of default.</li>
+    </ul>
+    <p>A CHF 5,000 loan, PD 12%, LGD 50%: expected loss 0.12 × 0.50 × 5,000 = <b>CHF 300</b>. The price of credit must cover this loss, the cost of money, servicing costs and the capital tied up. This is <b>risk-based pricing</b>: two customers of the same product can pay two different rates.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">The mechanism · from data to decision</span>
+    <h3>Seven steps between the application and the app’s “yes”</h3>
+    <div class="lab">
+      <div class="lab-title">An application for a CHF 3,000 loan over 24 months</div>
+      <div class="steps" id="scoreSteps"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="scoreNext">Commencer →</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label def">Measuring a score</span>
+    <h3>AUC and Gini: does the score rank the good before the bad?</h3>
+    <p>A score does not say who will default; it <em>ranks</em>. It is judged on loans it has never seen. The <b>AUC</b> is the probability that a randomly drawn bad payer gets a higher PD than a randomly drawn good payer: <b>0.5</b> = a coin toss, <b>1</b> = perfect ranking. Banks rather report the <b>Gini = 2 × AUC − 1</b>. A consumer-credit score typically has a Gini between 0.5 and 0.7; above 0.9 on test data, suspect a mistake (a variable that “knows” the answer).</p>
+    <p><strong>The threshold.</strong> The model gives a PD; a person sets the <em>threshold</em> above which applications are refused. If a repaid loan earns a margin <i>m</i> (as a % of the amount) and a default costs the LGD, a loan is worth making as long as (1 − PD) × <i>m</i> &gt; PD × LGD, that is:</p>
+    <div class="formula">Theoretical threshold: PD &lt; m ÷ (m + LGD)</div>
+    <p>With a 15% margin and a 50% LGD: 0.15 ÷ 0.65 = <b>23.1%</b>. Accepting more widely raises volume and defaults; accepting more tightly turns away good customers. The simulator in the next section shows the trade-off on real loans.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">The framework</span>
+    <h3>What the law requires of a score, in Switzerland, the EU and WAEMU</h3>
+    <ul>
+      <li><strong>Switzerland.</strong> The Consumer Credit Act (KKG/LCC) requires a <b>creditworthiness assessment</b> and a check with the Consumer Credit Information Centre (<b>IKO</b>); the <b>ZEK</b> is the lenders’ private credit register. Maximum annual effective rate in 2026: <b>10%</b> for a cash loan, <b>12%</b> for an overdraft or a credit card.</li>
+      <li><strong>European Union.</strong> The new Consumer Credit Directive (2023/2225, applicable from <b>20 November 2026</b>) requires a creditworthiness assessment based on relevant data, forbids using sensitive data (health, origin…) and social-media data in it, and gives a customer refused by an automated decision the right to an <b>explanation</b> and to <b>human intervention</b>. The <b>AI Act</b> classes credit scoring of individuals as a <b>high-risk</b> AI system. And the Court of Justice ruled in 2023 (SCHUFA, C-634/21) that the score itself can be an automated decision under the GDPR when the lender relies on it decisively.</li>
+      <li><strong>WAEMU.</strong> The <b>usury rate</b> set by the WAMU Council of Ministers caps the cost of credit: <b>14%</b> a year for banks since 1 June 2026 (15% before), <b>24%</b> for microfinance institutions and financial institutions. Credit information bureaus (BIC) licensed by the BCEAO share repayment histories.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 4 min</span>
+    <h3>Can this data go into a score?</h3>
+    <div class="lab">
+      <div class="lab-title">Usable · sensitive, must be justified · exclude</div>
+      <div id="featRows"></div>
+      <div class="caption" id="featRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s1" data-need="The seven steps and the sorting exercise complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.2 · Block 1</div><span class="mode m-do">🛠 Workshop · 55 min</span><h2>Live scoring · threshold versus profitability</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 25 min · the notebook</span>
+    <h3>Build the score on 1,000 real loans</h3>
+    <p>The public “German Credit” dataset (UCI, 1,000 consumer loans, 300 of which went bad) is the classic training set for scoring. The notebook loads it, looks at the default rate by category, fits a logistic regression on seven variables, measures the AUC and computes the portfolio result threshold by threshold. Run the cells in order (▶ or <code>Shift + Enter</code>); there is no line to write.</p>
+    <div class="btn-row">
+      <a class="btn" id="colabLink" href="https://colab.research.google.com/github/meidell/Teaching/blob/main/UMEF/mfb545/files/scoring-en.ipynb" target="_blank" rel="noopener">Open the notebook in Colab ↗</a>
+      <a class="btn ghost" href="files/scoring-en.ipynb" download>Download the .ipynb</a>
+    </div>
+    <p class="srcnote">If Colab asks for confirmation (“This notebook was not authored by Google”), choose “Run anyway”. Without a Google account: do part B, which uses exactly the same model and the same 300 test loans.</p>
+    <div id="nbNum"></div>
+    <div class="wb" data-board="What the notebook says|w3_notebook">
+      <div class="wq"><span class="qn">✍</span>The variable with the highest factor on the odds, and what it means in one sentence. What you saw in cell 7 (sex, nationality), and whether you would use those variables.</div>
+      <textarea data-work="w3_notebook" data-worklabel="Scoring notebook — the strongest variable, and the sensitive variables" placeholder="e.g. A poor credit history multiplies the odds of default by 3.1… ; foreign workers have a higher default rate here, but…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 20 min · the “threshold versus profitability” simulator</span>
+    <h3>The 300 test loans, and the threshold in your hands</h3>
+    <p>Each bar counts some of the 300 loans the model has not seen, placed by their PD: <b style="color:var(--accent-deep)">blue</b>, repaid; <b style="color:#9B2335">red</b>, defaulted. Everything to the left of the threshold is accepted. Amounts from the dataset, read as francs for the exercise.</p>
+    <div class="calc" id="thCtrl"></div>
+    <div class="hist" id="thHist"></div>
+    <div class="kpi" id="thKpi"></div>
+    <div class="btn-row"><button class="btn small ghost" id="thBest">Find the best threshold</button><button class="btn small" id="thCopy">Copy my choice into my notebook ↓</button></div>
+    <p class="caption" id="thCap"></p>
+    <div id="thNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">C · 10 min · one applicant, one decision, two reasons</span>
+    <h3>The same model, applied to one person</h3>
+    <p>The notebook’s model, with its coefficients. Change the profile: the PD, the decision at the threshold chosen in B, and the two reasons that weigh most. This is what a bank must be able to tell a refused customer.</p>
+    <div class="calc" id="apCtrl"></div>
+    <div class="kpi" id="apKpi"></div>
+    <div class="srcnote" id="apWhy"></div>
+    <div id="apNum"></div>
+    <div class="wb" data-board="The threshold chosen, and why|w3_seuil">
+      <div class="wq"><span class="qn">✍</span>Your threshold, what it gives (accepted, defaults, result), and what you would say to a customer refused at a 30% PD.</div>
+      <textarea data-work="w3_seuil" data-worklabel="Threshold versus profitability — my threshold, its result, the explanation to the refused customer" placeholder="The simulator’s button inserts the threshold and its figures; add your reasoning."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Debrief · 15 min</span>
+    <p>Three questions: which threshold did you choose, and what moved it — the margin, the LGD, fear of defaults? How many good customers does the best threshold turn away? Is the score “fair” if it refuses more often a group that defaults more often?</p>
+  </div>
+  <div class="sec-status" data-sec="s2" data-need="The four calculations, the threshold moved, one profile tested and the two fields complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: Block 2 · neobanks →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.3 · Block 2</div><span class="mode m-ex">🎤 Talk · 15 min</span><h2>The economics of a neobank</h2></div>
+  <p class="ex-note">Instructor’s talk, or self-study reading.</p>
+
+  <div class="card">
+    <span class="label def">Where the money comes from</span>
+    <h3>Five revenue lines, all small per customer</h3>
+    <ul>
+      <li><strong>Interchange</strong> (Day 2): the neobank is the issuer; it earns a share of every card payment. In the EU, capped at 0.2% on debit: CHF 800 of monthly spending brings in CHF 1.60.</li>
+      <li><strong>FX</strong>: a margin on the rate, often zero on weekdays up to a cap, then marked up (at weekends, above the limit, on illiquid currencies).</li>
+      <li><strong>Subscriptions</strong>: a few percent of customers pay for a plan (travel insurance, more free FX, a metal card).</li>
+      <li><strong>Interest margin</strong>: deposits placed with the central bank or in government securities earn interest; the neobank passes part of it on. With rates at zero (Switzerland 2015–2022), this line disappears.</li>
+      <li><strong>Credit and investing</strong>: overdrafts, loans, buy now pay later, brokerage. The most profitable lines — and the ones that need a banking licence and a score.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">The mechanism · unit economics</span>
+    <h3>What a customer is worth, and what they cost to acquire</h3>
+    <div class="formula">ARPU = average revenue per active customer per month</div>
+    <div class="formula">Customer lifetime value (LTV) = ARPU × contribution margin ÷ monthly churn</div>
+    <div class="formula">Payback period = CAC ÷ (ARPU × contribution margin)</div>
+    <p>The <b>contribution margin</b> is what remains of ARPU after variable costs (card processing, support, fraud, compliance per customer). <b>Churn</b> is the share of customers who leave — or go inactive — each month: at 2% a month, a customer stays 1 ÷ 0.02 = 50 months on average. <b>CAC</b> is the cost of acquiring a customer (advertising, referral bonuses, onboarding and identity-verification costs). The industry rule: <b>LTV ≥ 3 × CAC</b>, and CAC recovered in under 12 to 18 months.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Four cases</span>
+    <h3>Revolut, N26, neon, Yuh: why some lose money with millions of customers</h3>
+    <ul>
+      <li><strong>Revolut</strong> (London, 2015): 52.5 million customers at the end of 2024, revenue £3.1 billion, profit before tax £1.1 billion — a fourth profitable year. The engine: many products per customer (FX, subscriptions, credit, trading, interest) and global scale on a single platform.</li>
+      <li><strong>N26</strong> (Berlin, 2013): 4.2 million “revenue-relevant” customers at the end of 2023, revenue €313.5 million, net loss €102.4 million. Growth held back from 2021 to 2024 by BaFin, which had capped new account openings over anti-money-laundering weaknesses.</li>
+      <li><strong>neon</strong> (Zurich, 2019): about 250,000 customers at the end of 2025; no banking licence of its own (accounts are held by Hypothekarbank Lenzburg), a low-fee, subscription model.</li>
+      <li><strong>Yuh</strong> (2021, Swissquote and PostFinance; 100% Swissquote since July 2025): profitable at the end of 2024, just under 400,000 accounts at the end of 2025. Revenue comes largely from investing and the interest margin rather than from cards.</li>
+    </ul>
+    <p class="srcnote">Sources: the companies’ annual reports and press releases (Revolut, Annual Report 2024; N26, press release of 13 Nov. 2024; Swissquote, Annual Report 2025; PostFinance, “Yuh 2024” release). The figures change every year: the workshop asks you to look up the latest published ones.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 3 min</span>
+    <h3>Where does the neobank’s revenue come from, in each case?</h3>
+    <div class="lab">
+      <div class="lab-title">Interchange · FX · subscription · interest margin · credit</div>
+      <div id="neoRows"></div>
+      <div class="caption" id="neoRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s3" data-need="The sorting exercise completes this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.4 · Block 2</div><span class="mode m-do">🛠 Workshop · 50 min</span><h2>CAC, LTV, churn · a neobank’s income statement</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 25 min · the unit-economics simulator</span>
+    <h3>Build ARPU line by line, then see whether the customer is worth what they cost</h3>
+    <p>A fictitious neobank. Start from one of the three profiles, then move the sliders. Find <b>the slider that pushes LTV below CAC</b> the fastest.</p>
+    <div class="toggle-row" id="ueTpl" style="max-width:640px;"><button data-v="eu" class="on">EU neobank, card only</button><button data-v="ch">Swiss neobank</button><button data-v="multi">Multi-product</button></div>
+    <div class="calc" id="ueCtrl"></div>
+    <div class="tblwrap"><table class="fx" id="ueTab"></table></div>
+    <div class="kpi" id="ueKpi"></div>
+    <p class="srcnote">Illustrative profiles, built to show the mechanisms: these are not the figures of any real bank.</p>
+    <div id="ueNum"></div>
+    <div class="wb" data-board="The slider that kills LTV|w3_ltv">
+      <div class="wq"><span class="qn">✍</span>Which slider pushes LTV below CAC the fastest? What would a neobank actually do to fix it?</div>
+      <textarea data-work="w3_ltv" data-worklabel="Unit economics — the decisive slider and the fix" placeholder="e.g. Churn: from 1.5% to 3% a month, LTV is halved… ; the fix: make the account the main account (salary paid in)…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 25 min · in pairs · the income statement per customer</span>
+    <h3>Rebuild a neobank’s accounts from its published figures</h3>
+    <p>Two columns are prefilled with published figures. In the third, put a neobank of your choice — neon, Yuh, Wise, Monzo, Nubank, or an African neobank (Kuda, TymeBank, Moniepoint…) — using <b>its latest annual report or press release</b>, found online now. The table brings everything down to one customer.</p>
+    <div class="tblwrap"><table class="fx" id="neoTab"></table></div>
+    <div class="btn-row"><button class="btn small" id="neoCopy">Copy the table into my notebook ↓</button></div>
+    <div id="neoNum"></div>
+    <div class="wb" data-board="Why one wins and the other loses|w3_neo">
+      <div class="wq"><span class="qn">✍</span>The table, your source, then: N26 has more revenue per customer than Revolut and loses money. Why? And your neobank?</div>
+      <textarea data-work="w3_neo" data-worklabel="A neobank’s income statement — reconstruction and explanation" style="min-height:140px"></textarea>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s4" data-need="The five calculations, one profile changed, the third column filled in and the two fields complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: the quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.5 · Block 2</div><span class="mode m-quiz">✅ Quiz · 10 min</span><h2>End-of-morning quiz</h2></div>
+  <div class="card">
+    <span class="label play">Interactive quiz · counts toward participation</span>
+    <h3>Eight questions, one attempt each, all explained</h3>
+    <p><strong>Launched in class</strong>; this page unlocks by itself. On your own, without an AI assistant. A missed quiz scores zero unless arranged in advance.</p>
+    <div class="qlock" id="quizLock"></div>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: Block 3 · alternative finance →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.6 · Block 3</div><span class="mode m-ex">🎤 Talk · 20 min</span><h2>Crowdfunding, peer-to-peer lending, buy now pay later</h2></div>
+  <p class="ex-note">Instructor’s talk, or self-study reading.</p>
+
+  <div class="card">
+    <span class="label def">Four forms of crowdfunding</span>
+    <h3>What the person who puts in money gets back</h3>
+    <ul>
+      <li><strong>Donation</strong>: nothing in return (a school to rebuild, a cause).</li>
+      <li><strong>Reward</strong>: a product or a perk, often the first batch — it is a <em>pre-sale</em> (Kickstarter, in Switzerland wemakeit). An “all or nothing” campaign: if the target is not reached, nobody is charged.</li>
+      <li><strong>Lending</strong> (crowdlending): individuals lend to an SME or to another individual, with interest.</li>
+      <li><strong>Equity</strong> (equity crowdfunding): backers become shareholders; they hope for a capital gain on resale, in five to ten years, or nothing if the company fails.</li>
+    </ul>
+    <p><strong>The framework.</strong> In the EU, Regulation 2020/1503 (<b>ECSP</b>) gives lending and equity platforms an EU-wide licence, for offers of up to <b>€5 million</b> per project over twelve months, with a standard key information sheet and a knowledge test for non-sophisticated investors. In Switzerland, professionally accepting funds from more than 20 people normally requires a banking licence; platforms use the exceptions in the Banking Ordinance (funds on a <b>settlement account</b> passed on within 60 days) or the fintech licence (Day 5).</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">The mechanism · a peer-to-peer loan</span>
+    <h3>Six steps, from application to repayment</h3>
+    <div class="lab">
+      <div class="lab-title">An SME borrows CHF 300,000 from 600 individuals</div>
+      <div class="steps" id="p2pSteps"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="p2pNext">Commencer →</button></div>
+    </div>
+    <div class="formula">Expected return ≈ (1 − PD) × rate − PD × LGD − platform fees</div>
+    <p>The advertised rate is not the return. A loan at 18% with an 18% PD and a 70% LGD yields, after 1% fees, about 1.2% — less than a loan at 9%. And one default in a portfolio of two loans is a disaster; in two hundred, a statistic.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Split payment · Buy Now, Pay Later</span>
+    <h3>“Pay in 4, interest-free”: who pays, and is it credit?</h3>
+    <ul>
+      <li><strong>The mechanism.</strong> At checkout, the provider (Klarna, Afterpay, PayPal Pay in 4, in Switzerland also Powerpay or invoices payable in 30 days) runs a check in a few seconds, pays the merchant at once, and is repaid by the customer in several instalments, often every two weeks.</li>
+      <li><strong>Who pays.</strong> The <b>merchant</b>: a fee of a few percent, higher than a card, which it accepts because split payment raises basket size and conversion. The customer pays nothing if they pay on time — and <b>late fees</b> otherwise.</li>
+      <li><strong>The status.</strong> In the EU, the old directive excluded interest-free credit repayable within three months; the new one (2023/2225) brings it in from <b>20 November 2026</b>, with a creditworthiness assessment. In the UK, the FCA has regulated it since <b>15 July 2026</b>. In Switzerland, the KKG/LCC excludes credit repayable within <b>three months at most</b>; the old “four instalments within twelve months” exception disappeared with the 2016 revision.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 3 min</span>
+    <h3>Which form of crowdfunding?</h3>
+    <div class="lab">
+      <div class="lab-title">Donation · reward · lending · equity</div>
+      <div id="cfRows"></div>
+      <div class="caption" id="cfRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s6" data-need="The six steps and the sorting exercise complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.7 · Block 3</div><span class="mode m-do">🛠 Workshop · 55 min</span><h2>A campaign, a loan portfolio, a debate</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 10 min · the campaign</span>
+    <h3>What is left of a successful campaign</h3>
+    <p>A bag designer in Dakar runs a reward campaign: <b>400 backers</b> give <b>CHF 75</b> on average. The platform takes <b>5%</b>, payment processing <b>3%</b>; making the promised bags costs <b>30%</b> of the amount raised; shipping costs <b>CHF 5</b> per backer.</p>
+    <div id="cfNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 20 min · the peer-to-peer lending simulator</span>
+    <h3>Lend CHF 10,000: choose the risk grade, then the number of loans</h3>
+    <p>One-year loans, repaid in one go. A platform grades borrowers from A (safe) to E (risky). If a borrower defaults, you recover 30% (LGD 70%). Platform fees: 1% a year. Each click runs <b>2,000 simulated years</b>; the chart shows the distribution of your return.</p>
+    <div class="calc" id="pCtrl"></div>
+    <div class="tblwrap"><table class="fx" id="pGrades"></table></div>
+    <div class="btn-row"><button class="btn" id="pRun">Simulate 2,000 years →</button></div>
+    <div class="hist" id="pHist"></div>
+    <div class="kpi" id="pKpi"></div>
+    <div class="tblwrap"><table class="fx" id="pLog"></table></div>
+    <div id="pNum"></div>
+    <div class="wb" data-board="Lending to strangers: what I learned|w3_p2p">
+      <div class="wq"><span class="qn">✍</span>Your best combination (grade, number of loans) and why. What does diversification change — to the average return, and to the risk of losing?</div>
+      <textarea data-work="w3_p2p" data-worklabel="Peer-to-peer lending — grade, diversification, risk" placeholder="The simulation log appears above; summarise it."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">C · 25 min · structured debate</span>
+    <h3>“Is buy now, pay later credit?”</h3>
+    <p><b>The rules.</b> Two sides drawn by lot: <em>“yes, and it must be regulated as such”</em> against <em>“no, it is a means of payment”</em>. Five minutes of preparation with the arguments below, two minutes of opening per side, six minutes of exchange, one minute of conclusion per side. Every argument must cite a mechanism or a regulator’s position.</p>
+    <div class="lab">
+      <div class="lab-title">First, sort the arguments: which side do they serve?</div>
+      <div id="bnplRows"></div>
+      <div class="caption" id="bnplRowsCap"></div>
+    </div>
+    <div id="bnNum"></div>
+    <div class="timer" data-min="5" data-label="Preparation"></div>
+    <div class="timer" data-min="2" data-label="One side’s opening"></div>
+    <div class="timer" data-min="6" data-label="Exchange"></div>
+    <div class="wb" data-board="BNPL: credit or not?|w3_bnpl">
+      <div class="wq"><span class="qn">✍</span>Your side, the other side’s strongest argument, and your own position after the debate.</div>
+      <textarea data-work="w3_bnpl" data-worklabel="BNPL debate — my side, the strongest opposing argument, my position" placeholder="e.g. “Yes” side. Their best argument: the merchant pays… My position: …"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Debrief · 15 min</span>
+    <p>The jury (the instructor, or a team drawn by lot) names the side that made the best use of the regulators’ positions. Then a question for the project: could your fintech offer buy now, pay later, and under which licence?</p>
+  </div>
+  <div class="sec-status" data-sec="s7" data-need="The five calculations, three different simulations, the sorted arguments and the two fields complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <button class="btn" data-next="s8">Next: Block 4 · digital credit in Africa →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.8 ============================ -->
+<section class="screen" id="s8">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.8 · Block 4</div><span class="mode m-ex">🎤 Talk · 15 min</span><h2>Digital credit in Africa: effects and abuses</h2></div>
+  <p class="ex-note">Instructor’s talk, or self-study reading.</p>
+
+  <div class="card">
+    <span class="label def">The founding case · M-Shwari, Kenya, 2012</span>
+    <h3>A savings account and a loan in the M-Pesa menu</h3>
+    <ul>
+      <li><strong>The product.</strong> Launched by Commercial Bank of Africa and Safaricom: a savings account and a 30-day loan, from 100 shillings, opened from the M-Pesa menu, with no branch and no paper. The price: a <b>facilitation fee of 7.5%</b> of the amount, not an interest rate.</li>
+      <li><strong>The score.</strong> No credit file for most customers: the credit limit is computed from the M-Pesa history (tenure, deposits, transfers, savings on M-Shwari). The first limit is small; it grows with on-time repayments.</li>
+      <li><strong>The measured effect.</strong> Bharadwaj, Jack and Suri (<i>Journal of Development Economics</i>, 2021) compare customers just above and just below the eligibility threshold: a third of those eligible borrow; households with access to the loan are <b>6.3 points</b> less likely to forgo essential spending after a shock (illness, crop loss). But neither savings nor productive assets rise: digital credit helps absorb a blow, it does not lift people out of poverty.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">In West Africa</span>
+    <h3>Credit and savings through the mobile wallet</h3>
+    <ul>
+      <li><strong>Baobab</strong> (a microfinance group, formerly MicroCred) launched <b>M-Baobab</b> in Senegal in 2022 with Orange Finances Mobiles: fully digital credit and savings, from the Orange Money app or the USSD code #144#. Baobab+ built a score from the payment history of solar kits paid for by mobile money.</li>
+      <li><strong>The WAEMU framework.</strong> An e-money institution cannot lend (Day 2): the credit is extended by a partner bank or microfinance institution, under the usury rate (14% for banks, 24% for microfinance institutions). That constraint is what sets the West African market apart from Kenya.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">The abuses</span>
+    <h3>What went wrong, and what regulators did</h3>
+    <ul>
+      <li><strong>The hidden price.</strong> A “per loan” fee over 30 days looks modest; annualised, it often exceeds 90%.</li>
+      <li><strong>Over-indebtedness and the blacklist.</strong> In Kenya, borrowers were reported en masse to credit bureaus for defaults of a few hundred shillings, which then shut them out of bank credit.</li>
+      <li><strong>Debt shaming.</strong> Lending apps read the phone’s contact list and wrote to the late borrower’s contacts.</li>
+      <li><strong>The response.</strong> Kenya put digital lenders under central-bank supervision (Central Bank Act amended in 2021, <b>Digital Credit Providers Regulations</b> of March 2022): licence required, access to the contact list banned, threats and publication of data banned, no reporting to the credit bureau below 1,000 shillings. In 2025 the Kenyan press still reported harassment by licensed lenders.</li>
+      <li><strong>The opaque score.</strong> A refused customer does not know why, and so can neither challenge it nor improve.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 4 min</span>
+    <h3>Positive effect, no effect, or abuse?</h3>
+    <div class="lab">
+      <div class="lab-title">What research and regulators have documented</div>
+      <div id="afRows"></div>
+      <div class="caption" id="afRowsCap"></div>
+    </div>
+    <div id="afNum"></div>
+  </div>
+  <div class="sec-status" data-sec="s8" data-need="The sorting exercise and the two calculations complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Back</button>
+    <button class="btn" data-next="s9">Next: your fintech’s product →</button>
+  </div>
+</section>
+
+<!-- ============================ 3.9 ============================ -->
+<section class="screen" id="s9">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 3.9 · Block 4</div><span class="mode m-do">🛠 Project and peer review · 75 min</span><h2>Your fintech’s credit or savings product</h2></div>
+
+  <div class="card">
+    <span class="label play">35 min · in teams · the product sheet</span>
+    <h3>Design the product, its price and its scoring logic</h3>
+    <p>Take the Day 1 customer and the Day 2 flow. Your fintech adds <b>one</b> product: a credit (salary advance, merchant credit, buy now pay later, microcredit…) or a savings product (digital tontine, locked savings, scheduled savings). Each member fills in their notebook — the same version for the whole team.</p>
+    <div class="lab">
+      <div class="lab-title">Test your product’s price against the caps</div>
+      <div class="calc" id="prCtrl"></div>
+      <div class="kpi" id="prKpi"></div>
+      <div class="srcnote" id="prNote"></div>
+    </div>
+    <div class="wb" data-board="The teams’ products|w3_produit">
+      <div class="wq"><span class="qn">1.</span>The product: for whom, what amount, what term, what price (with the annual cost computed above), through which channel it is received and repaid, and who carries it on the balance sheet (your fintech, a partner bank or microfinance institution).</div>
+      <textarea data-work="w3_produit" data-worklabel="Project — the credit or savings product" style="min-height:120px" placeholder="e.g. An advance of 30,000 to 150,000 FCFA over 30 days for women traders who have been taking payments by Wave for 6 months; fee 2%, i.e. …% a year; carried by a BCEAO-licensed partner microfinance institution…"></textarea>
+    </div>
+    <div class="wb" data-board="The scoring logics|w3_scoring">
+      <div class="wq"><span class="qn">2.</span>The scoring logic: which data (and with what consent), which rules or model, which threshold, the first limit and how it evolves, and the sentence said to a refused customer.</div>
+      <textarea data-work="w3_scoring" data-worklabel="Project — the scoring logic" style="min-height:120px" placeholder="e.g. Data: 6 months of Wave receipts read by API with consent… ; rule: limit = 20% of average monthly flow, capped… ; refusal: “your receipts over the last three months are…”"></textarea>
+    </div>
+    <div class="wb" data-board="The safeguards|w3_garde">
+      <div class="wq"><span class="qn">3.</span>The safeguards: against over-indebtedness, against a discriminating variable, against abusive collection. One measure for each.</div>
+      <textarea data-work="w3_garde" data-worklabel="Project — the product’s safeguards" placeholder="e.g. No more than one open loan at a time… ; no sex, age or place of birth, and acceptance rates are checked by group… ; no contact with third parties…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">25 min · peer review</span>
+    <h3>Another team reads your sheet; you read theirs</h3>
+    <p>Swap screens (team 1 → 2 → 3 → 1). Read the other team’s three fields and answer the five questions below <em>for them</em>; tell them your answers out loud. Then write down what your own team received.</p>
+    <div class="lab">
+      <div class="lab-title">The review grid · the team you are reviewing</div>
+      <div id="rvRows"></div>
+      <div class="caption" id="rvRowsCap"></div>
+    </div>
+    <div class="timer" data-min="10" data-label="Reading and grid"></div>
+    <div class="wb" data-board="What the review changed|w3_revue">
+      <div class="wq"><span class="qn">4.</span>The criticism received from the other team, and what you change in your product.</div>
+      <textarea data-work="w3_revue" data-worklabel="Project — the peer review received, and what changes" placeholder="e.g. Team 2: our annual cost is above 24%… → fee cut to 1.5% and term extended to 60 days."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Before Day 4 · Friday 30 October</span>
+    <ul>
+      <li>Day 4 is about blockchain, crypto-assets and decentralised finance. You will create a wallet on a <b>test</b> blockchain: nothing to buy, nothing to install in advance; an up-to-date Chrome, Firefox or Brave browser is enough.</li>
+      <li>For the project: note whether any part of your fintech (settlement, savings, proof of a repayment) <em>could</em> run on a blockchain. Day 4 will make you say whether it really should.</li>
+    </ul>
+  </div>
+  <div class="sec-status" data-sec="s9" data-need="The price tested, the review grid and the four fields complete this section — and the day."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Back</button>
+    <button class="btn" data-home>Day menu</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   JOURNÉE 3 — configuration + widgets. The engine is journee.js.
+   Every number was recomputed in Python before shipping. The scoring
+   model is _build/notebook.py's: UCI German Credit, rows 1–700 train and
+   701–1000 test, unpenalised logistic regression on seven variables —
+   AUC test 0.784, Gini 0.568. PDT/YT/AMT below are its 300 test PDs,
+   outcomes and amounts, so the simulator, the checks and the notebook
+   agree: at a 20 % threshold 127 accepted, 14 defaults; best threshold
+   22 % (33 391) at margin 15 % / LGD 50 %; the worked applicant's PD is
+   49.4 %. Unit economics: EU profile ARPU 5.75, contribution 3.25,
+   LTV 216.67, payback 24.6 months; 6 × 60 % ÷ 2 % = 180, ÷ 4 % = 90,
+   CAC 90 → 25 months. Revolut 2024 £59.05 revenue / £20.95 PBT per
+   customer; N26 2023 €74.64 / −€24.38. Campaign net 16 600. P2P expected
+   returns A 1.89 · B 2.72 · C 3.26 · D 2.87 · E 1.16 %. BNPL late fee
+   521 % a year; M-Shwari 7.5 % / 30 days = 91.25 % simple, 141.1 %
+   compound.
+   ===================================================================== */
+var GLOSSARY={
+  lgd:['loss given default (LGD)','The share of the amount owed that the lender loses when the borrower defaults, after collection and sale of collateral. 50%: of CHF 1,000 owed, 500 are lost.'],
+  auc:['AUC (area under the ROC curve)','The probability that a randomly drawn bad payer gets a riskier score than a randomly drawn good payer. 0.5 = chance; 1 = perfect. Gini = 2 × AUC − 1.']
+};
+var DAY={
+  mod:'w3', key:'mfb545_w3_progress_v1', title:'Day 3 · Digital credit, neobanks and financial inclusion',
+  blocks:[
+    {n:1,t:'09h00–10h30',name:'how a score works · the notebook · threshold versus profitability',parts:[['ex',20],['do',55],['co',15]]},
+    {n:2,t:'10h45–12h15',name:'neobank economics · CAC, LTV, churn · the quiz',parts:[['ex',15],['do',50],['quiz',10],['co',15]]},
+    {n:3,t:'13h30–15h00',name:'crowdfunding, peer-to-peer lending · the BNPL debate',parts:[['ex',20],['do',55],['co',15]]},
+    {n:4,t:'15h15–16h45',name:'digital credit in Africa · your fintech’s product',parts:[['ex',15],['do',35],['co',25],['do',15]]}
+  ],
+  sections:[
+    {id:'s1',num:'3.1',name:'How a credit score works',tag:'Expected loss · from data to decision · AUC and Gini · the threshold · KKG, Directive 2023/2225, AI Act, usury rate',mode:'ex',min:20,block:1},
+    {id:'s2',num:'3.2',name:'Live scoring · threshold versus profitability',tag:'The Colab notebook on 1,000 loans · 300 test loans and the threshold · one applicant and their two reasons',mode:'do',min:55,block:1},
+    {id:'s3',num:'3.3',name:'The economics of a neobank',tag:'Five revenue lines · ARPU, LTV, CAC, churn · Revolut, N26, neon, Yuh',mode:'ex',min:15,block:2},
+    {id:'s4',num:'3.4',name:'CAC, LTV · the income statement per customer',tag:'The unit-economics simulator · rebuilding published accounts',mode:'do',min:50,block:2},
+    {id:'s5',num:'3.5',name:'End-of-morning quiz',tag:'Eight questions · launched in class · counts toward participation',mode:'quiz',min:10,block:2},
+    {id:'s6',num:'3.6',name:'Crowdfunding, peer-to-peer lending, BNPL',tag:'Four forms · a P2P loan step by step · buy now pay later and its status',mode:'ex',min:20,block:3},
+    {id:'s7',num:'3.7',name:'A campaign, a portfolio, a debate',tag:'What is left of a campaign · 2,000 simulated years of loans · “is BNPL credit?”',mode:'do',min:55,block:3},
+    {id:'s8',num:'3.8',name:'Digital credit in Africa',tag:'M-Shwari and what we know about it · M-Baobab · the abuses and Kenya’s response',mode:'ex',min:15,block:4},
+    {id:'s9',num:'3.9',name:'Your fintech’s credit or savings product',tag:'Product sheet, price against caps, scoring, safeguards · peer review',mode:'do',min:75,block:4}
+  ],
+  secCheck:function(a){
+    if(a.st.score&&a.cls.featRows)a.mark('s1');
+    if(['n1','n2','n3','n4','thr','appl'].every(function(k){return a.st[k];})&&a.all(['w3_notebook','w3_seuil']))a.mark('s2');
+    if(a.cls.neoRows)a.mark('s3');
+    if(['l1','l2','l3','r1','r2','ue','neo'].every(function(k){return a.st[k];})&&a.all(['w3_ltv','w3_neo']))a.mark('s4');
+    if(a.st.p2p&&a.cls.cfRows)a.mark('s6');
+    if(['c1','p1','p2','k1','mc'].every(function(k){return a.st[k];})&&a.cls.bnplRows&&a.all(['w3_p2p','w3_bnpl']))a.mark('s7');
+    if(a.cls.afRows&&a.st.a1&&a.st.a2)a.mark('s8');
+    if(a.st.price&&['rv1','rv2','rv3','rv4','rv5'].every(function(k){return a.st[k];})&&a.all(['w3_produit','w3_scoring','w3_garde','w3_revue']))a.mark('s9');
+  }
+};
+</script>
+<script src="journee.js"></script>
+<script>
+/* ---- the 300 test loans of the notebook's model (PD, outcome 1 = default, amount) ---- */
+var PDT=[0.068,0.633,0.1528,0.3535,0.4685,0.0723,0.5691,0.6571,0.352,0.3151,0.0773,0.6099,0.0713,0.3894,0.761,0.0785,0.1012,0.1161,0.1902,0.604,0.3974,0.5004,0.4161,0.159,0.1729,0.0475,0.0579,0.4615,0.791,0.175,0.4551,0.5241,0.2825,0.0996,0.0745,0.7165,0.5109,0.3306,0.0739,0.687,0.6548,0.6432,0.0771,0.6882,0.5436,0.4113,0.4476,0.37,0.0972,0.1074,0.2863,0.4656,0.2833,0.1848,0.0474,0.374,0.0954,0.1324,0.1386,0.375,0.0515,0.466,0.4196,0.1014,0.1008,0.323,0.5382,0.0639,0.3716,0.0641,0.4004,0.6234,0.1225,0.0714,0.0851,0.399,0.1816,0.4673,0.1271,0.2861,0.5969,0.0636,0.6314,0.2833,0.2411,0.2887,0.0799,0.1694,0.5799,0.639,0.3918,0.0877,0.0586,0.2119,0.0949,0.0697,0.2892,0.1117,0.068,0.2329,0.1027,0.3406,0.4896,0.0624,0.3,0.631,0.3254,0.0408,0.776,0.6711,0.3405,0.3186,0.6322,0.5935,0.6249,0.4752,0.0357,0.092,0.586,0.4558,0.1043,0.2162,0.5469,0.3066,0.1149,0.4655,0.4393,0.2868,0.4358,0.5177,0.0799,0.4665,0.8725,0.3162,0.2283,0.6085,0.0757,0.087,0.3736,0.1158,0.5994,0.1354,0.1314,0.2754,0.0974,0.3149,0.0507,0.1438,0.278,0.3017,0.4488,0.0828,0.1025,0.7058,0.1796,0.0917,0.0548,0.1152,0.4307,0.0671,0.1052,0.1234,0.4735,0.1054,0.1027,0.0853,0.4559,0.0877,0.1316,0.4141,0.1269,0.1382,0.3955,0.0793,0.4063,0.2303,0.6947,0.2026,0.3833,0.1119,0.1372,0.0828,0.3697,0.0739,0.4101,0.3147,0.3353,0.7031,0.1952,0.2614,0.4674,0.0887,0.3695,0.5438,0.0811,0.1449,0.4765,0.0629,0.0713,0.4072,0.3832,0.0721,0.1281,0.064,0.1298,0.4303,0.3882,0.4533,0.0908,0.2426,0.1904,0.4788,0.4115,0.0679,0.7511,0.8707,0.0629,0.2712,0.3741,0.4619,0.1229,0.193,0.4009,0.3593,0.6899,0.6143,0.4733,0.6697,0.0779,0.3496,0.5121,0.3638,0.0921,0.0562,0.4207,0.3899,0.1861,0.317,0.6948,0.0825,0.0561,0.0939,0.0936,0.0677,0.3627,0.7949,0.6648,0.0614,0.1003,0.0969,0.374,0.6068,0.3598,0.2255,0.4004,0.2912,0.1794,0.3121,0.4735,0.3496,0.085,0.3676,0.0767,0.0904,0.3382,0.4035,0.3943,0.0814,0.1706,0.3612,0.3082,0.1279,0.7514,0.748,0.1617,0.1342,0.2152,0.2691,0.1142,0.5704,0.45,0.2597,0.1821,0.6205,0.1415,0.4364,0.6713,0.0429,0.5108,0.3843,0.0629,0.1899,0.3632,0.5915,0.0515,0.0996,0.5074,0.0895,0.6746,0.5274];
+var YT="110000110001001000001110100110010000100100000001000100110101010100100001000100001001000011100000100000000100010011100001001000111001101100001010001001100100001001101000000000000010000011010000000000011000000000010011011100101101000100011010000000101101110000100001001000001100001111010000000000000010";
+var AMT=[1123,6331,1377,2503,2528,5324,6560,2969,1206,2118,629,1198,2476,1138,14027,7596,3077,1505,3148,6148,1337,433,1228,790,2570,250,1316,1882,6416,1275,6403,1987,760,2603,3380,3990,11560,4380,6761,4280,2325,1048,3160,2483,14179,1797,2511,1274,5248,3029,428,976,841,5771,1555,1285,1299,1271,1393,691,5045,2124,2214,12680,2463,1155,3108,2901,3617,1655,2812,8065,3275,2223,1480,1371,3535,3509,5711,3872,4933,1940,1410,836,6468,1941,2675,2751,6224,5998,1188,6313,1221,2892,3062,2301,7511,1258,717,1549,1597,1795,4272,976,7472,9271,590,930,9283,1778,907,484,9629,3051,3931,7432,1338,1554,15857,1345,1101,3016,2712,731,3780,1602,3966,4165,8335,6681,2375,1216,11816,5084,2327,1082,886,601,2957,2611,5179,2993,1943,1559,3422,3976,6761,1249,1364,709,2235,4042,1471,1442,10875,1474,894,3343,3959,3577,5804,2169,2439,4526,2210,2221,2389,3331,7409,652,7678,1343,1382,874,3590,1322,1940,3595,1422,6742,7814,9277,2181,1098,4057,795,2825,15672,6614,7824,2442,1829,2171,5800,1169,8947,2606,1592,2186,4153,2625,3485,10477,1386,1278,1107,3763,3711,3594,3195,4454,4736,2991,2142,3161,18424,2848,14896,2359,3345,1817,12749,1366,2002,6872,697,1049,10297,1867,1344,1747,1670,1224,522,1498,1919,745,2063,6288,6842,3527,1546,929,1455,1845,8358,3349,2859,1533,3621,3590,2145,4113,10974,1893,1231,3656,1154,4006,3069,1740,2353,3556,2397,454,1715,2520,3568,7166,3939,1514,7393,1193,7297,2831,1258,753,2427,2538,1264,8386,4844,2923,8229,2028,1433,6289,1409,6579,1743,3565,1569,1936,3959,2390,1736,3857,804,1845,4576];
+/* the model: logit = B0 + B·x ; x = [checking<0, checking 0–200, no checking, months, amount/1000, savings<100, age, poor history] */
+var B0=-1.7902,BX=[0.9751,0.8138,-0.7902,0.0316,0.0144,0.4375,-0.0149,1.1403];
+function pdOf(x){var z=B0;for(var i=0;i<BX.length;i++)z+=BX[i]*x[i];return 1/(1+Math.exp(-z));}
+var TH={t:0.30,m:15,l:50};   /* the threshold chosen in 3.2 B, read by 3.2 C */
+try{var _th=JSON.parse(localStorage.getItem('mfb545_w3_thr'));if(_th&&_th.t)TH=_th;}catch(e){}
+
+/* ---- 3.1 from data to decision ---- */
+buildSteps('scoreSteps','scoreNext',[
+  '<b>1 · The application.</b> The customer fills in the app: amount, term, income, expenses, job. Identity is checked by the Day 1 eKYC chain.',
+  '<b>2 · External data, with consent.</b> The credit register (ZEK and IKO in Switzerland, a credit information bureau in WAEMU) gives current loans and arrears. If the customer allows it, an <b>open-banking API</b> (Day 2, an AISP) reads twelve months of statements; in Africa, the mobile-wallet history plays that role.',
+  '<b>3 · The variables.</b> Raw data is turned into a few dozen variables: “negative average balance”, “number of payments more than 30 days late”, “salary paid in regularly”, “expenses-to-income ratio”. This is the step that makes a score good or bad.',
+  '<b>4 · The model.</b> A <b>logistic regression</b> adds up the weighted variables — the <em>logit</em> — then turns it into a probability: PD = 1 ÷ (1 + e<sup>−logit</sup>). Banks often translate it into <b>points</b> (a scorecard where, for example, +20 points double the good-payer odds). Digital lenders also use boosted decision trees, more accurate and harder to explain.',
+  '<b>5 · Rules before the score.</b> Some refusals never reach the model: minimum age, residence, detected fraud, an IKO entry, insufficient credit capacity (in Switzerland, the KKG requires that the credit can be repaid within 36 months without touching the subsistence minimum).',
+  '<b>6 · Threshold and price.</b> PD below the threshold: accepted, and the rate is set according to the PD (risk-based pricing), within the legal cap. Above: refused — or a smaller amount.',
+  '<b>7 · Afterwards.</b> The loan is monitored: every late payment is reported to the register, every repayment feeds the next score. The model itself is revalidated every year on recent loans, because the economy changes and the score degrades.'
+],'score');
+buildClassify('featRows','featRowsCap',
+  [['OK','Usable'],['J','Sensitive, must be justified'],['X','Exclude']],
+  [
+    {s:'Late payments over the last two years, from the credit register',a:'OK',w:'It is the most predictive variable there is, and checking it is provided for by law (ZEK, IKO, WAEMU credit bureaus).'},
+    {s:'The applicant’s sex',a:'X',w:'Forbidden as a decision criterion in the EU (Directive 2023/2225, Charter of Fundamental Rights); excluded in practice in Switzerland. Even if it “improves” the AUC.'},
+    {s:'Age',a:'J',w:'Our model uses it, like many scorecards. But age is a protected ground of discrimination: you must be able to justify that it measures a risk and not a prejudice, and check the effect by age band.'},
+    {s:'Twelve months of bank statements read through an open-banking API, with the customer’s consent',a:'OK',w:'This is the intended use of PSD2 (an AISP). Consent must be explicit, limited in time and in scope.'},
+    {s:'The home postcode',a:'J',w:'It predicts — and it can act as a proxy for the origin or income of a neighbourhood. To test: are refusals concentrated in certain neighbourhoods at equal risk?'},
+    {s:'The phone’s contact list and social-media activity',a:'X',w:'Disproportionate under data protection, and the source of the worst collection practices. Directive 2023/2225 excludes social-media data from the creditworthiness assessment; Kenya banned digital lenders from accessing contact lists in 2022.'},
+    {s:'The history of deposits, transfers and payments in a mobile-money wallet, with consent',a:'OK',w:'It is the basis of the M-Shwari score: for someone with no bank history, it is often the only data available.'},
+    {s:'Nationality',a:'X',w:'Directive 2023/2225 forbids any discrimination based on nationality or place of residence. The notebook’s dataset contains it: cell 7 shows why it is tempting.'}
+  ],
+  'useful data is not necessarily usable data.',null);
+
+/* ---- 3.2 A · notebook checks ---- */
+buildNum('nbNum',[
+  {id:'n1',q:'Cell 5 of the notebook: what is the <b>AUC on the test sample</b>, rounded to two decimals?',a:0.78,tol:0.006,unit:'',w:'Test AUC 0.784, Gini 0.568: an honest credit score. The training AUC is lower (0.766) — the luck of the split; usually it is a little higher, and a large gap signals a model that has learned by heart.',hint:'The line printed by cell 5: “AUC test: …”. No Colab? Ask a pair who opened it.'},
+  {id:'n3',q:'With a 15% margin and a 50% LGD, what is the <b>theoretical threshold</b>, as a % PD?',a:23.08,tol:0.005,unit:'%',w:'0.15 ÷ (0.15 + 0.50) = 23.1%. The best threshold observed on the 300 loans is 22%: the theory holds, up to sampling.',hint:'m ÷ (m + LGD), then × 100.'}
+]);
+
+/* ---- 3.2 B · threshold versus profitability ---- */
+(function threshold(){
+  need('thr');
+  var ctrl=document.getElementById('thCtrl'),hist=document.getElementById('thHist'),kpi=document.getElementById('thKpi'),cap=document.getElementById('thCap');
+  ctrl.innerHTML='<div class="ctrl"><label>Threshold: accept if the PD is below <span class="val" id="tv_t"></span></label><input type="range" min="0.02" max="0.9" step="0.01" data-k="t" value="'+TH.t+'"></div>'+
+    '<div class="ctrl"><label>Margin on a repaid loan <span class="val" id="tv_m"></span></label><input type="range" min="5" max="30" step="1" data-k="m" value="'+TH.m+'"></div>'+
+    '<div class="ctrl"><label>Loss given default (LGD) <span class="val" id="tv_l"></span></label><input type="range" min="20" max="90" step="5" data-k="l" value="'+TH.l+'"></div>';
+  function stats(t){var n=0,bad=0,good=0,res=0,refG=0,refB=0;for(var i=0;i<PDT.length;i++){var b=YT.charAt(i)==='1';if(PDT[i]<t){n++;if(b){bad++;res-=TH.l/100*AMT[i];}else{good++;res+=TH.m/100*AMT[i];}}else{if(b)refB++;else refG++;}}return {n:n,bad:bad,good:good,res:res,refG:refG,refB:refB};}
+  function best(){var bt=0.02,br=-1e18;for(var k=2;k<=90;k++){var r=stats(k/100).res;if(r>br){br=r;bt=k/100;}}return {t:bt,r:br};}
+  function draw(){
+    var W=640,H=150,P=24,bins=30,g=new Array(bins).fill(0),b=new Array(bins).fill(0),mx=1;
+    for(var i=0;i<PDT.length;i++){var k=Math.min(bins-1,Math.floor(PDT[i]*bins));if(YT.charAt(i)==='1')b[k]++;else g[k]++;}
+    for(var j=0;j<bins;j++)mx=Math.max(mx,g[j]+b[j]);
+    var bw=(W-2*P)/bins,s='<svg viewBox="0 0 '+W+' '+(H+30)+'" role="img" aria-label="Distribution of PDs">';
+    for(var j2=0;j2<bins;j2++){var x=P+j2*bw,hg=g[j2]/mx*H,hb=b[j2]/mx*H;
+      s+='<rect class="hg" x="'+(x+1)+'" y="'+(H-hg)+'" width="'+(bw-2)+'" height="'+hg+'"></rect><rect class="hb" x="'+(x+1)+'" y="'+(H-hg-hb)+'" width="'+(bw-2)+'" height="'+hb+'"></rect>';}
+    var tx=P+TH.t*(W-2*P);
+    s+='<rect class="hacc" x="'+P+'" y="0" width="'+(tx-P)+'" height="'+H+'"></rect><line class="hth" x1="'+tx+'" y1="0" x2="'+tx+'" y2="'+H+'"></line>';
+    for(var q=0;q<=10;q+=2){var qx=P+q/10*(W-2*P);s+='<text class="hax" x="'+qx+'" y="'+(H+16)+'" text-anchor="middle">'+(q*10)+' %</text>';}
+    s+='<text class="hax" x="'+(tx+4)+'" y="12">threshold</text><text class="hax" x="'+P+'" y="'+(H+28)+'">PD estimated by the model →</text></svg>';
+    hist.innerHTML=s;
+  }
+  function paint(){
+    document.getElementById('tv_t').textContent=fmt(TH.t*100)+' %';document.getElementById('tv_m').textContent=TH.m+' %';document.getElementById('tv_l').textContent=TH.l+' %';
+    var r=stats(TH.t);
+    kpi.innerHTML='<div class="k"><div class="v">'+r.n+' / 300</div><div class="l">accepted</div></div>'+
+      '<div class="k'+(r.n&&r.bad/r.n>0.15?' bad':'')+'"><div class="v">'+(r.n?fmt(r.bad/r.n*100,1):'0')+' %</div><div class="l">defaults among accepted</div></div>'+
+      '<div class="k"><div class="v">'+r.refG+'</div><div class="l">good customers refused</div></div>'+
+      '<div class="k"><div class="v">'+r.refB+' / 93</div><div class="l">defaults avoided</div></div>'+
+      '<div class="k '+(r.res>=0?'good':'bad')+'"><div class="v">'+fmt(r.res)+'</div><div class="l">portfolio result</div></div>';
+    cap.textContent='Accept everyone: 300 loans, 93 defaults (31%), result '+fmt(stats(2).res)+'. Theoretical threshold with these assumptions: '+fmt(TH.m/(TH.m+TH.l)*100,1)+' %.';
+    draw();
+  }
+  ctrl.querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){TH[i.dataset.k]=parseFloat(i.value);try{localStorage.setItem('mfb545_w3_thr',JSON.stringify(TH));}catch(e){}paint();markStep('thr');if(window.paintApplicant)paintApplicant();});});
+  document.getElementById('thBest').addEventListener('click',function(){var b=best();TH.t=b.t;ctrl.querySelector('[data-k=t]').value=b.t;try{localStorage.setItem('mfb545_w3_thr',JSON.stringify(TH));}catch(e){}paint();markStep('thr');if(window.paintApplicant)paintApplicant();
+    cap.textContent='Best threshold on these 300 loans: '+fmt(b.t*100)+' % → result '+fmt(b.r)+'. Theoretical threshold m ÷ (m + LGD): '+fmt(TH.m/(TH.m+TH.l)*100,1)+' %.';});
+  document.getElementById('thCopy').addEventListener('click',function(){
+    var r=stats(TH.t),el=document.querySelector('[data-work="w3_seuil"]'),rest=(el.value||'').split('\nWhy:')[1];
+    setWork('w3_seuil','Threshold '+fmt(TH.t*100)+' % (margin '+TH.m+' %, LGD '+TH.l+' %) → '+r.n+' accepted out of 300, '+r.bad+' defaults ('+(r.n?fmt(r.bad/r.n*100,1):'0')+' %), '+r.refG+' good customers refused, result '+fmt(r.res)+'\nWhy:'+(rest!=null?rest:' \nTo the customer refused at a 30% PD, I would say: '));
+  });
+  paint();
+})();
+buildNum('thNum',[
+  {id:'n2',q:'Set the margin back to 15% and the LGD to 50%, and put the threshold at <b>20%</b>. How many loans out of 300 are accepted?',a:127,tol:0,unit:'loans',w:'127 accepted, 14 of them defaults (11%): 79 of the 93 defaults are avoided and the default rate falls from 31% to 11% — but 94 good customers are turned away.',hint:'Read the first tile under the chart.'}
+]);
+
+/* ---- 3.2 C · one applicant ---- */
+(function applicant(){
+  need('appl');
+  var A={chk:'neg',dur:24,amt:3000,sav:1,age:30,hist:0},AK='mfb545_w3_appl',touched=false;
+  try{var o=JSON.parse(localStorage.getItem(AK));if(o)A=o;}catch(e){}
+  var ctrl=document.getElementById('apCtrl');
+  ctrl.innerHTML='<div class="ctrl"><label>Current account</label><select data-k="chk"><option value="neg">negative balance</option><option value="low">0 to 200</option><option value="high">200 or more</option><option value="none">no account at the bank</option></select></div>'+
+    '<div class="ctrl"><label>Term <span class="val" id="av_dur"></span></label><input type="range" min="6" max="60" step="6" data-k="dur"></div>'+
+    '<div class="ctrl"><label>Amount <span class="val" id="av_amt"></span></label><input type="range" min="500" max="15000" step="500" data-k="amt"></div>'+
+    '<div class="ctrl"><label>Savings below 100</label><select data-k="sav"><option value="1">yes</option><option value="0">no</option></select></div>'+
+    '<div class="ctrl"><label>Age <span class="val" id="av_age"></span></label><input type="range" min="19" max="75" step="1" data-k="age"></div>'+
+    '<div class="ctrl"><label>Poor credit history</label><select data-k="hist"><option value="0">no</option><option value="1">yes</option></select></div>';
+  ctrl.querySelectorAll('[data-k]').forEach(function(x){x.value=String(A[x.dataset.k]);x.addEventListener('input',function(){A[x.dataset.k]=x.dataset.k==='chk'?x.value:parseFloat(x.value);try{localStorage.setItem(AK,JSON.stringify(A));}catch(e){}markStep('appl');paint();});});
+  /* reasons are given per variable, the three checking-account indicators counted as one */
+  var GR=[[0,1,2],[3],[4],[5],[6],[7]],CHK={neg:'negative balance',low:'between 0 and 200',high:'200 or more',none:'none at the bank'};
+  function lbl(k){return ['the current account ('+CHK[A.chk]+')','the term ('+A.dur+' months)','the amount ('+fmt(A.amt)+')','savings below 100','age ('+A.age+')','a poor credit history'][k];}
+  /* the average test applicant, so a "reason" is a deviation from the norm */
+  var AVG=[0.30,0.24,0.40,21.49,3.48,0.59,36.07,0.10];
+  function vec(){return [A.chk==='neg'?1:0,A.chk==='low'?1:0,A.chk==='none'?1:0,A.dur,A.amt/1000,A.sav?1:0,A.age,A.hist?1:0];}
+  function paint(){
+    document.getElementById('av_dur').textContent=A.dur+' months';document.getElementById('av_amt').textContent=fmt(A.amt);document.getElementById('av_age').textContent=A.age+' years';
+    var x=vec(),p=pdOf(x),sc=600+20/Math.LN2*Math.log((1-p)/p/50),ok=p<TH.t;
+    document.getElementById('apKpi').innerHTML='<div class="k"><div class="v">'+fmt(p*100,1)+' %</div><div class="l">estimated PD</div></div><div class="k"><div class="v">'+fmt(sc)+'</div><div class="l">score in points</div></div>'+
+      '<div class="k '+(ok?'good':'bad')+'"><div class="v">'+(ok?'accepted':'refused')+'</div><div class="l">at the '+fmt(TH.t*100)+' % threshold (section B)</div></div>';
+    var c=GR.map(function(g,k){return {k:k,d:g.reduce(function(a,i){return a+BX[i]*(x[i]-AVG[i]);},0)};}).filter(function(o){return o.d>0.05;}).sort(function(a,b){return b.d-a.d;}).slice(0,2);
+    document.getElementById('apWhy').innerHTML='<b>The two reasons that raise the risk most</b>, compared with the average applicant: '+(c.length?c.map(function(o){return lbl(o.k)+' (+'+fmt(o.d,2)+' on the logit)';}).join(' ; '):'none — this profile is better than average on every variable')+
+      '. Score in points: 600 for odds of 50 good to 1 bad, +20 points each time the odds double.';
+  }
+  window.paintApplicant=paint;paint();
+})();
+buildNum('apNum',[
+  {id:'n4',q:'An applicant: current account with a negative balance, 24 months, 3,000, savings below 100, aged 30, normal history. What is their <b>PD</b>, in %?',a:49.4,tol:0.01,unit:'%',w:'Logit = −1.7902 + 0.9751 + 0.0316 × 24 + 0.0144 × 3 + 0.4375 − 0.0149 × 30 = −0.023, so PD = 49.4%: almost one chance in two. Refused at any reasonable threshold — and the two reasons to give are the negative current account and the low savings.',hint:'Set the profile in the calculator above and read the first tile.'}
+]);
+
+/* ---- 3.3 revenue lines ---- */
+buildClassify('neoRows','neoRowsCap',
+  [['I','Interchange'],['F','FX'],['A','Subscription'],['N','Interest margin'],['C','Credit']],
+  [
+    {s:'You pay CHF 4.80 for a coffee in Lausanne with your neobank card',a:'I',w:'The neobank is the issuer: it earns the interchange, here 0.44% on average in Switzerland — two centimes.'},
+    {s:'CHF 2,000 stays in your account all month',a:'N',w:'The neobank places it (central bank, short-term securities) and passes part of the return on to you, or nothing.'},
+    {s:'You switch to the Premium plan at 9.99 a month for the travel insurance',a:'A',w:'Fixed, predictable revenue: that is why neobanks push their paid plans.'},
+    {s:'On a Saturday, you change CHF 500 into CFA francs in the app',a:'F',w:'At weekends the currency markets are closed: many neobanks add a mark-up to cover the exchange-rate risk.'},
+    {s:'You spread the purchase of a laptop over six months in the app',a:'C',w:'A credit, with interest or fees: the most profitable line, but it needs a score, a licence and capital.'},
+    {s:'You pay €120 in a restaurant in Paris with the same card',a:'I',w:'Interchange again: capped at 0.2% for a European debit card. And no FX if your account has a euro sub-account.'}
+  ],
+  'each line is small: profitability comes from the number of lines per customer.',null);
+
+/* ---- 3.4 A · unit economics ---- */
+(function unitEcon(){
+  need('ue');
+  var PR={eu:{spend:800,ic:0.2,paid:10,price:9,dep:2000,nim:1.5,fx:150,mk:0.5,cost:2.5,churn:1.5,cac:80},
+          ch:{spend:1200,ic:0.44,paid:6,price:5,dep:3500,nim:0.4,fx:250,mk:0.95,cost:3.5,churn:1.0,cac:120},
+          multi:{spend:1000,ic:0.2,paid:15,price:10,dep:3000,nim:2,fx:300,mk:0.5,cost:4,churn:0.8,cac:60}};
+  var C=[['spend','Card spending per month',0,3000,50,'CHF'],['ic','Interchange',0,1,0.02,'%'],['paid','Share of customers on a paid plan',0,40,1,'%'],['price','Plan price per month',0,20,0.5,'CHF'],
+         ['dep','Average deposit',0,10000,100,'CHF'],['nim','Annual interest margin on deposits',0,4,0.1,'%'],['fx','FX per month',0,1000,10,'CHF'],['mk','FX margin',0,2,0.05,'%'],
+         ['cost','Variable cost per customer per month',0,10,0.1,'CHF'],['churn','Monthly churn',0.2,6,0.1,'%'],['cac','Acquisition cost (CAC)',0,300,5,'CHF']];
+  var UK='mfb545_w3_ue',v=JSON.parse(JSON.stringify(PR.eu)),cur='eu';
+  try{var o=JSON.parse(localStorage.getItem(UK));if(o&&o.v){v=o.v;cur=o.p;}}catch(e){}
+  var ctrl=document.getElementById('ueCtrl');
+  function build(){ctrl.innerHTML=C.map(function(c){return '<div class="ctrl"><label>'+c[1]+' <span class="val" id="uv_'+c[0]+'"></span></label><input type="range" min="'+c[2]+'" max="'+c[3]+'" step="'+c[4]+'" value="'+v[c[0]]+'" data-k="'+c[0]+'"></div>';}).join('');
+    ctrl.querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){v[i.dataset.k]=parseFloat(i.value);save2();markStep('ue');paint();});});
+    document.querySelectorAll('#ueTpl button').forEach(function(b){b.classList.toggle('on',b.dataset.v===cur);});}
+  function save2(){try{localStorage.setItem(UK,JSON.stringify({v:v,p:cur}));}catch(e){}}
+  document.getElementById('ueTpl').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;cur=b.dataset.v;v=JSON.parse(JSON.stringify(PR[cur]));save2();build();paint();if(cur!=='eu')markStep('ue');});
+  function paint(){
+    C.forEach(function(c){document.getElementById('uv_'+c[0]).textContent=fmt(v[c[0]],c[4]<1?2:(c[4]<1.5&&c[4]%1?1:0))+' '+c[5];});
+    var L=[['Interchange',v.spend*v.ic/100],['Subscriptions',v.paid/100*v.price],['Interest margin',v.dep*v.nim/100/12],['FX',v.fx*v.mk/100]];
+    var arpu=L.reduce(function(a,x){return a+x[1];},0),con=arpu-v.cost,ltv=con>0?con/(v.churn/100):0,ratio=v.cac>0?ltv/v.cac:0,pb=con>0?v.cac/con:Infinity;
+    document.getElementById('ueTab').innerHTML='<tr><th>Per active customer per month</th><th>CHF</th><th>share of ARPU</th></tr>'+
+      L.map(function(x){return '<tr><td>'+x[0]+'</td><td>'+fmt(x[1],2)+'</td><td>'+(arpu?fmt(x[1]/arpu*100):0)+' %</td></tr>';}).join('')+
+      '<tr class="tot"><td>ARPU</td><td>'+fmt(arpu,2)+'</td><td>100 %</td></tr><tr><td>− variable cost</td><td>'+fmt(-v.cost,2)+'</td><td></td></tr>'+
+      '<tr class="tot"><td>Contribution</td><td class="'+(con>=0?'pos':'neg')+'">'+fmt(con,2)+'</td><td></td></tr>';
+    document.getElementById('ueKpi').innerHTML='<div class="k"><div class="v">'+fmt(1/(v.churn/100))+' months</div><div class="l">average lifetime</div></div>'+
+      '<div class="k"><div class="v">'+fmt(ltv)+'</div><div class="l">LTV (CHF)</div></div>'+
+      '<div class="k '+(ratio>=3?'good':(ratio<1?'bad':''))+'"><div class="v">'+fmt(ratio,2)+'</div><div class="l">LTV ÷ CAC (target ≥ 3)</div></div>'+
+      '<div class="k '+(pb<=18?'good':(pb>36?'bad':''))+'"><div class="v">'+(isFinite(pb)?fmt(pb,1)+' months':'never')+'</div><div class="l">payback period</div></div>';
+  }
+  build();paint();
+})();
+buildNum('ueNum',[
+  {id:'l1',q:'A neobank: ARPU CHF 6 a month, contribution margin 60%, churn 2% a month. What is the <b>LTV</b>?',a:180,unit:'CHF',w:'6 × 0.60 = CHF 3.60 of contribution a month, for 1 ÷ 0.02 = 50 months on average: CHF 180.',hint:'ARPU × margin ÷ churn (as a decimal).'},
+  {id:'l2',q:'The same, but churn rises to <b>4%</b> a month (customers open the account for the bonus, then abandon it). LTV?',a:90,unit:'CHF',w:'3.60 ÷ 0.04 = CHF 90: churn doubles, LTV is halved. With a CAC of CHF 90, each customer only pays back what they cost.',hint:'Only churn changes.'},
+  {id:'l3',q:'With a CAC of CHF 90 and the same contribution of CHF 3.60 a month, what is the <b>payback period</b>?',a:25,unit:'months',w:'90 ÷ 3.60 = 25 months — well beyond the 12 to 18 months aimed for. If the customer leaves before then, their acquisition is lost.',hint:'CAC ÷ monthly contribution.'}
+]);
+
+/* ---- 3.4 B · the published income statement, per customer ---- */
+(function neo(){
+  need('neo');
+  var NK='mfb545_w3_neo',st={name:'',cur:'CHF',cl:'',rev:'',res:'',src:''};
+  try{var o=JSON.parse(localStorage.getItem(NK));if(o)st=o;}catch(e){}
+  var tab=document.getElementById('neoTab');
+  var FIX=[{n:'Revolut · 2024',c:'£',cl:52.5,rev:3100,res:1100,r:'profit before tax'},{n:'N26 · 2023',c:'€',cl:4.2,rev:313.5,res:-102.4,r:'net result'}];
+  function per(cl,x){return cl>0?x/cl:NaN;}
+  function cell(x,c){return isNaN(x)?'':(c+' '+fmt(x,2));}
+  function build(){
+    tab.innerHTML='<tr><th></th><th>Revolut · 2024</th><th>N26 · 2023</th><th><input id="nb_name" placeholder="your neobank · year" style="text-align:left"></th></tr>'+
+      '<tr><td>Currency</td><td>£</td><td>€</td><td><input id="nb_cur"></td></tr>'+
+      '<tr><td>Customers (millions)</td><td>52.5</td><td>4.2 <small>“revenue-relevant”</small></td><td><input id="nb_cl"></td></tr>'+
+      '<tr><td>Revenue (millions)</td><td>3,100</td><td>313.5</td><td><input id="nb_rev"></td></tr>'+
+      '<tr><td>Result (millions)</td><td>1,100 <small>before tax</small></td><td>−102.4 <small>net</small></td><td><input id="nb_res"></td></tr>'+
+      '<tr class="tot"><td>Revenue per customer</td><td id="o0r"></td><td id="o1r"></td><td id="o2r"></td></tr>'+
+      '<tr class="tot"><td>Costs per customer (revenue − result)</td><td id="o0c"></td><td id="o1c"></td><td id="o2c"></td></tr>'+
+      '<tr class="tot"><td>Result per customer</td><td id="o0x"></td><td id="o1x"></td><td id="o2x"></td></tr>'+
+      '<tr><td>Source</td><td><small>Annual Report 2024</small></td><td><small>press release, 13.11.2024</small></td><td><input id="nb_src" placeholder="link or document" style="text-align:left"></td></tr>';
+    [['name','nb_name'],['cur','nb_cur'],['cl','nb_cl'],['rev','nb_rev'],['res','nb_res'],['src','nb_src']].forEach(function(p){var i=document.getElementById(p[1]);i.value=st[p[0]]||'';i.addEventListener('input',function(){st[p[0]]=i.value;try{localStorage.setItem(NK,JSON.stringify(st));}catch(e){}paint();});});
+    paint();
+  }
+  function paint(){
+    FIX.forEach(function(f,k){var r=per(f.cl,f.rev),x=per(f.cl,f.res);document.getElementById('o'+k+'r').textContent=cell(r,f.c);document.getElementById('o'+k+'c').textContent=cell(r-x,f.c);var e=document.getElementById('o'+k+'x');e.textContent=cell(x,f.c);e.className=x>=0?'pos':'neg';});
+    var cl=num(st.cl),rv=num(st.rev),rs=num(st.res),c=st.cur||'',r=per(cl,rv),x=per(cl,rs);
+    document.getElementById('o2r').textContent=cell(r,c);document.getElementById('o2c').textContent=isNaN(x)?'':cell(r-x,c);var e2=document.getElementById('o2x');e2.textContent=cell(x,c);e2.className=isNaN(x)?'':(x>=0?'pos':'neg');
+    if(cl>0&&rv>0&&(st.name||'').trim())markStep('neo');
+  }
+  document.getElementById('neoCopy').addEventListener('click',function(){
+    var cl=num(st.cl),rv=num(st.rev),rs=num(st.res),el=document.querySelector('[data-work="w3_neo"]'),rest=(el.value||'').split('\nWhy:')[1];
+    var lines=['Per customer: Revolut 2024 revenue £59.05, profit before tax £20.95 · N26 2023 revenue €74.64, net result −€24.38',
+      (st.name||'?')+' : '+(cl>0?'revenue '+(st.cur||'')+' '+fmt(rv/cl,2)+(isNaN(rs)?'':', result '+(st.cur||'')+' '+fmt(rs/cl,2)):'(column to fill in)')+' · source: '+(st.src||'?')];
+    setWork('w3_neo',lines.join('\n')+'\nWhy:'+(rest!=null?rest:' '));
+  });
+  build();
+})();
+buildNum('neoNum',[
+  {id:'r1',q:'Revolut 2024: what is the <b>revenue per customer</b>, in pounds?',a:59.05,tol:0.005,unit:'£',w:'3,100 ÷ 52.5 = £59.05 per customer per year, less than £5 a month. Profit before tax: £20.95 per customer.',hint:'Revenue ÷ customers, both in millions.'},
+  {id:'r2',q:'N26 2023: what is the <b>net result per customer</b>, in euros?',a:-24.38,tol:0.005,unit:'€',w:'−102.4 ÷ 4.2 = −€24.38 per customer. Yet N26 earns €74.64 of revenue per customer, more than Revolut: the difference lies in costs per customer (€99 against £38) — scale, the cost of the compliance BaFin demanded, and fewer revenue lines.',hint:'Result ÷ customers; the sign matters.'}
+]);
+
+/* ---- 3.5 the quiz · positions 2 0 3 1 1 3 0 2 ---- */
+buildQuiz([
+  {q:'A CHF 10,000 loan, PD 5%, LGD 60%. The expected loss is…',
+   opts:['CHF 500','CHF 6,000','CHF 300','CHF 30'],a:2,
+   w:'PD × LGD × EAD = 0.05 × 0.60 × 10,000 = CHF 300. The price of credit must at least cover it.'},
+  {q:'A credit score has an AUC of 0.5 on the test sample. This means…',
+   opts:['it ranks no better than chance','it is wrong about defaults half the time','it accepts 50% of applications','it is excellent: 0.5 is the norm'],a:0,
+   w:'0.5 = a bad payer is as likely as a good one to get the riskier score. Gini = 0.'},
+  {q:'The lender raises its acceptance threshold (it accepts higher PDs). In general…',
+   opts:['volume falls and the default rate falls','nothing changes if the model is good','volume falls and the default rate rises','volume rises and the default rate among accepted loans rises'],a:3,
+   w:'More customers accepted, but the new ones are riskier than the earlier ones: the average default rate rises. The result rises as long as the new loans earn more than they cost.'},
+  {q:'A 15% margin on a repaid loan, a 50% LGD. The theoretical threshold is about…',
+   opts:['15 %','23 %','50 %','65 %'],a:1,
+   w:'0.15 ÷ (0.15 + 0.50) = 23.1%. Below it, a loan earns money in expectation; above it, it costs.'},
+  {q:'A neobank’s customer lifetime value (LTV) is calculated as…',
+   opts:['CAC × churn','ARPU × contribution margin ÷ monthly churn','ARPU × number of customers','total revenue ÷ CAC'],a:1,
+   w:'The monthly contribution, multiplied by the average lifetime (1 ÷ churn).'},
+  {q:'Monthly churn rises from 2% to 4%. LTV…',
+   opts:['rises by 2%','does not change','doubles','is halved'],a:3,
+   w:'Average lifetime falls from 50 to 25 months.'},
+  {q:'Why does a European neobank earn little on each debit-card payment?',
+   opts:['Because interchange is capped at 0.2% in the EU','Because Visa keeps the whole fee','Because the merchant pays nothing','Because the ECB taxes every payment'],a:0,
+   w:'Regulation 2015/751: 0.2% for debit, 0.3% for credit. On €800 of spending, €1.60 a month.'},
+  {q:'N26 (2023) earned more revenue per customer than Revolut (2024), and lost money. The main reason:',
+   opts:['its customers paid fewer fees','interest rates were negative in 2023','much higher costs per customer, for lack of scale','the pound is worth more than the euro'],a:2,
+   w:'≈ €99 of costs per customer against ≈ £38: a platform and compliance with largely fixed costs, spread over 4 million customers instead of 50.'}
+],'s5',['Excellent — the morning is in the bag.','Good. Reread the explanations of the questions you missed.','Reread sections 3.1 and 3.3: it is all there.']);
+
+/* ---- 3.6 a P2P loan, step by step ---- */
+buildSteps('p2pSteps','p2pNext',[
+  '<b>1 · The application.</b> The SME uploads its accounts and its project to the platform: CHF 300,000 over three years for a machine.',
+  '<b>2 · The analysis.</b> The platform (not the lenders) analyses the file, assigns a <b>risk grade</b> (A to E) and a rate, for example 6.5% for a grade B.',
+  '<b>3 · The raise.</b> The project is published; 600 individuals lend CHF 100 to 5,000 each. If the amount is not reached in time, the money is returned.',
+  '<b>4 · The payout.</b> The funds pass through an account of the platform or a partner bank — in Switzerland, a <em>settlement account</em> that must be emptied within 60 days — then are paid to the SME, minus the platform’s commission (2 to 4% of the amount, paid by the borrower).',
+  '<b>5 · The repayments.</b> Each month the SME repays; the platform distributes to the 600 lenders, minus its servicing fees (often ~1% a year, paid by the lenders).',
+  '<b>6 · Default.</b> If the SME stops paying, the platform chases and collects on the lenders’ behalf. The lenders bear the loss; the platform has already collected its commission — hence the incentive problem: it earns on volume, not on quality.'
+],'p2p');
+buildClassify('cfRows','cfRowsCap',
+  [['D','Donation'],['R','Reward'],['P','Lending'],['E','Equity']],
+  [
+    {s:'400 people pay CHF 75 each to receive a bag from the first batch, made in Dakar',a:'R',w:'A pre-sale: what they get is a product, not a return.'},
+    {s:'An SME borrows CHF 300,000 at 4.5% over three years from 600 individuals',a:'P',w:'Crowdlending: the lender expects principal and interest.'},
+    {s:'120 investors together buy 8% of the shares of a young fintech',a:'E',w:'Equity crowdfunding: they share the risk and the success, with no repayment date.'},
+    {s:'A collection to rebuild a neighbourhood school after a flood',a:'D',w:'No financial or material return.'},
+    {s:'Backers receive a T-shirt and their name on the project’s website',a:'R',w:'A symbolic reward — a gift with something in return, but no return on money.'},
+    {s:'One individual lends CHF 2,000 to another, through a platform, to buy a used car',a:'P',w:'Peer-to-peer lending: in Switzerland, this credit to a consumer may fall under the KKG.'}
+  ],
+  'what backers get decides the regime: nothing, a product, interest, or shares.',null);
+
+/* ---- 3.7 A · the campaign ---- */
+buildNum('cfNum',[
+  {id:'c1',q:'How much does the designer keep, in CHF, once the platform, payment processing, making the promised bags and shipping are paid?',a:16600,unit:'CHF',w:'Raised 400 × 75 = 30,000; platform and payment 8% = 2,400; production 30% = 9,000; shipping 400 × 5 = 2,000. 16,600 remains, 55% of the amount raised — before her own working hours.',hint:'Amount raised − 8% − 30% − shipping.'}
+]);
+
+/* ---- 3.7 B · the P2P portfolio simulator ---- */
+(function p2p(){
+  need('mc');
+  var G={A:[4,1.5],B:[6,3],C:[9,6],D:[13,11],E:[18,18]},LGD=0.70,FEE=0.01,RUNS=2000,PK='mfb545_w3_p2p';
+  var st={g:'C',n:10,log:[]};try{var o=JSON.parse(localStorage.getItem(PK));if(o&&o.log)st=o;}catch(e){}
+  document.getElementById('pCtrl').innerHTML='<div class="ctrl"><label>Risk grade</label><select id="pG">'+Object.keys(G).map(function(k){return '<option value="'+k+'">'+k+' · rate '+G[k][0]+' % · PD '+G[k][1]+' %</option>';}).join('')+'</select></div>'+
+    '<div class="ctrl"><label>Number of loans (CHF 10,000 split equally)</label><select id="pN"><option>1</option><option>10</option><option>50</option><option>200</option></select></div>';
+  var gs=document.getElementById('pG'),ns=document.getElementById('pN');gs.value=st.g;ns.value=String(st.n);
+  document.getElementById('pGrades').innerHTML='<tr><th>Grade</th><th>Advertised rate</th><th>PD</th><th>Expected return</th></tr>'+Object.keys(G).map(function(k){var r=G[k][0]/100,p=G[k][1]/100;return '<tr><td>'+k+'</td><td>'+G[k][0]+' %</td><td>'+G[k][1]+' %</td><td>to calculate ↓</td></tr>';}).join('');
+  /* a seeded generator, so a given choice always gives the same 2 000 years: the class can compare screens */
+  function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  function sim(g,n){
+    var r=G[g][0]/100,p=G[g][1]/100,R=rng(g.charCodeAt(0)*1000+n),out=[];
+    for(var k=0;k<RUNS;k++){var d=0;for(var j=0;j<n;j++)if(R()<p)d++;out.push(((n-d)*r-d*LGD)/n-FEE);}
+    out.sort(function(a,b){return a-b;});
+    var mean=out.reduce(function(a,x){return a+x;},0)/RUNS,loss=out.filter(function(x){return x<0;}).length/RUNS;
+    return {out:out,mean:mean,loss:loss,p5:out[Math.floor(RUNS*0.05)],med:out[Math.floor(RUNS/2)]};
+  }
+  function hist(o){
+    var lo=-0.75,hi=0.20,bins=38,h=new Array(bins).fill(0),mx=1;
+    o.out.forEach(function(x){var k=Math.max(0,Math.min(bins-1,Math.floor((x-lo)/(hi-lo)*bins)));h[k]++;});h.forEach(function(c){mx=Math.max(mx,c);});
+    var W=640,H=130,P=24,bw=(W-2*P)/bins,s='<svg viewBox="0 0 '+W+' '+(H+22)+'" role="img" aria-label="Distribution of returns">';
+    h.forEach(function(c,k){var hh=c/mx*H,x0=lo+k*(hi-lo)/bins;s+='<rect class="'+(x0<0?'hb':'hg')+'" x="'+(P+k*bw+1)+'" y="'+(H-hh)+'" width="'+(bw-2)+'" height="'+hh+'"></rect>';});
+    var zx=P+(0-lo)/(hi-lo)*(W-2*P);s+='<line class="hth" x1="'+zx+'" y1="0" x2="'+zx+'" y2="'+H+'"></line>';
+    [-0.6,-0.4,-0.2,0,0.2].forEach(function(t){s+='<text class="hax" x="'+(P+(t-lo)/(hi-lo)*(W-2*P))+'" y="'+(H+16)+'" text-anchor="middle">'+fmt(t*100)+' %</text>';});
+    return s+'</svg>';
+  }
+  function show(o,g,n){
+    document.getElementById('pHist').innerHTML=hist(o);
+    document.getElementById('pKpi').innerHTML='<div class="k"><div class="v">'+fmt(o.mean*100,2)+' %</div><div class="l">average return</div></div><div class="k"><div class="v">'+fmt(o.med*100,2)+' %</div><div class="l">median return</div></div>'+
+      '<div class="k '+(o.loss>0.2?'bad':(o.loss<0.05?'good':''))+'"><div class="v">'+fmt(o.loss*100,1)+' %</div><div class="l">years with a loss</div></div><div class="k"><div class="v">'+fmt(o.p5*100,1)+' %</div><div class="l">one year in twenty, worse than</div></div>';
+  }
+  function paintLog(){
+    document.getElementById('pLog').innerHTML=st.log.length?'<tr><th>Grade</th><th>Loans</th><th>Average</th><th>Years with a loss</th><th>1 in 20, worse than</th></tr>'+st.log.map(function(l){return '<tr><td>'+l.g+'</td><td>'+l.n+'</td><td>'+fmt(l.m,2)+' %</td><td>'+fmt(l.l,1)+' %</td><td>'+fmt(l.p,1)+' %</td></tr>';}).join(''):'';
+  }
+  document.getElementById('pRun').addEventListener('click',function(){
+    var g=gs.value,n=parseInt(ns.value,10),o=sim(g,n);st.g=g;st.n=n;show(o,g,n);
+    if(!st.log.some(function(l){return l.g===g&&l.n===n;}))st.log.push({g:g,n:n,m:+(o.mean*100).toFixed(2),l:+(o.loss*100).toFixed(1),p:+(o.p5*100).toFixed(1)});
+    try{localStorage.setItem(PK,JSON.stringify(st));}catch(e){}paintLog();
+    if(st.log.length>=3)markStep('mc');
+    setWork('w3_p2p',st.log.map(function(l){return 'Grade '+l.g+' × '+l.n+' loans: average '+fmt(l.m,2)+' %, years with a loss '+fmt(l.l,1)+' %, 1 year in 20 worse than '+fmt(l.p,1)+' %';}).join('\n')+'\nWhat I take from it:'+((document.querySelector('[data-work="w3_p2p"]').value||'').split('\nWhat I take from it:')[1]||' '));
+  });
+  paintLog();if(st.log.length){var last=st.log[st.log.length-1];show(sim(last.g,last.n),last.g,last.n);}
+})();
+buildNum('pNum',[
+  {id:'p1',q:'Expected return on a <b>grade E</b> loan (rate 18%, PD 18%, LGD 70%, fees 1%), in %?',a:1.16,tol:0.01,unit:'%',w:'0.82 × 18 − 0.18 × 70 − 1 = 14.76 − 12.60 − 1 = 1.16%: the highest rate, one of the lowest returns.',hint:'(1 − PD) × rate − PD × LGD − fees.'},
+  {id:'p2',q:'Same calculation for <b>grade C</b> (rate 9%, PD 6%)?',a:3.26,tol:0.01,unit:'%',w:'0.94 × 9 − 0.06 × 70 − 1 = 8.46 − 4.20 − 1 = 3.26%: the best of the five grades. The simulator confirms it — and shows that with a single loan you lose 70% about one year in sixteen.',hint:'(1 − 0.06) × 9 − 0.06 × 70 − 1.'}
+]);
+
+/* ---- 3.7 C · the BNPL debate ---- */
+buildClassify('bnplRows','bnplRowsCap',
+  [['O','“It is credit”'],['N','“It is not credit”']],
+  [
+    {s:'The provider pays the merchant at once; the customer repays later',a:'O',w:'That is the definition of credit: an advance of funds repayable later.'},
+    {s:'No interest is charged to a customer who pays on time',a:'N',w:'The historical argument for the exemption: no interest, no fees, no cost of credit for the customer.'},
+    {s:'A CHF 5 late fee on a CHF 25 instalment, two weeks late',a:'O',w:'Annualised, that is a cost of over 500%: those who pay late fund the model.'},
+    {s:'It is the merchant, not the customer, who pays the fee',a:'N',w:'The model looks like a payment card: revenue comes from acceptance, not from the customer.'},
+    {s:'A customer can open plans with several providers without any of them seeing the others',a:'O',w:'“Phantom” debt: as long as BNPL is not reported to credit registers, the creditworthiness assessment is blind.'},
+    {s:'The amounts are small and the term short: six weeks',a:'N',w:'The proportionality argument; that is why Switzerland excludes credit repayable within three months.'},
+    {s:'EU Directive 2023/2225 brings deferred payment into consumer credit from 20 November 2026',a:'O',w:'The EU legislator has decided: creditworthiness assessment and pre-contractual information, with possible lighter rules.'},
+    {s:'In the UK, since July 2026 the FCA has required an affordability check before every plan',a:'O',w:'Deferred payment credit is a regulated activity there, and the customer can go to the Financial Ombudsman.'}
+  ],
+  'both sides have arguments; the regulators have chosen.',null);
+buildNum('bnNum',[
+  {id:'k1',q:'A CHF 5 late fee on a CHF 25 instalment paid 14 days late: what <b>annual cost</b> (simple), in %?',a:521.4,tol:0.002,unit:'%',w:'5 ÷ 25 = 20% for 14 days; × 365 ÷ 14 = 521% a year. The Swiss cap for a cash loan is 10%.',hint:'(fee ÷ amount) × (365 ÷ days) × 100.'}
+]);
+
+/* ---- 3.8 effects and drifts ---- */
+buildClassify('afRows','afRowsCap',
+  [['E','Positive effect'],['Z','No effect'],['D','Abuse']],
+  [
+    {s:'Households with access to M-Shwari forgo essential spending less often after a shock',a:'E',w:'−6.3 points (Bharadwaj, Jack and Suri, 2021): digital credit works as insurance against hard knocks.'},
+    {s:'Access to M-Shwari and households’ savings or productive assets',a:'Z',w:'The study finds no effect: the loan helps absorb a shock, it does not make people richer.'},
+    {s:'Apps wrote to the phone contacts of a borrower who was late',a:'D',w:'Debt shaming, banned in Kenya since 2022 — and still found in 2025.'},
+    {s:'Borrowers reported to credit bureaus for a few hundred unpaid shillings',a:'D',w:'A lasting exclusion from credit for a tiny debt; since 2022, no reporting below 1,000 shillings.'},
+    {s:'Access to M-Pesa and poverty in Kenya (Day 2)',a:'E',w:'About 2% of households lifted out of extreme poverty (Suri and Jack, 2016) — an effect of payments, not of credit.'},
+    {s:'A credit refusal given with no reason at all, by a model nobody can explain',a:'D',w:'The customer can neither challenge it nor improve; this is what Directive 2023/2225 and the AI Act aim to prevent in Europe.'}
+  ],
+  'digital credit protects against shocks; badly regulated, it creates them.',null);
+buildNum('afNum',[
+  {id:'a1',q:'M-Shwari: a 7.5% fee for a 30-day loan. <b>Simple annual cost</b>, in %?',a:91.25,tol:0.002,unit:'%',w:'7.5 × 365 ÷ 30 = 91.25% a year, nearly four times the WAEMU usury rate for microfinance institutions (24%).',hint:'The 30-day rate × (365 ÷ 30).'},
+  {id:'a2',q:'And if the borrower takes a new loan as soon as the previous one is repaid, all year long: <b>compound annual cost</b>, in %?',a:141.1,tol:0.003,unit:'%',w:'1.075<sup>365/30</sup> − 1 = 141.1%. This is the figure for a customer who “rolls over” their debt — the very pattern of over-indebtedness.',hint:'(1 + 0.075) to the power (365 ÷ 30), minus 1.'}
+]);
+
+/* ---- 3.9 the price tester ---- */
+(function price(){
+  need('price');
+  var PK='mfb545_w3_price',p={amt:100000,days:30,fee:2000,rate:0,cur:'FCFA'};
+  try{var o=JSON.parse(localStorage.getItem(PK));if(o)p=o;}catch(e){}
+  var ctrl=document.getElementById('prCtrl');
+  ctrl.innerHTML='<div class="ctrl"><label>Amount lent</label><input type="number" data-k="amt" min="1"></div><div class="ctrl"><label>Currency</label><select data-k="cur"><option>FCFA</option><option>CHF</option><option>EUR</option></select></div>'+
+    '<div class="ctrl"><label>Term (days)</label><input type="number" data-k="days" min="1"></div><div class="ctrl"><label>Flat fees (same currency)</label><input type="number" data-k="fee" min="0"></div>'+
+    '<div class="ctrl"><label>Annual interest rate (%)</label><input type="number" data-k="rate" min="0" step="0.1"></div>';
+  ctrl.querySelectorAll('[data-k]').forEach(function(x){x.value=String(p[x.dataset.k]);x.addEventListener('input',function(){p[x.dataset.k]=x.dataset.k==='cur'?x.value:num(x.value);try{localStorage.setItem(PK,JSON.stringify(p));}catch(e){}markStep('price');paint();});});
+  function paint(){
+    if(!(p.amt>0&&p.days>0)){document.getElementById('prKpi').innerHTML='';return;}
+    var cost=(p.fee||0)+p.amt*(p.rate||0)/100*p.days/365,apr=cost/p.amt*365/p.days*100;
+    var caps=[['Switzerland · cash loan',10],['Switzerland · overdraft, card',12],['WAEMU · banks',14],['WAEMU · microfinance (SFD)',24]];
+    document.getElementById('prKpi').innerHTML='<div class="k"><div class="v">'+fmt(cost)+' '+esc(p.cur)+'</div><div class="l">total cost to the customer</div></div><div class="k '+(apr>24?'bad':(apr<=10?'good':''))+'"><div class="v">'+fmt(apr,1)+' %</div><div class="l">annual cost (simple)</div></div>'+
+      caps.map(function(c){var ok=apr<=c[1];return '<div class="k '+(ok?'good':'bad')+'"><div class="v">'+(ok?'✓':'✗')+' '+c[1]+' %</div><div class="l">'+c[0]+'</div></div>';}).join('');
+    document.getElementById('prNote').textContent='Approximation for a single repayment: cost ÷ amount × 365 ÷ days. The legal annual percentage rate includes all mandatory fees; for several instalments, it is computed on the actual cash flows. For a savings product: enter the rate paid to the customer and 0 fees, and compare it with inflation.';
+  }
+  paint();
+})();
+buildPick('rvRows','rvRowsCap',[
+  {id:'rv1',s:'The customer and their need are precise: we know who borrows or saves, how much, and why.',opts:[['y','Yes'],['m','To be clarified'],['n','No']]},
+  {id:'rv2',s:'The annual cost is calculated and respects the cap of the target country.',opts:[['y','Yes'],['m','To be checked'],['n','No']]},
+  {id:'rv3',s:'The score’s data is available, permitted, and obtained with consent.',opts:[['y','Yes'],['m','To be clarified'],['n','No']]},
+  {id:'rv4',s:'A refused customer gets an understandable reason, and can do something about it.',opts:[['y','Yes'],['m','Partly'],['n','No']]},
+  {id:'rv5',s:'At least one real safeguard against over-indebtedness.',opts:[['y','Yes'],['m','Too weak'],['n','No']]}
+],'tell the reviewed team your five answers, with a suggestion for every “no”.');
+
+bootDay();
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
