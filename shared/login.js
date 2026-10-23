@@ -649,7 +649,44 @@ window.CourseLogin = (function () {
       x.title=v==='student'?'See and do everything as a student, recorded under a hidden account':'Instructor view: release buttons, quiz launch, nothing recorded';
       x.addEventListener('click',function(){ if(h!==v)setHat(v); });return x;}
     b.appendChild(btn('instructor','👁 Instructor'));b.appendChild(btn('student','🎓 Student (hidden)'));
+    var r=document.createElement('button');r.type='button';r.textContent='↺ Reset';
+    r.title='Forget everything clicked or typed in this course on this device (and the hidden student\'s record), then reload';
+    r.style.cssText='border:none;border-left:1px solid rgba(255,255,255,.18);border-radius:0 30px 30px 0;padding:7px 11px;cursor:pointer;font:inherit;background:transparent;color:#f3c98b;';
+    r.addEventListener('click',resetCourse);b.appendChild(r);
     document.body.appendChild(b);
+  }
+  /* ↺ Reset (instructor devices only): wipes this course's answers on this
+     device — every localStorage key under the course prefix except the
+     sign-in and the instructor's own records (the reflection draws) — and,
+     because a reload would otherwise pull it back, the hidden student's
+     mod/ work/ team in the database, with the instructor account's token.
+     Walls are left alone: they never carry the hidden student. */
+  function resetCourse(){
+    if(!confirm('Reset this course on this device?\n\nEvery answer, pick, tick and progress you made here (in either view) is forgotten, and the hidden student\'s record is cleared. Students are not affected.'))return;
+    var gone=0;
+    try{
+      var keys=[];for(var i=0;i<localStorage.length;i++)keys.push(localStorage.key(i));
+      keys.forEach(function(k){
+        if(!k||k.indexOf(K+'_')!==0)return;
+        if(k===K+'_auth'||k===K+'_lang'||/_refl_draw/.test(k))return;
+        localStorage.removeItem(k);gone++;
+      });
+    }catch(e){}
+    function token(){
+      if(window.__fbUser)return window.__fbUser.getIdToken();
+      return new Promise(function(res,rej){var sc=document.createElement('script');sc.src='/shared/fb-auth.js';
+        sc.onload=function(){window.__fbUser?window.__fbUser.getIdToken().then(res,rej):rej(new Error('signed-out'));};
+        sc.onerror=function(){rej(new Error('load'));};document.head.appendChild(sc);});
+    }
+    var done=function(msg){toast(msg);setTimeout(function(){location.reload();},1300);};
+    token().then(function(t){
+      return Promise.all(['mod','work','team'].map(function(n){
+        return fetch(DB+'/'+NS+'/'+JEM.sid+'/'+n+'.json?auth='+encodeURIComponent(t),{method:'DELETE'}).then(function(x){return x.ok;});
+      }));
+    }).then(function(rs){
+      done(rs.every(Boolean)?'Reset ✓ '+gone+' saved items forgotten; the hidden student starts again.':
+        'Reset on this device ✓ — the database refused to clear the hidden student (publish the rules file).');
+    }).catch(function(){ done('Reset on this device ✓ ('+gone+' items). Sign in on a dashboard to clear the hidden student too.'); });
   }
 
   /* ---- boot ---- */

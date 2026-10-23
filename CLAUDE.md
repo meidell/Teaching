@@ -1532,8 +1532,9 @@ global `EscWall`; `courseprogress.js` a port).
   tripwires** (`w2_absorb`, `w2_act`, `w2_tell` — the first page of the
   crisis protocol Session 9 plays); the close seals `w2_nx` on Rid and
   collects **Reflection 2 as `refl3_*`** (Rid 2012, DOI verified on
-  Crossref). Team and the ROTATED role are prefilled from `work_w1_team`
-  (Analyst → Adversary → Scribe → Analyst). Written in the factual register
+  Crossref). The team is prefilled from `work_w1_team`; **no roles** since
+  23 Oct 2026 (Jan Erik: "some groups are 4 — they will work together"),
+  so `w2_team` is `Team X · mates` and an old saved role is skipped. Written in the factual register
   (no instructor first person); Session 1 and the hub still carry the older
   voice. The `_wall/$mod` wildcard covers both new nodes — no rules change.
 
@@ -2605,6 +2606,13 @@ signed-in instructor opens every course page as `_jem` via `?jemauth=`,
 and the bridge does not register it for push or lock a school to it.
 Not hidden yet: gen110's partner picker and capstone-ba's `_teams` — don't
 join a team in student view there.
+The same bar carries **↺ Reset** (23 Oct 2026, Jan Erik: "a reset button as
+admin for whatever I clicked on a course"): it removes every
+`localStorage` key under the course prefix except `<key>_auth`, `<key>_lang`
+and the reflection draws (`*_refl_draw*`), DELETEs the hidden student's
+`mod/`, `work/` and `team/` with the instructor token (else a reload would
+merge them back), and reloads. Walls are untouched. Students are never
+affected: the bar exists only on an instructor device.
 
 One password, one implementation, remembered per device. `AdminGate.mount({…})` hides a
 page until it is given, then stores it in `localStorage.jem_admin_pw` — so the next visit
