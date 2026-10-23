@@ -1249,7 +1249,16 @@ function openDrawer(sid){
          '</div><div class="dwa">'+esc(it.v)+'</div>';
     });
   }
+  /* Remove the student (23 Oct 2026, Jan Erik: test accounts to take out of a course).
+     Deletes their node, roster entry, class-directory name, presence marks, team seats
+     and their private thread with the instructor. Needs the instructor ACCOUNT, and
+     rules that let that account delete a student (firebase-database-rules.json, 23 Oct
+     2026); before those rules are published every delete answers 401 and says so. */
+  h+='<div class="dsec" style="margin-top:22px">Remove from this course</div>'+
+     '<div class="dwmiss" style="font-style:normal">For a test account or a duplicate registration. Deletes '+esc(s.name)+'\'s progress, answers, sign-in, presence marks and private messages. Cannot be undone; a file already handed in stays in the hand-in store.</div>'+
+     '<button class="btn" id="dRemove" style="background:#9B2335;border-color:#9B2335;color:#fff;margin-top:6px">🗑 Remove '+esc(s.name)+'</button><div id="dRemMsg" style="margin-top:6px;font-size:13px"></div>';
   $('dBody').innerHTML=h;
+  $('dRemove').addEventListener('click',function(){ removeStudent(sid,s.name); });
   Array.prototype.forEach.call($('dBody').querySelectorAll('.ptag[data-ses]'),function(t){
     t.addEventListener('click',function(){
       presToggle(sid,t.getAttribute('data-ses'),t.getAttribute('data-on')!=='1')
@@ -1269,6 +1278,30 @@ function openDrawer(sid){
   });
   $('drawer').classList.add('on');$('drawer').setAttribute('aria-hidden','false');
   $('scrim').classList.add('on');
+}
+async function removeStudent(sid,name){
+  if(prompt('This deletes '+name+' from '+(COURSE?COURSE.id:'this course')+' for good.\n\nType the name to confirm:','')!==name)return;
+  var msg=$('dRemMsg'),q=await authQ(),fails=[];
+  if(!q){msg.innerHTML='<b style="color:var(--bad)">Sign in with the instructor account first (🔑), then try again.</b>';return;}
+  msg.textContent='Removing…';
+  async function del(path){try{var r=await fetch(DB+'/'+NS+'/'+path+'.json'+q,{method:'DELETE'});if(!r.ok)fails.push(path+' ('+r.status+')');}catch(e){fails.push(path+' (network)');}}
+  var P=(ROOT&&ROOT._presence)||{};
+  for(var ses in P){ if(P[ses]&&P[ses].marks&&P[ses].marks[sid]!=null)await del('_presence/'+encodeURIComponent(ses)+'/marks/'+encodeURIComponent(sid)); }
+  var TM=(ROOT&&ROOT._teams)||{};
+  for(var t in TM){ if(TM[t]&&TM[t].members&&TM[t].members[sid])await del('_teams/'+encodeURIComponent(t)+'/members/'+encodeURIComponent(sid)); }
+  var dm=(ROOT&&ROOT._chat&&ROOT._chat['dm-'+sid])||null;
+  if(dm){ for(var mid in (dm.msgs||{}))await del('_chat/dm-'+encodeURIComponent(sid)+'/msgs/'+encodeURIComponent(mid));
+          if(dm.meta)await del('_chat/dm-'+encodeURIComponent(sid)+'/meta'); }
+  if(ROOT&&ROOT._chat&&ROOT._chat._people&&ROOT._chat._people[sid])await del('_chat/_people/'+encodeURIComponent(sid));
+  if(rosterOf(sid))await del('_roster/'+encodeURIComponent(sid));
+  await del(encodeURIComponent(sid));
+  if(fails.length){
+    msg.innerHTML='<b style="color:var(--bad)">Not everything could be deleted:</b> '+esc(fails.join(' · '))+
+      (fails.some(function(f){return / \(401\)/.test(f);})?'<br>The database rules that allow removal are probably not published yet: Firebase console → Realtime Database → Rules → paste firebase-database-rules.json → Publish.':'');
+    return;
+  }
+  msg.innerHTML='<b style="color:var(--ok,#2F855A)">✓ Removed.</b>';
+  setTimeout(function(){ closeDrawer(); load(); },700);
 }
 function closeDrawer(){
   $('drawer').classList.remove('on');$('drawer').setAttribute('aria-hidden','true');
