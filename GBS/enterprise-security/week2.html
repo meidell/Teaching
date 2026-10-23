@@ -184,8 +184,9 @@
       <p style="margin:4px 0 0">The Houthis, an armed movement in Yemen, began firing missiles and drones at merchant ships passing the Bab el-Mandeb in November 2023. Most large container lines stopped using the Suez route and sent ships around the Cape of Good Hope — roughly ten more days at sea per voyage, more fuel, higher war-risk insurance, and freight rates that rose for every importer in Europe. Egypt said the canal lost about USD 7 billion of revenue in 2024. On the defending side, Western navies shot down drones estimated to cost tens of thousands of dollars with interceptor missiles costing millions each. A cheap, deniable, repeatable instrument; an expensive, visible, finite response — the table below in one sea.</p>
     </div>
     <div class="cap">
-      <label>Your team, today</label>
-      <div class="row">
+      <label>Your team</label>
+      <div id="teamShow" style="font-size:15px;line-height:1.5;color:var(--ink)"></div>
+      <div class="row" id="teamPick" style="display:none">
         <select id="f_teamsel"><option value="">Team…</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
         <input type="text" id="f_mates" placeholder="your team-mates" autocomplete="off">
       </div>
@@ -622,28 +623,37 @@ window.addEventListener('DOMContentLoaded',function(){
     markDone('s4');
   });
 
-  /* team: two controls, ONE workbook field; Session 1's team is carried
-     over. No roles (23 Oct 2026): teams of three or four work together.
-     A role saved by an earlier version is skipped when reading back. */
-  var ROLES=/^(Analyst|Adversary|Scribe)$/;
+  /* team: chosen in Session 1, SHOWN here, not chosen again (23 Oct 2026).
+     The Session 1 record is "Team X · Role · mates"; it is copied to w2_team.
+     Only a student with no Session 1 record on this device gets the picker,
+     and the record may still arrive from the database after sign-in, so it
+     is re-read for a while. */
   function syncTeam(){
     var t=document.getElementById('f_teamsel').value,m=document.getElementById('f_mates').value;
     setWork('f_team',[t?('Team '+t):'',m].filter(Boolean).join(' · '));
   }
-  function mates(parts){if(parts[0]&&ROLES.test(parts[0]))parts=parts.slice(1);return parts.join(' · ');}
   ['f_teamsel','f_mates'].forEach(function(id){var e=document.getElementById(id);e.addEventListener('change',syncTeam);e.addEventListener('input',syncTeam);});
-  (function(){
-    var v=ls('work_w2_team')||'',p=v.split(' · ');
-    if(v){
-      if(p[0])document.getElementById('f_teamsel').value=p[0].replace('Team ','');
-      document.getElementById('f_mates').value=mates(p.slice(1));
-      return;
+  function paintTeam(){
+    var w1=ls('work_w1_team')||'',show=document.getElementById('teamShow'),pick=document.getElementById('teamPick');
+    var q=w1.split(' · '),t=(q[0]||'').replace('Team ','');
+    if(!w1||!/^[A-E]$/.test(t)){
+      if(!pick.style.display||pick.style.display==='none'){
+        var v=(ls('work_w2_team')||'').split(' · ');
+        if(v[0])document.getElementById('f_teamsel').value=v[0].replace('Team ','');
+        if(v[1])document.getElementById('f_mates').value=v.slice(1).join(' · ');
+      }
+      show.innerHTML='<span style="color:var(--grey)">No Session 1 team was found for you. Pick the team you joined then.</span>';
+      pick.style.display='';return false;
     }
-    var w1=ls('work_w1_team')||'',q=w1.split(' · ');if(!w1)return;
-    if(q[0])document.getElementById('f_teamsel').value=q[0].replace('Team ','');
-    document.getElementById('f_mates').value=mates(q.slice(1));
-    syncTeam();
-  })();
+    var role=/^(Analyst|Adversary|Scribe)$/.test(q[1]||'')?q[1]:'',mates=q.slice(role?2:1).join(' · ');
+    document.getElementById('f_teamsel').value=t;document.getElementById('f_mates').value=mates;
+    show.innerHTML='<b>Team '+t+'</b>'+(role?' · your role: <b>'+esc(role)+'</b>':'')+(mates?'<br><span style="color:var(--grey)">with '+esc(mates)+'</span>':'')+
+      '<div style="font-size:12px;color:var(--grey);margin-top:4px">From Session 1.</div>';
+    pick.style.display='none';
+    if(ls('work_w2_team')!==w1)setWork('f_team',w1);
+    return true;
+  }
+  if(!paintTeam()){var tries=0,iv=setInterval(function(){if(paintTeam()||++tries>15)clearInterval(iv);},2000);}
 
   document.getElementById('asyBtn').addEventListener('click',function(){
     var p=asyPicks();
