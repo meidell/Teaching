@@ -56,3 +56,42 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
   }catch(e){}
 })();
+
+/* "Open in the app" (23 Oct 2026, Jan Erik: "I'd like this qr code to open
+   the app on the phone, for their account"). The classroom QR codes carry
+   ?app=1. On an iPhone with the Insights app installed, iOS opens such a
+   link straight in the app (the universal link claimed by
+   /.well-known/apple-app-site-association, which claims ONLY links with
+   app=1, so the rest of the site keeps opening in the browser). On Android
+   the app's link verification is not published (no assetlinks.json: it
+   would hand EVERY site link to the app), so the page offers the app
+   instead: an intent link that opens the app if it is installed and stays
+   here if not. Inside the app (react-native-webview defines
+   window.ReactNativeWebView) nothing is shown. Either way the account is
+   the same: the app shows the same page, and the student signs in with
+   the same name and password, so progress and answers follow. The marker
+   is taken out of the address bar so a copied link does not carry it. */
+(function(){
+  try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('app')!=='1')return;
+    q.delete('app');
+    var clean=location.pathname+(q.toString()?'?'+q.toString():'')+location.hash;
+    try{history.replaceState(null,'',clean);}catch(e){}
+    if(window.ReactNativeWebView)return;
+    if(!/Android/i.test(navigator.userAgent||''))return;
+    var here=location.origin+clean;
+    var fr=(document.documentElement.lang||'').slice(0,2)==='fr';
+    var intent='intent://open?url='+encodeURIComponent(here)+'#Intent;scheme=jemcourses;package=ch.lexigo.courses;S.browser_fallback_url='+encodeURIComponent(here)+';end';
+    function show(){
+      var d=document.createElement('div');
+      d.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483000;background:#0F2A3A;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35);font:14px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;display:flex;gap:10px;align-items:center;';
+      d.innerHTML='<div style="flex:1">'+(fr?'<b>Vous avez l’app Insights ?</b> Ouvrez ce cours dedans — même compte, même progression.':'<b>Have the Insights app?</b> Open this course in it — same account, same progress.')+'</div>'+
+        '<a href="'+intent+'" style="background:#F39229;color:#0F2A3A;font-weight:800;border-radius:20px;padding:8px 12px;text-decoration:none;white-space:nowrap;">'+(fr?'Ouvrir l’app':'Open the app')+'</a>'+
+        '<button type="button" aria-label="'+(fr?'Fermer':'Close')+'" style="background:none;border:none;color:#fff;font-size:20px;line-height:1;cursor:pointer;">×</button>';
+      d.querySelector('button').addEventListener('click',function(){d.remove();});
+      document.body.appendChild(d);
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show();
+  }catch(e){}
+})();

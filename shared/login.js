@@ -136,20 +136,52 @@ window.CourseLogin = (function () {
   function get(path){return fetch(DB+'/'+NS+'/'+path+'.json').then(function(r){return r.json();});}
   function put(path,val){return fetch(DB+'/'+NS+'/'+path+'.json',{method:'PUT',body:JSON.stringify(val)});}
 
+  /* ---- the instructor's two hats (23 Oct 2026) ----------------------------
+     Jan Erik: "a single … login as instructor for all courses … let me be
+     admin only … let that user have access to all courses as 'student'".
+     The instructor's DEVICE is marked by /shared/admin-gate.js (`jem_instructor`)
+     or carries the instructor account's session (`jem_fb_session`). On a
+     course page it wears one of two hats, switched from the small bar this
+     file draws at the bottom of the page:
+       instructor view — as before: never prompted, nothing recorded;
+       student view    — signed in as the HIDDEN student `_jem` in every
+                         course: progress, answers, quizzes and presence are
+                         recorded like a student's, so the page behaves
+                         exactly as it does for the class.
+     `_jem` is hidden by its leading underscore: the dashboards, insights,
+     chat.html and board.html skip every key that starts with "_", the
+     presence "held" rule ignores its marks, chat.js keeps it out of the
+     class directory, and the GBS walls and team boards do not post it.
+     Its roster password is in this public file, like everything here: it
+     guards nothing but a test record. In the Insights app the instructor's
+     course pages are handed this same identity (?jemauth=). */
+  var JEM={sid:'_jem',name:'Jan Erik Meidell',pass:'jem-instructor'};
+  function instructorDevice(){
+    try{ if(localStorage.getItem('jem_instructor'))return true; }catch(e){}
+    try{ var v=JSON.parse(localStorage.getItem('jem_fb_session')||'null'); if(v&&v.rt)return true; }catch(e){}
+    return !!getCookie('jem_instructor');
+  }
+  function hat(){
+    if(!instructorDevice())return '';
+    var v=''; try{ v=localStorage.getItem('jem_view')||''; }catch(e){}
+    return v==='student'?'student':'instructor';
+  }
+  function setHat(v){
+    try{ if(v==='student')localStorage.setItem('jem_view','student'); else localStorage.removeItem('jem_view'); }catch(e){}
+    location.reload();
+  }
   function auth(){
     var a=null;
     try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}
     if(!a){var c=getCookie(K+'_auth'); if(c){try{a=JSON.parse(c);}catch(e){}}}
+    if(a&&a.sid===JEM.sid&&hat()==='instructor')return null;   /* the hidden student only exists in student view */
     return (a&&a.sid)?a:null;
   }
-  /* The instructor's device (marked by /shared/admin-gate.js once the gate
-     has been given there): never prompted, the pill just says who it is.
-     A student identity saved on this device still wins, for testing. */
+  /* The instructor's device in instructor view: never prompted, the pill
+     just says who it is. A real student identity saved on this device
+     still wins, for testing. */
   function instructor(){
-    if(window.AdminGate&&AdminGate.isUnlocked&&AdminGate.isUnlocked())return 'Jan Erik Meidell';
-    var m=null; try{m=JSON.parse(localStorage.getItem('jem_instructor')||'null');}catch(e){}
-    if(m&&m.name)return m.name;
-    return getCookie('jem_instructor')?'Jan Erik Meidell':'';
+    return hat()==='instructor'?'Jan Erik Meidell':'';
   }
   function saveAuth(a){
     if(hasGroups()&&!a.grp)a.grp=defGroup();
@@ -293,8 +325,9 @@ window.CourseLogin = (function () {
     css();
     var a=auth(), t=L();
     var p=document.getElementById('cl-pill');
-    if(!p){p=document.createElement('div');p.id='cl-pill';document.body.appendChild(p);p.addEventListener('click',open);}
-    if(a){p.className='';
+    if(!p){p=document.createElement('div');p.id='cl-pill';document.body.appendChild(p);p.addEventListener('click',function(){ if(hat())return; open(); });}
+    if(a&&a.sid===JEM.sid){p.className='';p.textContent='🎓 '+a.name+' · student view, hidden';p.title='Recorded under the hidden account _jem; switch with the bar below';}
+    else if(a){p.className='';
           p.textContent='👤 '+a.name+(hasGroups()?' · '+groupLabel(a.grp):'')+t.synced;}
     else if(instructor()){p.className='inst';p.textContent=instructor();p.title='Instructor';}
     else{p.className='unset';p.textContent=t.pill;}
@@ -586,8 +619,43 @@ window.CourseLogin = (function () {
     }).catch(function(){return false;});
   }
 
+  /* ---- student view: the hidden student, in every course ---- */
+  function enterStudentView(){
+    var a={sid:JEM.sid,name:JEM.name,pass:JEM.pass};
+    if(hasGroups())a.grp=defGroup();
+    saveAuth(a); renderPill();
+    get('_roster/'+JEM.sid).then(function(rec){
+      if(rec&&rec.error)return null;
+      if(rec&&rec.pass)return true;
+      var ts=Date.now(), r={name:JEM.name,pass:JEM.pass,ts:ts};
+      if(a.grp)r.grp=a.grp;
+      return Promise.all([ put('_roster/'+JEM.sid,r), put(JEM.sid+'/name',JEM.name), put(JEM.sid+'/sid',JEM.sid),
+                           put(JEM.sid+'/createdAt',ts), put(JEM.sid+'/updatedAt',ts) ])
+        .then(function(rs){ return !rs.some(function(x){return !x.ok;}); });
+    }).catch(function(){return null;}).then(function(ok){
+      if(ok===false)toast('Student view: the course database refused the hidden account — nothing will be saved here.');
+      return mergeDown(JEM.sid);
+    }).then(function(ch){ adopt(a,ch); });
+  }
+  /* the switch between the two hats: a small bar at the bottom of every course page */
+  function hatBar(){
+    var h=hat(); if(!h||inApp())return;
+    if(document.getElementById('jem-hat'))return;
+    var b=document.createElement('div'); b.id='jem-hat';
+    b.style.cssText='position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:320;display:flex;gap:2px;'+
+      'background:rgba(15,25,35,.82);border-radius:30px;padding:3px;font:700 11.5px/1 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);';
+    function btn(v,label){var x=document.createElement('button');x.type='button';x.textContent=label;
+      x.style.cssText='border:none;border-radius:30px;padding:7px 11px;cursor:pointer;font:inherit;'+(h===v?'background:#fff;color:#0f1923;':'background:transparent;color:#cfd8e3;');
+      x.title=v==='student'?'See and do everything as a student, recorded under a hidden account':'Instructor view: release buttons, quiz launch, nothing recorded';
+      x.addEventListener('click',function(){ if(h!==v)setHat(v); });return x;}
+    b.appendChild(btn('instructor','👁 Instructor'));b.appendChild(btn('student','🎓 Student (hidden)'));
+    document.body.appendChild(b);
+  }
+
   /* ---- boot ---- */
   function boot(){
+    hatBar();
+    if(hat()==='student'){ var h0=readHandoff(); enterStudentView(); return; }
     var h=readHandoff();
     if(h){ adoptHandoff(h).then(function(done){ if(!done)boot2(); }); return; }
     boot2();

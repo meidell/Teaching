@@ -64,7 +64,14 @@
     var a=null;
     try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}
     if(!a){var c=getCookie(K+'_auth');if(c){try{a=JSON.parse(c);}catch(e){}}}
+    if(a&&hiddenNow(a.sid))return null;
     return (a&&a.sid)?a:null;
+  }
+  /* the instructor's hidden student `_jem` exists only in the student view (see login.js) */
+  function hiddenNow(sid){
+    if(sid!=='_jem')return false;
+    var v='';try{v=localStorage.getItem('jem_view')||'';}catch(e){}
+    return v!=='student'&&isInstructor();
   }
 
   function loadLocal(){
@@ -74,6 +81,7 @@
       else{
         S.name=localStorage.getItem(K+'_name')||'';
         S.sid =localStorage.getItem(K+'_sid')||'';
+        if(hiddenNow(S.sid)){S.name='';S.sid='';}
         if(!S.name){var cn=getCookie(K+'_name'),cs=getCookie(K+'_sid');
           if(cn){S.name=cn;S.sid=cs||san(cn);try{localStorage.setItem(K+'_name',S.name);localStorage.setItem(K+'_sid',S.sid);}catch(e){}}}
       }
@@ -186,6 +194,7 @@
   /* the instructor's device — marked by /shared/admin-gate.js; see login.js */
   function isInstructor(){
     try{ if(localStorage.getItem('jem_instructor'))return true; }catch(e){}
+    try{ var fs=JSON.parse(localStorage.getItem('jem_fb_session')||'null'); if(fs&&fs.rt)return true; }catch(e){}
     return /(?:^|; )jem_instructor=1/.test(document.cookie||'');
   }
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}

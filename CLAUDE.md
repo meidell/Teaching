@@ -1330,6 +1330,21 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   60.0 · 40.0 m shares · tax 24% — **every later session builds on these
   numbers**; nine numbered build steps end in three checks and a master
   check on the cover. Teams of three, roles Builder / Auditor / Presenter.
+  ⚠ **Rebuilt the evening of 22 Oct 2026** (Jan Erik: the prediction was
+  "silly, they have not even seen the numbers"; "The cure … is just
+  uninteresting information"; "from the build it makes sense — build on
+  this to give me a 2 hour lecture"). Step 1 now shows the file's cover
+  page and asks two judgements (honest EV band; one share from the file's
+  own equity = €4.80 vs €0.0048). The cure is GONE; the session is one
+  build in three parts, each opened by an 8-min 🎤 `.lect` block: **Build I**
+  skeleton (s3, master check now in Checks!C12), **Build II** forecast (s4:
+  drivers C18–C22 6.7% · 16.1% · 5% · 8% · 10%, flag formula per row, FCF
+  9.28 / 9.62 / 10.22 / 10.85), **Build III** valuation (s4b: WACC 8.5%,
+  g 2%, DF from the timeline, Gordon TV = 84% of EV, EV **159.36**, equity
+  99.36, **€2.48**; WACC 9% → 147.9; Goal Seek €249 m → g 4.52%). Every
+  answer is a `.nchk` with a tolerance, recomputed in Python. Later
+  sessions (4 three statements, 5 forecast, 6 FCF) now revisit what
+  Session 1 introduced — deepen, don't repeat.
   No wall tonight (the `finmod` rules block has no `_wall` node yet; add it
   with Session 2 if a shared tally is wanted). Probed headlessly: 7/7, no
   errors. Run sheet `_private/week2-runsheet.md`.
@@ -2562,6 +2577,35 @@ in the repo at all.
 
 ### The instructor gate
 
+⚠ **One instructor login, two hats (23 Oct 2026).** Jan Erik: "a single
+and thus a separate login as instructor for all courses … let me be admin
+only … let that user have access to all courses as 'student'". The gate
+now also accepts the **instructor ACCOUNT's password**
+(`presence@janerikmeidell.com`, the account the database trusts and the
+Insights app's instructor door uses): typed at any gate it signs the
+account in through `fb-auth.js`, and a device holding that session
+(`jem_fb_session`) counts as unlocked everywhere — one login for the
+dashboards, chat, presence, releases, on every course, site and app. The
+old gate password still works as before. On COURSE pages a small bar at
+the bottom (drawn by `login.js`, instructor devices only, not in the app)
+switches **👁 Instructor / 🎓 Student (hidden)** (`localStorage.jem_view`).
+In student view `AdminGate.isUnlocked()` answers false outside `/shared/`,
+so every page is exactly the students' page, and `login.js` signs the
+device in, in every course, as the hidden student **`_jem`**
+(name "Jan Erik Meidell", password `jem-instructor` — public like this
+file; it guards a test record, nothing else). `_jem` is invisible by its
+leading underscore: admin2, insights, chat.html and board.html skip "_"
+keys (chat.html's roster loop too); `anyMarks()` in admin2 and the nine
+`presence.js` copies ignores "_" marks, so the hidden student never makes
+a session "held"; `chat.js` gives it no panel and lists no "_" classmate;
+the three GBS `wall.js` (and so the BI team board) never post it. In
+instructor view `login.js` and `progress.js` ignore a saved `_jem`
+identity. In the app (code in `Teaching App`, needs a new build), a
+signed-in instructor opens every course page as `_jem` via `?jemauth=`,
+and the bridge does not register it for push or lock a school to it.
+Not hidden yet: gen110's partner picker and capstone-ba's `_teams` — don't
+join a team in student view there.
+
 One password, one implementation, remembered per device. `AdminGate.mount({…})` hides a
 page until it is given, then stores it in `localStorage.jem_admin_pw` — so the next visit
 in that browser opens straight through, and unlocking any one instructor page unlocks
@@ -2662,7 +2706,19 @@ stores link to.
   → registered; different → the prompt opens on the password tab) and is
   stripped from the address bar first. The app appends it when it opens a
   course it already knows the student of, and when it opens the browser
-  (the ⧉ button). There is deliberately **no link from the web into the
-  app** (Jan Erik, 18 Oct 2026): the same name and password work on both
-  sides, and a student uses whichever they have open. `CourseLogin.handoffUrl(url)`
+  (the ⧉ button). Until 23 Oct 2026 there was deliberately no link from
+  the web into the app; Jan Erik then asked for the classroom QR to open
+  the app. **The QR now carries `?app=1`** (MFB 545 first:
+  `UMEF/mfb545/qr-mfb545.svg`, made with segno, scale 10, border 2,
+  colour #0f4c60). `/.well-known/apple-app-site-association` claims for
+  the app (team CJ53WJ54R4, `ch.lexigo.courses`) ONLY URLs with `app=1`
+  and never `/shared/*`, so an iPhone with Insights installed opens the
+  QR in the app and every other link stays in the browser. There is
+  deliberately **no `assetlinks.json`**: build 7's Android filter claims
+  every path on the domain, so publishing it would send the whole site
+  into the app on Android; instead `track.js` shows Android browsers a
+  bar with an `intent://…;scheme=jemcourses;package=ch.lexigo.courses`
+  link (falls back to the page) and strips `app=1` from the address bar
+  everywhere. The account is the same on both sides: the app shows the
+  same page and the student signs in with the same name and password. `CourseLogin.handoffUrl(url)`
   and `CourseLogin.inApp()` stay public for pages that need them.

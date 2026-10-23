@@ -66,8 +66,11 @@ window.CreatorWall=(function(){
   /* ---- write ----
      First call POSTs and keeps the returned push id; later calls PUT over
      the same row, so a student who fixes a typo does not appear twice. */
+  /* the instructor's hidden student (`_jem`, student view) sees the page but never appears on a wall */
+  function hidden(){try{var a=JSON.parse(localStorage.getItem(K+'_auth')||'null');return !!(a&&a.sid&&String(a.sid).charAt(0)==='_');}catch(e){return false;}}
   function post(mod,row){
     row.ts=Date.now();
+    if(hidden()){cache(mod,row);return Promise.resolve({ok:true,hidden:true});}
     var id=myRow(mod);
     var url=DB+'/'+NS+'/_wall/'+encodeURIComponent(mod)+(id?('/'+id):'')+'.json';
     return fetch(url,{method:id?'PUT':'POST',body:JSON.stringify(row)})

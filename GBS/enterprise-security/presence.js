@@ -72,7 +72,7 @@ window.StatsPresence = (function () {
 
      A window that is open RIGHT NOW is in progress, not held: nobody is
      absent from a session they are sitting in and about to mark. */
-  function anyMarks(s){ for(var k in ((s&&s.marks)||{}))return true; return false; }
+  function anyMarks(s){ for(var k in ((s&&s.marks)||{}))if(k.charAt(0)!=='_')return true; return false; }   /* `_jem`, the instructor's hidden student, never makes a session held */
   function isHeld(s){ return !!(s && !s.open && anyMarks(s)); }
 
   function css(){

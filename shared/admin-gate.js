@@ -19,6 +19,25 @@
    The unlock is site-wide on purpose: unlocking one course dashboard
    unlocks them all on that device. AdminGate.lock() forgets it again.
 
+   ONE LOGIN (23 Oct 2026, Jan Erik: "a single and thus a separate login
+   as instructor for all courses … let me be admin only … let that user
+   have access to all courses as 'student'"). The gate now also accepts
+   the INSTRUCTOR ACCOUNT's password (presence@janerikmeidell.com, the
+   account the database trusts and the Insights app's instructor door
+   uses): typing it here signs the account in through /shared/fb-auth.js,
+   and a device holding that account's session (`jem_fb_session`) counts
+   as unlocked everywhere — so one login opens the dashboards, chat,
+   presence and releases, on the site and in the app. The old gate
+   password still unlocks the UI (and still needs the 🔑 sign-in for
+   database writes).
+
+   TWO HATS. On a COURSE page (anything outside /shared/) the instructor
+   can switch to the STUDENT VIEW (`jem_view = 'student'`, the switch is
+   the name pill drawn by login.js). There isUnlocked() answers false, so
+   every page shows exactly what a student sees, and login.js signs the
+   device in as the hidden student `_jem` (see login.js). The instructor
+   pages under /shared/ ignore the hat.
+
    NOTE — this is a soft gate. It hides the instructor UI; it is not
    authentication, and it cannot protect the database (the rules do
    that). Never put anything here that must genuinely stay secret.
@@ -44,6 +63,19 @@ window.AdminGate = (function () {
     return matches(v) ? v : null;
   }
   function remember(pw){ try{ localStorage.setItem(STORE_KEY, pw); }catch(e){} mark(true); }
+  /* the instructor account's session, stored by fb-auth.js; read here without loading it */
+  function hasSession(){ try{ var v=JSON.parse(localStorage.getItem('jem_fb_session')||'null'); return !!(v&&v.rt); }catch(e){ return false; } }
+  function trusted(){ return !!remembered() || hasSession(); }
+  function view(){ try{ return localStorage.getItem('jem_view')||'instructor'; }catch(e){ return 'instructor'; } }
+  function onShared(){ return (location.pathname||'').indexOf('/shared/')===0; }
+  function isUnlocked(){ return trusted() && !(view()==='student' && !onShared()); }
+  /* load fb-auth.js on a page that did not, so the gate can sign the account in */
+  function withFB(cb){
+    if(window.FBAuth)return cb(window.FBAuth);
+    var sc=document.createElement('script'); sc.src='/shared/fb-auth.js';
+    sc.onload=function(){ cb(window.FBAuth||null); }; sc.onerror=function(){ cb(null); };
+    document.head.appendChild(sc);
+  }
 
   /* The instructor's own identity, for the COURSE pages. login.js and
      progress.js do not load this file, so an unlocked device also carries
@@ -61,6 +93,7 @@ window.AdminGate = (function () {
   }
   function lock(){
     mark(false);
+    try{ localStorage.removeItem('jem_fb_session'); localStorage.removeItem('jem_view'); }catch(e){}
     try{ localStorage.removeItem(STORE_KEY); }catch(e){}
     try{ LEGACY_KEYS.forEach(function(k){ sessionStorage.removeItem(k); localStorage.removeItem(k); }); }catch(e){}
   }
@@ -95,7 +128,7 @@ window.AdminGate = (function () {
     var done=false;
     function open(){ if(done)return; done=true; try{o.onUnlock&&o.onUnlock();}catch(e){console.error(e);} }
 
-    if(remembered()){ open(); return { unlocked:true }; }
+    if(trusted()){ open(); return { unlocked:true }; }
 
     css(T);
     var g=document.createElement('div'); g.id='ag-gate';
@@ -103,18 +136,26 @@ window.AdminGate = (function () {
       (o.logo?'<img src="'+o.logo+'" alt="">':'')+
       '<div id="ag-brand"></div><div id="ag-lock">🔒</div>'+
       '<h1></h1><p></p>'+
-      '<input id="ag-pw" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••">'+
+      '<input id="ag-pw" type="password" autocomplete="current-password" placeholder="••••">'+
       '<button id="ag-go">Unlock</button><div id="ag-err"></div></div>';
     document.body.appendChild(g);
     g.querySelector('#ag-brand').textContent=o.brand||'INSTRUCTOR';
     g.querySelector('h1').textContent=o.title||'Dashboard access';
-    g.querySelector('p').textContent=o.blurb||'Enter the instructor password. This device will remember it.';
+    g.querySelector('p').textContent=o.blurb||'Enter the instructor account password. This device will remember it.';
 
     var pw=g.querySelector('#ag-pw'), err=g.querySelector('#ag-err');
     function submit(){
       var v=(pw.value||'').trim();
-      if(matches(v)){ remember(v); err.textContent=''; g.classList.add('ag-hidden'); open(); }
-      else { err.textContent='Incorrect password.'; pw.value=''; pw.focus(); }
+      if(!v)return;
+      if(matches(v)){ remember(v); err.textContent=''; g.classList.add('ag-hidden'); open(); return; }
+      /* not the old gate password: try it as the instructor ACCOUNT's password */
+      err.textContent='…';
+      withFB(function(FB){
+        if(!FB){ err.textContent='Incorrect password.'; pw.value=''; pw.focus(); return; }
+        FB.signInPassword(FB.email(), v).then(function(){
+          mark(true); err.textContent=''; g.classList.add('ag-hidden'); open();
+        },function(){ err.textContent='Incorrect password.'; pw.value=''; pw.focus(); });
+      });
     }
     g.querySelector('#ag-go').addEventListener('click',submit);
     pw.addEventListener('keydown',function(e){ if(e.key==='Enter')submit(); });
@@ -124,7 +165,8 @@ window.AdminGate = (function () {
 
   /* keep the marker in step with the gate on every page that loads this
      file — so a changed PASS_HASH also clears it */
-  mark(!!remembered());
+  mark(trusted());
 
-  return { mount:mount, lock:lock, check:matches, isUnlocked:function(){return !!remembered();} };
+  return { mount:mount, lock:lock, check:matches, isUnlocked:isUnlocked, trusted:trusted,
+           view:view, setView:function(v){ try{ if(v==='student')localStorage.setItem('jem_view','student'); else localStorage.removeItem('jem_view'); }catch(e){} } };
 })();

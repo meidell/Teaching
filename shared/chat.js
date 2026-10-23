@@ -434,6 +434,7 @@ window.CourseChat = (function () {
       PEOPLE=[];
       Object.keys(o||{}).forEach(function(sid){
         if(!ME||sid===ME.sid)return;            /* you are not your own classmate */
+        if(sid.charAt(0)==='_')return;          /* nor is the instructor's hidden student */
         PEOPLE.push({sid:sid,name:(o[sid]&&o[sid].n)||sid});
       });
       PEOPLE.sort(function(a,b){return a.name.localeCompare(b.name);});
@@ -893,6 +894,9 @@ window.CourseChat = (function () {
   /* ---------------------------------------------------------------- */
   function boot(){
     ME=who();
+    /* the instructor's hidden student (`_jem`, student view — see login.js) has no panel:
+       the instructor's end of the conversation is /shared/chat.html */
+    if(ME&&ME.sid&&ME.sid.charAt(0)==='_')return;
     build();
     discover().then(function(list){
       THREADS=list;
@@ -909,6 +913,17 @@ window.CourseChat = (function () {
 
   return {
     open:open, close:close, refresh:refresh, newConversation:openNew,
+    /* re-read the student's thread index — a page that has just added the
+       student to a group (MFB 545's team board) calls this, so the new
+       thread appears without a reload */
+    rediscover:function(){ if(!ME)return; discover().then(function(list){
+      var had=THREADS.length; THREADS=list;
+      if(!document.getElementById('jc-btn'))return;
+      document.getElementById('jc-btn').style.display=THREADS.length?'':'none';
+      if(!had&&THREADS.length)CUR=THREADS[0].tid;
+      if(CUR&&!THREADS.some(function(t){return t.tid===CUR;}))CUR=THREADS[0]&&THREADS[0].tid;
+      renderTabs(); refresh(true);
+    }); },
     threads:function(){return THREADS.slice();},
     me:function(){return ME;}
   };

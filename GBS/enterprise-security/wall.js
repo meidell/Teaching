@@ -75,8 +75,10 @@ window.EscWall=(function(){
     try{if(localStorage.getItem('jem_instructor'))return true;}catch(e){}
     return /(?:^|; )jem_instructor=1/.test(document.cookie||'');
   }
+  /* the instructor's hidden student (`_jem`, student view) sees the page but never appears on a wall */
+  function hidden(){try{var a=JSON.parse(localStorage.getItem(K+'_auth')||'null');return !!(a&&a.sid&&String(a.sid).charAt(0)==='_');}catch(e){return false;}}
   function post(mod,row){
-    if(isInstructor()){row.ts=Date.now();cache(mod,row);return Promise.resolve({ok:false,reason:'instructor'});}
+    if(isInstructor()||hidden()){row.ts=Date.now();cache(mod,row);return Promise.resolve({ok:false,reason:'instructor'});}
     row.ts=Date.now();
     var id=myRow(mod);
     var url=DB+'/'+NS+'/_wall/'+encodeURIComponent(mod)+(id?('/'+id):'')+'.json';
