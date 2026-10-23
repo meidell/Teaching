@@ -17,12 +17,18 @@
    ===================================================================== */
 (function(){
   "use strict";
+  /* the same test as login.js's instructorDevice(): the gate's marker, or
+     the instructor account's session — and never in 🎓 student view */
   function isInstructor(){
+    try{ if(localStorage.getItem('jem_view')==='student')return false; }catch(e){}
     try{ if(localStorage.getItem('jem_instructor'))return true; }catch(e){}
+    try{ var v=JSON.parse(localStorage.getItem('jem_fb_session')||'null'); if(v&&v.rt)return true; }catch(e){}
     return /(?:^|; )jem_instructor=1/.test(document.cookie||'');
   }
   function boot(){
-    if(!isInstructor())return;
+    /* TEMPORARY (23 Oct 2026, Jan Erik: "just show that button for all"):
+       shown on every device; board.html still needs the gate and the account. */
+    if(false&&!isInstructor())return;
     var els=document.querySelectorAll('[data-board]'); if(!els.length)return;
     var cid=(document.body&&document.body.getAttribute('data-course'))||'';
     if(!document.getElementById('bl-css')){
