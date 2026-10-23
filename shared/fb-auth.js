@@ -24,6 +24,13 @@
        user.getIdToken()                       Promise<string>, refreshed when stale
        FBAuth.form(el, cb, ns)                 the inline password form
        FBAuth.signOut(cb)                      forget this device's session
+       FBAuth.changePassword(pw)               new password for the account
+
+   PASSWORD ONLY (23 Oct 2026, Jan Erik: "remove that and let me login
+   with a password only as admin"). The account's address is fixed here
+   (EMAIL) and never shown or typed: every sign-in box on the site is a
+   single password field. The address still exists — it is what the
+   database rules trust — it is just not the instructor's business.
 
    `window.__fbUser` is set SYNCHRONOUSLY at load when a session is
    stored, so a page's very first read already carries the token —
@@ -39,6 +46,7 @@ window.FBAuth = (function () {
   var API_KEY = "AIzaSyASAyieOa3_FQuGsquY8te8dKsZH0oBkKw";   /* public: the same key every page sends */
   var EMAIL = 'presence@janerikmeidell.com';                /* must match the rules */
   var SIGNIN  = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+API_KEY;
+  var UPDATE  = 'https://identitytoolkit.googleapis.com/v1/accounts:update?key='+API_KEY;
   var REFRESH = 'https://securetoken.googleapis.com/v1/token?key='+API_KEY;
   var MARGIN = 120*1000;               /* mint a new token when under two minutes remain */
   var CFG = {apiKey:API_KEY, authDomain:"teaching-70f1c.firebaseapp.com",
@@ -186,6 +194,26 @@ window.FBAuth = (function () {
       });
   }
 
+  /* A new password for the account, from a device that is signed in.
+     Firebase revokes every other session when the password changes, so
+     the phone and the other laptops must sign in again; THIS device
+     gets fresh tokens in the answer and stays signed in. */
+  function changePassword(pw){
+    if(!S)return Promise.reject(new Error('signed-out'));
+    return user().getIdToken(true).then(function(it){
+      return post(UPDATE,{'Content-Type':'application/json'},
+                  JSON.stringify({idToken:it,password:pw,returnSecureToken:true}));
+    }).then(function(x){
+      if(!x.ok||!x.j||!x.j.idToken)throw new Error(apiError(x.j)||'update-failed');
+      var now=Date.now();
+      save({rt:x.j.refreshToken, it:x.j.idToken,
+            exp:now+(parseInt(x.j.expiresIn,10)||3600)*1000,
+            email:S.email, uid:S.uid, ts:now});
+      window.__fbUser=user();
+      return true;
+    });
+  }
+
   function explain(e){
     var m=String((e&&(e.code||e.message))||e||'');
     if(/OPERATION_NOT_ALLOWED|PASSWORD_LOGIN_DISABLED|operation-not-allowed/i.test(m))
@@ -193,6 +221,8 @@ window.FBAuth = (function () {
     if(/EMAIL_NOT_FOUND|user-not-found/i.test(m))
       return 'No such account. Create it in Firebase Console → Authentication → Users → Add user.';
     if(/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|wrong-password|invalid-credential/i.test(m)) return 'Wrong password.';
+    if(/WEAK_PASSWORD/i.test(m)) return 'Too short: at least six characters.';
+    if(/CREDENTIAL_TOO_OLD|requires-recent-login/i.test(m)) return 'Sign out, sign in again with the current password, then change it.';
     if(/TOO_MANY_ATTEMPTS|too-many-requests/i.test(m)) return 'Too many attempts — Firebase has paused sign-in here for a few minutes.';
     if(/USER_DISABLED/i.test(m)) return 'This account is disabled in Firebase Console → Authentication → Users.';
     if(/network|Failed to fetch|Load failed|NetworkError/i.test(m)) return 'No network. Nothing changed.';
@@ -260,17 +290,19 @@ window.FBAuth = (function () {
       return;
     }
     css();
+    /* one visible field; the hidden username is only for the browser's
+       password manager, so it files the password under the right account */
     el.innerHTML='<div class="fba"><b>Instructor sign-in</b>'+
-      '<input type="email" autocomplete="username" value="'+EMAIL+'">'+
+      '<input type="text" autocomplete="username" value="'+EMAIL+'" style="display:none" aria-hidden="true" tabindex="-1">'+
       '<input type="password" autocomplete="current-password" placeholder="password">'+
       '<button>Sign in</button><span class="fba-msg"></span></div>';
-    var em=el.querySelector('input[type=email]'), pw=el.querySelector('input[type=password]'),
+    var pw=el.querySelector('input[type=password]'),
         go=el.querySelector('button'), msg=el.querySelector('.fba-msg');
     function submit(){
       var p=pw.value||'';
       if(!p){msg.textContent='Type the password first.';pw.focus();return;}
       go.disabled=true;go.textContent='Signing in…';msg.textContent='';
-      signInPassword((em.value||'').trim(),p).then(function(u){
+      signInPassword(EMAIL,p).then(function(u){
         el.innerHTML='';
         try{cb(u);}catch(e){}
       },function(e){
@@ -287,7 +319,8 @@ window.FBAuth = (function () {
   if(S)window.__fbUser=user();
 
   return {restore:restore, signOut:signOut, form:form, blocked:blocked,
-          signInPassword:signInPassword, email:function(){return EMAIL;},
+          signInPassword:signInPassword, changePassword:changePassword, explain:explain,
+          email:function(){return EMAIL;},
           user:function(){return window.__fbUser||null;},
           token:function(){ return window.__fbUser?window.__fbUser.getIdToken():Promise.reject(new Error('signed-out')); },
           seen:function(){return !!S;},

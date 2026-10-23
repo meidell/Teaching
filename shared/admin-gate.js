@@ -10,11 +10,14 @@
        onUnlock: start
      });
 
-   Only the SHA-256 of the password lives here, and the device remembers
-   the password itself (localStorage) — so the next visit, on this
-   browser, opens straight through with no prompt. Changing PASS_HASH
-   below automatically invalidates every remembered device, because the
-   stored value no longer hashes to a match.
+   ONE PASSWORD, NO HASH HERE (23 Oct 2026). The password typed at any
+   gate IS the instructor account's password, checked by Firebase
+   (fb-auth.js) — there is no second "gate password" any more, and no
+   hash of it in this file: this repo is public, and a hash of the
+   account password could be cracked offline into full access to every
+   cohort. The device keeps the account session (`jem_fb_session`), so
+   the next visit opens straight through. Changing the password (on
+   /shared/site.html) signs every OTHER device out.
 
    The unlock is site-wide on purpose: unlocking one course dashboard
    unlocks them all on that device. AdminGate.lock() forgets it again.
@@ -28,8 +31,7 @@
    and a device holding that account's session (`jem_fb_session`) counts
    as unlocked everywhere — so one login opens the dashboards, chat,
    presence and releases, on the site and in the app. The old gate
-   password still unlocks the UI (and still needs the 🔑 sign-in for
-   database writes).
+   password (a SHA-256 in this file) was retired the same day.
 
    TWO HATS. On a COURSE page (anything outside /shared/) the instructor
    can switch to the STUDENT VIEW (`jem_view = 'student'`, the switch is
@@ -45,27 +47,15 @@
 window.AdminGate = (function () {
   "use strict";
 
-  /* SHA-256 of the instructor password. To change the password: hash the
-     new one (`printf 'newpass' | shasum -a 256`) and paste it here. */
-  var PASS_HASH = "41c8fa7d060badc5618a28326dc00cf07e1ce22a79a94a1fed94f271d3127447";
-  var STORE_KEY = "jem_admin_pw";      /* shared by every gate on the site */
+  var STORE_KEY = "jem_admin_pw";      /* the retired gate password's store: cleared on load */
   var LEGACY_KEYS = ["omba401_admin_ok","ombafr455_admin_ok","umef407_admin_ok",
                      "e1410_admin_ok","stats_admin_ok"];
 
-  /* compact synchronous SHA-256 (same implementation the root page uses) */
-  function sha256(ascii){ function rr(v,a){return (v>>>a)|(v<<(32-a));} var mp=Math.pow,mw=mp(2,32),result='';var words=[],abl=ascii.length*8;var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pc=k.length,comp={};for(var c=2;pc<64;c++){if(!comp[c]){for(var i=0;i<313;i+=c){comp[i]=c;}hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0;}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return '';words[i>>2]|=j<<((3-i)%4)*8;}words[words.length]=((abl/mw)|0);words[words.length]=(abl);for(var j=0;j<words.length;){var w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;}for(var i=0;i<8;i++){hash[i]=(hash[i]+oh[i])|0;}}for(var i=0;i<8;i++){for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16);}}return result; }
-  function h(s){ return sha256(unescape(encodeURIComponent(s))); }
-
-  function matches(pw){ return !!pw && h(String(pw).trim()) === PASS_HASH; }
-
-  function remembered(){
-    var v=null; try{ v=localStorage.getItem(STORE_KEY); }catch(e){}
-    return matches(v) ? v : null;
-  }
-  function remember(pw){ try{ localStorage.setItem(STORE_KEY, pw); }catch(e){} mark(true); }
+  function matches(pw){ return false; }   /* AdminGate.check(): no gate password any more */
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
   /* the instructor account's session, stored by fb-auth.js; read here without loading it */
   function hasSession(){ try{ var v=JSON.parse(localStorage.getItem('jem_fb_session')||'null'); return !!(v&&v.rt); }catch(e){ return false; } }
-  function trusted(){ return !!remembered() || hasSession(); }
+  function trusted(){ return hasSession(); }
   function view(){ try{ return localStorage.getItem('jem_view')||'instructor'; }catch(e){ return 'instructor'; } }
   function onShared(){ return (location.pathname||'').indexOf('/shared/')===0; }
   function isUnlocked(){ return trusted() && !(view()==='student' && !onShared()); }
@@ -136,6 +126,7 @@ window.AdminGate = (function () {
       (o.logo?'<img src="'+o.logo+'" alt="">':'')+
       '<div id="ag-brand"></div><div id="ag-lock">🔒</div>'+
       '<h1></h1><p></p>'+
+      '<input type="text" autocomplete="username" value="presence@janerikmeidell.com" style="display:none" aria-hidden="true" tabindex="-1">'+
       '<input id="ag-pw" type="password" autocomplete="current-password" placeholder="••••">'+
       '<button id="ag-go">Unlock</button><div id="ag-err"></div></div>';
     document.body.appendChild(g);
@@ -147,14 +138,12 @@ window.AdminGate = (function () {
     function submit(){
       var v=(pw.value||'').trim();
       if(!v)return;
-      if(matches(v)){ remember(v); err.textContent=''; g.classList.add('ag-hidden'); open(); return; }
-      /* not the old gate password: try it as the instructor ACCOUNT's password */
       err.textContent='…';
       withFB(function(FB){
         if(!FB){ err.textContent='Incorrect password.'; pw.value=''; pw.focus(); return; }
         FB.signInPassword(FB.email(), v).then(function(){
           mark(true); err.textContent=''; g.classList.add('ag-hidden'); open();
-        },function(){ err.textContent='Incorrect password.'; pw.value=''; pw.focus(); });
+        },function(e){ err.textContent=FB.explain?FB.explain(e):'Incorrect password.'; pw.value=''; pw.focus(); });
       });
     }
     g.querySelector('#ag-go').addEventListener('click',submit);
@@ -163,8 +152,8 @@ window.AdminGate = (function () {
     return { unlocked:false };
   }
 
-  /* keep the marker in step with the gate on every page that loads this
-     file — so a changed PASS_HASH also clears it */
+  /* keep the marker in step with the session on every page that loads
+     this file — signing out (or a password change elsewhere) clears it */
   mark(trusted());
 
   return { mount:mount, lock:lock, check:matches, isUnlocked:isUnlocked, trusted:trusted,

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin · janerikmeidell.com</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+<!--
+  ADMIN · the instructor's one door (23 Oct 2026).
+      /admin/
+  Jan Erik: "one central login (for me)", "an admin dashboard from which
+  I can access universities, messages, presence, rosters, all that", and
+  no instructor login on the course landing pages.
+
+  ONE PASSWORD. The gate is AdminGate (password only — the instructor
+  account's password, checked by Firebase, see /shared/fb-auth.js). The
+  session it leaves on the device (`jem_fb_session`) is what every other
+  instructor page and every course page reads, so signing in here signs
+  this device in everywhere; "Sign out" here signs it out everywhere.
+
+  WHAT IT READS. For every course in courses.json that has a namespace,
+  with the instructor token, a handful of SMALL reads — never the whole
+  namespace:
+      <ns>/_chat               → messages waiting for an answer (the
+                                 inbox.html rule: a student message waits
+                                 until you reply, or mark it handled there)
+      <ns>/_roster?shallow     → how many students registered
+      <ns>/_presence_now       → is a presence window open right now
+      <ns>/_submissions?shallow→ how many students have handed something in
+  plus one ANONYMOUS read, <ns>/_rules_probe, which is the deploy check:
+  a namespace whose rules block was published answers 200 (any client may
+  read a $sid node), one that was never published answers 401. That is
+  the "Rules" column — the one thing nothing else on the site shows.
+
+  WHAT IT IS NOT. It does not rebuild the dashboards: every course row
+  links into /shared/admin2.html (roster, presence, hand-ins, CSV),
+  insights.html, chat.html and board.html for that course. Those pages
+  stay the place where the work is done; this is where you start.
+
+  "This week" comes from courses.json → schedule.dates where a course has
+  them, else weekly from schedule.first on schedule.day for
+  schedule.sessions weeks. Keep schedule.dates right and it is right.
+-->
+<style>
+:root{--main:#152a5e;--deep:#0a1a3a;--glow:#f0b33d;--pale:#eef2f9;--ink:#0F172A;--grey:#64748B;
+--paper:#fff;--wash:#F6F8FB;--line:#E2E8F0;--bad:#B91C1C;--badbg:#FEE2E2;--good:#15803D;--goodbg:#DCFCE7;--new:#B45309;--newbg:#FEF3C7;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,"Segoe UI","Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--wash);line-height:1.55;-webkit-font-smoothing:antialiased;}
+a{color:inherit;}
+header{background:var(--deep);color:#fff;padding:18px 0 16px;}
+header .in{max-width:1180px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+header .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--glow);font-weight:800;}
+header h1{font-size:23px;font-weight:800;letter-spacing:-.3px;}
+header .sp{flex:1;}
+.hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:6px 13px;font:800 12.5px system-ui,-apple-system,Arial,sans-serif;cursor:pointer;text-decoration:none;display:inline-block;}
+.hbtn:hover{background:rgba(255,255,255,.22);}
+.hbtn .n{background:var(--glow);color:var(--deep);border-radius:10px;padding:0 6px;margin-left:5px;font-size:11px;}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 50px;}
+.sec{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--grey);margin:26px 0 10px;display:flex;align-items:center;gap:10px;}
+.sec small{letter-spacing:0;text-transform:none;font-weight:600;}
+.warn{background:var(--newbg);border:1px solid rgba(180,83,9,.3);border-radius:12px;padding:14px 16px;font-size:13.5px;color:#78350F;margin-bottom:14px;display:none;}
+
+/* the four numbers */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;display:block;}
+a.kpi:hover{border-color:var(--main);}
+.kpi .v{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1;}
+.kpi .l{font-size:12.5px;color:var(--grey);font-weight:600;}
+.kpi.hot{border-color:rgba(180,83,9,.5);background:#FFFBEB;} .kpi.hot .v{color:var(--new);}
+.kpi.bad{border-color:rgba(185,28,28,.4);background:#FEF2F2;} .kpi.bad .v{color:var(--bad);}
+.kpi.ok .v{color:var(--good);}
+
+/* this week */
+.week{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;}
+.day{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:74px;}
+.day.today{border-color:var(--main);box-shadow:0 0 0 2px var(--pale);}
+.day .d{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--grey);margin-bottom:4px;}
+.day.today .d{color:var(--main);}
+.day a{display:block;text-decoration:none;font-size:12.5px;font-weight:700;padding:3px 0;border-top:1px dashed var(--line);}
+.day a:first-of-type{border-top:none;}
+.day a small{display:block;font-weight:500;color:var(--grey);font-size:11.5px;}
+.day .none{font-size:12px;color:#94A3B8;}
+
+/* schools and courses */
+.school{background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden;}
+.shd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--pale);border-bottom:1px solid var(--line);flex-wrap:wrap;}
+.shd h2{font-size:15.5px;font-weight:800;}
+.shd .sp{flex:1;}
+.shd a{font-size:12px;font-weight:700;color:var(--main);text-decoration:none;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);font-weight:800;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+td.c{text-align:center;}
+.cn{font-weight:800;}
+.cn small{display:block;font-weight:500;color:var(--grey);font-size:11.5px;}
+.code{font:800 10.5px system-ui,Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--main);background:var(--pale);border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.pill{font-weight:800;font-size:11.5px;border-radius:20px;padding:2px 9px;white-space:nowrap;display:inline-block;text-decoration:none;}
+.pill.new{color:var(--new);background:var(--newbg);}
+.pill.ok{color:var(--good);background:var(--goodbg);}
+.pill.bad{color:var(--bad);background:var(--badbg);}
+.pill.q{color:var(--grey);background:var(--wash);border:1px solid var(--line);}
+.pill.live{color:#fff;background:var(--bad);}
+.dim{color:#94A3B8;}
+.links{display:flex;gap:5px;flex-wrap:wrap;}
+.links a{font-size:11.5px;font-weight:800;text-decoration:none;color:var(--main);border:1px solid var(--line);border-radius:16px;padding:3px 9px;white-space:nowrap;background:#fff;}
+.links a:hover{background:var(--pale);border-color:var(--main);}
+.links a.main{background:var(--main);color:#fff;border-color:var(--main);}
+.ld::after{content:"…";color:#94A3B8;}
+
+/* account */
+.acct{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+.box h3{font-size:14.5px;margin-bottom:6px;}
+.box p{font-size:13px;color:var(--grey);margin-bottom:10px;}
+.box input{border:1px solid rgba(0,0,0,.2);border-radius:9px;padding:8px 11px;font:inherit;width:100%;max-width:260px;margin:0 6px 8px 0;}
+.btn{background:var(--main);color:#fff;border:none;border-radius:20px;padding:8px 15px;font:800 12.5px system-ui,Arial,sans-serif;cursor:pointer;text-decoration:none;display:inline-block;}
+.btn:hover{background:var(--deep);}
+.btn.ghost{background:#fff;color:var(--main);border:1px solid var(--line);}
+.msg{font-size:12.5px;font-weight:700;margin-top:4px;min-height:18px;}
+.msg.ok{color:var(--good);} .msg.bad{color:var(--bad);}
+details.arch{margin-top:6px;}
+details.arch summary{cursor:pointer;font-size:12.5px;color:var(--grey);font-weight:700;padding:6px 0;}
+@media(max-width:760px){ .hide-s{display:none;} }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <div>
+    <div class="eyebrow">Jan Erik Meidell · instructor</div>
+    <h1>Admin</h1>
+  </div>
+  <span class="sp"></span>
+  <a class="hbtn" href="/shared/inbox.html" id="hInbox">📥 Inbox</a>
+  <a class="hbtn" href="/shared/chat.html">💬 Messages</a>
+  <a class="hbtn" href="/shared/admin2.html">Dashboards</a>
+  <a class="hbtn" href="/shared/insights.html">Insights</a>
+  <a class="hbtn" href="/shared/site.html">Site · alerts · stats</a>
+  <button class="hbtn" id="bRefresh">↻</button>
+</div></header>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sec">This week <small id="weekLbl"></small></div>
+  <div class="week" id="week"></div>
+
+  <div class="sec">Schools and courses <small id="readLbl" class="ld">reading every course</small></div>
+  <div id="schools"></div>
+
+  <div class="sec">Account</div>
+  <div class="acct">
+    <div class="box">
+      <h3>Change the instructor password</h3>
+      <p>The one password for this page, every dashboard, chat, presence, releases and the app. Changing it signs every <b>other</b> device out; this one stays signed in.</p>
+      <input type="password" id="pw1" autocomplete="new-password" placeholder="new password">
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="the same again">
+      <div><button class="btn" id="bPw">Change password</button></div>
+      <div class="msg" id="pwMsg"></div>
+    </div>
+    <div class="box">
+      <h3>This device</h3>
+      <p>Signed in as the instructor: every course page shows your extra buttons, and the bar at the bottom of a course page switches to the student view. Signing out here signs this device out of everything.</p>
+      <button class="btn ghost" id="bOut">Sign out of this device</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+"use strict";
+var DB=window.CourseConfig.DB;
+var $=function(id){return document.getElementById(id);};
+var COURSES=[], ST={}, SCHOOL_HOME={'GBS':'/GBS/','SUMAS':'/SUMAS/','SWISS UMEF':'/UMEF/','UMEF':'/UMEF/'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function title(c){var t=c.title||{};return typeof t==='string'?t:(t.en||t.fr||c.id);}
+function ago(ts){if(!ts)return '';var m=Math.round((Date.now()-ts)/60000);if(m<1)return 'now';if(m<60)return m+' min';var h=Math.round(m/60);if(h<24)return h+' h';return Math.round(h/24)+' d';}
+async function authQ(){ if(!window.__fbUser)return ''; try{return 'auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
+async function get(path,qs,anon){
+  var q=[]; if(qs)q.push(qs); if(!anon){var a=await authQ(); if(a)q.push(a);}
+  var r=await fetch(DB+'/'+path+'.json'+(q.length?'?'+q.join('&'):''),{cache:'no-store'});
+  var j=null; try{j=await r.json();}catch(e){}
+  if(!r.ok||(j&&j.error))throw new Error((j&&j.error)||('HTTP '+r.status));
+  return j;
+}
+
+/* ---- messages waiting: the inbox.html rule, condensed ---- */
+function waiting(ns,chat){
+  var n=0;
+  Object.keys(chat||{}).forEach(function(tid){
+    if(tid.charAt(0)==='_'||tid.indexOf('p-')===0||tid.indexOf('sg-')===0)return;
+    var t=chat[tid]||{}; if((t.meta||{}).off)return;
+    var o=t.msgs||{}, mine=0, list=[];
+    Object.keys(o).forEach(function(k){var m=o[k]||{}; if(!m.txt)return; list.push(m); if(m.by==='i'&&(m.ts||0)>mine)mine=m.ts||0;});
+    var h=0; try{h=parseInt(localStorage.getItem('jem_inbox_handled_'+ns+'_'+tid)||'0',10)||0;}catch(e){}
+    var seen=Math.max(h,mine);
+    list.forEach(function(m){ if(m.by==='s'&&(m.ts||0)>seen)n++; });
+  });
+  return n;
+}
+function presenceOpen(p){
+  if(!p)return null;
+  if(p.open)return p;
+  var hit=null; Object.keys(p).forEach(function(k){ var v=p[k]; if(v&&typeof v==='object'&&v.open&&!hit){hit=v;hit._g=k;} });
+  return hit;
+}
+
+async function readCourse(c){
+  var s=ST[c.id]={};
+  /* rules: anonymous, a $sid-shaped node that never exists */
+  try{ await get(c.ns+'/_rules_probe',null,true); s.rules='ok'; }
+  catch(e){ s.rules=/permission|401/i.test(String(e.message))?'missing':'error'; }
+  var jobs=[
+    get(c.ns+'/_roster','shallow=true').then(function(j){s.students=j?Object.keys(j).filter(function(k){return k.charAt(0)!=='_';}).length:0;}),
+    get(c.ns+'/_chat').then(function(j){s.waiting=waiting(c.ns,j);})
+  ];
+  if((c.features||[]).indexOf('presence')>=0)
+    jobs.push(get(c.ns+'/_presence_now').then(function(j){s.pres=presenceOpen(j);}));
+  if(c.handins||(c.features||[]).indexOf('workbook')>=0)
+    jobs.push(get(c.ns+'/_submissions','shallow=true').then(function(j){s.handed=j?Object.keys(j).length:0;}));
+  var res=await Promise.allSettled(jobs);
+  s.failed=res.filter(function(r){return r.status==='rejected';}).length;
+  s.at=Date.now();
+}
+
+/* ---- this week ---- */
+var DOW={sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function datesOf(c){
+  var s=c.schedule||{};
+  if(s.dates&&s.dates.length)return s.dates;
+  var dw=DOW[String(s.day||'').slice(0,3).toLowerCase()];
+  if(dw==null||!s.first||!s.sessions)return [];
+  var out=[],d=new Date(s.first+'T12:00:00');
+  for(var i=0;i<s.sessions;i++){out.push(iso(d));d.setDate(d.getDate()+7);}
+  return out;
+}
+function drawWeek(){
+  var t=new Date();t.setHours(12,0,0,0);
+  var days=[];for(var i=0;i<7;i++){var d=new Date(t);d.setDate(t.getDate()+i);days.push(d);}
+  $('weekLbl').textContent='today and the next six days · from courses.json → schedule';
+  $('week').innerHTML=days.map(function(d,i){
+    var k=iso(d), items=[];
+    COURSES.forEach(function(c){
+      if(c.status!=='live')return;
+      var ds=datesOf(c),n=ds.indexOf(k);
+      if(n>=0)items.push('<a href="/'+esc(c.home||c.dir+'/index.html')+'">'+esc(c.code||c.id)+
+        '<small>session '+(n+1)+' / '+ds.length+' · '+esc((c.schedule||{}).time||'')+'</small></a>');
+    });
+    return '<div class="day'+(i===0?' today':'')+'"><div class="d">'+(i===0?'Today · ':'')+
+      d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'</div>'+
+      (items.length?items.join(''):'<div class="none">—</div>')+'</div>';
+  }).join('');
+}
+
+/* ---- the numbers and the table ---- */
+function drawAll(){
+  var wait=0,open=0,miss=0,stud=0,read=0;
+  COURSES.forEach(function(c){var s=ST[c.id];if(!c.ns||!s||!s.at)return;read++;
+    wait+=s.waiting||0; if(s.pres)open++; if(s.rules==='missing')miss++; stud+=s.students||0;});
+  var withNs=COURSES.filter(function(c){return c.ns&&c.status!=='archived';}).length;
+  $('kpis').innerHTML=
+    '<a class="kpi'+(wait?' hot':' ok')+'" href="/shared/inbox.html"><div class="v">'+wait+'</div><div class="l">messages waiting for an answer → Inbox</div></a>'+
+    '<div class="kpi'+(open?' hot':'')+'"><div class="v">'+open+'</div><div class="l">presence window'+(open===1?'':'s')+' open now</div></div>'+
+    '<div class="kpi'+(miss?' bad':' ok')+'"><div class="v">'+(read<withNs?'…':miss)+'</div><div class="l">course'+(miss===1?'':'s')+' whose database rules are not published</div></div>'+
+    '<div class="kpi"><div class="v">'+stud+'</div><div class="l">registered students, '+withNs+' courses with data</div></div>';
+  $('hInbox').innerHTML='📥 Inbox'+(wait?'<span class="n">'+wait+'</span>':'');
+  document.title=(wait?'('+wait+') ':'')+'Admin · janerikmeidell.com';
+
+  var bySchool={}, order=[];
+  COURSES.forEach(function(c){var k=c.school||'Other';if(!bySchool[k]){bySchool[k]=[];order.push(k);}bySchool[k].push(c);});
+  $('schools').innerHTML=order.map(function(k){
+    var list=bySchool[k], live=list.filter(function(c){return c.status!=='archived';}), arch=list.filter(function(c){return c.status==='archived';});
+    var home=SCHOOL_HOME[k];
+    return '<div class="school"><div class="shd"><h2>'+esc(k)+'</h2><span class="dim" style="font-size:12px">'+live.length+' course'+(live.length===1?'':'s')+'</span><span class="sp"></span>'+
+      (home?'<a href="'+home+'">School page ↗</a>':'')+'</div>'+
+      '<table><thead><tr><th>Course</th><th class="hide-s">Status</th><th class="c">Students</th><th class="c">Messages</th><th class="c">Presence</th><th class="c hide-s">Handed in</th><th class="c">Rules</th><th>Open</th></tr></thead><tbody>'+
+      live.map(row).join('')+'</tbody></table>'+
+      (arch.length?'<details class="arch" style="padding:0 16px 8px"><summary>'+arch.length+' archived</summary><table><tbody>'+arch.map(row).join('')+'</tbody></table></details>':'')+
+      '</div>';
+  }).join('');
+}
+function cell(v,load){return v==null?(load?'<span class="ld"></span>':'<span class="dim">—</span>'):v;}
+function row(c){
+  var s=ST[c.id]||{}, load=c.ns&&!s.at, id=encodeURIComponent(c.id), f=c.features||[];
+  var st=c.status==='live'?(c.listed?'live · public':'live · cohort'):(c.status||'');
+  var home='/'+(c.home||(c.dir+'/index.html'));
+  var links='<a class="main" href="'+esc(home)+'">Course</a>';
+  if(c.ns){
+    links+='<a href="/shared/admin2.html?course='+id+'">Dashboard</a>';
+    if(f.indexOf('presence')>=0)links+='<a href="/shared/admin2.html?course='+id+'#presence">Presence</a>';
+    links+='<a href="/shared/chat.html?course='+id+'">Messages</a><a href="/shared/insights.html?course='+id+'">Insights</a><a href="/shared/board.html?course='+id+'">Board</a>';
+  }
+  var msgs=s.waiting==null?null:(s.waiting?'<a class="pill new" href="/shared/inbox.html">'+s.waiting+' waiting</a>':'<span class="pill q">0</span>');
+  var pres=f.indexOf('presence')<0?null:(s.pres?'<a class="pill live" href="/shared/admin2.html?course='+id+'#presence" title="'+esc(s.pres.label||s.pres.mod||'')+'">● open'+(s.pres._g?' · '+esc(s.pres._g):'')+'</a>':(s.at?'<span class="pill q">closed</span>':null));
+  var rules=!c.ns?null:(s.rules==='ok'?'<span class="pill ok">✓</span>':s.rules==='missing'?'<span class="pill bad" title="The '+esc(c.ns)+' block is not in the deployed rules: publish firebase-database-rules.json">not published</span>':(s.rules?'<span class="pill q">?</span>':null));
+  return '<tr><td><div class="cn"><span class="code">'+esc(c.code||c.id)+'</span> '+esc(title(c))+'<small>'+esc([c.term,(c.schedule||{}).day,(c.schedule||{}).time].filter(Boolean).join(' · '))+'</small></div></td>'+
+    '<td class="hide-s"><span class="dim">'+esc(st)+'</span></td>'+
+    '<td class="c">'+(c.ns?cell(s.students,load):'<span class="dim" title="No namespace: this course stores no student data">no data</span>')+'</td>'+
+    '<td class="c">'+cell(c.ns?msgs:null,load)+'</td>'+
+    '<td class="c">'+cell(pres,load&&f.indexOf('presence')>=0)+'</td>'+
+    '<td class="c hide-s">'+cell(s.handed,load&&(c.handins||f.indexOf('workbook')>=0))+'</td>'+
+    '<td class="c">'+cell(rules,load)+'</td>'+
+    '<td><div class="links">'+links+'</div></td></tr>';
+}
+
+var BUSY=false;
+async function loadAll(){
+  if(BUSY)return; BUSY=true;
+  $('readLbl').className='ld'; $('readLbl').textContent='reading every course';
+  var q=COURSES.filter(function(c){return c.ns&&c.status!=='archived';}).slice();
+  async function worker(){ while(q.length){ var c=q.shift(); try{await readCourse(c);}catch(e){} drawAll(); } }
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  BUSY=false; drawAll();
+  $('readLbl').className=''; $('readLbl').textContent='read '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' · ↻ to read again';
+}
+
+/* ---- account ---- */
+$('bPw').addEventListener('click',function(){
+  var a=$('pw1').value, b=$('pw2').value, m=$('pwMsg');
+  m.className='msg';
+  if(!a){m.className='msg bad';m.textContent='Type the new password.';return;}
+  if(a!==b){m.className='msg bad';m.textContent='The two do not match.';return;}
+  m.textContent='Changing…';
+  FBAuth.changePassword(a).then(function(){
+    m.className='msg ok';m.textContent='Done. Use the new password on your other devices.';$('pw1').value='';$('pw2').value='';
+  },function(e){ m.className='msg bad'; m.textContent=FBAuth.explain(e); });
+});
+$('bOut').addEventListener('click',function(){
+  if(!confirm('Sign this device out of the admin, the dashboards and the instructor view on every course?'))return;
+  FBAuth.signOut(function(){ AdminGate.lock(); location.reload(); });
+});
+$('bRefresh').addEventListener('click',function(){loadAll();});
+
+/* ---- boot: one password, then everything ---- */
+AdminGate.mount({brand:'JANERIKMEIDELL.COM · ADMIN',title:'Instructor sign-in',
+  blurb:'One password for every course, dashboard and message. This device will remember it.',
+  onUnlock:function(){
+    window.CourseConfig.load().then(function(reg){
+      COURSES=reg.courses.filter(function(c){return c.status!=='superseded';});
+      drawWeek(); drawAll();
+      FBAuth.restore(function(u){
+        if(u){loadAll();return;}
+        $('warn').style.display='block';
+        $('warn').innerHTML='<div style="margin-bottom:8px">Signed out — sign in to read the courses.</div><div id="wf"></div>';
+        FBAuth.form($('wf'),function(){$('warn').style.display='none';loadAll();},'');
+      });
+      setInterval(function(){ if(!document.hidden)loadAll(); },60000);
+    });
+  }});
+</script>
+</body>
+</html>

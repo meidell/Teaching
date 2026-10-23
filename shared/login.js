@@ -64,8 +64,8 @@ window.CourseLogin = (function () {
       tabNew:"First time", tabBack:"I have a password",
       nameL:"Full name", nameP:"First and last name",
       codeL:"Your password", codeP:"your password",
-      pwL:"Choose a password", pwP:"2–10 letters or digits — anything easy to remember",
-      needPw:"Choose a password of 2 to 10 characters, without spaces.",
+      pwL:"Choose a password", pwP:"anything you will remember",
+      needPw:"Choose a password.",
       go:"Continue", back:"Sign in",
       later:"not now",
       madeH:"You're all set",
@@ -92,8 +92,8 @@ window.CourseLogin = (function () {
       tabNew:"Première fois", tabBack:"J'ai un mot de passe",
       nameL:"Nom complet", nameP:"Prénom et nom",
       codeL:"Votre mot de passe", codeP:"votre mot de passe",
-      pwL:"Choisissez un mot de passe", pwP:"2 à 10 lettres ou chiffres — quelque chose de facile à retenir",
-      needPw:"Choisissez un mot de passe de 2 à 10 caractères, sans espace.",
+      pwL:"Choisissez un mot de passe", pwP:"ce que vous voulez, facile à retenir",
+      needPw:"Choisissez un mot de passe.",
       go:"Continuer", back:"Se connecter",
       later:"plus tard",
       madeH:"C'est fait",
@@ -347,8 +347,8 @@ window.CourseLogin = (function () {
           '<label for="cl-name" id="cl-nameL"></label><input id="cl-name" autocomplete="name">'+
           '<div id="cl-grpwrap"><label id="cl-grpL"></label><div class="cl-grps" id="cl-grps"></div>'+
             '<div class="cl-ghelp" id="cl-ghelp"></div></div>'+
-          '<div id="cl-pwwrap"><label for="cl-pw" id="cl-pwL"></label><input id="cl-pw" autocomplete="new-password" maxlength="10" autocapitalize="none"></div>'+
-          '<div id="cl-codewrap"><label for="cl-code" id="cl-codeL"></label><input id="cl-code" autocomplete="current-password" maxlength="10" autocapitalize="none"></div>'+
+          '<div id="cl-pwwrap"><label for="cl-pw" id="cl-pwL"></label><input id="cl-pw" autocomplete="new-password" autocapitalize="none"></div>'+
+          '<div id="cl-codewrap"><label for="cl-code" id="cl-codeL"></label><input id="cl-code" autocomplete="current-password" autocapitalize="none"></div>'+
           '<button id="cl-go"></button><div id="cl-err"></div>'+
           '<button id="cl-later"></button>'+
         '</div>'+
@@ -455,7 +455,8 @@ window.CourseLogin = (function () {
     if(!name||name.indexOf(' ')<0||sid.length<3){err(t.needName);return;}
     if(hasGroups()&&!pickedGrp){err(t.needGrp);return;}
     var pw=(document.getElementById('cl-pw').value||'').trim();
-    if(!/^\S{2,10}$/.test(pw)){err(t.needPw);return;}
+    /* any password at all (23 Oct 2026, Jan Erik: "no restriction about length or complexity") */
+    if(!pw){err(t.needPw);return;}
     err('…');
     get('_roster/'+sid).then(function(existing){
       if(existing&&existing.error){ err(t.refused); return; }

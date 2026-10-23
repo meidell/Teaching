@@ -95,3 +95,39 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show();
   }catch(e){}
 })();
+
+/* ⚙ Admin — the instructor's one door, on every page (23 Oct 2026, Jan
+   Erik: "only one central login (for me)"). The course pages no longer
+   carry an "instructor" link; a device signed in to the instructor
+   account (`jem_fb_session`, written by /shared/fb-auth.js) gets this
+   button instead, and nobody else ever sees it. It joins the 👁/🎓 bar
+   login.js draws on course pages, or sits in the same place on its own.
+   Not on /admin/ or /shared/ (already there), not inside the app. */
+(function(){
+  try{
+    var s=JSON.parse(localStorage.getItem('jem_fb_session')||'null');
+    if(!s||!s.rt)return;
+    var p=location.pathname||'';
+    if(p.indexOf('/admin/')===0||p.indexOf('/shared/')===0)return;
+    var tries=0;
+    function place(){
+      if(window.CourseLogin&&CourseLogin.inApp&&CourseLogin.inApp())return;
+      var old=document.getElementById('jem-admin'); if(old)old.remove();
+      var a=document.createElement('a'); a.id='jem-admin'; a.href='/admin/'; a.textContent='⚙ Admin';
+      a.title='The admin console: every course, messages, presence, rosters';
+      var bar=document.getElementById('jem-hat');
+      if(bar){
+        a.style.cssText='border-right:1px solid rgba(255,255,255,.18);border-radius:30px 0 0 30px;padding:7px 11px;font:inherit;color:#fff;text-decoration:none;display:flex;align-items:center;';
+        bar.insertBefore(a,bar.firstChild);
+      }else{
+        a.style.cssText='position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:320;background:rgba(15,25,35,.82);color:#fff;'+
+          'border-radius:30px;padding:8px 13px;font:700 11.5px/1 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.25);';
+        document.body.appendChild(a);
+        /* login.js may draw its bar a moment later: move in when it does */
+        if(++tries<6)setTimeout(place,1000);
+      }
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(place,400);});
+    else setTimeout(place,400);
+  }catch(e){}
+})();
