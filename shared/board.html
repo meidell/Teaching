@@ -129,7 +129,11 @@ async function q(){ if(!window.__fbUser)return ''; try{return '?auth='+await win
 async function load(){
   var a=await q();
   var r=await fetch(DB+'/'+NS+'.json'+(a?a+'&':'?')+'shallow=true');
-  if(r.status===401||r.status===403){ needAuth(); return; }
+  /* TEMPORARY (23 Oct 2026, Jan Erik in class, no password at hand): without
+     the account, take the sids from the public class directory
+     (_chat/_people) and read each student's own node, which is
+     world-readable. Only students who have ever opened Messages appear. */
+  if(r.status===401||r.status===403){ r=await fetch(DB+'/'+NS+'/_chat/_people.json?shallow=true'); if(!r.ok){ needAuth(); return; } }
   var keys=Object.keys((await r.json())||{}).filter(function(k){return k.charAt(0)!=='_';});
   var rows=await Promise.all(keys.map(function(sid){
     return fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/work.json'+a).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;})
@@ -248,13 +252,12 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ---- boot ----------------------------------------------------------- */
-if(!AdminGate.isUnlocked()){dead('Instructor only','This screen opens on a device where an instructor dashboard has been unlocked.');return;}
+/* TEMPORARY: open on every device (see load()) */
 if(!C||!NS){dead('Unknown course','<code>?course='+esc(CID)+'</code> is not a course with student data.');return;}
 document.title='The room · '+(C.label||CID);
 $('crs').textContent=C.label||CID;$('bar').style.display='flex';
 main.innerHTML='<div class="empty">Reading the room…</div>';
 FBAuth.restore(function(u){
-  if(!u){needAuth();return;}
   load().then(start).catch(function(){dead('Could not read','The database did not answer. Check the network and reload.');});
 });
 })();
