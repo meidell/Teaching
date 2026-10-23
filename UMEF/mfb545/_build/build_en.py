@@ -14,7 +14,7 @@ What it does, in order:
      REPORTS any pair whose French text no longer occurs (the page changed:
      update the table);
   2. sets <html lang="en">; rewrites internal links (index.html,
-     journeeN.html, jeopardy.html — in attributes and in JS strings) to
+     journeeN.html, jeopardy.html, milliard.html — in attributes and in JS strings) to
      their -en twins; flips the language-switch link to point back to FR;
   3. checks every inline <script> with `node --check` and refuses to write
      a page whose JavaScript does not parse;
@@ -25,8 +25,8 @@ strings live inside single-quoted JavaScript; no raw " inside attributes.
 """
 import json, os, re, subprocess, sys, tempfile
 HERE=os.path.dirname(os.path.abspath(__file__)); ROOT=os.path.dirname(HERE)
-PAGES=['index','journee1','journee2','journee3','jeopardy','rendu']
-INTERNAL=r'(index|journee\d+|jeopardy|rendu)'
+PAGES=['index','journee1','journee2','journee3','jeopardy','milliard','rendu']
+INTERNAL=r'(index|journee\d+|jeopardy|milliard|rendu)'
 ALLOW=['Léman','PayLéman','Côte d','Rochat','Hypothekarbank','Zürich','Mamadou','Coumba','Khady','Ndeye','Ibrahima','Aminata','Mariama','Astou','Babacar','Cheikh','Abdou','Lamine','Moussa','Fatou','Ousmane','Awa','Diop','Pia-Maria','Rutschmann','Schnyder','Grosse Marktgasse','Rue du Lac','Société','Fintech et droit','Bonneau','Verdier','RB Édition','Teranga','Biel','Rorschach','Orange Money','Plenitude','MoMo','Wave']
 FR_WORDS=re.compile(r"(?<![\w-])(les|des|du|une|est|pour|avec|dans|vous|votre|vos|sur|aux|qui|ou|pas|journée|séance|cours|étape|réponse|Suite|Retour|Menu de la)(?![\w-])",re.I)
 ACC=re.compile(r'[éèêàçùûôîœëÉÈÊÀÇ]')

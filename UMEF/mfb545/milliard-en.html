@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Who Wants to Be a Billionaire? · MFB 545 Fintech · Swiss UMEF</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="lang.js"></script>
+<style>
+/* =====================================================================
+   MFB 545 · « Qui veut gagner un milliard ? » — révision des journées
+   1 à 3 pour l'écran de la salle, DEUX équipes. Modèle : les
+   millionnaires de /UMEF/negotiation et /GBS/blockchain, remis aux
+   couleurs UMEF (sarcelle, Georgia, rouge UMEF) comme jeopardy.html.
+
+   Les deux équipes montent en parallèle : A au palier 1, B au palier 1,
+   A au palier 2… Chaque palier a DEUX questions de difficulté voisine,
+   une par équipe (BANK[n][0] pour A, [1] pour B). Une erreur = retour au
+   dernier palier garanti et l'équipe s'arrête ; « Encaisser » garde le
+   gain acquis. Trois jokers par équipe : 50:50 · l'autre équipe (qui
+   peut bluffer) · le carnet (30 s de notes). Égalité finale → question
+   chiffrée, le plus proche gagne.
+
+   Page de projection : pas de connexion, rien de compté, rien envoyé.
+   La partie est gardée dans ce navigateur (mfb545_mill[_en]) pour
+   survivre à un rechargement. Questions FR + EN dans le même tableau,
+   choisies par T() ; la page anglaise est générée par build_en.py.
+   Tous les chiffres recalculés en Python le 23 oct. 2026.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:radial-gradient(ellipse at 40% 30%,#0F4C60 0%,#0A3341 62%,#06222C 100%);color:#fff;min-height:100vh;}
+button{font-family:inherit;}
+.top{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:2px solid rgba(255,213,138,.55);}
+.top .logo{background:#fff;border-radius:8px;padding:4px 8px;display:flex;}
+.top .logo img{height:28px;width:auto;display:block;}
+.top h1{font-family:Georgia,serif;font-size:clamp(17px,2.2vw,24px);font-style:italic;}
+.top .sub{color:#9FD3E6;font-size:12px;letter-spacing:1px;}
+.top a{color:#9FD3E6;font-size:13px;text-decoration:none;}
+.top .r{margin-left:auto;display:flex;gap:14px;align-items:center;}
+
+/* setup */
+#setup{max-width:760px;margin:0 auto;padding:34px 20px;text-align:center;}
+#setup h2{font-family:Georgia,serif;font-style:italic;font-size:clamp(30px,5vw,50px);color:#FFD58A;line-height:1.1;}
+#setup .tag{color:#9FD3E6;letter-spacing:3px;font-size:12px;text-transform:uppercase;margin:10px 0 26px;}
+.sbox{background:rgba(255,255,255,.06);border:1px solid rgba(159,211,230,.35);border-radius:14px;padding:18px 20px;margin-bottom:16px;text-align:left;}
+.sbox h3{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FFD58A;margin-bottom:10px;}
+.sbox .row{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
+.sbox .row b{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex:none;}
+.sbox input{flex:1;background:#0A3341;border:1px solid #176B87;color:#fff;padding:10px 12px;font-size:16px;border-radius:8px;outline:none;font-family:inherit;}
+.sbox input:focus{border-color:#FFD58A;}
+.sbox ul{list-style:none;font-size:14px;line-height:1.6;color:#D7EAF1;}
+.sbox li{padding:3px 0;}
+.sbox li i{font-style:normal;display:inline-block;background:#176B87;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:1px;padding:2px 7px;border-radius:4px;margin-right:8px;text-transform:uppercase;}
+.go{background:#FFD58A;color:#0A3341;border:none;border-radius:30px;padding:14px 38px;font-weight:800;font-size:16px;letter-spacing:1px;cursor:pointer;}
+.go:hover{background:#FFE3AE;}
+.go.gh{background:transparent;color:#FFD58A;border:1px solid #FFD58A;}
+
+/* teams colours */
+.tA{--tc:#2A93B0;} .tB{--tc:#C2566A;}
+.dot{background:var(--tc);color:#fff;}
+
+/* game */
+#game{display:none;grid-template-columns:1fr 250px;gap:20px;padding:14px 20px 8px;max-width:1500px;margin:0 auto;}
+#game.on{display:grid;}
+.turn{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.turn .who{font-family:Georgia,serif;font-size:clamp(18px,2.2vw,26px);font-weight:700;padding:6px 16px;border-radius:30px;background:var(--tc);}
+.turn .for{color:#9FD3E6;font-size:14px;letter-spacing:1px;text-transform:uppercase;}
+.turn .for b{color:#FFD58A;font-family:Georgia,serif;font-size:20px;letter-spacing:0;text-transform:none;}
+.turn .day{margin-left:auto;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9FD3E6;border:1px solid rgba(159,211,230,.4);border-radius:20px;padding:3px 10px;}
+.timer{font-family:Georgia,serif;font-weight:700;font-size:20px;min-width:70px;text-align:center;padding:4px 12px;border-radius:8px;background:#9B2335;cursor:pointer;}
+.timer.idle{background:rgba(255,255,255,.1);color:#9FD3E6;font-size:14px;}
+.timer.warn{background:#E0A526;color:#0A3341;animation:pulse .6s infinite;}
+@keyframes pulse{50%{transform:scale(1.07);}}
+.qbox{position:relative;background:#0A3341;border:2px solid #2A93B0;outline:2px solid rgba(255,213,138,.7);outline-offset:4px;border-radius:12px;padding:26px 30px;margin-bottom:22px;}
+.qbox .qt{font-family:Georgia,serif;font-size:clamp(20px,2.5vw,30px);line-height:1.35;text-align:center;}
+.ans{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.ab{display:flex;gap:14px;align-items:center;text-align:left;background:#0A3341;border:2px solid #176B87;outline:1px solid rgba(255,213,138,.35);outline-offset:2px;border-radius:40px;padding:14px 22px;color:#fff;font-size:clamp(15px,1.6vw,20px);line-height:1.3;min-height:64px;cursor:pointer;transition:.15s;}
+.ab:hover{border-color:#2A93B0;background:#0F4C60;}
+.ab .l{font-family:Georgia,serif;font-weight:700;color:#FFD58A;font-size:1.2em;min-width:24px;}
+.ab.pick{background:#E0A526;border-color:#FFD58A;color:#0A3341;}
+.ab.pick .l{color:#0A3341;}
+.ab.ok{background:#2F855A;border-color:#9AE6B4;color:#fff;animation:glow 1.4s;}
+.ab.ok .l,.ab.ko .l{color:#fff;}
+.ab.ko{background:#9B2335;border-color:#F4A3B1;color:#fff;}
+.ab.gone{visibility:hidden;}
+.ab:disabled{cursor:default;}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(47,133,90,.8);}100%{box-shadow:0 0 0 22px rgba(47,133,90,0);}}
+.why{display:none;margin-top:18px;background:rgba(255,213,138,.12);border:1px solid rgba(255,213,138,.6);border-radius:10px;padding:12px 16px;font-size:15px;line-height:1.5;color:#F3F8FA;}
+.why.on{display:block;}
+.why b{color:#FFD58A;letter-spacing:1px;text-transform:uppercase;font-size:12px;margin-right:8px;}
+.note{display:none;margin-top:14px;border-radius:10px;padding:10px 16px;font-size:15px;background:rgba(42,147,176,.18);border:1px solid #2A93B0;}
+.note.on{display:block;}
+.acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+.btn{background:#FFD58A;color:#0A3341;border:none;border-radius:30px;padding:11px 22px;font-weight:800;font-size:14px;letter-spacing:.5px;cursor:pointer;}
+.btn:hover{background:#FFE3AE;}
+.btn.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.btn.red{background:#9B2335;color:#fff;}
+.btn:disabled{opacity:.35;cursor:default;}
+.jok{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+.jk{background:rgba(255,255,255,.07);border:1.5px solid #FFD58A;color:#FFD58A;border-radius:30px;padding:7px 14px;font-weight:800;font-size:13px;cursor:pointer;}
+.jk:hover{background:rgba(255,213,138,.15);}
+.jk:disabled{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.3);text-decoration:line-through;cursor:default;background:none;}
+
+/* ladder */
+.ladder{background:rgba(0,0,0,.22);border:1px solid rgba(159,211,230,.25);border-radius:12px;padding:8px;align-self:start;}
+.rung{display:grid;grid-template-columns:24px 1fr 44px;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;font-size:14px;color:#D7EAF1;}
+.rung .n{color:#9FD3E6;font-size:12px;text-align:right;}
+.rung .v{font-family:Georgia,serif;font-weight:700;}
+.rung.safe .v{color:#FFD58A;}
+.rung.cur{background:#E0A526;color:#0A3341;}
+.rung.cur .n,.rung.cur .v{color:#0A3341;}
+.rung .pw{display:flex;gap:3px;justify-content:flex-end;}
+.rung .pw span{width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+/* team strip */
+.teams{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+.tc{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 16px;}
+.tc.act{border-color:var(--tc);box-shadow:0 0 18px -2px var(--tc);}
+.tc .nm{font-family:Georgia,serif;font-weight:700;font-size:18px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tc .st{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#9FD3E6;}
+.tc .bk{font-family:Georgia,serif;font-weight:700;font-size:22px;color:#FFD58A;white-space:nowrap;}
+.tc .jd{display:flex;gap:4px;}
+.tc .jd span{font-size:10px;font-weight:800;border:1px solid #FFD58A;color:#FFD58A;border-radius:10px;padding:1px 6px;}
+.tc .jd span.u{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.25);text-decoration:line-through;}
+.tc.out{opacity:.55;}
+
+.foot{text-align:center;font-size:12px;color:#9FD3E6;padding:14px 20px 22px;}
+.foot button{background:none;border:none;color:#9FD3E6;text-decoration:underline;cursor:pointer;font:inherit;}
+
+/* overlays: carnet timer, end, tie-break */
+.ov{position:fixed;inset:0;background:rgba(5,25,32,.95);display:none;align-items:center;justify-content:center;padding:30px;z-index:20;text-align:center;}
+.ov.on{display:flex;}
+.ov .box{max-width:860px;width:100%;}
+.ov h2{font-family:Georgia,serif;font-style:italic;font-size:clamp(30px,5vw,54px);color:#FFD58A;margin-bottom:10px;}
+.ov .big{font-family:Georgia,serif;font-size:clamp(70px,14vw,160px);font-weight:700;color:#FFD58A;line-height:1;}
+.ov p{color:#D7EAF1;font-size:17px;line-height:1.5;margin-bottom:18px;}
+.pod{display:grid;gap:12px;margin:22px 0;}
+.pr{display:grid;grid-template-columns:50px 1fr auto;gap:14px;align-items:center;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 20px;text-align:left;}
+.pr .p{font-family:Georgia,serif;font-size:24px;color:#FFD58A;}
+.pr .nm{font-family:Georgia,serif;font-size:22px;font-weight:700;}
+.pr .nm small{display:block;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:12px;font-weight:400;color:#9FD3E6;letter-spacing:1px;text-transform:uppercase;}
+.pr .bk{font-family:Georgia,serif;font-size:26px;font-weight:700;color:#FFD58A;}
+.pr.win{border-color:#FFD58A;box-shadow:0 0 26px -4px rgba(255,213,138,.7);}
+.tie{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0;}
+.tie label{display:block;font-family:Georgia,serif;font-weight:700;margin-bottom:6px;}
+.tie input{width:100%;background:#0A3341;border:1px solid #2A93B0;color:#fff;font-size:24px;padding:10px;border-radius:8px;text-align:center;font-family:Georgia,serif;}
+
+@media(max-width:900px){#game{grid-template-columns:1fr;}.ans{grid-template-columns:1fr;}.ladder{display:none;}}
+</style>
+</head>
+<body data-course="mfb545">
+<div class="top">
+  <span class="logo"><img src="swiss_umef_logo.jpg" alt="Swiss UMEF"></span>
+  <div><h1 id="hT"></h1><div class="sub" id="hS"></div></div>
+  <div class="r"><a href="milliard.html" data-lang-switch="fr">FR</a><a href="index-en.html" id="hBack"></a></div>
+</div>
+
+<div id="setup"></div>
+<div id="game">
+  <div>
+    <div class="turn" id="turn"></div>
+    <div class="qbox"><div class="qt" id="qt"></div></div>
+    <div class="ans" id="ans"></div>
+    <div class="note" id="note"></div>
+    <div class="why" id="why"></div>
+    <div class="acts" id="acts"></div>
+    <div class="jok" id="jok"></div>
+  </div>
+  <div class="ladder" id="ladder"></div>
+  <div class="teams" id="teams"></div>
+</div>
+<div class="foot" id="foot"></div>
+
+<div class="ov" id="ovNotes"><div class="box"><h2 id="nT"></h2><div class="big" id="nS">30</div><p id="nP"></p><button class="btn gh" id="nX"></button></div></div>
+<div class="ov" id="ovEnd"><div class="box" id="endBox"></div></div>
+
+<script>
+/* ---------------------------------------------------------------------
+   The ladder: fifteen rungs to a billion francs; rungs 5 and 10 are
+   guaranteed (an error drops the team back to the last one reached).
+   --------------------------------------------------------------------- */
+var LEVELS=[
+  [1e3,'1 000','1,000'],[2e3,'2 000','2,000'],[5e3,'5 000','5,000'],[1e4,'10 000','10,000'],[5e4,'50 000','50,000'],
+  [1e5,'100 000','100,000'],[25e4,'250 000','250,000'],[5e5,'500 000','500,000'],[1e6,'1 million','1 million'],[5e6,'5 millions','5 million'],
+  [1e7,'10 millions','10 million'],[5e7,'50 millions','50 million'],[1e8,'100 millions','100 million'],[5e8,'500 millions','500 million'],[1e9,'1 milliard','1 billion']
+];
+var SAFE={4:1,9:1};
+function amt(i){return i<0?'0':T(LEVELS[i][1],LEVELS[i][2]);}
+function secs(i){return i<5?30:(i<10?45:60);}
+
+/* ---------------------------------------------------------------------
+   The bank: BANK[rung] = [question for team A, question for team B],
+   of comparable difficulty and, where possible, from different days.
+   d = the day it comes from · a = index of the right option.
+   Every number recomputed in Python (23 Oct 2026); stylised figures are
+   the ones the day pages use (Wave/TWINT block 3, EL example, etc.).
+   --------------------------------------------------------------------- */
+var BANK=[
+ [ {d:1,q:['Laquelle de ces activités n’est PAS l’une des six briques de la banque universelle ?','Which of these is NOT one of the six building blocks of the universal bank?'],
+    o:[['Le compte','The account'],['Le paiement','Payments'],['L’assurance','Insurance'],['La conformité','Compliance']],a:2,
+    x:['Les six briques : compte, paiement, crédit, épargne, placement, conformité. L’assurance est un autre métier (les assurtechs du radar).','The six: account, payments, credit, savings, investment, compliance. Insurance is a different business (the radar’s insurtechs).']},
+   {d:2,q:['Dans le modèle à quatre coins, qui est l’« émetteur » ?','In the four-corner model, who is the “issuer”?'],
+    o:[['Le réseau, Visa ou Mastercard','The network, Visa or Mastercard'],['La banque du commerçant','The merchant’s bank'],['Le commerçant','The merchant'],['La banque qui a émis la carte','The bank that issued the card']],a:3,
+    x:['L’émetteur est la banque du titulaire, qui a émis la carte ; la banque ou le PSP du commerçant est l’acquéreur ; le réseau est au centre.','The issuer is the cardholder’s bank, which issued the card; the merchant’s bank or PSP is the acquirer; the network sits in the middle.']} ],
+ [ {d:2,q:['Que contient le code QR d’une QR-facture suisse ?','What does the QR code on a Swiss QR-bill contain?'],
+    o:[['Un ordre de paiement prérempli : IBAN, montant, référence','A pre-filled payment order: IBAN, amount, reference'],['De la monnaie électronique','Electronic money'],['Le code PIN du payeur','The payer’s PIN'],['Un jeton de carte bancaire','A card token']],a:0,
+    x:['Le code ne contient pas d’argent : l’appli bancaire du payeur lit l’ordre prérempli et le soumet après validation. La QR-facture a remplacé les bulletins de versement le 30 septembre 2022.','The code carries no money: the payer’s banking app reads the pre-filled order and submits it once approved. The QR-bill replaced the old payment slips on 30 September 2022.']},
+   {d:1,q:['Un client paie en magasin avec TWINT. Qui paie la commission ?','A customer pays in a shop with TWINT. Who pays the fee?'],
+    o:[['Le client','The customer'],['Le commerçant','The merchant'],['La Banque nationale suisse','The Swiss National Bank'],['Personne : c’est gratuit','Nobody: it is free']],a:1,
+    x:['Le client ne paie rien ; le commerçant paie une commission (de l’ordre de 1,3 % dans les données du bloc 3). C’est le côté payant d’un marché biface.','The customer pays nothing; the merchant pays a fee (around 1.3% in the block 3 data). It is the paying side of a two-sided market.']} ],
+ [ {d:3,q:['Dans « perte attendue = PD × LGD × EAD », que veut dire PD ?','In “expected loss = PD × LGD × EAD”, what does PD stand for?'],
+    o:[['Prix du dossier','Processing duty'],['Part du dépôt','Portion of deposit'],['Plafond de dette','Principal debt'],['Probabilité de défaut','Probability of default']],a:3,
+    x:['PD = probabilité que l’emprunteur cesse de payer (en général plus de 90 jours de retard) — c’est ce que le score estime. LGD = perte en cas de défaut, EAD = exposition au défaut.','PD = the probability that the borrower stops paying (usually more than 90 days late) — what the score estimates. LGD = loss given default, EAD = exposure at default.']},
+   {d:1,q:['Que signifie « KYC » ?','What does “KYC” stand for?'],
+    o:[['Keep Your Card','Keep Your Card'],['Know Your Customer','Know Your Customer'],['Key Yield Calculation','Key Yield Calculation'],['Know Your Currency','Know Your Currency']],a:1,
+    x:['Know Your Customer — connaître son client : l’identifier et comprendre l’origine de ses fonds. C’est la brique « conformité », que l’eKYC automatise.','Know Your Customer: identify the client and understand where their money comes from. It is the compliance block, which eKYC automates.']} ],
+ [ {d:2,q:['Une API de paiement répond « 401 ». Que s’est-il passé ?','A payment API answers “401”. What happened?'],
+    o:[['Le paiement a été refusé par la banque','The bank declined the payment'],['La ressource est introuvable','The resource was not found'],['La requête n’est pas authentifiée : clé absente ou fausse','The request is not authenticated: missing or wrong key'],['Le serveur est en panne','The server is down']],a:2,
+    x:['401 = pas authentifié. Paiement refusé = 402, introuvable = 404, panne côté serveur = 5xx, requête mal formée = 400.','401 = not authenticated. Payment declined = 402, not found = 404, server failure = 5xx, malformed request = 400.']},
+   {d:3,q:['Une néobanque perd 2 % de ses clients par mois. Combien de temps un client reste-t-il en moyenne ?','A neobank loses 2% of its customers a month. How long does a customer stay, on average?'],
+    o:[['2 mois','2 months'],['50 mois','50 months'],['20 mois','20 months'],['98 mois','98 months']],a:1,
+    x:['Durée moyenne = 1 ÷ attrition = 1 ÷ 0,02 = 50 mois. C’est le dénominateur de la valeur vie client.','Average lifetime = 1 ÷ churn = 1 ÷ 0.02 = 50 months. It is the denominator of customer lifetime value.']} ],
+ [ {d:1,q:['Entre 100 utilisateurs, combien de paires peuvent s’envoyer de l’argent ?','Among 100 users, how many pairs can send each other money?'],
+    o:[['100','100'],['200','200'],['10 000','10,000'],['4 950','4,950']],a:3,
+    x:['n(n − 1) ÷ 2 = 100 × 99 ÷ 2 = 4 950. La valeur d’un réseau croît bien plus vite que le nombre d’utilisateurs : l’effet de réseau direct.','n(n − 1) ÷ 2 = 100 × 99 ÷ 2 = 4,950. A network’s value grows much faster than its number of users: the direct network effect.']},
+   {d:2,q:['Dans une API comme celle de Stripe, comment écrit-on un montant de 49,90 CHF ?','In an API such as Stripe’s, how is an amount of CHF 49.90 written?'],
+    o:[['4990','4990'],['49.90','49.90'],['49','49'],['0.4990','0.4990']],a:0,
+    x:['En plus petite unité : 4 990 centimes. Sauf pour les monnaies sans décimales — 10 000 FCFA s’écrit 10000.','In the smallest unit: 4,990 centimes. Except for currencies without decimals — 10,000 FCFA is written 10000.']} ],
+ [ {d:3,q:['Prêt de 5 000 CHF, PD 12 %, LGD 50 %. Quelle est la perte attendue ?','A CHF 5,000 loan, PD 12%, LGD 50%. What is the expected loss?'],
+    o:[['600 CHF','CHF 600'],['300 CHF','CHF 300'],['2 500 CHF','CHF 2,500'],['60 CHF','CHF 60']],a:1,
+    x:['0,12 × 0,50 × 5 000 = 300 CHF. Le prix du crédit doit couvrir cette perte, plus le coût de l’argent, la gestion et le capital.','0.12 × 0.50 × 5,000 = CHF 300. The loan’s price must cover this loss, plus the cost of funds, servicing and capital.']},
+   {d:2,q:['Dans l’UE, à combien est plafonnée l’interchange d’une carte de DÉBIT de particulier ?','In the EU, what is the cap on interchange for a consumer DEBIT card?'],
+    o:[['0,44 %','0.44%'],['0,3 %','0.3%'],['1,5 %','1.5%'],['0,2 %','0.2%']],a:3,
+    x:['Règlement 2015/751 : 0,2 % pour le débit, 0,3 % pour le crédit. 0,44 % est la moyenne suisse des cartes de crédit domestiques (accords avec la COMCO, 2017).','Regulation 2015/751: 0.2% for debit, 0.3% for credit. 0.44% is the Swiss average for domestic credit cards (agreements with COMCO, 2017).']} ],
+ [ {d:2,q:['Un client remet 10 000 FCFA en espèces à un agent Wave. Qu’arrive-t-il aux deux stocks de l’agent ?','A customer hands a Wave agent 10,000 FCFA in cash. What happens to the agent’s two stocks?'],
+    o:[['Espèces + 10 000, float − 10 000','Cash + 10,000, float − 10,000'],['Espèces − 10 000, float + 10 000','Cash − 10,000, float + 10,000'],['Les deux augmentent de 10 000','Both rise by 10,000'],['Rien ne change','Nothing changes']],a:0,
+    x:['Un dépôt (cash-in) : l’agent reçoit des espèces et cède du float au client. Le retrait fait l’inverse. Quand l’un des deux stocks s’épuise, il faut rééquilibrer.','A deposit (cash-in): the agent takes cash and gives float to the customer. A withdrawal does the opposite. When one stock runs out, the agent must rebalance.']},
+   {d:1,q:['La licence fintech suisse permet d’accepter des dépôts du public jusqu’à…','The Swiss fintech licence allows accepting public deposits up to…'],
+    o:[['1 million de francs','CHF 1 million'],['20 millions de francs','CHF 20 million'],['1 milliard de francs','CHF 1 billion'],['100 millions de francs','CHF 100 million']],a:3,
+    x:['100 millions de CHF (art. 1b de la loi sur les banques, 2019), à condition de ne pas prêter ces dépôts ni de verser d’intérêts dessus.','CHF 100 million (art. 1b of the Banking Act, 2019), provided the deposits are neither lent out nor paid interest.']} ],
+ [ {d:3,q:['Un score de crédit a une AUC de 0,78 sur les données de test. Quel est son Gini ?','A credit score has a test AUC of 0.78. What is its Gini?'],
+    o:[['0,39','0.39'],['0,78','0.78'],['0,56','0.56'],['1,56','1.56']],a:2,
+    x:['Gini = 2 × AUC − 1 = 2 × 0,78 − 1 = 0,56 — dans la fourchette typique d’un score de crédit à la consommation (0,5 à 0,7).','Gini = 2 × AUC − 1 = 2 × 0.78 − 1 = 0.56 — within the typical range for a consumer credit score (0.5 to 0.7).']},
+   {d:1,q:['TWINT (données du bloc 3) : par utilisateur et par mois, 80 CHF de P2P gratuit et 120 CHF de paiements commerçants à 1,3 %. Taux de prélèvement sur tout le volume ?','TWINT (block 3 data): per user per month, CHF 80 of free P2P and CHF 120 of merchant payments at 1.3%. Take rate on the whole volume?'],
+    o:[['1,3 %','1.3%'],['0,78 %','0.78%'],['1,56 %','1.56%'],['0,52 %','0.52%']],a:1,
+    x:['Revenu = 120 × 1,3 % = 1,56 CHF ; volume = 80 + 120 = 200 CHF ; 1,56 ÷ 200 = 0,78 %. Le P2P gratuit dilue le taux.','Revenue = 120 × 1.3% = CHF 1.56; volume = 80 + 120 = CHF 200; 1.56 ÷ 200 = 0.78%. Free P2P dilutes the rate.']} ],
+ [ {d:1,q:['Wave (données du bloc 3) : ARPU 500 FCFA, coûts variables 250 FCFA par utilisateur, coûts fixes 1,5 milliard FCFA par mois. Point mort ?','Wave (block 3 data): ARPU 500 FCFA, variable costs 250 FCFA per user, fixed costs 1.5 billion FCFA a month. Break-even?'],
+    o:[['3 millions d’utilisateurs','3 million users'],['8 millions d’utilisateurs','8 million users'],['6 millions d’utilisateurs','6 million users'],['10 millions d’utilisateurs','10 million users']],a:2,
+    x:['Marge de contribution = 500 − 250 = 250 FCFA ; 1,5 milliard ÷ 250 = 6 millions. (ARPU = 1 % de 50 000 ; coûts variables = 0,3 % de 60 000 à l’agent + 70.) Avec 8 millions d’actifs, Wave est au-dessus.','Contribution margin = 500 − 250 = 250 FCFA; 1.5 billion ÷ 250 = 6 million. (ARPU = 1% of 50,000; variable costs = 0.3% of 60,000 to the agent + 70.) With 8 million active users, Wave is above it.']},
+   {d:3,q:['Marge de 15 % sur un prêt remboursé, LGD de 50 %. Au-dessus de quelle PD le prêt ne vaut-il plus la peine ?','A 15% margin on a repaid loan, LGD 50%. Above which PD is the loan no longer worth making?'],
+    o:[['15 %','15%'],['30 %','30%'],['35 %','35%'],['23,1 %','23.1%']],a:3,
+    x:['Seuil théorique : PD < m ÷ (m + LGD) = 0,15 ÷ 0,65 = 23,1 %. Plus large : plus de volume et plus de défauts ; plus serré : de bons clients refusés.','Theoretical cut-off: PD < m ÷ (m + LGD) = 0.15 ÷ 0.65 = 23.1%. Wider: more volume and more defaults; tighter: good customers refused.']} ],
+ [ {d:2,q:['Un paiement en ligne a été authentifié par 3-D Secure, puis se révèle frauduleux. Qui supporte la perte ?','An online payment was authenticated with 3-D Secure and turns out to be fraud. Who bears the loss?'],
+    o:[['Le commerçant','The merchant'],['L’émetteur de la carte','The card issuer'],['Le réseau de cartes','The card network'],['Le titulaire','The cardholder']],a:1,
+    x:['Le transfert de responsabilité : authentifié par 3-D Secure, la fraude est à la charge de l’émetteur. Sans authentification, le titulaire conteste, rétrofacturation, et c’est le commerçant qui perd la vente.','The liability shift: once authenticated by 3-D Secure, fraud is the issuer’s cost. Without it, the cardholder disputes, a chargeback follows, and the merchant loses the sale.']},
+   {d:3,q:['Quel régulateur a plafonné les ouvertures de comptes chez N26 de 2021 à 2024 ?','Which regulator capped new account openings at N26 from 2021 to 2024?'],
+    o:[['La FINMA','FINMA'],['La Banque centrale européenne','The European Central Bank'],['La BaFin','BaFin'],['La FCA britannique','The UK FCA']],a:2,
+    x:['La BaFin, le superviseur allemand, pour des faiblesses dans la lutte contre le blanchiment. N26 : 4,2 millions de clients générateurs de revenu fin 2023, perte nette de 102,4 millions d’€.','BaFin, the German supervisor, over anti-money-laundering weaknesses. N26: 4.2 million revenue-generating customers at end-2023, net loss of €102.4 million.']} ],
+ [ {d:2,q:['Une appli lit, avec votre accord, les soldes et transactions de vos trois banques pour faire votre budget. Sous la PSD2, c’est un…','An app reads, with your consent, the balances and transactions of your three banks to build your budget. Under PSD2 it is a…'],
+    o:[['AISP','AISP'],['PISP','PISP'],['Acquéreur','Acquirer'],['Établissement de monnaie électronique','E-money institution']],a:0,
+    x:['AISP — prestataire d’information sur les comptes : il lit. Le PISP déclenche un paiement depuis le compte. L’accès passe par un jeton OAuth 2.0, jamais par le mot de passe.','AISP — account information service provider: it reads. A PISP initiates a payment from the account. Access goes through an OAuth 2.0 token, never the password.']},
+   {d:1,q:['Selon la Banque des règlements internationaux, l’avantage des bigtechs tient en trois lettres, DNA. Lesquelles ?','According to the Bank for International Settlements, the big techs’ advantage is three letters, DNA. Which ones?'],
+    o:[['Digital, Native, Apps','Digital, Native, Apps'],['Deposits, Notes, Assets','Deposits, Notes, Assets'],['Distribution, Network, Access','Distribution, Network, Access'],['Data, Network, Activities','Data, Network, Activities']],a:3,
+    x:['Data (les données de la plateforme), Network (des centaines de millions d’utilisateurs), Activities (la finance greffée sur le commerce, la messagerie, le téléphone). Chaque tour de boucle renforce les deux autres (Frost et al., 2019).','Data (the platform’s data), Network (hundreds of millions of users), Activities (finance grafted onto commerce, messaging, the phone). Each turn of the loop strengthens the other two (Frost et al., 2019).']} ],
+ [ {d:3,q:['ARPU 10 CHF par mois, marge de contribution 60 %, attrition 2 % par mois, CAC 120 CHF. Valeur vie client et verdict selon la règle du métier ?','ARPU CHF 10 a month, contribution margin 60%, churn 2% a month, CAC CHF 120. Lifetime value, and the verdict by the industry rule?'],
+    o:[['300 CHF — insuffisant : LTV < 3 × CAC','CHF 300 — not enough: LTV < 3 × CAC'],['300 CHF — sain : LTV > CAC','CHF 300 — healthy: LTV > CAC'],['500 CHF — sain : LTV > 3 × CAC','CHF 500 — healthy: LTV > 3 × CAC'],['12 CHF — insuffisant','CHF 12 — not enough']],a:0,
+    x:['LTV = 10 × 0,60 ÷ 0,02 = 300 CHF. La règle : LTV ≥ 3 × CAC = 360 CHF — raté. Et le CAC se récupère en 120 ÷ 6 = 20 mois, au-delà des 12 à 18 mois visés.','LTV = 10 × 0.60 ÷ 0.02 = CHF 300. The rule: LTV ≥ 3 × CAC = CHF 360 — missed. And the CAC pays back in 120 ÷ 6 = 20 months, beyond the 12 to 18 months aimed for.']},
+   {d:2,q:['La connexion coupe pendant un paiement ; le programme renvoie la requête avec la même Idempotency-Key. Que fait le prestataire ?','The connection drops during a payment; the program resends the request with the same Idempotency-Key. What does the provider do?'],
+    o:[['Il débite une deuxième fois','It charges a second time'],['Il refuse avec une erreur 401','It refuses with a 401 error'],['Il renvoie le résultat de la première requête, sans débiter deux fois','It returns the first request’s result, without charging twice'],['Il annule les deux paiements','It cancels both payments']],a:2,
+    x:['C’est le rôle de l’idempotence : une même clé = une seule opération. Sans elle, un client pourrait être débité deux fois à cause d’une coupure réseau.','That is what idempotency is for: one key = one operation. Without it, a network glitch could charge the customer twice.']} ],
+ [ {d:3,q:['Prêt entre particuliers à 18 %, PD 18 %, LGD 70 %, frais de plateforme 1 %. Rendement attendu, environ ?','Peer-to-peer loan at 18%, PD 18%, LGD 70%, platform fee 1%. Expected return, approximately?'],
+    o:[['17 %','17%'],['5,4 %','5.4%'],['−3,6 %','−3.6%'],['1,2 %','1.2%']],a:3,
+    x:['(1 − 0,18) × 18 % − 0,18 × 70 % − 1 % = 14,76 % − 12,6 % − 1 % ≈ 1,2 %. Le taux affiché n’est pas le rendement : un prêt à 9 % peut rapporter davantage.','(1 − 0.18) × 18% − 0.18 × 70% − 1% = 14.76% − 12.6% − 1% ≈ 1.2%. The headline rate is not the return: a 9% loan can earn more.']},
+   {d:2,q:['Vous envoyez 200 CHF à Dakar, « 0 frais » ; le bénéficiaire reçoit 131 000 FCFA. 1 € = 0,94 CHF (et 1 € = 655,957 FCFA). Coût total de l’envoi ?','You send CHF 200 to Dakar, “zero fees”; the recipient gets 131,000 FCFA. €1 = CHF 0.94 (and €1 = 655.957 FCFA). Total cost of the transfer?'],
+    o:[['0 CHF','CHF 0'],['12,27 CHF, environ 6,1 %','CHF 12.27, about 6.1%'],['6,14 CHF, environ 3,1 %','CHF 6.14, about 3.1%'],['69 CHF, environ 34 %','CHF 69, about 34%']],a:1,
+    x:['Cours moyen : 655,957 ÷ 0,94 = 697,83 FCFA par franc. 131 000 ÷ 697,83 = 187,73 CHF reçus ; 200 − 187,73 = 12,27 CHF, 6,1 %. Le « 0 frais » se paie dans le taux.','Mid-market rate: 655.957 ÷ 0.94 = 697.83 FCFA per franc. 131,000 ÷ 697.83 = CHF 187.73 received; 200 − 187.73 = CHF 12.27, 6.1%. The “zero fees” is paid in the rate.']} ],
+ [ {d:3,q:['Selon Bharadwaj, Jack et Suri (2021), qu’a changé l’accès au prêt M-Shwari au Kenya ?','According to Bharadwaj, Jack and Suri (2021), what did access to M-Shwari loans change in Kenya?'],
+    o:[['2 % des ménages sont sortis de l’extrême pauvreté','2% of households left extreme poverty'],['Moins de dépenses essentielles sacrifiées après un choc, sans hausse de l’épargne ni des actifs','Fewer essential expenses forgone after a shock, with no rise in savings or assets'],['Une forte hausse des actifs productifs','A sharp rise in productive assets'],['Aucun effet mesurable','No measurable effect']],a:1,
+    x:['6,3 points de moins de ménages renoncent à des dépenses essentielles après un choc ; ni l’épargne ni les actifs n’augmentent. Le crédit digital aide à encaisser un coup dur, il ne fait pas sortir de la pauvreté. (Les 2 %, c’est M-Pesa : Suri et Jack, 2016.)','6.3 points fewer households forgo essential spending after a shock; neither savings nor assets rise. Digital credit helps absorb a blow; it does not lift people out of poverty. (The 2% is M-Pesa: Suri and Jack, 2016.)']},
+   {d:2,q:['Depuis quand le système suisse SIC traite-t-il les virements instantanés ?','Since when has the Swiss SIC system processed instant payments?'],
+    o:[['Septembre 2022','September 2022'],['Janvier 2026','January 2026'],['Août 2024','August 2024'],['Pas encore : prévu pour 2027','Not yet: planned for 2027']],a:2,
+    x:['Août 2024 : crédités en quelques secondes, 24 h sur 24, 7 jours sur 7, en messages ISO 20022. Septembre 2022, c’est la QR-facture qui remplace les bulletins de versement.','August 2024: credited within seconds, 24/7, in ISO 20022 messages. September 2022 is the QR-bill replacing the payment slips.']} ],
+ [ {d:3,q:['Dans l’UEMOA, quel est le taux d’usure pour les banques depuis le 1er juin 2026 ?','In WAEMU, what is the usury rate for banks since 1 June 2026?'],
+    o:[['14 %','14%'],['10 %','10%'],['15 %','15%'],['24 %','24%']],a:0,
+    x:['14 % par an pour les banques (15 % auparavant) ; 24 % pour les institutions de microfinance et les établissements financiers. En Suisse, 10 % pour un crédit au comptant.','14% a year for banks (15% before); 24% for microfinance institutions and financial establishments. In Switzerland, 10% for a cash loan.']},
+   {d:2,q:['Au Kenya, l’accès à M-Pesa a fait sortir de l’extrême pauvreté quelle part des ménages (Suri et Jack, Science, 2016) ?','In Kenya, what share of households did access to M-Pesa lift out of extreme poverty (Suri and Jack, Science, 2016)?'],
+    o:[['Environ 0,2 %','About 0.2%'],['Environ 20 %','About 20%'],['Aucune : l’effet est nul','None: the effect is zero'],['Environ 2 %','About 2%']],a:3,
+    x:['Environ 2 % des ménages, quelque 194 000, avec un effet plus fort pour les ménages dirigés par des femmes.','About 2% of households, some 194,000, with a stronger effect for households headed by women.']} ]
+];
+/* the tie-break: a number, closest wins */
+var TIE={q:['Entre 1 000 utilisateurs d’une appli de paiement, combien de paires peuvent s’envoyer de l’argent ?','Among 1,000 users of a payment app, how many pairs can send each other money?'],a:499500,
+  x:['n(n − 1) ÷ 2 = 1 000 × 999 ÷ 2 = 499 500.','n(n − 1) ÷ 2 = 1,000 × 999 ÷ 2 = 499,500.']};
+
+var LET=['A','B','C','D'], SK='mfb545_mill'+(window.MFB545_LANG==='en'?'_en':'');
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function L(p){return T(p[0],p[1]);}
+function fresh(){return {phase:'setup',turn:0,pick:-1,shown:false,hidden:[],note:'',
+  teams:[{name:T('Équipe 1','Team 1'),lvl:0,st:'in',bank:0,j:{h:0,a:0,c:0}},{name:T('Équipe 2','Team 2'),lvl:0,st:'in',bank:0,j:{h:0,a:0,c:0}}]};}
+var S=fresh();
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams&&o.teams.length===2)S=o;}catch(e){}
+function save(){try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}}
+function safeOf(l){return l>=10?9:(l>=5?4:-1);}   /* lvl = rungs won → index of the guaranteed rung */
+function cls(i){return i===0?'tA':'tB';}
+
+document.getElementById('hT').textContent=T('Qui veut gagner un milliard ?','Who Wants to Be a Billionaire?');
+document.getElementById('hS').textContent=T('MFB 545 Fintech · révision des journées 1 à 3 · deux équipes','MFB 545 Fintech · review of Days 1–3 · two teams');
+document.getElementById('hBack').textContent=T('← Cours','← Course');
+document.getElementById('foot').innerHTML=T('Clic sur une réponse = la réponse de l’équipe · <b>Entrée</b> révèle · touches A–D · ','Click an answer = the team’s answer · <b>Enter</b> reveals · keys A–D · ')+'<button id="reset">'+T('Nouvelle partie','New game')+'</button>';
+
+/* ------------------------------ setup ------------------------------ */
+function drawSetup(){
+  document.getElementById('game').classList.remove('on');
+  var s=document.getElementById('setup');s.style.display='';
+  s.innerHTML='<h2>'+T('Qui veut gagner<br>un milliard ?','Who Wants to Be<br>a Billionaire?')+'</h2><div class="tag">'+T('Fintech · journées 1, 2 et 3','Fintech · Days 1, 2 and 3')+'</div>'+
+   '<div class="sbox"><h3>'+T('Les deux équipes','The two teams')+'</h3>'+
+   S.teams.map(function(t,i){return '<div class="row '+cls(i)+'"><b class="dot">'+(i+1)+'</b><input id="tn'+i+'" maxlength="24" value="'+esc(t.name)+'"></div>';}).join('')+'</div>'+
+   '<div class="sbox"><h3>'+T('Les règles','The rules')+'</h3><ul>'+
+   '<li><i>'+T('Tour','Turns')+'</i>'+T('Les équipes jouent à tour de rôle, chacune sa question, au même palier : quinze paliers jusqu’à un milliard de francs.','The teams take turns, each with its own question, on the same rung: fifteen rungs to a billion francs.')+'</li>'+
+   '<li><i>'+T('Temps','Time')+'</i>'+T('30 secondes de discussion aux paliers 1–5, 45 s aux paliers 6–10, 60 s ensuite. Une seule réponse, annoncée par le porte-parole.','30 seconds to confer on rungs 1–5, 45 s on rungs 6–10, 60 s after that. One answer, given by the spokesperson.')+'</li>'+
+   '<li><i>'+T('Paliers','Safe')+'</i>'+T('50 000 et 5 millions sont garantis. Une mauvaise réponse : l’équipe redescend au dernier palier garanti et s’arrête.','50,000 and 5 million are guaranteed. A wrong answer: the team drops to its last guaranteed rung and stops.')+'</li>'+
+   '<li><i>'+T('Encaisser','Walk')+'</i>'+T('Avant de répondre, une équipe peut s’arrêter et garder ce qu’elle a gagné.','Before answering, a team may stop and keep what it has won.')+'</li>'+
+   '<li><i>'+T('Jokers','Lifelines')+'</i>'+T('Trois par équipe, une fois chacun : <b>50:50</b> · <b>l’autre équipe</b> donne son avis (elle peut bluffer) · <b>le carnet</b> — 30 secondes dans vos notes et sur le site.','Three per team, once each: <b>50:50</b> · <b>the other team</b> gives its view (it may bluff) · <b>the notebook</b> — 30 seconds in your notes and on the site.')+'</li>'+
+   '<li><i>'+T('Gagnant','Winner')+'</i>'+T('Le plus gros gain. En cas d’égalité, une question chiffrée : le plus proche l’emporte.','The bigger bank. If tied, a numerical question: the closest wins.')+'</li></ul></div>'+
+   '<button class="go" id="start">'+T('Commencer la partie →','Start the game →')+'</button>';
+  document.getElementById('start').onclick=function(){
+    S.teams.forEach(function(t,i){var v=document.getElementById('tn'+i).value.trim();t.name=v||T('Équipe ','Team ')+(i+1);});
+    S.phase='play';save();draw();
+  };
+}
+
+/* ------------------------------ timer ------------------------------ */
+var tmr=null,left=0;
+function stopT(){if(tmr){clearInterval(tmr);tmr=null;}}
+function paintT(){var e=document.getElementById('tm');if(!e)return;
+  if(!tmr&&left<=0){e.className='timer idle';e.textContent='⏱ '+secs(S.teams[S.turn].lvl)+' s';return;}
+  e.className='timer'+(left<=10?' warn':'');e.textContent=left>0?left+' s':T('Temps !','Time!');}
+function startT(){stopT();left=secs(S.teams[S.turn].lvl);paintT();
+  tmr=setInterval(function(){left--;paintT();if(left<=0){stopT();var e=document.getElementById('tm');if(e){e.className='timer warn';e.textContent=T('Temps !','Time!');}}},1000);}
+
+/* ------------------------------ play ------------------------------- */
+/* the rung of the question on screen: after a right answer lvl has already moved on */
+function qi(){return S.shown&&S.ql!=null?S.ql:S.teams[S.turn].lvl;}
+function cur(){return BANK[qi()][S.turn];}
+function draw(){
+  if(S.phase==='setup')return drawSetup();
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').classList.add('on');
+  if(S.phase==='end')return drawEnd();
+  var t=S.teams[S.turn],q=cur(),i=qi();
+  document.getElementById('turn').className='turn '+cls(S.turn);
+  document.getElementById('turn').innerHTML='<span class="who">'+esc(t.name)+'</span><span class="for">'+T('Question ','Question ')+(i+1)+' / 15 · '+T('pour ','for ')+'<b>'+amt(i)+' CHF</b></span><span class="day">'+T('Journée ','Day ')+q.d+'</span><span class="timer idle" id="tm" title="'+T('Lancer le chrono','Start the clock')+'"></span>';
+  document.getElementById('tm').onclick=function(){if(!S.shown)startT();};
+  paintT();
+  document.getElementById('qt').textContent=L(q.q);
+  document.getElementById('ans').innerHTML=q.o.map(function(o,k){
+    var c='ab';
+    if(S.hidden.indexOf(k)>=0)c+=' gone';
+    if(S.shown){if(k===q.a)c+=' ok';else if(k===S.pick)c+=' ko';}
+    else if(k===S.pick)c+=' pick';
+    return '<button class="'+c+'" data-k="'+k+'"'+(S.shown?' disabled':'')+'><span class="l">'+LET[k]+'</span><span>'+esc(L(o))+'</span></button>';
+  }).join('');
+  var n=document.getElementById('note');n.textContent=S.note||'';n.classList.toggle('on',!!S.note);
+  var w=document.getElementById('why');
+  w.innerHTML=S.shown?'<b>'+(S.pick===q.a?T('Juste','Right'):(S.pick<0?T('Encaissé','Walked'):T('Faux','Wrong')))+'</b>'+esc(L(q.x)):'';
+  w.classList.toggle('on',S.shown);
+  var a=document.getElementById('acts');
+  if(!S.shown){
+    a.innerHTML='<button class="btn" id="rev"'+(S.pick<0?' disabled':'')+'>'+T('Réponse définitive — révéler','Final answer — reveal')+'</button>'+
+      (i>0?'<button class="btn gh" id="walk">'+T('Encaisser ','Walk away with ')+amt(i-1)+' CHF</button>':'');
+    document.getElementById('rev').onclick=reveal;
+    if(i>0)document.getElementById('walk').onclick=walk;
+  }else{
+    a.innerHTML='<button class="btn" id="next">'+T('Suite →','Next →')+'</button>';
+    document.getElementById('next').onclick=next;
+  }
+  var jk=document.getElementById('jok');
+  jk.innerHTML=S.shown?'':
+    '<button class="jk" data-j="h"'+(t.j.h?' disabled':'')+'>50:50</button>'+
+    '<button class="jk" data-j="a"'+(t.j.a?' disabled':'')+'>🗣 '+T('L’autre équipe','The other team')+'</button>'+
+    '<button class="jk" data-j="c"'+(t.j.c?' disabled':'')+'>📓 '+T('Le carnet · 30 s','The notebook · 30 s')+'</button>';
+  drawLadder();drawTeams();
+}
+function drawLadder(){
+  var t=S.teams[S.turn],h='';
+  for(var i=14;i>=0;i--){
+    var pw=S.teams.map(function(x,k){return x.lvl-1===i?'<span class="dot '+cls(k)+'">'+(k+1)+'</span>':'';}).join('');
+    h+='<div class="rung'+(SAFE[i]?' safe':'')+(S.phase==='play'&&i===qi()?' cur':'')+'"><span class="n">'+(i+1)+'</span><span class="v">'+amt(i)+'</span><span class="pw">'+pw+'</span></div>';
+  }
+  document.getElementById('ladder').innerHTML=h;
+}
+function stLabel(t){return t.st==='in'?T('en jeu · ','playing · ')+t.lvl+' / 15':(t.st==='out'?T('éliminée','out'):(t.st==='walk'?T('a encaissé','walked away'):T('au sommet !','at the top!')));}
+function drawTeams(){
+  document.getElementById('teams').innerHTML=S.teams.map(function(t,k){
+    return '<div class="tc '+cls(k)+(S.phase==='play'&&k===S.turn?' act':'')+(t.st!=='in'?' out':'')+'"><b class="dot" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;">'+(k+1)+'</b>'+
+      '<div style="flex:1;min-width:0"><div class="nm">'+esc(t.name)+'</div><div class="st">'+stLabel(t)+'</div></div>'+
+      '<div class="jd"><span'+(t.j.h?' class="u"':'')+'>50:50</span><span'+(t.j.a?' class="u"':'')+'>🗣</span><span'+(t.j.c?' class="u"':'')+'>📓</span></div>'+
+      '<div class="bk">'+(t.st==='in'?amt(t.lvl-1):amtV(t.bank))+' CHF</div></div>';
+  }).join('');
+}
+function amtV(v){for(var i=0;i<LEVELS.length;i++)if(LEVELS[i][0]===v)return amt(i);return '0';}
+
+function pick(k){if(S.shown||S.hidden.indexOf(k)>=0)return;S.pick=k;save();draw();}
+function reveal(){
+  if(S.shown||S.pick<0)return;stopT();
+  var t=S.teams[S.turn],q=cur();S.ql=t.lvl;S.shown=true;S.note='';
+  if(S.pick===q.a){t.lvl++;if(t.lvl===15){t.st='top';t.bank=LEVELS[14][0];}}
+  else{var s=safeOf(t.lvl);t.st='out';t.bank=s<0?0:LEVELS[s][0];}
+  save();draw();
+}
+function walk(){
+  var t=S.teams[S.turn];if(S.shown||t.lvl===0)return;
+  if(!confirm(T('« ','“')+t.name+T(' » s’arrête et garde ','” stops and keeps ')+amt(t.lvl-1)+' CHF ?'))return;
+  stopT();S.ql=t.lvl;t.st='walk';t.bank=LEVELS[t.lvl-1][0];S.pick=-1;S.shown=true;S.note='';save();draw();
+}
+function next(){
+  stopT();S.pick=-1;S.shown=false;S.hidden=[];S.note='';
+  var o=1-S.turn;
+  if(S.teams[o].st==='in')S.turn=o;
+  else if(S.teams[S.turn].st!=='in')S.phase='end';
+  save();draw();
+}
+function joker(j){
+  var t=S.teams[S.turn],q=cur();if(S.shown||t.j[j])return;
+  if(j==='h'){
+    var wrong=[0,1,2,3].filter(function(k){return k!==q.a;});
+    var keep=wrong[Math.floor(Math.random()*3)];
+    S.hidden=wrong.filter(function(k){return k!==keep;});
+    if(S.hidden.indexOf(S.pick)>=0)S.pick=-1;
+  }
+  if(j==='a'){var o=S.teams[1-S.turn];S.note='🗣 '+T('« ','“')+o.name+T(' » donne son avis à voix haute — 20 secondes. Attention : elle peut bluffer.','” gives its view out loud — 20 seconds. Careful: it may bluff.');}
+  if(j==='c')openNotes();
+  t.j[j]=1;save();draw();
+}
+var nt=null;
+function openNotes(){
+  var ov=document.getElementById('ovNotes'),s=30;
+  document.getElementById('nT').textContent=T('Le carnet est ouvert','The notebook is open');
+  document.getElementById('nP').textContent=T('Notes, carnet, pages des journées 1 à 3 : 30 secondes. Pas d’assistant d’IA, pas l’autre équipe.','Notes, notebook, the Day 1–3 pages: 30 seconds. No AI assistant, not the other team.');
+  document.getElementById('nX').textContent=T('Fermer','Close');
+  document.getElementById('nS').textContent=s;ov.classList.add('on');
+  clearInterval(nt);nt=setInterval(function(){s--;document.getElementById('nS').textContent=s>0?s:'0';if(s<=0){clearInterval(nt);document.getElementById('nS').textContent=T('Stop !','Stop!');}},1000);
+}
+document.getElementById('nX').onclick=function(){clearInterval(nt);document.getElementById('ovNotes').classList.remove('on');};
+
+/* ------------------------------- end ------------------------------- */
+function drawEnd(){
+  drawLadder();drawTeams();
+  ['turn','ans','acts','jok'].forEach(function(id){document.getElementById(id).innerHTML='';});
+  document.getElementById('qt').textContent=T('Partie terminée','Game over');
+  var A=S.teams[0],B=S.teams[1],ov=document.getElementById('ovEnd'),box=document.getElementById('endBox');
+  var tie=A.bank===B.bank&&S.tieWin==null;
+  if(tie){
+    box.innerHTML='<h2>'+T('Égalité !','A tie!')+'</h2><p>'+T('Les deux équipes ont ','Both teams have ')+amtV(A.bank)+' CHF. '+T('Question de départage — chaque équipe écrit un nombre ; le plus proche gagne.','Tie-break — each team writes down a number; the closest wins.')+'</p>'+
+      '<div class="qbox" style="margin:18px 0"><div class="qt">'+esc(L(TIE.q))+'</div></div>'+
+      '<div class="tie">'+S.teams.map(function(t,k){return '<div><label>'+esc(t.name)+'</label><input id="tb'+k+'" inputmode="numeric"></div>';}).join('')+'</div>'+
+      '<button class="btn" id="tbGo">'+T('Comparer','Compare')+'</button>';
+    document.getElementById('tbGo').onclick=function(){
+      var v=[0,1].map(function(k){return parseFloat(String(document.getElementById('tb'+k).value).replace(/[\s’',]/g,'').replace(/[^\d.\-]/g,''));});
+      if(isNaN(v[0])||isNaN(v[1]))return;
+      var d=v.map(function(x){return Math.abs(x-TIE.a);});
+      S.tieWin=d[0]<d[1]?0:(d[1]<d[0]?1:-1);S.tieVals=v;save();drawEnd();
+    };
+  }else{
+    var w=A.bank>B.bank?0:(B.bank>A.bank?1:S.tieWin);
+    var order=w===1?[1,0]:[0,1];
+    box.innerHTML='<div style="font-size:64px">🏆</div><h2>'+(w===-1?T('Égalité parfaite','A perfect tie'):esc(S.teams[w].name)+T(' gagne !',' wins!'))+'</h2>'+
+      (S.tieVals?'<p>'+esc(L(TIE.x))+' · '+S.teams.map(function(t,k){return esc(t.name)+' : '+S.tieVals[k];}).join(' · ')+'</p>':'')+
+      '<div class="pod">'+order.map(function(k,r){var t=S.teams[k];return '<div class="pr'+(k===w?' win':'')+'"><span class="p">'+(r+1)+'</span><span class="nm">'+esc(t.name)+'<small>'+stLabel(t)+' · '+t.lvl+T(' bonnes réponses',' right answers')+'</small></span><span class="bk">'+amtV(t.bank)+' CHF</span></div>';}).join('')+'</div>'+
+      '<button class="btn gh" id="again">'+T('Nouvelle partie','New game')+'</button>';
+    document.getElementById('again').onclick=resetGame;
+  }
+  ov.classList.add('on');
+}
+function resetGame(){
+  stopT();var names=S.teams.map(function(t){return t.name;});S=fresh();
+  S.teams.forEach(function(t,i){t.name=names[i];});save();
+  document.getElementById('ovEnd').classList.remove('on');draw();
+}
+
+document.getElementById('ans').addEventListener('click',function(e){var b=e.target.closest('.ab');if(b)pick(+b.dataset.k);});
+document.getElementById('jok').addEventListener('click',function(e){var b=e.target.closest('.jk');if(b&&!b.disabled)joker(b.dataset.j);});
+document.getElementById('reset').addEventListener('click',function(){if(confirm(T('Effacer la partie et recommencer ?','Clear the game and start again?')))resetGame();});
+document.addEventListener('keydown',function(e){
+  if(S.phase!=='play'||/INPUT/.test((e.target||{}).tagName||''))return;
+  if(document.getElementById('ovNotes').classList.contains('on')){if(e.key==='Escape')document.getElementById('nX').click();return;}
+  var k='abcd'.indexOf(e.key.toLowerCase());
+  if(k>=0&&!S.shown){pick(k);return;}
+  if(e.key==='Enter'){if(!S.shown)reveal();else next();}
+  if(e.key===' '&&!S.shown){e.preventDefault();startT();}
+});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
