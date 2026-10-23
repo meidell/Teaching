@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reflections · ESCWA · instructor</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a2540">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<link rel="stylesheet" href="/shared/themes/iig.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<style>
+/* =====================================================================
+   ESCWA · the weekly reflections, all of them on one screen (23 Oct 2026).
+   Jan Erik, on "Weekly reflection 1 · due before Friday 23 October, 17:00":
+   "can I see these?". Instructor-only: behind the gate, and the read needs
+   the instructor ACCOUNT (escwa is not anonymously listable). A reflection
+   due for session N is stored as <sid>/work/refl<N>_{quote,ref,text,ai,
+   submitted} (week pages; refl2 = Reflection 1, due before Session 2).
+   Due time = session N's date (courses.json → schedule.dates) at 17:00.
+   "Draw 3" picks among the SUBMITTED ones and remembers the draw per
+   reflection on this device. Nothing is written to the database.
+   ===================================================================== */
+body{margin:0;background:var(--surface,#faf9f7);color:var(--ink,#1a2433);font-family:var(--sans,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif);}
+.top{background:#0a2540;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.top h1{font:600 20px/1.2 var(--serif,Georgia,serif);margin:0;flex:1;}
+.top a{color:#c9a961;font-size:13px;font-weight:700;text-decoration:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 20px 60px;}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 14px;}
+.bar select,.bar button{font:inherit;font-size:14px;border-radius:30px;padding:8px 14px;border:1.5px solid #d8d2c4;background:#fff;color:#0a2540;cursor:pointer;}
+.bar button.go{background:#c9a961;border-color:#c9a961;color:#0a2540;font-weight:800;}
+.sum{font-size:13.5px;color:#5a6472;}
+.sum b{color:#0a2540;}
+.draw{display:none;background:#0a2540;color:#fff;border-radius:16px;padding:16px 20px;margin:0 0 18px;}
+.draw.on{display:block;}
+.draw .h{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#c9a961;font-weight:800;margin-bottom:8px;}
+.draw .n{font:600 28px/1.35 var(--serif,Georgia,serif);}
+.draw .n span{display:inline-block;margin-right:22px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+.rc{background:#fff;border:1px solid #e3ddcf;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;}
+.rc.picked{border:2px solid #c9a961;box-shadow:0 0 0 4px rgba(201,169,97,.18);}
+.rc.none{opacity:.6;}
+.rc .who{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.rc .who b{font-size:15.5px;color:#0a2540;}
+.st{font-size:11px;font-weight:800;border-radius:20px;padding:2px 9px;white-space:nowrap;}
+.st.ok{background:#e7f3ec;color:#2f6b45;} .st.late{background:#fdecea;color:#9b2335;} .st.draft{background:#fff4e0;color:#86692c;} .st.no{background:#eef0f3;color:#5a6472;}
+.q{font:italic 15px/1.5 var(--serif,Georgia,serif);border-left:3px solid #c9a961;padding:2px 0 2px 10px;color:#1a2433;white-space:pre-wrap;}
+.ref{font-size:12px;color:#5a6472;}
+.tx{font-size:13.5px;line-height:1.55;white-space:pre-wrap;color:#2b3442;}
+.meta{font-size:11.5px;color:#7a828c;border-top:1px solid #efe9dc;padding-top:6px;}
+.warn{background:#fff4e0;border:1px solid #e8d5ac;border-radius:12px;padding:12px 14px;margin:0 0 14px;font-size:13.5px;display:none;}
+.empty{color:#5a6472;font-size:14px;padding:30px 0;text-align:center;}
+@media print{.top,.bar,.draw{display:none!important;} .rc{break-inside:avoid;}}
+</style>
+</head>
+<body>
+<div class="top"><h1>📖 Weekly reflections · Enterprise Security</h1><a href="/shared/admin2.html?course=escwa">Dashboard →</a><a href="index.html">Course page →</a></div>
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+  <div class="bar">
+    <select id="pick"></select>
+    <button type="button" class="go" id="drawBtn">🎲 Draw 3</button>
+    <button type="button" id="reloadBtn">↻ Refresh</button>
+    <span class="sum" id="sum"></span>
+  </div>
+  <div class="draw" id="draw"><div class="h">Drawn to open the discussion</div><div class="n" id="drawN"></div></div>
+  <div class="grid" id="grid"><div class="empty">Loading…</div></div>
+</div>
+<script>
+(function(){
+  'use strict';
+  var DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app', NS='escwa';
+  var ROOT=null, DATES=[], N=null;
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function words(t){return (String(t||'').trim().match(/\S+/g)||[]).length;}
+  function due(n){var d=DATES[n-1];return d?Date.parse(d+'T17:00:00'+(d<'2026-10-25'?'+02:00':'+01:00')):null;}
+  function dueText(n){var t=due(n);return t?new Date(t).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'?';}
+  function v(w,k){return w&&w[k]&&w[k].v!=null?String(w[k].v):'';}
+
+  function students(){
+    var out=[];
+    for(var sid in ROOT){ if(!ROOT.hasOwnProperty(sid)||sid.charAt(0)==='_')continue; var n=ROOT[sid]; if(!n||typeof n!=='object')continue;
+      out.push({sid:sid,name:n.name||sid,work:n.work||{}}); }
+    return out.sort(function(a,b){return a.name.localeCompare(b.name);});
+  }
+  function available(){
+    var set={};students().forEach(function(s){Object.keys(s.work).forEach(function(k){var m=/^refl(\d+)_/.exec(k);if(m)set[m[1]]=1;});});
+    return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
+  }
+  function rows(n){
+    var p='refl'+n+'_';
+    return students().map(function(s){
+      var w=s.work,sub=v(w,p+'submitted'),ts=sub?Date.parse(sub):0;
+      var has=!!(v(w,p+'quote')||v(w,p+'text'));
+      var st=sub?(due(n)&&ts>due(n)?'late':'ok'):(has?'draft':'no');
+      return {sid:s.sid,name:s.name,st:st,ts:ts,quote:v(w,p+'quote'),ref:v(w,p+'ref'),text:v(w,p+'text'),ai:v(w,p+'ai')};
+    });
+  }
+  function drawKey(n){return 'escwa_refl_draw_'+n;}
+  function drawn(n){try{return JSON.parse(localStorage.getItem(drawKey(n))||'[]');}catch(e){return [];}}
+
+  function render(){
+    var n=N; if(!n){$('grid').innerHTML='<div class="empty">No reflection has been started by anyone yet.</div>';$('sum').textContent='';return;}
+    var rs=rows(n), sub=rs.filter(function(r){return r.st==='ok'||r.st==='late';}), late=rs.filter(function(r){return r.st==='late';}).length, dr=drawn(n);
+    $('sum').innerHTML='Due '+esc(dueText(n))+' · <b>'+sub.length+'</b> submitted'+(late?' ('+late+' late)':'')+' · '+rs.filter(function(r){return r.st==='draft';}).length+' draft only · '+rs.filter(function(r){return r.st==='no';}).length+' nothing · '+rs.length+' students';
+    var names=dr.map(function(sid){var r=rs.filter(function(x){return x.sid===sid;})[0];return r?r.name:null;}).filter(Boolean);
+    $('draw').classList.toggle('on',names.length>0);$('drawN').innerHTML=names.map(function(x){return '<span>'+esc(x)+'</span>';}).join('');
+    var order={ok:0,late:1,draft:2,no:3};
+    rs.sort(function(a,b){var pa=dr.indexOf(a.sid)>=0?-1:order[a.st],pb=dr.indexOf(b.sid)>=0?-1:order[b.st];return pa-pb||a.name.localeCompare(b.name);});
+    var LBL={ok:'submitted',late:'submitted late',draft:'draft · not submitted',no:'nothing yet'};
+    $('grid').innerHTML=rs.map(function(r){
+      var wc=words(r.text);
+      return '<div class="rc'+(dr.indexOf(r.sid)>=0?' picked':'')+(r.st==='no'?' none':'')+'">'+
+        '<div class="who"><b>'+esc(r.name)+'</b><span class="st '+r.st+'">'+LBL[r.st]+'</span></div>'+
+        (r.quote?'<div class="q">'+esc(r.quote)+'</div>':'')+(r.ref?'<div class="ref">'+esc(r.ref)+'</div>':'')+
+        (r.text?'<div class="tx">'+esc(r.text)+'</div>':'')+
+        (r.st!=='no'?'<div class="meta">'+wc+' words'+(wc>300?' · <b style="color:#9b2335">over 300</b>':'')+(r.ts?' · '+esc(new Date(r.ts).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):'')+(r.ai?' · AI: '+esc(r.ai):'')+'</div>':'')+
+      '</div>';
+    }).join('')||'<div class="empty">No students yet.</div>';
+  }
+  function fillPick(){
+    var av=available(), sel=$('pick');
+    if(!av.length){N=null;sel.innerHTML='';render();return;}
+    if(N==null||av.indexOf(N)<0){
+      /* default: the reflection due next (or the last one due) */
+      var now=Date.now(),next=av.filter(function(n){return (due(n)||0)>=now-6*3600e3;})[0];N=next||av[av.length-1];
+    }
+    sel.innerHTML=av.map(function(n){return '<option value="'+n+'"'+(n===N?' selected':'')+'>Reflection '+(n-1)+' · due before Session '+n+' ('+esc(dueText(n))+')</option>';}).join('');
+    render();
+  }
+  $('pick').addEventListener('change',function(){N=parseInt(this.value,10);render();});
+  $('drawBtn').addEventListener('click',function(){
+    if(!N)return;
+    var pool=rows(N).filter(function(r){return r.st==='ok'||r.st==='late';}).map(function(r){return r.sid;});
+    if(!pool.length){alert('Nobody has submitted this reflection yet.');return;}
+    if(drawn(N).length&&!confirm('Draw again? The current three are replaced.'))return;
+    for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=pool[i];pool[i]=pool[j];pool[j]=t;}
+    try{localStorage.setItem(drawKey(N),JSON.stringify(pool.slice(0,3)));}catch(e){}
+    render();window.scrollTo({top:0,behavior:'smooth'});
+  });
+  $('reloadBtn').addEventListener('click',load);
+
+  function needAccount(){
+    var w=$('warn');w.style.display='block';
+    w.innerHTML='<div style="margin-bottom:8px">Reading the reflections needs the signed-in instructor account.</div><div id="wf"></div>';
+    FBAuth.form($('wf'),function(){w.style.display='none';load();},NS);
+  }
+  function load(){
+    var q=window.__fbUser?window.__fbUser.getIdToken().then(function(t){return '?auth='+t;}):Promise.resolve('');
+    q.then(function(a){return fetch(DB+'/'+NS+'.json'+a);}).then(function(r){
+      if(r.status===401){needAccount();return null;}
+      return r.json();
+    }).then(function(o){if(o==null)return;ROOT=o||{};fillPick();}).catch(function(){$('grid').innerHTML='<div class="empty">Network problem — press Refresh.</div>';});
+  }
+  function start(){
+    fetch('/courses.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(function(c){
+      var e=(c.courses||[]).filter(function(x){return x.id==='escwa';})[0];DATES=(e&&e.schedule&&e.schedule.dates)||[];
+    }).catch(function(){}).then(function(){
+      FBAuth.restore(function(u){ if(!u){needAccount();return;} load(); });
+    });
+  }
+  AdminGate.mount({brand:'ESCWA · INSTRUCTOR',title:'Weekly reflections',onUnlock:start});
+})();
+</script>
+</body>
+</html>
