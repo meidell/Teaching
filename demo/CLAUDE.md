@@ -28,4 +28,17 @@ front and back. Read the root `CLAUDE.md` first.
   students, frozen on Tue 8 Sep 2026 09:00; six have no hand-in, three are
   "gone quiet", two never started, three messages wait; week 5 is the feedback
   low point. Re-run the script after changing it; never hand-edit data.js.
+- **`menu.js`** (24 Oct 2026) — the left-hand menu on every demo page except
+  `board.html` (the room screen stays clean): one `<script src="/demo/menu.js"
+  defer>` before `</body>`, nothing else edited. Fixed sidebar from 1080 px
+  (body gets `padding-left`; the sticky top bars move with it; « folds it away,
+  remembered in `localStorage.demo_menu`), a "☰ Menu" button that slides it in
+  below that. Groups: the demo · student view (hub, W1–W8 with Lesson /
+  Homework / W6 quiz, assignment, glossary, feedback) · instructor view (the
+  six `admin.html` tabs by hash, room screen, exam). `admin.html` reads its tab
+  hash only at load, so the menu reloads it for a same-page tab link. A new
+  demo page needs the script tag; a new week needs an entry in `WEEKS`.
+- **`index.html` and `course/index.html` add the trailing slash** themselves:
+  the host serves `/demo` without redirecting, which sent every relative link
+  to the web root.
 - Nobody in the dataset is real. The names are invented combinations.
