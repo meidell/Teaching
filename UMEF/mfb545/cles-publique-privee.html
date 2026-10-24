@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, follow">
+  <!-- MFB 545 · reference page (24 Oct 2026), added as written by Jan Erik; only the colour (UMEF teal), the course link and track.js were added. French only. -->
+  <title>Clé publique et clé privée, pas à pas</title>
+  <style>
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 780px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.65;
+      color: #222;
+      background: #fafafa;
+    }
+    h1 { font-size: 1.7em; border-bottom: 2px solid #444; padding-bottom: 8px; }
+    h2 { font-size: 1.25em; margin-top: 40px; color: #176B87; }
+    .etape {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-left: 5px solid #176B87;
+      padding: 14px 20px;
+      margin: 18px 0;
+    }
+    .etape .num {
+      display: inline-block;
+      background: #176B87;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      line-height: 28px;
+      text-align: center;
+      margin-right: 10px;
+    }
+    .etape h3 { display: inline; font-size: 1.05em; }
+    .idee {
+      background: #fff8e6;
+      border: 1px solid #e6c97a;
+      padding: 12px 20px;
+      margin: 18px 0;
+    }
+    .attention {
+      background: #fdecea;
+      border: 1px solid #e0a0a0;
+      padding: 12px 20px;
+      margin: 18px 0;
+    }
+    table { border-collapse: collapse; margin: 12px 0; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; }
+    th { background: #eef3f7; }
+    code, .mono { font-family: "Courier New", monospace; background: #f0f0f0; padding: 1px 4px; }
+    .demo {
+      background: #eef5ee;
+      border: 1px solid #9bbf9b;
+      padding: 16px 20px;
+      margin-top: 18px;
+    }
+    .demo input { width: 70px; font-size: 1em; padding: 4px; }
+    .demo button { font-size: 1em; padding: 5px 12px; margin-left: 6px; cursor: pointer; }
+    .demo .resultat { margin-top: 12px; }
+    .ok { color: #1a7f37; font-weight: bold; }
+    .ko { color: #b42318; font-weight: bold; }
+  </style>
+</head>
+<body data-course="mfb545">
+  <p style="font-family:Helvetica,Arial,sans-serif;font-size:13px;margin:0 0 -16px;"><a href="/UMEF/mfb545/index.html" style="color:#176B87;text-decoration:none;font-weight:700;">← MFB 545 · page du cours</a></p>
+
+  <h1>Clé publique et clé privée, pas à pas</h1>
+
+  <p>En finance et dans les blockchains, on a besoin de répondre à une question simple :
+  <strong>« Est-ce vraiment Alice qui a donné cet ordre ? »</strong> — sans mot de passe, sans banque au milieu,
+  et de façon que n'importe qui puisse le vérifier. C'est exactement ce que permet la paire
+  <em>clé privée / clé publique</em>.</p>
+
+  <h2>1. L'idée en une image</h2>
+
+  <div class="idee">
+    <p>Imaginez un cachet de cire. Alice possède <strong>un sceau unique</strong>, qu'elle garde dans sa poche
+    et ne montre à personne : c'est sa <strong>clé privée</strong>.</p>
+    <p>Elle distribue à tout le monde <strong>une empreinte de ce sceau</strong>, que l'on peut comparer mais
+    pas utiliser pour fabriquer le sceau : c'est sa <strong>clé publique</strong>.</p>
+    <p>Quand Alice appose son sceau sur une lettre, n'importe qui peut vérifier, grâce à l'empreinte,
+    que c'est bien le sien. Mais personne ne peut reproduire le sceau à partir de l'empreinte.</p>
+  </div>
+
+  <h2>2. Les deux clés</h2>
+
+  <table>
+    <tr><th></th><th>Clé privée</th><th>Clé publique</th></tr>
+    <tr><td>Qui la connaît ?</td><td>Son propriétaire seulement</td><td>Tout le monde</td></tr>
+    <tr><td>À quoi sert-elle ?</td><td>À <strong>signer</strong></td><td>À <strong>vérifier</strong> une signature</td></tr>
+    <tr><td>Peut-on retrouver l'une à partir de l'autre ?</td><td colspan="2">On calcule facilement la publique à partir de la privée. L'inverse est pratiquement impossible.</td></tr>
+    <tr><td>Si elle est perdue ?</td><td>Les fonds sont perdus</td><td>Aucun problème, elle est publique</td></tr>
+    <tr><td>Si elle est volée ?</td><td>Le voleur peut tout signer</td><td>Aucun problème</td></tr>
+  </table>
+
+  <h2>3. Le processus, étape par étape</h2>
+
+  <div class="etape">
+    <span class="num">1</span><h3>Alice crée sa paire de clés</h3>
+    <p>Son logiciel (portefeuille, application bancaire) tire un très grand nombre au hasard : c'est la clé privée.
+    Il en déduit la clé publique par un calcul mathématique à sens unique.</p>
+  </div>
+
+  <div class="etape">
+    <span class="num">2</span><h3>Alice publie sa clé publique</h3>
+    <p>Dans une blockchain, son adresse est dérivée de cette clé publique. Dans un système bancaire,
+    la clé publique est enregistrée dans un certificat. Tout le monde peut la voir.</p>
+  </div>
+
+  <div class="etape">
+    <span class="num">3</span><h3>Alice rédige un message</h3>
+    <p>Par exemple : <code>« Je paie 10 francs à Bob »</code>. Le message lui-même n'est pas secret.</p>
+  </div>
+
+  <div class="etape">
+    <span class="num">4</span><h3>Alice signe le message avec sa clé privée</h3>
+    <p>Un calcul combine le message et la clé privée et produit un nombre : la <strong>signature</strong>.
+    Elle dépend des deux. Changez une seule lettre du message, la signature change complètement.</p>
+  </div>
+
+  <div class="etape">
+    <span class="num">5</span><h3>Alice envoie le message + la signature</h3>
+    <p>Elle n'envoie <em>jamais</em> sa clé privée. Seulement le message et la signature.</p>
+  </div>
+
+  <div class="etape">
+    <span class="num">6</span><h3>Bob (ou n'importe qui) vérifie</h3>
+    <p>Bob prend le message, la signature et la <strong>clé publique</strong> d'Alice. Un calcul lui répond
+    simplement <strong>OUI</strong> ou <strong>NON</strong> :</p>
+    <ul>
+      <li><strong>OUI</strong> : la signature a été produite avec la clé privée correspondante, et le message
+      n'a pas été modifié depuis.</li>
+      <li><strong>NON</strong> : soit ce n'est pas Alice, soit le message a été altéré.</li>
+    </ul>
+  </div>
+
+  <div class="attention">
+    <p><strong>Point essentiel :</strong> Bob a vérifié l'identité d'Alice sans jamais connaître son secret.
+    C'est ce qui rend le système utilisable à grande échelle : des milliers de nœuds d'une blockchain
+    peuvent vérifier la même transaction, et aucun d'eux ne peut la falsifier.</p>
+  </div>
+
+  <h2>4. Un exemple avec de tout petits nombres</h2>
+
+  <p>Les vraies clés font des centaines de chiffres. Pour comprendre le mécanisme, utilisons des nombres minuscules
+  (méthode RSA simplifiée).</p>
+
+  <div class="etape">
+    <span class="num">1</span><h3>Fabrication des clés</h3>
+    <p>On choisit deux nombres premiers : 5 et 11. Leur produit est <code>n = 55</code>.<br>
+    La clé publique est le couple <code>(3, 55)</code>.<br>
+    La clé privée est le couple <code>(27, 55)</code>.<br>
+    <small>(Le 3 et le 27 sont liés par une propriété mathématique : 3 × 27 = 81, et 81 laisse un reste de 1
+    quand on le divise par (5−1)×(11−1) = 40. Trouver 27 à partir de 3 est facile si l'on connaît 5 et 11 ;
+    impossible en pratique quand les nombres premiers ont 300 chiffres.)</small></p>
+  </div>
+
+  <div class="etape">
+    <span class="num">2</span><h3>Signature</h3>
+    <p>Le message est le nombre <code>8</code>. Alice calcule :
+    <code>8<sup>27</sup> modulo 55 = 2</code>. La signature est <strong>2</strong>.</p>
+  </div>
+
+  <div class="etape">
+    <span class="num">3</span><h3>Vérification</h3>
+    <p>Bob prend la signature <code>2</code> et la clé publique <code>(3, 55)</code> :
+    <code>2<sup>3</sup> modulo 55 = 8</code>. Il retrouve le message <strong>8</strong>. Signature valide.</p>
+    <p>Si un fraudeur modifie le message en <code>9</code> sans changer la signature, Bob obtient toujours 8 ≠ 9 :
+    signature <strong>rejetée</strong>.</p>
+  </div>
+
+  <div class="demo">
+    <strong>Essayez vous-même</strong> (clé publique (3, 55), clé privée (27, 55))<br><br>
+    Message d'Alice (nombre entre 1 et 54) : <input type="number" id="msg" value="8" min="1" max="54">
+    <button onclick="signer()">Signer</button>
+    <div class="resultat" id="sig"></div>
+    <br>
+    Message reçu par Bob : <input type="number" id="recu" value="8" min="1" max="54">
+    <button onclick="verifier()">Vérifier</button>
+    <div class="resultat" id="verif"></div>
+  </div>
+
+  <h2>5. Où cela sert-il concrètement ?</h2>
+
+  <table>
+    <tr><th>Contexte</th><th>Clé privée</th><th>Ce que la signature prouve</th></tr>
+    <tr><td>Bitcoin, Ethereum</td><td>Dans votre portefeuille (seed phrase)</td><td>Que c'est bien le propriétaire des fonds qui ordonne le transfert</td></tr>
+    <tr><td>Paiement par carte (puce EMV)</td><td>Dans la puce de la carte</td><td>Que la carte est authentique et n'a pas été clonée</td></tr>
+    <tr><td>Connexion sécurisée à une banque (https)</td><td>Sur le serveur de la banque</td><td>Que vous parlez à la vraie banque et non à un site imitant</td></tr>
+    <tr><td>Signature électronique d'un contrat</td><td>Chez le signataire</td><td>Qui a signé, et que le document n'a pas été modifié depuis</td></tr>
+  </table>
+
+  <h2>6. Les trois règles à retenir</h2>
+  <ol>
+    <li>La clé privée <strong>signe</strong>, la clé publique <strong>vérifie</strong>.</li>
+    <li>La clé privée ne quitte jamais son propriétaire. Qui la détient détient tout.</li>
+    <li>Une signature valide prouve deux choses à la fois : <em>qui</em> a signé et <em>que rien n'a changé</em>.</li>
+  </ol>
+
+  <script>
+    function modPow(base, exp, mod) {
+      let r = 1; base = base % mod;
+      while (exp > 0) {
+        if (exp % 2 === 1) r = (r * base) % mod;
+        base = (base * base) % mod;
+        exp = Math.floor(exp / 2);
+      }
+      return r;
+    }
+    let signatureCourante = null;
+    function signer() {
+      const m = parseInt(document.getElementById('msg').value);
+      if (isNaN(m) || m < 1 || m > 54) { document.getElementById('sig').innerHTML = 'Entrez un nombre entre 1 et 54.'; return; }
+      signatureCourante = modPow(m, 27, 55);
+      document.getElementById('sig').innerHTML =
+        'Signature = ' + m + '<sup>27</sup> mod 55 = <strong>' + signatureCourante + '</strong>. Alice envoie le message ' + m + ' et la signature ' + signatureCourante + '.';
+      document.getElementById('recu').value = m;
+      document.getElementById('verif').innerHTML = '';
+    }
+    function verifier() {
+      if (signatureCourante === null) { document.getElementById('verif').innerHTML = 'Signez d\'abord un message.'; return; }
+      const recu = parseInt(document.getElementById('recu').value);
+      const retrouve = modPow(signatureCourante, 3, 55);
+      const ok = (retrouve === recu);
+      document.getElementById('verif').innerHTML =
+        'Bob calcule ' + signatureCourante + '<sup>3</sup> mod 55 = <strong>' + retrouve + '</strong>. Message reçu : ' + recu + '. ' +
+        (ok ? '<span class="ok">Signature valide.</span>' : '<span class="ko">Signature rejetée : le message a été modifié ou ne vient pas d\'Alice.</span>');
+    }
+  </script>
+
+  <script src="/track.js" defer></script>
+</body>
+</html>

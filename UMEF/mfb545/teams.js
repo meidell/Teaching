@@ -5,11 +5,13 @@
    show the teams and their members on the course landing page — and also
    allow them to share a group chat (messages)".
 
-   Three teams (the syllabus: nine students, three teams of three; up to
-   four seats each, so nobody is left out). A student joins, moves or
+   TWO teams since 24 Oct 2026 (Jan Erik: "both groups of 3" build the
+   same pension-savings app; the syllabus planned three teams of three;
+   up to four seats each, so nobody is left out). t3 is gone from IDS —
+   nobody had joined any team when it was removed. A student joins, moves or
    leaves; any member renames the team. Stored in
 
-     mfb545/_teams/<t1|t2|t3>/name                  the team's name (≤ 40)
+     mfb545/_teams/<t1|t2>/name                  the team's name (≤ 40)
      mfb545/_teams/<t>/members/<sid> = {n, ts}      who is in it
 
    — world-readable, names only, the same shape as capstone-ba's `_teams`
@@ -32,7 +34,7 @@
    ===================================================================== */
 window.MfbTeams=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app", NS="mfb545", K="mfb545";
-  var IDS=['t1','t2','t3'], CAP=4, MAXNAME=40, POLL=10000;
+  var IDS=['t1','t2'], CAP=4, MAXNAME=40, POLL=10000;
   var T=window.T||function(fr){return fr;};
   var data={}, ok=true, loaded=false, el=null, hooks=[], busy=0, started=false;
 
@@ -150,7 +152,7 @@ window.MfbTeams=(function(){
       '<div class="tm-f">'+
         (inst?T('Vue enseignant : les équipes telles que la classe les voit. Leurs messages d’équipe sont entre étudiants et n’apparaissent pas dans votre boîte.','Instructor view: the teams as the class sees them. Their team messages are between students and do not appear in your inbox.')
          :(!a?T('<b>Connectez-vous</b> (le bouton en bas à droite) pour rejoindre une équipe.','<b>Sign in</b> (the button at the bottom right) to join a team.')
-         :T('Trois équipes de trois. Rejoignez la vôtre, donnez-lui un nom ; chaque équipe a son fil de messages (💬 en bas à droite), entre vous seulement.','Three teams of three. Join yours and give it a name; each team has its own message thread (💬 bottom right), just between you.')))+
+         :T('Deux équipes de trois. Rejoignez la vôtre, donnez-lui un nom ; chaque équipe a son fil de messages (💬 en bas à droite), entre vous seulement.','Two teams of three. Join yours and give it a name; each team has its own message thread (💬 bottom right), just between you.')))+
         (loaded&&!ok?' '+T('⚠ Les équipes ne peuvent pas être lues pour l’instant.','⚠ The teams cannot be read right now.'):'')+
       ' <span class="tm-err"></span></div>';
   }
