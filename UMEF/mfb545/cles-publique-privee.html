@@ -4,235 +4,338 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, follow">
-  <!-- MFB 545 · reference page (24 Oct 2026), added as written by Jan Erik; only the colour (UMEF teal), the course link and track.js were added. French only. -->
-  <title>Clé publique et clé privée, pas à pas</title>
+  <!-- MFB 545 · fiche « Clé publique et clé privée » — REFAITE le 24 Oct 2026 (Jan Erik : « ils se
+       sont perdus dans l'exemple numérique ; il y a trop de choses à retenir — 1 déclic, 2 déclics,
+       3 déclics… »). Trois choses à retenir, annoncées en haut et répétées en bas ; l'exemple RSA
+       (n = 55, clé publique 3, clé privée 27) est découpé en cinq DÉCLICS : une idée, une action,
+       puis la phrase « 💡 » qui n'apparaît qu'après l'action ; le déclic suivant s'ouvre ensuite.
+       Le calcul (puissance, modulo) est caché derrière deux « machines » et n'est montré que dans
+       des encadrés « voir le calcul », facultatifs. Chiffres vérifiés en Python : 8 → 2 → 8 ;
+       9 → 4 → 9 ; la seule signature valide pour 9 est 4 ; 3 × 27 = 81 = 2 × 40 + 1. -->
+  <title>Clé publique et clé privée, en cinq déclics</title>
   <style>
-    body {
-      font-family: Georgia, "Times New Roman", serif;
-      max-width: 780px;
-      margin: 40px auto;
-      padding: 0 20px;
-      line-height: 1.65;
-      color: #222;
-      background: #fafafa;
-    }
+    body { font-family: Georgia, "Times New Roman", serif; max-width: 780px; margin: 40px auto; padding: 0 20px;
+      line-height: 1.65; color: #222; background: #fafafa; }
     h1 { font-size: 1.7em; border-bottom: 2px solid #444; padding-bottom: 8px; }
     h2 { font-size: 1.25em; margin-top: 40px; color: #176B87; }
-    .etape {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-left: 5px solid #176B87;
-      padding: 14px 20px;
-      margin: 18px 0;
-    }
-    .etape .num {
-      display: inline-block;
-      background: #176B87;
-      color: #fff;
-      font-weight: bold;
-      border-radius: 50%;
-      width: 28px; height: 28px;
-      line-height: 28px;
-      text-align: center;
-      margin-right: 10px;
-    }
-    .etape h3 { display: inline; font-size: 1.05em; }
-    .idee {
-      background: #fff8e6;
-      border: 1px solid #e6c97a;
-      padding: 12px 20px;
-      margin: 18px 0;
-    }
-    .attention {
-      background: #fdecea;
-      border: 1px solid #e0a0a0;
-      padding: 12px 20px;
-      margin: 18px 0;
-    }
+    .retenir { background: #176B87; color: #fff; border-radius: 10px; padding: 14px 22px; margin: 22px 0; }
+    .retenir h3 { margin: 0 0 6px; font-size: 1.05em; letter-spacing: .5px; }
+    .retenir ol { margin: 0; padding-left: 22px; }
+    .retenir li { margin: 3px 0; }
+    .idee { background: #fff8e6; border: 1px solid #e6c97a; padding: 12px 20px; margin: 18px 0; }
+    .attention { background: #fdecea; border: 1px solid #e0a0a0; padding: 12px 20px; margin: 18px 0; }
     table { border-collapse: collapse; margin: 12px 0; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; }
+    th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; vertical-align: top; }
     th { background: #eef3f7; }
     code, .mono { font-family: "Courier New", monospace; background: #f0f0f0; padding: 1px 4px; }
-    .demo {
-      background: #eef5ee;
-      border: 1px solid #9bbf9b;
-      padding: 16px 20px;
-      margin-top: 18px;
-    }
-    .demo input { width: 70px; font-size: 1em; padding: 4px; }
-    .demo button { font-size: 1em; padding: 5px 12px; margin-left: 6px; cursor: pointer; }
-    .demo .resultat { margin-top: 12px; }
+
+    /* the two machines, drawn the same way everywhere on the page */
+    .cast { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    .who { flex: 1 1 210px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px 14px; font-size: .95em; }
+    .who b { display: block; }
+    .mach { display: inline-block; border-radius: 8px; padding: 2px 9px; font-family: Helvetica, Arial, sans-serif; font-size: .85em; font-weight: bold; color: #fff; white-space: nowrap; }
+    .mach.priv { background: #9B2335; }
+    .mach.pub { background: #176B87; }
+
+    /* progress */
+    .prog { display: flex; gap: 8px; margin: 10px 0 4px; font-family: Helvetica, Arial, sans-serif; font-size: 13px; align-items: center; flex-wrap: wrap; }
+    .prog span { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #c9d6dd; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #8aa; background: #fff; }
+    .prog span.on { border-color: #176B87; color: #176B87; }
+    .prog span.done { background: #176B87; border-color: #176B87; color: #fff; }
+
+    /* a déclic */
+    .dec { background: #fff; border: 1px solid #ddd; border-left: 6px solid #176B87; border-radius: 6px; padding: 14px 20px 16px; margin: 18px 0; transition: opacity .3s; }
+    .dec.locked { opacity: .35; pointer-events: none; filter: grayscale(.6); }
+    .dec .k { font-family: Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: bold; color: #176B87; }
+    .dec h3 { margin: 2px 0 8px; font-size: 1.15em; }
+    .dec .act { background: #eef5ee; border: 1px solid #9bbf9b; border-radius: 6px; padding: 12px 14px; margin: 10px 0; }
+    .dec input { width: 64px; font-size: 1em; padding: 4px; }
+    .dec button { font-size: 1em; padding: 5px 12px; margin: 4px 6px 4px 0; cursor: pointer; border-radius: 6px; border: 1px solid #999; background: #fff; }
+    .dec button.go { background: #176B87; border-color: #176B87; color: #fff; }
+    .dec button:disabled { opacity: .45; cursor: default; }
+    .flow { font-size: 1.15em; margin: 8px 0; line-height: 2; }
+    .num { display: inline-block; min-width: 34px; text-align: center; font-weight: bold; font-size: 1.15em; border: 2px solid #444; border-radius: 6px; padding: 0 6px; background: #fff; }
+    .env { display: inline-block; border: 2px dashed #888; border-radius: 8px; padding: 6px 12px; background: #fffdf5; margin: 4px 0; }
+    .aha { display: none; background: #fff8e6; border: 1px solid #e6c97a; border-radius: 6px; padding: 10px 14px; margin-top: 10px; }
+    .aha.on { display: block; }
+    .aha b:first-child { color: #8a6d14; }
+    .next { display: none; margin-top: 10px; }
+    .next.on { display: inline-block; }
+    details { margin-top: 10px; font-size: .95em; }
+    details summary { cursor: pointer; color: #176B87; font-family: Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; }
+    details > div { background: #f6f8f9; border: 1px solid #e1e6ea; border-radius: 6px; padding: 10px 14px; margin-top: 6px; }
     .ok { color: #1a7f37; font-weight: bold; }
     .ko { color: #b42318; font-weight: bold; }
+    .recap li { margin: 4px 0; }
   </style>
 </head>
 <body data-course="mfb545">
   <p style="font-family:Helvetica,Arial,sans-serif;font-size:13px;margin:0 0 -16px;"><a href="/UMEF/mfb545/index.html" style="color:#176B87;text-decoration:none;font-weight:700;">← MFB 545 · page du cours</a></p>
 
-  <h1>Clé publique et clé privée, pas à pas</h1>
+  <h1>Clé publique et clé privée, en cinq déclics</h1>
 
-  <p>En finance et dans les blockchains, on a besoin de répondre à une question simple :
-  <strong>« Est-ce vraiment Alice qui a donné cet ordre ? »</strong> — sans mot de passe, sans banque au milieu,
-  et de façon que n'importe qui puisse le vérifier. C'est exactement ce que permet la paire
-  <em>clé privée / clé publique</em>.</p>
+  <p>Comment prouver que c'est vraiment Alice qui a écrit <em>« Je paie 8 francs à Bob »</em> — sans mot de
+  passe, sans banque au milieu, et de façon que n'importe qui puisse le vérifier ?</p>
 
-  <h2>1. L'idée en une image</h2>
+  <div class="retenir">
+    <h3>Il n'y a que trois choses à retenir</h3>
+    <ol>
+      <li>La <strong>clé privée signe</strong>. Seule Alice l'a.</li>
+      <li>La <strong>clé publique vérifie</strong>. Tout le monde l'a.</li>
+      <li>On ne peut <strong>pas fabriquer la clé privée</strong> à partir de la clé publique.</li>
+    </ol>
+  </div>
+
+  <h2>L'idée, sans aucun calcul</h2>
 
   <div class="idee">
-    <p>Imaginez un cachet de cire. Alice possède <strong>un sceau unique</strong>, qu'elle garde dans sa poche
-    et ne montre à personne : c'est sa <strong>clé privée</strong>.</p>
-    <p>Elle distribue à tout le monde <strong>une empreinte de ce sceau</strong>, que l'on peut comparer mais
-    pas utiliser pour fabriquer le sceau : c'est sa <strong>clé publique</strong>.</p>
-    <p>Quand Alice appose son sceau sur une lettre, n'importe qui peut vérifier, grâce à l'empreinte,
-    que c'est bien le sien. Mais personne ne peut reproduire le sceau à partir de l'empreinte.</p>
+    <p>Alice a un <strong>sceau</strong> qu'elle garde dans sa poche : c'est sa <strong>clé privée</strong>.
+    Elle donne à tout le monde une <strong>photo de l'empreinte</strong> de ce sceau : c'est sa
+    <strong>clé publique</strong>.</p>
+    <p>Quand Alice scelle une lettre, n'importe qui compare le cachet avec la photo et sait que c'est elle.
+    Mais avec une photo, on ne fabrique pas le sceau.</p>
   </div>
 
-  <h2>2. Les deux clés</h2>
+  <h2>L'exemple, en cinq déclics</h2>
 
-  <table>
-    <tr><th></th><th>Clé privée</th><th>Clé publique</th></tr>
-    <tr><td>Qui la connaît ?</td><td>Son propriétaire seulement</td><td>Tout le monde</td></tr>
-    <tr><td>À quoi sert-elle ?</td><td>À <strong>signer</strong></td><td>À <strong>vérifier</strong> une signature</td></tr>
-    <tr><td>Peut-on retrouver l'une à partir de l'autre ?</td><td colspan="2">On calcule facilement la publique à partir de la privée. L'inverse est pratiquement impossible.</td></tr>
-    <tr><td>Si elle est perdue ?</td><td>Les fonds sont perdus</td><td>Aucun problème, elle est publique</td></tr>
-    <tr><td>Si elle est volée ?</td><td>Le voleur peut tout signer</td><td>Aucun problème</td></tr>
-  </table>
+  <p>Avec de tout petits nombres, pour voir le mécanisme. Pas besoin de calculer : la page le fait.
+  Pour chaque déclic, faites l'action, lisez la phrase 💡, puis passez au suivant.</p>
 
-  <h2>3. Le processus, étape par étape</h2>
+  <div class="cast">
+    <div class="who"><b>🔒 Alice</b>possède la <span class="mach priv">machine privée</span>.<br>Personne d'autre ne l'a.</div>
+    <div class="who"><b>🌍 Tout le monde</b>(Bob, la banque, un fraudeur) possède la <span class="mach pub">machine publique</span>.</div>
+  </div>
+  <p style="font-size:.95em;color:#555;margin-top:-4px;">Une « machine », c'est une clé : on y met un nombre, il en ressort un autre.</p>
 
-  <div class="etape">
-    <span class="num">1</span><h3>Alice crée sa paire de clés</h3>
-    <p>Son logiciel (portefeuille, application bancaire) tire un très grand nombre au hasard : c'est la clé privée.
-    Il en déduit la clé publique par un calcul mathématique à sens unique.</p>
+  <div class="prog" id="prog"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><em id="progTxt" style="color:#555;margin-left:4px;"></em></div>
+
+  <!-- DÉCLIC 1 -->
+  <div class="dec" id="d1">
+    <div class="k">Déclic 1 sur 5</div>
+    <h3>Les deux machines se défont l'une l'autre</h3>
+    <p>Mettez un nombre dans la machine privée, puis mettez ce qui en sort dans la machine publique.</p>
+    <div class="act">
+      Nombre de départ : <input type="number" id="d1in" value="8" min="1" max="54">
+      <button class="go" id="d1a">Machine privée →</button>
+      <button id="d1b" disabled>Machine publique →</button>
+      <div class="flow" id="d1flow"></div>
+    </div>
+    <div class="aha" id="d1aha"><b>💡 Déclic :</b> ce que la machine privée fait, la machine publique le défait.
+      On retombe toujours sur le nombre de départ. Essayez un autre nombre : ça marche à chaque fois.</div>
+    <details><summary>Voir le calcul (facultatif)</summary><div>
+      La machine privée multiplie le nombre par lui-même <strong>27 fois</strong>, puis garde le <em>reste</em> de la
+      division par 55 — comme une horloge à 55 heures : sur une horloge ordinaire, 15 heures, c'est 3 heures.
+      La machine publique fait pareil avec <strong>3</strong> au lieu de 27.<br>
+      8<sup>27</sup> → reste 2 quand on divise par 55. Puis 2<sup>3</sup> = 8.
+      Le 27 et le 3 ont été choisis ensemble pour que l'un défasse l'autre.</div></details>
+    <button class="next go" id="d1n">Déclic suivant →</button>
   </div>
 
-  <div class="etape">
-    <span class="num">2</span><h3>Alice publie sa clé publique</h3>
-    <p>Dans une blockchain, son adresse est dérivée de cette clé publique. Dans un système bancaire,
-    la clé publique est enregistrée dans un certificat. Tout le monde peut la voir.</p>
+  <!-- DÉCLIC 2 -->
+  <div class="dec locked" id="d2">
+    <div class="k">Déclic 2 sur 5</div>
+    <h3>Signer, c'est passer le message dans la machine privée</h3>
+    <p>Alice veut envoyer <em>« Je paie <b>8</b> francs à Bob »</em>. Elle passe 8 dans sa machine privée : ce qui sort
+    est sa <strong>signature</strong>. Elle envoie le message <em>et</em> la signature — jamais sa machine.</p>
+    <div class="act">
+      <button class="go" id="d2a">Alice signe et envoie</button>
+      <div id="d2env"></div>
+      <button id="d2b" disabled>Bob vérifie avec la machine publique</button>
+      <div class="flow" id="d2flow"></div>
+    </div>
+    <div class="aha" id="d2aha"><b>💡 Déclic :</b> Bob a vérifié que c'est Alice <strong>sans jamais toucher à la
+      machine privée</strong>. Il lui suffit de la machine publique, que tout le monde a. Si ce qui sort est égal au
+      message, seule la machine d'Alice a pu produire cette signature.</div>
+    <button class="next go" id="d2n">Déclic suivant →</button>
   </div>
 
-  <div class="etape">
-    <span class="num">3</span><h3>Alice rédige un message</h3>
-    <p>Par exemple : <code>« Je paie 10 francs à Bob »</code>. Le message lui-même n'est pas secret.</p>
+  <!-- DÉCLIC 3 -->
+  <div class="dec locked" id="d3">
+    <div class="k">Déclic 3 sur 5</div>
+    <h3>Un fraudeur change le montant</h3>
+    <p>Pendant le trajet, un fraudeur remplace 8 par un autre montant, mais garde la signature d'Alice
+    (il ne peut pas en fabriquer une autre : il n'a pas la machine privée).</p>
+    <div class="act">
+      Montant écrit par le fraudeur : <input type="number" id="d3in" value="9" min="1" max="54">
+      <button class="go" id="d3a">Bob vérifie</button>
+      <div class="flow" id="d3flow"></div>
+    </div>
+    <div class="aha" id="d3aha"><b>💡 Déclic :</b> la signature d'Alice ne « colle » qu'au message qu'elle a signé.
+      Changez le message, la vérification échoue. Une signature prouve donc deux choses à la fois :
+      <strong>qui</strong> a signé, et que <strong>rien n'a changé</strong>.</div>
+    <button class="next go" id="d3n">Déclic suivant →</button>
   </div>
 
-  <div class="etape">
-    <span class="num">4</span><h3>Alice signe le message avec sa clé privée</h3>
-    <p>Un calcul combine le message et la clé privée et produit un nombre : la <strong>signature</strong>.
-    Elle dépend des deux. Changez une seule lettre du message, la signature change complètement.</p>
+  <!-- DÉCLIC 4 -->
+  <div class="dec locked" id="d4">
+    <div class="k">Déclic 4 sur 5</div>
+    <h3>Le fraudeur essaie de deviner une signature pour 9</h3>
+    <p>Il cherche le nombre que la machine publique transforme en <b>9</b>. Il a la machine publique : il peut essayer.</p>
+    <div class="act">
+      Essayez une signature : <input type="number" id="d4in" value="1" min="0" max="54">
+      <button id="d4a">Essayer</button> <span id="d4try"></span>
+      <div class="flow" id="d4flow"></div>
+      <button class="go" id="d4b">Laisser l'ordinateur tout essayer</button>
+      <div id="d4all"></div>
+    </div>
+    <div class="aha" id="d4aha"><b>💡 Déclic :</b> avec 55, il n'y a que 55 essais possibles : un ordinateur trouve
+      la fausse signature instantanément. <strong>C'est pour cela que les vraies clés sont gigantesques</strong> : un
+      nombre de 617 chiffres. Essayer toutes les possibilités prendrait plus de temps que l'âge de l'univers, même avec
+      tous les ordinateurs du monde.</div>
+    <button class="next go" id="d4n">Déclic suivant →</button>
   </div>
 
-  <div class="etape">
-    <span class="num">5</span><h3>Alice envoie le message + la signature</h3>
-    <p>Elle n'envoie <em>jamais</em> sa clé privée. Seulement le message et la signature.</p>
+  <!-- DÉCLIC 5 -->
+  <div class="dec locked" id="d5">
+    <div class="k">Déclic 5 sur 5</div>
+    <h3>Pourquoi ne peut-on pas fabriquer la machine privée ?</h3>
+    <p>Pour fabriquer la machine privée (le 27) à partir de la publique (le 3), il faut connaître les deux nombres
+    premiers qui, multipliés, donnent 55. Trouvez-les.</p>
+    <div class="act">
+      55 = <input type="number" id="d5x" min="2"> × <input type="number" id="d5y" min="2">
+      <button class="go" id="d5a">Vérifier</button>
+      <div id="d5out" style="margin-top:6px;"></div>
+    </div>
+    <div class="aha" id="d5aha"><b>💡 Déclic :</b> pour 55, c'est facile (5 × 11). Mais une vraie clé publique contient un
+      nombre de <strong>617 chiffres</strong>. Le record mondial est d'avoir décomposé un nombre de 250 chiffres, en 2020,
+      au prix d'environ 2 700 années de calcul d'un processeur. 617 chiffres, personne ne sait faire. Celui qui a choisi
+      les deux nombres premiers — Alice — est le seul à pouvoir calculer sa clé privée.</div>
+    <details><summary>Voir le calcul (facultatif)</summary><div>
+      Avec 5 et 11, on calcule (5 − 1) × (11 − 1) = 40. La clé privée est le nombre qui, multiplié par 3, laisse un reste
+      de 1 quand on divise par 40 : 3 × 27 = 81 = 2 × 40 + <strong>1</strong>. Sans 5 et 11, impossible de trouver le 40,
+      donc impossible de trouver le 27.</div></details>
   </div>
 
-  <div class="etape">
-    <span class="num">6</span><h3>Bob (ou n'importe qui) vérifie</h3>
-    <p>Bob prend le message, la signature et la <strong>clé publique</strong> d'Alice. Un calcul lui répond
-    simplement <strong>OUI</strong> ou <strong>NON</strong> :</p>
-    <ul>
-      <li><strong>OUI</strong> : la signature a été produite avec la clé privée correspondante, et le message
-      n'a pas été modifié depuis.</li>
-      <li><strong>NON</strong> : soit ce n'est pas Alice, soit le message a été altéré.</li>
-    </ul>
-  </div>
-
-  <div class="attention">
-    <p><strong>Point essentiel :</strong> Bob a vérifié l'identité d'Alice sans jamais connaître son secret.
-    C'est ce qui rend le système utilisable à grande échelle : des milliers de nœuds d'une blockchain
-    peuvent vérifier la même transaction, et aucun d'eux ne peut la falsifier.</p>
-  </div>
-
-  <h2>4. Un exemple avec de tout petits nombres</h2>
-
-  <p>Les vraies clés font des centaines de chiffres. Pour comprendre le mécanisme, utilisons des nombres minuscules
-  (méthode RSA simplifiée).</p>
-
-  <div class="etape">
-    <span class="num">1</span><h3>Fabrication des clés</h3>
-    <p>On choisit deux nombres premiers : 5 et 11. Leur produit est <code>n = 55</code>.<br>
-    La clé publique est le couple <code>(3, 55)</code>.<br>
-    La clé privée est le couple <code>(27, 55)</code>.<br>
-    <small>(Le 3 et le 27 sont liés par une propriété mathématique : 3 × 27 = 81, et 81 laisse un reste de 1
-    quand on le divise par (5−1)×(11−1) = 40. Trouver 27 à partir de 3 est facile si l'on connaît 5 et 11 ;
-    impossible en pratique quand les nombres premiers ont 300 chiffres.)</small></p>
-  </div>
-
-  <div class="etape">
-    <span class="num">2</span><h3>Signature</h3>
-    <p>Le message est le nombre <code>8</code>. Alice calcule :
-    <code>8<sup>27</sup> modulo 55 = 2</code>. La signature est <strong>2</strong>.</p>
-  </div>
-
-  <div class="etape">
-    <span class="num">3</span><h3>Vérification</h3>
-    <p>Bob prend la signature <code>2</code> et la clé publique <code>(3, 55)</code> :
-    <code>2<sup>3</sup> modulo 55 = 8</code>. Il retrouve le message <strong>8</strong>. Signature valide.</p>
-    <p>Si un fraudeur modifie le message en <code>9</code> sans changer la signature, Bob obtient toujours 8 ≠ 9 :
-    signature <strong>rejetée</strong>.</p>
-  </div>
-
-  <div class="demo">
-    <strong>Essayez vous-même</strong> (clé publique (3, 55), clé privée (27, 55))<br><br>
-    Message d'Alice (nombre entre 1 et 54) : <input type="number" id="msg" value="8" min="1" max="54">
-    <button onclick="signer()">Signer</button>
-    <div class="resultat" id="sig"></div>
-    <br>
-    Message reçu par Bob : <input type="number" id="recu" value="8" min="1" max="54">
-    <button onclick="verifier()">Vérifier</button>
-    <div class="resultat" id="verif"></div>
-  </div>
-
-  <h2>5. Où cela sert-il concrètement ?</h2>
-
-  <table>
-    <tr><th>Contexte</th><th>Clé privée</th><th>Ce que la signature prouve</th></tr>
-    <tr><td>Bitcoin, Ethereum</td><td>Dans votre portefeuille (seed phrase)</td><td>Que c'est bien le propriétaire des fonds qui ordonne le transfert</td></tr>
-    <tr><td>Paiement par carte (puce EMV)</td><td>Dans la puce de la carte</td><td>Que la carte est authentique et n'a pas été clonée</td></tr>
-    <tr><td>Connexion sécurisée à une banque (https)</td><td>Sur le serveur de la banque</td><td>Que vous parlez à la vraie banque et non à un site imitant</td></tr>
-    <tr><td>Signature électronique d'un contrat</td><td>Chez le signataire</td><td>Qui a signé, et que le document n'a pas été modifié depuis</td></tr>
-  </table>
-
-  <h2>6. Les trois règles à retenir</h2>
-  <ol>
-    <li>La clé privée <strong>signe</strong>, la clé publique <strong>vérifie</strong>.</li>
-    <li>La clé privée ne quitte jamais son propriétaire. Qui la détient détient tout.</li>
-    <li>Une signature valide prouve deux choses à la fois : <em>qui</em> a signé et <em>que rien n'a changé</em>.</li>
+  <h2>Les cinq déclics, en une ligne chacun</h2>
+  <ol class="recap">
+    <li>La machine publique défait ce que fait la machine privée.</li>
+    <li>Signer = passer le message dans la machine privée ; vérifier = repasser la signature dans la machine publique.</li>
+    <li>Un message modifié ne correspond plus à la signature.</li>
+    <li>Les vraies clés sont gigantesques pour qu'on ne puisse pas deviner une signature.</li>
+    <li>On ne peut pas fabriquer la clé privée à partir de la publique : il faudrait décomposer un nombre de 617 chiffres.</li>
   </ol>
 
-  <script>
-    function modPow(base, exp, mod) {
-      let r = 1; base = base % mod;
-      while (exp > 0) {
-        if (exp % 2 === 1) r = (r * base) % mod;
-        base = (base * base) % mod;
-        exp = Math.floor(exp / 2);
-      }
-      return r;
-    }
-    let signatureCourante = null;
-    function signer() {
-      const m = parseInt(document.getElementById('msg').value);
-      if (isNaN(m) || m < 1 || m > 54) { document.getElementById('sig').innerHTML = 'Entrez un nombre entre 1 et 54.'; return; }
-      signatureCourante = modPow(m, 27, 55);
-      document.getElementById('sig').innerHTML =
-        'Signature = ' + m + '<sup>27</sup> mod 55 = <strong>' + signatureCourante + '</strong>. Alice envoie le message ' + m + ' et la signature ' + signatureCourante + '.';
-      document.getElementById('recu').value = m;
-      document.getElementById('verif').innerHTML = '';
-    }
-    function verifier() {
-      if (signatureCourante === null) { document.getElementById('verif').innerHTML = 'Signez d\'abord un message.'; return; }
-      const recu = parseInt(document.getElementById('recu').value);
-      const retrouve = modPow(signatureCourante, 3, 55);
-      const ok = (retrouve === recu);
-      document.getElementById('verif').innerHTML =
-        'Bob calcule ' + signatureCourante + '<sup>3</sup> mod 55 = <strong>' + retrouve + '</strong>. Message reçu : ' + recu + '. ' +
-        (ok ? '<span class="ok">Signature valide.</span>' : '<span class="ko">Signature rejetée : le message a été modifié ou ne vient pas d\'Alice.</span>');
-    }
-  </script>
+  <div class="retenir">
+    <h3>Et toujours les trois choses à retenir</h3>
+    <ol>
+      <li>La clé privée <strong>signe</strong>. Seule Alice l'a — qui la vole peut tout signer, qui la perd perd tout.</li>
+      <li>La clé publique <strong>vérifie</strong>. Tout le monde l'a, sans danger.</li>
+      <li>On ne peut pas fabriquer la clé privée à partir de la clé publique.</li>
+    </ol>
+  </div>
 
+  <h2>Où cela sert-il concrètement ?</h2>
+  <table>
+    <tr><th>Contexte</th><th>Où est la clé privée</th><th>Ce que la signature prouve</th></tr>
+    <tr><td>Bitcoin, Ethereum</td><td>Dans votre portefeuille (la phrase secrète)</td><td>Que c'est bien le propriétaire des fonds qui ordonne le transfert</td></tr>
+    <tr><td>Paiement par carte (puce)</td><td>Dans la puce de la carte</td><td>Que la carte est authentique et n'a pas été copiée</td></tr>
+    <tr><td>Site de votre banque (https, le cadenas)</td><td>Sur le serveur de la banque</td><td>Que vous parlez à la vraie banque et non à un faux site</td></tr>
+    <tr><td>Signature électronique d'un contrat</td><td>Chez le signataire</td><td>Qui a signé, et que le contrat n'a pas été modifié</td></tr>
+  </table>
+  <p style="font-size:.92em;color:#555;">Bitcoin et Ethereum n'utilisent pas cette méthode (RSA) mais une autre, fondée sur
+  des courbes elliptiques. L'idée est exactement la même : une clé privée qui signe, une clé publique qui vérifie.
+  Et en pratique, on signe l'<a href="hachage.html">empreinte (le hachage)</a> du message plutôt que le message entier.</p>
+
+  <script>
+    function modPow(b, e, m) { var r = 1; b = b % m; while (e > 0) { if (e % 2 === 1) r = (r * b) % m; b = (b * b) % m; e = Math.floor(e / 2); } return r; }
+    function priv(x) { return modPow(x, 27, 55); }
+    function pub(x) { return modPow(x, 3, 55); }
+    function $(id) { return document.getElementById(id); }
+    var P = '<span class="mach priv">machine privée</span>', U = '<span class="mach pub">machine publique</span>';
+    function n(x) { return '<span class="num">' + x + '</span>'; }
+    function int(id, lo, hi) { var v = parseInt($(id).value, 10); return (isNaN(v) || v < lo || v > hi) ? null : v; }
+
+    /* progress: a déclic is done when its 💡 is shown; the next one unlocks on "Déclic suivant" */
+    var done = {};
+    function paint() {
+      var s = $('prog').querySelectorAll('span'), k = 0;
+      s.forEach(function (el, i) {
+        var id = i + 1, open = !$('d' + id).classList.contains('locked');
+        el.className = done[id] ? 'done' : (open ? 'on' : '');
+        if (done[id]) k++;
+      });
+      $('progTxt').textContent = k === 5 ? 'Les cinq déclics sont faits.' : k + ' déclic' + (k > 1 ? 's' : '') + ' sur 5';
+    }
+    function aha(i) { done[i] = true; $('d' + i + 'aha').classList.add('on'); var nx = $('d' + i + 'n'); if (nx) nx.classList.add('on'); paint(); }
+    function unlock(i) { var d = $('d' + i); d.classList.remove('locked'); d.scrollIntoView({ behavior: 'smooth', block: 'start' }); paint(); }
+    [1, 2, 3, 4].forEach(function (i) { $('d' + i + 'n').addEventListener('click', function () { unlock(i + 1); }); });
+
+    /* 1 · the two machines undo each other */
+    var d1v = null, d1s = null;
+    $('d1a').addEventListener('click', function () {
+      d1v = int('d1in', 1, 54);
+      if (d1v === null) { $('d1flow').textContent = 'Choisissez un nombre entre 1 et 54.'; return; }
+      d1s = priv(d1v);
+      $('d1flow').innerHTML = n(d1v) + ' → ' + P + ' → ' + n(d1s);
+      $('d1b').disabled = false;
+    });
+    $('d1b').addEventListener('click', function () {
+      var back = pub(d1s);
+      $('d1flow').innerHTML = n(d1v) + ' → ' + P + ' → ' + n(d1s) + ' → ' + U + ' → ' + n(back) +
+        (back === d1v ? ' <span class="ok">on retrouve ' + d1v + ' !</span>' : '');
+      $('d1b').disabled = true;
+      aha(1);
+    });
+    $('d1in').addEventListener('input', function () { $('d1b').disabled = true; });
+
+    /* 2 · sign, then verify */
+    $('d2a').addEventListener('click', function () {
+      $('d2env').innerHTML = '<div class="flow">' + n(8) + ' → ' + P + ' → signature ' + n(priv(8)) + '</div>' +
+        '<div class="env">✉️ Message : <b>Je paie 8 francs à Bob</b> &nbsp;·&nbsp; Signature : <b>' + priv(8) + '</b></div>';
+      $('d2b').disabled = false; $('d2a').disabled = true;
+    });
+    $('d2b').addEventListener('click', function () {
+      var back = pub(priv(8));
+      $('d2flow').innerHTML = 'Bob : signature ' + n(priv(8)) + ' → ' + U + ' → ' + n(back) + ' . Le message dit ' + n(8) +
+        '. ' + (back === 8 ? '<span class="ok">Identique : c\'est bien Alice.</span>' : '');
+      $('d2b').disabled = true;
+      aha(2);
+    });
+
+    /* 3 · the forger changes the amount */
+    $('d3a').addEventListener('click', function () {
+      var m = int('d3in', 1, 54);
+      if (m === null) { $('d3flow').textContent = 'Choisissez un montant entre 1 et 54.'; return; }
+      var back = pub(priv(8));
+      $('d3flow').innerHTML = '<div class="env">✉️ Message : <b>Je paie ' + m + ' francs à Bob</b> &nbsp;·&nbsp; Signature : <b>' + priv(8) + '</b> (celle d\'Alice)</div><br>' +
+        'Bob : signature ' + n(priv(8)) + ' → ' + U + ' → ' + n(back) + ' . Le message dit ' + n(m) + '. ' +
+        (back === m ? '<span class="ok">Identique : le message n\'a pas changé.</span>' : '<span class="ko">Différent : signature rejetée.</span>');
+      if (back !== m) aha(3);
+    });
+
+    /* 4 · the forger tries to guess a signature for 9 */
+    var tries = 0;
+    $('d4a').addEventListener('click', function () {
+      var s = int('d4in', 0, 54);
+      if (s === null) { $('d4flow').textContent = 'Un nombre entre 0 et 54.'; return; }
+      tries++;
+      var out = pub(s);
+      $('d4try').textContent = tries + ' essai' + (tries > 1 ? 's' : '');
+      $('d4flow').innerHTML = n(s) + ' → ' + U + ' → ' + n(out) + ' ' +
+        (out === 9 ? '<span class="ko">Il a trouvé ! Avec des petits nombres, on finit par deviner.</span>' : '— pas 9, essayez encore.');
+      if (out === 9) aha(4);
+    });
+    $('d4b').addEventListener('click', function () {
+      var t0 = performance.now(), found = null, k = 0;
+      for (var s = 0; s < 55; s++) { k++; if (pub(s) === 9) { found = s; break; } }
+      var ms = performance.now() - t0;
+      $('d4all').innerHTML = '<div class="flow">L\'ordinateur a essayé ' + k + ' nombres en ' + (ms < 1 ? 'moins d\'une milliseconde' : ms.toFixed(1) + ' ms') +
+        ' : la signature ' + n(found) + ' → ' + U + ' → ' + n(pub(found)) + '. <span class="ko">Fausse signature trouvée.</span></div>';
+      aha(4);
+    });
+
+    /* 5 · the two primes */
+    $('d5a').addEventListener('click', function () {
+      var x = int('d5x', 2, 55), y = int('d5y', 2, 55);
+      if (x === null || y === null) { $('d5out').textContent = 'Deux nombres entiers.'; return; }
+      if (x * y !== 55) { $('d5out').innerHTML = x + ' × ' + y + ' = ' + (x * y) + ', pas 55. <span style="color:#555">Indice : 55 se termine par 5.</span>'; return; }
+      if (x === 1 || y === 1) { $('d5out').textContent = '1 ne compte pas : il faut deux nombres premiers.'; return; }
+      $('d5out').innerHTML = '<span class="ok">Oui : 55 = ' + Math.min(x, y) + ' × ' + Math.max(x, y) + '.</span> Facile, n\'est-ce pas ?';
+      aha(5);
+    });
+
+    paint();
+  </script>
   <script src="/track.js" defer></script>
 </body>
 </html>
