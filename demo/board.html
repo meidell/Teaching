@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Feedback board · room screen · demo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<!--
+  DEMO · the feedback board on the room screen (24 Oct 2026). The idea of
+  /shared/board.html — the class's own answers on the TV, anonymous — applied
+  to the weekly feedback: four meters, then the comments as cards, behind a
+  curtain until the instructor presses Reveal, so the room looks at the
+  numbers first and the words second. Never a name.
+      ?w=5   one week   ·   no w = the whole term
+  Keys: ←/→ change week · space reveals · 1–4 scroll to a panel.
+  Reads /demo/data.js; nothing live.
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#102418;color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 26px;border-bottom:2px solid rgba(143,203,94,.5);}
+.top h1{font-family:Georgia,serif;font-size:clamp(18px,2.4vw,28px);}
+.top .sub{color:#B9E39B;font-size:13px;}
+.top .r{margin-left:auto;display:flex;gap:8px;}
+.top button,.top a{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:6px 13px;font:700 13px inherit;cursor:pointer;text-decoration:none;}
+.top button.on{background:#8FCB5E;color:#102418;border-color:#8FCB5E;}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 26px 40px;}
+.meters{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:900px){.meters{grid-template-columns:repeat(2,1fr);}}
+.meter{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:16px 18px;}
+.meter .l{font-size:clamp(13px,1.3vw,17px);font-weight:700;color:#DFF5CC;}
+.meter .v{font-family:Georgia,serif;font-size:clamp(44px,6vw,80px);line-height:1;margin:6px 0 2px;}
+.meter .v.low{color:#FF8A80;}.meter .v.mid{color:#FFD58A;}.meter .v.hi{color:#8FCB5E;}
+.meter .n{font-size:13px;color:#B9E39B;}
+.dist{display:flex;gap:5px;align-items:flex-end;height:60px;margin-top:12px;}
+.dist i{flex:1;background:#8FCB5E;border-radius:4px 4px 0 0;min-height:3px;opacity:.9;}
+.distX{display:flex;gap:5px;margin-top:4px;}
+.distX span{flex:1;text-align:center;font-size:11px;color:#9FD3A4;}
+.sec{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#B9E39B;font-weight:800;margin:28px 0 10px;}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative;}
+@media(max-width:900px){.cols{grid-template-columns:1fr;}}
+.col h2{font-family:Georgia,serif;font-size:clamp(18px,2vw,26px);margin-bottom:10px;}
+.cmt{background:#fff;color:#1b2a1e;border-radius:14px;padding:14px 18px;margin-bottom:10px;font-size:clamp(15px,1.4vw,20px);line-height:1.4;box-shadow:0 10px 30px -18px rgba(0,0,0,.6);}
+.cmt small{display:block;color:#6b7a6e;font-size:12px;margin-top:6px;}
+.cmt.hit{border-left:6px solid #E0A526;}
+.curtain{position:absolute;inset:0;background:rgba(16,36,24,.96);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:5;min-height:260px;}
+.curtain .big{font-family:Georgia,serif;font-size:clamp(60px,10vw,140px);color:#8FCB5E;line-height:1;}
+.curtain p{color:#DFF5CC;font-size:18px;}
+.curtain button{background:#8FCB5E;color:#102418;border:none;border-radius:30px;padding:14px 34px;font:800 17px inherit;cursor:pointer;}
+.curtain.off{display:none;}
+.foot{text-align:center;color:#9FD3A4;font-size:12px;margin-top:26px;}
+</style>
+</head>
+<body>
+<div class="top"><h1 id="title"></h1><span class="sub" id="sub"></span><div class="r" id="weeks"></div></div>
+<div class="wrap">
+  <div class="meters" id="meters"></div>
+  <div class="sec">The comments · anonymous</div>
+  <div class="cols">
+    <div class="curtain" id="curtain"><div class="big" id="count">—</div><p>comments from the class · names never shown</p><button id="reveal">Reveal</button></div>
+    <div class="col"><h2>👍 What helped most</h2><div id="helped"></div></div>
+    <div class="col"><h2>✏️ What should change</h2><div id="change"></div></div>
+  </div>
+  <div class="foot">Demo · fictional cohort · ← → change week · space reveals · Esc hides again</div>
+</div>
+<script src="data.js"></script>
+<script>
+var D=window.DEMO,$=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var q=new URLSearchParams(location.search).get('w'); var W=q&&+q>=1&&+q<=8?+q:'all';
+function stats(w){var n=0,sum={},dist={};D.rates.forEach(function(r){sum[r[0]]=0;dist[r[0]]=[0,0,0,0,0];});var items=[];
+  D.students.forEach(function(s){Object.keys(s.feedback).forEach(function(k){if(w!=='all'&&+k!==w)return;var f=s.feedback[k];n++;D.rates.forEach(function(r){sum[r[0]]+=f[r[0]];dist[r[0]][f[r[0]]-1]++;});items.push({w:+k,f:f,h:(s.sid.length*7+(+k)*13)%97});});});
+  var means={};D.rates.forEach(function(r){means[r[0]]=n?sum[r[0]]/n:0;});items.sort(function(a,b){return a.h-b.h;});   /* a hash of the sid orders the cards, never the roster */
+  return {n:n,means:means,dist:dist,items:items};}
+function draw(){
+  var st=stats(W), wk=W==='all'?null:D.weeks[W-1];
+  $('title').textContent=W==='all'?'Your feedback · the whole term':'Your feedback · Week '+W;
+  $('sub').textContent=wk?wk.subject+' · '+wk.dates:D.course.code+' · '+D.course.title;
+  $('weeks').innerHTML='<button data-w="all"'+(W==='all'?' class="on"':'')+'>Term</button>'+D.weeks.map(function(w){return '<button data-w="'+w.n+'"'+(W===w.n?' class="on"':'')+'>'+w.n+'</button>';}).join('')+'<a href="admin.html#feedback">Dashboard</a>';
+  $('weeks').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){go(b.dataset.w==='all'?'all':+b.dataset.w);});});
+  $('meters').innerHTML=D.rates.map(function(r){var m=st.means[r[0]],cls=m<3.2?'low':m<3.8?'mid':'hi',mx=Math.max.apply(null,st.dist[r[0]])||1;
+    return '<div class="meter"><div class="l">'+esc(r[1])+'</div><div class="v '+cls+'">'+(st.n?m.toFixed(1):'—')+'</div><div class="n">out of 5 · '+st.n+' answers</div><div class="dist">'+st.dist[r[0]].map(function(c){return '<i style="height:'+Math.max(3,Math.round(100*c/mx))+'%" title="'+c+'"></i>';}).join('')+'</div><div class="distX"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div></div>';}).join('');
+  var h=st.items.filter(function(x){return x.f.helped;}),c=st.items.filter(function(x){return x.f.change;});
+  $('count').textContent=h.length+c.length;
+  $('helped').innerHTML=h.map(function(x){return '<div class="cmt">'+esc(x.f.helped)+(W==='all'?'<small>week '+x.w+'</small>':'')+'</div>';}).join('')||'<div class="cmt">No comments.</div>';
+  $('change').innerHTML=c.map(function(x){return '<div class="cmt'+(/test/i.test(x.f.change)?' hit':'')+'">'+esc(x.f.change)+(W==='all'?'<small>week '+x.w+'</small>':'')+'</div>';}).join('')||'<div class="cmt">No comments.</div>';
+  $('curtain').classList.remove('off');
+}
+function go(w){W=w;history.replaceState(null,'',w==='all'?'board.html':'board.html?w='+w);draw();}
+$('reveal').addEventListener('click',function(){$('curtain').classList.add('off');});
+document.addEventListener('keydown',function(e){
+  if(e.key===' '){e.preventDefault();$('curtain').classList.add('off');}
+  if(e.key==='Escape')$('curtain').classList.remove('off');
+  if(e.key==='ArrowRight')go(W==='all'?1:Math.min(8,W+1));
+  if(e.key==='ArrowLeft')go(W==='all'?8:(W===1?'all':W-1));
+});
+draw();
+</script>
+</body>
+</html>

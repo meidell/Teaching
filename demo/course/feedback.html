@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Your feedback on the week · OMBAFR455 (demo)</title>
+<!--
+  DEMO · the weekly feedback page (24 Oct 2026). Part of the presentation
+  demo at /demo/: the student end of the "feedback board". Four ratings
+  (1–5, agree scales) and two sentences per week, saved exactly like any
+  workbook field — hidden inputs with data-work, so /shared/progress.js
+  carries them to <ns>/<sid>/work/fb_wN_* and the dashboard's reader shows
+  them. The demo dashboard (/demo/admin.html) and the room screen
+  (/demo/board.html) read the generated dataset instead, so the talk does
+  not depend on anyone having filled this in.
+  Module `feedback`, total 8: a week counts as done when its four ratings
+  and at least one sentence are in.
+-->
+<link rel="stylesheet" href="/shared/themes/sumas.css">
+<link rel="stylesheet" href="/shared/lesson.css">
+<style>
+.weeks{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 18px;}
+.weeks button{font:700 13px inherit;border:1px solid var(--line,#D9D2C3);background:#fff;color:var(--ink,#1F2A1F);border-radius:20px;padding:6px 13px;cursor:pointer;}
+.weeks button.on{background:var(--accent,#2C5530);border-color:var(--accent,#2C5530);color:#fff;}
+.weeks button.done::after{content:" ✓";}
+.fbw{display:none;}
+.fbw.on{display:block;}
+.rate{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line,#E6E0D3);}
+.rate:last-child{border-bottom:none;}
+.rate .q{font-size:15px;}
+.rate .q small{display:block;color:var(--grey,#6B7280);font-size:12px;}
+.scale{display:flex;gap:4px;}
+.scale button{width:38px;height:38px;border-radius:9px;border:1px solid var(--line,#D9D2C3);background:#fff;font:700 14px inherit;cursor:pointer;color:var(--ink,#1F2A1F);}
+.scale button:hover{border-color:var(--accent,#2C5530);}
+.scale button.on{background:var(--accent,#2C5530);border-color:var(--accent,#2C5530);color:#fff;}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--grey,#6B7280);margin:-6px 0 10px;}
+.open{margin-top:16px;}
+.open label{display:block;font-weight:700;margin:12px 0 6px;}
+.open textarea{width:100%;min-height:84px;border:1px solid var(--line,#D9D2C3);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;resize:vertical;}
+.state{margin-top:14px;font-size:13px;color:var(--grey,#6B7280);}
+.state.ok{color:var(--accent,#2C5530);font-weight:700;}
+@media(max-width:520px){.rate{grid-template-columns:1fr;}}
+</style>
+</head>
+<body data-course="demo">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img src="sumas-logo.png" alt="SUMAS" style="height:20px;width:auto;flex:none;">
+    <span class="course">OMBAFR455 · FEEDBACK</span>
+    <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+    <span class="progress-pct" id="progPct">0%</span>
+    <a class="pop" href="index.html" title="Back to the course">✕</a>
+  </div>
+</div>
+
+<div class="wrap">
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Two minutes · every week</div>
+    <h1>Your feedback on <em>the week</em></h1>
+    <p class="sub">Four quick ratings and two sentences. The instructor reads them across the whole class before the next session — the statistics and the comments both — and brings them to the room. <b>On the classroom screen the comments are anonymous.</b> Pick the week, then answer.</p>
+  </div>
+
+  <div class="weeks" id="weeks"></div>
+  <div id="panels"></div>
+
+  <div class="foot" style="margin-top:30px;"><a class="backlink" href="index.html">← Back to the course</a></div>
+</section>
+</div>
+
+<script>
+var WEEKS=[[1,'6–12 Jul','Introduction to Sustainable Investing'],[2,'13–19 Jul','Building a Sustainable Financial System'],[3,'20–26 Jul','Regulatory & Policy Environment'],[4,'27 Jul – 2 Aug','Risk Management & Measurement'],[5,'3–9 Aug','The Sustainable Debt Market'],[6,'10–16 Aug','The Sustainable Equity Market'],[7,'17–23 Aug','Sustainable Derivatives & Impact Investing'],[8,'24–30 Aug','Carbon, Biodiversity Credits & Crowdfunding']];
+var RATES=[['clear','The lesson was clear','I could follow the ideas without re-reading'],['pace','The pace was right','Neither rushed nor slow'],['work','The workload was manageable','Lesson plus homework fitted the week'],['useful','I can use this at work','Something here changes what I would do']];
+var K='demo';
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+/* build every week's panel up front: progress.js binds [data-work] once, at init */
+var P=document.getElementById('panels'), W=document.getElementById('weeks');
+WEEKS.forEach(function(w){
+  var n=w[0];
+  var b=document.createElement('button');b.textContent='Week '+n;b.dataset.n=n;b.addEventListener('click',function(){show(n);});W.appendChild(b);
+  var d=document.createElement('div');d.className='fbw';d.id='fbw'+n;
+  d.innerHTML='<div class="section-card" style="display:block;cursor:default"><div class="eyebrow">Week '+n+' · '+esc(w[1])+'</div><h3 style="margin:4px 0 12px">'+esc(w[2])+'</h3>'+
+    RATES.map(function(r){return '<div class="rate"><div class="q">'+esc(r[1])+'<small>'+esc(r[2])+'</small></div><div><div class="scale" data-r="'+r[0]+'" data-n="'+n+'">'+[1,2,3,4,5].map(function(v){return '<button type="button" data-v="'+v+'">'+v+'</button>';}).join('')+'</div><div class="ends"><span>disagree</span><span>agree</span></div></div>'+
+      '<input type="hidden" data-work="fb_w'+n+'_'+r[0]+'" data-worklabel="Week '+n+' — '+esc(r[1])+' (1–5)"></div>';}).join('')+
+    '<div class="open"><label for="h'+n+'">What helped you most this week?</label><textarea id="h'+n+'" data-work="fb_w'+n+'_helped" data-worklabel="Week '+n+' — what helped most" placeholder="One or two sentences — a section, a lab, a number, an example…"></textarea>'+
+    '<label for="c'+n+'">What should change?</label><textarea id="c'+n+'" data-work="fb_w'+n+'_change" data-worklabel="Week '+n+' — what should change" placeholder="What was unclear, too fast, too much — or missing"></textarea></div>'+
+    '<div class="state" id="st'+n+'"></div></div>';
+  P.appendChild(d);
+});
+/* a rating click sets the hidden input and fires the event progress.js listens for */
+document.querySelectorAll('.scale').forEach(function(sc){
+  var n=sc.dataset.n, r=sc.dataset.r, inp=sc.parentNode.parentNode.querySelector('input[data-work="fb_w'+n+'_'+r+'"]');
+  function paint(){var v=inp.value;sc.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v);});}
+  sc.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;inp.value=b.dataset.v;inp.dispatchEvent(new Event('input',{bubbles:true}));paint();check(n);});
+  var sv=lsGet(K+'_work_fb_w'+n+'_'+r); if(sv){inp.value=sv;} paint();
+});
+document.querySelectorAll('textarea[data-work]').forEach(function(t){t.addEventListener('input',function(){check(t.getAttribute('data-work').match(/fb_w(\d)/)[1]);});});
+function filled(n){
+  var ok=RATES.every(function(r){var i=document.querySelector('input[data-work="fb_w'+n+'_'+r[0]+'"]');return i&&i.value;});
+  var txt=(document.getElementById('h'+n).value.trim().length>=10)||(document.getElementById('c'+n).value.trim().length>=10);
+  return ok&&txt;
+}
+function check(n){
+  var st=document.getElementById('st'+n), ok=filled(n);
+  st.className='state'+(ok?' ok':''); st.textContent=ok?'✓ Week '+n+' feedback recorded — thank you.':'Four ratings and at least one sentence complete the week.';
+  W.querySelector('[data-n="'+n+'"]').classList.toggle('done',ok);
+  if(ok&&window.StatsTrack)StatsTrack.complete('w'+n);
+  var done=WEEKS.filter(function(w){return filled(w[0]);}).length;
+  document.getElementById('progFill').style.width=Math.round(done/8*100)+'%';document.getElementById('progPct').textContent=Math.round(done/8*100)+'%';
+}
+function show(n){
+  document.querySelectorAll('.fbw').forEach(function(d){d.classList.toggle('on',d.id==='fbw'+n);});
+  W.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.n==String(n));});
+  lsSet(K+'_fb_week',String(n)); check(n);
+}
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack)StatsTrack.init({module:'feedback',title:'Weekly feedback',total:8});
+  /* textareas are restored by progress.js at init; repaint the states after that */
+  setTimeout(function(){WEEKS.forEach(function(w){check(w[0]);});show(parseInt(lsGet(K+'_fb_week')||'8',10));},50);
+});
+</script>
+<script src="/shared/config.js" defer></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

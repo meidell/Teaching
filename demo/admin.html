@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Instructor dashboard · demo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+<!--
+  DEMO · the back end (24 Oct 2026). A self-contained version of the
+  instructor dashboard (/shared/admin2.html) for talks on technology in
+  education: same questions, same vocabulary, same layout — Today, the
+  cohort, the roster with a per-student drawer, messages, hand-ins — plus
+  the FEEDBACK BOARD, which the real dashboards do not have yet: the
+  weekly ratings as statistics and the comments as cards, anonymous by
+  default, with a room-screen version (/demo/board.html).
+
+  Reads /demo/data.js (a generated, fictional cohort frozen on Tue 8 Sep
+  2026) and never the database, so it needs no sign-in and works offline
+  on a projector. The "sign-in" screen is only there to show that the real
+  one is behind one password. Flags are RELATIVE, as in the real thing:
+  "behind" is well under the cohort's median, "gone quiet" is no activity
+  for 14+ days while the course was running.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#2C5530;--accent-bright:#4A8B3A;--glow:#8FCB5E;--accent-pale:rgba(44,85,48,.09);--accent-line:rgba(44,85,48,.26);
+--ink:#0F172A;--ink2:#334155;--grey:#64748B;--faint:#94A3B8;--card:#fff;--page:#F5F7FA;--line:#E4E8EF;--wash:#F8FAFC;
+--good:#15803D;--good-bg:#DCFCE7;--warn:#B45309;--warn-bg:#FEF3C7;--bad:#B91C1C;--bad-bg:#FEE2E2;
+--step1:#B91C1C;--step2:#D97706;--step3:#CA8A04;--step4:#65A30D;--step5:#15803D;
+--shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px -16px rgba(16,24,40,.35);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);background:var(--page);line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;}
+h1,h2,h3{font-weight:800;letter-spacing:-.25px;}
+button,select,input,textarea{font-family:inherit;}
+a{color:var(--accent);}
+/* gate */
+#gate{position:fixed;inset:0;z-index:100;background:var(--page);display:flex;align-items:center;justify-content:center;padding:20px;}
+#gate .box{background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px 30px;max-width:400px;width:100%;text-align:center;box-shadow:var(--shadow);}
+#gate .box img{height:34px;margin-bottom:14px;}
+#gate .brand{font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:800;margin-bottom:10px;}
+#gate h1{font-size:22px;margin-bottom:6px;}
+#gate p{font-size:13px;color:var(--grey);margin-bottom:16px;}
+#gate input{width:100%;text-align:center;letter-spacing:8px;font-size:20px;padding:11px;border:1px solid var(--accent-line);border-radius:10px;margin-bottom:10px;background:var(--wash);}
+#gate button{width:100%;background:var(--accent);color:#fff;border:none;border-radius:30px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}
+#gate .demo{font-size:11.5px;color:var(--faint);margin-top:12px;}
+/* header */
+.hdr{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+.hdr .in{max-width:1280px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.hdr img.brand{height:24px;}
+.hdr .who{display:flex;flex-direction:column;line-height:1.15;}
+.hdr .who .c{font-size:15px;font-weight:800;}
+.hdr .who .t{font-size:12px;color:var(--grey);}
+.hdr .frozen{font-size:11.5px;color:var(--warn);background:var(--warn-bg);border-radius:20px;padding:3px 10px;font-weight:700;}
+.hdr .sp{flex:1;}
+.btn{background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:20px;padding:6px 13px;font:700 12.5px inherit;cursor:pointer;text-decoration:none;display:inline-block;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn.sm{padding:4px 10px;font-size:11.5px;}
+.wrap{max-width:1280px;margin:0 auto;padding:16px 20px 60px;}
+.ann{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:8px;}
+.ann .age{color:var(--faint);font-size:11.5px;}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 18px;border-bottom:2px solid var(--line);}
+.tabs button{background:none;border:none;border-bottom:3px solid transparent;color:var(--grey);font:700 13.5px inherit;padding:10px 15px;cursor:pointer;border-radius:9px 9px 0 0;margin-bottom:-2px;white-space:nowrap;}
+.tabs button:hover{color:var(--ink);background:var(--wash);}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--card);}
+.tabs button .n{display:inline-block;margin-left:7px;font-size:11px;font-weight:800;background:var(--line);color:var(--ink2);border-radius:9px;padding:1px 7px;}
+.tabs button.on .n{background:var(--accent);color:#fff;}
+.tabs button .n.hot{background:var(--warn-bg);color:var(--warn);}
+.pane{display:none;}.pane.on{display:block;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);}
+.card h3{font-size:15px;margin-bottom:2px;}
+.card .sub{font-size:12.5px;color:var(--grey);margin-bottom:12px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:860px){.grid2{grid-template-columns:1fr;}}
+/* today */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+.kpi .v{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;}
+.kpi .l{font-size:12px;color:var(--grey);font-weight:600;}
+.kpi.hot{border-color:rgba(180,83,9,.5);background:#FFFBEB;}.kpi.hot .v{color:var(--warn);}
+.kpi.bad{border-color:rgba(185,28,28,.4);background:#FEF2F2;}.kpi.bad .v{color:var(--bad);}
+.acts{list-style:none;}
+.acts li{background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:12px 16px;margin-bottom:10px;font-size:14px;line-height:1.5;}
+.acts li.bad{border-left-color:var(--bad);}.acts li.warn{border-left-color:var(--warn);}
+.acts li .k{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--grey);display:block;margin-bottom:2px;}
+.acts li .names{color:var(--ink2);}
+.acts li a{font-weight:700;}
+/* cohort bars */
+.bars{display:flex;align-items:flex-end;gap:8px;height:120px;margin-top:8px;}
+.bars .b{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;cursor:pointer;}
+.bars .b i{display:block;width:100%;border-radius:6px 6px 0 0;background:var(--accent);min-height:2px;}
+.bars .b b{font-size:12px;margin-bottom:4px;}
+.barsX{display:flex;gap:8px;margin-top:6px;}
+.barsX span{flex:1;text-align:center;font-size:11px;color:var(--grey);line-height:1.2;}
+.fun .row{display:grid;grid-template-columns:120px 1fr 60px;gap:10px;align-items:center;font-size:12.5px;padding:4px 0;}
+.fun .row .tr{height:14px;background:var(--wash);border-radius:7px;overflow:hidden;position:relative;}
+.fun .row .tr i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:7px;}
+.fun .row .tr i.st{background:var(--accent-pale);}
+.fun .row.flag{color:var(--bad);font-weight:700;}
+.qlist .q{padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.qlist .q:last-child{border-bottom:none;}
+.qlist .q .pct{display:inline-block;min-width:56px;font-weight:800;color:var(--bad);}
+.qlist .q .pct.mid{color:var(--warn);}
+.qlist .q .w{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--accent);background:var(--accent-pale);border-radius:10px;padding:1px 7px;margin-right:6px;}
+.qlist .q .opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;font-size:11.5px;color:var(--grey);}
+.qlist .q .opts span{background:var(--wash);border-radius:8px;padding:1px 7px;}
+.qlist .q .opts span.ok{background:var(--good-bg);color:var(--good);font-weight:700;}
+.stall .row{display:grid;grid-template-columns:70px 1fr 90px;gap:10px;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line);align-items:center;}
+.stall .row:last-child{border-bottom:none;}
+.stall .row b.n{color:var(--bad);}
+/* roster */
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.tools input{border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:13px;min-width:180px;}
+.chipbtn{background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font:700 12px inherit;cursor:pointer;color:var(--ink2);}
+.chipbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.tblwrap{overflow:auto;max-height:72vh;background:#fff;border:1px solid var(--line);border-radius:14px;}
+table.roster{border-collapse:collapse;font-size:12.5px;min-width:100%;}
+table.roster th,table.roster td{padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center;}
+table.roster th{background:var(--accent);color:#fff;font-size:10px;letter-spacing:.5px;text-transform:uppercase;position:sticky;top:0;z-index:2;}
+table.roster th.nm,table.roster td.nm{text-align:left;position:sticky;left:0;background:#fff;z-index:1;}
+table.roster th.nm{background:var(--accent);z-index:3;}
+table.roster tr:hover td{background:var(--wash);}
+table.roster tr{cursor:pointer;}
+.mini{display:inline-block;width:40px;height:9px;background:var(--wash);border-radius:5px;overflow:hidden;vertical-align:middle;}
+.mini i{display:block;height:100%;background:var(--accent);}
+.mini.st i{background:var(--glow);}
+.pbar{display:inline-block;width:90px;height:10px;background:var(--wash);border-radius:5px;overflow:hidden;vertical-align:middle;margin-right:6px;}
+.pbar i{display:block;height:100%;}
+.flag{font-size:10.5px;font-weight:800;border-radius:10px;padding:2px 8px;}
+.flag.quiet{background:var(--warn-bg);color:var(--warn);}
+.flag.behind{background:var(--bad-bg);color:var(--bad);}
+.flag.never{background:var(--line);color:var(--ink2);}
+.flag.ok{background:var(--good-bg);color:var(--good);}
+.muted{color:var(--grey);font-size:12px;}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;z-index:50;}
+.scrim.on{display:block;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:#fff;z-index:60;transform:translateX(100%);transition:transform .25s;overflow:auto;box-shadow:-10px 0 40px rgba(0,0,0,.15);}
+.drawer.on{transform:none;}
+.drawer .dh{display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;}
+.drawer .dh h2{font-size:19px;}
+.drawer .dh .m{font-size:12.5px;color:var(--grey);}
+.drawer .x{margin-left:auto;background:none;border:1px solid var(--line);border-radius:50%;width:32px;height:32px;cursor:pointer;}
+.drawer .db{padding:16px 20px;font-size:13px;}
+.drawer h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);margin:16px 0 8px;}
+.drawer .mrow{display:grid;grid-template-columns:110px 1fr 70px 60px;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);align-items:center;}
+.drawer .fb{background:var(--wash);border-radius:10px;padding:9px 12px;margin-bottom:8px;}
+.drawer .fb .r{font-size:11.5px;color:var(--grey);}
+/* feedback board */
+.wsel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+.meter{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+.meter .l{font-size:12.5px;font-weight:700;}
+.meter .v{font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1.1;}
+.meter .v small{font-size:13px;color:var(--grey);font-weight:600;}
+.meter .v.low{color:var(--bad);}.meter .v.mid{color:var(--warn);}.meter .v.hi{color:var(--good);}
+.dist{display:flex;gap:4px;align-items:flex-end;height:48px;margin-top:8px;}
+.dist i{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;position:relative;}
+.dist i::after{content:attr(data-n);position:absolute;top:-15px;left:0;right:0;text-align:center;font-size:10px;color:var(--grey);font-style:normal;}
+.distX{display:flex;gap:4px;margin-top:3px;}
+.distX span{flex:1;text-align:center;font-size:10px;color:var(--faint);}
+.trend{display:flex;gap:3px;align-items:flex-end;height:34px;margin-top:10px;}
+.trend i{flex:1;background:var(--line);border-radius:3px 3px 0 0;min-height:2px;}
+.trend i.on{background:var(--accent);}
+.trend i.low{background:var(--bad);}
+.reading{background:var(--warn-bg);border:1px solid rgba(180,83,9,.3);border-radius:12px;padding:12px 16px;font-size:13.5px;margin:14px 0;line-height:1.5;}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:860px){.cols{grid-template-columns:1fr;}}
+.cmt{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px;font-size:13.5px;line-height:1.45;}
+.cmt .who{display:block;font-size:11px;color:var(--grey);margin-top:4px;}
+.cmt.hit{border-left:4px solid var(--warn);}
+.notes textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;resize:vertical;}
+/* messages */
+.msgs{display:grid;grid-template-columns:300px 1fr;gap:14px;}
+@media(max-width:800px){.msgs{grid-template-columns:1fr;}}
+.tlist .t{display:flex;gap:8px;align-items:baseline;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:6px;cursor:pointer;}
+.tlist .t.on{border-color:var(--accent);background:var(--accent-pale);}
+.tlist .t .nm{font-weight:800;font-size:13px;flex:1;}
+.tlist .t .w{font-size:10.5px;font-weight:800;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:1px 7px;}
+.tlist .t .ago{font-size:10.5px;color:var(--faint);}
+.thread .m{max-width:78%;margin-bottom:10px;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.45;background:var(--wash);border:1px solid var(--line);}
+.thread .m.i{margin-left:auto;background:var(--accent);color:#fff;border-color:var(--accent);}
+.thread .m .by{display:block;font-size:10.5px;opacity:.7;margin-bottom:2px;}
+.reply{display:flex;gap:8px;margin-top:12px;}
+.reply textarea{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;min-height:44px;}
+/* hand-ins */
+table.subs{width:100%;border-collapse:collapse;font-size:13px;}
+table.subs th,table.subs td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;}
+table.subs th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey);}
+.late{color:var(--bad);font-weight:800;}
+.foot{font-size:12px;color:var(--faint);text-align:center;margin-top:30px;}
+</style>
+</head>
+<body>
+<div id="gate"><div class="box">
+  <img src="course/sumas-logo.png" alt="SUMAS">
+  <div class="brand">JANERIKMEIDELL.COM · ADMIN</div>
+  <div style="font-size:28px;margin-bottom:8px">🔒</div>
+  <h1>Instructor sign-in</h1>
+  <p>One password opens every course, dashboard and message. This device will remember it.</p>
+  <input type="password" id="gpw" value="demo">
+  <button id="gok">Unlock</button>
+  <div class="demo">Demo: any password works here, and this browser then remembers it — as the real console does. The real console checks the account with Firebase.</div>
+</div></div>
+
+<div class="hdr"><div class="in">
+  <img class="brand" src="course/sumas-logo.png" alt="SUMAS">
+  <div class="who"><span class="c" id="hCode"></span><span class="t" id="hTitle"></span></div>
+  <span class="frozen" id="frozen"></span>
+  <span class="sp"></span>
+  <a class="btn" href="course/index.html" target="_blank">🎓 Student view ↗</a>
+  <a class="btn" href="board.html" target="_blank">📺 Room screen</a>
+  <a class="btn" href="exam.html" target="_blank">📝 Final exam</a>
+  <a class="btn" href="index.html">About the demo</a>
+</div></div>
+
+<div class="wrap">
+  <div class="ann"><span>📣</span><span id="annTxt"></span><span class="age" id="annAge"></span><span style="flex:1"></span><button class="btn sm">Edit</button></div>
+  <div class="tabs" id="tabs"></div>
+
+  <div class="pane" data-pane="today">
+    <div class="kpis" id="kpis"></div>
+    <ul class="acts" id="acts"></ul>
+  </div>
+
+  <div class="pane" data-pane="cohort">
+    <div class="grid2">
+      <div class="card"><h3>When each student was last here</h3><div class="sub">Every student counted once, in the bucket of their most recent activity. Click a bar to filter the roster.</div><div class="bars" id="pulse"></div><div class="barsX" id="pulseX"></div></div>
+      <div class="card"><h3>How far through they are</h3><div class="sub">A distribution, not an average — an average hides the two who have not started.</div><div class="bars" id="dist"></div><div class="barsX" id="distX"></div><div class="muted" id="medline" style="margin-top:8px"></div></div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><h3>Module by module</h3><div class="sub">Solid = finished it · pale = started it. The flagged row is where the cohort thins out most sharply.</div><div class="fun" id="funnel"></div></div>
+      <div class="card"><h3>Where they get stuck</h3><div class="sub">For each lesson, the section where most students stopped — the stall point. This is the view for fixing the course, not the student.</div><div class="stall" id="stall"></div></div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>Checkpoint questions worth 60 seconds</h3><div class="sub">Worst-answered across the cohort, with how the wrong answers split. Clear these up at the start of the next session — or before the exam.</div><div class="qlist" id="qlist"></div></div>
+  </div>
+
+  <div class="pane" data-pane="roster">
+    <div class="tools">
+      <input type="search" id="filter" placeholder="Filter by name…">
+      <button class="chipbtn on" data-q="all">Everyone</button><button class="chipbtn" data-q="quiet">Gone quiet</button><button class="chipbtn" data-q="behind">Falling behind</button><button class="chipbtn" data-q="never">Never started</button><button class="chipbtn" data-q="nohand">No hand-in</button>
+      <span style="flex:1"></span><span class="muted" id="rosterCount"></span>
+    </div>
+    <div class="tblwrap"><table class="roster"><thead><tr id="head"></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="muted" style="margin-top:8px">Click a row for the student's drawer. Progress cells: solid bar = done, pale = started; the number under a homework is problems solved; the quiz column is the week-6 timed quiz.</div>
+  </div>
+
+  <div class="pane" data-pane="feedback">
+    <div class="wsel" id="wsel"></div>
+    <div class="meters" id="meters"></div>
+    <div class="reading" id="reading"></div>
+    <div class="tools" style="margin-top:6px">
+      <button class="chipbtn on" data-k="all">All comments</button><button class="chipbtn" data-k="helped">What helped</button><button class="chipbtn" data-k="change">What should change</button>
+      <label class="chipbtn" style="cursor:pointer"><input type="checkbox" id="names" style="vertical-align:-1px"> Show names</label>
+      <span style="flex:1"></span>
+      <a class="btn primary" id="toBoard" href="board.html" target="_blank">📺 Open on the room screen</a>
+    </div>
+    <div class="cols" style="margin-top:10px">
+      <div><h3 style="font-size:14px;margin-bottom:8px">What helped most <span class="muted" id="nHelped"></span></h3><div id="helped"></div></div>
+      <div><h3 style="font-size:14px;margin-bottom:8px">What should change <span class="muted" id="nChange"></span></h3><div id="change"></div></div>
+    </div>
+    <div class="card notes" style="margin-top:14px"><h3>Notes for the next session</h3><div class="sub">What you will say to the class about this feedback, and what you will change. Kept in this browser.</div><textarea id="notes" placeholder="e.g. Week 5: acknowledge the test week was too heavy; move the greenium break-even to Week 6 next year; show the WACI comment on screen and ask who else found the lab useful…"></textarea></div>
+  </div>
+
+  <div class="pane" data-pane="messages">
+    <div class="msgs"><div class="tlist" id="tlist"></div><div class="card"><div id="tHead" class="muted" style="margin-bottom:10px">Pick a thread.</div><div class="thread" id="thread"></div><div class="reply" id="replyBox" style="display:none"><textarea id="replyTxt" placeholder="Reply… (demo: kept in this browser only)"></textarea><button class="btn primary" id="replyGo">Send</button></div></div></div>
+  </div>
+
+  <div class="pane" data-pane="subs">
+    <div class="card"><h3 id="subsH"></h3><div class="sub" id="subsSub"></div><table class="subs"><thead><tr><th>Student</th><th>Handed in</th><th>Words</th><th>File</th><th></th></tr></thead><tbody id="subsBody"></tbody></table></div>
+  </div>
+
+  <div class="foot">Demo dashboard · a fictional cohort of 20, generated by demo/_build/make-data.py · the real dashboards read the course database and need the instructor sign-in</div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><div class="dh"><div><h2 id="dName"></h2><div class="m" id="dMeta"></div></div><button class="x" id="dClose">✕</button></div><div class="db" id="dBody"></div></aside>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+var D=window.DEMO, NOW=D.now, DAY=86400000;
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function ago(ts){if(!ts)return 'never';var d=Math.floor((NOW-ts)/DAY);if(d<=0)return 'today';if(d===1)return 'yesterday';if(d<14)return d+' days ago';if(d<60)return Math.round(d/7)+' weeks ago';return Math.round(d/30)+' months ago';}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Zurich'});}
+function fmtDT(ts){return new Date(ts).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'});}
+function hrs(s){return s>=3600?(s/3600).toFixed(1)+' h':Math.round(s/60)+' min';}
+function first(n){return n.split(' ')[0];}
+function median(a){if(!a.length)return 0;var b=a.slice().sort(function(x,y){return x-y;}),m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+
+/* ---- derived per student ---- */
+function doneOf(s,m){var r=s.mod[m.id];if(!r)return 0;return m.kind==='lesson'?(r.done||[]).length:(r.n||0);}
+/* a homework is finished when it was submitted, not when every problem was solved — the real page records a submission */
+function finished(s,m){var r=s.mod[m.id];if(!r)return false;return m.kind==='hw'?!!r.submitted:doneOf(s,m)>=m.total;}
+function pct(s){var d=0,t=0;D.modules.forEach(function(m){d+=doneOf(s,m);t+=m.total;});return Math.round(100*d/t);}
+function secs(s){var t=0;Object.keys(s.mod).forEach(function(k){t+=s.mod[k].secs||0;});return t;}
+function quizAvg(s){var g=0,o=0;Object.keys(s.picks).forEach(function(w){var r=s.mod['w'+w];if(r&&r.score){g+=r.score[0];o+=r.score[1];}});return o?Math.round(100*g/o):null;}
+D.students.forEach(function(s){s._pct=pct(s);s._secs=secs(s);s._quiz=quizAvg(s);s._fb=Object.keys(s.feedback).length;});
+var MED=median(D.students.map(function(s){return s._pct;}));
+function flagOf(s){
+  if(s._pct<5)return 'never';
+  if(NOW-s.last>14*DAY)return 'quiet';
+  if(s._pct<MED*0.6)return 'behind';
+  return 'ok';
+}
+D.students.forEach(function(s){s._flag=flagOf(s);});
+function waiting(t){var last=t.msgs[t.msgs.length-1];return last.by==='s'&&!t._replied;}
+var WAIT=D.threads.filter(waiting);
+
+/* ---- header, gate, tabs ---- */
+$('hCode').textContent=D.course.code+' · demo';$('hTitle').textContent=D.course.title+' · '+D.course.school+' · '+D.course.term;
+$('frozen').textContent='Frozen on '+fmtDT(NOW);
+$('annTxt').textContent='Final online exam opens today, Tuesday 8 September, and closes on the 15th — 90 minutes, open book, one attempt. Weeks 5–8 are examined here.';
+$('annAge').textContent='posted yesterday';
+$('gok').addEventListener('click',function(){$('gate').style.display='none';try{localStorage.setItem('demo_gate_ok','1');}catch(e){}});
+try{if(localStorage.getItem('demo_gate_ok'))$('gate').style.display='none';}catch(e){}
+$('gpw').addEventListener('keydown',function(e){if(e.key==='Enter')$('gok').click();});
+var TABS=[['today','Today'],['cohort','The cohort'],['roster','The roster'],['feedback','Feedback board'],['messages','Messages'],['subs','Handed in']];
+var TAB='today';try{TAB=localStorage.getItem('demo_admin_tab')||'today';}catch(e){}
+function badge(id){if(id==='messages')return WAIT.length?'<span class="n hot">'+WAIT.length+'</span>':'';if(id==='subs'){var n=D.students.filter(function(s){return s.handin;}).length;return '<span class="n">'+n+'/'+D.students.length+'</span>';}if(id==='feedback'){var k=0;D.students.forEach(function(s){k+=s._fb;});return '<span class="n">'+k+'</span>';}if(id==='roster')return '<span class="n">'+D.students.length+'</span>';return '';}
+function showTab(id){TAB=id;try{localStorage.setItem('demo_admin_tab',id);}catch(e){}
+  document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===id);});
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.dataset.pane===id);});}
+$('tabs').innerHTML=TABS.map(function(t){return '<button data-tab="'+t[0]+'">'+t[1]+badge(t[0])+'</button>';}).join('');
+document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){showTab(b.dataset.tab);});});
+if(location.hash)TAB=location.hash.slice(1)||TAB;
+showTab(TAB);
+
+/* ---- TODAY ---- */
+(function(){
+  var N=D.students.length, handed=D.students.filter(function(s){return s.handin;}), late=handed.filter(function(s){return s.handin.late;});
+  var missing=D.students.filter(function(s){return !s.handin;}), quiet=D.students.filter(function(s){return s._flag==='quiet';}), never=D.students.filter(function(s){return s._flag==='never';}), behind=D.students.filter(function(s){return s._flag==='behind';});
+  var active7=D.students.filter(function(s){return NOW-s.last<7*DAY;}).length;
+  $('kpis').innerHTML=
+    '<div class="kpi"><div class="v">'+N+'</div><div class="l">students registered</div></div>'+
+    '<div class="kpi"><div class="v">'+active7+'</div><div class="l">active in the last 7 days</div></div>'+
+    '<div class="kpi"><div class="v">'+Math.round(MED)+'%</div><div class="l">median progress</div></div>'+
+    '<div class="kpi'+(WAIT.length?' hot':'')+'"><div class="v">'+WAIT.length+'</div><div class="l">messages waiting for an answer</div></div>'+
+    '<div class="kpi'+(missing.length?' bad':'')+'"><div class="v">'+handed.length+'/'+N+'</div><div class="l">Apple notes handed in · '+late.length+' late</div></div>'+
+    '<div class="kpi hot"><div class="v">today</div><div class="l">the final exam opens · 35 %</div></div>';
+  var names=function(a){return a.map(function(s){return '<a href="#roster" data-open="'+s.sid+'">'+esc(s.name)+'</a>';}).join(', ');};
+  var worst=worstQuestions()[0];
+  var fb5=weekStats(5);
+  var acts=[];
+  if(missing.length)acts.push(['bad','Hand-ins','<b>'+missing.length+' have not handed in the Apple note</b>, due Sunday 23:59: <span class="names">'+names(missing)+'</span>. One of them, Mei-Ling Chau, asked for an extension on Thursday and has had no answer — see Messages.']);
+  var draft=D.students.filter(function(s){return s.handin&&s.handin.words<1500;});
+  if(draft.length)acts.push(['warn','Hand-ins','<b>'+esc(draft[0].name)+'</b> handed in a '+draft[0].handin.words+'-word file named "'+esc(draft[0].handin.file)+'" and has written to say it is the draft. Let him replace it before marking starts.']);
+  if(WAIT.length)acts.push(['warn','Messages','<b>'+WAIT.length+' messages are waiting for an answer</b>: '+WAIT.map(function(t){return esc(t.title)+' ('+ago(t.msgs[t.msgs.length-1].ts)+')';}).join(' · ')+'. The oldest is five days old.']);
+  acts.push(['warn','Exam','<b>The final exam opens at 09:00 today.</b> Worst-answered checkpoint question across the term: <i>'+esc(worst.q.q)+'</i> — <b>'+worst.wrong+'% wrong</b> (week '+worst.w+'). Send a one-line clarification to the cohort before they sit it.']);
+  acts.push(['warn','Feedback','<b>Week 5 was the low point of the term</b>: pace '+fb5.means.pace.toFixed(1)+'/5, workload '+fb5.means.work.toFixed(1)+'/5, from '+fb5.n+' students; '+fb5.mentionsTest+' of the comments name the online test in the same week. Worth saying so to the class — and moving Test 1 next year.']);
+  if(quiet.length)acts.push(['bad','Gone quiet','<b>'+quiet.length+' have done nothing for more than two weeks</b>: '+quiet.map(function(s){return '<a href="#roster" data-open="'+s.sid+'">'+esc(s.name)+'</a> (last seen '+ago(s.last)+')';}).join(', ')+'. All three stopped around weeks 4–5; none has handed in. One message each, today.']);
+  if(never.length)acts.push(['','Never started','<b>'+never.length+' registered and never came back</b>: '+names(never)+'. Not a teaching problem — check with the programme office whether they are still enrolled.']);
+  if(behind.length)acts.push(['','Falling behind','<b>'+behind.length+' are well under the cohort median</b> ('+Math.round(MED)+'%): '+names(behind)+'.']);
+  $('acts').innerHTML=acts.map(function(a){return '<li class="'+a[0]+'"><span class="k">'+a[1]+'</span>'+a[2]+'</li>';}).join('');
+})();
+document.addEventListener('click',function(e){var a=e.target.closest('[data-open]');if(a){e.preventDefault();showTab('roster');openDrawer(a.getAttribute('data-open'));}});
+
+/* ---- COHORT ---- */
+function worstQuestions(){
+  var out=[];
+  Object.keys(D.quiz).forEach(function(w){D.quiz[w].forEach(function(q,i){
+    var n=0,wrong=0,split=q.opts.map(function(){return 0;});
+    D.students.forEach(function(s){var p=s.picks[w];if(!p)return;n++;split[p[i]]++;if(p[i]!==q.a)wrong++;});
+    if(n)out.push({w:+w,i:i,q:q,n:n,wrong:Math.round(100*wrong/n),split:split});
+  });});
+  return out.sort(function(a,b){return b.wrong-a.wrong;});
+}
+function bars(elId,xId,data,colorFn,clickFn){
+  var max=Math.max.apply(null,data.map(function(d){return d.n;}))||1;
+  $(elId).innerHTML=data.map(function(d,i){return '<div class="b" data-i="'+i+'"><b>'+d.n+'</b><i style="height:'+Math.max(2,Math.round(100*d.n/max))+'%;background:'+(colorFn?colorFn(d,i):'var(--accent)')+'"></i></div>';}).join('');
+  $(xId).innerHTML=data.map(function(d){return '<span>'+d.l+'</span>';}).join('');
+  if(clickFn)$(elId).querySelectorAll('.b').forEach(function(b){b.addEventListener('click',function(){clickFn(data[+b.dataset.i]);});});
+}
+(function(){
+  var buckets=[['today',0,1],['this week',1,7],['2 weeks',7,14],['a month',14,30],['longer',30,9999]];
+  var pd=buckets.map(function(b){return {l:b[0],n:D.students.filter(function(s){var d=(NOW-s.last)/DAY;return d>=b[1]&&d<b[2]&&s._pct>=5;}).length,lo:b[1],hi:b[2]};});
+  pd.push({l:'never started',n:D.students.filter(function(s){return s._pct<5;}).length,never:true});
+  bars('pulse','pulseX',pd,function(d,i){return i<=1?'var(--step5)':i===2?'var(--step4)':i===3?'var(--step2)':'var(--step1)';},function(d){showTab('roster');quick(d.never?'never':null,function(s){return d.never?s._pct<5:(NOW-s.last)/DAY>=d.lo&&(NOW-s.last)/DAY<d.hi&&s._pct>=5;});});
+  var dd=[[0,20],[20,40],[40,60],[60,80],[80,101]].map(function(r){return {l:r[0]+'–'+Math.min(100,r[1])+'%',n:D.students.filter(function(s){return s._pct>=r[0]&&s._pct<r[1];}).length,lo:r[0],hi:r[1]};});
+  bars('dist','distX',dd,function(d,i){return 'var(--step'+(i+1)+')';},function(d){showTab('roster');quick(null,function(s){return s._pct>=d.lo&&s._pct<d.hi;});});
+  var ps=D.students.map(function(s){return s._pct;});
+  $('medline').innerHTML='Median <b>'+Math.round(MED)+'%</b> · range '+Math.min.apply(null,ps)+'–'+Math.max.apply(null,ps)+'% · median time on the course '+hrs(median(D.students.map(function(s){return s._secs;})));
+  /* funnel */
+  var rows=D.modules.map(function(m){var fin=0,st=0;D.students.forEach(function(s){var d=doneOf(s,m);if(finished(s,m))fin++;else if(d>0)st++;});return {m:m,fin:fin,st:st};});
+  var worstDrop=0,wi=-1;rows.forEach(function(r,i){if(i&&rows[i-1].fin-r.fin>worstDrop){worstDrop=rows[i-1].fin-r.fin;wi=i;}});
+  $('funnel').innerHTML=rows.map(function(r,i){var N=D.students.length;return '<div class="row'+(i===wi?' flag':'')+'"><span>'+esc(r.m.label)+'</span><span class="tr"><i class="st" style="width:'+Math.round(100*(r.fin+r.st)/N)+'%"></i><i style="width:'+Math.round(100*r.fin/N)+'%"></i></span><span>'+r.fin+(r.st?' <span class="muted">+'+r.st+'</span>':'')+'</span></div>';}).join('');
+  /* stall points */
+  $('stall').innerHTML=D.modules.filter(function(m){return m.kind==='lesson';}).map(function(m){
+    var stop={},started=0;D.students.forEach(function(s){var r=s.mod[m.id];if(!r||!r.done||!r.done.length)return;started++;if(r.done.length<6){var last=r.done[r.done.length-1];stop[last]=(stop[last]||0)+1;}});
+    var best=null;Object.keys(stop).forEach(function(k){if(!best||stop[k]>stop[best])best=k;});
+    var sec=best?D.sections[m.week].find(function(x){return x[0]===best;}):null;
+    return '<div class="row"><b>Week '+m.week+'</b><span>'+(sec?'stopped after <b>'+esc(sec[0].replace('s',m.week+'.'))+' '+esc(sec[1])+'</b>':'<span class="muted">nobody stalls — everyone who starts finishes</span>')+'</span><span>'+(best?'<b class="n">'+stop[best]+'</b> of '+started:'')+'</span></div>';
+  }).join('');
+  /* worst questions */
+  var wq=worstQuestions().slice(0,6);
+  $('qlist').innerHTML=wq.map(function(x){return '<div class="q"><span class="pct'+(x.wrong<40?' mid':'')+'">'+x.wrong+'% ✗</span><span class="w">W'+x.w+' · Q'+(x.i+1)+'</span>'+esc(x.q.q)+'<div class="opts">'+x.q.opts.map(function(o,j){return '<span class="'+(j===x.q.a?'ok':'')+'">'+String.fromCharCode(65+j)+' · '+x.split[j]+'</span>';}).join('')+'<span class="muted">'+x.n+' answered</span></div></div>';}).join('');
+})();
+
+/* ---- ROSTER ---- */
+var FILTER=null,QUICK='all';
+function quick(q,fn){QUICK=q||'custom';FILTER=fn||null;document.querySelectorAll('.chipbtn[data-q]').forEach(function(b){b.classList.toggle('on',b.dataset.q===QUICK);});renderRoster();}
+document.querySelectorAll('.chipbtn[data-q]').forEach(function(b){b.addEventListener('click',function(){var q=b.dataset.q;quick(q,q==='all'?null:q==='nohand'?function(s){return !s.handin;}:function(s){return s._flag===q;});});});
+$('filter').addEventListener('input',renderRoster);
+function cellFor(s,m){var r=s.mod[m.id];if(!r)return '<td></td>';var d=doneOf(s,m),full=finished(s,m);
+  if(m.kind==='quiz')return '<td><b>'+r.score[0]+'</b>/18</td>';
+  return '<td title="'+esc(m.label)+' · '+d+'/'+m.total+' · '+hrs(r.secs)+'"><span class="mini'+(full?'':' st')+'"><i style="width:'+Math.round(100*d/m.total)+'%"></i></span>'+(m.kind==='hw'?'<div class="muted" style="font-size:10.5px">'+d+'</div>':(r.score?'<div class="muted" style="font-size:10.5px">'+r.score[0]+'/12</div>':''))+'</td>';}
+function renderRoster(){
+  var f=($('filter').value||'').toLowerCase();
+  var rows=D.students.filter(function(s){return (!FILTER||FILTER(s))&&(!f||s.name.toLowerCase().indexOf(f)>=0);}).sort(function(a,b){return b._pct-a._pct;});
+  $('head').innerHTML='<th class="nm">Student</th><th>Last seen</th><th>Progress</th>'+D.modules.map(function(m){return '<th>'+esc(m.label.replace(' · Lesson','').replace(' · Homework',' HW').replace(' · Timed quiz',' Quiz'))+'</th>';}).join('')+'<th>Quiz avg</th><th>Feedback</th><th>Apple note</th><th>Flag</th>';
+  $('tbody').innerHTML=rows.map(function(s){var col=s._pct>=80?'var(--step5)':s._pct>=60?'var(--step4)':s._pct>=40?'var(--step3)':s._pct>=20?'var(--step2)':'var(--step1)';
+    return '<tr data-sid="'+s.sid+'"><td class="nm"><b>'+esc(s.name)+'</b><div class="muted">'+esc(s.city)+', '+esc(s.country)+'</div></td><td>'+ago(s.last)+'</td><td><span class="pbar"><i style="width:'+s._pct+'%;background:'+col+'"></i></span>'+s._pct+'%</td>'+D.modules.map(function(m){return cellFor(s,m);}).join('')+
+      '<td>'+(s._quiz==null?'<span class="muted">—</span>':s._quiz+'%')+'</td><td>'+(s._fb||'<span class="muted">—</span>')+'</td><td>'+(s.handin?(s.handin.late?'<span class="late">late</span>':'✓'):'<span class="muted">—</span>')+'</td><td><span class="flag '+s._flag+'">'+({ok:'keeping up',quiet:'gone quiet',behind:'behind',never:'never started'})[s._flag]+'</span></td></tr>';}).join('');
+  $('rosterCount').textContent=rows.length+' of '+D.students.length;
+  $('tbody').querySelectorAll('tr').forEach(function(tr){tr.addEventListener('click',function(){openDrawer(tr.dataset.sid);});});
+}
+renderRoster();
+function openDrawer(sid){var s=D.students.find(function(x){return x.sid===sid;});if(!s)return;
+  $('dName').textContent=s.name;$('dMeta').textContent=s.city+', '+s.country+' · joined '+fmtDate(s.joined)+' · last seen '+ago(s.last)+' · '+hrs(s._secs)+' on the course';
+  var h='<h4>Modules</h4>'+D.modules.map(function(m){var r=s.mod[m.id];var d=doneOf(s,m);return '<div class="mrow"><span>'+esc(m.label)+'</span><span><span class="pbar" style="width:100%"><i style="width:'+Math.round(100*d/m.total)+'%;background:var(--accent)"></i></span></span><span>'+(r?d+'/'+m.total:'<span class="muted">—</span>')+'</span><span class="muted">'+(r?hrs(r.secs):'')+'</span></div>';}).join('');
+  if(Object.keys(s.picks).length){h+='<h4>Checkpoint scores</h4><div style="display:flex;gap:6px;flex-wrap:wrap">'+Object.keys(s.picks).map(function(w){var sc=s.mod['w'+w].score;return '<span class="flag '+(sc[0]>=9?'ok':sc[0]>=6?'quiet':'behind')+'">W'+w+' · '+sc[0]+'/12</span>';}).join('')+'</div>';}
+  h+='<h4>Apple note</h4>'+(s.handin?'<div>'+esc(s.handin.file)+' · '+s.handin.words+' words · '+fmtDT(s.handin.ts)+(s.handin.late?' · <span class="late">after the deadline</span>':'')+'</div>':'<div class="muted">Not handed in.</div>');
+  var fbw=Object.keys(s.feedback);
+  h+='<h4>Weekly feedback · '+fbw.length+'</h4>'+(fbw.length?fbw.map(function(w){var f=s.feedback[w];return '<div class="fb"><b>Week '+w+'</b> <span class="r">clear '+f.clear+' · pace '+f.pace+' · workload '+f.work+' · useful '+f.useful+'</span>'+(f.helped?'<div>👍 '+esc(f.helped)+'</div>':'')+(f.change?'<div>✏️ '+esc(f.change)+'</div>':'')+'</div>';}).join(''):'<div class="muted">None given.</div>');
+  var th=D.threads.filter(function(t){return t.tid==='dm-'+s.sid||t.msgs.some(function(m){return m.sid===s.sid;});});
+  h+='<h4>Messages</h4>'+(th.length?th.map(function(t){return '<div><a href="#messages" data-thread="'+t.tid+'">'+esc(t.title)+'</a> · '+t.msgs.length+' messages'+(waiting(t)?' · <span class="late">waiting for you</span>':'')+'</div>';}).join(''):'<div class="muted">No thread yet — <a href="#messages">write to '+esc(first(s.name))+'</a>.</div>');
+  $('dBody').innerHTML=h;$('drawer').classList.add('on');$('scrim').classList.add('on');
+}
+function closeDrawer(){$('drawer').classList.remove('on');$('scrim').classList.remove('on');}
+$('dClose').addEventListener('click',closeDrawer);$('scrim').addEventListener('click',closeDrawer);
+document.addEventListener('click',function(e){var a=e.target.closest('[data-thread]');if(a){e.preventDefault();closeDrawer();showTab('messages');openThread(a.getAttribute('data-thread'));}});
+
+/* ---- FEEDBACK BOARD ---- */
+var FW='all',FK='all';
+function weekStats(w){var n=0,sum={clear:0,pace:0,work:0,useful:0},dist={clear:[0,0,0,0,0],pace:[0,0,0,0,0],work:[0,0,0,0,0],useful:[0,0,0,0,0]},mentionsTest=0,items=[];
+  D.students.forEach(function(s){Object.keys(s.feedback).forEach(function(k){if(w!=='all'&&+k!==+w)return;var f=s.feedback[k];n++;D.rates.forEach(function(r){sum[r[0]]+=f[r[0]];dist[r[0]][f[r[0]]-1]++;});if(/test/i.test(f.change+' '+f.helped))mentionsTest++;items.push({s:s,w:+k,f:f});});});
+  var means={};D.rates.forEach(function(r){means[r[0]]=n?sum[r[0]]/n:0;});
+  return {n:n,means:means,dist:dist,mentionsTest:mentionsTest,items:items};}
+var WEEKMEANS=D.weeks.map(function(w){return weekStats(w.n);});
+function renderFeedback(){
+  $('wsel').innerHTML='<button class="chipbtn'+(FW==='all'?' on':'')+'" data-w="all">Whole term</button>'+D.weeks.map(function(w){return '<button class="chipbtn'+(FW===w.n?' on':'')+'" data-w="'+w.n+'" title="'+esc(w.subject)+'">Week '+w.n+'</button>';}).join('');
+  $('wsel').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){FW=b.dataset.w==='all'?'all':+b.dataset.w;renderFeedback();});});
+  var st=weekStats(FW);
+  $('meters').innerHTML=D.rates.map(function(r){var m=st.means[r[0]],cls=m<3.2?'low':m<3.8?'mid':'hi';var mx=Math.max.apply(null,st.dist[r[0]])||1;
+    return '<div class="meter"><div class="l">'+esc(r[1])+'</div><div class="v '+cls+'">'+(st.n?m.toFixed(1):'—')+'<small> / 5 · '+st.n+' answers</small></div><div class="dist">'+st.dist[r[0]].map(function(c){return '<i data-n="'+c+'" style="height:'+Math.max(3,Math.round(100*c/mx))+'%"></i>';}).join('')+'</div><div class="distX"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>'+
+      '<div class="trend" title="week by week">'+WEEKMEANS.map(function(ws,i){var v=ws.means[r[0]];return '<i class="'+(FW===i+1?'on':'')+(v&&v<3.2?' low':'')+'" style="height:'+Math.round(100*(v||0)/5)+'%" title="Week '+(i+1)+': '+(v?v.toFixed(1):'—')+'"></i>';}).join('')+'</div></div>';}).join('');
+  /* a computed reading */
+  var low=null;WEEKMEANS.forEach(function(ws,i){if(!ws.n)return;var v=(ws.means.pace+ws.means.work)/2;if(!low||v<low.v)low={v:v,i:i,ws:ws};});
+  var hi=null;WEEKMEANS.forEach(function(ws,i){if(!ws.n)return;if(!hi||ws.means.useful>hi.v)hi={v:ws.means.useful,i:i,ws:ws};});
+  if(FW==='all')$('reading').innerHTML='<b>Reading:</b> '+st.n+' feedback records from '+D.students.filter(function(s){return s._fb;}).length+' students over eight weeks. The low point is <b>Week '+(low.i+1)+'</b> ('+esc(D.weeks[low.i].subject)+'): pace '+low.ws.means.pace.toFixed(1)+' and workload '+low.ws.means.work.toFixed(1)+' — and '+low.ws.mentionsTest+' of its comments name the online test. The week rated most useful is <b>Week '+(hi.i+1)+'</b> ('+hi.v.toFixed(1)+'). Usefulness stays above 3.9 every week: the content lands; the schedule is what needs fixing.';
+  else{var ws=D.weeks[FW-1];$('reading').innerHTML='<b>Week '+FW+' · '+esc(ws.subject)+':</b> '+st.n+' answers. '+(st.means.pace<3.2||st.means.work<3.2?'Pace or workload is under 3.2 — the comments on the right say why.':'Pace and workload are acceptable.')+' Usefulness '+st.means.useful.toFixed(1)+'/5.'+(st.mentionsTest?' '+st.mentionsTest+' comment'+(st.mentionsTest>1?'s':'')+' mention'+(st.mentionsTest>1?'':'s')+' the online test.':'');}
+  $('toBoard').href='board.html'+(FW==='all'?'':'?w='+FW);
+  var names=$('names').checked;
+  function cards(key){var list=st.items.filter(function(x){return x.f[key];}).sort(function(a,b){return b.f.ts-a.f.ts;});
+    return {n:list.length,html:list.map(function(x){return '<div class="cmt'+(/test/i.test(x.f[key])?' hit':'')+'">'+esc(x.f[key])+'<span class="who">'+(names?esc(x.s.name)+' · ':'')+'week '+x.w+(names?'':' · anonymous')+'</span></div>';}).join('')||'<div class="muted">No comments'+(FW==='all'?'':' this week')+'.</div>'};}
+  var h=cards('helped'),c=cards('change');
+  $('helped').innerHTML=FK==='change'?'':h.html;$('change').innerHTML=FK==='helped'?'':c.html;
+  $('nHelped').textContent='· '+h.n;$('nChange').textContent='· '+c.n;
+}
+document.querySelectorAll('.chipbtn[data-k]').forEach(function(b){b.addEventListener('click',function(){FK=b.dataset.k;document.querySelectorAll('.chipbtn[data-k]').forEach(function(x){x.classList.toggle('on',x===b);});renderFeedback();});});
+$('names').addEventListener('change',renderFeedback);
+try{$('notes').value=localStorage.getItem('demo_admin_notes')||'';}catch(e){}
+$('notes').addEventListener('input',function(){try{localStorage.setItem('demo_admin_notes',$('notes').value);}catch(e){}});
+renderFeedback();
+
+/* ---- MESSAGES ---- */
+var CUR=null;
+function renderThreads(){var list=D.threads.slice().sort(function(a,b){var wa=waiting(a)?1:0,wb=waiting(b)?1:0;if(wa!==wb)return wb-wa;return b.msgs[b.msgs.length-1].ts-a.msgs[a.msgs.length-1].ts;});
+  $('tlist').innerHTML=list.map(function(t){var l=t.msgs[t.msgs.length-1];return '<div class="t'+(CUR===t.tid?' on':'')+'" data-tid="'+t.tid+'"><span class="nm">'+(t.kind==='all'?'📣 ':t.kind==='group'?'👥 ':'')+esc(t.title)+'</span>'+(waiting(t)?'<span class="w">waiting</span>':'')+'<span class="ago">'+ago(l.ts)+'</span></div>';}).join('');
+  $('tlist').querySelectorAll('.t').forEach(function(d){d.addEventListener('click',function(){openThread(d.dataset.tid);});});}
+function openThread(tid){CUR=tid;var t=D.threads.find(function(x){return x.tid===tid;});renderThreads();
+  $('tHead').innerHTML='<b>'+esc(t.title)+'</b> · '+(t.kind==='dm'?'between you and this student':t.kind==='all'?'the whole cohort':'a group you made')+(waiting(t)?' · <span class="late">waiting for your answer</span>':'');
+  $('thread').innerHTML=t.msgs.map(function(m){return '<div class="m '+(m.by==='i'?'i':'')+'"><span class="by">'+esc(m.name)+' · '+fmtDT(m.ts)+'</span>'+esc(m.txt)+'</div>';}).join('');
+  $('replyBox').style.display='flex';$('replyTxt').value='';}
+$('replyGo').addEventListener('click',function(){var t=D.threads.find(function(x){return x.tid===CUR;});var v=$('replyTxt').value.trim();if(!t||!v)return;t.msgs.push({by:'i',sid:'i',name:'Jan Erik Meidell',txt:v,ts:NOW+60000});t._replied=true;WAIT=D.threads.filter(waiting);openThread(CUR);
+  var b=document.querySelector('.tabs button[data-tab="messages"]');if(b)b.innerHTML='Messages'+badge('messages');});
+renderThreads();
+
+/* ---- HANDED IN ---- */
+(function(){
+  var h=D.students.filter(function(s){return s.handin;}).sort(function(a,b){return a.handin.ts-b.handin.ts;}), m=D.students.filter(function(s){return !s.handin;});
+  $('subsH').textContent=D.assignment.title+' · '+D.assignment.weight;$('subsSub').textContent='Due '+fmtDT(D.assignment.due)+' · '+h.length+' of '+D.students.length+' handed in · '+h.filter(function(s){return s.handin.late;}).length+' after the deadline · missing: '+m.map(function(s){return s.name;}).join(', ');
+  $('subsBody').innerHTML=h.map(function(s){return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+fmtDT(s.handin.ts)+(s.handin.late?' <span class="late">late</span>':'')+'</td><td>'+s.handin.words+(s.handin.words<1500?' <span class="late">short</span>':'')+'</td><td class="muted">'+esc(s.handin.file)+'</td><td><button class="btn sm" onclick="alert(\'Demo: in the real dashboard this downloads the file from the database.\')">Download</button></td></tr>';}).join('');
+})();
+</script>
+</body>
+</html>

@@ -90,7 +90,11 @@ window.CourseConfig = (function () {
     "omba500":   { school:"SUMAS", ns:"omba500",   theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · OMBA500 Capstone — European wind to 2040" },
     "capstone-ba": { school:"SUMAS", ns:"capstone-ba", theme:"sumas", lang:"en", login:true,
-                   label:"SUMAS · Capstone (Bachelors) — European wind to 2040" }
+                   label:"SUMAS · Capstone (Bachelors) — European wind to 2040" },
+    /* the presentation demo (/demo/): a copy of ombafr455 with its own namespace, so a
+       visitor who tries the front end never lands in the real cohort (24 Oct 2026) */
+    "demo":      { school:"Demo", ns:"demo",      theme:"sumas", lang:"en", login:true,
+                   label:"Demo · Sustainable Financial Markets" }
   };
 
   /* ---- language strings, so a French course speaks French everywhere ---- */
