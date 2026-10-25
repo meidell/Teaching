@@ -278,6 +278,7 @@ Each course's history, decisions and traps now live next to its pages (split 23 
 - `GBS/enterprise-security/CLAUDE.md` — GBS · Enterprise Security
 - `UMEF/gen110/CLAUDE.md` — UMEF · GEN 110
 - `HEG/quantitative-methods/CLAUDE.md` — HEG · Quantitative Methods I
+- `Kalaidos/flc/CLAUDE.md` — Kalaidos · Financial Leadership & Controlling
 - `UMEF/ideas-e1410/CLAUDE.md` — UMEF · E1410
 - Courses without a file (OMBA401, OMBAFR455, UMEF407, MFB 545, the open hubs) are documented in the memory notes and in comments at the top of their pages.
 
@@ -612,13 +613,23 @@ trusts. The two are not the same thing and one cannot replace the other.
   the standard chrome into it again.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
   ⚠ Since 22 Oct 2026 it also **makes the top-left school logo a link to
-  the school's landing page** (`/GBS/`, `/SUMAS/`, `/UMEF/` — the first
+  the school's landing page** (`/GBS/`, `/SUMAS/`, `/UMEF/`, `/Kalaidos/` — the first
   path segment; HEG has no landing page and is left alone). It looks for
   `.topbar picture/img.brand/img.logo`, then `nav.nav` (the open hubs),
   `header`, and finally any `img[src*=logo]` in the top 220 px (the SUMAS
   hubs with the logo in the hero); a logo already inside a link is
   skipped. Lives in track.js because it is the one script every course
   page loads — no page was edited.
+- **Kalaidos pages wear Kalaidos' own look (25 Oct 2026).** Jan Erik: "use
+  that style for the classes for kalaidos", pointing at kalaidos-fh.ch.
+  `/Kalaidos/kalaidos.css` holds it (Barlow + Lora, teal bands #3393A1 /
+  #C1D8DB, square cards with a dark left strip, dark footer under a teal
+  wedge), scoped by body class: `kal-land` (`/Kalaidos/index.html`, the school
+  landing page, registry-driven like the other three), `kal-hub` (a course
+  hub), `kal-bloc` (flc.css session pages). The fonts are SELF-HOSTED in
+  `/Kalaidos/fonts/` (SIL OFL, licences beside them) — the no-external-fonts
+  rule below still holds. `Kalaidos/digital banking` (evergreen, its own
+  bespoke design) has NOT been restyled.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
   `/shared/fb-auth.js` `import()`s *only* once per device, to migrate a session a

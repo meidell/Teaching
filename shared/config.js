@@ -31,6 +31,8 @@ window.CourseConfig = (function () {
              pale:"#E8EEF8", surface:"#F4F6FA", ink:"#0a1a3a", grey:"#5A6B87" },
     heg:   { deep:"#002C46", bar:"#002C46", main:"#CC0000", glow:"#FF3127",
              pale:"#FFF0EF", surface:"#F6F7F7", ink:"#24272A", grey:"#5F6B76" },
+    kalaidos: { deep:"#0B5862", bar:"#007A87", main:"#007A87", glow:"#00B4E0",
+             pale:"#DFF1F3", surface:"#F4F6F5", ink:"#232A31", grey:"#6E7672" },
     iig:   { deep:"#0a2540", bar:"#0a2540", main:"#305875", glow:"#c9a961",
              pale:"#f6f0e3", surface:"#faf9f7", ink:"#0d1b3e", grey:"#6b7080" }
   };
@@ -75,6 +77,8 @@ window.CourseConfig = (function () {
                    label:"SWISS UMEF · GEN 110 Intelligence artificielle" },
     "mfb545":    { school:"UMEF", ns:"mfb545",    theme:"umef",  lang:"fr", login:true,
                    label:"SWISS UMEF · MFB 545 Fintech" },
+    "flc":       { school:"Kalaidos", ns:"flc", theme:"kalaidos", lang:"fr", login:true,
+                   label:"Kalaidos · Financial Leadership & Controlling" },
     "qm1":       { school:"HEG", ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { school:"GBS", ns:"creator",   theme:"gbs",   lang:"en", login:true,

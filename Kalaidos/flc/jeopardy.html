@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/Kalaidos/flc/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · FL&amp;C · Kalaidos</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<link rel="stylesheet" href="/shared/themes/kalaidos-full.css">
+<link rel="stylesheet" href="/Kalaidos/kalaidos.css">
+<script src="lang.js"></script>
+<style>
+/* =====================================================================
+   Kalaidos FL&C · Jeopardy for the room screen. ?set=sam (end of the
+   Saturday, bloc 2) · ?set=rev (revision, bloc 4). Projector page: no
+   progress, no sign-in, never counted; scores are kept in this browser
+   only (flc_jeo_<set>). Two players — the cohort is two students.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--navy-surface-deep,#073C43);color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#9FDCE3;font-size:13px;}
+.top a{color:#9FDCE3;font-size:13px;text-decoration:none;}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 20px;}
+.cat{background:var(--navy-surface,#0F4C60);border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(12px,1.6vw,17px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cell{background:#176B87;border:none;border-radius:10px;color:#FFD58A;font:800 clamp(20px,3.4vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2A93B0;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:170px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#FFD58A;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(5,25,32,.94);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:980px;width:100%;text-align:center;}
+#modal .mc{color:#9FDCE3;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.8vw,44px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.4vw,28px);color:#FFD58A;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#073C43;border:none;border-radius:30px;padding:11px 20px;font:800 15px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#9FDCE3;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#9FDCE3;text-decoration:underline;cursor:pointer;font:inherit;}
+body,.top h1,.cell,.cat,button,input{font-family:'Barlow','Helvetica Neue',Arial,sans-serif !important;}
+</style>
+</head>
+<body data-course="flc">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="index.html" style="margin-left:auto">← Cours</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Cliquez une case · « Réponse » · puis le joueur qui a répondu juste (+) ou faux (−). <button id="reset">Nouvelle partie</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  sam:{name:'Une journée dans la vie d’Alpibois · samedi',cats:[
+    ['Fonder',[
+      ['Le capital minimum d’une SA, et l’article.','CHF 100\'000, art. 621 CO.'],
+      ['Le minimum à libérer à la fondation d’une SA.','20 % de chaque action et au moins CHF 50\'000 au total (art. 632 CO).'],
+      ['Les deux documents qu’exige un apport en nature.','Le rapport de fondation (art. 635 CO) et l’attestation de vérification d’un réviseur agréé (art. 635a CO).'],
+      ['Où vont les frais de fondation ?','En charges — ils ne peuvent pas être activés.'],
+      ['Quand la SA acquiert-elle la personnalité juridique ?','À son inscription au registre du commerce (art. 643 CO).']]],
+    ['Transformer',[
+      ['La loi qui régit la transformation.','La loi sur la fusion (LFus), art. 53 ss.'],
+      ['Une Sàrl au capital de 20\'000 peut-elle devenir une SA sans autre mesure ?','Non : il faut porter le capital à 100\'000 (conversion de fonds propres librement disponibles ou apport nouveau).'],
+      ['Quelle réserve ne peut pas être convertie en capital lors de la transformation ?','La réserve légale issue du bénéfice : elle n’est pas librement disponible.'],
+      ['À quelle condition la transformation est-elle fiscalement neutre ?','La société reste assujettie en Suisse et reprend les valeurs comptables (art. 61 LIFD).'],
+      ['Transformer, est-ce liquider ?','Non : la société change de forme sans être dissoute ; actifs, dettes et contrats restent.']]],
+    ['Assainir',[
+      ['Le test de la perte de capital.','Fonds propres inférieurs à la moitié de capital-actions + réserve légale issue du capital + réserve légale issue du bénéfice (art. 725a CO).'],
+      ['Ce que le conseil doit faire en cas de surendettement.','Aviser le tribunal (art. 725b CO), sauf postposition suffisante ou perspective concrète d’assainissement dans les 90 jours.'],
+      ['Une réduction du capital : au débit ou au crédit du compte Assainissement ?','Au crédit (Capital-actions à Assainissement).'],
+      ['Quels actifs peut-on réévaluer au-dessus du coût selon l’art. 725c CO ?','Les immeubles et les participations, jusqu’à leur valeur réelle, en réserve de réévaluation.'],
+      ['Le « coup d’accordéon ».','Une réduction du capital suivie d’une augmentation simultanée, avec de l’argent frais.']]],
+    ['Évaluer',[
+      ['La formule de la méthode des praticiens.','(2 × valeur de rendement + valeur substantielle) ÷ 3.'],
+      ['Bénéfice durable 300\'000, taux 12 %. Valeur de rendement ?','2\'500\'000.'],
+      ['Goodwill d’évaluation : la formule.','Valeur de l’entreprise − valeur substantielle.'],
+      ['L’EVA, en une ligne.','NOPAT − WACC × capital investi.'],
+      ['Pourquoi présenter une fourchette plutôt qu’un chiffre ?','Les méthodes reposent sur des hypothèses différentes ; un évaluateur objectif documente les écarts et dit ce qu’il retient pour quelle décision.']]],
+    ['Fusionner et liquider',[
+      ['Action absorbée 1\'500, action absorbante 1\'000 : rapport d’échange ?','3 actions absorbantes pour 2 absorbées (1,5).'],
+      ['Le plafond de la soulte en espèces.','10 % de la valeur réelle des parts attribuées (art. 7 al. 2 LFus).'],
+      ['Où va l’agio de fusion ?','À la réserve légale issue du capital.'],
+      ['Scission : la société qui se scinde subsiste. Comment s’appelle-t-elle ?','Une scission par séparation (en division, elle disparaît).'],
+      ['Combien de publications de l’appel aux créanciers, et quel délai avant la répartition ?','Une publication dans la FOSC ; un an (trois mois avec l’attestation d’un expert-réviseur agréé).']]]
+  ]},
+  rev:{name:'Révision des quatre blocs · avant l’examen',cats:[
+    ['Cas particuliers',[
+      ['S. Pereira souscrit 100 actions de 1\'000 et en libère 40 %. Écriture du solde non versé.','Capital-actions non libéré à Actionnaires, 60\'000.'],
+      ['Fonds propres 170, capital-actions et réserves légales 470. Diagnostic ?','Perte de capital (170 < 235).'],
+      ['Une postposition de créance supprime-t-elle la perte au bilan ?','Non : la dette reste ; elle évite seulement l’avis au tribunal.'],
+      ['Liquidités à répartir 108, capital social 50. Impôt anticipé ?','35 % × 58 = 20,3.'],
+      ['Qui doit donner son accord avant la radiation au registre du commerce ?','Les autorités fiscales.']]],
+    ['Groupe et périmètre',[
+      ['Les trois seuils de l’art. 963a CO.','Bilan 20 millions, chiffre d’affaires 40 millions, 250 emplois à plein temps — deux sur trois, deux exercices de suite.'],
+      ['40 % des voix et la majorité du conseil par convention : méthode ?','Consolidation intégrale (contrôle).'],
+      ['Coentreprise à 50 % : deux méthodes admises par RPC 30.','Consolidation proportionnelle ou mise en équivalence.'],
+      ['Différence entre BC 1 et BC 2.','Le BC 2 est apuré : structure et évaluation uniformes, réserves latentes dissoutes.'],
+      ['Pourquoi le bilan cumulé ne suffit-il pas ?','Il compte deux fois les fonds propres des filiales et tous les échanges internes.']]],
+    ['Capital et goodwill',[
+      ['Prix 400 pour 80 % de fonds propres de 320. Goodwill ?','144.'],
+      ['Dans le même cas, part des minoritaires à l’acquisition ?','64.'],
+      ['Les deux traitements du goodwill selon RPC 30.','Activer et amortir (en général 5 ans, 20 au plus) ou compenser avec les fonds propres à l’acquisition.'],
+      ['Effet de la compensation du goodwill sur le ROE.','Plus élevé : bénéfice plus haut (pas d’amortissement), fonds propres plus bas.'],
+      ['Mise en équivalence : 450 + 45 − 18 − 18. Que sont les deux 18 ?','Le dividende reçu et l’amortissement du goodwill compris.']]],
+    ['Éliminations',[
+      ['Ventes internes 300 : écriture.','Ventes à Charges de marchandises, 300.'],
+      ['Stock interne 40 → 60, marge 25 %. Effet sur le résultat de l’année ?','−5 (bénéfice intermédiaire de 10 à 15).'],
+      ['La marge sur le stock interne du début : contre quel compte ?','Contre les réserves (elle a été éliminée les années précédentes).'],
+      ['Dividende de 30 d’une filiale à 80 % : montant éliminé chez la mère ?','24, contre les réserves.'],
+      ['Intérêts courus sur un prêt interne : écriture.','Passifs de régularisation à Actifs de régularisation.']]],
+    ['Coûts de processus',[
+      ['L’avantage essentiel de la méthode ABC.','Imputer les charges indirectes selon le principe de causalité, par des inducteurs de coûts.'],
+      ['Coûts du processus 300\'000, 2\'000 heures de conception. Taux ?','150 par heure.'],
+      ['Un exemple d’inducteur de coûts.','Nombre de commandes, de réglages, d’heures de conception, d’heures-machine…'],
+      ['Ce qu’ajoute la délimitation matérielle à la CAE.','Les charges supplétives (intérêt sur les fonds propres, salaire de l’entrepreneur), et elle retire les charges non incorporables.'],
+      ['Pourquoi le calcul traditionnel favorise-t-il le sur-mesure ?','Il répartit les frais de complexité selon le volume : la série paie une partie des frais du sur-mesure.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'sam';
+var S=SETS[setId]||SETS.sam, SK='flc_jeo_'+setId;
+var st={used:{},teams:[['Joueur 1',0],['Joueur 2',0]]};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams)st=o;}catch(e){}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='';
+  S.cats.forEach(function(c){h+='<div class="cat">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Réponse</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Fermer</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Effacer les scores et recommencer ?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
