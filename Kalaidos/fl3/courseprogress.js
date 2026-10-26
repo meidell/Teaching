@@ -20,16 +20,16 @@ window.CourseProgress=(function(){
   var NS="fl3", K="fl3";
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
-    {mod:'w1', short:'S1', name:'Séance 1 · Introduction · Création d’entreprise', total:0, live:true, href:'seance1.html'},
-    {mod:'w2', short:'S2', name:'Séance 2 · Transformation', total:0, live:true, href:'seance2.html'},
-    {mod:'w3', short:'S3', name:'Séance 3 · Fusion', total:0, live:true, href:'seance3.html'},
-    {mod:'w4', short:'S4', name:'Séance 4 · Scission et transfert de patrimoine', total:0, live:true, href:'seance4.html'},
-    {mod:'w5', short:'S5', name:'Séance 5 · Assainissement', total:0, live:true, href:'seance5.html'},
-    {mod:'w6', short:'S6', name:'Séance 6 · Liquidation', total:0, live:true, href:'seance6.html'},
-    {mod:'w7', short:'S7', name:'Séance 7 · Évaluation d’entreprise', total:0, live:true, href:'seance7.html'},
-    {mod:'w8', short:'S8', name:'Séance 8 · Comptes consolidés : fondements, BC 1 → BC 2', total:0, live:true, href:'seance8.html'},
-    {mod:'w9', short:'S9', name:'Séance 9 · Consolidation subséquente et éliminations', total:0, live:true, href:'seance9.html'},
-    {mod:'w10', short:'S10', name:'Séance 10 · Mise en équivalence · Préparation à l’examen', total:0, live:true, href:'seance10.html'}
+    {mod:'w1', short:'S1', name:'Séance 1 · Introduction · Création d’entreprise', total:6, live:true, href:'seance1.html'},
+    {mod:'w2', short:'S2', name:'Séance 2 · Transformation', total:5, live:true, href:'seance2.html'},
+    {mod:'w3', short:'S3', name:'Séance 3 · Fusion', total:6, live:true, href:'seance3.html'},
+    {mod:'w4', short:'S4', name:'Séance 4 · Scission et transfert de patrimoine', total:7, live:true, href:'seance4.html'},
+    {mod:'w5', short:'S5', name:'Séance 5 · Assainissement', total:6, live:true, href:'seance5.html'},
+    {mod:'w6', short:'S6', name:'Séance 6 · Liquidation', total:6, live:true, href:'seance6.html'},
+    {mod:'w7', short:'S7', name:'Séance 7 · Évaluation d’entreprise', total:6, live:true, href:'seance7.html'},
+    {mod:'w8', short:'S8', name:'Séance 8 · Comptes consolidés : fondements, BC 1 → BC 2', total:7, live:true, href:'seance8.html'},
+    {mod:'w9', short:'S9', name:'Séance 9 · Consolidation subséquente et éliminations', total:6, live:true, href:'seance9.html'},
+    {mod:'w10', short:'S10', name:'Séance 10 · Mise en équivalence · Préparation à l’examen', total:7, live:true, href:'seance10.html'}
   ];
 
 

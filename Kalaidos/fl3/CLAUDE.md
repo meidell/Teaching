@@ -100,3 +100,42 @@ with `python3 -m http.server 8765` running from the repo root.
 
 ⚠ The rules block `fl3` in `firebase-database-rules.json` must be DEPLOYED
 before the link goes to the students (10 Nov 2026).
+
+## Built 26 Oct 2026 — what shipped and how
+
+All ten pages exist and pass the probe (every atelier section ✓; quizzes
+locked until launched; reading sections 2.3, 3.1, 3.3, 8.5, 10.3 mark on
+« Suite »). Totals in courseprogress.js: w1 6 · w2 5 · w3 6 · w4 7 · w5 6 ·
+w6 6 · w7 6 · w8 7 · w9 6 · w10 7. Carnet fields (`wN_*`) are all listed in
+courses.json `project.sections`. Jeopardy sets `sam` (séances 1–4, linked
+from 4.7) and `rev` (ten séances, linked from séance 10).
+
+Pages were written by three parallel forks from the plan above; two left a
+rebuild script: `_private/build_s456.py` (S4–S6 splice the reused flc
+sections by marker comments — rerun it if those flc sections change) and the
+scratchpad's `build_s7_10.py` (not kept). New cases, all figures asserted in
+`_private/check_sN.py`: S1 SNC Favre & Dumont, Vitrerie du Léman SA (agio);
+S2 Carrosserie Berney (entreprise individuelle → SA, capital propre 629'000);
+S3 Alpibois absorbs Jorat from GIVEN valeurs intrinsèques (5:4, agio
+1'250'000 — flc's bloc 2 books the same merger at book values, agio 850'000;
+the page says why), Clos des Roches / Cave de Bonvillars (ajustement, E = 24),
+Bois Romand SA (combinaison); S4 scission of Alpibois Design SA into Design
+Mobilier SA / Design Bureaux SA, vehicle-fleet transfert; S5 Menuiserie
+Vallotton SA (AVANT 3'050 → APRÈS 2'660); S6 Ébénisterie Corboz SA (résultat
+de liquidation 33'000, 768 par action); S7 Jorat multiples; S8 Vuilleumier
+Escaliers SA BC 1 → BC 2 (BC 2 total 694), badwill −35; S9 flc's 2028
+worksheet + upstream intermediate profit 80/20; S10 Transports Bovay SA 30 %.
+
+⚠ **Art. 725c (checked 26 Oct 2026):** the revaluation amount is "inscrit
+séparément dans la réserve légale issue du bénéfice" — it is INSIDE the RLB,
+so it COUNTS in the 725a threshold (½ × CA + RLC + RLB). flc bloc1 and
+fl3 seance5 were corrected; never write "n'entre pas dans le calcul".
+
+Law citations the forks wrote from memory and nobody fetched (verify before
+10 Nov if in doubt): LFus 31 al. 2, 37, 41, 43 al. 3, 45–47, 54, 58–66, 69–77;
+CO 533, 568, 634a, 653p, 826 al. 2; LIFD 19 al. 2. S10 prints the grade as
+EEA 20 % + exam 80 % — the 20 % is not yet confirmed by the coordination.
+
+Not yet done: a `sam` Jeopardy link from the hub (only from 4.7); PDFs of the
+séances (mfb545 has a `_build/pdf.py` to copy if wanted); the `fl3` rules
+block is NOT deployed.
