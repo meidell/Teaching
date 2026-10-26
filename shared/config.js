@@ -79,6 +79,8 @@ window.CourseConfig = (function () {
                    label:"SWISS UMEF · MFB 545 Fintech" },
     "flc":       { school:"Kalaidos", ns:"flc", theme:"kalaidos", lang:"fr", login:true,
                    label:"Kalaidos · Financial Leadership & Controlling" },
+    "fl3":       { school:"Kalaidos", ns:"fl3", theme:"kalaidos", lang:"fr", login:true,
+                   label:"Kalaidos · Financial Leadership III" },
     "qm1":       { school:"HEG", ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { school:"GBS", ns:"creator",   theme:"gbs",   lang:"en", login:true,

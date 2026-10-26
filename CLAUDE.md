@@ -279,6 +279,7 @@ Each course's history, decisions and traps now live next to its pages (split 23 
 - `UMEF/gen110/CLAUDE.md` — UMEF · GEN 110
 - `HEG/quantitative-methods/CLAUDE.md` — HEG · Quantitative Methods I
 - `Kalaidos/flc/CLAUDE.md` — Kalaidos · Financial Leadership & Controlling
+- `Kalaidos/fl3/CLAUDE.md` — Kalaidos · Financial Leadership III
 - `UMEF/ideas-e1410/CLAUDE.md` — UMEF · E1410
 - Courses without a file (OMBA401, OMBAFR455, UMEF407, MFB 545, the open hubs) are documented in the memory notes and in comments at the top of their pages.
 
