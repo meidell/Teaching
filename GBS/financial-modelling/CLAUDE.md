@@ -57,3 +57,55 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   No wall tonight (the `finmod` rules block has no `_wall` node yet; add it
   with Session 2 if a shared tally is wanted). Probed headlessly: 7/7, no
   errors. Run sheet `_private/week2-runsheet.md`.
+- **Session 2 — *Error-checking as architecture* (`week3.html`, built 26 Oct
+  2026), `total:6`.** Builds on v01: **Build I** a two-way INDEX/MATCH
+  snapshot on the Cover (Inputs C28 = snapshot year, labels LINKED from
+  Calc), with an in-page mini sheet showing VLOOKUP's typed column index
+  going wrong after an inserted column (30.99 vs 33.07). **Build II** the
+  scenario switch: selector Inputs!C27, table C29:E34 (Base 6.7/16.1/5/8/10
+  · Boreal plan 9.0/17.5/5/8.5/10 · Lender case 3.0/14.5/5/7.5/12), live
+  column C18:C22 `=CHOOSE(Scenario,C30,D30,E30)`, names Scenario / WACC /
+  TermGrowth / TaxRate, a data table on the selector at Inputs C37:E40.
+  **EV 159.36 / 179.11 / 135.59, €2.48 / 2.98 / 1.89.** The finding the
+  session turns on: growth is worth almost nothing (Boreal's 9% alone
+  +0.5), the margin is worth +34.2 (lender's −39.1), capex −16.1.
+  **Build III** the audit block: Checks rows 12:14 inserted, new error
+  checks C11 ISTEXT · C12 selector valid · C13 live = selected · C14
+  ISFORMULA, master **C15** `=IFERROR(IF(MAX(C5:C14)<0.001,0,1),1)`,
+  warnings C18–C21, count C22; Cover `=IF(Checks!C15=0,"OK · "&Checks!C22&" warning(s)","ERROR")`.
+  **Step 5** deals each student one of nine sabotage cards; the classify
+  answers E E E N E W N W E. Every number and every card was recalculated
+  **in Excel** (osascript on the installed app) from
+  `_private/gen-meridia-v01-v02.py`; the end state is
+  `_private/meridia-cold-v02-key.xlsx`; the student-facing start file is
+  `files/meridia-cold-v01-reference.xlsx` (S1's end state, linked from the
+  banner). Run sheet `_private/week3-runsheet.md`.
+  ⚠ **openpyxl writes post-2010 functions without their `_xlfn.` prefix** —
+  ISFORMULA read #NAME? until written as `_xlfn.ISFORMULA`. Any generated
+  workbook using IFS, XLOOKUP, ISFORMULA etc. needs the prefix.
+  ⚠ **A data table's input cell must be on the table's own sheet.** Session
+  1's page originally put the WACC × g table on the Cover with inputs on
+  Inputs, which Excel refuses; fixed 26 Oct 2026 (it lives on Inputs).
+  ⚠ **Session 3 needs Meridia's historical balance sheet and cash flow
+  statement**, which exist nowhere yet; they must agree with the canonical
+  history above.
+
+### Session parameters (for /new-session)
+
+- **Language** English. **Archetype** a run sheet, not concept screens: one
+  `.step` per block of the evening with a clock, `.lect` 🎤 blocks of ~8 min
+  opening each build part, a numbered `.spec` of cell-by-cell build steps,
+  `.nchk` numeric checks (every answer recomputed in Python AND in Excel),
+  `data-work` capture fields, `data-board` on steps. `finmod.css` only;
+  additions at its END. `total` in courseprogress.js = number of steps.
+- **Textbook** none verbatim — Benninga *Financial Modeling*, Pignataro
+  *Financial Modeling and Valuation*, the FAST Standard, Microsoft docs, as
+  sources. Wording is free.
+- **Running case** Meridia Cold, canonical history above; each session
+  builds on the previous file (v01, v02, …). A second, non-Meridia example
+  goes in a `details.kbd` drawer ("the same structure in another business").
+- **Session** Thu 18:45–20:45, 120 min including a 5-min break. Teams of
+  three (A–F), roles Builder / Auditor / Presenter rotating.
+- **Grading** 50% participation (the student's own file and the page's
+  fields) · 50% final group presentation. No homework page, no checkpoint
+  quiz, no glossary page: the Close step's term list is the glossary.

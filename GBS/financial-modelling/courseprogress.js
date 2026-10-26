@@ -38,7 +38,7 @@ window.CourseProgress=(function(){
   var NS="finmod", K="finmod";
   var CHAPTERS=[
     {mod:'w2',  short:'W2', name:'Week 02 · The model nobody can audit',      total:7, live:true, href:'week2.html'},
-    {mod:'w3',  short:'W3', name:'Week 03 · Error-checking as architecture',  total:6, live:false},
+    {mod:'w3',  short:'W3', name:'Week 03 · Error-checking as architecture',  total:6, live:true, href:'week3.html'},
     {mod:'w4',  short:'W4', name:'Week 04 · The three statements, linked',    total:6, live:false},
     {mod:'w5',  short:'W5', name:'Week 05 · Forecast, plug, circularity',     total:6, live:false},
     {mod:'w6',  short:'W6', name:'Week 06 · Free cash flow, honestly',        total:6, live:false},

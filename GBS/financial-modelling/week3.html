@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/financial-modelling/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 2 · Error-checking as architecture · GBS</title>
+<meta name="description" content="Session 2 of Finance Modelling at Geneva Business School. Session 1's Meridia Cold model gains a two-way INDEX/MATCH lookup, a three-case scenario switch built with CHOOSE and named inputs, and an audit block of error checks and warnings; then each student plants an error in a teammate's file and finds out which checks catch it.">
+<meta name="theme-color" content="#101F44">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="finmod.css">
+</head>
+<body data-course="finmod" data-module="w3">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Session 02 · Thu 29 Oct</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 02 · Week 03 · Thursday 29 October 2026 · 18:45–20:45</div>
+    <h1>Error-checking as architecture</h1>
+    <div class="when">Laptop with Microsoft Excel (the desktop app) and last week's file, <code>meridia-cold-&lt;surname&gt;-v01.xlsx</code>, with its master check at 0. If you do not have it, start from <a href="files/meridia-cold-v01-reference.xlsx" download style="color:var(--accent-bright);font-weight:800;">the reference v01</a>.</div>
+    <p class="lead">Last week's model gives one answer for one set of assumptions. Tonight it gets three things that make it usable by someone else. The first is a <b>lookup</b> that finds a figure by its label and its year rather than by its position. The second is a <b>scenario switch</b> that runs the whole model on Meridia's base case, on the plan Boreal Logistics was shown, or on the case a lender would use, from one cell. The third is an <b>audit block</b> that separates errors, which stop the model, from warnings, which ask a person to look. At the end each of you plants an error in a teammate's file, and the audit block either finds it or does not. Both results answer last week's open question.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 6</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <div class="plan">
+    <h2>The run sheet</h2>
+    <div class="ps">One file, <code>v01</code> → <code>v02</code>. Each build part opens with a short 🎤 block on the projector; the room then builds along.</div>
+    <ol>
+      <li><span class="t">18:45</span><span class="n"><b>Prediction.</b> Three cases for Meridia: what are they worth, and which assumption decides it?</span><span class="m">8 min</span></li>
+      <li><span class="t">18:53</span><span class="n"><b>Build I · lookups.</b> Why VLOOKUP breaks; a two-way INDEX/MATCH snapshot on the cover.</span><span class="m">22 min</span></li>
+      <li><span class="t">19:15</span><span class="n"><b>Build II · the scenario switch.</b> A scenario table, CHOOSE, named inputs, a data table across the three cases.</span><span class="m">30 min</span></li>
+      <li><span class="t">19:45</span><span class="n">Break.</span><span class="m">5 min</span></li>
+      <li><span class="t">19:50</span><span class="n"><b>Build III · the audit block.</b> Error checks, warnings, a master that cannot be fooled by an error value.</span><span class="m">25 min</span></li>
+      <li><span class="t">20:15</span><span class="n"><b>Break it on purpose.</b> Plant one error in a teammate's file; find out which check fires.</span><span class="m">20 min</span></li>
+      <li><span class="t">20:35</span><span class="n"><b>Close.</b> Terms, the open question for Session 3, what to bring.</span><span class="m">10 min</span></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="Boreal plan, EV|w3_pred_boreal;Lender case, EV|w3_pred_lender;The assumption that decides it|w3_pred_driver">
+    <span class="tick">✅</span>
+    <span class="clock">18:45 · 8 min · Step 1</span>
+    <h2>Prediction: three cases, one company</h2>
+    <div id="lastWeek"></div>
+    <p>Last week's model values Meridia at <b>€159.4 m</b>, or €2.48 a share, on one set of drivers. The two bidders will not use that set. Boreal Logistics has been shown the management's plan, which has faster growth and a better margin. A bank lending to Arco Partners will test a case where growth slows and the margin slips back to FY2023's level. All three cases use the same history, WACC (8.5%) and terminal growth (2%).</p>
+    <table class="data">
+      <tr><th>Driver</th><th>1 · Base</th><th>2 · Boreal plan</th><th>3 · Lender case</th></tr>
+      <tr><td>Revenue growth</td><td>6.7%</td><td>9.0%</td><td>3.0%</td></tr>
+      <tr><td>EBITDA margin</td><td>16.1%</td><td>17.5%</td><td>14.5%</td></tr>
+      <tr><td>D&amp;A growth</td><td>5.0%</td><td>5.0%</td><td>5.0%</td></tr>
+      <tr><td>Capex, % of revenue</td><td>8.0%</td><td>8.5%</td><td>7.5%</td></tr>
+      <tr><td>NWC, % of the revenue increase</td><td>10.0%</td><td>10.0%</td><td>12.0%</td></tr>
+      <tr><td><b>Enterprise value (€ m)</b></td><td><b>159.4</b></td><td><b>?</b></td><td><b>?</b></td></tr>
+    </table>
+    <div class="row2">
+      <div class="cap">
+        <label for="f_pb">1 · Enterprise value on the Boreal plan</label>
+        <select id="f_pb"><option value="">Choose…</option><option>Below €160 m</option><option>€160–180 m</option><option>€180–200 m</option><option>Above €200 m</option></select>
+        <input type="hidden" id="h_pb" data-work="w3_pred_boreal" data-worklabel="W3 prediction · EV on the Boreal plan">
+      </div>
+      <div class="cap">
+        <label for="f_pl">2 · Enterprise value on the lender case</label>
+        <select id="f_pl"><option value="">Choose…</option><option>Below €140 m</option><option>€140–160 m</option><option>€160–180 m</option><option>Above €180 m</option></select>
+        <input type="hidden" id="h_pl" data-work="w3_pred_lender" data-worklabel="W3 prediction · EV on the lender case">
+      </div>
+    </div>
+    <div class="cap">
+      <label for="f_pd">3 · The Boreal plan changes three drivers. Which change adds the most value on its own?</label>
+      <select id="f_pd"><option value="">Choose…</option><option>Growth, 6.7% → 9.0%</option><option>Margin, 16.1% → 17.5%</option><option>Capex, 8.0% → 8.5% of revenue</option></select>
+      <input type="hidden" id="h_pd" data-work="w3_pred_driver" data-worklabel="W3 prediction · the driver worth most">
+    </div>
+    <button class="btn" id="sealBtn">Seal my prediction</button>
+    <div class="savenote" id="sealNote">Once sealed, the prediction cannot be edited. Build II computes all three.</div>
+    <div id="sealed"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2" data-board="After the insert, VLOOKUP returns|w3_pred_vlookup">
+    <span class="tick">✅</span>
+    <span class="clock">18:53 · 22 min · Step 2</span>
+    <h2>Build I · Lookups: find a figure by what it is, not where it is</h2>
+    <p>A model is read by people who want one figure: EBITDA in FY2027, or net debt in the last actual year. Last week's net-debt cell already found its value with <code>INDEX/MATCH</code> on the year. Tonight that becomes a habit, and the cover gets a snapshot that shows any year's revenue, EBITDA and free cash flow. First, the reason not to use the function most people learned first.</p>
+    <div class="lect">
+      <div class="lh">🎤 On the screen · 8 min · what a lookup actually stores</div>
+      <ol>
+        <li><b>VLOOKUP stores a position.</b> <code>=VLOOKUP("EBITDA",$A$8:$K$22,10,FALSE)</code> finds the row whose first cell is "EBITDA", then returns the <b>10th column</b> of the range. The 10 is a typed number inside a formula: a hardcode. Excel adjusts cell references when columns are inserted or deleted, but it never edits a constant. Insert a column inside the range and the 10 points at a different year, without any error.</li>
+        <li><b>The fourth argument decides the search.</b> <code>FALSE</code> (or 0) means exact match: Excel scans down the first column until it finds the value, and returns <code>#N/A</code> if it does not. Left out, it means <i>approximate</i> match, which assumes the first column is sorted ascending and binary-searches it. On a column of labels, that can return a neighbouring row without any error. In a model, a lookup is always exact.</li>
+        <li><b>INDEX/MATCH stores two questions.</b> <code>MATCH("EBITDA",$A$8:$A$22,0)</code> returns the position of the label in its column, here 3. <code>MATCH(2027,$F$4:$K$4,0)</code> returns the position of the year in the timeline, here 5. <code>INDEX($F$8:$K$22,3,5)</code> returns the cell at that row and column. Nothing is counted by hand. An inserted column shifts the ranges, and both MATCHes find the same label and year again.</li>
+        <li><b>Failing loudly is the good outcome.</b> Rename the label to "EBITDA (€m)" and both formulas return <code>#N/A</code>. That is correct behaviour: an error you can see beats a plausible wrong number. It is also why the snapshot below <i>links</i> its labels from Calc instead of retyping them. (Excel 365 has <code>XLOOKUP</code>, which does the same job in one function. INDEX/MATCH works in every version a colleague might open the file with.)</li>
+      </ol>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title">Calc, rows 4–13 · insert a column and watch two formulas</div>
+      <p style="font-size:13px;margin:0 0 8px;">Before you press anything, predict what the VLOOKUP returns after a column is inserted at F (a "Notes" column someone adds next to the labels).</p>
+      <div class="cap" style="margin:6px 0;">
+        <select id="f_pv"><option value="">After the insert, the VLOOKUP returns…</option><option>The same 33.07</option><option>Another year's EBITDA, with no error</option><option>#REF!</option><option>#N/A</option></select>
+        <input type="hidden" id="h_pv" data-work="w3_pred_vlookup" data-worklabel="W3 prediction · VLOOKUP after an inserted column">
+      </div>
+      <div class="btn-row">
+        <button class="btn small" id="xlIns" disabled>Insert a column at F</button>
+        <button class="btn small ghost" id="xlRen" disabled>Rename "EBITDA" to "EBITDA (€m)"</button>
+        <button class="btn small ghost" id="xlReset" disabled>Reset</button>
+      </div>
+      <div class="xl-wrap"><table class="xl" id="xlTab"></table></div>
+      <div id="xlFx"></div>
+      <div class="caption" id="xlCap">Choose a prediction to unlock the buttons.</div>
+    </div>
+
+    <div class="spec">
+      <div class="sr"><b>Open <code>v01</code>, save as <code>meridia-cold-&lt;surname&gt;-v02.xlsx</code></b><p>A new version for every session. v01 stays as it was.</p></div>
+      <div class="sr"><b>Inputs · the snapshot year</b><p>A28 <b>Cover snapshot year</b>, B28 <code>year</code>, C28 <code>2027</code>, blue. It is a number a person types, so it lives on Inputs, even though only the cover reads it. Then <i>Data → Data Validation → Allow: List</i>, Source <code>=$F$4:$K$4</code>: the cell now offers only years the timeline has.</p></div>
+      <div class="sr"><b>Cover · the snapshot block</b><p>In a free block of the cover, for example A20:C23: A20 <b>Year</b>, C20 <code>=Inputs!C28</code>. A21 <code>=Calc!A8</code>, A22 <code>=Calc!A10</code>, A23 <code>=Calc!A18</code>. These are green links to the labels, never retyped, so a renamed label renames itself here too.</p></div>
+      <div class="sr"><b>Cover · the two-way lookup</b><p>C21 <code>=INDEX(Calc!$F$8:$K$22,MATCH($A21,Calc!$A$8:$A$22,0),MATCH($C$20,Calc!$F$4:$K$4,0))</code>, filled down to C23. The <code>$A21</code> keeps the column fixed and lets the row move. <code>$C$20</code> is fixed completely. Change the year on Inputs and all three move.</p></div>
+      <div class="sr"><b>Test it</b><p>Set C28 to 2025: revenue must read 180.4, the history. Set it back to 2027. Then try typing 2031 in C28: validation refuses it. Go to Formulas → Evaluate Formula on C21 and step through it: the two MATCHes become 3 and 5 before INDEX runs.</p></div>
+    </div>
+    <div class="nchk-box">
+      <div class="nh">Check your snapshot · FY2027</div>
+      <div class="nchk" data-id="l_rev27" data-a="205.38" data-tol="0.06"><span class="q">Revenue FY2027 (€m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="l_ebitda27" data-a="33.07" data-tol="0.06"><span class="q">EBITDA FY2027 (€m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="l_fcf27" data-a="10.22" data-tol="0.06"><span class="q">Free cash flow FY2027 (€m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+    </div>
+    <details class="kbd"><summary>The same structure in another business · a hotel's rate card</summary>
+      <p style="font-size:13px;margin-top:8px;">A Geneva hotel keeps its room rates in a grid: room types down column A (Standard, Superior, Junior suite, Suite in A5:A8), seasons across row 4 (Low, Mid, High, Festival in C4:F4). The booking sheet needs the rate for a Junior suite in High season. <code>=VLOOKUP("Junior suite",$A$5:$F$8,5,FALSE)</code> works, until revenue management adds a "Shoulder" season column between Mid and High. Then the 5 points at Shoulder.</p>
+      <p style="font-size:13px;">The robust version is <code>=INDEX($C$5:$F$8,MATCH("Junior suite",$A$5:$A$8,0),MATCH("High",$C$4:$F$4,0))</code>. MATCH returns 3 for the room and 3 for the season, and both are found again after any insert. The industry is different and the lookup is the same: one label down, one label across.</p>
+    </details>
+    <div class="cap">
+      <label for="f_snap">Your C21 formula, pasted</label>
+      <input type="text" id="f_snap" data-work="w3_snap" data-worklabel="W3 · snapshot lookup formula" placeholder="=INDEX(Calc!$F$8:$K$22,MATCH(…),MATCH(…))" autocomplete="off">
+    </div>
+    <button class="btn" id="b1Btn">Record the lookup</button>
+    <div class="savenote" id="b1Note"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3" data-board="EV · Boreal plan|w3_ev_boreal;EV · Lender case|w3_ev_lender">
+    <span class="tick">✅</span>
+    <span class="clock">19:15 · 30 min · Step 3</span>
+    <h2>Build II · The scenario switch: three cases, one cell</h2>
+    <p>Last week the five drivers were typed straight into C18:C22. If a case changes, someone retypes them and the previous case is gone. Tonight the cases sit side by side in a <b>scenario table</b>, each one typed once, and the cells the model reads become a <b>live column</b> that copies whichever case one selector cell names.</p>
+    <div class="lect">
+      <div class="lh">🎤 On the screen · 8 min · CHOOSE, the live column, names</div>
+      <ol>
+        <li><b>CHOOSE returns its n-th argument.</b> <code>=CHOOSE(2,C30,D30,E30)</code> returns D30. The index is truncated to a whole number, so 2.7 behaves as 2. An index below 1 or above the number of options returns <code>#VALUE!</code>. CHOOSE can pick from cells that are not next to each other, which is why the syllabus names it for scenario switching. <code>=INDEX(C30:E30,2)</code> does the same here, and a fourth case only means widening the range.</li>
+        <li><b>The live column.</b> C18:C22 stop being inputs. Each becomes <code>=CHOOSE(Scenario,C30,D30,E30)</code>, black, because it is now a formula. The blue cells are the scenario table. Calc did not change: it still reads C18:C22, so not a single model formula is edited.</li>
+        <li><b>Names.</b> A name is a workbook-wide label for an absolute reference: <code>WACC</code> means <code>=Inputs!$C$24</code>. A formula reads as its logic, <code>=F$6/(1+WACC)^F20</code>, and <code>Ctrl+[</code> still traces it. The risk is that a name hides where it points, and the Name Manager can hold stale names that give <code>#REF!</code>. The rule: name a handful of single-cell inputs, never a block of calculations, and paste the list of names onto the cover.</li>
+        <li><b>A data table across the cases.</b> A one-variable data table with the <i>selector</i> as its input cell runs the whole model three times and prints EV and value per share for each case side by side. Excel requires a data table's input cell to be <b>on the same sheet as the table</b>, so the table lives on Inputs, next to the selector. (Last week's WACC × g grid belongs there too, for the same reason.)</li>
+      </ol>
+    </div>
+    <div class="spec">
+      <div class="sr"><b>Inputs · the selector</b><p>A27 <b>Scenario selected</b>, B27 <code>1–3</code>, C27 <code>1</code>, blue. Data Validation → List, Source <code>1,2,3</code>.</p></div>
+      <div class="sr"><b>Inputs · the scenario table</b><p>Row 29 headers: C29 <code>1 · Base</code>, D29 <code>2 · Boreal plan</code>, E29 <code>3 · Lender case</code>. Rows 30–34: the five drivers, labels in A, <code>%</code> in B, the three cases from Step 1 in C:E, all blue. Copy C18:C22 into C30:C34 with <i>Paste Special → Values</i>, so the base case is exactly last week's.</p></div>
+      <div class="sr"><b>Names · Ctrl+F3 (Mac: Formulas → Define Name)</b><p><code>Scenario</code> → Inputs!$C$27 · <code>WACC</code> → Inputs!$C$24 · <code>TermGrowth</code> → Inputs!$C$25 · <code>TaxRate</code> → Inputs!$C$16. Scope: Workbook.</p></div>
+      <div class="sr"><b>Inputs · the live column</b><p>C18 <code>=CHOOSE(Scenario,C30,D30,E30)</code>, filled down to C22, font black. The cover still reads €159.36 m on case 1.</p></div>
+      <div class="sr"><b>Calc · use the names</b><p>Row 14 tax <code>=F13*TaxRate</code>. Row 21 discount factor <code>=F$6/(1+WACC)^F20</code>. C24 terminal value <code>=K18*(1+TermGrowth)/(WACC-TermGrowth)</code>. Fill each row right again. Nothing changes in value; the formulas now say what they do.</p></div>
+      <div class="sr"><b>Cover · say which case it is</b><p>Under the answer: <b>Scenario</b> <code>=INDEX(Inputs!C29:E29,Scenario)</code>. A value printed without its case is not an answer. Then <i>Formulas → Use in Formula → Paste Names</i> (<code>F3</code>) → Paste List into a free corner of the cover: the names, documented.</p></div>
+      <div class="sr"><b>Inputs · the data table across the cases</b><p>D37 <code>=Calc!C27</code>, E37 <code>=Calc!C31</code>. C38:C40: <code>1</code>, <code>2</code>, <code>3</code>. Select C37:E40 → <i>Data → What-If Analysis → Data Table</i> → <b>Column input cell</b> <code>C27</code>, row input empty. If the grid does not fill, check <i>Formulas → Calculation Options</i>: "Automatic except for data tables" leaves it stale until <code>F9</code>.</p></div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title">The switch, in the browser · the same model as your file</div>
+      <p style="font-size:13px;margin:0 0 6px;">Type into the blue selector cell as you would in C27. Try 2, then 3, then 2.7, then 4. Then go back to case 1 and switch on Boreal's three changes one at a time: this is what your prediction 3 was about.</p>
+      <div class="scn-sel">
+        <span style="font-size:12.5px;font-weight:800;color:var(--navy);">Inputs!C27 =</span><input type="text" id="scSel" value="1" inputmode="decimal" aria-label="Scenario selector">
+        <code style="font-size:12px;" id="scFx"></code>
+      </div>
+      <div class="scn-sel" id="scLevers">
+        <span style="font-size:12px;color:var(--grey);">On case 1, apply only:</span>
+        <label class="lever"><input type="checkbox" data-k="gr"> growth 9.0%</label>
+        <label class="lever"><input type="checkbox" data-k="m"> margin 17.5%</label>
+        <label class="lever"><input type="checkbox" data-k="cx"> capex 8.5%</label>
+      </div>
+      <div class="scn-out" id="scOut"></div>
+      <div class="caption" id="scCap"></div>
+    </div>
+
+    <div class="nchk-box">
+      <div class="nh">Check your switch · read the data table</div>
+      <div class="nchk" data-id="s_evb" data-a="179.11" data-tol="0.06"><span class="q">EV, case 2 · Boreal plan (€m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="s_evl" data-a="135.59" data-tol="0.06"><span class="q">EV, case 3 · Lender case (€m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="s_psl" data-a="1.89" data-tol="0.006"><span class="q">Value per share, Lender case (€)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="s_rev28" data-a="197.13" data-tol="0.06"><span class="q">Set C27 to 3 · revenue FY2028 (€m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+    </div>
+    <div class="callout"><span class="ct">What the switch says</span>Boreal's 9% growth adds about <b>€0.5 m</b> of value. Its margin adds <b>€34.2 m</b>. Its extra capex takes away <b>€16.1 m</b>. Growth is worth almost nothing here because every extra euro of revenue needs 8 cents of capex and 10 cents of working capital, and at a 16.1% margin, after tax, that leaves little to discount. On the lender's side, the lower margin alone costs <b>€39.1 m</b>. The negotiation between the two bidders is a negotiation about one cell: the EBITDA margin.</div>
+    <details class="kbd"><summary>The same switch in another business · a hotel budget</summary>
+      <p style="font-size:13px;margin-top:8px;">A 120-room Geneva hotel budgets room revenue as rooms × 365 × occupancy × average daily rate (CHF 310). Occupancy has three cases: 72% budget, 80% if a congress is confirmed, 61% if it is not. The occupancy cell holds <code>=CHOOSE(Case,72%,80%,61%)</code>. That is legal, and it is exactly the hardcode-inside-a-formula from last week's broken file. The cases belong in three blue cells that the CHOOSE points to.</p>
+      <div class="nchk" data-id="s_hotel" data-a="8.28" data-tol="0.006"><span class="q">Room revenue with case 3 selected (CHF m)</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+    </details>
+    <input type="hidden" id="h_evb" data-work="w3_ev_boreal" data-worklabel="W3 · EV on the Boreal plan (€m)">
+    <input type="hidden" id="h_evl" data-work="w3_ev_lender" data-worklabel="W3 · EV on the lender case (€m)">
+  </div>
+
+  <div class="quiet">☕ <b>19:45 · Break, 5 minutes.</b> Set the selector back to 1 before you leave the laptop.</div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="Your master formula|w3_master">
+    <span class="tick">✅</span>
+    <span class="clock">19:50 · 25 min · Step 4</span>
+    <h2>Build III · The audit block: errors stop the model, warnings ask a person</h2>
+    <p>Last week's Checks sheet held six differences that must be zero. That was a start. Tonight it becomes an audit block with two kinds of check and a master that cannot be fooled.</p>
+    <div class="lect">
+      <div class="lh">🎤 On the screen · 8 min · what an audit block contains</div>
+      <ol>
+        <li><b>Errors and warnings are different things.</b> An <i>error check</i> tests something that must be true: the timeline is linked, the actuals carry over, WACC exceeds g, the selector is 1, 2 or 3. If one fails, the model is wrong, and the cover says ERROR. A <i>warning</i> tests something that is merely unusual: a margin above 30%, a terminal value above 85% of EV. It can be legitimate, so it is counted and shown, and it never turns the cover red. A model that flags every oddity as an error trains its reader to ignore the flag.</li>
+        <li><b>Four families of error check.</b> <i>Integrity</i>: two routes to the same number agree (the actuals carried over, PV computed two ways). <i>Type</i>: <code>ISTEXT</code> over the typed inputs catches a number stored as text, last week's fault 1. <i>Structure</i>: <code>ISFORMULA</code> catches a number typed over a formula on Calc (Excel 2013 or later). <i>Switch</i>: the selector is valid, and the live column equals the case it names.</li>
+        <li><b>An error value is a failed check.</b> If the selector is 4, CHOOSE returns <code>#VALUE!</code>, the error flows into the checks, and <code>MAX</code> of a range that contains an error is itself an error. The master then shows neither 0 nor 1. Wrapping it, <code>=IFERROR(IF(MAX(…)&lt;0.001,0,1),1)</code>, turns "cannot tell" into ERROR, which is the only safe reading.</li>
+        <li><b>A check outside the master's range is decoration.</b> Inserting rows <i>inside</i> a range grows it. Inserting them just below, as you will do now, does not: <code>MAX(C5:C10)</code> stays <code>MAX(C5:C10)</code>. Every new check therefore ends with editing the master's range. Some modellers leave a blank row inside the range for exactly this reason.</li>
+      </ol>
+    </div>
+    <div class="spec">
+      <div class="sr"><b>Checks · make room</b><p>Select rows 12:14 on the Checks sheet and insert three rows (<code>Ctrl+Shift+=</code>; Mac <code>⌃I</code>). The master moves to <b>C15</b>, and the cover's link follows it by itself, because references adjust. Its <code>MAX(C5:C10)</code> does not grow.</p></div>
+      <div class="sr"><b>Checks · four new error checks</b><p>C11 <b>No text among the typed inputs</b> <code>=SUMPRODUCT(--ISTEXT(Inputs!F8:H14))+SUMPRODUCT(--ISTEXT(Inputs!C30:E34))</code><br>C12 <b>Selector is 1, 2 or 3</b> <code>=IF(OR(Scenario=1,Scenario=2,Scenario=3),0,1)</code><br>C13 <b>Live drivers = the selected case</b> <code>=SUMPRODUCT(ABS(Inputs!C18:C22-INDEX(Inputs!C30:E34,0,Scenario)))</code>. INDEX with row 0 returns the whole column.<br>C14 <b>No typed numbers on Calc</b> <code>=SUMPRODUCT(ISNUMBER(Calc!F4:K22)*(1-ISFORMULA(Calc!F4:K22)))</code></p></div>
+      <div class="sr"><b>Checks · the master, rewritten</b><p>C15 <code>=IFERROR(IF(MAX(C5:C14)&lt;0.001,0,1),1)</code>. Green when 0, red when 1, as before.</p></div>
+      <div class="sr"><b>Checks · the warnings, below the master</b><p>A17 <b>Warnings</b>. C18 <b>W1 forecast growth outside −10%…+20%</b> <code>=IF(OR(MAX(Calc!I9:K9)&gt;0.2,MIN(Calc!I9:K9)&lt;-0.1),1,0)</code> · C19 <b>W2 forecast margin outside 5%…30%</b> <code>=IF(OR(MAX(Calc!I11:K11)&gt;0.3,MIN(Calc!I11:K11)&lt;0.05),1,0)</code> · C20 <b>W3 terminal value above 85% of EV</b> <code>=IF(Calc!C25/Calc!C27&gt;0.85,1,0)</code> · C21 <b>W4 value per share outside €0.50…€50</b> <code>=IF(OR(Calc!C31&lt;0.5,Calc!C31&gt;50),1,0)</code> · C22 <b>Warnings, count</b> <code>=SUM(C18:C21)</code>. Conditional format: amber when 1.</p></div>
+      <div class="sr"><b>Cover · one line that says both</b><p>The Model-check cell: <code>=IF(Checks!C15=0,"OK · "&amp;Checks!C22&amp;" warning(s)","ERROR")</code>. On ERROR it does not read the warnings at all, so an error value there cannot reach the cover.</p></div>
+      <div class="sr"><b>Prove each family fires</b><p>Copy a cell holding 4 and paste it onto C27 (validation stops typing, not pasting): the cover reads ERROR, not <code>#VALUE!</code>. Undo. Set terminal growth to 3%: the cover reads <b>OK · 1 warning(s)</b> (W3). Undo.</p></div>
+    </div>
+    <div class="nchk-box">
+      <div class="nh">Check your audit block</div>
+      <div class="nchk" data-id="a_master" data-a="0" data-tol="0.0001"><span class="q">Master check C15, case 1</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="a_warn3" data-a="1" data-tol="0.0001"><span class="q">Warnings count with g at 3%</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+      <div class="nchk" data-id="a_tv3" data-a="85.94" data-tol="0.06" data-pct="1"><span class="q">Terminal value as % of EV, g at 3%</span><input inputmode="decimal" placeholder="…"><button type="button">Check</button><span class="r"></span></div>
+    </div>
+    <div class="cap">
+      <label for="f_master">Your master formula, pasted</label>
+      <input type="text" id="f_master" data-work="w3_master" data-worklabel="W3 · master check formula" placeholder="=IFERROR(IF(MAX(C5:C14)<0.001,0,1),1)" autocomplete="off">
+    </div>
+    <button class="btn" id="b3Btn">Record the audit block</button>
+    <div class="savenote" id="b3Note"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="Card planted|w3_card;Caught by|w3_caughtby">
+    <span class="tick">✅</span>
+    <span class="clock">20:15 · 20 min · Step 5</span>
+    <h2>Break it on purpose</h2>
+    <p>An audit block that has never caught anything is untested. Within your team, the <b>Auditor</b> plants one error in the <b>Builder</b>'s v02 while the Builder looks away; the Presenter keeps time. The Builder then has <b>six minutes</b> to find it, starting from the cover. Then swap and repeat with a new card. Work on a copy: <i>File → Save a Copy</i> as <code>…-v02-sabotage.xlsx</code>.</p>
+    <div class="doit">
+      <div class="dh">Rules</div>
+      <p><b>1.</b> Select case 1 before planting. <b>2.</b> Plant exactly what the card says, nothing else. <b>3.</b> The Builder may use every tool from last week (<code>Ctrl+`</code>, <code>Ctrl+G → Constants</code>, <code>Ctrl+\</code>, <code>Ctrl+[</code>) and the audit block. <b>4.</b> Record what found it: a check row, a warning, a tool, or nothing.</p>
+    </div>
+    <button class="btn ghost" id="dealBtn">Deal me a card (I am planting)</button>
+    <div id="dealt"></div>
+    <div class="row2">
+      <div class="cap">
+        <label for="f_found">The Builder found it?</label>
+        <select id="f_found"><option value="">Choose…</option><option>Yes, the cover said ERROR</option><option>Yes, from a warning</option><option>Yes, with a tool (Ctrl+\ etc.)</option><option>Not within six minutes</option></select>
+      </div>
+      <div class="cap">
+        <label for="f_by">What exactly caught it</label>
+        <input type="text" id="f_by" placeholder="e.g. C13 live drivers, or Ctrl+\ on row 21" autocomplete="off">
+      </div>
+    </div>
+    <input type="hidden" id="h_card" data-work="w3_card" data-worklabel="W3 · sabotage card planted">
+    <input type="hidden" id="h_caught" data-work="w3_caughtby" data-worklabel="W3 · what caught the planted error">
+    <button class="btn" id="sabBtn">Record the round</button>
+    <div class="savenote" id="sabNote"></div>
+
+    <h3>All nine cards · which part of the audit block fires?</h3>
+    <p>Every card was planted in the reference model and recalculated in Excel. Classify each one, then read what it did.</p>
+    <div class="lab">
+      <div class="lab-title">Error check · Warning only · Nothing (a convention finds it)</div>
+      <div id="symRows"></div>
+      <div class="caption" id="symCap"></div>
+    </div>
+    <div class="callout" id="tally" hidden><span class="ct">Last week's open question, answered</span>Of nine planted errors, <b>five</b> turn the cover to ERROR, <b>two</b> raise only a warning, and <b>two</b> pass every check: a constant inside a formula and a formula copied from the neighbour. Those are the faults the audit block cannot see by construction. A check compares numbers, and both errors leave plausible numbers. They are found by the conventions (<code>Ctrl+\</code>, one formula per row, no constants in formulas), which is why the conventions came first.</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6" data-board="Prediction for Session 3|w3_next">
+    <span class="tick">✅</span>
+    <span class="clock">20:35 · 10 min · Step 6</span>
+    <h2>Close</h2>
+    <h3>Terms introduced today</h3>
+    <div class="terms">
+      <div><b>VLOOKUP column index</b> · a typed position inside the formula; an inserted column moves it silently.</div>
+      <div><b>Exact vs approximate match</b> · FALSE / 0 scans for the value or returns #N/A; omitted, it binary-searches a column assumed sorted.</div>
+      <div><b>INDEX/MATCH</b> · MATCH returns a position, INDEX returns the cell at it; two MATCHes make a two-way lookup.</div>
+      <div><b>Data validation</b> · a cell that accepts only listed values; pasting can bypass it, so a check still tests the cell.</div>
+      <div><b>Evaluate Formula</b> · steps through a formula one function at a time.</div>
+      <div><b>Scenario table · live column</b> · every case typed once, in blue; the cells the model reads copy the selected case.</div>
+      <div><b>CHOOSE</b> · returns its n-th argument; n is truncated; outside 1…n it returns #VALUE!.</div>
+      <div><b>Named range</b> · a workbook-wide label for an absolute reference; for a few single-cell inputs only.</div>
+      <div><b>Data table input cell</b> · must be on the same sheet as the table; a one-variable table on the selector compares all cases.</div>
+      <div><b>Error check · warning</b> · must be true, turns the cover to ERROR · merely unusual, is counted and shown.</div>
+      <div><b>ISTEXT · ISFORMULA</b> · type and structure checks: text among inputs, numbers typed over formulas.</div>
+      <div><b>IFERROR on the master</b> · an error value inside a check counts as a failed check.</div>
+    </div>
+    <div class="claim">
+      <div class="ch">Open question · for Session 3</div>
+      <div class="cq">"Next week the balance sheet will not balance the first time. Which check would tell you <i>where</i> it breaks, not only <i>that</i> it breaks?"</div>
+      <div class="cn">A single "assets − liabilities − equity = 0" check says that something is wrong. A check per year says when it first goes wrong, and a check that the cash on the balance sheet equals the cash flow statement's closing cash says which statement to look at. Session 3 builds Meridia's three historical statements and finds out.</div>
+    </div>
+    <div class="cap">
+      <label for="f_next">Prediction for Session 3</label>
+      <div class="hint">When your linked balance sheet first fails to balance, which line do you expect to be the cause, and which check will you write before you start?</div>
+      <textarea id="f_next" data-work="w3_next" data-worklabel="W3 · prediction for session 3"></textarea>
+    </div>
+    <button class="btn" id="nextBtn">Seal it</button>
+    <div class="savenote" id="nextNote"></div>
+
+    <h3>Sources for this session</h3>
+    <ul>
+      <li>Microsoft, <i>VLOOKUP function</i>, <i>INDEX function</i>, <i>MATCH function</i>, <i>CHOOSE function</i>: syntax and match types. <a href="https://support.microsoft.com/en-us/office/vlookup-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1" target="_blank" rel="noopener">VLOOKUP →</a> · <a href="https://support.microsoft.com/en-us/office/index-function-a5dcf0dd-996d-40a4-a822-b56b061328bd" target="_blank" rel="noopener">INDEX →</a> · <a href="https://support.microsoft.com/en-us/office/match-function-e8dffd45-c762-47d6-bf89-533f4a37673a" target="_blank" rel="noopener">MATCH →</a> · <a href="https://support.microsoft.com/en-us/office/choose-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc" target="_blank" rel="noopener">CHOOSE →</a></li>
+      <li>Microsoft, <i>Define and use names in formulas</i>. <a href="https://support.microsoft.com/en-us/office/define-and-use-names-in-formulas-4d0f13ac-53b7-422e-afd2-abd7ff379c64" target="_blank" rel="noopener">support.microsoft.com →</a></li>
+      <li>Microsoft, <i>Calculate multiple results by using a data table</i>. <a href="https://support.microsoft.com/en-us/office/calculate-multiple-results-by-using-a-data-table-e95e2487-6ca6-4413-ad12-77542a5ea50b" target="_blank" rel="noopener">support.microsoft.com →</a></li>
+      <li>FAST Standard Organisation, <i>The FAST Standard</i>: checks, flags and the case for few names. <a href="https://www.fast-standard.org/" target="_blank" rel="noopener">fast-standard.org →</a></li>
+      <li>Benninga, S., <i>Financial Modeling</i> (MIT Press): data tables and lookup functions. Pignataro, P., <i>Financial Modeling and Valuation</i> (Wiley): scenario switches on the assumptions page.</li>
+    </ul>
+    <div class="quiet"><b>Before Session 3:</b> bring <code>meridia-cold-&lt;surname&gt;-v02.xlsx</code> with the cover reading <b>OK · 0 warning(s)</b> on case 1, not the sabotage copy. Session 3 adds Meridia's historical income statement, balance sheet and cash flow statement to this file and links them.</div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Session 2 of 11 · Geneva Business School
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 2 — Error-checking as architecture (built 26 Oct 2026).
+   Builds on Session 1's v01 (week2.html): Inputs C18:C22 become a live
+   column over a scenario table in C29:E34 (selector C27, snapshot year
+   C28); Checks gains C11–C14, master moves to C15, warnings C18:C22.
+   Every number below was computed in Python AND recalculated in Excel
+   from the generated reference files (_private/gen-meridia-v01-v02.py,
+   _private/meridia-cold-v02-key.xlsx), including the nine sabotage cards.
+
+   ⚠ THE PROGRESS DENOMINATOR IS THE SIX STEPS. SECTIONS is the list and
+   courseprogress.js carries total:6 for w3; the two must agree.
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6'];
+var K='finmod';
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_w3')||'{}')[id];}catch(e){return false;}}
+function markDone(id){
+  var el=document.getElementById(id);if(el)el.classList.add('done');
+  if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  paintProgress();
+}
+function paintProgress(){
+  var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=document.getElementById(s);if(el)el.classList.add('done');}});
+  var pct=Math.round(n/SECTIONS.length*100);
+  document.getElementById('spLbl').textContent=n+' / '+SECTIONS.length;
+  document.getElementById('spPct').textContent=pct+'%';
+  document.getElementById('spFill').style.width=pct+'%';
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function v(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+function ls(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lset(k,x){try{localStorage.setItem(k,x);}catch(e){}}
+function setWork(id,val){var h=document.getElementById(id);if(h&&h.value!==String(val)){h.value=String(val);h.dispatchEvent(new Event('input'));}}
+
+/* ---- the Meridia model, exactly as the workbook computes it ---- */
+var HIST={rev:[160.2,171.0,180.4],ebitda:[23.2,26.2,29.0],da:[9.6,10.1,10.6],capex:[12.0,13.5,14.2],nwc:[1.2,1.4,1.1]};
+var CASES=[null,
+  {n:'1 · Base',        gr:.067,m:.161,gda:.05,cx:.08, nw:.10},
+  {n:'2 · Boreal plan', gr:.09, m:.175,gda:.05,cx:.085,nw:.10},
+  {n:'3 · Lender case', gr:.03, m:.145,gda:.05,cx:.075,nw:.12}];
+function model(d){
+  var R=HIST.rev.slice(),E=HIST.ebitda.slice(),D=HIST.da.slice(),C=HIST.capex.slice(),N=HIST.nwc.slice(),t;
+  for(t=3;t<6;t++){R.push(R[t-1]*(1+d.gr));E.push(R[t]*d.m);D.push(D[t-1]*(1+d.gda));C.push(R[t]*d.cx);N.push((R[t]-R[t-1])*d.nw);}
+  var F=[],pv=0;
+  for(t=0;t<6;t++){F.push((E[t]-D[t])*(1-.24)+D[t]-C[t]-N[t]);}
+  for(t=3;t<6;t++){pv+=F[t]/Math.pow(1.085,t-2);}
+  var pvtv=F[5]*1.02/(.085-.02)/Math.pow(1.085,3),ev=pvtv+pv;
+  return {R:R,E:E,D:D,F:F,ev:ev,ps:(ev-60)/40};
+}
+function f2(x){return x.toFixed(2);}
+
+/* ---- step 1: the sealed prediction ---- */
+function paintSeal(){
+  if(ls(K+'_w3_sealed')!=='1')return;
+  ['f_pb','f_pl','f_pd'].forEach(function(id){document.getElementById(id).disabled=true;});
+  var b=document.getElementById('sealBtn');b.disabled=true;b.textContent='Sealed ✓';
+  document.getElementById('sealNote').textContent='';
+  document.getElementById('sealed').innerHTML='<div class="sealed"><div class="sh">Sealed prediction</div><div class="sv">Boreal plan: '+esc(v('f_pb'))+' · Lender case: '+esc(v('f_pl'))+' · worth most: '+esc(v('f_pd'))+'</div></div>';
+}
+
+/* ---- step 2: the mini sheet ---- */
+var XL={ins:false,ren:false};
+function xlRender(){
+  var m=model(CASES[1]),years=[2023,2024,2025,2026,2027,2028];
+  var rows=[[4,'Year','',years.map(String)],[8,'Revenue','€m',m.R.map(f2)],[10,XL.ren?'EBITDA (€m)':'EBITDA','€m',m.E.map(f2)],[12,'D&A','€m',m.D.map(f2)],[13,'EBIT','€m',m.E.map(function(e,i){return f2(e-m.D[i]);})]];
+  var letters=XL.ins?['A','B','C','D','E','F','G','H','I','J','K','L']:['A','B','C','D','E','F','G','H','I','J','K'];
+  /* VLOOKUP: 10th column of A…; INDEX/MATCH: the year 2027 wherever it now sits */
+  var vlCol=letters[9];
+  var h='<tr><th></th>'+letters.map(function(L){return '<th'+(XL.ins&&L==='F'?' class="new"':'')+'>'+L+'</th>';}).join('')+'</tr>';
+  rows.forEach(function(r){
+    var cells=[r[1],r[2],'','',''];if(XL.ins)cells.push(r[0]===4?'Notes':'');cells=cells.concat(r[3]);
+    h+='<tr><td class="rn">'+r[0]+'</td>'+cells.map(function(c,i){
+      var L=letters[i],cls=i===0?'lbl':'';
+      if(XL.ins&&L==='F')cls+=' new';
+      if(r[0]===10&&!XL.ren&&L===vlCol)cls+=' hit';
+      return '<td class="'+cls+'">'+esc(c)+'</td>';}).join('')+'</tr>';
+  });
+  document.getElementById('xlTab').innerHTML=h;
+  var last=XL.ins?'L':'K',first=XL.ins?'G':'F';
+  var vl=XL.ren?'#N/A':m.E[XL.ins?3:4],im=XL.ren?'#N/A':m.E[4];
+  function out(x){return typeof x==='number'?f2(x):x;}
+  document.getElementById('xlFx').innerHTML=
+    '<div class="fx"><span class="fn">VLOOKUP</span><code>=VLOOKUP("EBITDA",$A$8:$'+last+'$22,10,FALSE)</code><span class="fv '+(vl===m.E[4]?'good':'bad')+'">'+out(vl)+'</span></div>'+
+    '<div class="fx"><span class="fn">INDEX/MATCH</span><code>=INDEX($'+first+'$8:$'+last+'$22,MATCH("EBITDA",$A$8:$A$22,0),MATCH(2027,$'+first+'$4:$'+last+'$4,0))</code><span class="fv '+(im===m.E[4]?'good':'bad')+'">'+out(im)+'</span></div>';
+  var cap=document.getElementById('xlCap');
+  if(XL.ren)cap.innerHTML='Both formulas return <b>#N/A</b>: the label no longer matches exactly. That is the honest failure, and the reason the cover links its labels from Calc instead of retyping them.';
+  else if(XL.ins)cap.innerHTML='Excel moved every reference, but not the typed <b>10</b>. VLOOKUP now returns column J, which holds FY2026: <b>'+f2(m.E[3])+'</b> instead of 33.07, with no error. INDEX/MATCH found 2027 in its new column.';
+  else if(v('f_pv'))cap.textContent='Both formulas return FY2027 EBITDA. Now insert the column.';
+}
+/* ---- step 3: the scenario widget ---- */
+function scRender(){
+  var raw=v('scSel'),x=parseFloat(raw.replace(',','.')),idx=Math.floor(x),out=document.getElementById('scOut'),cap=document.getElementById('scCap'),fx=document.getElementById('scFx');
+  var levers={};document.querySelectorAll('#scLevers input').forEach(function(c){levers[c.dataset.k]=c.checked;});
+  var anyLever=levers.gr||levers.m||levers.cx;
+  fx.textContent='C18 =CHOOSE(Scenario,C30,D30,E30) → '+(isNaN(x)?'#VALUE!':(idx>=1&&idx<=3?['C30','D30','E30'][idx-1]:'#VALUE!'));
+  if(isNaN(x)||idx<1||idx>3){
+    out.innerHTML='<div class="err">Enterprise value<b>#VALUE!</b></div><div class="err">Value per share<b>#VALUE!</b></div><div class="err">Cover<b>ERROR</b></div>';
+    cap.innerHTML='CHOOSE has no option number '+esc(raw||'blank')+', so every driver, every forecast row and every check downstream is <b>#VALUE!</b>. Only the master\'s IFERROR turns that into a readable ERROR.';
+    return;
+  }
+  var d=JSON.parse(JSON.stringify(CASES[idx]));
+  if(idx===1&&anyLever){if(levers.gr)d.gr=.09;if(levers.m)d.m=.175;if(levers.cx)d.cx=.085;}
+  var r=model(d),base=model(CASES[1]);
+  out.innerHTML='<div>Case<b style="font-size:15px">'+esc(CASES[idx].n)+(idx===1&&anyLever?' + levers':'')+'</b></div>'+
+    '<div>FCF FY2026 · 27 · 28<b style="font-size:15px">'+f2(r.F[3])+' · '+f2(r.F[4])+' · '+f2(r.F[5])+'</b></div>'+
+    '<div>Enterprise value<b>€'+r.ev.toFixed(1)+' m</b></div><div>Value per share<b>€'+f2(r.ps)+'</b></div>';
+  var diff=r.ev-base.ev,msg='';
+  if(x!==idx)msg='CHOOSE truncated '+esc(raw)+' to '+idx+'. A selector that accepts 2.7 is one reason the cell gets data validation, and the audit block still checks it. ';
+  if(idx===1&&anyLever)msg+='Against the base case: '+(diff>=0?'+':'−')+'€'+Math.abs(diff).toFixed(1)+' m. ';
+  else if(idx!==1)msg+='Against the base case: '+(diff>=0?'+':'−')+'€'+Math.abs(diff).toFixed(1)+' m.';
+  if(idx===1&&!anyLever)msg+='The base case: last week\'s €159.4 m.';
+  cap.innerHTML=msg;
+  if(ls(K+'_w3_sealed')==='1'&&idx!==1){
+    var pb=v('f_pb'),pl=v('f_pl');
+    cap.innerHTML+=' You predicted <i>'+esc(idx===2?pb:pl)+'</i>.';
+  }
+}
+
+/* ---- step 5: the nine cards (each verified in Excel on the reference v02) ---- */
+var CARDS=[
+  {c:'On Inputs, retype FY2024 revenue as text: type <code>\'171.0</code> (with the apostrophe) in <code>G8</code>.',a:'E',w:'C11 (ISTEXT) fires and the cover reads ERROR. Nothing else moves: arithmetic coerces the text, so EV stays €159.36 m. Without C11 this is invisible.'},
+  {c:'On Calc, type the number <code>33.07</code> over the FY2027 EBITDA formula in <code>J10</code>. The value does not change.',a:'E',w:'C14 (ISFORMULA) fires. Every number is still right today; the cell simply stops responding to the scenario switch. Set case 2 and FY2027 EBITDA would stay 33.07.'},
+  {c:'On Inputs, type <code>12%</code> over the live growth cell <code>C18</code> (the CHOOSE formula).',a:'E',w:'C13 (live drivers = the selected case) fires: 12% is not 6.7%. EV only moves to €160.12 m, which is growth being worth almost nothing again, so no number would have looked wrong.'},
+  {c:'On Calc, in the FY2027 discount factor <code>J21</code>, replace <code>WACC</code> with <code>0.09</code>.',a:'N',w:'No check fires. EV moves from €159.36 m to €159.28 m, and "PV computed two ways" agrees with itself because both routes read row 21. Ctrl+\\ on row 21 finds it in a second.'},
+  {c:'Copy a cell holding <code>4</code> and paste it onto the selector <code>C27</code>. Pasting is not stopped by the drop-down.',a:'E',w:'C12 fires. CHOOSE returns #VALUE!, which flows into C7, C8, C10 and C13 too; the IFERROR on the master turns that into 1 and the cover reads ERROR instead of #VALUE!.'},
+  {c:'In the scenario table, retype the Base EBITDA margin <code>C31</code> as <code>16.1</code> instead of <code>16.1%</code>.',a:'W',w:'W2 (margin outside 5–30%) and W4 (value per share outside €0.50–50) fire; the cover reads OK · 2 warning(s). EV is €39,114 m. Nothing is structurally wrong — every link holds — which is exactly why it is a warning and why a reader must look at the warnings.'},
+  {c:'On Calc, replace the FY2028 D&amp;A formula in <code>K12</code> with <code>=J12</code>.',a:'N',w:'No check fires. EV moves to €157.53 m — plausible, quiet, wrong. It is last week\'s fault 5 again. Ctrl+\\ on row 12 highlights K12.'},
+  {c:'On Inputs, retype FY2025 shares <code>H14</code> in thousands: <code>40000</code>.',a:'W',w:'W4 fires: €0.0025 a share is outside €0.50–50. The cover reads OK · 1 warning(s). Last week\'s fault 11, now caught, but only as a warning, because the model cannot know your units.'},
+  {c:'On Inputs, set terminal growth <code>C25</code> to <code>9%</code>.',a:'E',w:'C9 (WACC above g) fires; the Gordon formula would give an EV of −€1,826 m. W3 and W4 fire as well, but the error is what turns the cover red.'}
+];
+function buildSym(){
+  var box=document.getElementById('symRows'),cap=document.getElementById('symCap'),done=0,LEVELS=[['E','Error check'],['W','Warning only'],['N','Nothing']];
+  var st={};try{st=JSON.parse(ls(K+'_w3_sym')||'{}');}catch(e){}
+  CARDS.forEach(function(it,i){
+    var row=document.createElement('div');row.className='cl-row';
+    row.innerHTML='<div class="st"><b>'+(i+1)+'.</b> '+it.c+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="symw'+i+'"></div>';
+    function attempt(val,btn,quiet){
+      if(row.dataset.done)return;
+      if(val===it.a){row.dataset.done='1';row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});
+        var w=document.getElementById('symw'+i);w.innerHTML='<b>Correct.</b> '+it.w;w.classList.add('show');done++;
+        cap.textContent=done+' of '+CARDS.length+' classified';
+        if(!quiet){st[i]=(st[i]||[]).concat([val]);lset(K+'_w3_sym',JSON.stringify(st));}
+        if(done===CARDS.length){document.getElementById('tally').hidden=false;if(ls(K+'_w3_sab')==='1')markDone('s5');}
+      }else{btn.classList.add('no');btn.disabled=true;if(!quiet){st[i]=(st[i]||[]).concat([val]);lset(K+'_w3_sym',JSON.stringify(st));}}
+    }
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){attempt(b.dataset.v,b,false);});});
+    box.appendChild(row);
+    (st[i]||[]).forEach(function(val){var btn=null;row.querySelectorAll('button').forEach(function(x){if(x.dataset.v===val)btn=x;});if(btn)attempt(val,btn,true);});
+  });
+  cap.textContent=done+' of '+CARDS.length+' classified';
+  return function(){return done===CARDS.length;};
+}
+function paintDeal(){
+  var i=parseInt(ls(K+'_w3_deal'),10);if(isNaN(i))return;
+  document.getElementById('dealt').innerHTML='<div class="card-deal"><div class="ck">Your card · №'+(i+1)+' · plant it, say nothing</div><div class="cb">'+CARDS[i].c+'</div></div>';
+  var b=document.getElementById('dealBtn');b.disabled=true;b.textContent='Card dealt';
+  setWork('h_card','Card '+(i+1));
+}
+
+/* ---- wiring ---- */
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:'w3',title:'Session 2 · Error-checking as architecture',total:SECTIONS.length});
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('cbar'),compact:true});
+  paintProgress();
+
+  /* last week's sealed prediction, if this device has it */
+  (function(){var p=ls(K+'_work_w2_next');if(!p)return;
+    document.getElementById('lastWeek').innerHTML='<div class="prevpred"><b>Your prediction from Session 1:</b> '+esc(p)+'<br><span style="font-size:12px;">Step 5 tonight tests it on nine planted errors.</span></div>';})();
+
+  function mirror(selId,hidId){var s=document.getElementById(selId),h=document.getElementById(hidId);
+    s.addEventListener('change',function(){h.value=s.value;h.dispatchEvent(new Event('input'));});
+    var saved=ls(K+'_work_'+h.getAttribute('data-work'))||'';
+    if(saved){for(var i=0;i<s.options.length;i++){if(s.options[i].text===saved){s.selectedIndex=i;break;}}}
+  }
+  mirror('f_pb','h_pb');mirror('f_pl','h_pl');mirror('f_pd','h_pd');mirror('f_pv','h_pv');
+  paintSeal();
+  document.getElementById('sealBtn').addEventListener('click',function(){
+    if(!v('f_pb')||!v('f_pl')||!v('f_pd')){alert('Make all three judgements first.');return;}
+    lset(K+'_w3_sealed','1');paintSeal();markDone('s1');scRender();
+  });
+
+  /* mini sheet: the prediction unlocks the buttons */
+  function xlGate(){var on=!!v('f_pv');['xlIns','xlRen','xlReset'].forEach(function(id){document.getElementById(id).disabled=!on;});if(on)document.getElementById('f_pv').disabled=true;xlRender();}
+  document.getElementById('f_pv').addEventListener('change',xlGate);
+  document.getElementById('xlIns').addEventListener('click',function(){XL.ins=true;xlRender();});
+  document.getElementById('xlRen').addEventListener('click',function(){XL.ren=true;xlRender();});
+  document.getElementById('xlReset').addEventListener('click',function(){XL.ins=false;XL.ren=false;xlRender();});
+  if(v('f_pv'))xlGate();else xlRender();
+
+  document.getElementById('scSel').addEventListener('input',scRender);
+  document.querySelectorAll('#scLevers input').forEach(function(c){c.addEventListener('change',function(){document.getElementById('scSel').value='1';scRender();});});
+  scRender();
+
+  /* numeric checks — same engine as Session 1 */
+  var NK=K+'_w3_nchk',nst={};try{nst=JSON.parse(ls(NK)||'{}');}catch(e){}
+  function parseN(t,pct){t=String(t||'').trim().replace(/\s/g,'').replace('%','');if(/^-?\d+,\d+$/.test(t))t=t.replace(',','.');t=t.replace(/,/g,'');var x=parseFloat(t);if(pct&&!isNaN(x)&&Math.abs(x)<1&&x!==0)x*=100;return x;}
+  function partDone(stepId){var all=document.querySelectorAll('#'+stepId+' .nchk');for(var i=0;i<all.length;i++){if(nst[all[i].dataset.id]==null)return false;}return all.length>0;}
+  function afterCheck(){
+    if(nst.s_evb!=null)setWork('h_evb',nst.s_evb);
+    if(nst.s_evl!=null)setWork('h_evl',nst.s_evl);
+    if(partDone('s3'))markDone('s3');
+  }
+  document.querySelectorAll('.nchk').forEach(function(d){
+    var inp=d.querySelector('input'),btn=d.querySelector('button'),r=d.querySelector('.r'),a=parseFloat(d.dataset.a),tol=parseFloat(d.dataset.tol),pct=!!d.dataset.pct;
+    function ok(val,quiet){d.classList.add('ok');inp.value=String(val);inp.disabled=true;btn.disabled=true;r.textContent='✓';if(!quiet){nst[d.dataset.id]=val;lset(NK,JSON.stringify(nst));afterCheck();}}
+    btn.addEventListener('click',function(){
+      var x=parseN(inp.value,pct);if(isNaN(x)){r.textContent='a number';return;}
+      if(Math.abs(x-a)<=tol)ok(x,false);
+      else{d.classList.remove('ok');r.textContent='✗ not yet — trace it back with Ctrl+[';}
+    });
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter')btn.click();});
+    if(nst[d.dataset.id]!=null)ok(nst[d.dataset.id],true);
+  });
+  afterCheck();
+
+  document.getElementById('b1Btn').addEventListener('click',function(){
+    if(!v('f_snap')){alert('Paste your C21 formula.');return;}
+    if(!partDone('s2')){alert('First the three snapshot checks above.');return;}
+    document.getElementById('b1Note').textContent='Recorded ✓ — the cover finds its figures by label and year.';markDone('s2');
+  });
+  document.getElementById('b3Btn').addEventListener('click',function(){
+    if(!v('f_master')){alert('Paste your master formula.');return;}
+    if(!partDone('s4')){alert('First the three audit-block checks above.');return;}
+    var ok=/IFERROR/i.test(v('f_master'))&&/C14/i.test(v('f_master'));
+    document.getElementById('b3Note').textContent=ok?'Recorded ✓ — errors stop the model, warnings are counted.':'Recorded ✓ — but check the master: it should cover C5:C14 and be wrapped in IFERROR.';
+    markDone('s4');
+  });
+
+  /* sabotage round */
+  var allClassified=buildSym();
+  paintDeal();
+  document.getElementById('dealBtn').addEventListener('click',function(){
+    if(ls(K+'_w3_deal')==null)lset(K+'_w3_deal',String(Math.floor(Math.random()*CARDS.length)));
+    paintDeal();
+  });
+  (function(){var s=ls(K+'_work_w3_caughtby')||'';if(!s)return;var p=s.split(' · ');var sel=document.getElementById('f_found');for(var i=0;i<sel.options.length;i++){if(sel.options[i].text===p[0])sel.selectedIndex=i;}if(p[1])document.getElementById('f_by').value=p.slice(1).join(' · ');})();
+  document.getElementById('sabBtn').addEventListener('click',function(){
+    if(!v('f_found')){alert('Record whether the Builder found it.');return;}
+    setWork('h_caught',[v('f_found'),v('f_by')].filter(Boolean).join(' · '));
+    lset(K+'_w3_sab','1');
+    if(allClassified()){document.getElementById('sabNote').textContent='Recorded ✓';markDone('s5');}
+    else document.getElementById('sabNote').textContent='Recorded ✓ — now classify the nine cards below to complete the step.';
+  });
+
+  document.getElementById('nextBtn').addEventListener('click',function(){
+    if(!v('f_next')){alert('Enter a prediction.');return;}
+    document.getElementById('nextNote').textContent='Sealed ✓. It is compared with the result in Session 3.';markDone('s6');
+  });
+
+  function chip(){
+    var a=null;try{a=JSON.parse(ls(K+'_auth')||'null');}catch(e){}
+    if(!a||!a.sid)return;
+    var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}
+    var f=document.getElementById('whoami');if(f)f.innerHTML='Signed in as <b>'+esc(a.name)+'</b>';
+  }
+  chip();window.addEventListener('statstrack:named',chip);
+});
+</script>
+
+<script src="courseprogress.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
