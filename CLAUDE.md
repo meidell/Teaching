@@ -777,6 +777,10 @@ you are, and no account password is ever typed into a page or stored.
 - **Test by opening the file**, or `python3 -m http.server` from the repo root when a
   page needs absolute `/shared/…` paths to resolve.
 - Commit messages in this repo are terse by convention.
+- **New weekly lesson for any course → `/new-session <course-folder> <week>`** (skill in
+  `.claude/skills/new-session/SKILL.md`). It holds the hybrid session structure; the
+  course-specific parameters it needs live in a "Session parameters" block of each
+  course's `CLAUDE.md`.
 
 ## 8. The Courses app and push notifications (17 Oct 2026)
 
