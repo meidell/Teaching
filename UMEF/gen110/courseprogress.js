@@ -33,12 +33,12 @@ window.CourseProgress=(function(){
     {mod:'w1', short:'S1', name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                        total:8, live:true, href:T('seance1.html','seance1-en.html')},
     {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:9, live:true, href:T('seance2.html','seance2-en.html')},
     {mod:'w3', short:'S3', name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),         total:8, live:true, href:T('seance3.html','seance3-en.html')},
-    {mod:'w4', short:'S4', name:T('Séance 4 · Excel et Word avec l’IA — finance','Session 4 · Excel and Word with AI — finance'),                total:8, live:false},
-    {mod:'w5', short:'S5', name:T('Séance 5 · L’IA au travail — marketing, finance, RH','Session 5 · AI at work — marketing, finance, HR'),      total:8, live:false},
-    {mod:'w6', short:'S6', name:T('Séance 6 · Programmer sans être programmeur','Session 6 · Programming without being a programmer'),           total:8, live:false},
-    {mod:'w7', short:'S7', name:T('Séance 7 · Protection des données et IA','Session 7 · Data protection and AI'),                              total:8, live:false},
-    {mod:'w8', short:'S8', name:T('Séance 8 · Agents et assistants','Session 8 · Agents and assistants'),                                       total:8, live:false},
-    {mod:'w9', short:'S9', name:T('Séance 9 · Employable — les compétences IA, et l’avenir','Session 9 · Employable — AI skills, and the future'), total:8, live:false},
+    {mod:'w4', short:'S4', name:T('Séance 4 · Des agents qui travaillent ensemble','Session 4 · Agents working together'),                total:7, live:true, href:T('seance4.html','seance4-en.html')},
+    {mod:'w5', short:'S5', name:T('Séance 5 · Le CV automatisé','Session 5 · The automated CV'),      total:8, live:false},
+    {mod:'w6', short:'S6', name:T('Séance 6 · Le prompt engineering pour le travail','Session 6 · Prompt engineering for work'),           total:8, live:false},
+    {mod:'w7', short:'S7', name:T('Séance 7 · Automatiser — un agent qui travaille seul','Session 7 · Automating — an agent that works alone'),                              total:8, live:false},
+    {mod:'w8', short:'S8', name:T('Séance 8 · Programmer — un site, une appli, un jeu','Session 8 · Programming — a site, an app, a game'),                                       total:8, live:false},
+    {mod:'w9', short:'S9', name:T('Séance 9 · Contrats et données','Session 9 · Contracts and data'), total:8, live:false},
     {mod:'w10',short:'S10',name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),      total:4, live:false},
     /* the project page: listed and ticked, never in the percentage (opt) — 5 fields + 5 PDFs */
     {mod:'projet',short:'PJ',name:T('Le projet · remise 1 et les remises, sur ce site','The project · hand-in 1 and the hand-ins, on this site'), total:10, live:true, opt:true, href:T('projet.html','projet-en.html')}

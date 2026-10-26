@@ -210,12 +210,12 @@ window.StatsPresence = (function () {
     {mod:'w1', n:1, name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                 pages:['w1']},
     {mod:'w2', n:2, name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),          pages:['w2']},
     {mod:'w3', n:3, name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),     pages:['w3']},
-    {mod:'w4', n:4, name:T('Séance 4 · Excel et Word avec l’IA — finance','Session 4 · Excel and Word with AI — finance'),                  pages:['w4']},
-    {mod:'w5', n:5, name:T('Séance 5 · L’IA au travail — marketing, finance, RH','Session 5 · AI at work — marketing, finance, HR'),         pages:['w5']},
-    {mod:'w6', n:6, name:T('Séance 6 · Programmer sans être programmeur','Session 6 · Programming without being a programmer'),    pages:['w6']},
-    {mod:'w7', n:7, name:T('Séance 7 · Protection des données et IA','Session 7 · Data protection and AI'),                pages:['w7']},
-    {mod:'w8', n:8, name:T('Séance 8 · Agents et assistants','Session 8 · Agents and assistants'),            pages:['w8']},
-    {mod:'w9', n:9, name:T('Séance 9 · Employable — les compétences IA, et l’avenir','Session 9 · Employable — AI skills, and the future'),                 pages:['w9']},
+    {mod:'w4', n:4, name:T('Séance 4 · Des agents qui travaillent ensemble','Session 4 · Agents working together'),                  pages:['w4']},
+    {mod:'w5', n:5, name:T('Séance 5 · Le CV automatisé','Session 5 · The automated CV'),         pages:['w5']},
+    {mod:'w6', n:6, name:T('Séance 6 · Le prompt engineering pour le travail','Session 6 · Prompt engineering for work'),    pages:['w6']},
+    {mod:'w7', n:7, name:T('Séance 7 · Automatiser — un agent qui travaille seul','Session 7 · Automating — an agent that works alone'),                pages:['w7']},
+    {mod:'w8', n:8, name:T('Séance 8 · Programmer — un site, une appli, un jeu','Session 8 · Programming — a site, an app, a game'),            pages:['w8']},
+    {mod:'w9', n:9, name:T('Séance 9 · Contrats et données','Session 9 · Contracts and data'),                 pages:['w9']},
     {mod:'w10',n:10,name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),           pages:['w10']}
   ];
   function allWeeks(){ return SESSIONS.slice(); }

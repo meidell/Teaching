@@ -16,7 +16,7 @@ It refuses to write if a marker is malformed or a ⟦ is left unmatched.
 """
 import re, sys, os
 HERE=os.path.dirname(os.path.abspath(__file__)); ROOT=os.path.dirname(HERE)
-PAGES=['index','seance1','seance2','seance3','projet']
+PAGES=['index','seance1','seance2','seance3','seance4','projet']
 MARK=re.compile(r'⟦(.*?)⫽(.*?)⟧',re.S)
 def build(name):
     tpl=open(os.path.join(HERE,name+'.tpl.html'),encoding='utf-8').read()

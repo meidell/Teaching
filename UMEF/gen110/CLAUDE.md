@@ -47,16 +47,37 @@ define their project and who participates."* Everything below follows from it.
 - **Module ids are `w1`…`w10` although the pages are `seance1.html`…** The
   dashboard's presence picker builds `'w'+i` from `presenceSessions`, so an
   `s1` id would never appear in it. Labels say "Séance N"; ids say `wN`.
-- **The ten séances** (hub `SEANCES`, `courseprogress.js` `CHAPTERS` — keep
-  the two in step): 1 *L'IA, on commence par s'en servir* · 2 *Bien demander I —
-  texte* · 3 *Bien demander II — son, image, vidéo* · 4 *Excel et Word avec
-  l'IA* · 5 *L'IA au travail — marketing, finance, RH* · 6 *Programmer sans
-  être programmeur* · 7 *Protection des données* · 8 *Agents et assistants* ·
-  9 *Employable — compétences IA, et l'avenir* · 10 *Présentations et examen*.
-  Each hub card lists what is **done together** that day (`do[]`) and, every
-  other séance, the suggested hand-in (`hand`). The class's eight requests are
-  the `WISHES` array — on the hub (a grid) **and** in séance 1 §1.7 (clickable,
-  counted); change both.
+- ⚠ **26 Oct 2026 — the class's PRIORITIES replace the old programme from
+  séance 4 on.** Jan Erik: "we have to change the course into a much more
+  practical teaching approach — where the students learn through real
+  exercises in class"; the class wrote its priorities on the board, in
+  order: (1) business agents working together in business · (2) création
+  de CV automatisée · (3) prompt engineering · (4) automation/agents ·
+  (5) programmation · (6) gestion de contrat etc. · (7) analyse des données
+  (the board also said "jeux interactifs" — folded into séance 8). "These
+  replace the old course from here on." The ten séances (hub `SEANCES`,
+  `courseprogress.js` `CHAPTERS`, `nav.js` `NAV`, `presence.js` `SESSIONS`,
+  `projet.tpl.html` `WEEKS` — keep all five in step): 1–3 unchanged
+  (*L'IA, on commence par s'en servir* · *Bien demander I — texte* · *Bien
+  demander II — son, image, vidéo*) · 4 *Des agents qui travaillent
+  ensemble* · 5 *Le CV automatisé* · 6 *Le prompt engineering pour le
+  travail* · 7 *Automatiser — un agent qui travaille seul* · 8 *Programmer —
+  un site, une appli, un jeu* · 9 *Contrats et données* · 10 *Présentations
+  et examen*. Data protection lost its séance: it is a 🔐 step at the start
+  of every exercise ("before pasting, look") and stays an exam topic.
+  Hub cards for 4+ say *Exercices réels* and carry an `out` line (🎒 what
+  you keep). The hub's `WISHES` is now the ranked list (7 items, rank
+  badge); **séance 1's §1.7 keeps the 6 Oct wish-list on purpose** — it is
+  the record of that day, and its 8-click completion rule depends on it.
+  The per-project task lists in `projet.tpl.html` `PROJECTS[].plan[4..10]`
+  were written for the old séances and were NOT rewritten (only `WEEKS`
+  titles/gives were); revisit them when building séances 5–9. Hand-in
+  rhythm unchanged (R2 S4 · R3 S5 · R4 S7 · R5 S9).
+- **"Real exercise" format (séance 4 on)**: every section is one real
+  exercise — a real file or case (the student's own, or Wax & Co's), a job
+  task, a result the PAGE checks with numbers, something kept for the
+  project. Same `.todo` / `.donewhen` / `REQ` engine as séance 3. Kicker
+  says *Exercice réel / Real exercise*, badge *Exercice · N min*.
 - ⚠ **The project IS on the site — `projet.html` / `projet-en.html`** (19 Oct
   2026, Jan Erik: "le projet doit se faire sur mon site"; until then it was
   "handed in on the Swiss UMEF platform"). One or two students, topic of
@@ -156,7 +177,7 @@ define their project and who participates."* Everything below follows from it.
   minus the finance block plus this course's widgets (`.demo`, `.venn`,
   `.sab`, `.qlock`, `.dates`, `.voix`, and since the rebuild `.pb`, `.wish`,
   `.chk`). Runtime files are renamed ports of MBA406's with `T()` copy.
-  Séances 1–3 exist; 4–10 are `live:false` and locked `div`s on the hub.
+  Séances 1–4 exist; 5–10 are `live:false` and locked `div`s on the hub.
 - **Séance 2 — *Bien demander I, le texte* (`seance2.tpl.html`, 18 Oct
   2026, for Tuesday 20 Oct)** follows séance 1's engine section for
   section. ⚠ **Restructured the morning of 20 Oct 2026** (Jan Erik: the
@@ -260,13 +281,70 @@ define their project and who participates."* Everything below follows from it.
   the dashboard's **Activity** tab (§3). Probed headlessly in both
   editions: every widget to its step, 8/8 sections, the quiz refusing
   clicks while locked.
+- **Séance 4 — *Des agents qui travaillent ensemble* (`seance4.tpl.html`,
+  26 Oct 2026, for Tue 3 Nov 13h30–16h45, break 15h00).** 4.0 the
+  student's data file: paste from Excel/Sheets (tab-separated) or a .csv,
+  `parseTable` + `profile` (types, empties, mixed number/text, two date
+  formats, exact duplicate rows) and **🔐 personal columns** (`PRIV_HEAD`
+  header regex, or ≥ 3 phone/e-mail values) ticked "remove"; ⬇ exports the
+  CSV without them (`;`, BOM). Kept in `gen110_w4_data` (≤ 300 kB), never
+  sent. "Use the shop's file" loads **Wax & Co** (`WAX_CSV`, 80 orders
+  Jul–Oct 2026 + 1 duplicate, generated in Python, seed 1103) with SEVEN
+  planted problems: duplicate order 1039 · dates ISO and dd/mm/yyyy ·
+  four spellings of "Robe wax" · five prices typed "18 000 F" · two empty
+  prices (rows of Sac en pagne and Boubou bazin) · order 1030 = 120 bags
+  (really 1) · "OM" for Orange Money; invented first names and phone
+  numbers so the 🔐 flag has something to catch. **`TRUTH` (Python, on the
+  file corrected with "Aminata"): CA 1 918 000 FCFA · top Boubou bazin
+  490 000 = 25.55 % · Oct 622 000 vs Jul 442 000 = +40.72 % · basket
+  23 975 (80 orders) · Wave 37/80 = 46.25 %.** A naive total on the raw
+  file is 2 899 000. 4.1 the **agent-card builder** (`buildAgents`: six
+  boxes role/mission/input/format/rules/next, `lintAgent` five checks,
+  assembled `cardText`, copy) — the three Wax cards are seeded with two
+  flaws on purpose (analyst format "un résumé des ventes" 4/5, writer no
+  rule 4/5); step `card` needs all three at 5/5. 4.2 the **relay board**
+  (`w4_analyste` → `w4_redacteur` → `w4_controleur`, the student carries
+  each answer between three chats) and the **truth check**: `numbersIn`
+  pulls numbers from the writer's message (1 918 000 · 1,9 million ·
+  1.918.000 · 25,5 %) and `TRUTH_ROWS` compares with tolerances; Aminata's
+  reply (the corrections only she knows) unfolds below; classify "who
+  should have stopped it" (A H K A R H). 4.3 single agent vs team grid
+  (`CRIT_TEAM`, → Comparisons tab, why = `w4_equipe`), the **chain
+  simulator** (prediction first, sliders locked until then; p^n and
+  p^n + (1−p^n)·c, 100 dots), classify chain/manager/debate (H C D C D H).
+  4.4 the builder again, empty (`gen110_w4_mine`, need 4/5) on the
+  student's own file → `w4_projet` = remise 3's first result. Quiz on
+  `_release/w4/quiz`, positions `2 0 3 1 1 3 0 2`. Denominator
+  `EXTRA_STEPS (12) + .cl-row (12) + .q (8) + [data-work] (5) = 37`;
+  `total:7`. Five `w4_*` carnet fields in `courses.json → project`
+  (section "4"). Probed headlessly (CDP over Node 23's WebSocket, Firebase
+  and track.js blocked so no test pageviews land in analytics) in both
+  editions: every widget to its step, 6/6 non-quiz sections, 29/37 with the
+  quiz still locked; the EN truth check reads "1,918,000" and "25.5%".
+  Free tiers named (ChatGPT and Gemini file attachment) were NOT
+  re-verified on 26 Oct 2026 — check before the séance. Séance 5 needs:
+  the student's CV and a real job/internship offer as text.
 - **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
   keep the engine, change the sections), add it to `PAGES` in `build.py`,
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the
   module and its carnet fields to `courses.json`, and set `live:true` on the
   hub's `SEANCES` entry (in the template). Run the headless probe on both
-  editions before pushing. Séances 1–3 exist; 4–10 are `live:false`.
+  editions before pushing. Séances 1–4 exist; 5–10 are `live:false`.
 - **Own namespace `gen110`, prefix `gen110_`**; the rules block in
   `firebase-database-rules.json` must be deployed before the link goes to
   students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`
   has `lang:"fr"`, which the EN pages override through `COURSE_LANG`.
+
+### Session parameters (for `/new-session`)
+
+- **Language**: French and English from one template (`⟦fr⫽en⟧`), never two files.
+- **Textbook**: none; copy is our own, free wording. No slides, ever.
+- **Format**: 3 h 15 (Tue 13h30–16h45, break ~15h00), two blocks; 6–8
+  sections = real exercises, each `.todo` → widgets → carnet → `.donewhen`;
+  one synchronised quiz of 8 (`_release/wN/quiz`), one "what you keep" close.
+  The skill's concept-screen order and homework page do NOT apply here.
+- **Running case**: Wax & Co (boutique, Sacré-Cœur, Dakar; owner Aminata)
+  when the student has no material of their own; their own project first.
+- **Theme**: `/shared/themes/umef-full.css` + `ia.css` (new CSS at its end).
+- **Grading**: 10 % participation · 40 % project · 50 % final exam.
+- **Order of séances 5–9**: the class's ranked list above.
