@@ -27,11 +27,11 @@
    Jan Erik: "when you click on a logo (top, left), it should open that
    school's landing page"). Lives here because track.js is the one script
    every course page loads. Only schools with a landing page are linked
-   (Kalaidos since 25 Oct 2026); HEG has none, so its logos stay plain. A logo already inside a link is
+   (Kalaidos since 25 Oct 2026, HEG since 26 Oct 2026). A logo already inside a link is
    left alone, and the landing page itself is not linked to itself. */
 (function(){
   try{
-    var LAND={GBS:1,SUMAS:1,UMEF:1,Kalaidos:1};
+    var LAND={GBS:1,SUMAS:1,UMEF:1,Kalaidos:1,HEG:1};
     var seg=(location.pathname.split('/')[1]||'');
     if(!LAND[seg])return;
     var home='/'+seg+'/';

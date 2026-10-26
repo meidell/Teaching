@@ -614,8 +614,8 @@ trusts. The two are not the same thing and one cannot replace the other.
   the standard chrome into it again.
 - **Every page gets `/track.js`.** It is best-effort and fails silently.
   ⚠ Since 22 Oct 2026 it also **makes the top-left school logo a link to
-  the school's landing page** (`/GBS/`, `/SUMAS/`, `/UMEF/`, `/Kalaidos/` — the first
-  path segment; HEG has no landing page and is left alone). It looks for
+  the school's landing page** (`/GBS/`, `/SUMAS/`, `/UMEF/`, `/Kalaidos/`, `/HEG/` — the first
+  path segment; HEG's since 26 Oct 2026). It looks for
   `.topbar picture/img.brand/img.logo`, then `nav.nav` (the open hubs),
   `header`, and finally any `img[src*=logo]` in the top 220 px (the SUMAS
   hubs with the logo in the hero); a logo already inside a link is
