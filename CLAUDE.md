@@ -271,6 +271,7 @@ Each course's history, decisions and traps now live next to its pages (split 23 
 - `SUMAS/wind/CLAUDE.md` — SUMAS · MA/MBA500 Capstone (wind)
 - `SUMAS/omba500/CLAUDE.md` — SUMAS · OMBA500 Capstone
 - `SUMAS/capstone-ba/CLAUDE.md` — SUMAS · Capstone Bachelors
+- `SUMAS/green-ai/CLAUDE.md` — SUMAS · CrS Green AI (Year 2 project)
 - `GBS/CLAUDE.md` — GBS · school-wide
 - `GBS/business-intelligence/CLAUDE.md` — GBS · Business Intelligence
 - `GBS/financial-modelling/CLAUDE.md` — GBS · Finance Modelling

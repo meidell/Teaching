@@ -97,6 +97,8 @@ window.CourseConfig = (function () {
                    label:"SUMAS · OMBA500 Capstone — European wind to 2040" },
     "capstone-ba": { school:"SUMAS", ns:"capstone-ba", theme:"sumas", lang:"en", login:true,
                    label:"SUMAS · Capstone (Bachelors) — European wind to 2040" },
+    "green-ai":  { school:"SUMAS", ns:"green-ai",  theme:"sumas", lang:"en", login:true,
+                   label:"SUMAS · CrS Green AI" },
     /* the presentation demo (/demo/): a copy of ombafr455 with its own namespace, so a
        visitor who tries the front end never lands in the real cohort (24 Oct 2026) */
     "demo":      { school:"Demo", ns:"demo",      theme:"sumas", lang:"en", login:true,
