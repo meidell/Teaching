@@ -101,6 +101,34 @@ releases, the progress-denominator trap) still applies. What differs:
   and `w3-hw`; `courseprogress.js` totals 9 and 14. The headless probe
   (strip network scripts, stub `fetch`, play every walker, your-turn,
   widget, classify and quiz to 8/8 sections) is the test to rerun.
+- ⚠ **Week 3 was re-laid out on 26 Oct 2026 in the SAYLOR GRAMMAR** (Jan
+  Erik: "I really like the structure in the online book (saylor), with 1
+  color cards for theory, another colour for examples and explanations in
+  between. just use that but in the style of my site"). This is now the
+  standard for a lesson section in this course; weeks 4+ are built in it
+  from the start, and Weeks 1–2 are NOT retrofitted unless being edited.
+  Four blocks, in `stats.css` (last section) — nothing else on a lesson
+  section except the site's own pizzeria / "Try it" / hook `.card`s:
+  `.tcard` (THEORY, green: `.tc-bar` + `.tc-body` — Learning Objectives,
+  a formula box under the book's own callout title, a definition, Key
+  Takeaways; one colour for all of them, the bar says which), `.xcard`
+  (EXAMPLE, teal: `.xc-bar` "Example N" / "Your turn · Exercise N" +
+  `.xc-body` with the question as `.stem`, a `.sol` "Solution" line and
+  the `buildSteps` walker or `buildTurn` rows — Saylor colours its
+  exercises like its examples, so your-turns are teal too), `.fig`
+  (white, a gold `.fig-t` figure title like the book's, with a `live`
+  pill — the book's figures turned into widgets, and the site's tools;
+  the inner `.lab` goes flat), `.prose` (no box: the book's running text
+  and the page's own explanation, with a `.src` source line). The teal is
+  new: `--ex-wash/--ex-bar/--ex-ink` and `--th-wash` exist only in the
+  dark block of `sumas-stats.css`; the light values are the `var()`
+  fallbacks. Every widget, walker, your-turn, id and the denominator (76)
+  are unchanged — the splice was verified by an id diff and a headless
+  probe (no errors, all 11 walkers + 6 turns mounted, ex3 played to its
+  step, the Geneva hook computed), and screenshotted light / dark / 390px
+  (the 390px clipping is a headless-window artefact, identical before).
+  The old `.book` block stays for the deck (`.lect-body .book`) and the
+  exercise section.
 - **Own namespace `mba401` and localStorage prefix `mba401_`**; its rules
   block is in `firebase-database-rules.json` and must be deployed.
 - **Theme `/shared/themes/sumas-stats.css`** (heg.css colour-mapped to SUMAS
