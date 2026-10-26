@@ -21,31 +21,7 @@ SAY='https://saylordotorg.github.io/text_introductory-statistics/'
 def S(u): return SAY+u
 
 SPEC=[
- dict(n=7,slug='Testing hypotheses',emoji='⚖️',
-  title='A competitor claims the Geneva average is CHF 20. <em>Is it?</em>',
-  sub='Estimation says where the truth probably is; testing asks whether a specific claim survives the data. This week is the logic of hypothesis testing — null and alternative, test statistic, rejection region, the two kinds of error — then the one-sample z test, the p-value, the small-sample t test, and the test for a proportion.',
-  ch='Saylor ch. 8',
-  reads=[('Saylor §8.1 — The elements of hypothesis testing',S('s12-01-the-elements-of-hypothesis-tes.html')),('Saylor §8.2 — Large-sample tests for a population mean',S('s12-02-large-sample-tests-for-a-popul.html')),('Saylor §8.3 — The observed significance of a test',S('s12-03-the-observed-significance-of-a.html')),('Saylor §8.4 — Small-sample tests for a population mean',S('s12-04-small-sample-tests-for-a-popul.html')),('Saylor §8.5 — Large-sample tests for a population proportion',S('s12-05-large-sample-tests-for-a-popul.html'))],
-  objectives=['Write H₀ and Hₐ for a claim, and choose left-, right- or two-tailed.','Run a large-sample z test for a mean with a rejection region at level α.','Compute and interpret a p-value — and say what it is not.','Run a small-sample t test and a test for a proportion.','Name Type I and Type II errors in the pizzeria\'s terms, and say which α trades against which.'],
-  sections=[
-   ('The hook','The CHF 20 claim','Estimate: is CHF 19.6 from 30 pizzerias "different enough" from 20?',['Slider: "how sure are you the true average is NOT 20?" Lock it; section 7.4 gives the p-value.'],'Hook'),
-   ('The logic','Innocent until the data say otherwise','H₀, Hₐ, test statistic, rejection region, Type I and II errors (§8.1)',['Classify (6 rows): write the hypotheses — left, right or two-tailed — for six pizzeria claims.','Widget: the two errors as a 2×2 — "we change the price when we shouldn\'t" vs "we keep it when we should change" — with α and β on sliders.'],'Logic'),
-   ('The z test','Large samples','Rejection region at α = 0.05, 0.01 (§8.2)',['Widget: the standard normal with the rejection region shaded for the chosen tail and α; type x̄, n, σ and watch the test statistic land inside or outside. Exam card c13.'],'z test'),
-   ('The p-value','How surprising is this?','Observed significance (§8.3)',['Widget: the p-value as the tail area beyond the observed statistic; compare with α. The hook closes: p-value for x̄ = 19.6, n = 30, σ = 4 against µ₀ = 20.','The five-line list of what a p-value is NOT — the exam\'s favourite trap.'],'p-value'),
-   ('t and proportions','Small samples, and shares','Small-sample t test (§8.4) · test for a proportion (§8.5)',['Widget: the t test with df = n − 1 on a sample of 12 lakeside pizzerias; the proportion test on "more than 30% charge over CHF 20". Exam cards c14–c15.'],'t & p'),
-   ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: hypotheses, tails, the rejection region, a z statistic, a p-value interpretation, Type I vs II, a t test, a proportion test, and "significant ≠ important".'],'Quiz'),
-   ('Workshop','The pizzeria file · instalment seven','Workbook fields',['w7_claim — a claim about your pizzeria you would test, with H₀ and Hₐ.','w7_errors — the Type I and Type II error for that test, in plain words, and which one costs you more.'],'Exercise')],
-  slides=['Applied Statistics · Week 7 — Testing hypotheses','Recap → today: from "where" to "whether"','Poll: is 19.6 different enough from 20?','H₀ and Hₐ — innocent until the data say otherwise','Left, right, two-tailed','The z test and the rejection region','The p-value: how surprising?','What a p-value is not (five things)','Type I and Type II — which do you fear?','t tests and proportion tests','Your turn — checkpoint live','Takeaways · homework · Week 8'],
-  ex=[('Write the hypotheses',12,'six claims → H₀, Hₐ, and the tail'),
-      ('The rejection region',15,'a z test at α = 0.05 on the CHF 20 claim'),
-      ('Change α',10,'0.10, 0.05, 0.01 — what moves, and what it costs'),
-      ('Compute a p-value',15,'the same test, the other way round'),
-      ('What a p-value is not',12,'five statements — spot the three that are wrong'),
-      ('Type I or Type II?',12,'name both errors for the pizzeria, and price them'),
-      ('A small-sample t test',15,'twelve lakeside pizzerias, df = 11'),
-      ('A test for a proportion',12,'“more than 30% charge over CHF 20”')],
-  tools=[('real-or-random.html','Real or random? — signal vs noise, again'),('exam-cards.html','Exam cards c13–c15')]),
-
+ # Week 7 was written by hand on 26 Oct 2026 (a port of SUMAS/mba401/week4a.html) — its SPEC entry is gone.
  dict(n=8,slug='Two-sample problems',emoji='⚔️',
   title='Do lakeside pizzerias <em>really</em> charge more?',
   sub='One sample tested one claim. Most business questions compare two things: two neighbourhoods, before and after a menu change, two proportions. This week is the two-sample toolkit — independent samples large and small, paired samples, two proportions — and, above all, the judgement of which one applies.',

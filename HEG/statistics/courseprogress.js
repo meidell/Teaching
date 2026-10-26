@@ -33,7 +33,7 @@ window.CourseProgress=(function(){
     {mod:'w5-hw', short:'HW5',name:'Week 5 · Homework — thirteen exercises from the book', total:14,live:true,href:'week5-homework.html'},
     {mod:'w6',    short:'W6', name:'Week 6 · Estimation',                            total:9,live:true, href:'week6.html'},
     {mod:'w6-hw', short:'HW6',name:'Week 6 · Homework — thirteen exercises from the book', total:14,live:true,href:'week6-homework.html'},
-    {mod:'w7',    short:'W7', name:'Week 7 · Testing hypotheses',                    total:8,live:false},
+    {mod:'w7',    short:'W7', name:'Week 7 · Testing hypotheses',                    total:11,live:true, href:'week7.html'},
     {mod:'w8',    short:'W8', name:'Week 8 · Two-sample problems',                   total:8,live:false},
     {mod:'w9',    short:'W9', name:'Week 9 · Correlation and regression',            total:8,live:false},
     {mod:'w10',   short:'W10',name:'Week 10 · Chi-square tests and F-tests',         total:8,live:false},

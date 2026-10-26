@@ -285,3 +285,23 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
 - Workbook fields are listed in `courses.json → project.sections` so the
   dashboard's assignment reader shows the pizzeria file; there is no
   `compile.html` yet (the E1410 one is the template).
+
+- **Week 7 (Saylor ch. 8, testing hypotheses) was built on 26 Oct 2026 as a port of
+  `SUMAS/mba401/week4a.html`**, written the same day, rather than from the scaffold.
+  The builder (`build_heg.py`, kept in the session scratchpad, not the repo) takes the chrome,
+  palette, deck functions, lecture frame and footer from `week6.html`, and the example
+  walker, the your-turns and the **combination-aware classify** (`clsDone[rowsId]` +
+  `secCheck()`) from `SUMAS/mba401/week3.html`, because Week 6 here has neither. The
+  content is relabelled for HEG: Week 6 for the interval, Week 5 for the magazine's
+  CHF 21, Week 2 for the thirty prices, instalment seven of the graded individual
+  project, presence mounted with `mod:MOD` (presence.js adds `-g2` for Wednesday).
+  Eleven sections (`s1`–`s8`, `ex`, `s9` checkpoint, `s10` workshop) →
+  `courseprogress.js` total 11; denominator 86 (40 steps + 10 exercises + 23 classify
+  rows + 10 quiz + 3 fields). All fifteen Examples walked in the book's words, ten
+  your-turns on even-numbered exercises, ten odd-numbered exercises in Part 2, an
+  80-slide deck that clones the page's own theory cards and Example stems. Every number
+  recomputed in Python; one book misprint flagged (§8.2 #5a: the key prints 2.235,
+  the answer is 2.325). Your-turns accept a decimal comma ("−1,694"), which Week 3's
+  `numIn` alone reads as a thousands separator. Its SPEC entry was removed from
+  `_build/scaffold.py`. **No Week 7 homework page yet** — the page links the practice
+  arena and the exam cards instead.
