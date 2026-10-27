@@ -43,6 +43,7 @@ table.cvt td{padding:2px 2px;vertical-align:top;border-bottom:1px solid var(--su
 table.cvt td.fx{font-weight:700;color:var(--ink);padding:7px 6px 0 2px;font-size:12.5px;}
 table.cvt td.rs{font-size:10.5px;color:var(--grey);padding-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 table.cvt td.rs .lk{color:var(--gold-soft);font-weight:700;} table.cvt td.rs .er{color:var(--terra);font-weight:700;}
+table.cvt td.rs .rl{font:700 10.5px 'Helvetica Neue',Arial,sans-serif;color:var(--terra);background:#FBEEE9;border:1px solid rgba(179,64,42,.35);border-radius:12px;padding:1px 7px;cursor:pointer;margin-right:4px;}
 table.cvt input{width:100%;box-sizing:border-box;font:12.5px/1.4 'Helvetica Neue',Arial,sans-serif;color:var(--ink);background:var(--white);border:1px solid var(--surface-2);border-radius:7px;padding:5px 7px;}
 .you{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--surface-2);border-radius:10px;padding:11px 14px;font-size:13.5px;color:var(--ink-soft);margin-bottom:16px;}
 .you b{color:var(--ink);} .you .sp{flex:1;}
@@ -201,6 +202,15 @@ body.doc .cv{grid-template-columns:1fr 1fr;}
   function memberNames(t){ var m=(ALL[t]||{}).members||{}; return Object.keys(m).filter(function(k){return m[k]&&m[k].n;}).sort(function(a,b){return (m[a].ts||0)-(m[b].ts||0);}).map(function(k){return m[k].n;}); }
   function rowKeys(b){ var n=b.fixed?b.fixed.length:b.rows, r=[]; for(var i=0;i<n;i++)r.push(b.k+'_r'+i); return r; }
   function fid(t,k){ return 'f-'+t+'-'+k; }
+  /* the editable fields of a box or row — inputs and textareas only. The <tr> carries the
+     same data-k; until 27 Oct 2026 it was selected too, the poll gave it a stray .value
+     (the row's first cell) and every save wrote that in front: the row moved one column
+     right and its last cell fell off the end. */
+  function fsel(k){ return 'input[data-k="'+k+'"],textarea[data-k="'+k+'"]'; }
+  function nCells(k){ var b=(BOXES[WK]||[]).filter(function(x){return x.cols&&k.indexOf(x.k+'_r')===0;})[0]; return b?b.cols.length-(b.fixed?1:0):0; }
+  /* a row saved with more cells than the table has columns was shifted by that bug */
+  function realign(t,k,r){ var n=nCells(k); if(!n||t!==TEAM||READONLY||!r||!r.v)return ''; return String(r.v).split('\t').length>n?'<button type="button" class="rl" data-rl="'+k+'" title="This row was saved shifted one column to the right. Move every cell one column left.">↤ realign</button>':''; }
+  var savedAt={};
 
   /* ---- who, and which team ---- */
   function resolveTeam(){
@@ -237,7 +247,7 @@ body.doc .cv{grid-template-columns:1fr 1fr;}
           var vi=b.fixed?ci-1:ci;
           h+='<td><input type="text" data-k="'+rk+'" data-c="'+vi+'" value="'+esc(cells[vi]||'')+'"'+((ro||other)?' readonly':'')+'></td>';
         });
-        h+='<td class="rs" id="st-'+t+'-'+rk+'">'+rowStatus(r,lk,other)+'</td></tr>';
+        h+='<td class="rs" id="st-'+t+'-'+rk+'">'+realign(t,rk,rec(t,rk))+rowStatus(r,lk,other)+'</td></tr>';
       });
       h+='</tbody></table>';
     } else {
@@ -277,9 +287,9 @@ body.doc .cv{grid-template-columns:1fr 1fr;}
       });
     });
   }
-  function fields(k){ return Array.prototype.slice.call(el('blk-'+TEAM).querySelectorAll('[data-k="'+k+'"]')); }
-  function valueOf(k){ var fs=fields(k); if(fs.length===1&&fs[0].tagName==='TEXTAREA')return fs[0].value; return fs.sort(function(a,b){return (+a.getAttribute('data-c'))-(+b.getAttribute('data-c'));}).map(function(f){return f.value.replace(/\t/g,' ');}).join('\t').replace(/\t+$/,''); }
-  function setValue(t,k,v){ var fs=Array.prototype.slice.call(el('blk-'+t).querySelectorAll('[data-k="'+k+'"]')); if(!fs.length)return; if(fs.length===1&&fs[0].tagName==='TEXTAREA'){ fs[0].value=v||''; var dv=el('dv-'+t+'-'+k); if(dv)dv.textContent=v||''; return; } var cells=String(v||'').split('\t'); fs.forEach(function(f){ f.value=cells[+f.getAttribute('data-c')]||''; }); }
+  function fields(k){ return Array.prototype.slice.call(el('blk-'+TEAM).querySelectorAll(fsel(k))); }
+  function valueOf(k){ var fs=fields(k); if(fs.length===1&&fs[0].tagName==='TEXTAREA')return fs[0].value; return fs.sort(function(a,b){return (+a.getAttribute('data-c'))-(+b.getAttribute('data-c'));}).map(function(f){return String(f.value||'').replace(/\t/g,' ');}).join('\t').replace(/\t+$/,''); }
+  function setValue(t,k,v){ var fs=Array.prototype.slice.call(el('blk-'+t).querySelectorAll(fsel(k))); if(!fs.length)return; if(fs.length===1&&fs[0].tagName==='TEXTAREA'){ fs[0].value=v||''; var dv=el('dv-'+t+'-'+k); if(dv)dv.textContent=v||''; return; } var cells=String(v||'').split('\t'); fs.forEach(function(f){ f.value=cells[+f.getAttribute('data-c')]||''; }); }
   function setStatus(k,html){ var s=el('st-'+TEAM+'-'+k); if(s)s.innerHTML=html; }
   function lockKey(k){ return '_teams/'+TEAM+'/lock/cv_w'+WK+'_'+k; }
   function takeLock(k,f){
@@ -292,7 +302,7 @@ body.doc .cv{grid-template-columns:1fr 1fr;}
   function save(k){
     var v=valueOf(k), body={v:v,ts:now(),by:ME.sid,n:ME.name};
     dirty[k]=false;
-    put('_teams/'+TEAM+'/canvas/w'+WK+'/'+k,body).then(function(){ var tn=ALL[TEAM]=ALL[TEAM]||{}; tn.canvas=tn.canvas||{}; tn.canvas['w'+WK]=tn.canvas['w'+WK]||{}; tn.canvas['w'+WK][k]=body; setStatus(k,'<span class="sv">saved just now by you</span>'); var dv=el('dv-'+TEAM+'-'+k); if(dv)dv.textContent=v; })
+    put('_teams/'+TEAM+'/canvas/w'+WK+'/'+k,body).then(function(){ var tn=ALL[TEAM]=ALL[TEAM]||{}; tn.canvas=tn.canvas||{}; tn.canvas['w'+WK]=tn.canvas['w'+WK]||{}; tn.canvas['w'+WK][k]=body; savedAt[k]=body.ts; setStatus(k,realign(TEAM,k,body)+'<span class="sv">saved just now by you</span>'); var dv=el('dv-'+TEAM+'-'+k); if(dv)dv.textContent=v; })
       .catch(function(e){ dirty[k]=true; setStatus(k,'<span class="er">not saved — '+esc(e.message)+'</span>'); });
   }
 
@@ -305,8 +315,8 @@ body.doc .cv{grid-template-columns:1fr 1fr;}
         (BOXES[WK]||[]).forEach(function(b){
           (b.cols?rowKeys(b):[b.k]).forEach(function(k){
             var r=rec(t,k)||{}, lk=lockOf(t,k), other=lk&&(!mine||lk.sid!==ME.sid);
-            if(!(mine&&(focused===k||dirty[k]))){ setValue(t,k,r.v||''); var s=el('st-'+t+'-'+k); if(s)s.innerHTML=rowStatus(r,lk,other); }
-            if(mine){ var box=el(fid(t,k)); if(box){ box.classList.toggle('locked',!!other); box.querySelectorAll('[data-k="'+k+'"]').forEach(function(f){ f.readOnly=!!other; }); } }
+            if(!(mine&&(focused===k||dirty[k]||(r.ts||0)<(savedAt[k]||0)))){ setValue(t,k,r.v||''); var s=el('st-'+t+'-'+k); if(s)s.innerHTML=realign(t,k,r)+rowStatus(r,lk,other); }
+            if(mine){ var box=el(fid(t,k)); if(box){ box.classList.toggle('locked',!!other); box.querySelectorAll(fsel(k)).forEach(function(f){ f.readOnly=!!other; }); } }
           });
         });
       });
@@ -317,6 +327,15 @@ body.doc .cv{grid-template-columns:1fr 1fr;}
 
   function boot(){
     resolveTeam().then(renderAll);
+    el('cv').addEventListener('click',function(e){
+      var k=e.target.getAttribute&&e.target.getAttribute('data-rl'); if(!k||READONLY)return;
+      var lk=lockOf(TEAM,k); if(lk&&lk.sid!==ME.sid)return;
+      var r=rec(TEAM,k); if(!r||!r.v)return;
+      var v=String(r.v).split('\t').slice(1).join('\t').replace(/\t+$/,''), body={v:v,ts:now(),by:ME.sid,n:ME.name};
+      e.target.disabled=true;
+      put('_teams/'+TEAM+'/canvas/w'+WK+'/'+k,body).then(function(){ ALL[TEAM].canvas['w'+WK][k]=body; savedAt[k]=body.ts; setValue(TEAM,k,v); setStatus(k,realign(TEAM,k,body)+'<span class="sv">realigned just now</span>'); })
+        .catch(function(er){ e.target.disabled=false; setStatus(k,'<span class="er">not saved — '+esc(er.message)+'</span>'); });
+    });
     el('docBtn').addEventListener('click',function(){ document.body.classList.toggle('doc'); el('docBtn').textContent=document.body.classList.contains('doc')?'Edit view':'Document view'; });
     el('printBtn').addEventListener('click',function(){ document.body.classList.add('doc'); el('docBtn').textContent='Edit view'; setTimeout(function(){window.print();},100); });
     window.addEventListener('statstrack:named',function(){ resolveTeam().then(renderAll); });

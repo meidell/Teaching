@@ -122,6 +122,17 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   `http(s)` value would be treated as an external document again). Week 5's
   loops are written as `A → B (+)` lines; a sketch goes in the Phase 1 PDF.
   No history and no undo: last save wins, as on the report page.
+  ⚠ **Table rows shifted right until 27 Oct 2026** (Alisha, Team 2: "the
+  data either disappears after a few minutes or shifts one column to the
+  right"). The `<tr>` carries the same `data-k` as its inputs and was picked
+  up by `fields()`/`setValue()`: the 8 s poll gave it a stray `.value` (cell
+  0) and each save wrote that in front, so the row moved one column right and
+  its last cell fell off. Since 7 Oct, every table on every week. Fixed with
+  `fsel(k)` (inputs/textareas only); a row stored with more cells than the
+  table has columns now shows **↤ realign** (drops the leading cell) for its
+  own team. Rows shifted without overflow, or shifted twice, have to be
+  checked by eye — Week 2 of both teams was affected. A poll that left before
+  your own save landed no longer overwrites it (`savedAt`).
   ⚠ **The `_teams` rules block grew a `canvas` node and must be re-deployed**
   before the next group hour, or every canvas write is refused (reported on
   the box, never swallowed). The instructor's device is read-only on both
