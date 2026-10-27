@@ -64,7 +64,7 @@ applies. What differs:
   Sustainability, Forecasting and AI/`). The deck names last term's students
   on every slide, so it is **rewritten as page text, never shown as slide
   images**, and student names are removed. Contents: Schoemaker's four kinds of
-  "scenario" + a `CAP.classify('kind')` sort, the three pitfalls with the
+  "scenario" + a `CAP.classify('kind')` sort, three post-draft pitfalls (credited to the course, not Schoemaker — unverified there) with the
   official-future check (250+ GW vs the member states' 2040 goal 259–261 GW,
   Dec 2024 update, verified), the four policy→cost channels, the hidden
   supply-chain axis, options A/B/C, the four-worlds consistency table, and
