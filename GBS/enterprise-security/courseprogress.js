@@ -46,11 +46,11 @@ window.CourseProgress=(function(){
     var live=counted().filter(function(c){return c.live;});
     var done=live.filter(function(c){return data[c.mod].done>=c.total;}).length;
     var up=counted().filter(function(c){return !c.live;}).length;
-    if(!live.length)return 'The term opens on Friday 16 October. Each session unlocks on the morning it runs — there is nothing to read ahead, because the material is what the room produces on the day.';
+    if(!live.length)return 'The term opens on Friday 16 October. Each session page is published as soon as it is written, ahead of its date.';
     return (done===live.length
       ? '✓ You’re up to date — every session published so far is logged.'
       : 'You’ve completed '+done+' of '+live.length+' published sessions. The bar fills as you log the work you actually did in the room.')
-      + (up?' '+up+' more unlock as the term runs — the hatched segments.':'');
+      + (up?' '+up+' more to come as they are written — the hatched segments.':'');
   }
   function buildList(data,el){
     el.innerHTML='';

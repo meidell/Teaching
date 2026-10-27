@@ -145,7 +145,7 @@ window.CAP = (function () {
     });
     markPosted(); window.addEventListener('statstrack:named',markPosted);
     if(S.week(WK)&&Date.now()<S.week(WK).opens.getTime()){
-      var lb=$('lockbar'); if(lb){ lb.style.display='block'; lb.textContent='This week opens on '+S.fmtDay(S.week(WK).monday)+'. You can read ahead; the forums open then.'; }
+      var lb=$('lockbar'); if(lb){ lb.style.display='block'; lb.textContent='This week starts on '+S.fmtDay(S.week(WK).monday)+'. Everything here is open now: read and work ahead as you like.'; }
     }
   }
 

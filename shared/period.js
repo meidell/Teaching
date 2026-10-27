@@ -14,7 +14,8 @@
      now      from 7 days before the first session to 14 days after the
               last (exams, marking, late forums)        → highlighted
      soon     first session within the next 30 days     → normal + "starts"
-     ended · later · open (evergreen, no cohort)        → slightly greyed
+     later    starts in more than 30 days              → normal + "starts", never greyed
+     ended · open (evergreen, no cohort)                → slightly greyed
      unknown  live course with no dates at all          → left as it is
 
    CoursePeriod.decorate(c) → {state, cls, tag}: `cls` is a class string
@@ -69,10 +70,11 @@
       var more = p.next ? (p.next === (today || todayISO()) ? (F ? ' · séance aujourd’hui' : ' · session today') : (F ? ' · prochaine séance ' : ' · next session ') + fmt(p.next))
                : p.week ? (F ? ' · semaine ' : ' · week ') + p.week + (p.weeks ? (F ? ' sur ' : ' of ') + p.weeks : '') : '';
       tag = '<span class="pd-tag">● ' + (F ? 'En cours' : 'Running now') + more + '</span>';
-    } else if (p.state === 'soon') {
+    } else if (p.state === 'soon' || p.state === 'later') {
       tag = '<span class="pd-tag soon">' + (F ? 'Commence ' : 'Starts ') + fmt(p.start) + '</span>';
     }
-    var idle = p.state === 'ended' || p.state === 'later' || p.state === 'open';
+    /* a course that has not started yet is NOT greyed (27 Oct 2026: "make all courses accessible even before the date") */
+    var idle = p.state === 'ended' || p.state === 'open';
     return { state: p.state, cls: p.state === 'now' ? ' is-now' : (idle ? ' is-idle' : ''), tag: tag, p: p };
   }
 
