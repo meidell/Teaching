@@ -19,16 +19,17 @@
   and lists them, newest first, each row a link into chat.html at that
   thread. Courses with nothing waiting fold into one quiet line each.
 
-  ⚠ "Answered", not "read" (changed 20 Oct 2026). The first version also
-  counted a thread as done once you had opened it — chat.html's read mark
-  or its receipt — so a message read on the phone and not replied to
-  simply vanished from here, which is the one case this page exists for.
-  Now a student message waits until one of two things happens:
+  ⚠ "Opened" counts again (27 Oct 2026, Jan Erik: "if I click to see
+  them, make the waiting go away"). Between 20 and 27 Oct a thread waited
+  until ANSWERED — a message read on the phone stayed here. Now a student
+  message stops waiting as soon as any of these happens:
+      · you open the thread in chat.html — a per-device mark
+        (jem_inbox_handled_<ns>_<tid>, set by chat.html), and for a 1:1
+        thread your read receipt _chat/<tid>/rcpt/i.r, which is in the
+        database and so clears it on every device
       · you reply in the thread (your own later message), on any device
-      · you press "Mark as handled" here (answered elsewhere, or no reply
-        needed) — a per-device mark, localStorage jem_inbox_handled_<ns>_<tid>
-  Opening the thread does nothing to this page. chat.html's "← Inbox"
-  button is the way back.
+      · you press "Mark as handled" here
+  chat.html's "← Inbox" button is the way back.
 
   Student-to-student threads (p-, sg-) are not counted, for the reason
   chat.html gives: a deliberate decision not to look. Open them there.
@@ -191,7 +192,7 @@ function needSignIn(){
   }
 }
 
-/* ---- "handled" marks: per device, this page's own; reading a thread in chat.html does NOT set one ---- */
+/* ---- "handled" marks: per device; set here by "Mark as handled" and by chat.html when a thread is opened ---- */
 function readKey(ns,tid){return 'jem_inbox_handled_'+ns+'_'+tid;}
 function lastRead(ns,tid){var v=0;try{v=parseInt(localStorage.getItem(readKey(ns,tid))||'0',10)||0;}catch(e){}return v;}
 function markRead(ns,tid,ts){try{localStorage.setItem(readKey(ns,tid),String(ts||Date.now()));}catch(e){}}
@@ -212,8 +213,10 @@ function analyse(ns,chat){
     if(!list.length)return;
     var last=list[list.length-1], mine=0;
     list.forEach(function(m){ if(m.by==='i'&&(m.ts||0)>mine)mine=m.ts||0; });
-    /* answered = your own later message, or handled here; a read receipt is NOT an answer */
-    var seen=Math.max(lastRead(ns,tid),mine);
+    /* no longer waiting once you have replied, opened the thread in chat.html (its per-device mark, or for a
+       1:1 thread your read receipt rcpt/i.r, which follows you across devices), or marked it handled here */
+    var rc=((t.rcpt||{}).i||{}).r||0;
+    var seen=Math.max(lastRead(ns,tid),mine,rc);
     var fresh=list.filter(function(m){return m.by==='s'&&(m.ts||0)>seen;});
     var kind=tid==='all'?'all':tid.indexOf('dm-')===0?'dm':(meta.kind||'group');
     var title=meta.title||(kind==='dm'?nameOf(tid.slice(3)):kind==='all'?'Everyone':tid.replace(/^g-/,''));
@@ -280,7 +283,7 @@ function render(){
   else if(COURSES.length&&Object.keys(STATE).length){ $('big').textContent='Nothing waiting for an answer'; document.title='Inbox · all courses'; }
   $('meta').className='meta';
   var when=0; COURSES.forEach(function(c){var s=STATE[c.id];if(s&&s.at>when)when=s.at;});
-  $('meta').textContent=(when?(whenAgo(when)==='now'?'Read just now':'Read '+whenAgo(when)+' ago')+' · ':'')+COURSES.length+' courses · a thread waits until you reply in it, or mark it handled here · re-reads every 30 s while open'+
+  $('meta').textContent=(when?(whenAgo(when)==='now'?'Read just now':'Read '+whenAgo(when)+' ago')+' · ':'')+COURSES.length+' courses · a thread waits until you open it, reply in it, or mark it handled here · re-reads every 30 s while open'+
     (broken.length?' · '+broken.length+' could not be read':'');
   $('bAll').style.display=total?'':'none';
 
