@@ -83,7 +83,7 @@ a.kpi:hover{border-color:var(--main);}
 .day .none{font-size:12px;color:#94A3B8;}
 
 /* schools and courses */
-.school{background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden;}
+.school{background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden;overflow-x:auto;}
 .shd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--pale);border-bottom:1px solid var(--line);flex-wrap:wrap;}
 .shd h2{font-size:15.5px;font-weight:800;}
 .shd .sp{flex:1;}
@@ -103,8 +103,17 @@ td.c{text-align:center;}
 .pill.q{color:var(--grey);background:var(--wash);border:1px solid var(--line);}
 .pill.live{color:#fff;background:var(--bad);}
 .dim{color:#94A3B8;}
+.ct{table-layout:fixed;} .ct col.n{width:96px;}
+.ct td{padding:12px 12px;} .ct tbody tr:hover{background:var(--wash,#F5F7FA);}
+.cn .t1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;} .cn .tt{font-size:14px;}
+.cn .t2{display:flex;align-items:center;flex-wrap:wrap;gap:0 8px;margin-top:4px;}
+.cn .t2 .pd-tag{margin:0;font-size:10.5px;padding:2px 8px;}
+.cn .meta{font-weight:500;color:var(--grey);font-size:11.5px;}
+.ct td.num{font-size:15px;font-weight:800;color:var(--ink,#0F172A);}
+.ct tr.is-now{background:linear-gradient(90deg,rgba(74,139,58,.07),transparent 60%);box-shadow:none!important;}
+.cn .links{margin-top:8px;}
 .links{display:flex;gap:5px;flex-wrap:wrap;}
-.links a{font-size:11.5px;font-weight:800;text-decoration:none;color:var(--main);border:1px solid var(--line);border-radius:16px;padding:3px 9px;white-space:nowrap;background:#fff;}
+.links a{font-size:11px;font-weight:700;text-decoration:none;color:var(--main);border:1px solid var(--line);border-radius:14px;padding:2px 9px;white-space:nowrap;background:#fff;}
 .links a:hover{background:var(--pale);border-color:var(--main);}
 .links a.main{background:var(--main);color:#fff;border-color:var(--main);}
 .ld::after{content:"…";color:#94A3B8;}
@@ -122,7 +131,7 @@ td.c{text-align:center;}
 .msg.ok{color:var(--good);} .msg.bad{color:var(--bad);}
 details.arch{margin-top:6px;}
 details.arch summary{cursor:pointer;font-size:12.5px;color:var(--grey);font-weight:700;padding:6px 0;}
-@media(max-width:760px){ .hide-s{display:none;} }
+@media(max-width:760px){ .hide-s{display:none;} .ct{table-layout:auto;} .ct td{padding:10px 6px;} }
 </style>
 <script src="/shared/period.js"></script>
 </head>
@@ -280,12 +289,17 @@ function drawAll(){
     var home=SCHOOL_HOME[k];
     return '<div class="school"><div class="shd"><h2>'+esc(k)+'</h2><span class="dim" style="font-size:12px">'+live.length+' course'+(live.length===1?'':'s')+'</span><span class="sp"></span>'+
       (home?'<a href="'+home+'">School page ↗</a>':'')+'</div>'+
-      '<table><thead><tr><th>Course</th><th class="hide-s">Status</th><th class="c">Students</th><th class="c">Messages</th><th class="c">Presence</th><th class="c hide-s">Handed in</th><th class="c">Rules</th><th>Open</th></tr></thead><tbody>'+
-      live.map(row).join('')+'</tbody></table>'+
-      (arch.length?'<details class="arch" style="padding:0 16px 8px"><summary>'+arch.length+' archived</summary><table><tbody>'+arch.map(row).join('')+'</tbody></table></details>':'')+
+      '<table class="ct">'+COLS+'<thead><tr><th>Course</th><th class="c">Students</th><th class="c">Messages</th><th class="c">Presence</th><th class="c hide-s">Handed in</th><th class="c">Rules</th></tr></thead><tbody>'+
+      live.slice().sort(byPeriod).map(row).join('')+'</tbody></table>'+
+      (arch.length?'<details class="arch" style="padding:0 16px 8px"><summary>'+arch.length+' archived</summary><table class="ct">'+COLS+'<tbody>'+arch.map(row).join('')+'</tbody></table></details>':'')+
       '</div>';
   }).join('');
 }
+/* fixed columns: the course cell takes the width, the five numbers stay narrow */
+var COLS='<colgroup><col><col class="n"><col class="n"><col class="n"><col class="n hide-s"><col class="n"></colgroup>';
+/* running first, then starting soon, then courses with no dates, then idle — the original order inside each group */
+var PRANK={now:0,soon:1,unknown:2,open:3,later:3,ended:4};
+function byPeriod(a,b){ if(!window.CoursePeriod)return 0; return (PRANK[CoursePeriod.of(a).state]||0)-(PRANK[CoursePeriod.of(b).state]||0); }
 function cell(v,load){return v==null?(load?'<span class="ld"></span>':'<span class="dim">—</span>'):v;}
 function row(c){
   var PD=window.CoursePeriod?CoursePeriod.decorate(c):{cls:'',tag:''};
@@ -301,14 +315,15 @@ function row(c){
   var msgs=s.waiting==null?null:(s.waiting?'<a class="pill new" href="/shared/inbox.html">'+s.waiting+' waiting</a>':'<span class="pill q">0</span>');
   var pres=f.indexOf('presence')<0?null:(s.pres?'<a class="pill live" href="/shared/admin2.html?course='+id+'#presence" title="'+esc(s.pres.label||s.pres.mod||'')+'">● open'+(s.pres._g?' · '+esc(s.pres._g):'')+'</a>':(s.at?'<span class="pill q">closed</span>':null));
   var rules=!c.ns?null:(s.rules==='ok'?'<span class="pill ok">✓</span>':s.rules==='missing'?'<span class="pill bad" title="The '+esc(c.ns)+' block is not in the deployed rules: publish firebase-database-rules.json">not published</span>':(s.rules?'<span class="pill q">?</span>':null));
-  return '<tr class="'+PD.cls.trim()+'"><td><div class="cn"><span class="code">'+esc(c.code||c.id)+'</span> '+esc(title(c))+(PD.tag?' '+PD.tag:'')+'<small>'+esc([c.term,(c.schedule||{}).day,(c.schedule||{}).time].filter(Boolean).join(' · '))+'</small></div></td>'+
-    '<td class="hide-s"><span class="dim">'+esc(st)+'</span></td>'+
-    '<td class="c">'+(c.ns?cell(s.students,load):'<span class="dim" title="No namespace: this course stores no student data">no data</span>')+'</td>'+
+  var meta=[c.term,(c.schedule||{}).day,(c.schedule||{}).time,st].filter(Boolean).join(' · ');
+  return '<tr class="'+PD.cls.trim()+'"><td><div class="cn"><div class="t1"><span class="code">'+esc(c.code||c.id)+'</span><span class="tt">'+esc(title(c))+'</span></div>'+
+    '<div class="t2">'+(PD.tag||'')+'<span class="meta">'+esc(meta)+'</span></div>'+
+    '<div class="links">'+links+'</div></div></td>'+
+    '<td class="c num">'+(c.ns?cell(s.students,load):'<span class="dim" title="No namespace: this course stores no student data">no data</span>')+'</td>'+
     '<td class="c">'+cell(c.ns?msgs:null,load)+'</td>'+
     '<td class="c">'+cell(pres,load&&f.indexOf('presence')>=0)+'</td>'+
-    '<td class="c hide-s">'+cell(s.handed,load&&(c.handins||f.indexOf('workbook')>=0))+'</td>'+
-    '<td class="c">'+cell(rules,load)+'</td>'+
-    '<td><div class="links">'+links+'</div></td></tr>';
+    '<td class="c hide-s num">'+cell(s.handed,load&&(c.handins||f.indexOf('workbook')>=0))+'</td>'+
+    '<td class="c">'+cell(rules,load)+'</td></tr>';
 }
 
 var BUSY=false;
