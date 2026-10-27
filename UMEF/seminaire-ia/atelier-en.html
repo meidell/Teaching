@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The workshop · Programming with AI · Swiss UMEF</title>
+<meta name="description" content="The seminar workshop: your team, your prompts, the AI’s code run in a sandbox, the database and publishing.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<link rel="stylesheet" href="sem.css">
+<style>
+/* =====================================================================
+   atelier.html — the one tool of the seminar. Five steps, top to bottom:
+   team → prompts (built from the team's idea and data path) → paste and
+   run the AI's code in a SANDBOXED iframe, with its errors caught → see
+   the team's data → publish to the gallery.
+   Everything a team types is kept per browser (umefsem_* keys), so a
+   reload loses nothing; every Run that changed the code is a version.
+   ===================================================================== */
+.wrap{max-width:1100px;}
+.step{display:flex;gap:10px;align-items:baseline;}
+.step .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--navy-surface);color:#fff;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-family:"Helvetica Neue",Arial,sans-serif;font-size:15px;}
+label{display:block;font-size:13px;font-weight:800;color:var(--ink-soft);margin:10px 0 4px;}
+input[type=text],select,textarea{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--card);color:var(--ink);}
+input[type=text]:focus,textarea:focus,select:focus{outline:2px solid var(--accent-bright);border-color:transparent;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:700px){.row{grid-template-columns:1fr;}}
+.team-ok{margin-top:8px;font-size:14px;}
+.path{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-all;background:var(--accent-pale);border-radius:8px;padding:8px 10px;margin-top:6px;}
+
+textarea.code{min-height:260px;font-size:12.5px;line-height:1.45;white-space:pre;tab-size:2;}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;}
+.bar .sp{flex:1;}
+.stage{display:grid;grid-template-columns:1fr 320px;gap:12px;}
+@media(max-width:900px){.stage{grid-template-columns:1fr;}}
+.frame{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:540px;position:relative;}
+.frame iframe{width:100%;height:600px;border:0;display:block;background:#fff;}
+.frame .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--grey);font-size:14px;padding:20px;text-align:center;}
+.frame .empty[hidden]{display:none;}
+.frame.big{position:fixed;inset:0;z-index:200;border-radius:0;}
+.frame.big iframe{height:100vh;}
+.frame .close{display:none;position:absolute;top:10px;right:10px;z-index:3;}
+.frame.big .close{display:inline-flex;}
+.log{background:var(--ink-surface);color:#DDE5EA;border-radius:12px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.45;height:600px;overflow:auto;}
+.log .h{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9fb3bf;margin-bottom:6px;}
+.log div.e{color:#FF9AA5;margin:3px 0;}
+.log div.l{color:#DDE5EA;margin:3px 0;}
+.log div.net{color:#8FD9B6;margin:3px 0;}
+.log div.i{color:#9fb3bf;margin:3px 0;font-style:italic;}
+pre.data{background:var(--ink-surface);color:#DDE5EA;border-radius:12px;padding:12px 14px;font-size:12px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+.pub{font-size:15px;margin-top:10px;}
+.pub a{font-weight:700;}
+</style>
+<script src="sem.js"></script>
+</head>
+<body data-course="seminaire-ia">
+
+<div class="topbar"><div class="topbar-inner">
+  <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+  <span class="course">Programming with AI · the workshop</span>
+  <span class="sp"></span>
+  <a class="home" href="atelier.html" title="Cette page en français">FR</a>
+  <a class="home" href="galerie-en.html">🏆 Gallery</a>
+  <a class="home" href="index-en.html">← Seminar</a>
+</div></div>
+
+<div class="wrap">
+<div class="hero">
+  <div class="eyebrow">The workshop</div>
+  <h1>Your app, <em>from idea to live address</em></h1>
+  <p class="sub">One page, five steps. You describe, the AI writes the code, you run it here, you check, you fix. Everything you type stays in this browser: reloading the page loses nothing.</p>
+</div>
+
+<div class="todo">
+  <div class="k">How it works, in short</div>
+  <ol>
+    <li>You choose a <b>team name</b> (step 1).</li>
+    <li>You choose an <b>app idea</b> (step 2).</li>
+    <li>You copy a ready-made text — a <b>prompt</b> — and paste it into a free AI, in another tab.</li>
+    <li>The AI answers with <b>code</b>. You copy its whole answer, paste it here (step 3) and click <b>▶ Run</b>.</li>
+    <li>You <b>try</b> your app. If something is wrong, you tell the AI with prompt 3, then start again from point 4.</li>
+    <li>When it works, you click <b>🚀 Publish</b> (step 5).</li>
+  </ol>
+  <p>You do not need to understand the code. Your job: tell the AI clearly what you want, then check that the app really does it.</p>
+</div>
+
+<!-- 1 · TEAM -->
+<h2><span class="step"><span class="n">1</span> Your team</span></h2>
+<div class="todo">
+  <div class="k">What you do</div>
+  <ol>
+    <li>Type a short name for your team in the field below, for example <code>the-carpoolers</code>.</li>
+    <li>Wait for the green <span class="ok">✓</span>. If a red message says the name is already taken, choose another one.</li>
+    <li>The whole team uses this same name, on all its devices, all morning.</li>
+  </ol>
+</div>
+<div class="card">
+  <label for="team">Team name (two to thirty characters — it becomes your app’s address)</label>
+  <input type="text" id="team" placeholder="e.g. the-carpoolers" autocomplete="off">
+  <div class="team-ok" id="teamMsg"></div>
+  <div id="teamPath" hidden>
+    <div class="note" style="margin-top:10px">The address of your data in the database:</div>
+    <div class="path" id="teamBase"></div>
+  </div>
+</div>
+
+<!-- 2 · PROMPTS -->
+<h2><span class="step"><span class="n">2</span> Your prompts</span></h2>
+<div class="todo">
+  <div class="k">What you do</div>
+  <ol>
+    <li>Open a <b>new tab</b> and go to a free AI: <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>, <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>, <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a> or <a href="https://chat.mistral.ai" target="_blank" rel="noopener">Le Chat</a>. Sign in (a free account is enough) and start a <b>new conversation</b>.</li>
+    <li>Come back here. In the form just below, choose an idea from the list — or write your own in the five fields.</li>
+    <li>Click <b>Copy</b> at the top right of <b>prompt 1</b>. Paste it into the AI (Ctrl+V, on a Mac ⌘V) and send it.</li>
+    <li>Go to <b>step 3</b> with the AI’s answer.</li>
+  </ol>
+  <p>The prompts fill themselves in with your idea and your team’s address. Prompts 2, 3 and 4 are for later: under each one it says when to use it.</p>
+</div>
+<div class="card do">
+  <label for="preset">Start from an idea in the list (optional)</label>
+  <select id="preset"><option value="">— your own idea —</option></select>
+  <div class="row">
+    <div><label for="idea">The app, in one sentence</label><input type="text" id="idea"></div>
+    <div><label for="who">Who it is for</label><input type="text" id="who"></div>
+  </div>
+  <label for="f1">What it must do — three concrete features, one per line</label>
+  <input type="text" id="f1" placeholder="1.">
+  <input type="text" id="f2" placeholder="2." style="margin-top:6px">
+  <input type="text" id="f3" placeholder="3." style="margin-top:6px">
+</div>
+
+<h3>Prompt 1 · the first version (no database)</h3>
+<p class="when"><b>When:</b> at the very start. <b>What it does:</b> asks the AI for a first version of the app, which works on one device only.</p>
+<div class="prompt" id="p1"></div>
+<h3>Prompt 2 · connect the database</h3>
+<p class="when"><b>When:</b> once version 1 works in step 3. Send it in the <b>same conversation</b>. <b>What it does:</b> the app stores its data in the shared database, so that all users see the same data. <b>Then:</b> paste the new answer in step 3, in place of the old code.</p>
+<div class="prompt" id="p2"></div>
+<h3>Prompt 3 · when it does not work</h3>
+<p class="when"><b>When:</b> every time something does not work. <b>Before sending:</b> paste it into the AI, then replace the three texts in [square brackets] with what really happened for you. The red errors from step 3 are already added automatically.</p>
+<div class="prompt" id="p3"></div>
+<h3>Prompt 4 · improve, one request at a time</h3>
+<p class="when"><b>When:</b> once everything works and you want to improve the app. <b>Before sending:</b> delete every line of the list except one — one improvement at a time, then test.</p>
+<div class="prompt" id="p4"></div>
+
+<!-- 3 · RUN -->
+<h2><span class="step"><span class="n">3</span> Paste the code, run it</span></h2>
+<div class="todo">
+  <div class="k">What you do</div>
+  <ol>
+    <li>In the AI, copy <b>the whole answer</b>. Easiest: the code block’s <b>Copy</b> button, or select everything with the mouse. The sentences around the code do no harm; they are removed automatically.</li>
+    <li>Click in the big box below. <b>Delete</b> what is in it (Ctrl+A then Delete; on a Mac ⌘A), then <b>paste</b> (Ctrl+V; ⌘V).</li>
+    <li>Click <b>▶ Run</b>. Your app appears in the white frame underneath.</li>
+    <li><b>Try every feature</b>, the way a user would: fill in the fields, click the buttons.</li>
+    <li>Look at the <b>black panel</b> on the right. Red = an error. If there is red, or a feature does not do what it should: <b>prompt 3</b> (step 2).</li>
+  </ol>
+  <p>Every time the AI sends a new version: repeat 1 to 4. A new version broke everything? Choose the previous one in the <b>Versions</b> menu.</p>
+</div>
+<p class="note">The code runs in a <b>sandbox</b>: it cannot read anything from this page or your browser.</p>
+<textarea class="code" id="code" spellcheck="false" placeholder="&lt;!doctype html&gt; …"></textarea>
+<div class="bar">
+  <button class="btn" id="run">▶ Run</button>
+  <button class="btn ghost" id="big">⛶ Full screen</button>
+  <button class="btn ghost" id="copyErr">📋 Copy the errors for the AI</button>
+  <span class="sp"></span>
+  <label for="vers" style="margin:0">Versions</label>
+  <select id="vers" style="width:auto;max-width:260px"></select>
+</div>
+<div class="stage">
+  <div class="frame" id="frame">
+    <button class="btn small close" id="unbig">✕ Close</button>
+    <div class="empty" id="empty">Paste the AI’s code, then click ▶ Run.</div>
+  </div>
+  <div class="log" id="log"><div class="h">What the code does</div><div class="i">Errors (in red), console.log messages and every request to the database (in green) appear here.</div></div>
+</div>
+
+<!-- 4 · DATA -->
+<h2><span class="step"><span class="n">4</span> What is in your database</span></h2>
+<div class="todo">
+  <div class="k">What you do — only after prompt 2</div>
+  <ol>
+    <li>In your app (step 3), <b>add something</b>: a message, an ad, an answer…</li>
+    <li>Click <b>↻ Re-read the database</b> below. What you just added must appear in the black box.</li>
+    <li>If the box stays empty, your app is not writing to the database: use <b>prompt 3</b> and tell the AI.</li>
+  </ol>
+  <p>This box shows your data as it is stored in the database: one big tree of names and values, called <b>JSON</b>.</p>
+</div>
+<div class="bar"><button class="btn ghost" id="refresh">↻ Re-read the database</button><span class="note" id="dataNote"></span></div>
+<pre class="data" id="data">—</pre>
+
+<!-- 5 · PUBLISH -->
+<h2><span class="step"><span class="n">5</span> Publish</span></h2>
+<div class="todo">
+  <div class="k">What you do</div>
+  <ol>
+    <li>Check the <b>title</b> below (it is the name shown in the gallery).</li>
+    <li>Click <b>🚀 Publish</b>. A link appears underneath.</li>
+    <li><b>Two-device test:</b> open that link on a phone. Add something on the phone, then look at the computer: it must appear within ten seconds (and the other way round).</li>
+    <li>After every fix: <b>▶ Run</b> in step 3, then <b>🚀 Publish</b> again. Publishing puts the last version you ran online; the gallery always shows the latest.</li>
+  </ol>
+</div>
+<div class="card">
+  <label for="title">Title shown in the gallery</label>
+  <input type="text" id="title" maxlength="80">
+  <div class="bar"><button class="btn" id="publish">🚀 Publish</button><span class="note" id="pubNote"></span></div>
+  <div class="pub" id="pub"></div>
+</div>
+</div>
+
+<footer>Swiss UMEF seminar · 27 October 2026 · Jan Erik Meidell</footer>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var team = '', html = '', logs = [];
+
+  /* ---------- 1 · team ---------- */
+  function setTeam(){
+    team = Sem.slug($('team').value);
+    Sem.ls('team', $('team').value);
+    $('teamPath').hidden = !team || team.length < 2;
+    $('teamBase').textContent = team ? Sem.dataBase(team) : '';
+    $('teamMsg').textContent = '';
+    if (team.length < 2) { if ($('team').value) $('teamMsg').innerHTML = '<span class="no">At least two characters.</span>'; prompts(); return; }
+    var mine = Sem.ls('own_' + team) === '1';
+    Promise.all([Sem.get('idx/' + team), Sem.get('data/' + team, 'shallow=true')]).then(function(r){
+      if ((r[0] || r[1]) && !mine) $('teamMsg').innerHTML = '<span class="no">⚠ This name is already used by a team.</span> If it is not yours, choose another one.';
+      else $('teamMsg').innerHTML = '<span class="ok">✓ ' + Sem.esc(team) + '</span> — that is your team’s name.';
+    }).catch(function(e){
+      $('teamMsg').innerHTML = e.status === 401
+        ? '<span class="no">The database refuses to be read</span> — its rules are not published yet. Tell the instructor.'
+        : '<span class="no">No network?</span> ' + Sem.esc(e.message);
+    });
+    prompts(); loadVersions(); readData();
+  }
+  var tTeam;
+  $('team').addEventListener('input', function(){ clearTimeout(tTeam); tTeam = setTimeout(setTeam, 400); });
+
+  /* ---------- 2 · prompts ---------- */
+  var FIELDS = ['idea','who','f1','f2','f3'];
+  Sem.IDEAS.forEach(function(x, i){ var o = document.createElement('option'); o.value = i; o.textContent = x.t; $('preset').appendChild(o); });
+  $('preset').addEventListener('change', function(){
+    var x = Sem.IDEAS[this.value]; if (!x) return;
+    $('idea').value = x.t; $('who').value = x.who; $('f1').value = x.f[0]; $('f2').value = x.f[1]; $('f3').value = x.f[2];
+    if (!$('title').value) $('title').value = x.t;
+    save(); prompts();
+  });
+  FIELDS.forEach(function(k){ $(k).addEventListener('input', function(){ save(); prompts(); }); });
+  function save(){ FIELDS.forEach(function(k){ Sem.ls('f_' + k, $(k).value); }); }
+  function v(k, ph){ return $(k).value.trim() || ph; }
+
+  function prompts(){
+    var base = team.length >= 2 ? Sem.dataBase(team) : '(first choose your team name in step 1)';
+    fill('p1',
+'You are my web developer. Build a complete web app in ONE SINGLE HTML file (HTML, CSS and JavaScript in the same file).\n\n' +
+'The app: ' + v('idea','[your idea]') + '\n' +
+'Who it is for: ' + v('who','[your users]') + '\n' +
+'What it must do:\n1. ' + v('f1','[feature 1]') + '\n2. ' + v('f2','[feature 2]') + '\n3. ' + v('f3','[feature 3]') + '\n\n' +
+'Constraints:\n' +
+'- no external library, no CDN, no framework, no external font;\n' +
+'- all text in English;\n' +
+'- good-looking and readable on a phone as well as a computer;\n' +
+'- for now, keep the data in a JavaScript variable (no localStorage);\n' +
+'- a clear <title>.\n\n' +
+'Answer with the complete file in a single code block, with no explanation.');
+    fill('p2',
+'Now the data must be shared between all users. Replace the variable with a Firebase Realtime Database used with fetch() (its REST API) — no Firebase SDK, no key, no login.\n\n' +
+'Base address, copy it exactly:\nconst BASE = "' + base + '";\n\n' +
+'- Read a collection: GET BASE + "/messages.json" → an object { id: item, … }, or null if it is empty.\n' +
+'- Add an item: POST BASE + "/messages.json" with JSON.stringify(item) → the response is { "name": "<id>" }.\n' +
+'- Update an item: PATCH BASE + "/messages/<id>.json" with the fields to change.\n' +
+'- Delete an item: DELETE BASE + "/messages/<id>.json".\n' +
+'("messages" is an example: choose collection names in lower case, with no spaces or accents.)\n\n' +
+'Rules:\n' +
+'- only ever write to one specific item (POST to a collection, or PATCH / DELETE on /collection/<id>); writing to BASE or replacing a whole collection is refused by the database;\n' +
+'- every item has a field ts = Date.now();\n' +
+'- re-read the data every 5 seconds to see what others add, without wiping what the user is typing;\n' +
+'- if a request fails, show a clear message on screen;\n' +
+'- text typed by a user is displayed with textContent, never with innerHTML;\n' +
+'- still no localStorage.\n\n' +
+'Send back the complete file, in a single code block.');
+    var errs = logs.filter(function(l){ return l.level === 'error'; }).map(function(l){ return '- ' + l.msg; });
+    fill('p3',
+'Your code does not work as expected.\n' +
+'What I did: [e.g. I added a message and clicked Send]\n' +
+'What I expected: [e.g. the message appears at the top of the list]\n' +
+'What happened: [e.g. nothing shows up]\n' +
+'Error messages:\n' + (errs.length ? errs.slice(-8).join('\n') : '- no error message') + '\n\n' +
+'Find the cause, explain it in one sentence, then send back the complete corrected file.');
+    fill('p4',
+'Keep everything that works. Change only this: [ONE request, for example:]\n' +
+'- a more polished design: one main colour, cards, rounded buttons, white space;\n' +
+'- refuse an empty or too-long entry (over 280 characters), with a message;\n' +
+'- a search box that filters the list as you type;\n' +
+'- show “3 min ago” next to each item, from ts;\n' +
+'- a counter at the top: how many items in total.\n\n' +
+'Send back the complete file, in a single code block.');
+  }
+  function fill(id, text){
+    var el = $(id); el.textContent = text;
+    var b = document.createElement('button'); b.className = 'copy'; b.textContent = 'Copy';
+    b.onclick = function(){ copy(text, b); };
+    el.insertBefore(b, el.firstChild);
+  }
+  function copy(text, b){
+    var done = function(){ if (!b) return; b.textContent = '✓ Copied'; b.classList.add('ok'); setTimeout(function(){ b.textContent = 'Copy'; b.classList.remove('ok'); }, 1500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    function fallback(){ var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch(e) {} t.remove(); }
+  }
+
+  /* ---------- 3 · run ---------- */
+  var frame = $('frame'), iframe = null;
+  function run(){
+    var code = Sem.clean($('code').value);
+    if (!code) return;
+    if (code !== $('code').value.trim()) $('code').value = code;
+    html = code; Sem.ls('code_' + (team || '_'), code);
+    pushVersion(code);
+    logs = []; $('log').innerHTML = '<div class="h">What the code does</div><div class="i">Run at ' + new Date().toLocaleTimeString(Sem.LOC) + '.</div>';
+    if (iframe) iframe.remove();
+    iframe = document.createElement('iframe');
+    iframe.setAttribute('sandbox', Sem.SANDBOX);
+    iframe.srcdoc = Sem.withPrelude(code, true);
+    frame.appendChild(iframe); $('empty').hidden = true;
+    if (!$('title').value && Sem.titleOf(code)) $('title').value = Sem.titleOf(code);
+    prompts();
+    setTimeout(readData, 2500);
+  }
+  window.addEventListener('message', function(e){
+    if (!iframe || e.source !== iframe.contentWindow || !e.data || !e.data.semlog) return;
+    logs.push({level:e.data.level, msg:e.data.msg});
+    var d = document.createElement('div');
+    d.className = e.data.level === 'error' ? 'e' : e.data.level === 'net' ? 'net' : 'l';
+    d.textContent = (e.data.level === 'error' ? '✗ ' : e.data.level === 'net' ? '⇄ ' : '› ') + e.data.msg;
+    $('log').appendChild(d); $('log').scrollTop = 1e9;
+    if (e.data.level === 'error') prompts();
+    if (e.data.level === 'net' && /^(POST|PATCH|PUT|DELETE)/.test(e.data.msg)) { clearTimeout(tData); tData = setTimeout(readData, 600); }
+  });
+  $('run').onclick = run;
+  $('code').addEventListener('keydown', function(e){ if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run(); });
+  $('big').onclick = function(){ frame.classList.add('big'); };
+  $('unbig').onclick = function(){ frame.classList.remove('big'); };
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') frame.classList.remove('big'); });
+  $('copyErr').onclick = function(){ copy($('p3').textContent.replace(/^Copy/, ''), this); };
+
+  /* versions: every Run that changed the code, newest first, 20 kept */
+  function vKey(){ return 'vers_' + (team || '_'); }
+  function versions(){ try { return JSON.parse(Sem.ls(vKey()) || '[]'); } catch(e) { return []; } }
+  function pushVersion(code){
+    var vs = versions();
+    if (vs[0] && vs[0].c === code) return;
+    vs.unshift({c:code, ts:Date.now()}); vs = vs.slice(0, 20);
+    try { Sem.ls(vKey(), JSON.stringify(vs)); } catch(e) { vs.pop(); try { Sem.ls(vKey(), JSON.stringify(vs.slice(0, 8))); } catch(_) {} }
+    loadVersions();
+  }
+  function loadVersions(){
+    var vs = versions(), s = $('vers');
+    s.innerHTML = '<option value="">' + (vs.length ? vs.length + ' version' + (vs.length > 1 ? 's' : '') : 'no version') + '</option>';
+    vs.forEach(function(x, i){
+      var o = document.createElement('option'); o.value = i;
+      o.textContent = 'v' + (vs.length - i) + ' · ' + new Date(x.ts).toLocaleTimeString(Sem.LOC, {hour:'2-digit', minute:'2-digit'}) + ' · ' + (Sem.titleOf(x.c) || Math.round(x.c.length / 100) / 10 + ' kB');
+      s.appendChild(o);
+    });
+  }
+  $('vers').addEventListener('change', function(){
+    var x = versions()[this.value]; if (!x) return;
+    $('code').value = x.c; this.value = ''; run();
+  });
+
+  /* ---------- 4 · data ---------- */
+  var tData;
+  function readData(){
+    if (team.length < 2) { $('data').textContent = '—'; return; }
+    Sem.get('data/' + team).then(function(d){
+      $('data').textContent = d ? JSON.stringify(d, null, 2) : '(empty — your app has not written anything yet)';
+      $('dataNote').textContent = 'read at ' + new Date().toLocaleTimeString(Sem.LOC);
+    }).catch(function(e){ $('data').textContent = 'Read refused: ' + e.message; });
+  }
+  $('refresh').onclick = readData;
+
+  /* ---------- 5 · publish ---------- */
+  $('title').addEventListener('input', function(){ Sem.ls('title', this.value); });
+  $('publish').onclick = function(){
+    var code = html || Sem.clean($('code').value);
+    if (team.length < 2) { $('pubNote').innerHTML = '<span class="no">First choose a team name (step 1).</span>'; return; }
+    if (!code) { $('pubNote').innerHTML = '<span class="no">Nothing to publish: run your code first (step 3).</span>'; return; }
+    if (code.length > 300000) { $('pubNote').innerHTML = '<span class="no">The file is over 300,000 characters.</span>'; return; }
+    var title = ($('title').value.trim() || Sem.titleOf(code) || team).slice(0, 80), ts = Date.now(), btn = this;
+    btn.disabled = true; $('pubNote').textContent = 'Publishing…';
+    Sem.put('apps/' + team, {html:code, title:title, team:team, ts:ts})
+      .then(function(){ return Sem.put('idx/' + team, {title:title, ts:ts}); })
+      .then(function(){
+        Sem.ls('own_' + team, '1');
+        var link = Sem.SITE + 'app-en.html?t=' + encodeURIComponent(team);
+        $('pubNote').innerHTML = '<span class="ok">✓ Published at ' + new Date(ts).toLocaleTimeString(Sem.LOC) + '</span>';
+        $('pub').innerHTML = 'Your app: <a href="app-en.html?t=' + encodeURIComponent(team) + '" target="_blank">' + Sem.esc(link) + '</a> · <a href="galerie-en.html">see the gallery</a>';
+      })
+      .catch(function(e){
+        $('pubNote').innerHTML = '<span class="no">Refused (' + Sem.esc(e.message) + ')</span>' + (e.status === 401 ? ' — the database rules are not published, or the file is too big.' : '');
+      })
+      .then(function(){ btn.disabled = false; });
+  };
+
+  /* ---------- restore ---------- */
+  FIELDS.forEach(function(k){ var x = Sem.ls('f_' + k); if (x) $(k).value = x; });
+  $('title').value = Sem.ls('title') || '';
+  $('team').value = Sem.ls('team') || '';
+  team = Sem.slug($('team').value);
+  var saved = Sem.ls('code_' + (team || '_'));
+  if (saved) $('code').value = saved;
+  setTeam();
+  if (saved) run();
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

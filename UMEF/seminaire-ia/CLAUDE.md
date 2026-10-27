@@ -2,7 +2,12 @@
 
 One-off, 3 h, Swiss UMEF conference day, **Tue 27 Oct 2026, 09h15–12h00, salle
 Moscou-Dubaï**. Requested by Dimitrios Koukourdinos ("a topic of new
-technologies … interactive the way you do the courses"). French. Built 26 Oct 2026.
+technologies … interactive the way you do the courses"). Built 26 Oct 2026 in
+French; **English copies `*-en.html` added 27 Oct 2026**, written by hand (no
+build script) — a change to a French page must be made in its `-en` twin too.
+`sem.js` switches its own strings (ideas, `ago()`, the iframe's error
+messages) on `<html lang>`; both languages share the team keys, the data and
+the poll (same ids and option order).
 
 Teams of 2–3 describe an app to a FREE chat assistant (Claude, ChatGPT, Gemini,
 Le Chat), paste the code into the atelier, run it, wire it to a shared Firebase
