@@ -146,3 +146,29 @@ presence needing an account) applies. What differs:
   `--dump-dom` with a probe that writes `<pre id="RESULT">`) is the test
   to rerun. The instructor's timed run sheet is
   `_private/week3-runsheet.md`.
+- **Week 4 — risk and the cost of capital (`week4.html`, `week4-homework.html`,
+  built 27 Oct 2026 for the 29 Oct session)** on the Week 3 engine (blocks
+  byte-copied from week3.html, `w3`→`w4`). **The canonical rate inputs**:
+  r_f 1% and market premium 6% are *stated course assumptions* (low Swiss
+  rates; say so, never present them as market data); equity β 1.5, borrowed
+  from an illustrative listed comparable → r_E 10.0%; cost of debt = the
+  bank's 6% for NEW money (Week 2), not last year's 60 ⁄ 760 = 7.9% → 4.8%
+  after tax; target mix 30% debt → **company WACC 8.44%** (book weights
+  1,000 ⁄ 760 would give 7.75%). **Lausanne's own rate: β 1.8 → 11.8% →
+  9.70%**, NPV +122.47 (8.44%: 143.46 · 10%: 117.64 · rates up r_f 3% / bank
+  8% → 10.32%: 112.56); the father's 10% "was close, by luck". Teaching
+  points that later weeks rely on: the rate belongs to the project; Léa is
+  undiversified (an owner's premium is stated openly, not hidden in the rate);
+  more debt raises r_E (deferred to Week 7). `capm()`/`waccOf()` and the
+  constants `RF MRP BETA RD DV BETA_P` in the page are the one definition.
+  Widgets: required-return instinct, σ walk, diversification curve with a
+  prediction (σ 40%, ρ 0.3 → floor 21.9%), beta walk (illustrative 5-year
+  series built so β is exactly 1.50), security market line, the editable WACC
+  table, the project-rate walk. Denominator `EXTRA_STEPS (12) + EXERCISES (9)
+  + .cl-row (12) + .q (10) + [data-work] (4) = 47`; deck 25 slides. Headless
+  probe: 23/23 widget checks, homework 18/18. Homework: **Nyon Cycles** β 1.2
+  → 8.2%, bank 5% → 4%, 25% debt → WACC 7.15%; **Morges** β 1.6 → 10.6% →
+  8.95% (≈ the 9% Week 3 gave), NPV 118.00 (134.68 at 7.15%; rates up →
+  10.85%, 101.75). Fields `w4_re · w4_wacc · w4_project · w4_verdict` in
+  `courses.json → project.sections` ("Week 4 · What hurdle rate?"). Run
+  sheet `_private/week4-runsheet.md`.
