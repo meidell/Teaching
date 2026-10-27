@@ -23,7 +23,7 @@ window.CourseProgress=(function(){
   var NS="omba500", K="omba500";
   var S=window.CAPSTONE_SCHEDULE;
   var WEEK_TOTALS={w1:0,w2:0,w3:0,w4:0,w5:0,w6:0,w7:0,w8:0,w9:0,w10:0}; /* filled by _build/count.py */
-  WEEK_TOTALS={w1:10,w2:12,w3:13,w4:13,w5:13,w6:11,w7:10,w8:10,w9:12,w10:7};
+  WEEK_TOTALS={w1:10,w2:12,w3:13,w4:13,w5:14,w6:11,w7:10,w8:10,w9:12,w10:7};
   var CHAPTERS=[];
   (S?S.WEEKS:[]).forEach(function(w){
     var live=Date.now()>=w.opens.getTime();

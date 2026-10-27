@@ -57,3 +57,23 @@ applies. What differs:
   ≈ 870 TWh); "~70%" LCOE fall is 54–60%; the €65 ETS price does not cover
   green steel's €180 premium; "10× EU capacity" is 24–30× offshore. The
   energy-units video is a YouTube search link — the Moodle export had no link targets.
+- **Week 5 pressure-test section (27 Oct 2026, omba500 only — not yet
+  ported to `wind` or `capstone-ba`)**: "Three questions to put to your own
+  2×2", between s3 and s4, written from the on-campus MA500 deck
+  `Week5_Pressure_Testing_Scenarios.pptx` (archive, `2026 Capstone
+  Sustainability, Forecasting and AI/`). The deck names last term's students
+  on every slide, so it is **rewritten as page text, never shown as slide
+  images**, and student names are removed. Contents: Schoemaker's four kinds of
+  "scenario" + a `CAP.classify('kind')` sort, the three pitfalls with the
+  official-future check (250+ GW vs the member states' 2040 goal 259–261 GW,
+  Dec 2024 update, verified), the four policy→cost channels, the hidden
+  supply-chain axis, options A/B/C, the four-worlds consistency table, and
+  one new field `w5_axisopt` (in `courses.json → project.sections`; w5 total
+  13 → 14 via `count.py`). The deck's "35% of 2040 capacity on non-Chinese
+  vessels (Kuehne)" could not be verified: the Kühne Climate Center study
+  (Jan 2026) is about 2030 (rest of world ~175 GW with €2.5–4 bn/yr of
+  newbuilds, ~140 GW without; China ~225 GW), and that is what the page
+  quotes. The section has no `data-step`. The rest of the archive's Week 5
+  kit (Loom decks, Courtney postures, BLUF/SCQA, CFO branching scenario,
+  Section 5 strategic implications) is team-based strategy work and was
+  deliberately not used here.
