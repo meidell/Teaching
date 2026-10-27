@@ -250,3 +250,18 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   controls expired on **10 Nov 2026** — the transcript tells Jan Erik to check
   on the day. No TotalEnergies anywhere (the German 2023 seabed auction is
   "oil majors among the winners").
+- **One slide style for every deck (27 Oct 2026, Jan Erik: "all the slides
+  for all the weeks should have the same style").** Every deck of this course
+  runs on the Week 1 deck's engine. The two Week 2 readings, until then PDFs
+  of the navy Moodle PowerPoints, were rebuilt as `week2-gas-wind-slides.html`
+  (9) and `week2-stakeholders-slides.html` (10; not the 30-slide session deck
+  `stakeholders-to-systems-slides.html`), Eni throughout and the original
+  deck's numbers corrected as in omba500's Week 2 notes; their PDFs were
+  printed over the same `w2slides/` file names, so no link changed. Reading
+  decks hide the session clock in the footer (`.hud` CSS). **Each week's
+  slides are listed in its "Learning focus · required materials" card**
+  (`<h3>Slides</h3>` before `<h3>Read</h3>`; Week 2 "Slides · read both"), as
+  well as at the top of Weeks 4–6 and on the hub cards (`SLIDES` in
+  `index.html`). A new deck must be added in all three places. Weeks 1, 3
+  and 7–10 have no deck in a learning-focus card (Week 1 has no such card;
+  `week1-slides.html` is the instructor's session deck with notes).
