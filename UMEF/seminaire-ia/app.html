@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appli · Programmer avec une IA · Swiss UMEF</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#176B87">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<style>
+/* app.html?t=<team> — one published app, full screen. The app runs in a
+   sandboxed iframe with NO allow-same-origin (see sem.js): it is
+   unreviewed code on this domain. The thin bar on top is the only chrome. */
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#fff;display:flex;flex-direction:column;}
+.bar{flex:none;display:flex;align-items:center;gap:10px;padding:6px 12px;background:var(--navy-surface);color:#fff;font-size:13px;}
+.bar a{color:#fff;text-decoration:none;font-weight:700;opacity:.85;}
+.bar a:hover{opacity:1;}
+.bar .t{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar .team{opacity:.7;white-space:nowrap;}
+.bar .sp{flex:1;}
+.bar button{font:inherit;font-weight:800;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:20px;padding:3px 11px;cursor:pointer;white-space:nowrap;}
+.bar button.on{background:#fff;color:var(--navy-surface);}
+iframe{flex:1;width:100%;border:0;display:block;}
+.msg{flex:1;display:flex;align-items:center;justify-content:center;color:#6B7280;padding:30px;text-align:center;}
+@media(max-width:520px){.bar .team{display:none;}}
+</style>
+<script src="sem.js"></script>
+</head>
+<body data-course="seminaire-ia">
+<div class="bar">
+  <a href="galerie.html">← Galerie</a>
+  <span class="t" id="t">…</span>
+  <span class="team" id="team"></span>
+  <span class="sp"></span>
+  <button id="vote" hidden>❤ <span id="nv">0</span></button>
+</div>
+<div class="msg" id="msg">Chargement…</div>
+<script>
+(function(){
+  var team = Sem.slug(new URLSearchParams(location.search).get('t') || '');
+  var $ = function(id){ return document.getElementById(id); };
+  if (!team) { $('msg').textContent = 'Aucune appli demandée.'; return; }
+  Sem.get('apps/' + team).then(function(a){
+    if (!a || !a.html) { $('msg').textContent = 'L’équipe « ' + team + ' » n’a encore rien publié.'; return; }
+    $('t').textContent = a.title || team; $('team').textContent = 'équipe ' + team + ' · ' + Sem.ago(a.ts);
+    document.title = (a.title || team) + ' · Swiss UMEF';
+    var f = document.createElement('iframe');
+    f.setAttribute('sandbox', Sem.SANDBOX);
+    f.srcdoc = Sem.withPrelude(a.html, false);
+    $('msg').replaceWith(f);
+    votes();
+  }).catch(function(e){ $('msg').textContent = 'Impossible de lire l’appli (' + e.message + ').'; });
+
+  var me = Sem.voter();
+  function votes(){
+    Sem.get('votes/' + team).then(function(v){
+      v = v || {};
+      $('nv').textContent = Object.keys(v).length;
+      $('vote').hidden = false;
+      $('vote').classList.toggle('on', !!v[me]);
+    }).catch(function(){});
+  }
+  $('vote').onclick = function(){
+    if (this.classList.contains('on')) return;
+    Sem.put('votes/' + team + '/' + me, true).then(votes, votes);
+  };
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

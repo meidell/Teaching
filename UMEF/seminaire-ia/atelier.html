@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>L’atelier · Programmer avec une IA · Swiss UMEF</title>
+<meta name="description" content="L’atelier du séminaire : votre équipe, vos prompts, le code de l’IA lancé dans un bac à sable, la base de données et la publication.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<link rel="stylesheet" href="sem.css">
+<style>
+/* =====================================================================
+   atelier.html — the one tool of the seminar. Five steps, top to bottom:
+   team → prompts (built from the team's idea and data path) → paste and
+   run the AI's code in a SANDBOXED iframe, with its errors caught → see
+   the team's data → publish to the gallery.
+   Everything a team types is kept per browser (umefsem_* keys), so a
+   reload loses nothing; every Run that changed the code is a version.
+   ===================================================================== */
+.wrap{max-width:1100px;}
+.step{display:flex;gap:10px;align-items:baseline;}
+.step .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--navy-surface);color:#fff;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-family:"Helvetica Neue",Arial,sans-serif;font-size:15px;}
+label{display:block;font-size:13px;font-weight:800;color:var(--ink-soft);margin:10px 0 4px;}
+input[type=text],select,textarea{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--card);color:var(--ink);}
+input[type=text]:focus,textarea:focus,select:focus{outline:2px solid var(--accent-bright);border-color:transparent;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:700px){.row{grid-template-columns:1fr;}}
+.team-ok{margin-top:8px;font-size:14px;}
+.path{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-all;background:var(--accent-pale);border-radius:8px;padding:8px 10px;margin-top:6px;}
+
+textarea.code{min-height:260px;font-size:12.5px;line-height:1.45;white-space:pre;tab-size:2;}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;}
+.bar .sp{flex:1;}
+.stage{display:grid;grid-template-columns:1fr 320px;gap:12px;}
+@media(max-width:900px){.stage{grid-template-columns:1fr;}}
+.frame{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:540px;position:relative;}
+.frame iframe{width:100%;height:600px;border:0;display:block;background:#fff;}
+.frame .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--grey);font-size:14px;padding:20px;text-align:center;}
+.frame .empty[hidden]{display:none;}
+.frame.big{position:fixed;inset:0;z-index:200;border-radius:0;}
+.frame.big iframe{height:100vh;}
+.frame .close{display:none;position:absolute;top:10px;right:10px;z-index:3;}
+.frame.big .close{display:inline-flex;}
+.log{background:var(--ink-surface);color:#DDE5EA;border-radius:12px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.45;height:600px;overflow:auto;}
+.log .h{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9fb3bf;margin-bottom:6px;}
+.log div.e{color:#FF9AA5;margin:3px 0;}
+.log div.l{color:#DDE5EA;margin:3px 0;}
+.log div.net{color:#8FD9B6;margin:3px 0;}
+.log div.i{color:#9fb3bf;margin:3px 0;font-style:italic;}
+pre.data{background:var(--ink-surface);color:#DDE5EA;border-radius:12px;padding:12px 14px;font-size:12px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+.pub{font-size:15px;margin-top:10px;}
+.pub a{font-weight:700;}
+</style>
+<script src="sem.js"></script>
+</head>
+<body data-course="seminaire-ia">
+
+<div class="topbar"><div class="topbar-inner">
+  <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+  <span class="course">Programmer avec une IA · l’atelier</span>
+  <span class="sp"></span>
+  <a class="home" href="galerie.html">🏆 Galerie</a>
+  <a class="home" href="index.html">← Séminaire</a>
+</div></div>
+
+<div class="wrap">
+<div class="hero">
+  <div class="eyebrow">L’atelier</div>
+  <h1>Votre appli, <em>de l’idée à l’adresse en ligne</em></h1>
+  <p class="sub">Une page, cinq étapes. Vous décrivez, l’IA écrit le code, vous le lancez ici, vous vérifiez, vous corrigez. Tout ce que vous tapez reste dans ce navigateur : recharger la page ne perd rien.</p>
+</div>
+
+<!-- 1 · TEAM -->
+<h2><span class="step"><span class="n">1</span> Votre équipe</span></h2>
+<div class="card">
+  <label for="team">Nom de l’équipe (deux à trente caractères — il devient l’adresse de votre appli)</label>
+  <input type="text" id="team" placeholder="par ex. les-covoitureurs" autocomplete="off">
+  <div class="team-ok" id="teamMsg"></div>
+  <div id="teamPath" hidden>
+    <div class="note" style="margin-top:10px">L’adresse de vos données dans la base :</div>
+    <div class="path" id="teamBase"></div>
+  </div>
+</div>
+
+<!-- 2 · PROMPTS -->
+<h2><span class="step"><span class="n">2</span> Vos prompts</span></h2>
+<p>Ouvrez un assistant gratuit dans un autre onglet — <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>, <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>, <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a> ou <a href="https://chat.mistral.ai" target="_blank" rel="noopener">Le Chat</a>. Remplissez la fiche ; les prompts ci-dessous se mettent à jour avec votre idée et l’adresse de votre équipe.</p>
+<div class="card do">
+  <label for="preset">Partir d’une idée de la liste (facultatif)</label>
+  <select id="preset"><option value="">— votre propre idée —</option></select>
+  <div class="row">
+    <div><label for="idea">L’application, en une phrase</label><input type="text" id="idea"></div>
+    <div><label for="who">Pour qui</label><input type="text" id="who"></div>
+  </div>
+  <label for="f1">Ce qu’elle doit faire — trois fonctions, une par ligne, concrètes</label>
+  <input type="text" id="f1" placeholder="1.">
+  <input type="text" id="f2" placeholder="2." style="margin-top:6px">
+  <input type="text" id="f3" placeholder="3." style="margin-top:6px">
+</div>
+
+<h3>Prompt 1 · la première version (sans base de données)</h3>
+<div class="prompt" id="p1"></div>
+<h3>Prompt 2 · brancher la base de données</h3>
+<p class="note">À envoyer dans la même conversation, une fois que la version 1 tourne à l’étape 3.</p>
+<div class="prompt" id="p2"></div>
+<h3>Prompt 3 · quand ça ne marche pas</h3>
+<p class="note">Les erreurs captées à l’étape 3 s’ajoutent ici automatiquement. Complétez les trois lignes « Ce que… » avant d’envoyer.</p>
+<div class="prompt" id="p3"></div>
+<h3>Prompt 4 · améliorer, une demande à la fois</h3>
+<div class="prompt" id="p4"></div>
+
+<!-- 3 · RUN -->
+<h2><span class="step"><span class="n">3</span> Collez le code, lancez-le</span></h2>
+<p>Copiez la réponse entière de l’IA et collez-la ici — les <code>```html</code> et les phrases autour sont retirés automatiquement. Le code tourne dans un <b>bac à sable</b> : il ne peut rien lire de cette page ni de votre navigateur.</p>
+<textarea class="code" id="code" spellcheck="false" placeholder="&lt;!doctype html&gt; …"></textarea>
+<div class="bar">
+  <button class="btn" id="run">▶ Lancer</button>
+  <button class="btn ghost" id="big">⛶ Plein écran</button>
+  <button class="btn ghost" id="copyErr">📋 Copier les erreurs pour l’IA</button>
+  <span class="sp"></span>
+  <label for="vers" style="margin:0">Versions</label>
+  <select id="vers" style="width:auto;max-width:260px"></select>
+</div>
+<div class="stage">
+  <div class="frame" id="frame">
+    <button class="btn small close" id="unbig">✕ Fermer</button>
+    <div class="empty" id="empty">Collez le code de l’IA puis cliquez ▶ Lancer.</div>
+  </div>
+  <div class="log" id="log"><div class="h">Ce que fait le code</div><div class="i">Les erreurs (en rouge), les messages console.log et chaque requête à la base (en vert) s’affichent ici.</div></div>
+</div>
+
+<!-- 4 · DATA -->
+<h2><span class="step"><span class="n">4</span> Ce qu’il y a dans votre base</span></h2>
+<p>La base n’est qu’un grand arbre <b>JSON</b>. Voici la branche de votre équipe, telle qu’elle est stockée — ce que votre appli écrit doit apparaître ici. Ouvrez votre appli sur un deuxième appareil : ce que l’un ajoute, l’autre le voit.</p>
+<div class="bar"><button class="btn ghost" id="refresh">↻ Relire la base</button><span class="note" id="dataNote"></span></div>
+<pre class="data" id="data">—</pre>
+
+<!-- 5 · PUBLISH -->
+<h2><span class="step"><span class="n">5</span> Publier</span></h2>
+<p>Publier met la dernière version lancée dans la galerie de la classe, à une adresse que tout le monde peut ouvrir sur son téléphone. Vous pouvez republier autant de fois que vous voulez ; la galerie montre toujours la dernière.</p>
+<div class="card">
+  <label for="title">Titre affiché dans la galerie</label>
+  <input type="text" id="title" maxlength="80">
+  <div class="bar"><button class="btn" id="publish">🚀 Publier</button><span class="note" id="pubNote"></span></div>
+  <div class="pub" id="pub"></div>
+</div>
+</div>
+
+<footer>Séminaire Swiss UMEF · 27 octobre 2026 · Jan Erik Meidell</footer>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var team = '', html = '', logs = [];
+
+  /* ---------- 1 · team ---------- */
+  function setTeam(){
+    team = Sem.slug($('team').value);
+    Sem.ls('team', $('team').value);
+    $('teamPath').hidden = !team || team.length < 2;
+    $('teamBase').textContent = team ? Sem.dataBase(team) : '';
+    $('teamMsg').textContent = '';
+    if (team.length < 2) { if ($('team').value) $('teamMsg').innerHTML = '<span class="no">Deux caractères au moins.</span>'; prompts(); return; }
+    var mine = Sem.ls('own_' + team) === '1';
+    Promise.all([Sem.get('idx/' + team), Sem.get('data/' + team, 'shallow=true')]).then(function(r){
+      if ((r[0] || r[1]) && !mine) $('teamMsg').innerHTML = '<span class="no">⚠ Ce nom est déjà utilisé par une équipe.</span> Si ce n’est pas la vôtre, choisissez-en un autre.';
+      else $('teamMsg').innerHTML = '<span class="ok">✓ ' + Sem.esc(team) + '</span> — c’est le nom de votre équipe.';
+    }).catch(function(e){
+      $('teamMsg').innerHTML = e.status === 401
+        ? '<span class="no">La base refuse la lecture</span> — ses règles ne sont pas encore publiées. Prévenez l’enseignant.'
+        : '<span class="no">Pas de réseau ?</span> ' + Sem.esc(e.message);
+    });
+    prompts(); loadVersions(); readData();
+  }
+  var tTeam;
+  $('team').addEventListener('input', function(){ clearTimeout(tTeam); tTeam = setTimeout(setTeam, 400); });
+
+  /* ---------- 2 · prompts ---------- */
+  var FIELDS = ['idea','who','f1','f2','f3'];
+  Sem.IDEAS.forEach(function(x, i){ var o = document.createElement('option'); o.value = i; o.textContent = x.t; $('preset').appendChild(o); });
+  $('preset').addEventListener('change', function(){
+    var x = Sem.IDEAS[this.value]; if (!x) return;
+    $('idea').value = x.t; $('who').value = x.who; $('f1').value = x.f[0]; $('f2').value = x.f[1]; $('f3').value = x.f[2];
+    if (!$('title').value) $('title').value = x.t;
+    save(); prompts();
+  });
+  FIELDS.forEach(function(k){ $(k).addEventListener('input', function(){ save(); prompts(); }); });
+  function save(){ FIELDS.forEach(function(k){ Sem.ls('f_' + k, $(k).value); }); }
+  function v(k, ph){ return $(k).value.trim() || ph; }
+
+  function prompts(){
+    var base = team.length >= 2 ? Sem.dataBase(team) : '(choisissez d’abord le nom de votre équipe à l’étape 1)';
+    fill('p1',
+'Tu es mon développeur web. Crée une application web complète dans UN SEUL fichier HTML (HTML, CSS et JavaScript dans le même fichier).\n\n' +
+'L’application : ' + v('idea','[votre idée]') + '\n' +
+'Pour qui : ' + v('who','[vos utilisateurs]') + '\n' +
+'Ce qu’elle doit faire :\n1. ' + v('f1','[fonction 1]') + '\n2. ' + v('f2','[fonction 2]') + '\n3. ' + v('f3','[fonction 3]') + '\n\n' +
+'Contraintes :\n' +
+'- aucune bibliothèque externe, aucun CDN, aucun framework, aucune police externe ;\n' +
+'- tous les textes en français ;\n' +
+'- belle et lisible sur un téléphone comme sur un ordinateur ;\n' +
+'- pour l’instant, garde les données dans une variable JavaScript (pas de localStorage) ;\n' +
+'- un <title> clair.\n\n' +
+'Réponds avec le fichier complet dans un seul bloc de code, sans explication.');
+    fill('p2',
+'Maintenant, les données doivent être partagées entre tous les utilisateurs. Remplace la variable par une base de données Firebase Realtime Database utilisée avec fetch() (son API REST) — pas de SDK Firebase, pas de clé, pas de connexion.\n\n' +
+'Adresse de base, à recopier telle quelle :\nconst BASE = "' + base + '";\n\n' +
+'- Lire une collection : GET BASE + "/messages.json" → un objet { id: élément, … }, ou null si elle est vide.\n' +
+'- Ajouter un élément : POST BASE + "/messages.json" avec JSON.stringify(élément) → la réponse est { "name": "<id>" }.\n' +
+'- Modifier un élément : PATCH BASE + "/messages/<id>.json" avec les champs à changer.\n' +
+'- Supprimer un élément : DELETE BASE + "/messages/<id>.json".\n' +
+'(« messages » est un exemple : choisis des noms de collection en minuscules, sans espace ni accent.)\n\n' +
+'Règles :\n' +
+'- on n’écrit QUE sur un élément précis (POST sur une collection, ou PATCH / DELETE sur /collection/<id>) ; écrire sur BASE ou remplacer une collection entière est refusé par la base ;\n' +
+'- chaque élément a un champ ts = Date.now() ;\n' +
+'- relis les données toutes les 5 secondes pour voir les ajouts des autres, sans effacer ce que l’utilisateur est en train de taper ;\n' +
+'- si une requête échoue, affiche un message clair à l’écran ;\n' +
+'- le texte tapé par un utilisateur s’affiche avec textContent, jamais avec innerHTML ;\n' +
+'- toujours pas de localStorage.\n\n' +
+'Renvoie le fichier complet, dans un seul bloc de code.');
+    var errs = logs.filter(function(l){ return l.level === 'error'; }).map(function(l){ return '- ' + l.msg; });
+    fill('p3',
+'Ton code ne marche pas comme prévu.\n' +
+'Ce que j’ai fait : [par ex. j’ai ajouté un message et cliqué sur Envoyer]\n' +
+'Ce que j’attendais : [par ex. le message apparaît en haut de la liste]\n' +
+'Ce qui s’est passé : [par ex. rien ne s’affiche]\n' +
+'Messages d’erreur :\n' + (errs.length ? errs.slice(-8).join('\n') : '- aucun message d’erreur') + '\n\n' +
+'Trouve la cause, explique-la en une phrase, puis renvoie le fichier complet corrigé.');
+    fill('p4',
+'Garde tout ce qui marche. Change seulement ceci : [UNE demande, par exemple :]\n' +
+'- un design plus soigné : une couleur principale, des cartes, des boutons arrondis, de l’espace ;\n' +
+'- refuser un envoi vide ou trop long (plus de 280 caractères), avec un message ;\n' +
+'- un champ de recherche qui filtre la liste pendant que l’on tape ;\n' +
+'- afficher « il y a 3 min » à côté de chaque élément, à partir de ts ;\n' +
+'- un compteur en haut : combien d’éléments au total.\n\n' +
+'Renvoie le fichier complet, dans un seul bloc de code.');
+  }
+  function fill(id, text){
+    var el = $(id); el.textContent = text;
+    var b = document.createElement('button'); b.className = 'copy'; b.textContent = 'Copier';
+    b.onclick = function(){ copy(text, b); };
+    el.insertBefore(b, el.firstChild);
+  }
+  function copy(text, b){
+    var done = function(){ if (!b) return; b.textContent = '✓ Copié'; b.classList.add('ok'); setTimeout(function(){ b.textContent = 'Copier'; b.classList.remove('ok'); }, 1500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    function fallback(){ var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch(e) {} t.remove(); }
+  }
+
+  /* ---------- 3 · run ---------- */
+  var frame = $('frame'), iframe = null;
+  function run(){
+    var code = Sem.clean($('code').value);
+    if (!code) return;
+    if (code !== $('code').value.trim()) $('code').value = code;
+    html = code; Sem.ls('code_' + (team || '_'), code);
+    pushVersion(code);
+    logs = []; $('log').innerHTML = '<div class="h">Ce que fait le code</div><div class="i">Lancé à ' + new Date().toLocaleTimeString('fr-CH') + '.</div>';
+    if (iframe) iframe.remove();
+    iframe = document.createElement('iframe');
+    iframe.setAttribute('sandbox', Sem.SANDBOX);
+    iframe.srcdoc = Sem.withPrelude(code, true);
+    frame.appendChild(iframe); $('empty').hidden = true;
+    if (!$('title').value && Sem.titleOf(code)) $('title').value = Sem.titleOf(code);
+    prompts();
+    setTimeout(readData, 2500);
+  }
+  window.addEventListener('message', function(e){
+    if (!iframe || e.source !== iframe.contentWindow || !e.data || !e.data.semlog) return;
+    logs.push({level:e.data.level, msg:e.data.msg});
+    var d = document.createElement('div');
+    d.className = e.data.level === 'error' ? 'e' : e.data.level === 'net' ? 'net' : 'l';
+    d.textContent = (e.data.level === 'error' ? '✗ ' : e.data.level === 'net' ? '⇄ ' : '› ') + e.data.msg;
+    $('log').appendChild(d); $('log').scrollTop = 1e9;
+    if (e.data.level === 'error') prompts();
+    if (e.data.level === 'net' && /^(POST|PATCH|PUT|DELETE)/.test(e.data.msg)) { clearTimeout(tData); tData = setTimeout(readData, 600); }
+  });
+  $('run').onclick = run;
+  $('code').addEventListener('keydown', function(e){ if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run(); });
+  $('big').onclick = function(){ frame.classList.add('big'); };
+  $('unbig').onclick = function(){ frame.classList.remove('big'); };
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') frame.classList.remove('big'); });
+  $('copyErr').onclick = function(){ copy($('p3').textContent.replace(/^Copier/, ''), this); };
+
+  /* versions: every Run that changed the code, newest first, 20 kept */
+  function vKey(){ return 'vers_' + (team || '_'); }
+  function versions(){ try { return JSON.parse(Sem.ls(vKey()) || '[]'); } catch(e) { return []; } }
+  function pushVersion(code){
+    var vs = versions();
+    if (vs[0] && vs[0].c === code) return;
+    vs.unshift({c:code, ts:Date.now()}); vs = vs.slice(0, 20);
+    try { Sem.ls(vKey(), JSON.stringify(vs)); } catch(e) { vs.pop(); try { Sem.ls(vKey(), JSON.stringify(vs.slice(0, 8))); } catch(_) {} }
+    loadVersions();
+  }
+  function loadVersions(){
+    var vs = versions(), s = $('vers');
+    s.innerHTML = '<option value="">' + (vs.length ? vs.length + ' version' + (vs.length > 1 ? 's' : '') : 'aucune version') + '</option>';
+    vs.forEach(function(x, i){
+      var o = document.createElement('option'); o.value = i;
+      o.textContent = 'v' + (vs.length - i) + ' · ' + new Date(x.ts).toLocaleTimeString('fr-CH', {hour:'2-digit', minute:'2-digit'}) + ' · ' + (Sem.titleOf(x.c) || Math.round(x.c.length / 100) / 10 + ' ko');
+      s.appendChild(o);
+    });
+  }
+  $('vers').addEventListener('change', function(){
+    var x = versions()[this.value]; if (!x) return;
+    $('code').value = x.c; this.value = ''; run();
+  });
+
+  /* ---------- 4 · data ---------- */
+  var tData;
+  function readData(){
+    if (team.length < 2) { $('data').textContent = '—'; return; }
+    Sem.get('data/' + team).then(function(d){
+      $('data').textContent = d ? JSON.stringify(d, null, 2) : '(vide — votre appli n’a encore rien écrit)';
+      $('dataNote').textContent = 'lu à ' + new Date().toLocaleTimeString('fr-CH');
+    }).catch(function(e){ $('data').textContent = 'Lecture refusée : ' + e.message; });
+  }
+  $('refresh').onclick = readData;
+
+  /* ---------- 5 · publish ---------- */
+  $('title').addEventListener('input', function(){ Sem.ls('title', this.value); });
+  $('publish').onclick = function(){
+    var code = html || Sem.clean($('code').value);
+    if (team.length < 2) { $('pubNote').innerHTML = '<span class="no">Choisissez d’abord un nom d’équipe (étape 1).</span>'; return; }
+    if (!code) { $('pubNote').innerHTML = '<span class="no">Rien à publier : lancez d’abord votre code (étape 3).</span>'; return; }
+    if (code.length > 300000) { $('pubNote').innerHTML = '<span class="no">Le fichier dépasse 300 000 caractères.</span>'; return; }
+    var title = ($('title').value.trim() || Sem.titleOf(code) || team).slice(0, 80), ts = Date.now(), btn = this;
+    btn.disabled = true; $('pubNote').textContent = 'Publication…';
+    Sem.put('apps/' + team, {html:code, title:title, team:team, ts:ts})
+      .then(function(){ return Sem.put('idx/' + team, {title:title, ts:ts}); })
+      .then(function(){
+        Sem.ls('own_' + team, '1');
+        var link = Sem.SITE + 'app.html?t=' + encodeURIComponent(team);
+        $('pubNote').innerHTML = '<span class="ok">✓ Publié à ' + new Date(ts).toLocaleTimeString('fr-CH') + '</span>';
+        $('pub').innerHTML = 'Votre appli : <a href="app.html?t=' + encodeURIComponent(team) + '" target="_blank">' + Sem.esc(link) + '</a> · <a href="galerie.html">voir la galerie</a>';
+      })
+      .catch(function(e){
+        $('pubNote').innerHTML = '<span class="no">Refusé (' + Sem.esc(e.message) + ')</span>' + (e.status === 401 ? ' — les règles de la base ne sont pas publiées, ou le fichier est trop gros.' : '');
+      })
+      .then(function(){ btn.disabled = false; });
+  };
+
+  /* ---------- restore ---------- */
+  FIELDS.forEach(function(k){ var x = Sem.ls('f_' + k); if (x) $(k).value = x; });
+  $('title').value = Sem.ls('title') || '';
+  $('team').value = Sem.ls('team') || '';
+  team = Sem.slug($('team').value);
+  var saved = Sem.ls('code_' + (team || '_'));
+  if (saved) $('code').value = saved;
+  setTeam();
+  if (saved) run();
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

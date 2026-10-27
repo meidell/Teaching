@@ -282,6 +282,7 @@ Each course's history, decisions and traps now live next to its pages (split 23 
 - `Kalaidos/flc/CLAUDE.md` — Kalaidos · Financial Leadership & Controlling
 - `Kalaidos/fl3/CLAUDE.md` — Kalaidos · Financial Leadership III
 - `UMEF/ideas-e1410/CLAUDE.md` — UMEF · E1410
+- `UMEF/seminaire-ia/CLAUDE.md` — UMEF · Séminaire « Programmer avec une IA » (27 Oct 2026, one-off)
 - Courses without a file (OMBA401, OMBAFR455, UMEF407, MFB 545, the open hubs) are documented in the memory notes and in comments at the top of their pages.
 
 ## 5. Data model

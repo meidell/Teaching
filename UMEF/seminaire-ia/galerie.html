@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La galerie · Programmer avec une IA · Swiss UMEF</title>
+<meta name="description" content="Les applis publiées par les équipes du séminaire, et le vote de la salle.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<link rel="stylesheet" href="sem.css">
+<style>
+/* galerie.html — for the projector and for phones. Lists idx/ (titles
+   only, never the html), re-reads every 10 s, one ❤ per device per app
+   (votes/<team>/<voter>, create-once). */
+.wrap{max-width:1200px;}
+.head{display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:18px;}
+.head h1{font-size:clamp(30px,5vw,48px);}
+.head .qr img{width:130px;height:130px;}
+.head .qr .u{font-size:13px;font-weight:700;color:var(--accent-deep);}
+.tools{display:flex;gap:8px;align-items:center;margin:8px 0 16px;flex-wrap:wrap;}
+.tools .n{font-size:14px;color:var(--grey);margin-left:auto;}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.app{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;}
+.app .t{font-family:Georgia,serif;font-size:21px;font-weight:700;color:var(--navy);line-height:1.2;}
+.app .tm{font-size:13px;color:var(--grey);}
+.app .act{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:10px;}
+.app .v{margin-left:auto;font:inherit;font-weight:800;border:1px solid var(--line);background:var(--card);color:var(--terra);border-radius:20px;padding:5px 12px;cursor:pointer;}
+.app .v.on{background:var(--terra);color:#fff;border-color:var(--terra);}
+.app.top{border:2px solid var(--gold);}
+.app .rank{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--gold-soft);text-transform:uppercase;}
+.none{color:var(--grey);font-size:16px;padding:40px 0;text-align:center;}
+</style>
+<script src="sem.js"></script>
+</head>
+<body data-course="seminaire-ia">
+<div class="topbar"><div class="topbar-inner">
+  <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+  <span class="course">Programmer avec une IA · la galerie</span>
+  <span class="sp"></span>
+  <a class="home" href="atelier.html">🛠 Atelier</a>
+  <a class="home" href="index.html">← Séminaire</a>
+</div></div>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="eyebrow">27 octobre 2026 · salle Moscou-Dubaï</div>
+      <h1>Ce que la salle a construit</h1>
+      <p class="lead">Ouvrez une appli, utilisez-la, laissez un ❤ à celles qui marchent le mieux — un vote par appli et par appareil.</p>
+    </div>
+    <div class="qr"><img src="qr-galerie.svg" alt="QR code de la galerie"><div class="u">janerikmeidell.com/UMEF/seminaire-ia/galerie.html</div></div>
+  </div>
+  <div class="tools">
+    <button class="btn small" id="byNew">Les plus récentes</button>
+    <button class="btn small ghost" id="byVote">Les plus aimées</button>
+    <span class="n" id="n"></span>
+  </div>
+  <div class="apps" id="apps"><div class="none">Chargement…</div></div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var idx = {}, votes = {}, sort = 'new', me = Sem.voter();
+  function load(){
+    Promise.all([Sem.get('idx'), Sem.get('votes')]).then(function(r){
+      idx = r[0] || {}; votes = r[1] || {}; draw();
+    }).catch(function(e){
+      $('apps').innerHTML = '<div class="none">' + (e.status === 401 ? 'La base refuse la lecture : ses règles ne sont pas encore publiées.' : 'Pas de réseau (' + Sem.esc(e.message) + ').') + '</div>';
+    });
+  }
+  function nv(t){ return Object.keys(votes[t] || {}).length; }
+  function draw(){
+    var ts = Object.keys(idx);
+    $('n').textContent = ts.length + ' appli' + (ts.length > 1 ? 's' : '') + ' · ' + ts.reduce(function(s, t){ return s + nv(t); }, 0) + ' ❤';
+    if (!ts.length) { $('apps').innerHTML = '<div class="none">Aucune appli publiée pour l’instant. La première arrive bientôt.</div>'; return; }
+    ts.sort(sort === 'vote' ? function(a, b){ return nv(b) - nv(a) || idx[b].ts - idx[a].ts; } : function(a, b){ return idx[b].ts - idx[a].ts; });
+    var best = Math.max.apply(null, ts.map(nv));
+    $('apps').innerHTML = ts.map(function(t, i){
+      var x = idx[t], n = nv(t), mine = votes[t] && votes[t][me], top = sort === 'vote' && n > 0 && n === best;
+      return '<div class="app' + (top ? ' top' : '') + '">' +
+        (top ? '<div class="rank">🏆 en tête</div>' : '') +
+        '<div class="t">' + Sem.esc(x.title || t) + '</div>' +
+        '<div class="tm">équipe ' + Sem.esc(t) + ' · publiée ' + Sem.ago(x.ts) + '</div>' +
+        '<div class="act"><a class="btn small" href="app.html?t=' + encodeURIComponent(t) + '">Ouvrir →</a>' +
+        '<button class="v' + (mine ? ' on' : '') + '" data-t="' + Sem.esc(t) + '">❤ ' + n + '</button></div></div>';
+    }).join('');
+  }
+  $('apps').addEventListener('click', function(e){
+    var b = e.target.closest('button.v'); if (!b || b.classList.contains('on')) return;
+    var t = b.getAttribute('data-t');
+    b.classList.add('on');
+    (votes[t] = votes[t] || {})[me] = true; draw();
+    Sem.put('votes/' + t + '/' + me, true).catch(load);
+  });
+  function setSort(s){ sort = s; $('byNew').classList.toggle('ghost', s !== 'new'); $('byVote').classList.toggle('ghost', s !== 'vote'); draw(); }
+  $('byNew').onclick = function(){ setSort('new'); };
+  $('byVote').onclick = function(){ setSort('vote'); };
+  load(); setInterval(function(){ if (!document.hidden) load(); }, 10000);
+})();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
