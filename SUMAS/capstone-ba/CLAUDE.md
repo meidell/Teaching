@@ -198,3 +198,21 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   note that their "TotalEnergies" reads Eni here). Everything else on the site.
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
   `capstone-ba` only if ported by hand, and vice versa.
+- **Week 4 session deck (27 Oct 2026, for Wed 28 Oct, online, 18:15–20:00 —
+  1 h 45 at Jan Erik's request; `schedule.js → SESSION.cls` still says 20:15
+  for every week and was NOT changed)**: `week4-slides.html`, 29 slides on
+  the Week 1 deck's engine, **with no speaker notes** because students
+  download it — `w4slides/week4-scenario-planning.pdf` (printed from the deck
+  with headless Chrome; larger print sizes added to this deck's `@media print`
+  only), linked with the browser view in a `.ref` block directly under the
+  Week 4 hero. Built from Jan Erik's two archived Week 4 decks (on-campus
+  `Week4 Scenario_Planning.pptx`, online `Week4_Theory_Lecture.pptx`):
+  Eni for TotalEnergies, no last-year references, two canvas exercises
+  (19:02 the orthogonality court, team vs team; 19:40 the stress test in
+  breakout rooms). Canvas `BOXES[4]` gained `verdict` and `stress`
+  (thrive/survive/struggle/fail × Ørsted/Eni, 5 rows). Ørsted's figure is
+  the company's own: DKK 28.4 bn of 2023 impairments (≈ €3.8 bn) — not the
+  "$4 bn" the old decks used. The anchors table (55/40/35/22 % · €42/68/55/85 ·
+  €180/160/60/45) is labelled illustrative. The spoken script is
+  `_private/week4-transcript.md` (never committed); regenerate the PDF and the
+  transcript if the deck changes.
