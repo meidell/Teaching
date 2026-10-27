@@ -94,6 +94,7 @@ a.card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:va
 .card h3{font-size:18px;margin:4px 0 8px;line-height:1.25;color:var(--ink);}
 .card .fl{font-size:12.5px;color:var(--ink-soft);margin-top:6px;}
 .card .fl span{display:block;}
+.card .fl .sl{color:var(--accent-deep);font-weight:600;cursor:pointer;margin-top:3px;} .card .fl .sl:hover u{color:var(--accent);}
 .card .badge{display:inline-block;font-size:10px;letter-spacing:1px;font-weight:700;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-top:12px;margin-right:6px;}
 .badge.go{background:var(--accent);color:#fff;} .badge.now{background:var(--accent-deep);color:#fff;} .badge.soon{background:var(--surface);color:var(--grey);border:1px solid var(--surface-2);} .badge.hand{background:rgba(201,162,39,0.15);color:#8a6d14;border:1px solid rgba(201,162,39,0.5);} .badge.exam{background:rgba(44,85,48,0.1);color:var(--accent-deep);border:1px solid rgba(44,85,48,0.35);} .badge.done{background:var(--accent-pale);color:var(--accent-deep);}
 .card.future{opacity:.72;background:linear-gradient(160deg,#fff,var(--surface));}
@@ -227,16 +228,26 @@ a.card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:va
   kd.push('<li><b>'+req.length+' required forum posts</b> — the first '+req[0].dueText.replace(' · ',' ')+', the last '+req[req.length-1].dueText.replace(' · ',' ')+'; each week\'s card below lists them</li>');
   document.getElementById('keyDates').innerHTML=kd.join('');
   var cur=S.weekOfToday(), g=document.getElementById('grid');
+  /* the taught topic of each week and its deck, downloadable from the card (the week page links it too) */
+  var SLIDES={
+    4:[{t:'Taught: how an offshore wind farm makes, or loses, money',pdf:'w4slides/week4-wind-farm-economics.pdf'},{t:'Self-study: scenario planning',pdf:'w4slides/week4-scenario-planning.pdf'}],
+    5:[{t:'Taught: the grid is the bottleneck, not the turbines',pdf:'w5slides/week5-grid-bottleneck.pdf'}],
+    6:[{t:'Taught: the supply chain and China',pdf:'w6slides/week6-supply-chain-china.pdf'}]
+  };
   g.innerHTML=S.WEEKS.map(function(w){
     var future=Date.now()<w.opens.getTime(), live=w.n===cur;
     var fl=S.forumsOf(w.n).map(function(f){return '<span>'+(f.opt?'○':'●')+' '+f.short+' · '+(f.opt?'open until ':'by ')+S.fmtDay(f.due).replace(/^\w+ /,'')+'</span>';}).join('');
     fl='<span>◆ '+w.session.day+' · '+w.session.group+' group hour · '+w.session.cls+' class</span>'+fl;
     S.phasesOf(w.n).forEach(function(p){fl+='<span>▲ '+p.name.replace(/ · .*$/,'')+' · team report · by '+S.fmtDay(p.due).replace(/^\w+ /,'')+'</span>';});
+    (SLIDES[w.n]||[]).forEach(function(d){fl+='<span class="sl" data-href="'+d.pdf+'" role="link" tabindex="0">▶ '+d.t+' · <u>slides (PDF)</u></span>';});
     if(w.examWeek)fl+='<span>▲ Final exam online, open book · '+S.fmtDay(S.EXAM.open).replace(/^\w+ /,'')+' – '+S.fmtDay(S.EXAM.close).replace(/^\w+ /,'')+'</span>';
     var badge=w.examWeek?'<span class="badge exam">Final exam</span>':(live?'<span class="badge now">This week</span>':(future?'<span class="badge soon">Opens '+S.fmtDay(w.monday)+'</span>':'<span class="badge go">Open</span>'));
     if(S.phasesOf(w.n).length)badge+='<span class="badge hand">Hand-in</span>';
     return '<a class="card'+(future?' future':'')+(live?' live':'')+'" href="week'+w.n+'.html" data-mod="w'+w.n+'"><span class="dt">'+w.dates+'</span><span class="wk">Week '+w.n+'</span><div class="role">'+(w.examWeek?'Open book':'Role · '+w.role)+'</div><h3>'+w.title+'</h3><div class="fl">'+fl+'</div>'+badge+'</a>';
   }).join('');
+  /* a slides line sits inside the card's link, so it opens the PDF itself instead of the week page */
+  function openSl(e){ var t=e.target.closest&&e.target.closest('.sl'); if(!t)return; if(e.type==='keydown'&&e.key!=='Enter')return; e.preventDefault(); e.stopPropagation(); window.open(t.getAttribute('data-href'),'_blank'); }
+  g.addEventListener('click',openSl); g.addEventListener('keydown',openSl);
   /* the two teams — _teams is world-readable and carries names only */
   var DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app';
   function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
