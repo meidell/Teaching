@@ -211,8 +211,42 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   (19:02 the orthogonality court, team vs team; 19:40 the stress test in
   breakout rooms). Canvas `BOXES[4]` gained `verdict` and `stress`
   (thrive/survive/struggle/fail × Ørsted/Eni, 5 rows). Ørsted's figure is
-  the company's own: DKK 28.4 bn of 2023 impairments (≈ €3.8 bn) — not the
-  "$4 bn" the old decks used. The anchors table (55/40/35/22 % · €42/68/55/85 ·
+  the company's own: DKK 28.4 bn of impairments in the FIRST NINE MONTHS
+  of 2023 (≈ €3.8 bn; DKK 19.9 bn on Ocean Wind 1) — not "for the year" (full
+  year: DKK 26.8 bn + a DKK 9.6 bn cancellation provision), and not the "$4 bn"
+  the old decks used. The anchors table (55/40/35/22 % · €42/68/55/85 ·
   €180/160/60/45) is labelled illustrative. The spoken script is
   `_private/week4-transcript.md` (never committed); regenerate the PDF and the
   transcript if the deck changes.
+- ⚠ **Weeks 4–6: Jan Erik TEACHES A TOPIC, the students DO THE WEEK PAGE
+  (27 Oct 2026, "I'd rather they read and do week 4 and that I teach them a
+  topic (with superbe slides) related to the tasks of this mandate").** Each
+  session is 18:15–20:00, online, two breakout-room exercises written on the
+  canvas, a downloadable PDF at the top of the week page, and a private
+  spoken script in `_private/` (never committed):
+  | Week | Deck | PDF | Script | Page section | Canvas boxes | New fields |
+  |---|---|---|---|---|---|---|
+  | 4 | `week4-economics-slides.html` (27) — how an offshore wind farm makes or loses money | `w4slides/week4-wind-farm-economics.pdf` | `week4-economics-transcript.md` | `#calc`, the wind-farm calculator (no data-step) | `shocks`, `bid` | — |
+  | 5 | `week5-slides.html` (28) — the grid is the bottleneck | `w5slides/week5-grid-bottleneck.pdf` | `week5-transcript.md` | `s6` team roles · `s7 #grid` table, revenue calculator, `gridq` sort | `gridbind`, `gridind` | `w5_role`, `w5_grid` |
+  | 6 | `week6-slides.html` (26) — the supply chain and China | `w6slides/week6-supply-chain-china.pdf` | `week6-transcript.md` | `s7` team roles · `s8 #supply` table, price-of-security slider, `supq` sort | `dep`, `rome` | `w6_role`, `w6_supply` |
+  The Week 4 scenario deck (`week4-slides.html`) is now the **self-study**
+  deck, linked second; its canvas boxes `verdict`/`stress` lost their
+  in-class times. The `.thu` "with Jan Erik" bullets and `wednesday.html`'s
+  outlines for W4–6 describe the new topics; the group hours did not change.
+  Totals (count.py): w5 13 → 18, w6 12 → 16. Glossary gained cost of capital,
+  CfD, farm-down, curtailment/redispatch, negative price, capture rate,
+  interconnection, connection queue, rare earths, NZIA; **Plenitude's entry
+  now carries verified figures** (just over 4 GW end-2024, over 5.8 GW
+  end-2025, 15 GW by 2030, Eni 65%, deconsolidated end-Sept 2026).
+  **All figures came from three research passes on 27 Oct 2026 with primary
+  sources where possible** and are sourced on each slide. One LCOE model
+  everywhere (deck slide 7, `#calc`, the W6 slider): annuity at r over 35
+  years, Arup/DESNZ 2025 inputs (£3,976/kW, £138.5k/MW/yr, 50.5%), giving
+  £94.8/MWh at 6.2% (Arup's full model: £88.5); +2 pts → +16%. Exercise 2 of
+  W4 uses capex £3,400/kW so 6.0% bids (£84.3) and 7.5% walks (£93.9) against
+  AR7's £91.20. Flagged as unconfirmed on the slides: Borkum Riffgrund 3 /
+  DolWin5 (trade press), the Mingyang factory site in Italy. ⚠ The W6 deck
+  asks the class what happened when China's suspended Oct-2025 rare-earth
+  controls expired on **10 Nov 2026** — the transcript tells Jan Erik to check
+  on the day. No TotalEnergies anywhere (the German 2023 seabed auction is
+  "oil majors among the winners").
