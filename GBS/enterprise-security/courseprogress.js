@@ -22,7 +22,7 @@ window.CourseProgress=(function(){
   var CHAPTERS=[
     {mod:'w1',  short:'S1', name:'Session 01 · Who was the target?',                    total:7, live:true, href:'week1.html'},
     {mod:'w2',  short:'S2', name:'Session 02 · Below the threshold',                    total:7, live:true, href:'week2.html'},
-    {mod:'w3',  short:'S3', name:'Session 03 · Will cyber war take place?',             total:6, live:false},
+    {mod:'w3',  short:'S3', name:'Session 03 · Will cyber war take place?',             total:6, live:true, href:'week3.html'},
     {mod:'w4',  short:'S4', name:'Session 04 · Cables, satellites and the sky',         total:6, live:false},
     {mod:'w5',  short:'S5', name:'Session 05 · The update you trusted',                 total:6, live:false},
     {mod:'w6',  short:'S6', name:'Session 06 · Putting a number on it',                 total:6, live:false},
