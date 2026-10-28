@@ -288,7 +288,7 @@ listed; shared login, no class password.
   the page source like every homework solution in this repo. It stops a
   student reading the answers instead of doing the work; it does not stop a
   determined one pressing ⌥⌘U. Nothing confidential in a solution, ever.
-- **`exam-cards.html` — 165 midterm practice cards (28 Oct 2026; 99, then 66 more the same day).** Jan Erik
+- **`exam-cards.html` — 215 midterm practice cards (28 Oct 2026; 99, then 66, then 50 more the same day).** Jan Erik
   sent the four midterm papers (A–D) as examples and said "DO NOT USE ANY OF
   THESE QUESTIONS": the cards train the same skills on different functions,
   numbers and situations, and **no midterm paper, stem or key is in this
@@ -338,5 +338,17 @@ listed; shared login, no class password.
   board: anyone could write a fake row. Probed headlessly with a stubbed
   database: test → 0.80, run posted to `examruns` and `_exambest`, a
   5-card row kept off the board, no overflow at 400 px.
+  **Third set + PDF (same day).** 50 more cards (215; 43 per position
+  A–E), again checked against the four papers — no paper template reused
+  (no k⁄(q+a)+b inverses, nth-root log expansions, linear Newton, x³
+  tangents, package/event or visits→revenue stories) — and leaning on the
+  papers' conceptual style (sign charts, a silent second-derivative test,
+  perpendicular pairs, a price floor, break-even revenue). The text-keyed
+  ones are recomputed in the script's checks block. The script now also
+  writes **`exam-cards.pdf`**: every card with its hint, answer letter and
+  worked solution, printed by headless Chrome from a page it builds in a
+  temp folder (needs Google Chrome in /Applications). The ⬇ button sits in
+  the deck UI, so students see it only once the deck is released — but the
+  PDF is a public URL like the page source: same classroom gate, no more.
 - The hub lists **both semesters** in one grid with a `.semhead` divider, which
   is the only layout this hub has that `HEG/statistics/index.html` does not.
