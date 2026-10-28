@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/mfb545/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Day 4 · Blockchain, crypto-assets, DeFi and tokenisation · MFB 545 · Swiss UMEF</title>
+<meta name="description" content="MFB 545 Fintech, Day 4 — why trustless works, a wallet and a real transaction on the Sepolia test blockchain, decentralised lending and exchange in simulators, stablecoins, tokenisation, the DLT Act, SDX, Project Helvetia and WAEMU, “do you need a blockchain?”, MEV, three hacks, MiCA, and proof that your app’s money exists.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛓️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="fintech.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+<style>
+/* Day 4's own additions; everything else is fintech.css. */
+.txv{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+.txv input{flex:1;min-width:240px;font:13px ui-monospace,Menlo,Consolas,monospace;padding:9px 10px;border:1px solid var(--line);border-radius:8px;}
+.txout{font-size:13.5px;line-height:1.6;}
+.txout table{width:100%;border-collapse:collapse;}
+.txout td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+.txout td:first-child{color:var(--grey);white-space:nowrap;width:1%;}
+.txout code,.mk code{font-size:12px;word-break:break-all;}
+.dtree .dq{font-size:16px;font-weight:700;margin:6px 0 10px;}
+.dtree .path{font-size:13px;color:var(--grey);margin-top:8px;line-height:1.5;}
+.dtree .res{font-size:16px;font-weight:700;padding:10px 12px;border-radius:10px;background:var(--surface);margin-top:8px;}
+.mk .lv{font:12px ui-monospace,Menlo,Consolas,monospace;word-break:break-all;line-height:1.5;padding:6px 8px;border:1px solid var(--line);border-radius:8px;margin:4px 0;background:#fff;}
+.mk .lv.me{border-color:var(--accent);background:var(--accent-pale,#eef6f8);}
+.mk .lv.bad{border-color:#9B2335;background:#fdecea;}
+.mk .lv b{font-family:inherit;}
+</style>
+</head>
+<body data-course="mfb545">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">FINTECH · DAY 4</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="journee4.html" data-lang-switch="fr" title="Cette page en français">FR</a>
+    <a class="home" href="index-en.html">← Course</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This day</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Day 4 · Friday 30 October 2026 · MFB 545</div>
+    <h1>Blockchain, crypto-assets, DeFi and <em>tokenisation</em></h1>
+    <p class="sub">A blockchain is a ledger that nobody keeps alone and that everybody can check. This day shows it for real: you create a wallet, send a transaction on a test blockchain and find it in the public ledger. Then you borrow and swap on protocols with no bank, you split a building into tokens, you see how hundreds of millions get stolen — and you decide whether your team’s pension-savings app needs a blockchain, or only proof that the money is there.</p>
+    <div class="liveinfo">
+      <span class="li">🕘 <b>09:00–12:15 · 13:30–16:45</b> · four 90-minute blocks</span>
+      <span class="li">💻 laptop · an up-to-date Chrome, Firefox or Brave</span>
+      <span class="li">🎤 the talk is short — <b>🛠 most of the time, you are the one working</b></span>
+    </div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="objectives">
+    <h4>By the end of Day 4, you will be able to</h4>
+    <ul>
+      <li>Explain in three ideas why a shared ledger holds without a trusted third party — signature, fingerprint, consensus — and what it does not guarantee.</li>
+      <li>Create a wallet, send a transaction on a test blockchain and read each of its fields in an explorer.</li>
+      <li>Calculate the health factor of a DeFi loan, its liquidation price, and the price obtained on an automated exchange.</li>
+      <li>Tell apart the three families of stablecoins and say what backs each one.</li>
+      <li>Place tokenisation and central bank digital currencies in Switzerland (DLT Act, SDX, Helvetia) and in WAEMU.</li>
+      <li>Decide, with a published method, whether your project needs a blockchain — and prove to a customer that their units exist.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Before you start — tick</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Signed in</b> on this site (the button at the bottom right).</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>An up-to-date browser</b> (Chrome, Firefox or Brave) where you can add an extension. On a school computer that forbids it, the MetaMask mobile app does the same thing.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>A sheet of paper and a pen</b>: the wallet’s secret phrase is written by hand, never photographed or saved in a file.</span></div>
+    <div class="mi" data-read="r4"><span class="box">✓</span><span><b>Your team’s pension-savings plan</b> (<a href="journee3-en.html">Day 3, section 3.9</a>): the day ends on it.</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index-en.html">← Course page</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">reset my Day 4 progress on this device</a></div>
+  </div>
+</section>
+
+<!-- ============================ 4.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.1 · Block 1</div><span class="mode m-ex">🎤 Talk · 20 min</span><h2>Why “trustless” works</h2></div>
+  <p class="ex-note">The instructor’s talk. If it does not take place, read this section on your own, then do the sorting at the bottom of the page.</p>
+
+  <div class="card">
+    <span class="label def">The problem</span>
+    <h3>A ledger that nobody keeps alone</h3>
+    <p>Your bank account is a line in the bank’s ledger. You believe the balance because you trust the bank, its auditor and FINMA. A blockchain replaces that third party with a ledger <b>copied on thousands of computers</b>, which anyone can reread from day one. Three questions must then be answered with no one in charge: who may spend? can the past be rewritten? in what order do transactions go through? Three ideas, one per question.</p>
+    <ul>
+      <li><strong>1 · The signature — who can spend.</strong> Each account is a pair of keys. The <b>private</b> key signs; the <b>public</b> key (from which the address comes) lets everyone check the signature without ever knowing the private key. Without a valid signature, no computer on the network accepts the transaction. That is the sheet <a href="cles-publique-privee.html">public key and private key</a>.</li>
+      <li><strong>2 · The fingerprint — the past is not rewritten.</strong> Each block contains the <b>fingerprint</b> (the hash) of the previous block. Changing one comma in an old block changes its fingerprint, and therefore that of every block after it: the forgery shows immediately. That is the sheet <a href="hachage.html">what is a hash?</a>.</li>
+      <li><strong>3 · Consensus — who writes the next block.</strong> Bitcoin draws lots by computation (<em>proof of work</em>, one block every ten minutes or so). Ethereum, since September 2022, by stake (<em>proof of stake</em>): validators each lock up 32 ETH; every 12 seconds one of them proposes a block and the others attest it. A validator who cheats loses part of its stake. After two “epochs” (about 13 minutes) the block is <b>finalised</b>: undoing it would cost at least a third of all the stake.</li>
+    </ul>
+    <p>These three ideas are enough. The rest — smart contracts, DeFi, tokens — is code that runs on this ledger and inherits its guarantees, <em>and its limits</em>.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">The mechanism · the life of a transaction</span>
+    <h3>Seven steps between “Send” and the public ledger</h3>
+    <div class="lab">
+      <div class="lab-title">0.001 ETH sent to a classmate on Ethereum</div>
+      <div class="steps" id="lifeSteps"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="lifeNext">Start →</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Check · 5 min</span>
+    <h3>What the blockchain guarantees — and what it does not</h3>
+    <div class="lab">
+      <div class="lab-title">Guaranteed by the chain · not guaranteed: someone else is needed</div>
+      <div id="gRows"></div>
+      <div class="caption" id="gRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s1" data-need="The seven steps and the sorting complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.2 · Block 1</div><span class="mode m-do">🛠 Workshop · 55 min</span><h2>A wallet, a transaction, an explorer</h2></div>
+
+  <div class="card">
+    <span class="label why">The workshop rule</span>
+    <p>We work on <b>Sepolia</b>, Ethereum’s test blockchain: same software, same rules, but its ETH have no value and cannot be bought. This wallet is a <b>practice wallet</b>: never put real money in it. Anyone who asks for your secret phrase — a “support agent”, a website, a classmate — wants to empty the wallet; nobody needs it to help you.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">A · 20 min · the wallet</span>
+    <h3>Create it, write down the phrase, switch to Sepolia</h3>
+    <p>Tick each step when it is done. If a step is stuck, tick “stuck” and raise your hand: the rest of the workshop can be done with a neighbour’s wallet.</p>
+    <div class="lab">
+      <div class="lab-title">The MetaMask wallet, step by step</div>
+      <div id="wlRows"></div>
+      <div class="caption" id="wlRowsCap"></div>
+    </div>
+    <div class="wb" data-board="The class’s addresses|w4_adresse">
+      <div class="wq"><span class="qn">✍</span>Your account’s address on Sepolia (it starts with <code>0x</code>; MetaMask’s “copy” button). An address is safe to share: it is the <em>private</em> key that is never shared.</div>
+      <textarea data-work="w4_adresse" data-worklabel="My Sepolia address" placeholder="0x…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 25 min · receive, send, find</span>
+    <h3>A real transaction, and its trace in the public ledger</h3>
+    <ol>
+      <li><b>Receive.</b> The instructor sends a little test ETH to the addresses you have just entered (they are shown on the room’s screen, without names). Otherwise the no-account faucet <a href="https://sepolia-faucet.pk910.de/" target="_blank" rel="noopener">sepolia-faucet.pk910.de ↗</a> gives test ETH in exchange for a few minutes of your browser’s computing.</li>
+      <li><b>Send.</b> In MetaMask: <i>Send</i>, paste a neighbour’s address, amount <b>0.001</b>, confirm. Look at the confirmation screen: the amount, and the estimated <b>network fee</b>.</li>
+      <li><b>Find.</b> In the <i>Activity</i> tab, click the transaction, then “View on block explorer”. Copy its <b>hash</b> (0x followed by 64 characters) and paste it below: the page reads the transaction directly from the blockchain.</li>
+    </ol>
+    <div class="lab">
+      <div class="lab-title">Read a transaction on Sepolia · directly from a public node</div>
+      <div class="txv"><input id="txIn" placeholder="0x… the hash of your transaction" autocomplete="off" spellcheck="false"><button class="btn small" id="txGo">Read from the blockchain</button><button class="btn small ghost" id="txAny">Take a recent transaction</button></div>
+      <div class="txout" id="txOut"></div>
+      <p class="srcnote">No test ETH? “Take a recent transaction” reads anybody’s transaction from the latest block: the whole ledger is public, which is the point.</p>
+    </div>
+    <div id="gasNum"></div>
+    <div class="wb" data-board="What the explorer shows|w4_tx">
+      <div class="wq"><span class="qn">✍</span>The hash, the block, the fee paid — and one thing that surprised you: what everyone can see of your transaction, and what nobody can see.</div>
+      <textarea data-work="w4_tx" data-worklabel="My Sepolia transaction — hash, block, fee, what is public" placeholder="The reader’s button inserts the hash, the block and the fee; add your remark."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Debrief · 10 min</span>
+    <p>Three questions: how long between “Confirm” and the block? Who set the fee, and who received it? If you lose the sheet with the secret phrase and your computer, who can give you the money back?</p>
+    <p class="srcnote">To go further: the interactive course <a href="/GBS/blockchain/trustless-course.html" target="_blank" rel="noopener">“Why trustless works” ↗</a> redoes the three ideas of section 4.1 with hands-on steps.</p>
+  </div>
+  <div class="sec-status" data-sec="s2" data-need="The four wallet steps, one transaction read, the two calculations and the two fields complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: block 2 · decentralised finance →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.3 · Block 2</div><span class="mode m-ex">🎤 Talk · 15 min</span><h2>Lend, swap, stabilise — with no bank</h2></div>
+  <p class="ex-note">The instructor’s talk, or read on your own.</p>
+
+  <div class="card">
+    <span class="label def">Lending · Aave-type</span>
+    <h3>A loan with no file: the collateral does everything</h3>
+    <p>A lending protocol is a program (a <em>smart contract</em>) that holds a common pot. Lenders deposit tokens in it and earn interest; borrowers borrow <b>against collateral larger than the loan</b>, because the program knows neither their name nor their income: no score, no debt collection, only the collateral.</p>
+    <ul>
+      <li><strong>Maximum loan-to-value (LTV).</strong> You borrow at most, for example, 80% of the collateral’s value.</li>
+      <li><strong>Liquidation threshold.</strong> If the debt exceeds, for example, 82.5% of the collateral’s value, the loan becomes liquidatable.</li>
+      <li><strong>Health factor.</strong> Collateral value × liquidation threshold ÷ debt. Above 1, all is well; below 1, anyone can repay part of the debt in your place and take some of your collateral with a <b>bonus</b> (for example 5%). That is liquidation: automatic, public, with no judge.</li>
+      <li><strong>The rate.</strong> It depends on the pot’s <b>utilisation</b> (the share lent out): when almost everything is lent, the rate rises steeply to attract deposits and discourage borrowing.</li>
+    </ul>
+    <div class="formula">Health factor = collateral × liquidation threshold ÷ debt</div>
+    <p class="srcnote">Aave’s real parameters vary from one asset to another and from month to month; the ones on this page are orders of magnitude, chosen for the calculation.</p>
+    <div class="lab">
+      <div class="lab-title">A liquidation, step by step</div>
+      <div class="steps" id="liqSteps"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="liqNext">Start →</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label def">The exchange · Uniswap-type</span>
+    <h3>No order book: a formula</h3>
+    <p>An <b>automated market maker</b> (AMM) is a pot holding two tokens, for example 100 ETH and 300,000 USDC. The program accepts any swap that leaves the product of the two quantities unchanged: <b>x × y = k</b>. The price is the ratio of the two reserves (300,000 ÷ 100 = 3,000 USDC per ETH). The more you buy at once, the more you empty the pot on one side and the higher the average price: that is <b>price impact</b>. Each swap pays a fee (often 0.3%) to the pot’s depositors. If the pot’s price drifts from the market’s, arbitrageurs bring it back by swapping — and earn the gap.</p>
+    <div class="formula">Received = y × Δx × (1 − fee) ÷ (x + Δx × (1 − fee))</div>
+  </div>
+
+  <div class="card">
+    <span class="label def">Stablecoins</span>
+    <h3>A token worth one dollar — provided that…</h3>
+    <ul>
+      <li><strong>Backed by reserves.</strong> A company issues one token for each dollar received and places the dollars in cash and Treasury bills (Circle’s USDC, Tether’s USDT). The value holds as long as the reserves exist and can be reached. In March 2023, 3.3 billion dollars of USDC’s reserves were stuck at Silicon Valley Bank: USDC fell below 0.90 dollar for a weekend.</li>
+      <li><strong>Backed by crypto-assets.</strong> DAI is created by borrowers who deposit more collateral than they issue, with automatic liquidation — Aave’s mechanism, applied to a currency.</li>
+      <li><strong>Algorithmic.</strong> No reserves: the peg holds through a swap mechanism with a second token. TerraUSD (UST) worked this way; in May 2022 a wave of selling sent both tokens to almost zero, and tens of billions of dollars vanished within days.</li>
+    </ul>
+    <div class="lab">
+      <div class="lab-title">What backs the value of this token?</div>
+      <div id="scRows"></div>
+      <div class="caption" id="scRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s3" data-need="The liquidation walk-through and the sorting complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: the labs →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.4 · Block 2</div><span class="mode m-do">🛠 Workshop · 50 min</span><h2>DeFi labs · borrow, swap</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 15 min · the loan</span>
+    <h3>2 ETH as collateral, USDC borrowed, and the ETH price falling</h3>
+    <p>First write your prediction: at what ETH price will this loan be liquidated? Then move the price. Maximum LTV 80%, liquidation threshold 82.5%, liquidation bonus 5%.</p>
+    <div class="calc" id="lnCtrl"></div>
+    <div class="kpi" id="lnKpi"></div>
+    <p class="caption" id="lnCap"></p>
+    <div id="lnNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 15 min · the swap</span>
+    <h3>A pot of 100 ETH and 300,000 USDC, and your order</h3>
+    <p>Choose the direction and the amount. Compare the average price obtained with 3,000: the gap is the price impact, plus the fee.</p>
+    <div class="calc" id="amCtrl"></div>
+    <div class="kpi" id="amKpi"></div>
+    <div id="amNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">C · 15 min · the DeFi capstone</span>
+    <h3>A complete case, and the module certificate</h3>
+    <p>The <a href="/GBS/blockchain/defi-capstone.html" target="_blank" rel="noopener">DeFi capstone ↗</a> chains deposit, borrowing, swap and liquidation on a single wallet, and issues a certificate at the end. The course <a href="/GBS/blockchain/defi-course.html" target="_blank" rel="noopener">“How DeFi works” ↗</a> goes over the theory if needed.</p>
+    <div class="lab">
+      <div id="capRows"></div>
+      <div class="caption" id="capRowsCap"></div>
+    </div>
+    <div class="wb" data-board="DeFi for pension savings?|w4_defi">
+      <div class="wq"><span class="qn">✍</span>Would you place your customers’ pension savings in a DeFi lending pot paying 4%? Three reasons, each taken from a mechanism seen this morning.</div>
+      <textarea data-work="w4_defi" data-worklabel="DeFi for pension savings — three reasons" placeholder="e.g. No: 1) the yield comes from borrowers who can be liquidated in a cascade… 2) … 3) …"></textarea>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s4" data-need="The two simulators, the five calculations, the capstone and the field complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: the quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.5 · Block 2</div><span class="mode m-quiz">✅ Quiz · 10 min</span><h2>End-of-morning quiz</h2></div>
+  <div class="card">
+    <span class="label play">Interactive quiz · counts towards participation</span>
+    <h3>Eight questions, one attempt each, all explained</h3>
+    <p><strong>Launched in class</strong>; this page unlocks by itself. On your own, without an AI assistant. A missed quiz scores zero, unless arranged in advance.</p>
+    <div class="qlock" id="quizLock"></div>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: block 3 · tokenisation →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.6 · Block 3</div><span class="mode m-ex">🎤 Talk · 20 min</span><h2>Tokenisation and central bank digital currencies</h2></div>
+  <p class="ex-note">The instructor’s talk, or read on your own.</p>
+
+  <div class="card">
+    <span class="label def">Tokenising</span>
+    <h3>A token is a ledger entry that represents a right</h3>
+    <p>Tokenising a building, a bond or a fund unit means recording the ownership right in a shared ledger rather than in a custodian’s. What you gain: transfers settled in minutes instead of two days, smaller units, rules (who may buy, when the coupon is paid) written into the token. What you do not gain: <b>the blockchain does not know that the building exists</b>. The link between the token and the asset remains a contract, a company, a custodian and an applicable law — exactly as for a share.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Switzerland</span>
+    <h3>A law, an exchange, a wholesale currency</h3>
+    <ul>
+      <li><strong>The DLT Act</strong> (the federal act adapting federal law to developments in distributed ledger technology, in force in 2021) creates <b>ledger-based securities</b> (art. 973d CO): a security that exists only in an electronic register, transferable on that register with the same legal certainty as a paper security. It also creates a licence for a <b>DLT trading facility</b> and protects clients’ crypto-assets if the custodian goes bankrupt.</li>
+      <li><strong>SDX</strong> (SIX Digital Exchange), the SIX group’s digital exchange, authorised by FINMA in 2021, issues and settles digital bonds.</li>
+      <li><strong>Helvetia</strong>: the SNB makes a <b>wholesale central bank digital currency</b> available to banks on SDX’s platform, to settle tokenised bonds in central bank money. In pilot operation since December 2023, extended by the SNB until at least June 2028. A digital currency <b>for the public</b> (retail) is not planned by the SNB.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">WAEMU</span>
+    <h3>Studies, and no decision</h3>
+    <ul>
+      <li><strong>A BCEAO digital currency?</strong> On 22 July 2026, presenting its annual report, the BCEAO said that a study phase is under way and that <b>no deployment decision has been taken</b>. The “eCFA” launched in Senegal in 2016 was not central bank money: it was electronic money issued by a commercial bank, on a start-up’s technology.</li>
+      <li><strong>Crypto-assets.</strong> The BCEAO points out that they are not money and are not regulated in WAMU; a regulatory framework is being prepared. Neighbouring Nigeria launched a retail digital currency, the eNaira, in 2021: its adoption has remained very low.</li>
+    </ul>
+    <div class="lab">
+      <div class="lab-title">Central bank digital currency: retail, wholesale, or not at all?</div>
+      <div id="cbRows"></div>
+      <div class="caption" id="cbRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s6" data-need="The sorting completes this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.7 · Block 3</div><span class="mode m-do">🛠 Workshop · 55 min</span><h2>Split a building · do you need a blockchain?</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 20 min · the fractionalisation simulator</span>
+    <h3>A building in Lausanne, in 1,000-franc tokens</h3>
+    <p>A company owns the building; its equity is split into tokens. Change the value, the debt, the rent: what one token is worth, what it yields — and what it loses when the building loses 10%.</p>
+    <div class="calc" id="tkCtrl"></div>
+    <div class="kpi" id="tkKpi"></div>
+    <div id="tkNum"></div>
+    <div class="wb" data-board="Tokenise the fund units?|w4_token">
+      <div class="wq"><span class="qn">✍</span>Could your customers’ fund units be tokens (ledger-based securities)? What the customer would gain, and what would not change.</div>
+      <textarea data-work="w4_token" data-worklabel="Project — tokenise the fund units?" placeholder="e.g. Gained: the customer sees their unit in a public register… Unchanged: a Swiss custodian, the fund and the exchange rate are still needed…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 20 min · by team · “Do you need a blockchain?”</span>
+    <h3>Six questions, applied to your app</h3>
+    <p>The method is published: Wüst and Gervais, <a href="https://doi.org/10.1109/CVCBT.2018.00011" target="_blank" rel="noopener"><i>Do you need a Blockchain?</i> ↗</a> (2018). Take one precise function of your app — the register of customers’ units, the monthly statement, the transfer of payments from Africa — and answer for it. Start again for a second function.</p>
+    <div class="lab dtree" id="dtree"></div>
+    <div class="wb" data-board="The technology choice|w4_choix">
+      <div class="wq"><span class="qn">✍</span>For each function tested: the tree’s result, and your decision argued in two sentences. This is the dossier’s “argued technology choice”.</div>
+      <textarea data-work="w4_choix" data-worklabel="Project — the argued technology choice" style="min-height:110px" placeholder="The tree inserts its result; add your decision."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Debrief · 15 min</span>
+    <p>Each team reads its two results. Where did the tree say “no blockchain”? What tipped the answer — an available trusted third party, known actors? And if the answer is “no”, what from today is still useful for your app? Section 4.9 gives part of the answer.</p>
+  </div>
+  <div class="sec-status" data-sec="s7" data-need="The simulator set, the two calculations, one full run of the tree and the two fields complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <button class="btn" data-next="s8">Next: block 4 · the risks →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.8 ============================ -->
+<section class="screen" id="s8">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.8 · Block 4</div><span class="mode m-ex">🎤 Talk · 15 min</span><h2>MEV, three hacks, MiCA</h2></div>
+  <p class="ex-note">The instructor’s talk, or read on your own.</p>
+
+  <div class="card">
+    <span class="label def">The “sandwich” attack</span>
+    <h3>Your order is public before it is executed</h3>
+    <p>A transaction waits in the <b>public queue</b> (the <em>mempool</em>) before it enters a block, and whoever builds the block chooses the order. A bot sees your purchase of 30,000 USDC of ETH on the pot from section 4.4. It <b>buys just before you</b> (the price rises), your purchase goes through at the higher price, and it <b>sells just after</b>. It gains exactly what you lose, within your <b>slippage tolerance</b>: with 1%, you agree to receive 1% less than expected, and that is what the bot takes. This gain that the order of transactions makes extractable is called <b>MEV</b> (<i>maximal extractable value</i>).</p>
+    <p>In this example the bot puts 1,586 USDC in front of you, you receive 8.9754 ETH instead of 9.0661, and it sells back with <b>a 318 USDC gain</b>, pot fees included. The simulator <a href="/GBS/blockchain/mev-dark-forest.html" target="_blank" rel="noopener">“The dark forest” ↗</a> shows it block by block.</p>
+    <div id="mevNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label def">Three hacks</span>
+    <h3>The code, the keys, the screen</h3>
+    <ul>
+      <li><strong>The DAO, June 2016 — the code.</strong> An investment fund run by a smart contract. A flaw allowed a withdrawal to be requested again before the contract had updated the balance (<em>re-entrancy</em>): about 3.6 million ETH diverted. Ethereum rewrote history through a split (<em>hard fork</em>); those who refused it carried on under the name Ethereum Classic. Lesson: “code is law” applies to bugs too.</li>
+      <li><strong>Ronin, March 2022 — the keys.</strong> The bridge of the game Axie Infinity required 5 signatures out of 9 validators. The attackers obtained 5 keys and withdrew about 625 million dollars; the FBI attributed the attack to North Korea. Lesson: a secure chain does not protect badly kept keys.</li>
+      <li><strong>Bybit, February 2025 — the screen.</strong> The platform signed its transfers from a multi-signature “cold” wallet. The signing interface had been hacked: the signers approved what they saw on screen, not what they were signing. About 1.5 billion dollars of ETH, the largest theft in crypto-asset history, also attributed to North Korea. Lesson: check what you sign, on a second device.</li>
+    </ul>
+    <div class="lab">
+      <div class="lab-title">The code · the keys · the screen: where does each risk come from?</div>
+      <div id="hkRows"></div>
+      <div class="caption" id="hkRowsCap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label def">The framework</span>
+    <h3>MiCA in the EU, FINMA in Switzerland, the BCEAO</h3>
+    <ul>
+      <li><strong>European Union · MiCA</strong> (Regulation 2023/1114). Since 30 June 2024 for stablecoins, since 30 December 2024 for the rest: an issuer of a stablecoin backed by a single currency (an <em>e-money token</em>) must be a credit or e-money institution, with segregated reserves and a right to redemption at par; a provider (platform, custodian, adviser) needs an authorisation, valid across the Union. The national transitional periods ended on 1 July 2026 at the latest.</li>
+      <li><strong>Switzerland.</strong> No MiCA: FINMA applies existing law according to the token’s function (payment, investment, utility), the DLT Act, and the AMLA to every provider that transfers crypto-assets on behalf of others.</li>
+      <li><strong>WAEMU.</strong> No framework specific to crypto-assets so far (see section 4.6).</li>
+    </ul>
+  </div>
+  <div class="sec-status" data-sec="s8" data-need="The calculation and the sorting complete this section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Back</button>
+    <button class="btn" data-next="s9">Next: the proof and the game →</button>
+  </div>
+</section>
+
+<!-- ============================ 4.9 ============================ -->
+<section class="screen" id="s9">
+  <button class="crumb" data-home>← Day menu</button>
+  <div class="sec-head"><div class="kicker">Section 4.9 · Block 4</div><span class="mode m-do">🛠 Project and game · 75 min</span><h2>Prove the money is there · DeFi Millionaire</h2></div>
+
+  <div class="card">
+    <span class="label play">A · 15 min · the proof of inclusion</span>
+    <h3>Each customer checks that their units are counted, without seeing anyone else’s</h3>
+    <p>After FTX’s bankruptcy (November 2022), platforms began publishing a “proof of reserves”. Its “liabilities” half is a <b>Merkle tree</b>: the fingerprint of each account (identifier, balance, and a secret <em>salt</em> that prevents guessing the others’ balances) is combined two by two up to a single fingerprint, the <b>root</b>, published on the same day for everyone. Each customer receives their path — three fingerprints here — and recomputes the root themselves. If their balance had been left out or reduced, the root would not match. Here are eight customers of the app, in fund units.</p>
+    <div class="lab mk">
+      <div class="lab-title">The Merkle tree of the eight customers · SHA-256 computed in your browser</div>
+      <div class="calc" id="mkCtrl"></div>
+      <div id="mkOut"></div>
+      <div class="btn-row"><button class="btn small" id="mkGo">Check my inclusion</button><button class="btn small ghost" id="mkCheat">What if the company had reduced my balance?</button></div>
+      <p class="caption" id="mkCap"></p>
+    </div>
+    <p class="srcnote">The root proves that your balance is <em>counted</em>. It does not prove that the units exist: that is the other half — an attestation from the custodian and the auditor that the assets held cover the sum of the balances. A blockchain can serve to <b>publish the root</b> with a timestamp and unalterably; it replaces neither the custodian nor the auditor.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 30 min · by team · the project</span>
+    <h3>Prove that your customers’ money is there</h3>
+    <div class="wb" data-board="The proof offered to the customer|w4_preuve">
+      <div class="wq"><span class="qn">1.</span>What your customer can check themselves, without taking your word for it: what, by what means (custodian’s statement, published root, token register…), how often — and who attests the other half (the assets).</div>
+      <textarea data-work="w4_preuve" data-worklabel="Project — proof that the money is there" style="min-height:110px" placeholder="e.g. Every month the Merkle root of the balances is published… ; the Swiss custodian attests… ; the auditor…"></textarea>
+    </div>
+    <div class="wb" data-board="Keys and signing|w4_cles">
+      <div class="wq"><span class="qn">2.</span>The lesson of the three hacks for your app: who can move customers’ money, with how many signatures, on which devices — and what happens if an employee or a phone is compromised.</div>
+      <textarea data-work="w4_cles" data-worklabel="Project — keys and signing" placeholder="e.g. No employee can move the units: only the custodian, on instruction… ; two signatures out of three, checked on a second device…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">C · 25 min · DeFi Millionaire, by teams</span>
+    <p>The class game <a href="/GBS/blockchain/defi-millionaire.html" target="_blank" rel="noopener">DeFi Millionaire ↗</a> is played on the room’s screen, both teams at once. The questions go back over the day.</p>
+    <div class="timer" data-min="25" data-label="DeFi Millionaire"></div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Before Day 5 · Saturday 7 November</span>
+    <ul>
+      <li>Day 5 covers artificial intelligence, data, regtech and compliance: a fraud-detection notebook (Colab), a KYC/AML file, the “Regulator versus fintech” game.</li>
+      <li>For the project: note which regulator, in your customer’s country and in Switzerland, would have to authorise your app — Day 5 will have you write the regulatory dossier.</li>
+      <li>The test wallet can stay installed; it is no longer needed. Never reuse its secret phrase for a real wallet.</li>
+    </ul>
+  </div>
+  <div class="sec-status" data-sec="s9" data-need="The check, the fraud attempt and the two fields complete this section — and the day."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Back</button>
+    <button class="btn" data-home>Day menu</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   JOURNÉE 4 — configuration + widgets. The engine is journee.js.
+   Every number was recomputed in Python before shipping (27 Oct 2026):
+   AMM pot 100 ETH / 300 000 USDC, fee 0.3 % — sell 10 ETH → 27 198.33
+   USDC (avg 2 719.83); buy with 30 000 USDC → 9.0661 ETH (avg 3 309.03),
+   new pot price 3 629.01. Loan: 2 ETH at 3 000, debt 3 000, LT 82.5 % →
+   HF 1.65, liquidation price 1 818.18; at 1 700, 50 % close factor →
+   repay 1 500, seize 0.92647 ETH = 1 575 (bonus 75). Sandwich at 1 %
+   slippage: optimal front-run 1 585.61 USDC, victim 8.9754 vs 9.0661 ETH,
+   attacker +318.22 USDC. Building 12 M, debt 4 M, 8 000 tokens → 1 000
+   each, rent 360 k − 2 % interest → 35 per token (3.5 %); −10 % on the
+   building → token 850 (−15 %). Gas 21 000 × 2 gwei = 0.000042 ETH.
+   Merkle: eight leaves sha256("cNN|units|salt"), parent = sha256(hexL +
+   hexR); root 3ab7213e…84038385, checked against Python hashlib.
+   Facts checked 27 Oct 2026: SNB Helvetia pilot until at least June 2028
+   (snb.ch); BCEAO 22 Jul 2026 "aucune décision de déploiement"
+   (Financial Afrik, 23 Jul 2026); the public Sepolia RPC answers with
+   Access-Control-Allow-Origin: *.
+   ===================================================================== */
+var GLOSSARY={};
+var DAY={
+  mod:'w4', key:'mfb545_w4_progress_v1', title:'Day 4 · Blockchain, crypto-assets, DeFi and tokenisation',
+  blocks:[
+    {n:1,t:'09:00–10:30',name:'why “trustless” works · a wallet, a transaction',parts:[['ex',20],['do',55],['co',15]]},
+    {n:2,t:'10:45–12:15',name:'lend, swap, stabilise · the DeFi labs · the quiz',parts:[['ex',15],['do',50],['quiz',10],['co',15]]},
+    {n:3,t:'13:30–15:00',name:'tokenisation, Switzerland and WAEMU · “do you need a blockchain?”',parts:[['ex',20],['do',55],['co',15]]},
+    {n:4,t:'15:15–16:45',name:'MEV, hacks, MiCA · prove the money is there · DeFi Millionaire',parts:[['ex',15],['do',45],['co',30]]}
+  ],
+  sections:[
+    {id:'s1',num:'4.1',name:'Why “trustless” works',tag:'Signature, fingerprint, consensus · the life of a transaction · what the chain guarantees',mode:'ex',min:20,block:1},
+    {id:'s2',num:'4.2',name:'A wallet, a transaction, an explorer',tag:'MetaMask on Sepolia · a real transaction · reading it on the blockchain · gas',mode:'do',min:55,block:1},
+    {id:'s3',num:'4.3',name:'Lend, swap, stabilise — with no bank',tag:'Health factor and liquidation · x × y = k · three families of stablecoins',mode:'ex',min:15,block:2},
+    {id:'s4',num:'4.4',name:'DeFi labs · borrow, swap',tag:'The loan and its liquidation price · price impact · the DeFi capstone',mode:'do',min:50,block:2},
+    {id:'s5',num:'4.5',name:'End-of-morning quiz',tag:'Eight questions · launched in class · counts towards participation',mode:'quiz',min:10,block:2},
+    {id:'s6',num:'4.6',name:'Tokenisation and central bank digital currencies',tag:'A token, a right · DLT Act, SDX, Helvetia · the BCEAO and the eNaira',mode:'ex',min:20,block:3},
+    {id:'s7',num:'4.7',name:'Split a building · do you need a blockchain?',tag:'The fractionalisation simulator · the decision tree applied to your app',mode:'do',min:55,block:3},
+    {id:'s8',num:'4.8',name:'MEV, three hacks, MiCA',tag:'The sandwich attack in numbers · The DAO, Ronin, Bybit · MiCA, FINMA, BCEAO',mode:'ex',min:15,block:4},
+    {id:'s9',num:'4.9',name:'Prove the money is there · DeFi Millionaire',tag:'The customers’ Merkle tree · your app’s proof and keys · the game',mode:'do',min:75,block:4}
+  ],
+  secCheck:function(a){
+    if(a.st.life&&a.cls.gRows)a.mark('s1');
+    if(['wl1','wl2','wl3','wl4','txv','g1','g2'].every(function(k){return a.st[k];})&&a.all(['w4_adresse','w4_tx']))a.mark('s2');
+    if(a.st.liq&&a.cls.scRows)a.mark('s3');
+    if(['lend','l1','l2','l3','amm','a1','a2','cap1'].every(function(k){return a.st[k];})&&a.all(['w4_defi']))a.mark('s4');
+    if(a.cls.cbRows)a.mark('s6');
+    if(['tok','t1','t2','dec'].every(function(k){return a.st[k];})&&a.all(['w4_token','w4_choix']))a.mark('s7');
+    if(a.st.m1&&a.cls.hkRows)a.mark('s8');
+    if(a.st.mk&&a.st.mkt&&a.all(['w4_preuve','w4_cles']))a.mark('s9');
+  }
+};
+</script>
+<script src="journee.js"></script>
+<script>
+/* ---- 4.1 the life of a transaction ---- */
+buildSteps('lifeSteps','lifeNext',[
+  '<b>1 · The wallet builds the transaction.</b> Recipient, amount, a counter (the <em>nonce</em>: this is your 1st, 2nd… transaction, which prevents it being replayed), and two caps: the maximum <b>gas</b> (the computing work allowed; a simple transfer uses exactly 21,000) and the maximum price per unit of gas.',
+  '<b>2 · It signs it with the private key.</b> The key never leaves your device; only the signature goes out. Anyone can check, with your public key, that it really is you and that nothing has been altered.',
+  '<b>3 · It goes into the public queue.</b> The <em>mempool</em>: thousands of nodes receive it and check the signature and the balance. It is visible to everyone <em>before</em> it is executed — remember this for section 4.8.',
+  '<b>4 · A validator picks it.</b> Every 12 seconds, a validator drawn by lot proposes a block; it orders the transactions, usually those offering the best tip first.',
+  '<b>5 · It is executed and paid for.</b> The balance changes. Fee = gas used × gas price. Since 2021 (EIP-1559), the “base” part of that price is <b>destroyed</b>; only the tip goes to the validator.',
+  '<b>6 · It becomes final.</b> The other validators attest the block; after two epochs, about 13 minutes, it is <b>finalised</b>. No customer service can cancel it or refund it.',
+  '<b>7 · Anyone can read it.</b> A block explorer (Etherscan) is just a website that reads the public ledger: sender, recipient, amount, fee, block, time. Your name is not there — but your address, once linked to you, reveals your whole history.'
+],'life');
+buildClassify('gRows','gRowsCap',
+  [['G','Guaranteed by the chain'],['N','Not guaranteed']],
+  [
+    {s:'That the transaction was authorised by the holder of the private key',a:'G',w:'The signature proves it to everyone. But “the holder of the key” is not necessarily the owner: a stolen key signs just as well.'},
+    {s:'That a finalised transaction will not be altered',a:'G',w:'Undoing it would cost at least a third of all the validators’ stake. The DAO (section 4.8) shows the one exception: a community deciding to rewrite history.'},
+    {s:'That the building represented by a token exists and is not mortgaged twice',a:'N',w:'The chain sees only its own data. The link to the real world goes through a company, a contract, a land register and an auditor: the “oracle problem”.'},
+    {s:'That a smart contract does what is written in its code',a:'G',w:'Yes — including its mistakes. The code runs as written, not as its author meant it.'},
+    {s:'That an address really belongs to the person who claims it',a:'N',w:'An address is anonymous. The link to an identity is a platform’s or a bank’s KYC — Day 5.'},
+    {s:'That funds can be recovered after losing the secret phrase',a:'N',w:'Nobody can. No forgotten-password link, no customer service: that is the other side of “no trusted third party”.'},
+    {s:'That the balance shown by a stablecoin is covered by dollars at the bank',a:'N',w:'The reserves are off the chain. It is known only through the attestations of the issuer and its auditors (section 4.3).'}
+  ],
+  'the chain guarantees what happens on the chain — nothing more.',null);
+
+/* ---- 4.2 A · the wallet, step by step ---- */
+buildPick('wlRows','wlRowsCap',[
+  {id:'wl1',s:'<b>Install MetaMask</b> from <a href="https://metamask.io/download/" target="_blank" rel="noopener">metamask.io ↗</a> only — fake MetaMasks circulate in extension stores.',opts:[['y','Done'],['n','Stuck']]},
+  {id:'wl2',s:'<b>Create a new wallet</b>, choose a password (it only protects this browser), then <b>write down by hand the 12 words</b> of the secret phrase, in order. These 12 words <em>are</em> the private key.',opts:[['y','Done'],['n','Stuck']]},
+  {id:'wl3',s:'<b>Show the test networks</b>: network menu at the top left, turn on “Show test networks”, choose <b>Sepolia</b>.',opts:[['y','Done'],['n','Stuck']]},
+  {id:'wl4',s:'<b>Copy the address</b> of the account and paste it into the field below.',opts:[['y','Done'],['n','Stuck']]}
+],'the wallet is ready. Nobody but you can empty it — and nobody can help you if you lose the 12 words.');
+
+/* ---- 4.2 B · read a transaction straight from a public Sepolia node ----
+   publicnode.com answers JSON-RPC with Access-Control-Allow-Origin: *
+   (checked 27 Oct 2026). Any valid transaction found counts (step txv). */
+(function txReader(){
+  need('txv');
+  var RPC='https://ethereum-sepolia-rpc.publicnode.com',out=document.getElementById('txOut'),inp=document.getElementById('txIn');
+  function rpc(m,p){return fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:m,params:p})}).then(function(r){return r.json();}).then(function(j){if(j.error)throw new Error(j.error.message);return j.result;});}
+  function big(h){return h?parseInt(h,16):0;}
+  function eth(h){var w=BigInt(h||'0x0');var s=w.toString().padStart(19,'0');var i=s.slice(0,-18).replace(/^0+(?=\d)/,''),f=s.slice(-18).replace(/0+$/,'');return i+(f?(T(',','.')+f):'');}
+  function read(hash){
+    hash=String(hash||'').trim();
+    if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){out.innerHTML='<p class="no">A hash starts with 0x and has 64 characters after it.</p>';return;}
+    out.innerHTML='<p>Reading from the blockchain…</p>';
+    Promise.all([rpc('eth_getTransactionByHash',[hash]),rpc('eth_getTransactionReceipt',[hash])]).then(function(r){
+      var tx=r[0],rc=r[1];
+      if(!tx){out.innerHTML='<p class="no">No transaction with this hash on Sepolia. Check that it is complete, and that MetaMask was really on Sepolia.</p>';return;}
+      if(!rc){out.innerHTML='<p>Transaction found, <b>not yet in a block</b>: it is waiting in the public queue. Try again in 15 seconds.</p>';return;}
+      return rpc('eth_getBlockByNumber',[rc.blockNumber,false]).then(function(b){
+        var gas=big(rc.gasUsed),gp=BigInt(rc.effectiveGasPrice||tx.gasPrice||'0x0'),fee='0x'+(BigInt(rc.gasUsed)*gp).toString(16);
+        var when=new Date(big(b.timestamp)*1000).toLocaleString(T('fr-CH','en-GB'));
+        var gwei=Number(gp)/1e9;
+        out.innerHTML='<table>'+
+          '<tr><td>Status</td><td>'+(rc.status==='0x1'?'<b>succeeded</b>':'<b>failed</b> (the fee is paid all the same)')+'</td></tr>'+
+          '<tr><td>Block</td><td>'+fmt(big(rc.blockNumber))+' · '+esc(when)+'</td></tr>'+
+          '<tr><td>From</td><td><code>'+esc(tx.from)+'</code></td></tr>'+
+          '<tr><td>To</td><td><code>'+esc(tx.to||'(contract creation)')+'</code></td></tr>'+
+          '<tr><td>Amount</td><td>'+eth(tx.value)+' ETH</td></tr>'+
+          '<tr><td>Gas used</td><td>'+fmt(gas)+(tx.input==='0x'&&gas===21000?' — a simple transfer':' — a contract call, more computation')+'</td></tr>'+
+          '<tr><td>Gas price</td><td>'+(gwei<0.001?fmt(Number(gp))+' wei':fmt(gwei,3)+' gwei')+'</td></tr>'+
+          '<tr><td>Fee paid</td><td>'+eth(fee)+' test ETH</td></tr>'+
+          '<tr><td>Hash</td><td><code>'+esc(hash)+'</code> · <a href="https://sepolia.etherscan.io/tx/'+esc(hash)+'" target="_blank" rel="noopener">Etherscan ↗</a></td></tr></table>'+
+          '<div class="btn-row"><button class="btn small" id="txCopy">Copy into my notebook ↓</button></div>';
+        markStep('txv');
+        document.getElementById('txCopy').addEventListener('click',function(){
+          var cur=(document.querySelector('[data-work="w4_tx"]').value||'').trim();
+          setWork('w4_tx',(cur?cur+'\n':'')+'Hash '+hash+' · block '+big(rc.blockNumber)+' · gas '+gas+' · fee '+eth(fee)+' test ETH · ');
+        });
+      });
+    }).catch(function(e){out.innerHTML='<p class="no">The public node did not answer ('+esc(e.message||'network')+'). Open the transaction on <a href="https://sepolia.etherscan.io/tx/'+esc(hash)+'" target="_blank" rel="noopener">Etherscan ↗</a> and read the same fields there.</p>';});
+  }
+  document.getElementById('txGo').addEventListener('click',function(){read(inp.value);});
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')read(inp.value);});
+  document.getElementById('txAny').addEventListener('click',function(){
+    out.innerHTML='<p>Reading the latest block…</p>';
+    rpc('eth_getBlockByNumber',['latest',true]).then(function(b){
+      var t=(b.transactions||[]).filter(function(x){return x.input==='0x'&&x.value!=='0x0';})[0]||(b.transactions||[])[0];
+      if(!t){out.innerHTML='<p>Empty block. Try again in 12 seconds.</p>';return;}
+      inp.value=t.hash;read(t.hash);
+    }).catch(function(){out.innerHTML='<p class="no">The public node did not answer. Open <a href="https://sepolia.etherscan.io/txs" target="_blank" rel="noopener">sepolia.etherscan.io ↗</a> and take a transaction from the list.</p>';});
+  });
+})();
+buildNum('gasNum',[
+  {id:'g1',q:'How many units of <b>gas</b> does a simple ETH transfer from one address to another use?',a:21000,tol:0,unit:'gas',w:'21,000, always: it is the fixed cost of a transfer with no contract. A swap on an AMM uses several times more.',hint:'The reader above shows it on the “Gas used” line of a simple transfer.'},
+  {id:'g2',q:'On the real Ethereum network the gas price is 2 gwei (1 gwei = 0.000000001 ETH). What does this transfer cost, in <b>millionths of an ETH</b>?',a:42,tol:0.005,unit:'× 0.000001 ETH',w:'21,000 × 2 gwei = 42,000 gwei = 0.000042 ETH, i.e. 42 millionths. The gas price varies with demand: it went above 100 gwei at the 2021 peaks.',hint:'21,000 × 2 = 42,000 gwei; divide by 1,000 for millionths of an ETH.'}
+]);
+
+/* ---- 4.3 a liquidation, step by step ---- */
+buildSteps('liqSteps','liqNext',[
+  '<b>1 · The deposit.</b> Awa deposits 2 ETH at 3,000 USDC: 6,000 USDC of collateral. She can borrow up to 80%, i.e. 4,800 USDC. She borrows 3,000.',
+  '<b>2 · The health factor.</b> 6,000 × 0.825 ÷ 3,000 = <b>1.65</b>. The loan is healthy.',
+  '<b>3 · The price falls.</b> At 2,000 USDC per ETH: 4,000 × 0.825 ÷ 3,000 = 1.10. Still above 1. The threshold is at 3,000 ÷ (2 × 0.825) = <b>1,818 USDC</b> per ETH.',
+  '<b>4 · The liquidation.</b> ETH drops to 1,700: factor 0.935. A bot repays half the debt, 1,500 USDC, and receives in exchange 1,500 × 1.05 = 1,575 USDC of ETH, i.e. 0.926 ETH, taken from Awa’s collateral.',
+  '<b>5 · The outcome.</b> Awa keeps 1.074 ETH and still owes 1,500 USDC. She has lost the bonus, 75 USDC, in a few seconds and with no notice. When many loans are liquidated at once, the bots sell the seized ETH, which pushes the price down further: the <b>liquidation cascade</b>.'
+],'liq');
+buildClassify('scRows','scRowsCap',
+  [['F','Currency reserves'],['C','Crypto-asset collateral'],['A','Algorithm']],
+  [
+    {s:'USDC (Circle)',a:'F',w:'Dollars in cash and US Treasury bills, attested every month. The risk: the bank where the reserves sit (SVB, March 2023).'},
+    {s:'USDT (Tether)',a:'F',w:'Reserves, part of them in Treasury bills; the largest stablecoin, long criticised for the transparency of its reserves.'},
+    {s:'DAI',a:'C',w:'Issued by borrowers who deposit more collateral than they issue, with automatic liquidation.'},
+    {s:'TerraUSD (UST), until May 2022',a:'A',w:'No reserves: a swap mechanism with the LUNA token. It gave way under a wave of selling, and both tokens lost almost everything.'},
+    {s:'EURC (Circle), a euro token',a:'F',w:'Reserves in euros. In the EU it is an e-money token within the meaning of MiCA (section 4.8).'}
+  ],
+  'a stablecoin is as stable as what backs it.',null);
+
+/* ---- 4.4 A · the loan ---- */
+(function loan(){
+  need('lend');
+  var p={c:2,b:3000,px:3000},ctrl=document.getElementById('lnCtrl');
+  ctrl.innerHTML=
+    '<div class="ctrl"><label>ETH deposited as collateral</label><input type="number" data-k="c" min="0.1" step="0.1"></div>'+
+    '<div class="ctrl"><label>USDC borrowed</label><input type="number" data-k="b" min="0" step="100"></div>'+
+    '<div class="ctrl"><label>ETH price, in USDC</label><input type="range" data-k="px" min="1000" max="4000" step="50"></div>';
+  ctrl.querySelectorAll('[data-k]').forEach(function(x){x.value=String(p[x.dataset.k]);x.addEventListener('input',function(){p[x.dataset.k]=num(x.value);if(x.dataset.k==='px')markStep('lend');paint();});});
+  function paint(){
+    var col=p.c*p.px,hf=p.b>0?col*0.825/p.b:Infinity,liq=p.c>0?p.b/(p.c*0.825):0,max=col*0.80,k=document.getElementById('lnKpi');
+    k.innerHTML=
+      '<div class="k"><div class="v">'+fmt(col)+'</div><div class="l">collateral value, USDC</div></div>'+
+      '<div class="k"><div class="v">'+fmt(max)+'</div><div class="l">maximum loan at 80%</div></div>'+
+      '<div class="k '+(hf<1?'bad':hf<1.2?'':'good')+'"><div class="v">'+(isFinite(hf)?fmt(hf,2):'∞')+'</div><div class="l">health factor</div></div>'+
+      '<div class="k"><div class="v">'+fmt(liq,2)+'</div><div class="l">ETH liquidation price</div></div>';
+    document.getElementById('lnCap').textContent=hf<1
+      ?'Liquidatable: a bot can repay up to half the debt ('+fmt(p.b/2)+' USDC) and take '+fmt(p.b/2*1.05/p.px,4)+' ETH of collateral, 5% bonus included.'
+      :(p.b>max?'Loan refused at opening: it exceeds 80% of the collateral.':'Healthy. The ETH price can still fall by '+fmt((1-liq/p.px)*100,1)+'% before liquidation.');
+  }
+  paint();
+})();
+buildNum('lnNum',[
+  {id:'l1',q:'2 ETH at 3,000 USDC as collateral, 3,000 USDC borrowed, liquidation threshold 82.5%. The <b>health factor</b>, to two decimals?',a:1.65,tol:0.003,unit:'',w:'6,000 × 0.825 ÷ 3,000 = 1.65.',hint:'Collateral × threshold ÷ debt.'},
+  {id:'l2',q:'At what <b>ETH price</b> does this loan become liquidatable? Rounded to the nearest unit.',a:1818,tol:0.001,unit:'USDC',w:'3,000 ÷ (2 × 0.825) = 1,818.18. A 39.4% fall from 3,000 — ETH has already fallen further than that within a few weeks.',hint:'The price at which the factor is exactly 1: debt ÷ (ETH × threshold).'},
+  {id:'l3',q:'At 1,700, a bot repays 1,500 USDC of the debt, with a 5% bonus. How much <b>bonus does the borrower lose</b>, in USDC?',a:75,tol:0.005,unit:'USDC',w:'1,500 × 5% = 75 USDC: the bot receives 1,575 USDC of ETH for 1,500 repaid.',hint:'Amount repaid × bonus.'}
+]);
+
+/* ---- 4.4 B · the AMM ---- */
+var POOL={x:100,y:300000,f:0.003};
+function ammOut(dx,X,Y){var d=dx*(1-POOL.f);return Y*d/(X+d);}
+(function amm(){
+  need('amm');
+  var p={dir:'buy',amt:30000},ctrl=document.getElementById('amCtrl');
+  ctrl.innerHTML=
+    '<div class="ctrl"><label>Direction</label><select data-k="dir"><option value="buy">buy ETH with USDC</option><option value="sell">sell ETH for USDC</option></select></div>'+
+    '<div class="ctrl"><label>Amount paid in (USDC or ETH)</label><input type="number" data-k="amt" min="0" step="any"></div>';
+  ctrl.querySelectorAll('[data-k]').forEach(function(x){x.value=String(p[x.dataset.k]);x.addEventListener('input',function(){p[x.dataset.k]=x.dataset.k==='dir'?x.value:num(x.value);markStep('amm');paint();});x.addEventListener('change',function(){if(x.dataset.k==='dir'){p.dir=x.value;var a=ctrl.querySelector('[data-k=amt]');a.value=p.dir==='buy'?'30000':'10';p.amt=num(a.value);markStep('amm');paint();}});});
+  function paint(){
+    var k=document.getElementById('amKpi');if(!(p.amt>0)){k.innerHTML='';return;}
+    var buy=p.dir==='buy',out=buy?ammOut(p.amt,POOL.y,POOL.x):ammOut(p.amt,POOL.x,POOL.y);
+    var avg=buy?p.amt/out:out/p.amt,X=buy?POOL.x-out:POOL.x+p.amt,Y=buy?POOL.y+p.amt:POOL.y-out,imp=Math.abs(avg/3000-1);
+    k.innerHTML=
+      '<div class="k good"><div class="v">'+fmt(out,buy?4:2)+'</div><div class="l">'+(buy?'ETH received':'USDC received')+'</div></div>'+
+      '<div class="k"><div class="v">'+fmt(avg,2)+'</div><div class="l">average price obtained, USDC per ETH</div></div>'+
+      '<div class="k '+(imp>0.05?'bad':'')+'"><div class="v">'+fmt(imp*100,2)+' %</div><div class="l">gap with 3,000 (impact + fee)</div></div>'+
+      '<div class="k"><div class="v">'+fmt(Y/X,2)+'</div><div class="l">pot price after the swap</div></div>';
+  }
+  paint();
+})();
+buildNum('amNum',[
+  {id:'a1',q:'Sell <b>10 ETH</b> into the pot (100 ETH, 300,000 USDC, 0.3% fee). How many USDC do you receive, to the nearest unit?',a:27198,tol:0.0005,unit:'USDC',w:'300,000 × 9.97 ÷ (100 + 9.97) = 27,198.33 — an average price of 2,719.83, 9.3% below the quoted price.',hint:'Δx after fee = 10 × 0.997 = 9.97; received = y × 9.97 ÷ (x + 9.97).'},
+  {id:'a2',q:'Buy ETH with <b>30,000 USDC</b>. How many ETH do you receive, to two decimals?',a:9.07,tol:0.001,unit:'ETH',w:'100 × 29,910 ÷ (300,000 + 29,910) = 9.0661 ETH: 3,309 USDC per ETH on average. At the quoted price, 30,000 USDC would have bought 10 ETH.',hint:'The roles swap: received = x × (30,000 × 0.997) ÷ (y + 30,000 × 0.997).'}
+]);
+buildPick('capRows','capRowsCap',[
+  {id:'cap1',s:'The DeFi capstone, through to the certificate.',opts:[['y','Finished, certificate obtained'],['m','Started'],['n','Not yet']]}
+]);
+
+/* ---- 4.5 quiz ---- */
+buildQuiz([
+  {q:'A transaction is signed with Awa’s private key. This proves…',
+   opts:['that Awa is its author, whatever happens','that the holder of the private key authorised it, and that it has not been altered','that the transaction is finalised','that the recipient is identified'],a:1,
+   w:'The signature links the transaction to the key, not to a person: a stolen key signs just as well (Ronin, section 4.8).'},
+  {q:'Why can a transaction in an old block not be altered quietly?',
+   opts:['Because the blocks are encrypted','Because FINMA keeps a copy','Because each block contains the previous one’s fingerprint: everything after it would change, and the network would reject it','Because transactions are anonymous'],a:2,
+   w:'The chained fingerprint makes forgery visible; consensus makes it too expensive. Blocks are not encrypted: everything is readable.'},
+  {q:'A simple transfer uses 21,000 gas, at a price of 2 gwei. The fee is…',
+   opts:['0.000042 ETH','0.042 ETH','42 ETH','21,000 ETH'],a:0,
+   w:'21,000 × 2 = 42,000 gwei = 0.000042 ETH (1 gwei = one billionth of an ETH).'},
+  {q:'A DeFi loan has a health factor of 1.65. If the collateral’s price falls by 40%, the factor becomes…',
+   opts:['1.25: healthy','0.99: liquidatable','1.65: it does not depend on the price','0.40'],a:1,
+   w:'1.65 × 0.60 = 0.99: below 1, anyone can liquidate part of the loan with a bonus.'},
+  {q:'On an x × y = k AMM, buying a lot of ETH at once…',
+   opts:['costs the quoted price, plus 0.3%','costs a higher average price, because each ETH removed makes the next one dearer','lowers the ETH price in the pot','is refused beyond 10% of the pot'],a:1,
+   w:'Price impact: 30,000 USDC buy 9.07 ETH instead of 10, and the pot’s price goes from 3,000 to 3,629.'},
+  {q:'In March 2023, USDC fell below 0.90 dollar for a weekend. Why?',
+   opts:['A bug in its smart contract','Part of its reserves was stuck at the failed Silicon Valley Bank','Its algorithm gave way, like TerraUSD’s','The United States had banned it'],a:1,
+   w:'3.3 billion dollars of reserves at SVB. A reserve-backed stablecoin carries the risk of the bank that holds the reserves.'},
+  {q:'According to Wüst and Gervais’s tree, if an always-available trusted third party can keep the ledger…',
+   opts:['a public blockchain is needed','a private blockchain is needed','a blockchain is not needed: the third party does it better, faster and cheaper','a stablecoin is needed'],a:2,
+   w:'This is the question that eliminates the most projects. For your app, the custodian bank is that third party.'},
+  {q:'In a “sandwich” attack, the bot makes money because…',
+   opts:['it knows your private key','your order is visible in the public queue before it is executed, and it places a buy in front and a sell behind','it hacks the AMM’s contract','it is always the validator of the next block'],a:1,
+   w:'It takes at most your slippage tolerance. A low tolerance or sending the transaction privately reduces the exposure.'}
+],'s5',['Excellent — the morning is in the bag.','Good. Reread the explanations of the questions you missed.','Reread sections 4.1 and 4.3: it is all there.']);
+
+/* ---- 4.6 CBDC or not ---- */
+buildClassify('cbRows','cbRowsCap',
+  [['R','Retail CBDC'],['W','Wholesale CBDC'],['X','Not a CBDC']],
+  [
+    {s:'Helvetia: digital francs from the SNB to settle tokenised bonds on SDX',a:'W',w:'Reserved for banks and financial institutions, for settlement between them.'},
+    {s:'The Central Bank of Nigeria’s eNaira (2021)',a:'R',w:'Central bank money for the public, in an app. Little adopted.'},
+    {s:'The “eCFA” launched in Senegal in 2016',a:'X',w:'Electronic money issued by a commercial bank, not by the BCEAO.'},
+    {s:'USDC',a:'X',w:'A private stablecoin: the claim is on Circle, not on the Federal Reserve.'},
+    {s:'The digital euro being prepared at the ECB',a:'R',w:'Intended for individuals and merchants, alongside banknotes.'},
+    {s:'A TWINT payment',a:'X',w:'Commercial bank money, moved by an app. No blockchain, no central bank money.'}
+  ],
+  'central bank money is a claim on the central bank — the medium matters little.',null);
+
+/* ---- 4.7 A · the building ---- */
+(function token(){
+  need('tok');
+  var p={v:12000000,d:4000000,n:8000,r:360000,i:2},ctrl=document.getElementById('tkCtrl');
+  ctrl.innerHTML=
+    '<div class="ctrl"><label>Building value, CHF</label><input type="number" data-k="v" min="0" step="100000"></div>'+
+    '<div class="ctrl"><label>Mortgage, CHF</label><input type="number" data-k="d" min="0" step="100000"></div>'+
+    '<div class="ctrl"><label>Number of tokens</label><input type="number" data-k="n" min="1" step="100"></div>'+
+    '<div class="ctrl"><label>Rent net of costs, CHF per year</label><input type="number" data-k="r" min="0" step="10000"></div>'+
+    '<div class="ctrl"><label>Mortgage rate, %</label><input type="number" data-k="i" min="0" step="0.1"></div>';
+  ctrl.querySelectorAll('[data-k]').forEach(function(x){x.value=String(p[x.dataset.k]);x.addEventListener('input',function(){p[x.dataset.k]=num(x.value);markStep('tok');paint();});});
+  function paint(){
+    var k=document.getElementById('tkKpi'),eq=p.v-p.d;if(!(p.n>0)||eq<=0){k.innerHTML='';return;}
+    var per=eq/p.n,dist=(p.r-p.d*p.i/100)/p.n,after=(p.v*0.9-p.d)/p.n;
+    k.innerHTML=
+      '<div class="k"><div class="v">'+fmt(per)+' CHF</div><div class="l">value of one token</div></div>'+
+      '<div class="k good"><div class="v">'+fmt(dist,2)+' CHF</div><div class="l">paid out per token per year ('+fmt(dist/per*100,2)+'%)</div></div>'+
+      '<div class="k bad"><div class="v">'+fmt(after)+' CHF</div><div class="l">one token if the building loses 10% ('+fmt((after/per-1)*100,1)+'%)</div></div>';
+  }
+  paint();
+})();
+buildNum('tkNum',[
+  {id:'t1',q:'Building 12 million, mortgage 4 million at 2%, net rent CHF 360,000, 8,000 tokens. How much does one token <b>pay out per year</b>, in CHF?',a:35,tol:0.005,unit:'CHF',w:'(360,000 − 4,000,000 × 2%) ÷ 8,000 = 280,000 ÷ 8,000 = CHF 35, i.e. 3.5% on 1,000.',hint:'Rent minus interest, divided by the number of tokens.'},
+  {id:'t2',q:'The building loses 10%. What is <b>one token</b> worth, in CHF?',a:850,tol:0.002,unit:'CHF',w:'(10.8 million − 4 million) ÷ 8,000 = 850: −15% for −10% on the building. Debt amplifies the fall, with or without a blockchain.',hint:'New value minus the debt, divided by 8,000.'}
+]);
+
+/* ---- 4.7 B · Wüst & Gervais (2018), "Do you need a blockchain?" ---- */
+(function dtree(){
+  need('dec');
+  var Q={
+    q1:{t:'Do you need to store data (a state: balances, a register)?',y:'q2',n:'R0'},
+    q2:{t:'Do several parties need to write to it?',y:'q3',n:'R1'},
+    q3:{t:'Can the register be entrusted to an always-available trusted third party (a custodian bank, an official register)?',y:'R2',n:'q4'},
+    q4:{t:'Are all the writing parties known?',y:'q5',n:'R5'},
+    q5:{t:'Do all the writing parties trust one another?',y:'R3',n:'q6'},
+    q6:{t:'Does the public need to be able to check the register?',y:'R6',n:'R4'}
+  },R={
+    R0:'No blockchain: there is nothing to record.',
+    R1:'No blockchain: an ordinary database, kept by the only party that writes.',
+    R2:'No blockchain: the trusted third party does it better, faster and cheaper.',
+    R3:'No blockchain: a shared database is enough between parties who trust one another.',
+    R4:'Private permissioned blockchain: known parties who do not trust one another, with no public verification.',
+    R5:'Public permissionless blockchain: anyone can write (Bitcoin, Ethereum).',
+    R6:'Public permissioned blockchain: known parties write, everyone can check.'
+  };
+  var box=document.getElementById('dtree'),fn='',path=[],cur='q1';
+  function paint(){
+    var h='<div class="ctrl" style="margin-bottom:8px"><label>'+T('La fonction de votre appli que vous testez','The function of your app you are testing')+'</label><input type="text" id="dtFn" value="'+esc(fn)+'" placeholder="'+T('p. ex. le registre des parts des clients','e.g. the register of customers’ units')+'"></div>';
+    if(cur.charAt(0)==='q'){
+      h+='<div class="dq">'+Q[cur].t+'</div><div class="btn-row"><button class="btn small" data-a="y">'+T('Oui','Yes')+'</button><button class="btn small ghost" data-a="n">'+T('Non','No')+'</button></div>';
+    }else{
+      h+='<div class="res">'+R[cur]+'</div><div class="btn-row"><button class="btn small" data-a="copy">'+T('Copier dans mon carnet ↓','Copy into my notebook ↓')+'</button><button class="btn small ghost" data-a="again">'+T('Tester une autre fonction','Test another function')+'</button></div>';
+    }
+    if(path.length)h+='<div class="path">'+path.map(function(s){return esc(s);}).join('<br>')+'</div>';
+    box.innerHTML=h;
+    var fi=document.getElementById('dtFn');fi.addEventListener('input',function(){fn=fi.value;});
+    box.querySelectorAll('[data-a]').forEach(function(b){b.addEventListener('click',function(){
+      var a=b.dataset.a;
+      if(a==='y'||a==='n'){path.push(Q[cur].t+' → '+(a==='y'?T('oui','yes'):T('non','no')));cur=Q[cur][a];if(cur.charAt(0)==='R')markStep('dec');paint();return;}
+      if(a==='copy'){var c=(document.querySelector('[data-work="w4_choix"]').value||'').trim();setWork('w4_choix',(c?c+'\n\n':'')+(fn||T('Fonction','Function'))+' — '+R[cur]+' '+T('Décision : ','Decision: '));return;}
+      if(a==='again'){path=[];cur='q1';fn='';paint();}
+    });});
+  }
+  paint();
+})();
+
+/* ---- 4.8 the sandwich, one check ---- */
+buildNum('mevNum',[
+  {id:'m1',q:'With no attack, 30,000 USDC buy 9.0661 ETH. With a 1% slippage tolerance, what is the <b>minimum ETH</b> you agree to receive, to two decimals?',a:8.98,tol:0.0012,unit:'ETH',w:'9.0661 × 0.99 = 8.9754. The bot calibrated its purchase so that you receive exactly that minimum: every point of tolerance is a point for it.',hint:'The expected amount × (1 − 1%).'}
+]);
+buildClassify('hkRows','hkRowsCap',
+  [['C','The code'],['K','The keys'],['S','The screen, the person']],
+  [
+    {s:'The DAO (2016): a withdrawal requested again before the balance was updated',a:'C',w:'Re-entrancy: a programming error, faithfully executed by the chain.'},
+    {s:'Ronin (2022): 5 validator keys out of 9 in the attackers’ hands',a:'K',w:'The bridge required a majority of signatures; too many keys were in the same place.'},
+    {s:'Bybit (2025): signers approve what the interface shows them, not what they sign',a:'S',w:'The keys were well kept; it was what they were made to sign that was false.'},
+    {s:'A student gives their secret phrase to a fake “MetaMask support”',a:'S',w:'Phishing: the most common form of theft, and a topic of Day 5.'},
+    {s:'A platform keeps all its customers’ keys on one server connected to the Internet',a:'K',w:'A single “hot” wallet: one compromised server, and everything goes.'}
+  ],
+  'the chain was secure in all three cases; what gave way was around it.',null);
+
+/* ---- 4.9 A · the customers' Merkle tree ----
+   Leaf = SHA-256("cNN|units|salt"), parent = SHA-256(hexLeft + hexRight).
+   ROOT is the value computed with Python's hashlib (27 Oct 2026); the page
+   recomputes it in the browser and compares. */
+var CLIENTS=[['c01','412.50','7f3a91c2'],['c02','88.20','b04e6d19'],['c03','1290.00','2c8f5a77'],['c04','35.75','e91d0b43'],['c05','640.10','5a6c2e08'],['c06','210.00','d27b94f1'],['c07','77.30','13e8c6aa'],['c08','955.40','9b05f37d']];
+var ROOT='3ab7213e6ca36165f9caef63aa5eec4d92e1972e6225332f2086ce0284038385';
+function sha(s){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});}
+(function merkle(){
+  need('mk');need('mkt');
+  var me=2,ctrl=document.getElementById('mkCtrl'),out=document.getElementById('mkOut'),cap=document.getElementById('mkCap');
+  ctrl.innerHTML='<div class="ctrl"><label>You are customer</label><select id="mkMe">'+CLIENTS.map(function(c,i){return '<option value="'+i+'"'+(i===me?' selected':'')+'>'+c[0]+'</option>';}).join('')+'</select></div><div class="ctrl"><label>Root published by the company</label><input type="text" readonly value="'+ROOT.slice(0,16)+'…"></div>';
+  document.getElementById('mkMe').addEventListener('change',function(){me=+this.value;out.innerHTML='';cap.textContent='';});
+  function levels(rows){
+    return Promise.all(rows.map(function(c){return sha(c[0]+'|'+c[1]+'|'+c[2]);})).then(function(L){
+      var lv=[L];
+      function up(){var p=lv[lv.length-1];if(p.length===1)return Promise.resolve(lv);
+        var q=[];for(var k=0;k<p.length;k+=2)q.push(sha(p[k]+p[k+1]));
+        return Promise.all(q).then(function(n){lv.push(n);return up();});}
+      return up();
+    });
+  }
+  function run(cheat){
+    if(!(window.crypto&&crypto.subtle)){out.innerHTML='<p class="no">'+T('Ce navigateur ne calcule pas le SHA-256 ici (page non sécurisée).','This browser cannot compute SHA-256 here (insecure page).')+'</p>';return;}
+    var rows=CLIENTS.map(function(c){return c.slice();});
+    if(cheat)rows[me][1]=(Math.round(parseFloat(rows[me][1])*90)/100).toFixed(2);
+    levels(rows).then(function(lv){
+      var idx=me,h='<div class="lv me">'+T('Votre feuille : ','Your leaf: ')+'<b>'+esc(rows[me][0]+'|'+rows[me][1]+'|'+rows[me][2])+'</b><br>→ <code>'+lv[0][me]+'</code></div>';
+      for(var d=0;d<lv.length-1;d++){var sib=idx^1;h+='<div class="lv">'+T('Étage ','Level ')+(d+1)+T(' · l’empreinte voisine fournie par la société : ',' · the neighbouring fingerprint supplied by the company: ')+'<code>'+lv[d][sib]+'</code><br>'+T('→ combinée avec la vôtre : ','→ combined with yours: ')+'<code>'+lv[d+1][idx>>1]+'</code></div>';idx>>=1;}
+      var ok=lv[lv.length-1][0]===ROOT;
+      h+='<div class="lv '+(ok?'me':'bad')+'">'+T('Racine recalculée : ','Recomputed root: ')+'<code>'+lv[lv.length-1][0]+'</code><br><b>'+(ok?T('= la racine publiée. Votre solde est compté tel quel.','= the published root. Your balance is counted as it is.'):T('≠ la racine publiée. La falsification se voit — sans que vous ayez vu le solde de personne d’autre.','≠ the published root. The forgery shows — without you having seen anyone else’s balance.'))+'</b></div>';
+      out.innerHTML=h;
+      if(cheat){markStep('mkt');cap.textContent=T('Solde réduit de 10 % (','Balance reduced by 10% (')+CLIENTS[me][1]+' → '+rows[me][1]+T(' parts) : la racine ne correspond plus.',' units): the root no longer matches.');}
+      else{markStep('mk');cap.textContent=T('Trois empreintes voisines suffisent pour huit clients ; vingt suffiraient pour un million.','Three neighbouring fingerprints are enough for eight customers; twenty would do for a million.');}
+    });
+  }
+  document.getElementById('mkGo').addEventListener('click',function(){run(false);});
+  document.getElementById('mkCheat').addEventListener('click',function(){run(true);});
+})();
+
+bootDay();
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
