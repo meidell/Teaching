@@ -310,5 +310,14 @@ listed; shared login, no class password.
   solved (`StatsTrack.complete`, module `exam`) when its FIRST click is
   right; `courseprogress.js` lists it `opt:true`, so it never enters the
   percentage. Linked from the hub under the assessment grid.
+  ⚠ **LOCKED until released (28 Oct 2026, Jan Erik: "block these for now,
+  but let me as admin see them and open them from admin").** Students see a
+  lock screen and no hub link until `qm1/_release/exam/_all` exists; it is
+  written by the dashboard's **Solutions** tab, row `exam` — which is why
+  `exam` is in `courses.json → modules` (that also gives it a dashboard
+  column). The page re-checks every 30 s, so releasing opens it on open
+  pages; "Lock again" hides it again. An instructor device (`jem_fb_session`,
+  not in 🎓 student view) always sees the deck, with a bar saying whether
+  students can. A classroom gate: the cards are in the page source.
 - The hub lists **both semesters** in one grid with a `.semhead` divider, which
   is the only layout this hub has that `HEG/statistics/index.html` does not.
