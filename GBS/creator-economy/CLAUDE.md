@@ -134,6 +134,16 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   SHA-256 of `sealText()` → `w3_seal` + `_wall/w3seal`. Roles rotate twice
   from `w1_team`. Probed headlessly (CDP, stubbed writes): all seven
   steps complete, no errors, no overflow at 400 px.
+- ⚠ **Session 3 REWRITTEN in plain words, 28 Oct 2026** (Jan Erik: "very
+  unclear what you actually want the students to do here, e.g. what list? …
+  be more specific and layman"). Title now *Write a page and put it online*
+  (also in index.html TERM, courseprogress.js, presence.js, courses.json).
+  Every step says what to look at, what to type, where, and who on the team
+  does it; "the lab" → "the course's website", "baseline" → "the before
+  record", "phrasing" → "question, way 1/2/3", "seal" → "lock your guess";
+  the live checklist and role box too. No field ids, steps or toys changed.
+  Same rule for later sessions: name the thing ("the reasons that held up in
+  Session 2, Step 6"), never a bare "the list".
 - ⚠ **The lab — `live/` — is the experiment.** `_build/publish_live.py`
   (asks for the instructor password, reads every sid's `work/`, keeps the
   newest track-B submission per team) writes `live/<slug>.html`,

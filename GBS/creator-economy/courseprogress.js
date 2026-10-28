@@ -39,7 +39,7 @@ window.CourseProgress=(function(){
   var CHAPTERS=[
     {mod:'w1',  short:'W1', name:'Week 01 · One question, fifteen phones, and the pipeline',        total:8, live:true, href:'week1.html'},
     {mod:'w2',  short:'W2', name:'Week 02 · Reverse-engineer a winner',           total:7, live:true, href:'week2.html'},
-    {mod:'w3',  short:'W3', name:'Week 03 · The intervention goes live',          total:7, live:true, href:'week3.html'},
+    {mod:'w3',  short:'W3', name:'Week 03 · Write a page and put it online',          total:7, live:true, href:'week3.html'},
     {mod:'w4',  short:'W4', name:'Week 04 · The creator draft',                   total:5, live:false},
     {mod:'w5',  short:'W5', name:'Week 05 · The negotiation',                     total:5, live:false},
     {mod:'w6',  short:'W6', name:'Week 06 · Find the lie',                        total:5, live:false},
