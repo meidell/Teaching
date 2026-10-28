@@ -288,5 +288,27 @@ listed; shared login, no class password.
   the page source like every homework solution in this repo. It stops a
   student reading the answers instead of doing the work; it does not stop a
   determined one pressing ⌥⌘U. Nothing confidential in a solution, ever.
+- **`exam-cards.html` — 99 midterm practice cards (28 Oct 2026).** Jan Erik
+  sent the four midterm papers (A–D) as examples and said "DO NOT USE ANY OF
+  THESE QUESTIONS": the cards train the same skills on different functions,
+  numbers and situations, and **no midterm paper, stem or key is in this
+  repo** — the repo is the web root. Format mirrors the paper: five options,
+  **E is always "None of the above" and is the right answer on 19 of 99**
+  (A–D 20 each, never three alike in a row; fixed seed). Twelve categories
+  (domain & range 8 · operations & composition 8 · inverses 6 · exp & log 9
+  · lines 9 · business models 12 · derivative rules 18 · tangents & marginal
+  analysis 8 · chain rule in business 4 · approximation & Newton 7 ·
+  elasticity 5 · critical points & concavity 5), with a filter, a hint and a
+  worked solution on each. ⚠ **GENERATED**: edit the cards in
+  `_build/exam_cards.py` and the page in `_build/exam_cards.tpl.html`, then
+  run the script — never edit `exam-cards.html` by hand. The script
+  recomputes every answer with sympy from the question, asserts the marked
+  option equals it and no distractor does, and stops otherwise (checked by
+  planting wrong answers: caught on symbolic, inverse, interval and numeric
+  cards). Interval and qualitative cards compare text keys, so their check
+  is only as good as the reasoning written beside them. A card counts as
+  solved (`StatsTrack.complete`, module `exam`) when its FIRST click is
+  right; `courseprogress.js` lists it `opt:true`, so it never enters the
+  percentage. Linked from the hub under the assessment grid.
 - The hub lists **both semesters** in one grid with a `.semhead` divider, which
   is the only layout this hub has that `HEG/statistics/index.html` does not.

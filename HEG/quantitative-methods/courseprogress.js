@@ -68,7 +68,9 @@ window.CourseProgress=(function(){
     {mod:'s13',   short:'S13',name:'Spring W13 · Selected topics',                       total:6, live:false},
     {mod:'s14',   short:'S14',name:'Spring W14 · Selected topics',                       total:6, live:false},
     {mod:'s15',   short:'S15',name:'Spring W15 · Review — no new material',              total:4, live:false},
-    {mod:'s16',   short:'S16',name:'Spring W16–17 · Spring semester exam',               total:1, live:false}
+    {mod:'s16',   short:'S16',name:'Spring W16–17 · Spring semester exam',               total:1, live:false},
+    /* a tool, not a chapter: opt:true keeps it out of the percentage */
+    {mod:'exam',  short:'EX', name:'Exam cards — 99 midterm practice questions',         total:99,live:true,opt:true,href:'exam-cards.html'}
   ];
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}
