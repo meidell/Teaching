@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build exam-cards.html — 99 midterm practice cards for Quantitative Methods I.
+"""Build exam-cards.html — 165 midterm practice cards for Quantitative Methods I.
 
     python3 HEG/quantitative-methods/_build/exam_cards.py
 
@@ -799,6 +799,479 @@ C(D, "The profit-maximising output",
   "P′ = −3q² + 30q − 48 = −3(q² − 10q + 16) = −3(q − 2)(q − 8). P″ = −6q + 30: P″(2) = 18 > 0 (a minimum, a loss of 64), P″(8) = −18 < 0 → <b>q = 8</b>, P = 44.",
   chk=Rational(8))
 
+
+# ======================================================================
+# SECOND SET · 66 more cards (28 Oct 2026), same categories, new
+# functions and situations — checked against the first 99 as well
+# ======================================================================
+D = "Domain & range"
+C(D, "A root in the denominator",
+  f"What is the domain of f(x) = {F('1', S('8 − 2x'))} ?",
+  ("]−∞, 4[", "t:]-inf,4["),
+  [("]−∞, 4]", "t:]-inf,4]"), ("]4, +∞[", "t:]4,inf["), ("ℝ \\ {4}", "t:R-{4}"), ("]−∞, 8[", "t:]-inf,8[")],
+  "Under the root: ≥ 0. In the denominator: ≠ 0. Together: strictly positive.",
+  "8 − 2x > 0 ⇔ x < 4. 4 itself makes the denominator √0 = 0, so it is excluded: <b>]−∞, 4[</b>.",
+  chk=val("t:]-inf,4["))
+C(D, "A log and a root together",
+  f"What is the domain of f(x) = ln x + {S('3 − x')} ?",
+  ("]0, 3]", "t:]0,3]"),
+  [("[0, 3]", "t:[0,3]"), ("]0, 3[", "t:]0,3["), ("]−∞, 3]", "t:]-inf,3]"), ("]0, +∞[", "t:]0,inf[")],
+  "Each piece has its own condition; x must satisfy both.",
+  "ln x needs x > 0; √(3 − x) needs x ≤ 3. Both: <b>]0, 3]</b> — open at 0, closed at 3.",
+  chk=val("t:]0,3]"))
+C(D, "A denominator that is never zero",
+  f"What is the domain of f(x) = {F('x − 2', 'x² + 4')} ?",
+  ("ℝ", "t:R"),
+  [("ℝ \\ {2}", "t:R-{2}"), ("ℝ \\ {−2, 2}", "t:R-{-2,2}"), ("ℝ \\ {−4}", "t:R-{-4}"), ("]2, +∞[", "t:]2,inf[")],
+  "Can x² + 4 ever be 0?",
+  "x² ≥ 0, so x² + 4 ≥ 4 > 0 for every x. Nothing is forbidden: <b>ℝ</b>. x = 2 only makes f equal to 0, which is allowed.",
+  chk=val("t:R"))
+C(D, "A shifted parabola",
+  "What is the range of f(x) = (x − 1)² + 5 ?",
+  ("[5, +∞[", "t:[5,inf["),
+  [("]5, +∞[", "t:]5,inf["), ("[1, +∞[", "t:[1,inf["), ("ℝ", "t:R"), ("[0, +∞[", "t:[0,inf[")],
+  "A square is ≥ 0, and equals 0 at x = 1.",
+  "(x − 1)² ≥ 0, so f ≥ 5, reached at x = 1: <b>[5, +∞[</b>. 1 is where the minimum is, not its value.",
+  chk=val("t:[5,inf["))
+C(D, "A negative exponential",
+  "What is the range of f(x) = −2eˣ ?",
+  ("]−∞, 0[", "t:]-inf,0["),
+  [("]−∞, 0]", "t:]-inf,0]"), ("]0, +∞[", "t:]0,inf["), ("]−∞, −2]", "t:]-inf,-2]"), ("ℝ", "t:R")],
+  "eˣ takes every value in ]0, +∞[. Multiply that whole set by −2.",
+  "eˣ ∈ ]0, +∞[ ⇒ −2eˣ ∈ <b>]−∞, 0[</b>. 0 is never reached; −2 is only the value at x = 0.",
+  chk=val("t:]-inf,0["))
+
+D = "Operations & composition"
+C(D, "A reciprocal after a shift",
+  f"Let f(x) = x + 2 and g(x) = {F('1', 'x')}. What is (g ∘ f)(x)?",
+  (F("1", "x + 2"), "e:1/(x+2)"),
+  [(F("1", "x") + " + 2", "e:1/x+2"), (F("1", "2x"), "e:1/(2*x)"), ("x + " + F("1", "2"), "e:x+1/2"), (F("x", "x + 2"), "e:x/(x+2)")],
+  "g ∘ f: first add 2, then take the reciprocal.",
+  "g(f(x)) = g(x + 2) = <b>1 ⁄ (x + 2)</b>. 1⁄x + 2 is the other order, f(g(x)).",
+  chk=1 / (x + 2))
+C(D, "A difference at a negative point",
+  "Let f(x) = 3x² and g(x) = x³ − x. Compute (f − g)(−1).",
+  ("3", "n:3"),
+  [("2", "n:2"), ("4", "n:4"), ("−3", "n:-3"), ("6", "n:6")],
+  "Evaluate each at −1, keeping the signs: (−1)² = 1, (−1)³ = −1.",
+  "f(−1) = 3, g(−1) = −1 + 1 = 0. (f − g)(−1) = <b>3</b>.",
+  chk=3 * (-1) ** 2 - ((-1) ** 3 - (-1)))
+C(D, "Revenue per hour open",
+  "A bakery serves n(h) = 40 + 5h customers when it opens h hours a day, and each customer spends CHF 15. Write the daily revenue as a function of h.",
+  ("R = 600 + 75h", "e:600+75*y"),
+  [("R = 600 + 5h", "e:600+5*y"), ("R = 40 + 75h", "e:40+75*y"), ("R = 75h", "e:75*y"), ("R = 55 + 75h", "e:55+75*y")],
+  "R(n) = 15n; replace n by 40 + 5h.",
+  "R = 15(40 + 5h) = <b>600 + 75h</b>: the 40 regulars bring 600; each extra hour adds 5 customers × 15.",
+  chk=15 * (40 + 5 * y))
+C(D, "Replace x by 2x",
+  "Let f(x) = x² + 1. What is f(2x)?",
+  ("4x² + 1", "e:4*x**2+1"),
+  [("2x² + 2", "e:2*x**2+2"), ("2x² + 1", "e:2*x**2+1"), ("4x² + 4", "e:4*x**2+4"), ("4x² + 2", "e:4*x**2+2")],
+  "Every x becomes (2x), brackets included.",
+  "(2x)² + 1 = <b>4x² + 1</b>. 2x² + 2 is 2·f(x) — doubling the output, not the input.",
+  chk=(2 * x) ** 2 + 1)
+C(D, "Order matters",
+  "Let f(x) = x + 5 and g(x) = 2x. Compute (g ∘ f)(1) − (f ∘ g)(1).",
+  ("5", "n:5"),
+  [("0", "n:0"), ("−5", "n:-5"), ("12", "n:12"), ("7", "n:7")],
+  "Compute both compositions at 1 separately.",
+  "(g ∘ f)(1) = g(6) = 12; (f ∘ g)(1) = f(2) = 7. Difference: <b>5</b>. 0 assumes the order does not matter — it does.",
+  chk=2 * (1 + 5) - (2 * 1 + 5))
+
+D = "Inverse functions"
+C(D, "Undo a division",
+  f"Let f(x) = {F('x − 4', '3')}. What is f⁻¹(x)?",
+  ("3x + 4", "e:3*x+4"),
+  [("3x − 4", "e:3*x-4"), (F("x + 4", "3"), "e:(x+4)/3"), (F("3", "x − 4"), "e:3/(x-4)"), (F("x", "3") + " + 4", "e:x/3+4")],
+  "f subtracts 4 then divides by 3. Undo: multiply by 3, then add 4.",
+  "y = (x − 4) ⁄ 3 ⇔ 3y = x − 4 ⇔ x = 3y + 4: <b>f⁻¹(x) = 3x + 4</b>.",
+  chk=3 * x + 4)
+C(D, "Supply, read the other way",
+  "Supply is p = 2q + 10. Express the quantity supplied as a function of the price.",
+  ("q = " + F("p − 10", "2"), "e:(p-10)/2"),
+  [("q = " + F("p + 10", "2"), "e:(p+10)/2"), ("q = 2p − 10", "e:2*p-10"), ("q = " + F("p", "2") + " − 10", "e:p/2-10"), ("q = 2(p − 10)", "e:2*(p-10)")],
+  "Solve p = 2q + 10 for q.",
+  "2q = p − 10 ⇔ <b>q = (p − 10) ⁄ 2</b>. At p = 10 nothing is supplied; each extra franc brings half a unit.",
+  chk=solve(2 * q + 10 - p, q)[0])
+C(D, "Undo a reciprocal",
+  f"Let f(x) = {F('5', 'x + 1')}, x ≠ −1. What is f⁻¹(x)?",
+  (F("5", "x") + " − 1", "e:5/x-1"),
+  [(F("5", "x − 1"), "e:5/(x-1)"), (F("x", "5") + " − 1", "e:x/5-1"), (F("5", "x") + " + 1", "e:5/x+1"), (F("x + 1", "5"), "e:(x+1)/5")],
+  "y(x + 1) = 5 ⇒ x + 1 = 5 ⁄ y.",
+  "x + 1 = 5 ⁄ y ⇔ x = 5 ⁄ y − 1: <b>f⁻¹(x) = 5⁄x − 1</b>. (x + 1) ⁄ 5 is 1 ⁄ f.",
+  chk=5 / x - 1)
+C(D, "Undo ln(2x)",
+  "Let f(x) = ln(2x), x > 0. What is f⁻¹(x)?",
+  (F("eˣ", "2"), "e:exp(x)/2"),
+  [("2eˣ", "e:2*exp(x)"), ("e<sup>x⁄2</sup>", "e:exp(x/2)"), ("e<sup>2x</sup>", "e:exp(2*x)"), (F("ln x", "2"), "e:log(x)/2")],
+  "y = ln(2x) ⇔ eʸ = 2x.",
+  "eʸ = 2x ⇔ x = eʸ ⁄ 2: <b>f⁻¹(x) = eˣ ⁄ 2</b>.",
+  chk=exp(x) / 2)
+C(D, "Undo a root",
+  f"Let f(x) = {S('x + 4')}, x ≥ −4. What is f⁻¹(x), for x ≥ 0?",
+  ("x² − 4", "e:x**2-4"),
+  [("x² + 4", "e:x**2+4"), (S("x") + " − 4", "e:sqrt(x)-4"), ("(x − 4)²", "e:(x-4)**2"), (S("x − 4"), "e:sqrt(x-4)")],
+  "Square both sides of y = √(x + 4).",
+  "y² = x + 4 ⇔ x = y² − 4: <b>f⁻¹(x) = x² − 4</b>. Check: f(5) = 3 and 3² − 4 = 5 ✓.",
+  chk=x ** 2 - 4)
+
+D = "Exponentials & logarithms"
+C(D, "Undo a natural log",
+  "Solve ln x = 2.",
+  ("x = e² ≈ 7.389", "n:exp(2)"),
+  [("x = 2e ≈ 5.437", "n:2*exp(1)"), ("x = ln 2", "n:log(2)"), ("x = 100", "n:100"), ("x = √e", "n:sqrt(exp(1))")],
+  "ln x = 2 means: e to the power 2 is x.",
+  "x = <b>e² ≈ 7.389</b>. 100 would be the answer for log₁₀ x = 2.",
+  chk=exp(2))
+C(D, "Powers of three",
+  "Solve 3<sup>x + 1</sup> = 81.",
+  ("x = 3", "n:3"),
+  [("x = 4", "n:4"), ("x = 27", "n:27"), ("x = 26", "n:26"), ("x = 2", "n:2")],
+  "81 = 3⁴. Compare the exponents.",
+  "3<sup>x + 1</sup> = 3⁴ ⇔ x + 1 = 4 ⇔ <b>x = 3</b>. 4 forgets to subtract 1.",
+  chk=solve(x + 1 - 4, x)[0])
+C(D, "ln of e and of 1⁄e",
+  f"Compute ln(e⁵) − ln({F('1', 'e')}).",
+  ("6", "n:6"),
+  [("4", "n:4"), ("5", "n:5"), ("−6", "n:-6"), ("e⁶", "n:exp(6)")],
+  "ln(eᵏ) = k, and 1⁄e = e⁻¹.",
+  "5 − (−1) = <b>6</b>. 4 drops the minus sign of ln(1⁄e).",
+  chk=log(exp(5)) - log(1 / EE))
+C(D, "Which one equals ln 12?",
+  "Which expression is equal to ln 12?",
+  ("ln 3 + 2 ln 2", "n:log(3)+2*log(2)"),
+  [("ln 3 · ln 4", "n:log(3)*log(4)"), ("2 ln 6", "n:2*log(6)"), ("ln 24 − ln 4", "n:log(24)-log(4)"), ("ln 9 + ln 3", "n:log(9)+log(3)")],
+  "12 = 3 × 4 = 3 × 2². Use ln(ab) = ln a + ln b and ln(aᵏ) = k ln a.",
+  "ln 12 = ln 3 + ln 4 = <b>ln 3 + 2 ln 2</b>. 2 ln 6 = ln 36; ln 24 − ln 4 = ln 6; ln 3 · ln 4 is not a log law at all.",
+  chk=log(12))
+C(D, "Sales that triple",
+  "Monthly sales follow S(t) = 500 e<sup>0.1t</sup> (t in months). When do they reach 1 500?",
+  ("t = 10 ln 3 ≈ 11 months", "n:10*log(3)"),
+  [("30 months", "n:30"), ("20 months", "n:20"), ("10 months", "n:10"), ("3 months", "n:3")],
+  "Divide by 500, then take ln.",
+  "e<sup>0.1t</sup> = 3 ⇔ 0.1t = ln 3 ⇔ <b>t = 10 ln 3 ≈ 10.99</b>. 30 treats the growth as linear.",
+  chk=10 * log(3))
+C(D, "Half the value",
+  "A car's value is V(t) = 8 000 e<sup>−0.25t</sup> (t in years). After how long is it worth half?",
+  ("≈ 2.77 years", "n:4*log(2)"),
+  [("4 years", "n:4"), ("2 years", "n:2"), ("0.5 years", "n:0.5"), ("≈ 0.17 years", "n:0.25*log(2)")],
+  "Set e<sup>−0.25t</sup> = ½ and take ln.",
+  "−0.25t = ln ½ = −ln 2 ⇔ t = ln 2 ⁄ 0.25 = <b>2.77 years</b>. 0.17 multiplies by 0.25 instead of dividing.",
+  chk=log(2) / Rational(1, 4))
+
+D = "Lines"
+C(D, "The intercept from one point",
+  "A line has slope −3 and passes through (2, 7). What is its y-intercept?",
+  ("13", "n:13"),
+  [("1", "n:1"), ("7", "n:7"), ("−13", "n:-13"), ("4", "n:4")],
+  "y = −3x + b; put in (2, 7).",
+  "7 = −6 + b ⇔ <b>b = 13</b>. 1 comes from 7 − 6, a sign slip.",
+  chk=7 + 3 * 2)
+C(D, "Two points with the same x",
+  "Which equation describes the line through (1, 4) and (1, −2)?",
+  ("x = 1", "t:x=1"),
+  [("y = 1", "t:y=1"), ("y = x + 3", "t:y=x+3"), ("x = 4", "t:x=4"), ("y = −3x + 7", "t:y=-3x+7")],
+  "Both points have x = 1. What does a line through them look like?",
+  "Same x, different y: the line is vertical, <b>x = 1</b>. Its slope (6 ⁄ 0) does not exist, so no y = mx + b form fits.",
+  chk=val("t:x=1"))
+C(D, "A perpendicular slope",
+  f"What is the slope of any line perpendicular to y = {F('2', '5')}x − 1 ?",
+  ("−" + F("5", "2"), "n:-5/2"),
+  [(F("5", "2"), "n:5/2"), ("−" + F("2", "5"), "n:-2/5"), (F("2", "5"), "n:2/5"), ("−1", "n:-1")],
+  "Perpendicular slopes multiply to −1: flip the fraction and change the sign.",
+  "m₂ = −1 ⁄ (2⁄5) = <b>−5⁄2</b>. Check: (2⁄5)(−5⁄2) = −1 ✓.",
+  chk=-1 / Rational(2, 5))
+C(D, "From the two intercepts",
+  "A line crosses the x-axis at 4 and the y-axis at −2. What is its equation?",
+  ("y = " + F("x", "2") + " − 2", "e:x/2-2"),
+  [("y = −" + F("x", "2") + " − 2", "e:-x/2-2"), ("y = 2x − 4", "e:2*x-4"), ("y = −2x + 4", "e:-2*x+4"), ("y = " + F("x", "2") + " + 4", "e:x/2+4")],
+  "Two points: (4, 0) and (0, −2).",
+  "m = (0 − (−2)) ⁄ (4 − 0) = ½, b = −2: <b>y = x⁄2 − 2</b>. Check x = 4: 2 − 2 = 0 ✓.",
+  chk=x / 2 - 2)
+C(D, "Two phone plans",
+  "Plan A: CHF 20 a month plus CHF 0.10 a minute. Plan B: CHF 35 a month, unlimited. Above how many minutes is B cheaper?",
+  ("150 minutes", "n:150"),
+  [("350 minutes", "n:350"), ("200 minutes", "n:200"), ("15 minutes", "n:15"), ("55 minutes", "n:55")],
+  "Set the two costs equal: 20 + 0.10m = 35.",
+  "0.10m = 15 ⇔ <b>m = 150</b>. Above 150 minutes plan A costs more than 35.",
+  chk=Rational(35 - 20) / Rational(1, 10))
+C(D, "Read a value off a line",
+  "A line passes through (0, 0) and (3, −6). What is y at x = −2?",
+  ("4", "n:4"),
+  [("−4", "n:-4"), ("2", "n:2"), ("−2", "n:-2"), ("6", "n:6")],
+  "Slope first, then y = mx (the line passes through the origin).",
+  "m = −6 ⁄ 3 = −2, so y = −2x and y(−2) = <b>4</b>.",
+  chk=-2 * (-2))
+
+D = "Business models"
+C(D, "A profit target",
+  "A product sells for CHF 40, costs CHF 28 per unit to make, and the fixed costs are CHF 9 000. How many units give a profit of CHF 3 000?",
+  ("1 000", "n:1000"),
+  [("750", "n:750"), ("300", "n:300"), ("1 250", "n:1250"), ("≈ 428.6", "n:12000/28")],
+  "Profit = (40 − 28)q − 9 000. Set it equal to 3 000.",
+  "12q = 12 000 ⇔ <b>q = 1 000</b>. 750 is break-even (profit 0).",
+  chk=Rational(9000 + 3000, 40 - 28))
+C(D, "Equilibrium quantity",
+  "Demand q = 500 − 10p, supply q = 40p. What quantity is traded at equilibrium?",
+  ("400", "n:400"),
+  [("10", "n:10"), ("500", "n:500"), ("100", "n:100"), ("450", "n:450")],
+  "Set demand = supply, solve for p, then compute q.",
+  "500 − 10p = 40p ⇔ p = 10, q = 40 × 10 = <b>400</b>. 10 is the price, not the quantity.",
+  chk=40 * solve(500 - 10 * p - 40 * p, p)[0])
+C(D, "Revenue at a price",
+  "Demand is q = 80 − 2p. What is the revenue at p = 15?",
+  ("CHF 750", "n:750"),
+  [("CHF 1 200", "n:1200"), ("CHF 50", "n:50"), ("CHF 1 170", "n:1170"), ("CHF 600", "n:600")],
+  "R = p × q, with q from the demand curve.",
+  "q(15) = 50, R = 15 × 50 = <b>750</b>. 1 200 uses q = 80, ignoring the price.",
+  chk=15 * (80 - 2 * 15))
+C(D, "The best ticket price",
+  "A cinema with 300 seats sells out at CHF 12. Each franc added to the price loses 15 spectators. Which price maximises revenue?",
+  ("CHF 16", "n:16"),
+  [("CHF 12", "n:12"), ("CHF 32", "n:32"), ("CHF 20", "n:20"), ("CHF 18", "n:18")],
+  "q = 300 − 15(p − 12) = 480 − 15p. R = p·q is a parabola.",
+  "R = 480p − 15p², R′ = 480 − 30p = 0 ⇔ <b>p = 16</b> (240 seats, CHF 3 840 against 3 600 at 12). 32 is where nobody comes.",
+  chk=solve(diff(p * (480 - 15 * p), p), p)[0])
+C(D, "What a budget buys",
+  "Total cost is C(q) = 5 000 + 12q. How many units can a budget of CHF 11 000 produce?",
+  ("500", "n:500"),
+  [("≈ 916.7", "n:11000/12"), ("≈ 1 333", "n:16000/12"), ("≈ 416.7", "n:5000/12"), ("600", "n:600")],
+  "Set C(q) = 11 000.",
+  "12q = 6 000 ⇔ <b>q = 500</b>. 916.7 forgets that 5 000 of the budget goes to fixed costs.",
+  chk=Rational(11000 - 5000, 12))
+C(D, "Rent goes up",
+  "Price CHF 30, unit cost CHF 18, fixed costs CHF 6 000. Fixed costs rise by 20%. What is the new break-even quantity?",
+  ("600", "n:600"),
+  [("500", "n:500"), ("520", "n:520"), ("720", "n:720"), ("240", "n:240")],
+  "Break-even = fixed ⁄ (price − unit cost), with the new fixed cost.",
+  "New fixed 7 200; 7 200 ⁄ 12 = <b>600</b> (from 500). A 20% rise in fixed costs moves break-even by exactly 20%.",
+  chk=Rational(6000 * 12 // 10, 30 - 18))
+C(D, "Markup, then a discount",
+  "A shop buys an item for CHF 80 and prices it 25% above cost. In the sales it then takes 25% off that price. What is the profit per item?",
+  ("−CHF 5 (a loss)", "n:-5"),
+  [("CHF 0", "n:0"), ("CHF 5", "n:5"), ("−CHF 20", "n:-20"), ("CHF 20", "n:20")],
+  "Price: 80 × 1.25. Sale price: that × 0.75.",
+  "80 × 1.25 = 100; 100 × 0.75 = 75; 75 − 80 = <b>−5</b>. 0 assumes +25% and −25% cancel; they are 25% of different amounts.",
+  chk=80 * Rational(125, 100) * Rational(75, 100) - 80)
+C(D, "Compound interest",
+  "CHF 5 000 is invested at 3% a year, compounded yearly. What is it worth after 4 years?",
+  ("≈ CHF 5 627.54", "n:5000*1.03**4"),
+  [("CHF 5 600", "n:5600"), ("≈ CHF 5 637.48", "n:5000*exp(0.12)"), ("CHF 5 150", "n:5150"), ("≈ CHF 5 450", "n:5450")],
+  "Each year multiplies by 1.03: V = 5 000 × 1.03⁴.",
+  "1.03⁴ = 1.12551 → <b>5 627.54</b>. 5 600 is simple interest (3% of 5 000, four times); 5 637.48 is continuous compounding.",
+  chk=5000 * Rational(103, 100) ** 4)
+
+D = "Derivative rules"
+Dv("Divide first", F("x² − 4", "x"), (x ** 2 - 4) / x,
+   ("1 + " + F("4", "x²"), "e:1+4/x**2"),
+   [("2x", "e:2*x"), ("1 − " + F("4", "x²"), "e:1-4/x**2"), ("x − " + F("4", "x²"), "e:x-4/x**2"), ("1 + " + F("4", "x"), "e:1+4/x")],
+   "Split the fraction: x − 4⁄x. Then the power rule.",
+   "(x − 4x⁻¹)′ = 1 + 4x⁻² = <b>1 + 4⁄x²</b>. 2x differentiates only the numerator.")
+Dv("eˣ times a polynomial", "eˣ(x² + 1)", exp(x) * (x ** 2 + 1),
+   ("eˣ(x + 1)²", "e:exp(x)*(x+1)**2"),
+   [("2x eˣ", "e:2*x*exp(x)"), ("eˣ(x² + 1)", "e:exp(x)*(x**2+1)"), ("eˣ(x² + 2x)", "e:exp(x)*(x**2+2*x)"), ("2x eˣ + 1", "e:2*x*exp(x)+1")],
+   "Product rule: eˣ(x² + 1) + eˣ·2x.",
+   "eˣ(x² + 2x + 1) = <b>eˣ(x + 1)²</b>. eˣ(x² + 1) forgets the derivative of the polynomial.")
+Dv("ln of a multiple", "ln(5x)", log(5 * x),
+   (F("1", "x"), "e:1/x"),
+   [(F("5", "x"), "e:5/x"), (F("1", "5x"), "e:1/(5*x)"), (F("ln 5", "x"), "e:log(5)/x"), ("5", "e:5+0*x")],
+   "ln(5x) = ln 5 + ln x, and ln 5 is a constant.",
+   "(ln 5)′ = 0, (ln x)′ = 1⁄x: <b>1⁄x</b>. By the chain rule: 5 ⁄ (5x) — the 5s cancel.")
+Dv("A cube root of a quadratic", "∛(x² + 7)", (x ** 2 + 7) ** Rational(1, 3),
+   (F("2x", "3 ∛(x² + 7)²"), "e:2*x/(3*(x**2+7)**(2/3))"),
+   [(F("1", "3 ∛(x² + 7)²"), "e:1/(3*(x**2+7)**(2/3))"), (F("2x", "∛(x² + 7)²"), "e:2*x/(x**2+7)**(2/3)"), (F("2x", "3") + "∛(x² + 7)", "e:2*x*(x**2+7)**(1/3)/3"), (F("x", "3 ∛(x² + 7)²"), "e:x/(3*(x**2+7)**(2/3))")],
+   "(x² + 7)<sup>1⁄3</sup>: power rule with exponent 1⁄3, then × the inner derivative 2x.",
+   "(1⁄3)(x² + 7)<sup>−2⁄3</sup> · 2x = <b>2x ⁄ (3∛(x² + 7)²)</b>.")
+Dv("A log squared", "(ln x)²", log(x) ** 2,
+   (F("2 ln x", "x"), "e:2*log(x)/x"),
+   [("2 ln x", "e:2*log(x)"), (F("2", "x"), "e:2/x"), (F("ln x", "x"), "e:log(x)/x"), (F("1", "x²"), "e:1/x**2")],
+   "u² with u = ln x: 2u · u′.",
+   "2 ln x · (1⁄x) = <b>2 ln x ⁄ x</b>. 2 ln x forgets the inner derivative. (ln x)² is not ln(x²) = 2 ln x.")
+Dv("An exponential over x", F("e<sup>3x</sup>", "x"), exp(3 * x) / x,
+   (F("e<sup>3x</sup>(3x − 1)", "x²"), "e:exp(3*x)*(3*x-1)/x**2"),
+   [("3e<sup>3x</sup>", "e:3*exp(3*x)"), (F("e<sup>3x</sup>(3x + 1)", "x²"), "e:exp(3*x)*(3*x+1)/x**2"), (F("e<sup>3x</sup>(1 − 3x)", "x²"), "e:exp(3*x)*(1-3*x)/x**2"), (F("3e<sup>3x</sup>", "x"), "e:3*exp(3*x)/x")],
+   "Quotient rule: u = e<sup>3x</sup> (u′ = 3e<sup>3x</sup>), v = x.",
+   "(3e<sup>3x</sup>·x − e<sup>3x</sup>·1) ⁄ x² = <b>e<sup>3x</sup>(3x − 1) ⁄ x²</b>.")
+Dv("A product with a square", "(x + 1)²(x − 2)", (x + 1) ** 2 * (x - 2),
+   ("3x² − 3", "e:3*x**2-3"),
+   [("2(x + 1)", "e:2*(x+1)"), ("(x + 1)²", "e:(x+1)**2"), ("3x² + 3", "e:3*x**2+3"), ("3x² − 3x", "e:3*x**2-3*x")],
+   "Product rule, or expand first: (x + 1)²(x − 2) = x³ − 3x − 2.",
+   "Expanded: x³ − 3x − 2, so f′ = <b>3x² − 3</b>. By the product rule: 2(x+1)(x−2) + (x+1)² = (x+1)(3x−3) — the same.")
+Dv("One over a root", F("1", S("x")), 1 / sqrt(x),
+   ("−" + F("1", "2x" + S("x")), "e:-1/(2*x*sqrt(x))"),
+   [(F("1", "2" + S("x")), "e:1/(2*sqrt(x))"), ("−" + F("1", "2" + S("x")), "e:-1/(2*sqrt(x))"), ("−" + F("2", "x²"), "e:-2/x**2"), ("−" + F("1", "x" + S("x")), "e:-1/(x*sqrt(x))")],
+   "1⁄√x = x<sup>−1⁄2</sup>. The new exponent is −3⁄2.",
+   "(−1⁄2)x<sup>−3⁄2</sup> = <b>−1 ⁄ (2x√x)</b>. −1⁄(2√x) lowers the exponent to −1⁄2 − 0 instead of −1⁄2 − 1.")
+C(D, "A third derivative",
+  "Let f(x) = x⁵. What is f‴(x)?",
+  ("60x²", "e:60*x**2"),
+  [("20x³", "e:20*x**3"), ("120x", "e:120*x"), ("60x³", "e:60*x**3"), ("5x⁴", "e:5*x**4")],
+  "Three times the power rule: 5x⁴, then 20x³, then …",
+  "5x⁴ → 20x³ → <b>60x²</b>. 20x³ is f″.",
+  chk=diff(x ** 5, x, 3))
+Dv("Two to the 3x", "2<sup>3x</sup>", 2 ** (3 * x),
+   ("3 · 2<sup>3x</sup> · ln 2", "e:3*2**(3*x)*log(2)"),
+   [("3x · 2<sup>3x − 1</sup>", "e:3*x*2**(3*x-1)"), ("2<sup>3x</sup> · ln 2", "e:2**(3*x)*log(2)"), ("3 · 2<sup>3x</sup>", "e:3*2**(3*x)"), ("8ˣ", "e:8**x")],
+   "(bᵘ)′ = bᵘ · ln b · u′, with u = 3x.",
+   "2<sup>3x</sup> · ln 2 · 3 = <b>3 · 2<sup>3x</sup> · ln 2</b> (= 8ˣ ln 8, the same thing). 8ˣ is the function itself, not its derivative.")
+
+D = "Tangents & marginal analysis"
+C(D, "Tangent to a cubic",
+  "What is the tangent line to f(x) = x³ − 2x at x = 2?",
+  ("y = 10x − 16", "e:10*x-16"),
+  [("y = 10x + 4", "e:10*x+4"), ("y = 4x + 2", "e:4*x+2"), ("y = 10x − 4", "e:10*x-4"), ("y = 12x − 20", "e:12*x-20")],
+  "f(2) and f′(2), then y = f(2) + f′(2)(x − 2).",
+  "f(2) = 4, f′ = 3x² − 2 → f′(2) = 10. y = 4 + 10(x − 2) = <b>10x − 16</b>. 12x − 20 forgets the −2 in f′.",
+  chk=(x ** 3 - 2 * x).subs(x, 2) + diff(x ** 3 - 2 * x, x).subs(x, 2) * (x - 2))
+C(D, "Marginal profit",
+  "P(q) = −0.02q² + 60q − 8 000. What is the marginal profit at q = 1 000?",
+  ("CHF 20", "n:20"),
+  [("CHF 32 000", "n:32000"), ("CHF 40", "n:40"), ("CHF 60", "n:60"), ("−CHF 20", "n:-20")],
+  "P′(q) = −0.04q + 60.",
+  "P′(1 000) = −40 + 60 = <b>20</b>: one more unit still adds about CHF 20. 32 000 is the profit itself.",
+  chk=diff(-q ** 2 / 50 + 60 * q - 8000, q).subs(q, 1000))
+C(D, "Where marginal cost is lowest",
+  "C(q) = q³ − 12q² + 60q + 100. At which output is the marginal cost lowest?",
+  ("q = 4", "n:4"),
+  [("q = 8", "n:8"), ("q = 2", "n:2"), ("q = 6", "n:6"), ("q = 12", "n:12")],
+  "MC = C′(q) = 3q² − 24q + 60 is a parabola. Its minimum is where its own derivative is 0.",
+  "MC′ = C″ = 6q − 24 = 0 ⇔ <b>q = 4</b> (MC = 12 there). This is the inflection point of C.",
+  chk=solve(diff(q ** 3 - 12 * q ** 2 + 60 * q + 100, q, 2), q)[0])
+C(D, "How fast average cost falls",
+  "C(q) = 2 000 + 5q. The average cost is A(q) = C(q) ⁄ q. What is A′(100)?",
+  ("−0.2", "n:-0.2"),
+  [("0.2", "n:0.2"), ("5", "n:5"), ("−20", "n:-20"), ("25", "n:25")],
+  "A(q) = 2 000⁄q + 5, so A′(q) = −2 000⁄q².",
+  "A′(100) = −2 000 ⁄ 10 000 = <b>−0.2</b>: the 101st unit lowers the average by about 20 centimes. 25 is A(100) itself.",
+  chk=diff(2000 / q + 5, q).subs(q, 100))
+C(D, "Marginal revenue from a price curve",
+  "Demand p = 200 − 4q. What is the marginal revenue at q = 10?",
+  ("CHF 120", "n:120"),
+  [("CHF 160", "n:160"), ("CHF 1 600", "n:1600"), ("CHF 200", "n:200"), ("CHF 80", "n:80")],
+  "R = p·q = 200q − 4q², then R′.",
+  "R′ = 200 − 8q, R′(10) = <b>120</b>. 160 is the price at q = 10 — marginal revenue is below price because the price falls on every unit.",
+  chk=diff((200 - 4 * q) * q, q).subs(q, 10))
+C(D, "Where the tangent is flat",
+  "At which point of the graph of f(x) = x² − 6x + 11 is the tangent horizontal?",
+  ("(3, 2)", "t:(3,2)"),
+  [("(3, −2)", "t:(3,-2)"), ("(6, 11)", "t:(6,11)"), ("(2, 3)", "t:(2,3)"), ("(−3, 38)", "t:(-3,38)")],
+  "Horizontal tangent: f′(x) = 0. Then compute f there.",
+  "f′ = 2x − 6 = 0 ⇔ x = 3; f(3) = 9 − 18 + 11 = 2: <b>(3, 2)</b>.",
+  chk=val("t:(3,2)"))
+
+D = "Chain rule in business"
+C(D, "Costs in euros, paid in francs",
+  "A supplier's cost in euros is E(q) = 200 + 3q, and 1 euro costs CHF 0.95. What is the marginal cost in francs?",
+  ("CHF 2.85 per unit", "n:2.85"),
+  [("CHF 3", "n:3"), ("CHF 0.95", "n:0.95"), ("CHF 3.95", "n:3.95"), ("CHF 190", "n:190")],
+  "C(q) = 0.95 · E(q). dC⁄dq = 0.95 · E′(q).",
+  "0.95 × 3 = <b>2.85</b> francs per unit. 3 is the marginal cost in euros.",
+  chk=Rational(95, 100) * 3)
+C(D, "Warmer days, more ice cream",
+  "Ice-cream sales are S(T) = 40T (T in °C), and the temperature rises as T(t) = 18 + 2t (t in hours after 8 am). How fast do sales grow per hour?",
+  ("80 per hour", "n:80"),
+  [("40", "n:40"), ("2", "n:2"), ("720", "n:720"), ("42", "n:42")],
+  "dS⁄dt = dS⁄dT × dT⁄dt.",
+  "40 × 2 = <b>80</b> per hour. 40 is per degree, not per hour.",
+  chk=diff(40 * (18 + 2 * t), t))
+C(D, "A root of a sum of squares",
+  f"R(q) = {S('q² + 900')}. Compute R′(40).",
+  ("0.8", "n:0.8"),
+  [("0.5", "n:0.5"), ("40", "n:40"), ("50", "n:50"), ("1.6", "n:1.6")],
+  "(√u)′ = u′ ⁄ (2√u), with u = q² + 900.",
+  "R′ = 2q ⁄ (2√(q² + 900)) = q ⁄ √(q² + 900); at 40: 40 ⁄ 50 = <b>0.8</b>. 1.6 forgets the 2 in 2√u.",
+  chk=diff(sqrt(q ** 2 + 900), q).subs(q, 40))
+C(D, "Hiring over time",
+  f"Output is q(L) = 10{S('L')} with L workers, and the workforce grows as L(t) = 100 + 4t (t in months). How fast does output grow at t = 0?",
+  ("2 units per month", "n:2"),
+  [("0.5", "n:0.5"), ("4", "n:4"), ("20", "n:20"), ("0.2", "n:0.2")],
+  "dq⁄dt = q′(L) · L′(t), with q′(L) = 5 ⁄ √L and L(0) = 100.",
+  "q′(100) = 5 ⁄ 10 = 0.5 per worker; L′ = 4 workers a month → <b>2</b> units a month.",
+  chk=diff(10 * sqrt(100 + 4 * t), t).subs(t, 0))
+
+D = "Approximation & Newton"
+C(D, "A power close to 1",
+  "Use the linear approximation of f(x) = x¹⁰ at x₀ = 1 to estimate 1.02¹⁰.",
+  ("1.2", "n:1.2"),
+  [("1.02", "n:1.02"), ("1.0", "n:1"), ("1.25", "n:1.25"), ("1.12", "n:1.12")],
+  "f(1) = 1, f′(x) = 10x⁹, so f′(1) = 10.",
+  "1.02¹⁰ ≈ 1 + 10 × 0.02 = <b>1.2</b> (the true value is 1.219 — the approximation errs on the low side because x¹⁰ curves up).",
+  chk=1 + 10 * Rational(2, 100))
+C(D, "ln of a number near 1",
+  "Using the tangent to ln x at x₀ = 1, estimate ln 1.05.",
+  ("0.05", "n:0.05"),
+  [("0.0488", "n:0.0488"), ("1.05", "n:1.05"), ("0.5", "n:0.5"), ("0.005", "n:0.005")],
+  "The tangent at 1 is y = x − 1.",
+  "ln 1.05 ≈ 1.05 − 1 = <b>0.05</b>. 0.0488 is the exact value — the approximation, not the calculator, is asked for.",
+  chk=Rational(105, 100) - 1)
+C(D, "Newton on a quadratic",
+  "One step of Newton's method on f(x) = x² − 2x − 5, starting from x₀ = 4. What is x₁?",
+  ("3.5", "n:3.5"),
+  [("4.5", "n:4.5"), ("3.25", "n:3.25"), ("3.449", "n:3.449"), ("3", "n:3")],
+  "f(4) = 3, f′(x) = 2x − 2, so f′(4) = 6.",
+  "x₁ = 4 − 3⁄6 = <b>3.5</b>. 4.5 adds the correction instead of subtracting it; 3.449 = 1 + √6 is the root itself.",
+  chk=4 - Rational(4 ** 2 - 2 * 4 - 5, 2 * 4 - 2))
+C(D, "When Newton cannot start",
+  "Newton's method is applied to f(x) = x² − 4 from x₀ = 0. What happens at the first step?",
+  ("The step is undefined, because f′(0) = 0", "t:undef"),
+  [("x₁ = 2 straight away", "t:2"), ("x₁ = −2 straight away", "t:-2"), ("x₁ = 4", "t:4"), ("It converges slowly to 2", "t:slow")],
+  "x₁ = x₀ − f(x₀) ⁄ f′(x₀). What is f′(0)?",
+  "f′(x) = 2x, f′(0) = 0: the formula divides by zero — <b>the step is undefined</b>. Geometrically, the tangent at x = 0 is horizontal and never meets the x-axis. Start from any x₀ ≠ 0.",
+  chk=val("t:undef"))
+
+D = "Elasticity"
+C(D, "Elasticity of a curved demand",
+  "Demand q = 500 − 2p². What is the price elasticity at p = 10?",
+  ("≈ −1.33", "n:-4/3"),
+  [("−0.75", "n:-0.75"), ("−40", "n:-40"), ("≈ 1.33", "n:4/3"), ("≈ −0.13", "n:-2/15")],
+  "η = q′(p) · p ⁄ q, with q′ = −4p.",
+  "q(10) = 300, q′(10) = −40. η = −40 × 10 ⁄ 300 = <b>−4⁄3 ≈ −1.33</b>: elastic.",
+  chk=Rational(-40 * 10, 300))
+C(D, "Elastic demand and a price cut",
+  "At the current price, η = −2.5. What does a small price cut do to revenue?",
+  ("Revenue rises", "t:up"),
+  [("Revenue falls", "t:down"), ("Revenue stays the same", "t:same"), ("Quantity falls", "t:qdown"), ("It cannot be known from η", "t:unknown")],
+  "|η| > 1: quantity reacts more than proportionally to price.",
+  "A 1% cut brings about 2.5% more sales, so revenue rises by roughly 1.5%: <b>revenue rises</b>. With elastic demand, price and revenue move in opposite directions.",
+  chk=val("t:up"))
+C(D, "A constant-elasticity demand",
+  "Demand q = 1 000 p<sup>−0.6</sup>. What is the price elasticity?",
+  ("−0.6, at every price", "t:-0.6"),
+  [("−600 p<sup>−1.6</sup>", "t:-600p"), ("−0.4", "t:-0.4"), ("0.6", "t:0.6"), ("It depends on p", "t:dep")],
+  "q′ = −600 p<sup>−1.6</sup>. Compute q′ · p ⁄ q.",
+  "q′ · p ⁄ q = −600 p<sup>−1.6</sup> · p ⁄ (1 000 p<sup>−0.6</sup>) = <b>−0.6</b>, whatever p is. For q = k·pᵃ the elasticity is always a.",
+  chk=val("t:-0.6"))
+C(D, "Elasticity of a straight demand",
+  "Demand q = 60 − p. What is the price elasticity at p = 20?",
+  ("−0.5", "n:-0.5"),
+  [("−2", "n:-2"), ("−1", "n:-1"), ("0.5", "n:0.5"), ("−20", "n:-20")],
+  "η = q′ · p ⁄ q with q′ = −1 and q(20) = 40.",
+  "η = −1 × 20 ⁄ 40 = <b>−0.5</b>: inelastic here. −2 inverts p ⁄ q.",
+  chk=Rational(-20, 40))
+
+D = "Critical points & concavity"
+C(D, "The lowest value of a parabola",
+  "What is the minimum VALUE of f(x) = x² − 8x + 30?",
+  ("14", "n:14"),
+  [("4", "n:4"), ("30", "n:30"), ("−14", "n:-14"), ("16", "n:16")],
+  "Find where f′ = 0, then compute f there. The question asks for the value, not the x.",
+  "f′ = 2x − 8 = 0 ⇔ x = 4; f(4) = 16 − 32 + 30 = <b>14</b>. 4 is where the minimum is.",
+  chk=(x ** 2 - 8 * x + 30).subs(x, 4))
+C(D, "A maximum on an interval",
+  "What is the largest value of f(x) = −x² + 6x on the interval [0, 4]?",
+  ("9", "n:9"),
+  [("8", "n:8"), ("3", "n:3"), ("0", "n:0"), ("16", "n:16")],
+  "Compare f at the critical point inside the interval with f at both ends.",
+  "f′ = −2x + 6 = 0 ⇔ x = 3 ∈ [0, 4]; f(3) = 9, f(0) = 0, f(4) = 8. Maximum <b>9</b>. 8 is the value at the end point.",
+  chk=max((-x ** 2 + 6 * x).subs(x, v) for v in (0, 3, 4)))
+C(D, "Ordering costs",
+  f"A shop's yearly stock cost is C(q) = q + {F('400', 'q')}, where q is the order size (q > 0). Which order size minimises it?",
+  ("q = 20", "n:20"),
+  [("q = 400", "n:400"), ("q = 10", "n:10"), ("q = 40", "n:40"), ("q = 200", "n:200")],
+  "C′(q) = 1 − 400⁄q². Set it to zero.",
+  "q² = 400 ⇔ <b>q = 20</b> (C = 40). C″ = 800⁄q³ > 0, so it is a minimum. 40 is the cost, not the order size.",
+  chk=[r for r in solve(1 - 400 / q ** 2, q) if r > 0][0])
+
 # ----------------------------------------------------------------------
 # checks that need more than one line
 # ----------------------------------------------------------------------
@@ -822,7 +1295,13 @@ assert expand_log(log(x ** 2 * y / z ** 3), force=True) == 2 * log(x) + log(y) -
 # verify every card: the right option equals the recomputed answer,
 # and no distractor does
 # ----------------------------------------------------------------------
-assert len(CARDS) == 99, len(CARDS)
+assert len(CARDS) == 165, len(CARDS)
+# keep each category together, in the order the categories first appear
+ORDER = []
+for c in CARDS:
+    if c["cat"] not in ORDER:
+        ORDER.append(c["cat"])
+CARDS.sort(key=lambda c: ORDER.index(c["cat"]))
 for i, c in enumerate(CARDS, 1):
     R = val(c["right"][1])
     chk = c["chk"]
@@ -839,12 +1318,12 @@ for i, c in enumerate(CARDS, 1):
             assert not same(w, W[k]), f"card {i}: distractors {k} and {j} are equal"
 
 # ----------------------------------------------------------------------
-# position plan: 99 slots, A–D 20 each and E (none of the above) 19,
+# position plan: 165 slots, 33 each for A–D and for E (none of the above),
 # never three alike in a row; fixed seed so a rebuild does not reshuffle
 # ----------------------------------------------------------------------
 rng = random.Random(545)
 while True:
-    plan = [0] * 20 + [1] * 20 + [2] * 20 + [3] * 20 + [4] * 19
+    plan = [0] * 33 + [1] * 33 + [2] * 33 + [3] * 33 + [4] * 33
     rng.shuffle(plan)
     if all(not (plan[i] == plan[i + 1] == plan[i + 2]) for i in range(len(plan) - 2)):
         break

@@ -288,7 +288,7 @@ listed; shared login, no class password.
   the page source like every homework solution in this repo. It stops a
   student reading the answers instead of doing the work; it does not stop a
   determined one pressing ⌥⌘U. Nothing confidential in a solution, ever.
-- **`exam-cards.html` — 99 midterm practice cards (28 Oct 2026).** Jan Erik
+- **`exam-cards.html` — 165 midterm practice cards (28 Oct 2026; 99, then 66 more the same day).** Jan Erik
   sent the four midterm papers (A–D) as examples and said "DO NOT USE ANY OF
   THESE QUESTIONS": the cards train the same skills on different functions,
   numbers and situations, and **no midterm paper, stem or key is in this
@@ -319,5 +319,24 @@ listed; shared login, no class password.
   pages; "Lock again" hides it again. An instructor device (`jem_fb_session`,
   not in 🎓 student view) always sees the deck, with a bar saying whether
   students can. A classroom gate: the cards are in the page source.
+  **Second set + random tests (same day).** 66 more cards (165; positions
+  33 each for A–E; categories kept together by a sort, so card ids c01…c165
+  follow category order). A **random test** draws N cards (5–50, all topics
+  or one), one point when the FIRST click is right, no hints until answered;
+  the score is **points per card** (0–1). Records: every finished test in
+  `qm1_examruns` (device) and `qm1/<sid>/examruns` (POST, merged on load) —
+  the personal top 5 with date, time and duration; the **class top 5,
+  anonymous**, at `qm1/_exambest/<token>` = the student's best test of
+  **10+ cards**, one row per student; the token is random, made once, kept
+  in `qm1/<sid>/examtok` (so no name on the board; someone who guesses a
+  sid can still find that student's token — the same exposure as the rest
+  of `<sid>`). Ranked by points per card, then more cards, then faster per
+  card. Instructor devices and the hidden `_jem` never post. Both paths work
+  under the deployed `$sid` wildcard (world-read/write); a stricter
+  `_exambest` block (0 ≤ a ≤ 1, 10 ≤ n ≤ 200) is in
+  `firebase-database-rules.json`, effective once published. A classroom
+  board: anyone could write a fake row. Probed headlessly with a stubbed
+  database: test → 0.80, run posted to `examruns` and `_exambest`, a
+  5-card row kept off the board, no overflow at 400 px.
 - The hub lists **both semesters** in one grid with a `.semhead` divider, which
   is the only layout this hub has that `HEG/statistics/index.html` does not.
