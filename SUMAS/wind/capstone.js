@@ -36,6 +36,11 @@ window.CAP = (function () {
   var MIRROR = K + '_capdone_' + MOD;
   var done = {};
   try { done = JSON.parse(localStorage.getItem(MIRROR) || '{}'); } catch (e) {}
+  /* Steps done on another device: login.js merges them into progress.js's
+     own key (<K>_done_<mod>) at sign-in, not into this mirror — take them
+     from there, or a second browser shows the week as not started. */
+  try { var pd = JSON.parse(localStorage.getItem(K + '_done_' + MOD) || '{}') || {};
+        Object.keys(pd).forEach(function (id) { if (pd[id]) done[id] = true; }); } catch (e) {}
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -190,6 +195,13 @@ window.CAP = (function () {
     var picks={}; try{picks=JSON.parse(localStorage.getItem(key)||'{}');}catch(e){}
     if(o.score!==false)window.COURSE_QUIZ=Q;   /* progress.js pushes the question text for the dashboard */
     box.innerHTML='';
+    /* ⚠ the score line must exist BEFORE the questions: a replayed pick
+       calls finish(), and until 28 Oct 2026 `sc` was still undefined there —
+       the throw stopped the quiz after question 1 and, from CAP.recall, the
+       rest of the page's script, so the self-check vanished in any browser
+       where the student had already answered (Marilou, Aron, OMBA500). */
+    var sc=document.createElement('div'); sc.className='qscore';
+    var settles=[];
     Q.forEach(function(it,i){
       var d=document.createElement('div'); d.className='q';
       d.innerHTML='<div class="qt"><span class="n">'+(i+1)+'</span>'+esc(it.q)+'</div><div class="opts">'+
@@ -205,9 +217,22 @@ window.CAP = (function () {
         finish();
       }
       d.querySelectorAll('.opt').forEach(function(b){ b.addEventListener('click',function(){ settle(+b.getAttribute('data-j'),false); }); });
+      settles[i]=settle;
       if(picks[i]!=null)settle(picks[i],true);
     });
-    var sc=document.createElement('div'); sc.className='qscore'; box.appendChild(sc);
+    box.appendChild(sc);
+    /* answers given on another device: <ns>/<sid>/mod/<mod>/quiz/q<i>.p
+       (progress.js writes it; the recall opener is not stored remotely) */
+    if(o.score!==false)(function(){
+      var a=null; try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}
+      if(!a||!a.sid||!window.fetch)return;
+      var DB=(window.CourseConfig&&window.CourseConfig.DB)||'https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app';
+      fetch(DB+'/'+K+'/'+encodeURIComponent(a.sid)+'/mod/'+encodeURIComponent(MOD)+'/quiz.json').then(function(r){return r.ok?r.json():null;}).then(function(rq){
+        if(!rq||typeof rq!=='object')return; var n=0;
+        Q.forEach(function(it,i){ var x=rq['q'+i]; if(picks[i]==null&&x&&typeof x.p==='number'&&x.p>=0&&x.p<it.opts.length){ picks[i]=x.p; settles[i](x.p,true); n++; } });
+        if(n){ try{localStorage.setItem(key,JSON.stringify(picks));}catch(e){} finish(); }
+      }).catch(function(){});
+    })();
     function finish(){
       var n=Object.keys(picks).length, right=0; Q.forEach(function(it,i){ if(picks[i]===it.a)right++; });
       if(n<Q.length){ sc.innerHTML=n+' of '+Q.length+' answered.'; return; }

@@ -237,6 +237,7 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   spoken script in `_private/` (never committed):
   | Week | Deck | PDF | Script | Page section | Canvas boxes | New fields |
   |---|---|---|---|---|---|---|
+  | 3 | `week3-slides.html` (35, added 28 Oct 2026, 18:15–20:15) — learning curves and AI as an analyst | `w3slides/week3-learning-curves-ai.pdf` | `week3-transcript.md` (≈14,000 words, word for word) | `#wright`, the existing fitter (no data-step) | the existing Week 3 boxes `fit`/`sens`, `audit`/`policy` | — |
   | 4 | `week4-economics-slides.html` (27) — how an offshore wind farm makes or loses money | `w4slides/week4-wind-farm-economics.pdf` | `week4-economics-transcript.md` | `#calc`, the wind-farm calculator (no data-step) | `shocks`, `bid` | — |
   | 5 | `week5-slides.html` (28) — the grid is the bottleneck | `w5slides/week5-grid-bottleneck.pdf` | `week5-transcript.md` | `s6` team roles · `s7 #grid` table, revenue calculator, `gridq` sort | `gridbind`, `gridind` | `w5_role`, `w5_grid` |
   | 6 | `week6-slides.html` (26) — the supply chain and China | `w6slides/week6-supply-chain-china.pdf` | `week6-transcript.md` | `s7` team roles · `s8 #supply` table, price-of-security slider, `supq` sort | `dep`, `rome` | `w6_role`, `w6_supply` |
@@ -273,6 +274,8 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   slides are listed in its "Learning focus · required materials" card**
   (`<h3>Slides</h3>` before `<h3>Read</h3>`; Week 2 "Slides · read both"), as
   well as at the top of Weeks 4–6 and on the hub cards (`SLIDES` in
-  `index.html`). A new deck must be added in all three places. Weeks 1, 3
-  and 7–10 have no deck in a learning-focus card (Week 1 has no such card;
+  `index.html`). A new deck must be added in all three places. Weeks 1
+  and 7–10 have no deck in a learning-focus card (Week 3 got one on 28 Oct 2026) (Week 1 has no such card;
   `week1-slides.html` is the instructor's session deck with notes).
+
+- **Week 3 deck (28 Oct 2026, Jan Erik: "there are no slides for week 3? if not add them and give me a transcript for two hours")**: `week3-slides.html`, 35 slides, generated from `week6-slides.html`'s head and engine (the build script lived in the session scratchpad, not in `_build/`; edit the HTML directly from now on). Every number is computed from the page's own fitter rows (19.8 %, R² 0.94; ±20 % per row; 2040 at 600 GW: 58.5 / 49.7 / 41.8 from $79) or sourced on the slide (Wright 1936, Nagy 2013, Way 2022, IRENA 2023 falls 90/70/63 %, UK AR5, Mata v. Avianca, Ørsted Q3/FY 2023, Vinuesa, TOP500 Nov 2024, Google Aug 2025). The exercises use the existing Week 3 canvas boxes, so `canvas.html` did not change. The script is `_private/week3-transcript.md`; it says to check Ørsted's full-year figures in the 2023 annual report before speaking. Linked in all three places (top of `week3.html`, its learning-focus card, `index.html` `SLIDES[3]`). Week 3's Wednesday in `schedule.js` was 21 Oct 2026; the deck names no date.

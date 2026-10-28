@@ -76,7 +76,7 @@ same from `/SUMAS/omba401/week3.html` and `/ideas-e1410/session1.html`.
 
 | File | Does |
 |---|---|
-| `config.js` | reads `courses.json`, exposes `Course.get(id)`; every other module depends on it |
+| `config.js` | reads `courses.json`, exposes `Course.get(id)`; every other module depends on it. `CourseConfig.bySchool(list)` groups registry courses by school folder — the course pickers in admin2, chat and insights are one `<optgroup>` per school (28 Oct 2026) |
 | `progress.js` | student identity, active-time, per-section completion, scores → DB |
 | `login.js` | name + personal code, so a student resumes on any device |
 | `announce.js` | cohort announcement banner (instructor posts it from admin) |

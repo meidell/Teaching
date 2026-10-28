@@ -181,6 +181,26 @@ window.CourseConfig = (function () {
         return k !== id && COURSES[k].login && COURSES[k].school === me.school;
       }).map(function (k) { return { id:k, key:COURSES[k].key||k, ns:COURSES[k].ns, label:COURSES[k].label||k }; });
     },
+    /* Registry courses grouped by school folder (the first segment of
+       `dir`, as adminnav.js does; the web root and lower-case folders such
+       as demo/ go under "Other"), schools in a
+       fixed order, courses by code — for the instructor pages' course
+       pickers, which render one <optgroup> per school (28 Oct 2026). */
+    bySchool: function (list) {
+      var ORDER = ["SUMAS", "UMEF", "GBS", "HEG", "Kalaidos", "ESM"], g = {};
+      (list || []).forEach(function (c) {
+        var d = String(c.dir || ""), s = d.indexOf("/") > 0 && /^[A-Z]/.test(d) ? d.split("/")[0] : "Other";
+        (g[s] = g[s] || []).push(c);
+      });
+      return Object.keys(g).sort(function (a, b) {
+        var i = ORDER.indexOf(a), j = ORDER.indexOf(b);
+        return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b);
+      }).map(function (s) {
+        return { school: s, courses: g[s].sort(function (a, b) {
+          return String(a.code || a.id).localeCompare(String(b.code || b.id));
+        }) };
+      });
+    },
     /* the full /courses.json, for pages that need titles, modules, status */
     load: function () {
       /* `no-cache` = revalidate with the server every time (a conditional

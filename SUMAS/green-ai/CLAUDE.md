@@ -23,6 +23,15 @@ in schools in India, Dubai, Bangkok and Switzerland; everything is online and re
   uses the Friday 23:59 of each deadline week; the final report (12 Feb) and the slides
   (14 Feb) are placeholders marked "to be confirmed". The calendar table is written twice,
   in `index.html` and `session1.html` — change both.
+- ✅ **Confirmed 28 Oct 2026 (Giorgia):** live sessions Fri 6, 13, 20 Nov 2026,
+  13:00–14:30 CET, on the SUMAS Zoom account (credentials in Jan Erik's email —
+  NEVER in this repo). Her mail said "19 November"; Jan Erik had proposed Fri 20,
+  so the pages say 20 and the reply asks her to confirm. Final report due
+  **Sun 28 Feb 2027, 23:59 CET** (slides use the same date in `CAPSTONE_SCHEDULE`).
+  Presentations: **with Jan Erik only**, arranged with each student. The "professor
+  and the project partner" wording is gone from every page. WIP sessions are proposed to the students
+  directly. Jan Erik asked for a recurring Zoom meeting; when the link comes, it goes on
+  `index.html` (the banner's "Live on Zoom" line) — a meeting link, not the account.
 - **Pages:** `index.html` (hub), `session1–3.html` (run sheets on the
   GBS/enterprise-security archetype: `green.css` = esc.css core + a light SUMAS top bar +
   additions; `session.js` = the engine — a `.step` is done when its `[data-done]` button is

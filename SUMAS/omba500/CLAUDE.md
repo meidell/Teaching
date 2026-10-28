@@ -11,6 +11,16 @@ Good - Online Masters* (id 1307). `SUMAS/wind` is the **Green Term** edition
 what is hidden. Everything the `SUMAS/wind` section says about the engine
 applies. What differs:
 
+- ⚠ **Self-check replay bug, fixed 28 Oct 2026 (all three `capstone.js` copies:
+  omba500, wind, capstone-ba).** Since 8 Oct, a page reloaded in a browser where
+  the student had already answered threw in `quizEngine` (`sc` used before it
+  existed): the quiz stopped after question 1, and from `CAP.recall` the rest of
+  the inline script died, so the end-of-week self-check never rendered. A fresh
+  browser worked — hence Marilou (Chrome broken, Safari fine) and Aron (the
+  reverse). Tested in Playwright Chromium + WebKit, every week, fresh and after
+  use. Same day: the quiz now also restores picks from
+  `<ns>/<sid>/mod/<mod>/quiz` and the steps from `<K>_done_<mod>`, so answers
+  given on one device show on another.
 - **Own id / ns / keyPrefix `omba500`**, code `OMBA500` (so the SUMAS
   landing page files it under *Online MBA*), term "Online Masters 2026".
   Registry entry in `courses.json` (same 27 modules, hrefs moved), mirror in
