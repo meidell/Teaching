@@ -86,3 +86,12 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   memo to `w3_memo` (every member's node) and marks s7 for the whole team;
   download = a printable HTML. Sealing the Session 3 prediction no longer
   marks s7. Probed end to end (7/7, no errors, no overflow at 390 px).
+  Same day, second pass: **the memo goes online on the team's own Netlify
+  site** (Step 7 = 7a finish · 7b download as index.html in a folder
+  `orbita-memo` · 7c Netlify Drop + rename `orbita-kpi-team-<x>-…` · 7d hand
+  in). Team field `f_site` → `w3_site`; Hand in refuses without a
+  `*.netlify.app` address and posts `_wall/w3s` (n = team label, src = URL),
+  listed as "The class's memos". The downloaded page carries
+  `robots: noindex` and a "fictional company" footer. No Google/Bing
+  registration (that is creator's experiment, not BI's). Individual work
+  stays on the page. Times: Step 4 15 min, Step 7 25 min.
