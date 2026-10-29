@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · Business Intelligence · GBS</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<style>
+/* =====================================================================
+   BI · Jeopardy for the room screen (29 Oct 2026). ?set=s2 = Session 2,
+   "KPIs that survive contact" — the closing team quiz that replaced the
+   red team. Engine copied from UMEF/mfb545/jeopardy-en.html (6 columns,
+   5 teams). Projector page: no progress, no sign-in, never counted;
+   scores are kept in this browser only (bi_jeo_<set>).
+   Every ÒRBITA number below is the session page's own (week3.html),
+   recomputed in Python on 29 Oct 2026.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#0B1633;color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#F7B267;font-size:13px;}
+.top a{color:#B9C6E4;font-size:13px;text-decoration:none;margin-left:auto;}
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:0 20px;}
+.cat{background:#101F44;border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(11px,1.4vw,16px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cat.own{background:#7A3E0E;}
+.cell{background:#1D3470;border:none;border-radius:10px;color:#F7B267;font:800 clamp(20px,3.2vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2B4A98;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:150px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#F7B267;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(6,12,30,.95);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:1000px;width:100%;text-align:center;}
+#modal .mc{color:#F7B267;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.6vw,42px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.3vw,27px);color:#F7B267;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#0B1633;border:none;border-radius:30px;padding:10px 16px;font:800 14px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#B9C6E4;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#B9C6E4;text-decoration:underline;cursor:pointer;font:inherit;}
+</style>
+</head>
+<body data-course="bi">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="week3.html">← Session 2</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Click a square · "Answer" · then the team that answered right (+) or wrong (−). Team names can be edited. <button id="reset">New game</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  s2:{name:'Session 2 · KPIs that survive contact · ÒRBITA',cats:[
+    ['ÒRBITA\'s two numbers',[
+      ['The churn figure finance showed the board.','2.6 % — 22 cancellations by paying customers ÷ 840 paying, unpaused, paid-up customers.'],
+      ['The churn figure billing printed — and the retention budget was set on.','4.1 % — 41 cancellations ÷ all 1,000 accounts on the books.'],
+      ['Of the 41 cancellations in October, how many were by paying customers?','22 (the others: 12 paused, 3 trials, 4 unpaid).'],
+      ['Which accounts does finance leave out of the base that billing keeps in?','Paused accounts (95), trial accounts (40) and accounts unpaid for 30+ days (25).'],
+      ['Why are both figures "right"?','Same month, same data, two definitions — and neither definition was written down where the other could read it.']]],
+    ['The definition machine',[
+      ['How many switches does the definition machine have?','Five: A to E.'],
+      ['Switch B, "a pause is itself a churn", only works if which switch is on?','A — paused subscribers are on the books.'],
+      ['Every switch on: what monthly churn does the machine show?','16.1 % — 161 ÷ 1,000.'],
+      ['The lowest rate the machine can give, and the switches that give it.','2.0 % — 17 ÷ 840: only paying accounts, reversed cancellations subtracted (all switches off).'],
+      ['Finish the sentence: "A definition is a set of filters on a …"','… grain. Each switch is one line of a WHERE clause over the rows.']]],
+    ['Metric trees',[
+      ['The four levels of a metric tree, top to bottom.','Strategic priority → outcome KPI → driver KPIs → inputs.'],
+      ['The test an input has to pass.','A named person can move it by Friday.'],
+      ['Outcome KPIs at the top of a tree are usually leading or lagging?','Lagging — they record the result after it has happened.'],
+      ['The outcome KPI in ÒRBITA\'s example retention tree.','90-day retention of new subscribers, by city.'],
+      ['Why is "improve the customer experience" not an input?','No number, no owner, and nobody can move it by Friday.']]],
+    ['The KPI contract',[
+      ['How many fields does a KPI contract have?','Eight.'],
+      ['Name all eight fields.','Name · formula · source · grain · owner · cadence · target · counter-metric.'],
+      ['What does the "grain" field say?','What one row is before it is counted (one subscriber, one ride, one ticket).'],
+      ['The counter-metric for "tickets closed per day".','Tickets reopened within 7 days.'],
+      ['In ÒRBITA\'s example contract, the counter-metric for 90-day retention.','Discount depth per retained subscriber — retention bought with discounts.']]],
+    ['Leading · lagging · Goodhart',[
+      ['Leading, lagging or vanity: total app downloads since launch.','Vanity — it only goes up and drives no decision.'],
+      ['Leading, lagging or vanity: rides per new subscriber in their first 14 days.','Leading — it moves before retention does, and a city manager can act on it this week.'],
+      ['State Goodhart\'s law.','When a measure becomes a target, it ceases to be a good measure.'],
+      ['In the page\'s Goodhart model, full bonus on tickets closed: what happens to reopened tickets and satisfaction?','Reopened rises from 8 % to 38 %; satisfaction falls from 4.3 to 2.9 (while tickets closed rise from 120 to 192 a day).'],
+      ['Why does a dashboard with only lagging KPIs "report the past"?','Lagging KPIs record outcomes after they happen; nothing on it can be acted on this week.']]],
+    ['Your memo',[
+      ['Show your memo on screen and read its address aloud.','The judge: the team\'s Netlify page opens and shows the memo.'],
+      ['Read out your team\'s churn definition — and the rate it gives.','The judge: a definition with switches named and a rate, as in part 1 of the memo.'],
+      ['Name your outcome KPI, and the person who owns it.','The judge: both are in the memo\'s tree and contract, and the owner is a role ÒRBITA has.'],
+      ['Read out one of your driver KPIs\' counter-metric — and how someone would game the KPI without it.','The judge: a counter-metric that actually moves when the KPI is gamed.'],
+      ['Your recommendation to the CFO, in one sentence, without reading it.','The judge: it matches part 4 of the memo and names which churn figure to report.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'s2';
+var S=SETS[setId]||SETS.s2, SK='bi_jeo_'+setId;
+var st={used:{},teams:[['Team A',0],['Team B',0],['Team C',0],['Team D',0],['Team E',0]]};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams)st=o;}catch(e){}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='',n=S.cats.length;
+  S.cats.forEach(function(c,ci){h+='<div class="cat'+(ci===n-1?' own':'')+'">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Answer</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Close</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Clear the scores and start again?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

@@ -95,3 +95,15 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   `robots: noindex` and a "fictional company" footer. No Google/Bing
   registration (that is creator's experiment, not BI's). Individual work
   stays on the page. Times: Step 4 15 min, Step 7 25 min.
+  Third pass, same day: **no peer rating** (Jan Erik: "I do not want the
+  teams to rate each other"). The red-team step is hidden as `#rtOld`
+  (display:none — its script still binds to its elements; its markDone
+  now targets `rtOld`, so it can never tick a counted step). The memo has
+  FOUR parts (definition · tree · contract · recommendation). Visible
+  steps: 1–4, 5 = contract (`s6`), 6 = publish + hand in (`s7`), 7 = the
+  **team quiz** (`s5`, placed last; button "We played the quiz"). The quiz
+  is **`jeopardy.html?set=s2`** — the room screen, MFB 545's engine, 6
+  categories × 5 (the last, "Your memo", asks the team on turn about its
+  own memo: the instructor's check that the work was done), 5 teams A–E,
+  scores in this browser only (`bi_jeo_s2`). Not linked from any student
+  page; its answers are in its source, like every Jeopardy in the repo.
