@@ -71,3 +71,18 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   `_wall` every 8 s. Tamperable by design, like every wall. A new session
   page with a team artifact calls `BiTeams.field(id,key)` /
   `BiTeams.state(key,apply)` and `BiTeams.share()` on its hand-in button.
+- ⚠ **Session 2 (`week3.html`) turned into a SELF-RUN MANDATE, 29 Oct 2026**
+  (the day of the session; Jan Erik: "a mandate the students can work on on
+  their own (groups) and then give me a deliverable — like creator-economy
+  week3"). The banner is the CFO's mandate and names the deliverable: a
+  five-part **KPI memo** (team definition · tree · contract · red-team
+  finding · recommendation). Every step has numbered instructions; no "on
+  the screen" / "when told" / "the room decides"; clocks are durations.
+  New team fields: `f_tdef` → `w3_tdef` (data-work `w3_team_def`), `f_rec`
+  → `w3_rec`; state `w3_handin`. Step 5 gained **Load their tree** (reads
+  `_wall/tt_<T>_w3_tp…ti`, newest row). Step 7 is now the hand-in: the memo
+  is built live, the verdicts ON this team are found by reading every other
+  team's `w3_def_txt` for "[Team <me> ·", and **Hand in** writes the plain
+  memo to `w3_memo` (every member's node) and marks s7 for the whole team;
+  download = a printable HTML. Sealing the Session 3 prediction no longer
+  marks s7. Probed end to end (7/7, no errors, no overflow at 390 px).
