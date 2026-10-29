@@ -144,6 +144,23 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   the live checklist and role box too. No field ids, steps or toys changed.
   Same rule for later sessions: name the thing ("the reasons that held up in
   Session 2, Step 6"), never a bare "the list".
+- ⚠ **Session 3 REBUILT 29 Oct 2026 (the day of the session) from Jan
+  Erik's own text, "Get Your Page Quoted by AI"** — students follow it alone,
+  the instructor walks around. Replaces everything above for week3.html (the
+  28 Oct plain-words pass included). Teams of 2–3 (not A–E); Intro rules A–D
+  + six steps = 7 `.step`s, `total:7` unchanged. Pages are hosted by the teams
+  on **Netlify** (Netlify Drop, renamed project), registered in **Google
+  Search Console** (URL prefix, HTML-file verification, Request indexing) and
+  **Bing Webmaster Tools** (import from GSC, URL Submission); measuring is in
+  each team's own **Google Sheet** (9 columns, Week 0 = 9 rows). Fields:
+  `w3_team`, `w3_q/q2/q3`, `w3_sheet`, `w3_base_top`, `w3_facts`, `w3_url`,
+  `w3_pubtime`, `w3_gsc`, `w3_bing`, `w3_who`, `w3_hyp`; the page address is
+  posted to `_wall/w3` (n = team name ≤ 40, meta = Q1 ≤ 120). Step 3 builds
+  Jan Erik's prompt verbatim with the team's fields filled in, plus a Copy
+  button. Experiment: version A frozen 3 weekly checks, then version B (first
+  paragraph only) if GSC says "URL is on Google". **The lab below (`live/`,
+  publish_live.py) is no longer used by Session 3**; the hub's link to it was
+  removed. "ChatGPT's web search draws on Bing" is Jan Erik's wording.
 - ⚠ **The lab — `live/` — is the experiment.** `_build/publish_live.py`
   (asks for the instructor password, reads every sid's `work/`, keeps the
   newest track-B submission per team) writes `live/<slug>.html`,

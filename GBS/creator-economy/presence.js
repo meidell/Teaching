@@ -194,7 +194,7 @@ window.StatsPresence = (function () {
   var SESSIONS=[
     {mod:'w1', n:1, name:'Week 01 · One question, fifteen phones, and the pipeline', pages:['w1']},
     {mod:'w2', n:2, name:'Week 02 · Reverse-engineer a winner', pages:['w2']},
-    {mod:'w3', n:3, name:'Week 03 · Write a page and put it online', pages:['w3']},
+    {mod:'w3', n:3, name:'Week 03 · Get your page quoted by AI', pages:['w3']},
     {mod:'w4', n:4, name:'Week 04 · The creator draft', pages:['w4']},
     {mod:'w5', n:5, name:'Week 05 · The negotiation', pages:['w5']},
     {mod:'w6', n:6, name:'Week 06 · Find the lie', pages:['w6']},
