@@ -117,3 +117,8 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   next read. Names come from the board and from `_chat/_people` (`_`-keys
   skipped). Needs a signed-in student (or the instructor session). No rules
   change. On the hub, Session 1 and Session 2 alike (one file).
+- **Six teams, A–F, from 29 Oct 2026** (Jan Erik: "create an extra group").
+  `teams.js` IDS + the `J:` regex, `TEAMS` and the `[Team X ·` regexes in
+  week2/week3, Session 1's decision wall `T:<A–F>`, and the quiz board
+  (adds Team F to a saved score sheet). The A–E *switches* of the
+  definition machine are not teams and stay five.

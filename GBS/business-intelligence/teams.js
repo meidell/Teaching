@@ -1,7 +1,7 @@
 /* =====================================================================
    GBS · Business Intelligence — THE TEAMS, and the team's shared answers.
 
-   Five teams (A–E, the ids every page already uses: the red-team chips,
+   Six teams (A–F since 29 Oct 2026; A–E before, the ids every page already uses: the red-team chips,
    "T:<A-E>" on the decision wall). Students join a team themselves, any
    member can rename it, and — since 22 Oct 2026 — a field that belongs to
    the TEAM (the sealed decision, the one number, the red-team verdict, the
@@ -37,7 +37,7 @@
    ===================================================================== */
 window.BiTeams=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",NS="bi";
-  var IDS=['A','B','C','D','E'],K='bi',MAXNAME=30,MAXV=500,POLL=8000;
+  var IDS=['A','B','C','D','E','F'],K='bi',MAXNAME=30,MAXV=500,POLL=8000;
   var pending=0,st={members:{},names:{},ok:true,loaded:false},hooks=[],el=null,opts={},started=false;
   var wallRaw=null,shared={},binds=[],applying=false;
   /* the board's styles travel with it, so the hub (which does not load bi.css) draws it too */
@@ -65,7 +65,7 @@ window.BiTeams=(function(){
       st.ok=res.ok;
       if(res.ok){
         var o=res.o,latest={},mem={},nm={};
-        rowsOf(o.teams).forEach(function(r){var m=/^J:([A-E]?)$/.exec(r.src||'');if(m&&r.n&&(!latest[r.n]||(r.ts||0)>latest[r.n].ts))latest[r.n]={t:m[1],ts:r.ts||0};});
+        rowsOf(o.teams).forEach(function(r){var m=/^J:([A-F]?)$/.exec(r.src||'');if(m&&r.n&&(!latest[r.n]||(r.ts||0)>latest[r.n].ts))latest[r.n]={t:m[1],ts:r.ts||0};});
         IDS.forEach(function(id){mem[id]=[];var b=null;rowsOf(o['tn_'+id]).forEach(function(r){var m=/^N:(.*)$/.exec(r.src||'');if(m&&m[1].trim()&&(!b||(r.ts||0)>=b.ts))b={v:m[1].trim(),ts:r.ts||0};});if(b)nm[id]=b.v;});
         Object.keys(latest).sort().forEach(function(n){if(latest[n].t)mem[latest[n].t].push(n);});
         wallRaw=o;
