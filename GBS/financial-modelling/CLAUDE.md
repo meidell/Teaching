@@ -111,8 +111,9 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   tornado (margin −0.98/+0.86, capex +0.40/−0.40, NWC −0.10/0, growth
   −0.03/+0.01) · +1 point each (margin +24.4 m, capex −32.2 m, NWC −2.0 m,
   growth +0.2 m) · why growth costs cash (per €1 of new revenue −0.058 in
-  its year, +0.042 after; at 9 % FCF −0.24/−0.10/+0.06 vs base) · value
-  driver formula (Koller et al.) · WACC/g · history vs plan both directions
+  its year, +0.042 after; at 9 % FCF −0.24/−0.10/+0.06 vs base) · [the
+  value-driver formula slide was DROPPED, 29 Oct: "too advanced"] · an
+  abbreviations slide (EV, EBITDA … PE in full words) · WACC/g · history vs plan both directions
   · margin jump (+€2.75 m FY2026) · inside/outside view (Kahneman &
   Lovallo 1993; Flyvbjerg) · football field · walk-away (BATNA, anchoring)
   · margin-for-a-price table · model risk (JPMorgan 2013 task force,
