@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/financial-modelling/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · Finance Modelling · GBS</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<style>
+/* =====================================================================
+   Finance Modelling · Jeopardy for the room screen (29 Oct 2026).
+   ?set=s2 = Session 2, "Can the board sign off the plan?" — the closing
+   team quiz. Engine = GBS/business-intelligence/jeopardy.html (from
+   MFB 545's). Scores in this browser only (finmod_jeo_<set>). Every
+   Meridia figure is week3.html's model, recomputed in Python 29 Oct 2026.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#0B1633;color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#F7B267;font-size:13px;}
+.top a{color:#B9C6E4;font-size:13px;text-decoration:none;margin-left:auto;}
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:0 20px;}
+.cat{background:#101F44;border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(11px,1.4vw,16px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cat.own{background:#7A3E0E;}
+.cell{background:#1D3470;border:none;border-radius:10px;color:#F7B267;font:800 clamp(20px,3.2vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2B4A98;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:150px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#F7B267;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(6,12,30,.95);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:1000px;width:100%;text-align:center;}
+#modal .mc{color:#F7B267;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.6vw,42px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.3vw,27px);color:#F7B267;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#0B1633;border:none;border-radius:30px;padding:10px 16px;font:800 14px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#B9C6E4;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#B9C6E4;text-decoration:underline;cursor:pointer;font:inherit;}
+</style>
+</head>
+<body data-course="finmod">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="week3.html">← Session 2</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Click a square · "Answer" · then the team that answered right (+) or wrong (−). Team names can be edited. <button id="reset">New game</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  s2:{name:'Session 2 · Can the board sign off the plan? · Meridia Cold',cats:[
+    ['Meridia and the sale',[
+      ['What exactly is for sale?','100 % of Meridia\'s 40.0 million shares — the whole company.'],
+      ['How do you get from enterprise value to the price the owners receive?','Subtract the €60.0 m net debt the buyer takes over: equity value = EV − net debt; ÷ 40.0 m shares for the price per share.'],
+      ['Boreal Logistics and Arco Partners: which is the strategic buyer, which the financial one — and what is the difference?','Boreal is strategic (merges Meridia into its network, saves costs); Arco is financial (private equity: no savings, borrows heavily, sells again in about five years).'],
+      ['What is a data room, and why does the plan matter in it?','The confidential folder buyers use to prepare their bids. Both buyers price from the plan in it.'],
+      ['Why is an over-optimistic plan bad for the seller?','Due diligence finds it: buyers cut their price or walk away, and the buyer\'s bank refuses to lend.']]],
+    ['What drives the value',[
+      ['Of growth, margin and capex, which one barely moves Meridia\'s value?','Revenue growth: 6.7 % → 9 % adds about €0.01 a share.'],
+      ['The margin from 16.1 % to 17.5 %, everything else at the base case: change in price per share?','About +€0.86 a share (+€34.2 m of enterprise value).'],
+      ['Capex from 8.0 % to 8.5 % of revenue: change in price per share?','About −€0.40 a share (−€16.1 m of enterprise value).'],
+      ['Why is faster growth worth so little in this model?','Every extra euro of revenue needs capex (8 %) and working capital (10 % of the increase), and the faster growth lasts only three years before the 2 % for ever.'],
+      ['One percentage point of margin, or one point of capex: which is worth more, and roughly how much each?','Capex: +1 point costs about €32 m of EV; +1 point of margin adds about €24 m.']]],
+    ['Is the plan credible?',[
+      ['Meridia\'s EBITDA margin in FY2025.','16.1 % (29.0 ÷ 180.4).'],
+      ['The most Meridia\'s margin has ever risen in one year.','About 0.8 points: 14.5 % → 15.3 % in FY2024.'],
+      ['How much extra EBITDA does the plan need in FY2026 compared with keeping today\'s margin?','About €2.75 m (196.6 × 1.4 points).'],
+      ['The plan\'s working capital is 10 % of new revenue. Meridia\'s history?','12–13 %: the plan is optimistic here — it ties up less cash than Meridia ever has.'],
+      ['The plan\'s capex is 8.5 % of revenue. Meridia\'s history — and what should a reviewer say?','7.5–7.9 %: the plan is cautious here. A reviewer reports both directions, not only the optimism.']]],
+    ['The value range',[
+      ['Price per share on management\'s plan.','€2.98 (EV €179.1 m).'],
+      ['Price per share on the base case.','€2.48 (EV €159.4 m).'],
+      ['Price per share on the lender\'s case.','€1.89 (EV €135.6 m).'],
+      ['How much of Meridia\'s value comes from the years after FY2028?','About 84 % of the enterprise value is the terminal value.'],
+      ['Base case, but the WACC is 9.5 % instead of 8.5 %: price per share?','About €1.95 — a buyer with a higher cost of capital pays less.']]],
+    ['The walk-away price',[
+      ['Why does a board fix its walk-away price before any offer arrives?','So it cannot be talked down during the negotiation.'],
+      ['What EBITDA margin does a price of €2.48 a share need, other assumptions at the base case?','16.1 % — the margin Meridia already earns.'],
+      ['And for €2.98 a share, with only the margin changing?','About 16.9 %.'],
+      ['Which buyer is most likely to price from the lender\'s case, and why?','Arco Partners: it borrows heavily, and its bank tests its own harsh case before lending.'],
+      ['Why might Boreal pay more than any of the three plan values?','Synergies: closing overlapping warehouses saves costs that only Boreal can capture — they are not in Meridia\'s plan.']]],
+    ['Your memo',[
+      ['Show your memo on screen and read its address aloud.','The judge: the team\'s Netlify page opens and shows the memo.'],
+      ['Your recommendation to the board, in one sentence, without reading it.','The judge: approve / approve with caveats / send back, with a reason, matching part 1.'],
+      ['Your walk-away price — and the assumption it rests on.','The judge: a price per share and one assumption, as in part 4.'],
+      ['One piece of evidence your memo asks management for before the board signs.','The judge: a concrete document or figure (contracts, price increases, cost plan), as in part 3.'],
+      ['Your value range in one sentence, and the plan your team believes.','The judge: matches part 2 and names one of the three plans.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'s2';
+var S=SETS[setId]||SETS.s2, SK='finmod_jeo_'+setId;
+var st={used:{},teams:[['Team A',0],['Team B',0],['Team C',0],['Team D',0],['Team E',0]]};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams)st=o;}catch(e){}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='',n=S.cats.length;
+  S.cats.forEach(function(c,ci){h+='<div class="cat'+(ci===n-1?' own':'')+'">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Answer</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Close</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Clear the scores and start again?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

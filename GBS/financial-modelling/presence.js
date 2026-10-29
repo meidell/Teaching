@@ -180,7 +180,7 @@ window.StatsPresence = (function () {
      (MBA406 has no A/B parts). The final exam (Week 10) is not a session. */
   var SESSIONS=[
     {mod:'w2', n:2, name:'Week 02 · The model nobody can audit', pages:['w2']},
-    {mod:'w3', n:3, name:'Week 03 · Error-checking as architecture', pages:['w3']},
+    {mod:'w3', n:3, name:'Week 03 · Can the board sign off the plan?', pages:['w3']},
     {mod:'w4', n:4, name:'Week 04 · The three statements, linked', pages:['w4']},
     {mod:'w5', n:5, name:'Week 05 · Forecast, plug, circularity', pages:['w5']},
     {mod:'w6', n:6, name:'Week 06 · Free cash flow, honestly', pages:['w6']},

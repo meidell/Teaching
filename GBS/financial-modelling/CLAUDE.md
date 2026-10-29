@@ -80,6 +80,30 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   `_private/meridia-cold-v02-key.xlsx`; the student-facing start file is
   `files/meridia-cold-v01-reference.xlsx` (S1's end state, linked from the
   banner). Run sheet `_private/week3-runsheet.md`.
+  ⚠ **REPLACED 29 Oct 2026, the day of the session, by a self-run group
+  MANDATE** (Jan Erik: "work independently as small groups … DO NOT make
+  this about excel training … something real they must solve"). The Excel
+  build above lives in git history only; Session 3 onwards may still assume
+  the v02 file (scenario switch, audit block) — decide whether to fold it
+  into a later session. **New `week3.html` — *Can the board sign off the
+  plan?*, `total:7`**: Meridia is for sale; before the data room opens the
+  board must approve management's plan (= the old "Boreal plan" case:
+  9 % / 17.5 % / capex 8.5 % / NWC 10 %); teams are the board's independent
+  reviewer. Steps: board pack (team names `w3m_team`) · what drives value
+  (in-page calculator = the v01 model line for line, presets base / plan /
+  lender; four one-at-a-time Δ €/share checks: +0.01 · +0.86 · −0.40 ·
+  0.00) · credibility vs history (margins 14.48 / 16.08, growth 5.50 %,
+  capex 7.87 %, NWC 12.96 % of new revenue, extra FY2026 EBITDA €2.75 m) ·
+  value range (2.98 / 2.48 / 1.89, TV 83.7 % of EV, WACC 9.5 % → €1.95) ·
+  walk-away price (margin-for-a-price solver: €2.48 → 16.09 %, €2.98 →
+  16.91 %) · memo (4 parts) → download as index.html in `meridia-memo` →
+  Netlify Drop (`meridia-review-team-…`) → hand in (`w3m_memo`, `w3m_site`,
+  refuses without a *.netlify.app address) · team quiz =
+  **`jeopardy.html?set=s2`** (BI's engine, 6 × 5, last category "Your
+  memo"; scores `finmod_jeo_s2`). One laptop per team: finmod has NO
+  `_wall`, so nothing syncs between devices and there is no class list —
+  the memo lands in the signed-in student's record. Every figure recomputed
+  in Python 29 Oct 2026; probed end to end 7/7, no overflow at 390 px.
   ⚠ **openpyxl writes post-2010 functions without their `_xlfn.` prefix** —
   ISFORMULA read #NAME? until written as `_xlfn.ISFORMULA`. Any generated
   workbook using IFS, XLOOKUP, ISFORMULA etc. needs the prefix.

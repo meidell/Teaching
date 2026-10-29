@@ -107,3 +107,13 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   own memo: the instructor's check that the work was done), 5 teams A–E,
   scores in this browser only (`bi_jeo_s2`). Not linked from any student
   page; its answers are in its source, like every Jeopardy in the repo.
+- **Anyone can add or remove anyone on the team board (29 Oct 2026, during
+  Session 2;** Jan Erik: "let all students the possibility to add or remove
+  team members. easier"). `teams.js`: a × beside every member (→ `J:` for
+  that name) and an "+ Add a member…" list on every team (moves the person
+  out of their old team). A change for someone else is a NEW POST row in
+  `_wall/teams` with their name — never the device's own row — and the
+  newest row per name wins, so the moved student's device adopts it on its
+  next read. Names come from the board and from `_chat/_people` (`_`-keys
+  skipped). Needs a signed-in student (or the instructor session). No rules
+  change. On the hub, Session 1 and Session 2 alike (one file).
