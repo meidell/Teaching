@@ -104,6 +104,19 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   `_wall`, so nothing syncs between devices and there is no class list —
   the memo lands in the signed-in student's record. Every figure recomputed
   in Python 29 Oct 2026; probed end to end 7/7, no overflow at 390 px.
+  **Slides, 29 Oct 2026: `session2-slides.html`** — one hour, 26 slides,
+  the capstone decks' engine in GBS navy/gold (← → · N notes · P print),
+  speaker notes on every slide, linked from week3's banner. Sale process ·
+  equity bridge (PV FY26–28 26.04 + PV TV 133.32 = 159.36) · three plans ·
+  tornado (margin −0.98/+0.86, capex +0.40/−0.40, NWC −0.10/0, growth
+  −0.03/+0.01) · +1 point each (margin +24.4 m, capex −32.2 m, NWC −2.0 m,
+  growth +0.2 m) · why growth costs cash (per €1 of new revenue −0.058 in
+  its year, +0.042 after; at 9 % FCF −0.24/−0.10/+0.06 vs base) · value
+  driver formula (Koller et al.) · WACC/g · history vs plan both directions
+  · margin jump (+€2.75 m FY2026) · inside/outside view (Kahneman &
+  Lovallo 1993; Flyvbjerg) · football field · walk-away (BATNA, anchoring)
+  · margin-for-a-price table · model risk (JPMorgan 2013 task force,
+  Herndon/Ash/Pollin 2013, TransAlta 2003). Figures recomputed in Python.
   ⚠ **openpyxl writes post-2010 functions without their `_xlfn.` prefix** —
   ISFORMULA read #NAME? until written as `_xlfn.ISFORMULA`. Any generated
   workbook using IFS, XLOOKUP, ISFORMULA etc. needs the prefix.
