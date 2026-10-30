@@ -355,6 +355,7 @@ body.room .meter{font-size:36px;}
   <p>Envoyez <b>tout votre solde</b> à deux personnes différentes, l’une juste après l’autre. Les deux paiements entrent dans la file d’attente avec une signature valide. Regardez lequel entre dans un bloc, et ce que les nœuds font de l’autre.</p>
   <div class="fieldrow"><label>À</label><div class="btn-row"><select id="dTo1"></select><span>et</span><select id="dTo2"></select></div></div>
   <div class="btn-row"><button class="btn small" id="dDo" disabled>Envoyer tout mon solde aux deux</button></div>
+  <p class="caption" id="dCap"></p>
   <div class="verdict" id="dVerdict"></div>
   <div class="why"><b>Pourquoi ça échoue.</b> Le mineur prend les paiements dans l’ordre et recalcule le solde après chacun ; le second dépasse le solde, il est écarté. Un nœud qui l’accepterait fabriquerait un bloc que tous les autres refuseraient. Sans blockchain, c’est la banque qui empêche la double dépense ; ici, c’est tout le monde.</div>
 </div>
@@ -634,7 +635,10 @@ function render(){
   Object.keys(NODES).forEach(function(sid){var n=NODES[sid];if(!n.addr||n.addr===ADDR)return;opts+='<option value="'+esc(n.addr)+'">'+esc(n.n||sid)+' · '+esc(n.addr)+'</option>';});
   ['tTo','dTo1','dTo2'].forEach(function(id){var s=$(id);if(!s)return;var v=s.value;s.innerHTML=opts||'<option value="">'+T('— personne d’autre en ligne —','— nobody else online —')+'</option>';if(v)s.value=v;});
   var who=$('sWho');if(who){var v=who.value,o='<option value="me">'+T('ma propre clé publique','my own public key')+'</option>';Object.keys(NODES).forEach(function(sid){var n=NODES[sid];if(n.pk&&n.pk!==PK)o+='<option value="'+esc(n.pk)+'">'+T('la clé publique de ','the public key of ')+esc(n.n||sid)+'</option>';});who.innerHTML=o;if(v)who.value=v;}
-  $('tSend').disabled=!(ADDR&&RULES_OK&&(bal[ADDR]||0)>0&&opts);$('dDo').disabled=!(ADDR&&RULES_OK&&(bal[ADDR]||0)>0&&opts);
+  $('tSend').disabled=!(ADDR&&RULES_OK&&(bal[ADDR]||0)>0&&opts);
+  /* B (double spend) also waits for a repaired copy: a balance read off a tampered copy is not one the other nodes recognise */
+  $('dDo').disabled=!(ADDR&&RULES_OK&&(bal[ADDR]||0)>0&&opts)||!!br;
+  $('dCap').textContent=!ADDR?T('Fabriquez d’abord vos clés (manche 1).','Make your keys first (round 1).'):!RULES_OK?T('La base refuse les écritures (règles non publiées).','The database refuses writes (rules not published).'):br?T('Votre copie est modifiée (A, bloc ','Your copy is altered (A, block ')+br+T(') : le solde qu’elle affiche n’est pas celui que les autres nœuds reconnaissent. Cliquez « Réparer : retélécharger la chaîne » ci-dessus, puis revenez.',') so the balance it shows is not one the other nodes recognise. Click “Repair: download the chain again” above, then come back.'):!opts?T('Personne d’autre en ligne pour recevoir.','Nobody else online to receive.'):(bal[ADDR]||0)>0?T('Solde disponible : ','Available: ')+fmt(bal[ADDR])+' UMF'+T(' — il partira deux fois.',' — it will be sent twice.'):T('Solde 0 : minez un bloc d’abord (manche 3), ou attendez qu’un paiement reçu soit confirmé.','Balance 0: mine a block first (round 3), or wait for a received payment to be confirmed.');
   $('tCap').textContent=ADDR?((bal[ADDR]||0)>0?T('Solde disponible : ','Available: ')+fmt(bal[ADDR])+' UMF':T('Solde 0 : minez un bloc d’abord (manche 3).','Balance 0: mine a block first (round 3).')):T('Fabriquez d’abord vos clés (manche 1).','Make your keys first (round 1).');
   $('mStart').disabled=!(ADDR&&RULES_OK)||MINING;
   /* mempool */
