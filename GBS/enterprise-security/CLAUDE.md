@@ -92,3 +92,24 @@ global `EscWall`; `courseprogress.js` a port).
   so `w2_team` is `Team X · mates` and an old saved role is skipped. Written in the factual register
   (no instructor first person); Session 1 and the hub still carry the older
   voice. The `_wall/$mod` wildcard covers both new nodes — no rules change.
+
+- **Teams on the wall + the written Jeopardy (30 Oct 2026, built for Session 3).**
+  `teams.js` (`EscTeams`) is BI's `teams.js` with the namespace changed and five
+  teams A–E: `_wall/teams/<row> = {n:name, src:'J:<T>'}` (newest row per name wins),
+  `_wall/tn_<T>` for names — the `_wall/$mod` wildcard covers it, **no rules
+  change**. Mounted on the hub (`#teamsBox`, section "Teams · for the term") and on
+  Session 3 step 5 (the old letter + mates text field is gone; `f_teamsel`/`f_mates`
+  are hidden and filled by the board, `w3_team` still saved). Anyone may add or
+  remove anyone; any member renames. Jan Erik: "let the teams select a name (like
+  for the business intelligence course) · let users be able to delete and add team
+  members". **`jeopardy.html`** (two boards of 30 on Sessions 1–3 + Mazarr + Rid,
+  `?set=r1|r2`, 45-min clock) is the GAME MASTER's screen; **`jeopardy-team.html`**
+  is the teams' page: the open square is broadcast as `_wall/jeo_cur/master`
+  (`Q:<set>|<key>|<pts>|<cat>|<question>`, written with a plain PUT because
+  `EscWall.post` refuses instructor devices), a team types its answer →
+  `_wall/jeo_<set>_<key>` as `T:<T>|<answer>` (newest per team, a device re-sends
+  over its own row), "Answer" on the master lists every team's text with ✓ (+pts) /
+  ✗ (0), scores go out on `_wall/jeo_score/master` (`S:name=pts;…`) and show on the
+  team page; Close sends `Q:`. Manual +/− stays behind a button. Tested headlessly
+  (fake DB, 20 checks). Tamperable like every wall; the scores that count are the
+  master's browser.

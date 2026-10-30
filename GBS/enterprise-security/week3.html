@@ -164,11 +164,10 @@
     <div class="callout"><span class="ct">Arvane's position</span>Arvane carries property, marine and a new cyber policy. If a NotPetya-style worm, released in a war Arvane is not part of, encrypts the Constanța terminal's systems and halts trading for a week, which policy pays — and does the war exclusion apply? The cards below say what the clause should look like, and why, before renewal, knowing the attribution may never be certain.</div>
     <div class="cap">
       <label>Your team</label>
-      <div id="teamShow" style="font-size:15px;line-height:1.5;color:var(--ink)"></div>
-      <div class="row" id="teamPick" style="display:none">
-        <select id="f_teamsel"><option value="">Team…</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
-        <input type="text" id="f_mates" placeholder="your team-mates" autocomplete="off">
-      </div>
+      <div class="hint">The team board: join yours, name it, add or remove members. The same board is on the course page.</div>
+      <div id="teamsBox" class="teams"></div>
+      <select id="f_teamsel" hidden><option value="">Team…</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+      <input type="hidden" id="f_mates">
       <input type="hidden" id="f_team" data-work="w3_team" data-worklabel="W3 · team">
     </div>
     <p><b>What a well-written clause says.</b> The market has had a model answer since 31 March 2023: Lloyd's bulletin Y5381 made four Lloyd's Market Association clauses (LMA 5564 to 5567) the minimum for standalone cyber policies. Read as a buyer, they answer the three questions Arvane has to settle before renewal.</p>
@@ -468,25 +467,16 @@ window.addEventListener('DOMContentLoaded',function(){
   });
   document.getElementById('ridWallBtn').addEventListener('click',loadRidWall);
 
-  /* team: chosen in Session 1, shown here, not chosen again */
+  /* the team board (teams.js): the team and the team-mates come from it */
   function syncTeam(){var t=document.getElementById('f_teamsel').value,m=document.getElementById('f_mates').value;setWork('f_team',[t?('Team '+t):'',m].filter(Boolean).join(' · '));}
-  ['f_teamsel','f_mates'].forEach(function(id){var e=document.getElementById(id);e.addEventListener('change',syncTeam);e.addEventListener('input',syncTeam);});
-  function paintTeam(){
-    var w1=ls('work_w1_team')||'',w2=ls('work_w2_team')||'',show=document.getElementById('teamShow'),pick=document.getElementById('teamPick');
-    var src=w1||w2,q=src.split(' · '),t=(q[0]||'').replace('Team ','');
-    if(!src||!/^[A-E]$/.test(t)){
-      if(!pick.style.display||pick.style.display==='none'){var v=(ls('work_w3_team')||'').split(' · ');if(v[0])document.getElementById('f_teamsel').value=v[0].replace('Team ','');if(v[1])document.getElementById('f_mates').value=v.slice(1).join(' · ');}
-      show.innerHTML='<span style="color:var(--grey)">No earlier team was found for you. Pick the team you are in.</span>';pick.style.display='';return false;
-    }
-    var role=/^(Analyst|Adversary|Scribe|Operator|Skeptic)$/.test(q[1]||'')?q[1]:'',mates=q.slice(role?2:1).join(' · ');
-    document.getElementById('f_teamsel').value=t;document.getElementById('f_mates').value=mates;
-    show.innerHTML='<b>Team '+t+'</b>'+(mates?'<br><span style="color:var(--grey)">with '+esc(mates)+'</span>':'')+'<div style="font-size:12px;color:var(--grey);margin-top:4px">From your earlier sessions.</div>';
-    pick.style.display='none';if(ls('work_w3_team')!==src)setWork('f_team',src);return true;
+  if(window.EscTeams){
+    EscTeams.mount(document.getElementById('teamsBox'),{onChange:function(t,mates){document.getElementById('f_teamsel').value=t||'';document.getElementById('f_mates').value=mates.join(', ');syncTeam();}});
+    /* a team chosen in Session 1 or 2, before the board existed: put the student on the board once */
+    if(!EscTeams.myTeam()){var src0=ls('work_w1_team')||ls('work_w2_team')||'',t0=(src0.split(' · ')[0]||'').replace('Team ','');if(/^[A-E]$/.test(t0))EscTeams.join(t0,true);}
   }
-  if(!paintTeam()){var tries=0,iv=setInterval(function(){if(paintTeam()||++tries>15)clearInterval(iv);},2000);}
 
   document.getElementById('policyBtn').addEventListener('click',function(){
-    if(!document.getElementById('f_teamsel').value){alert('Pick the team letter first.');return;}
+    if(!document.getElementById('f_teamsel').value){alert('Join your team on the board first.');return;}
     syncTeam();document.getElementById('policyNote').textContent='Done ✓';markDone('s5');
   });
 
@@ -525,6 +515,7 @@ window.addEventListener('DOMContentLoaded',function(){
 
 <script src="courseprogress.js"></script>
 <script src="wall.js"></script>
+<script src="teams.js"></script>
 <script src="/shared/config.js"></script>
 <script src="/shared/login.js" defer></script>
 <script src="/shared/progress.js" defer></script>
