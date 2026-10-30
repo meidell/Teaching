@@ -73,17 +73,24 @@
   function paintQ(){
     var q=$('q');
     if(!cur){q.innerHTML='<div class="wait">Waiting for the game master to open a square…</div>';return;}
-    if(q.dataset.k===cur.key)return;                       /* same square: never repaint under someone typing */
+    if(q.dataset.k===cur.key){teamState();return;}         /* same square: never repaint under someone typing */
     q.dataset.k=cur.key;sentFor='';
     q.innerHTML='<div class="qc">'+esc(cur.cat)+' · '+esc(cur.pts)+'</div><div class="qq">'+esc(cur.q)+'</div>'+
-      '<textarea id="ans" maxlength="480" placeholder="'+(team?'Your team\'s answer — one of you types, you can edit until the master reveals':'Join a team below to answer')+'"'+(team?'':' disabled')+'></textarea>'+
-      '<div class="row"><button class="btn" id="send"'+(team?'':' disabled')+'>Send the team\'s answer</button><span class="st" id="st"></span></div>';
+      '<textarea id="ans" maxlength="480" placeholder="Your team\'s answer — one of you types; you can edit and send again until the master reveals"></textarea>'+
+      '<div class="row"><button class="btn" id="send">Send the team\'s answer</button><span class="st" id="st"></span></div>';
     $('send').addEventListener('click',send);
     $('ans').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+    teamState();
+  }
+  /* the box is always typeable; the team only decides whether Send works — it is re-checked on every poll and team change */
+  function teamState(){
+    var b=$('send'),st=$('st');if(!b)return;
+    if(team){if(b.dataset.no){delete b.dataset.no;if(st&&st.textContent.indexOf('Join')===0)st.textContent='';}}
+    else{b.dataset.no='1';if(st&&!st.textContent){st.className='st bad';st.textContent='Join a team below, then send.';}}
   }
   function send(){
     var v=($('ans').value||'').trim(),st=$('st');
-    if(!team){st.className='st bad';st.textContent='Join a team first.';return;}
+    if(!team){st.className='st bad';st.textContent='Join a team below first — your text stays here.';showBoard=true;$('bw').style.display='';return;}
     if(!v){st.className='st bad';st.textContent='Type the answer first.';return;}
     st.className='st';st.textContent='Sending…';
     EscWall.post('jeo_'+cur.set+'_'+cur.key,{n:first()||'someone',src:'T:'+team+'|'+v.slice(0,470)}).then(function(r){
