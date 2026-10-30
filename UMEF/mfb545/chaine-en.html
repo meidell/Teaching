@@ -132,11 +132,11 @@ table.net tr.off td{opacity:.45;}
 .why{background:var(--accent-pale);border-left:4px solid var(--accent);border-radius:0 12px 12px 0;padding:12px 16px;margin:12px 0;font-size:14px;color:var(--ink);}
 .why b{color:var(--accent-deep);}
 /* the room screen */
-body.screen .wrap{max-width:1500px;}
-body.screen .card{padding:18px 20px;}
-body.screen .blk{flex-basis:210px;}
-body.screen table.net{font-size:16px;}
-body.screen .meter{font-size:36px;}
+body.room .wrap{max-width:1500px;}
+body.room .card{padding:18px 20px;}
+body.room .blk{flex-basis:210px;}
+body.room table.net{font-size:16px;}
+body.room .meter{font-size:36px;}
 </style>
 </head>
 <body data-course="mfb545">
@@ -579,7 +579,7 @@ function absorb(serverBlocks){                           /* what the postman del
 }
 
 /* ---- polling ---- */
-var pollTimer=null, lastHead='';
+var pollTimer=null, lastHead='', SCROLLED=null;
 function poll(){
   clearTimeout(pollTimer);
   if(document.hidden){pollTimer=setTimeout(poll,POLL);return;}
@@ -684,7 +684,9 @@ function renderChain(br){
   $('cH').textContent=MAIN.length;$('cOrph').textContent=ORPH.length;$('cTx').textContent=Object.keys(TXSEEN).length;
   var rej=Object.keys(L.rej);$('cRej').textContent=rej.length;
   $('cRejList').innerHTML=rej.length?'<ul>'+rej.map(function(h){var r=L.rej[h];return '<li>'+T('Bloc ','Block ')+r.h+' '+T('de ','from ')+esc(r.name)+' <span class="mono">'+esc(short(h))+'</span> — '+esc(r.why)+'</li>';}).join('')+'</ul>':'';
-  if(!SCREEN){var cv=$('chainView');cv.scrollLeft=cv.scrollWidth;}
+  /* bring the newest block into view (orphans sit after it) — once per new head, so a hand scroll is not fought every 3 s */
+  var cv=$('chainView'),headH=MAIN.length?MAIN[MAIN.length-1].hash:'';
+  if(headH!==SCROLLED){SCROLLED=headH;var last=cv.querySelectorAll('.blk:not(.orph)');last=last[last.length-1];if(last)cv.scrollLeft=Math.max(0,last.offsetLeft+last.offsetWidth-cv.clientWidth+12);}
 }
 
 /* ---- round 1: keys ---- */
@@ -860,7 +862,7 @@ function instrInit(){
 /* ---- boot ---- */
 (function boot(){
   if(SCREEN){
-    document.body.classList.add('screen');
+    document.body.classList.add('room');
     ['r1','r2','r3','r4','r6','r7','rounds','strip','loginWarn'].forEach(function(id){var e=$(id);if(e)e.style.display='none';});
     document.querySelector('.hero h1').innerHTML=T('La blockchain de la <em>classe</em>','The <em>class</em> blockchain');document.querySelector('.hero .sub').textContent=T('Ce que voit un nœud qui ne fait que regarder : les nœuds, la chaîne la plus longue, la file d’attente et les soldes.','What a node that only watches sees: the nodes, the longest chain, the queue and the balances.');
     window.COURSE_LOGIN_AUTO=false;
