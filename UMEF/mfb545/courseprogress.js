@@ -27,8 +27,8 @@ window.CourseProgress=(function(){
   var CHAPTERS=[
     {mod:'w1', short:T('J1','D1'), name:T('Journée 1 · La fintech, ou la banque désagrégée','Day 1 · Fintech, or the unbundled bank'), total:9, live:true,  href:T('journee1.html','journee1-en.html')},
     {mod:'w2', short:T('J2','D2'), name:T('Journée 2 · Paiements et monnaie digitale','Day 2 · Payments and digital money'), total:9, live:true,  href:T('journee2.html','journee2-en.html')},
-    {mod:'w3', short:T('J3','D3'), name:T('Journée 3 · Crédit digital, néobanques et inclusion financière','Day 3 · Digital credit, neobanks and financial inclusion'), total:10, live:true, href:T('journee3.html','journee3-en.html')},
-    {mod:'w4', short:T('J4','D4'), name:T('Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation','Day 4 · Blockchain, crypto-assets, DeFi and tokenisation'),     total:9, live:true,  href:T('journee4.html','journee4-en.html')},
+    {mod:'w3', short:T('J3','D3'), name:T('Journée 3 · Crédit digital, néobanques et inclusion financière','Day 3 · Digital credit, neobanks and financial inclusion'), total:9, live:true,  href:T('journee3.html','journee3-en.html')},
+    {mod:'w4', short:T('J4','D4'), name:T('Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation','Day 4 · Blockchain, crypto-assets, DeFi and tokenisation'),     total:10, live:true, href:T('journee4.html','journee4-en.html')},
     {mod:'w5', short:T('J5','D5'), name:T('Journée 5 · IA, données, regtech et conformité','Day 5 · AI, data, regtech and compliance'),                 total:9, live:false},
     {mod:'w6', short:T('J6','D6'), name:T('Journée 6 · Stratégie, financement et présentations finales','Day 6 · Strategy, funding and final presentations'),    total:9, live:false}
   ];
