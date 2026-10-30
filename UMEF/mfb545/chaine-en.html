@@ -733,7 +733,9 @@ $('hAuto').addEventListener('click',function(){
 });
 
 /* ---- round 3: mining ---- */
-var MINING=false, MINE={h:0,prefix:'',nonce:0,tries:0,t0:0,block:null}, WON=0, LOST=0;
+var MINING=false, WANT=false, MINE={h:0,prefix:'',nonce:0,tries:0,t0:0,block:null}, WON=0, LOST=0;
+/* WANT = the student wants to be mining (Miner pressed, Arrêter not). MINING = a search is running right now.
+   They differ while a found block is being published: Arrêter during that write must win, so the resume checks WANT. */
 function pendingTx(){                                    /* valid, unconfirmed, balance-checked in ts order */
   var head=MAIN[MAIN.length-1],bal=Object.assign({},balancesAt(head.hash)),out=[],ids={};
   Object.keys(TXPOOL).sort(function(a,b){return (TXPOOL[a].ts||0)-(TXPOOL[b].ts||0);}).forEach(function(id){
@@ -757,7 +759,9 @@ function restartMining(lost){
 function mineLoop(){
   if(!MINING)return;
   var found=null;
-  for(var i=0;i<25000;i++){var h=sha256(MINE.prefix+MINE.nonce);MINE.tries++;if(meets(h)){found=h;break;}MINE.nonce++;}
+  /* time-sliced: at most ~40 ms before yielding, so Arrêter stays clickable on a slow laptop or a phone */
+  var until=performance.now()+40;
+  for(var i=0;i<25000;i++){var h=sha256(MINE.prefix+MINE.nonce);MINE.tries++;if(meets(h)){found=h;break;}MINE.nonce++;if((i&255)===255&&performance.now()>until)break;}
   var dt=(performance.now()-MINE.t0)/1000;
   $('mTries').textContent=fmt(MINE.tries);$('mRate').textContent=fmt(Math.round(MINE.tries/Math.max(dt,0.05)));
   if(found){
@@ -769,18 +773,19 @@ function mineLoop(){
       VALID[found]=true;L.blocks[found]=b;L.order.push(found);saveL();computeChain();
       WON++;$('mWon').textContent=WON;$('mVerdict').className='verdict ok';$('mVerdict').textContent=T('✓ Bloc ','✓ Block ')+b.h+T(' trouvé après ',' found after ')+fmt(b.tries)+T(' essais en ',' tries in ')+dt.toFixed(1)+T(' s, publié. Récompense : ',' s, published. Reward: ')+REWARD+' UMF.';
       step('ch_mine');render();heartbeat();
+      if(!WANT){$('mStart').disabled=false;return;}          /* Arrêter was pressed while publishing: stay stopped */
       MINING=true;$('mStart').disabled=true;assemble();setTimeout(mineLoop,400);
     },function(e){
       $('mVerdict').className='verdict bad';$('mVerdict').textContent=e.message==='rules'?T('La base refuse l’écriture : règles non publiées.','The database refuses the write: rules not published.'):T('Publication impossible : ','Could not publish: ')+e.message;
-      $('mStop').style.display='none';$('mStart').style.display='';$('mStart').disabled=false;
+      WANT=false;$('mStop').style.display='none';$('mStart').style.display='';$('mStart').disabled=false;
     });
     return;
   }
   $('mHash').innerHTML=hashHTML(sha256(MINE.prefix+(MINE.nonce-1)),DIFF);$('mHash').classList.remove('ok');
   setTimeout(mineLoop,0);
 }
-$('mStart').addEventListener('click',function(){if(!ADDR||MINING)return;MINING=true;this.style.display='none';$('mStop').style.display='';assemble();mineLoop();});
-$('mStop').addEventListener('click',function(){MINING=false;this.style.display='none';$('mStart').style.display='';$('mStart').disabled=false;$('mVerdict').className='verdict';$('mVerdict').textContent=T('Arrêté après ','Stopped after ')+fmt(MINE.tries)+T(' essais.',' tries.');});
+$('mStart').addEventListener('click',function(){if(!ADDR||MINING)return;MINING=true;WANT=true;this.style.display='none';$('mStop').style.display='';assemble();mineLoop();});
+$('mStop').addEventListener('click',function(){MINING=false;WANT=false;this.style.display='none';$('mStart').style.display='';$('mStart').disabled=false;$('mVerdict').className='verdict';$('mVerdict').textContent=T('Arrêté après ','Stopped after ')+fmt(MINE.tries)+T(' essais.',' tries.');});
 
 /* ---- round 4: pay ---- */
 function sendTx(to,amt){
