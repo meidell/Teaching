@@ -24,7 +24,7 @@ import os, re, subprocess, sys, threading, http.server, socketserver, functools,
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 WEB = os.path.abspath(os.path.join(ROOT, '..', '..'))      # the web root
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-DAYS = ['journee1', 'journee2', 'journee3', 'journee4']
+DAYS = ['journee1', 'journee2', 'journee3', 'journee4', 'journee5']
 PORT = 8791
 
 CSS = r"""<style id="pdfcss">
