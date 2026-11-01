@@ -92,20 +92,21 @@ window.AdminGate = (function () {
     if(document.getElementById('ag-css'))return;
     var s=document.createElement('style'); s.id='ag-css';
     s.textContent=
-    '#ag-gate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:'+T.surface+';}'+
+    '#ag-gate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:#F3F5F9;}'+
     '#ag-gate.ag-hidden{display:none;}'+
-    '#ag-box{background:#fff;border:1px solid '+T.main+'33;border-radius:20px;padding:34px 30px;max-width:380px;width:100%;text-align:center;box-shadow:0 18px 50px -20px rgba(0,0,0,.35);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;}'+
+    '#ag-box{background:#fff;border:1px solid #E4E8EF;border-radius:18px;padding:34px 30px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 1px 2px rgba(16,24,40,.05),0 24px 60px -30px rgba(16,24,40,.45);font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI","Helvetica Neue",Arial,sans-serif;color:#0F172A;}'+
     '#ag-box img{height:42px;width:auto;margin:0 auto 16px;display:block;}'+
-    '#ag-brand{font-size:10px;letter-spacing:2px;color:'+T.main+';font-weight:bold;margin-bottom:12px;}'+
-    '#ag-lock{font-size:30px;margin-bottom:10px;}'+
-    '#ag-box h1{font-family:Georgia,serif;font-size:22px;margin:0 0 8px;color:'+T.ink+';}'+
-    '#ag-box p{color:'+T.grey+';font-size:13px;margin:0 0 16px;}'+
-    '#ag-pw{width:100%;text-align:center;letter-spacing:10px;font:22px "Helvetica Neue",Arial,sans-serif;color:'+T.ink+';'+
-    'background:'+T.surface+';border:1px solid '+T.main+'40;border-radius:10px;padding:12px;margin-bottom:12px;}'+
-    '#ag-pw:focus{outline:none;border-color:'+T.main+';}'+
-    '#ag-go{width:100%;background:'+T.main+';color:#fff;border:none;border-radius:30px;padding:12px;font:bold 14px "Helvetica Neue",Arial,sans-serif;cursor:pointer;}'+
+    '#ag-brand{font-size:10.5px;letter-spacing:.14em;color:'+T.main+';font-weight:800;margin-bottom:14px;text-transform:uppercase;}'+
+    '#ag-lock{width:46px;height:46px;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:'+T.main+'14;color:'+T.main+';font-size:20px;}'+
+    '#ag-lock svg{width:22px;height:22px;}'+
+    '#ag-box h1{font-size:21px;font-weight:800;letter-spacing:-.3px;margin:0 0 6px;color:#0F172A;}'+
+    '#ag-box p{color:#64748B;font-size:13px;line-height:1.5;margin:0 0 18px;}'+
+    '#ag-pw{width:100%;text-align:center;letter-spacing:8px;font:20px "Plus Jakarta Sans",system-ui,Arial,sans-serif;color:#0F172A;'+
+    'background:#F8FAFC;border:1px solid #E4E8EF;border-radius:10px;padding:12px;margin-bottom:10px;}'+
+    '#ag-pw:focus{outline:none;border-color:'+T.main+';box-shadow:0 0 0 3px '+T.main+'22;}'+
+    '#ag-go{width:100%;background:'+T.main+';color:#fff;border:none;border-radius:10px;padding:12px;font:700 14px "Plus Jakarta Sans",system-ui,Arial,sans-serif;cursor:pointer;}'+
     '#ag-go:hover{background:'+T.deep+';}'+
-    '#ag-err{color:#B3402A;font-size:13px;margin-top:10px;min-height:18px;}';
+    '#ag-err{color:#B91C1C;font-size:13px;margin-top:10px;min-height:18px;}';
     document.head.appendChild(s);
   }
 
@@ -124,7 +125,7 @@ window.AdminGate = (function () {
     var g=document.createElement('div'); g.id='ag-gate';
     g.innerHTML='<div id="ag-box">'+
       (o.logo?'<img src="'+o.logo+'" alt="">':'')+
-      '<div id="ag-brand"></div><div id="ag-lock">🔒</div>'+
+      '<div id="ag-brand"></div><div id="ag-lock">'+(window.AdminUI?AdminUI.icon('lock'):'🔒')+'</div>'+
       '<h1></h1><p></p>'+
       '<input type="text" autocomplete="username" value="presence@janerikmeidell.com" style="display:none" aria-hidden="true" tabindex="-1">'+
       '<input id="ag-pw" type="password" autocomplete="current-password" placeholder="••••">'+

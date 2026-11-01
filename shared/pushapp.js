@@ -2,8 +2,9 @@
    SHARED · talking to the push sender from an instructor page.
 
    The "Courses" app (iOS + Android) registers each phone's push token in
-   the database; a Cloudflare Worker — the sender — turns an event on the
-   site into a push. This helper is what chat.html, admin2.html and
+   the database, and /shared/webpush.js registers a browser's Web Push
+   subscription beside it; a Cloudflare Worker — the sender — turns an
+   event on the site into a push to both. This helper is what chat.html, admin2.html and
    site.html use to ask the sender for one. Student pages do NOT load it:
    chat.js has its own three-line hook (no token needed there).
 
@@ -24,7 +25,7 @@ window.JEMPushApp = (function () {
   var CFG = null;
   /* a dead-token path is deletable only where the rules say the instructor may:
      a student's mirror under <ns>/_push, or the instructor's own list */
-  var DELETABLE = /^([a-z0-9][a-z0-9-]{0,80}\/_push\/[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_-]{1,120}|_site\/push\/instructor\/[A-Za-z0-9_-]{1,120})$/;
+  var DELETABLE = /^([a-z0-9][a-z0-9-]{0,80}\/_(web)?push\/[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_-]{1,120}|_site\/push\/instructor\/[A-Za-z0-9_-]{1,120}|_site\/webpush\/[A-Za-z0-9_-]{1,120})$/;
 
   function cfg(force) {
     if (CFG && !force) return CFG;
@@ -59,7 +60,7 @@ window.JEMPushApp = (function () {
     if (j.error) return 'push: ' + j.error;
     if (j.skipped) return '';
     if (j.devices == null) return '';
-    var s = 'pushed to ' + j.sent + ' of ' + j.devices + ' device' + (j.devices === 1 ? '' : 's');
+    var s = 'pushed to ' + j.sent + ' of ' + j.devices + ' device' + (j.devices === 1 ? '' : 's') + (j.browsers ? ' (' + j.browsers + ' browser' + (j.browsers === 1 ? '' : 's') + ')' : '');
     if (j.dead && j.dead.length) s += ' · ' + j.dead.length + ' stale removed';
     return s;
   }

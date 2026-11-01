@@ -98,7 +98,12 @@ window.CourseChat = (function () {
       today:"Today", yesterday:"Yesterday",
       close:"Close", members:function(n){return n+" people";},
       here:"in this chat", online:"online", seenAgo:function(a){return "last seen "+a;},
-      tipSent:"Sent", tipDeliv:"Delivered", tipRead:"Read"
+      tipSent:"Sent", tipDeliv:"Delivered", tipRead:"Read",
+      notifAsk:"Get a notification on this device when your instructor replies.",
+      notifYes:"Turn on", notifNo:"Not now", notifBusy:"One moment…",
+      notifDone:"Notifications are on for this device.",
+      notifIos:"On an iPhone or iPad: tap Share, then \"Add to Home Screen\", and open the course from that icon — notifications can then be turned on there.",
+      notifGot:"Got it"
     },
     fr: {
       launch:"Messages", title:"Messages",
@@ -129,7 +134,12 @@ window.CourseChat = (function () {
       today:"Aujourd'hui", yesterday:"Hier",
       close:"Fermer", members:function(n){return n+" personnes";},
       here:"dans cette conversation", online:"en ligne", seenAgo:function(a){return "vu "+a;},
-      tipSent:"Envoyé", tipDeliv:"Remis", tipRead:"Lu"
+      tipSent:"Envoyé", tipDeliv:"Remis", tipRead:"Lu",
+      notifAsk:"Recevoir une notification sur cet appareil quand votre professeur répond.",
+      notifYes:"Activer", notifNo:"Plus tard", notifBusy:"Un instant…",
+      notifDone:"Les notifications sont activées sur cet appareil.",
+      notifIos:"Sur iPhone ou iPad : touchez Partager, puis « Sur l’écran d’accueil », et ouvrez le cours depuis cette icône — les notifications pourront alors être activées.",
+      notifGot:"Compris"
     }
   };
   function L(){ var l=document.documentElement.getAttribute('data-lang');
@@ -320,6 +330,14 @@ window.CourseChat = (function () {
     '#jc-send:hover{background:'+T.deep+';}'+
     '#jc-send:disabled{opacity:.5;cursor:default;}'+
     '#jc-note{font-size:11.5px;color:var(--grey,'+T.grey+');padding:4px 3px 0;line-height:1.45;min-height:2px;}'+
+    '#jc-ask{display:none;flex:none;align-items:center;gap:9px;padding:9px 12px;background:'+T.glow+'22;border-bottom:1px solid '+T.main+'1f;font-size:12px;line-height:1.35;color:var(--ink,'+T.ink+');}'+
+    '#jc-ask.on{display:flex;}'+
+    '#jc-ask svg{width:18px;height:18px;flex:none;color:'+T.deep+';}'+
+    '#jc-ask span{flex:1;min-width:0;}'+
+    '#jc-ask button{flex:none;border-radius:20px;padding:5px 11px;font:700 11.5px "Helvetica Neue",Arial,sans-serif;cursor:pointer;border:1px solid '+T.main+';background:'+T.main+';color:#fff;}'+
+    '#jc-ask button.no{background:transparent;color:'+T.main+';}'+
+    '#jc-ask button:disabled{opacity:.6;cursor:default;}'+
+    '#jc-ask.ok{background:#ECFDF5;color:#065F46;}#jc-ask.ok svg{color:#059669;}'+
     '#jc-note.bad{color:#B3402A;}'+
     '@media(max-width:480px){#jc-panel{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;}}';
     document.head.appendChild(s);
@@ -349,6 +367,7 @@ window.CourseChat = (function () {
         '<button id="jc-plus" type="button" title="'+esc(t.newT)+'">'+esc(t.newBtn)+'</button>'+
         '<button id="jc-x" type="button" aria-label="'+esc(t.close)+'">×</button></div>'+
       '<div id="jc-tabs"></div>'+
+      '<div id="jc-ask" role="status"></div>'+
       '<div id="jc-body"><div id="jc-list"></div><div id="jc-new"></div></div>'+
       '<div id="jc-foot"><div id="jc-hint"></div><div id="jc-row">'+
         '<textarea id="jc-in" rows="1" placeholder="'+esc(t.ph)+'"></textarea>'+
@@ -704,7 +723,11 @@ window.CourseChat = (function () {
       return msgsOf(th.tid,full?80:1).then(function(list){
         if(list===null)return;
         var newest=list.length?(list[list.length-1].ts||0):0;
-        if(newest>(LAST[th.tid]||0))LAST[th.tid]=newest;
+        var prev=LAST[th.tid]||0;
+        if(newest>prev)LAST[th.tid]=newest;
+        /* a message arrived while this page is open: say so on the screen,
+           unless the student is looking at that very thread right now */
+        if(prev&&newest>prev)notifyHere(th,list[list.length-1]);
         if(full){
           MSGS[th.tid]=list;
           if(list.length)markRead(th.tid,newest);
@@ -774,6 +797,102 @@ window.CourseChat = (function () {
   function beat(){
     clearInterval(TIMER);
     TIMER=setInterval(refresh, OPEN?6000:30000);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* notifications on this device (1 Nov 2026)                         */
+  /* ---------------------------------------------------------------- */
+  /* Two layers, both best-effort. (1) While a course page is open, the
+     poll above already learns of a new message; with the browser's
+     permission it is shown as a system notification — background tab,
+     other window, screen locked on a laptop. (2) With the sender set up
+     (site.html → Push), the browser SUBSCRIBES, and the instructor's reply
+     or announcement reaches the device with no page open at all, through
+     the same worker that pushes to the app. /shared/webpush.js does the
+     subscribing; it is loaded only when the panel has a reason to. The
+     ask is a one-line strip under the panel's tabs: Turn on · Not now
+     ("not now" = ask again in seven days); on an iPhone that is not on
+     the Home Screen it explains that step instead, because Safari has
+     no Web Push in a tab. A refused permission is never asked again:
+     the browser remembers it, and nagging would not change it. */
+  var WP=null;
+  function webpush(){
+    if(WP)return WP;
+    WP=new Promise(function(res){
+      if(window.JEMWebPush)return res(window.JEMWebPush);
+      var sc=document.createElement('script'); sc.src='/shared/webpush.js';
+      sc.onload=function(){res(window.JEMWebPush||null);}; sc.onerror=function(){res(null);};
+      document.head.appendChild(sc);
+    });
+    return WP;
+  }
+  function isIosTab(){
+    var ua=navigator.userAgent||'';
+    var ios=/iPhone|iPod|iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+    var standalone=(navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+    return ios&&!standalone;
+  }
+  function askKey(){return K+'_notif_ask';}
+  function askLater(days){try{localStorage.setItem(askKey(),String(Date.now()+days*86400e3));}catch(e){}}
+  function askSnoozed(){var v=0;try{v=parseInt(localStorage.getItem(askKey())||'0',10)||0;}catch(e){}return v>Date.now();}
+  function subscribed(){try{var m=JSON.parse(localStorage.getItem('jem_webpush')||'{}');return !!(m[NS]&&m[NS].k);}catch(e){return false;}}
+  function renderAsk(){
+    var el=document.getElementById('jc-ask'); if(!el||!ME||!ME.sid)return;
+    var t=L();
+    function hide(){el.className='';el.innerHTML='';}
+    if(askSnoozed()){hide();return;}
+    pushCfg().then(function(cfg){
+      if(!cfg||cfg.error||!cfg.on||!cfg.key){hide();return;}        /* the site is not set up for it: never nag */
+      if(isIosTab()){
+        el.className='on';
+        el.innerHTML=icon('bell')+'<span>'+esc(t.notifIos)+'</span><button type="button" class="no" data-a="ios">'+esc(t.notifGot)+'</button>';
+        el.querySelector('button').addEventListener('click',function(){askLater(30);hide();});
+        return;
+      }
+      if(!('Notification' in window)||!('PushManager' in window)||!('serviceWorker' in navigator)){hide();return;}
+      if(Notification.permission==='denied'){hide();return;}
+      if(Notification.permission==='granted'&&subscribed()){hide();return;}
+      el.className='on';
+      el.innerHTML=icon('bell')+'<span>'+esc(t.notifAsk)+'</span><button type="button" data-a="yes">'+esc(t.notifYes)+'</button><button type="button" class="no" data-a="no">'+esc(t.notifNo)+'</button>';
+      el.querySelector('[data-a="no"]').addEventListener('click',function(){askLater(7);hide();});
+      el.querySelector('[data-a="yes"]').addEventListener('click',function(){
+        var b=this; b.disabled=true; b.textContent=t.notifBusy;
+        webpush().then(function(W){
+          if(!W)throw new Error('unsupported');
+          return W.enable(NS,ME.sid);
+        }).then(function(){
+          el.className='on ok'; el.innerHTML=icon('bell')+'<span>'+esc(t.notifDone)+'</span>';
+          setTimeout(hide,4000);
+        }).catch(function(e){
+          var W=window.JEMWebPush, msg=W?W.explain(e,C.lang):String(e&&e.message||e);
+          if(/^mirror:/.test(String(e&&e.message))){ el.className='on ok'; el.innerHTML=icon('bell')+'<span>'+esc(t.notifDone)+'</span>'; setTimeout(hide,4000); return; }
+          el.className='on'; el.innerHTML=icon('bell')+'<span>'+esc(msg)+'</span><button type="button" class="no" data-a="no">'+esc(t.notifGot)+'</button>';
+          el.querySelector('button').addEventListener('click',function(){askLater(7);hide();});
+        });
+      });
+    });
+  }
+  function icon(n){
+    if(n==='bell')return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+    return '';
+  }
+  function notifyHere(th,m){
+    if(!m||!ME)return;
+    if(m.by==='s'&&m.sid===ME.sid)return;                       /* my own message, from another device */
+    if(OPEN&&th.tid===CUR&&!document.hidden&&document.hasFocus())return;
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    var who=m.by==='i'?L().instr:(m.name||m.sid||'');
+    var title=String((C.code||C.id||'')+(who?' · '+who:'')).trim()||'janerikmeidell.com';
+    webpush().then(function(W){
+      if(!W)return;
+      W.local(title,{body:String(m.txt||'').slice(0,140),tag:'jc-'+NS+'-'+th.tid,url:location.href.split('#')[0]});
+    });
+  }
+  function manifest(){
+    try{
+      if(!document.querySelector('link[rel="manifest"]')){var l=document.createElement('link');l.rel='manifest';l.href='/shared/app.webmanifest';document.head.appendChild(l);}
+      if(!document.querySelector('meta[name="apple-mobile-web-app-capable"]')){var mt=document.createElement('meta');mt.name='apple-mobile-web-app-capable';mt.content='yes';document.head.appendChild(mt);}
+    }catch(e){}
   }
 
   /* ---------------------------------------------------------------- */
@@ -876,7 +995,7 @@ window.CourseChat = (function () {
     document.getElementById('jc-btn').style.display='none';
     if(typeof tid==='string'&&THREADS.some(function(x){return x.tid===tid;}))CUR=tid;
     if(!CUR&&THREADS.length)CUR=THREADS[0].tid;
-    renderTabs(); renderFoot(); renderMsgs(false); renderPresence();
+    renderTabs(); renderFoot(); renderMsgs(false); renderPresence(); renderAsk();
     refresh(true); beat(); startHeart();
     setTimeout(function(){var i=document.getElementById('jc-in');if(i&&i.offsetParent)i.focus();},80);
   }
@@ -902,7 +1021,7 @@ window.CourseChat = (function () {
       THREADS=list;
       if(!THREADS.length){ document.getElementById('jc-btn').style.display='none'; return; }
       CUR=THREADS[0].tid;
-      renderTabs();
+      renderTabs(); manifest();
       refresh(true); beat();
       joinDirectory();
       loadPeople().catch(function(){});

@@ -58,12 +58,15 @@
 
   /* the per-course tools: [key, icon, label, path, hash] */
   var TOOLS = [
-    ['dash', '📊', 'Dashboard', '/shared/admin2.html', '#today'],
-    ['pres', '✅', 'Presence', '/shared/admin2.html', '#presence'],
-    ['chat', '💬', 'Messages', '/shared/chat.html', ''],
-    ['ins', '🔎', 'Insights', '/shared/insights.html', ''],
-    ['board', '📺', 'Board · TV', '/shared/board.html', '']
+    ['dash', 'dashboard', 'Dashboard', '/shared/admin2.html', '#today'],
+    ['pres', 'presence', 'Presence', '/shared/admin2.html', '#presence'],
+    ['chat', 'chat', 'Messages', '/shared/chat.html', ''],
+    ['ins', 'insights', 'Insights', '/shared/insights.html', ''],
+    ['board', 'board', 'Board · TV', '/shared/board.html', '']
   ];
+  /* icons come from /shared/adminui.js (one set, currentColor); a page
+     that did not load it gets a plain dot */
+  function ico(name) { return (window.AdminUI && AdminUI.icon) ? AdminUI.icon(name) : '·'; }
   /* which tool is this page? (admin2: by its hash) */
   function currentTool() {
     if (/\/shared\/admin2\.html$/.test(PATH)) {
@@ -83,13 +86,14 @@
   function css() {
     var s = document.createElement('style');
     s.textContent =
-      '#anav{position:fixed;top:0;left:0;bottom:0;width:' + W + 'px;z-index:300;background:#0a1a3a;color:#fff;' +
-      'font:500 13px/1.35 system-ui,-apple-system,"Segoe UI","Helvetica Neue",Arial,sans-serif;' +
+      '#anav{position:fixed;top:0;left:0;bottom:0;width:' + W + 'px;z-index:300;background:#0B1220;color:#fff;' +
+      'font:500 13px/1.35 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI","Helvetica Neue",Arial,sans-serif;' +
       'display:flex;flex-direction:column;overflow:hidden;box-shadow:1px 0 0 rgba(255,255,255,.06);transition:width .15s,transform .18s;}' +
       '#anav *{box-sizing:border-box;}' +
       '#anav .ah{display:flex;align-items:center;gap:8px;padding:14px 12px 10px 16px;}' +
       '#anav .ah b{flex:1;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f0b33d;font-weight:800;white-space:nowrap;}' +
-      '#anav .ab{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font:700 15px system-ui,sans-serif;padding:4px 6px;border-radius:6px;}' +
+      '#anav .ab{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font:700 15px system-ui,sans-serif;padding:4px 6px;border-radius:6px;display:inline-flex;align-items:center;}' +
+      '#anav .ab .ic{width:16px;height:16px;}' +
       '#anav .ab:hover{background:rgba(255,255,255,.1);color:#fff;}' +
       '#anav .as{overflow-y:auto;flex:1;padding:0 8px 16px;scrollbar-width:thin;}' +
       '#anav .ak{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);font-weight:800;' +
@@ -99,7 +103,9 @@
       'padding:7px 8px;border-radius:8px;white-space:nowrap;overflow:hidden;}' +
       '#anav a:hover{background:rgba(255,255,255,.09);color:#fff;}' +
       '#anav a.on{background:rgba(240,179,61,.16);color:#fff;box-shadow:inset 3px 0 0 #f0b33d;font-weight:700;}' +
-      '#anav a .i{width:20px;text-align:center;flex:none;font-size:14px;}' +
+      '#anav a .i{width:20px;height:20px;flex:none;display:inline-flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);}' +
+      '#anav a .i .ic{width:17px;height:17px;}' +
+      '#anav a.on .i,#anav a:hover .i{color:#f0b33d;}' +
       '#anav a .t{overflow:hidden;text-overflow:ellipsis;}' +
       '#anav a.off{opacity:.38;pointer-events:none;}' +
       '#anav details{margin-top:2px;}' +
@@ -118,7 +124,8 @@
       '@media(min-width:1000px){body.anav-push{padding-left:' + W + 'px!important;}body.anav-push.anav-min{padding-left:' + RAIL + 'px!important;}}' +
       /* the overlay (narrow, and the board) */
       '#anavBtn{position:fixed;left:14px;bottom:14px;z-index:299;width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;' +
-      'background:#0a1a3a;color:#fff;font:700 18px system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);display:none;}' +
+      'background:#0B1220;color:#fff;font:700 18px system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;}' +
+      '#anavBtn .ic{width:20px;height:20px;}' +
       '#anavScrim{position:fixed;inset:0;z-index:298;background:rgba(10,26,58,.45);display:none;}' +
       'body.anav-over #anav{transform:translateX(-102%);width:' + W + 'px;}' +
       'body.anav-over.anav-open #anav{transform:none;}' +
@@ -141,20 +148,20 @@
     var nav = document.getElementById('anav');
     var id = courseId(), c = course(id), tool = currentTool();
     var h = '<div class="ah"><b>Instructor</b>' +
-      '<button class="ab amin" id="anavMin" title="Fold the menu">' + (document.body.classList.contains('anav-min') ? '»' : '«') + '</button>' +
-      '<button class="ab" id="anavX" title="Close" style="display:none">✕</button></div><div class="as">';
+      '<button class="ab amin" id="anavMin" title="Fold the menu">' + ico(document.body.classList.contains('anav-min') ? 'right' : 'left') + '</button>' +
+      '<button class="ab" id="anavX" title="Close" style="display:none">' + ico('x') + '</button></div><div class="as">';
 
-    h += link('/admin/', '⚙️', 'Admin console', PATH === '/admin/');
-    h += link('/shared/inbox.html', '📥', 'Inbox · all courses', PATH === '/shared/inbox.html');
+    h += link('/admin/', ico('settings'), 'Admin console', PATH === '/admin/');
+    h += link('/shared/inbox.html', ico('inbox'), 'Inbox · all courses', PATH === '/shared/inbox.html');
 
     h += '<div class="ak">Course' + (c || id ? ' · <em>' + esc(c ? (c.code || c.id) : id) + '</em>' : '') + '</div>';
     TOOLS.forEach(function (t) {
       if (t[0] === 'pres' && c && !hasPresence(c)) return;
-      h += link(toolHref(t, id), t[1], t[2], tool === t[0], ' data-tool="' + t[0] + '"');
+      h += link(toolHref(t, id), ico(t[1]), t[2], tool === t[0], ' data-tool="' + t[0] + '"');
     });
 
     h += '<div class="ak">Site</div>';
-    h += link('/shared/site.html', '📈', 'Statistics & alerts', PATH === '/shared/site.html');
+    h += link('/shared/site.html', ico('site'), 'Statistics & alerts', PATH === '/shared/site.html');
 
     if (REG && REG.courses) {
       var list = REG.courses.filter(function (x) { return x.ns && x.status !== 'archived'; });
@@ -234,7 +241,7 @@
     var nav = document.createElement('nav');
     nav.id = 'anav'; nav.setAttribute('aria-label', 'Instructor menu');
     var btn = document.createElement('button');
-    btn.id = 'anavBtn'; btn.title = 'Menu'; btn.textContent = '☰';
+    btn.id = 'anavBtn'; btn.title = 'Menu'; btn.innerHTML = ico('menu');
     var scrim = document.createElement('div'); scrim.id = 'anavScrim';
     b.appendChild(scrim); b.appendChild(nav); b.appendChild(btn);
     layout(); render();
@@ -242,11 +249,12 @@
     btn.addEventListener('click', function () { b.classList.add('anav-open'); refresh(); });
     scrim.addEventListener('click', function () { b.classList.remove('anav-open'); });
     nav.addEventListener('click', function (e) {
-      if (e.target.id === 'anavX') { b.classList.remove('anav-open'); return; }
-      if (e.target.id === 'anavMin') {
+      var tb = e.target.closest ? e.target.closest('button') : null;
+      if (tb && tb.id === 'anavX') { b.classList.remove('anav-open'); return; }
+      if (tb && tb.id === 'anavMin') {
         var min = b.classList.toggle('anav-min');
         try { if (min) localStorage.setItem('jem_anav', 'min'); else localStorage.removeItem('jem_anav'); } catch (x) {}
-        e.target.textContent = min ? '»' : '«';
+        tb.innerHTML = ico(min ? 'right' : 'left');
         return;
       }
       onClick(e);

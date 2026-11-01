@@ -151,8 +151,11 @@ Five things worth knowing before editing any of them:
   many of the cohort) and a student × step matrix with the last time and
   the students who have nothing. No map in the dashboard — the label
   travels with the record, in English. Any course can write the shape.
+- **The console (`/admin/`) was re-laid out on 1 Nov 2026** (Jan Erik: "remove messages from the tables and add it rather on the top (showing if any presence is open)", "remove rules, rather add statistics that shows student progress"). A **Now** strip at the top: messages waiting per course (chips into chat.html), presence windows open per course (chips into the register), and a third card only when a course's rules block is not published (the anonymous `_rules_probe` read stayed; the column went). The course table has **Students · Progress · Active · Handed in**: progress and active come from a second, slower pass that reads each namespace whole (two at a time, cached 15 min in `sessionStorage` `jem_prog_<ns>`, re-read with ↻) and computes course_pct the way admin2 does — done sections ÷ the cohort's maximum total per module — drawn as five bands (admin2's `--step1…5` colours), the median, and who was active in the last 7 days. The minute refresh re-runs only the quick reads.
 - **`courses.json` themes expose `accent` / `accentBright` / `glow` / `surface`** — not `deep` / `bar` / `main` / `pale`. The old `admin.html` looked for the second set, so only two of eight keys ever matched and *every course rendered navy*. `applyTheme()` maps the keys the file actually has. If you add a theme variable, add it to `courses.json` **and** to the mapping.
 | `adminnav.js` | **the instructor's left-hand menu** (27 Oct 2026, Jan Erik: "a menu (left) for all admin pages"). One deferred `<script>` on `/admin/`, admin2, insights, chat, inbox, site and board. Draws only on a device holding `jem_fb_session`. Admin console · Inbox · the current course's Dashboard / Presence / Messages / Insights / Board (course = `?course=`, else `jem_admin_last`, re-read when the pointer enters the menu so it follows each page's picker) · Site · every course by school (a click opens the same tool for that course). ≥1000 px it pushes `<body>` right and « folds it to a rail (`jem_anav`); narrower, and always on board.html, a ☰ button bottom-left opens it over the page. A new instructor page joins by adding the one script tag |
+| `admin.css` + `adminui.js` | **one look for every instructor page (1 Nov 2026).** Jan Erik: "make the style of admin uniform (same style for all) — use icons — but of the same colour", "update the admin style to something more modern". Loaded in the `<head>` of `/admin/`, admin2, chat, inbox, insights, site (and adminui.js alone on board): a white sticky top bar `header.ahd` with a 3 px line in the course colour (`AdminUI.theme(theme)` sets `--a-accent` from courses.json — admin2 and chat call it from their own `applyTheme`), one button `.ab` (`primary` · `ghost` · `icon` · `sm` · `.n` count bubble), one picker `.apick`, `.apill`, `.acard`, `.asec`, `.awarn`. Every token is prefixed `--a-` so it cannot collide with a page's own `:root`; a page keeps its body CSS and drops only its old `header` and `.hbtn`. **No emoji in instructor chrome**: `<i data-ic="inbox">` / `AdminUI.icon('inbox')` give one line-icon set drawn in `currentColor` (Lucide-style, 24-grid); `AdminUI.icons(root)` fills `[data-ic]` after a render. `adminnav.js` and the gate (`admin-gate.js`) use the same icons and palette. Add an icon to adminui.js, never paste SVG into a page |
+| `webpush.js` + `/sw.js` + `app.webmanifest` | **Web Push for browsers (1 Nov 2026)** — see §8 |
 | `period.js` | **is a course running now?** (27 Oct 2026) — `CoursePeriod.decorate(c)` from `courses.json` (`period {start,end}`, else `schedule.dates`, else weekly from `schedule.first` × `sessions`): **now** = 7 days before the first session to 14 after the last → ring + "● Running now · next session …"; **soon** = starts within 30 days → "Starts …"; later (30+ days ahead) → "Starts …", not greyed; ended / evergreen → greyed (`.is-idle`, restored on hover); a live course with no dates is left as it is. Injects its own CSS. Used by the five school landing pages and `/admin/`. A course without `schedule` needs a `period` or it never highlights — `umef407` has none |
 | `theme.js` | light / dark, one switch per device. **Loaded in `<head>`, not deferred** — it sets `data-theme` before first paint, or the page flashes white. Opt-in, one `<script>` per page; only `HEG/statistics` uses it today |
 | `lesson.css` | the 128 layout rules every `weekN.html` shares |
@@ -828,6 +831,57 @@ the worker reports — the worker itself cannot delete anything). Student pages
 do not load it; `chat.js` has its own inline hook. Never for `p-`/`sg-`
 threads, in either direction. `privacy.html` at the web root is what both
 stores link to.
+
+### Web Push · the same notifications in a browser (1 Nov 2026)
+
+Jan Erik: "create code asking students to accept notifications on their
+devices — so that messages pop up on their screens. Then re-code messages
+to send those notifications in addition to the current flow." The app
+stays as it is; a **browser** now registers the same way a phone does, and
+the sender fans out to both.
+
+- **Student side, `shared/chat.js`.** When the panel opens, a one-line strip
+  under its tabs offers *Turn on · Not now* ("not now" = ask again in seven
+  days, `<key>_notif_ask`). It appears only when `_site/push` is **on and
+  holds a `key`** (the VAPID public key), so a half-configured site never
+  nags. *Turn on* loads `/shared/webpush.js`, asks the browser's
+  permission, registers `/sw.js` (scope `/`, no fetch handler, caches
+  nothing), subscribes, and writes `{e,p,a,ua,ts,v:'web'}` to
+  `<ns>/<sid>/webpush/<key>` (always writable) and the mirror
+  `<ns>/_webpush/<sid>/<key>` (the new rules block; a refusal is shown,
+  never swallowed). On an **iPhone in a Safari tab** the strip instead says
+  *Add to Home Screen first* — iOS has Web Push only there — and chat.js
+  injects `/shared/app.webmanifest` + `apple-mobile-web-app-capable` so
+  the Home-Screen copy opens standalone. A refused permission is never
+  asked again. **Independently of any sender**, while a course page is
+  open the poll already sees a new message: with permission granted it is
+  shown as a system notification (`JEMWebPush.local`, tag per thread)
+  unless the student is looking at that thread right now.
+- **Instructor side, `shared/site.html` → Push.** *Fetch the key* asks the
+  sender for `GET /vapid` and stores it in `_site/push.key`; *Turn on in
+  this browser* subscribes the instructor's own browser under
+  `_site/webpush/<key>` with the ID token; *Count devices* now reports
+  phones and browsers separately.
+- **The sender** (`Teaching App/sender/worker.js`) grew a second transport:
+  a node with `e/p/a` is a browser and goes straight to its push service,
+  signed with the site's VAPID key (RFC 8292) and encrypted per RFC 8291
+  (WebCrypto, no dependency; the RFC's Appendix A vector is in
+  `test.mjs`). `/notify`, `/send` and `/test` need no change on the pages:
+  `cohortDevices` and `instructorDevices` read `_webpush` beside `_push`,
+  and a dead subscription (404/410) is reported in `dead` like a dead Expo
+  token, so `pushapp.js → cleanup()` deletes it (its `DELETABLE` regex
+  knows the new paths). A DM push still carries no text.
+- ⚠ **Three deployments before any browser receives anything**: (1) publish
+  `firebase-database-rules.json` — `_site/webpush` and a `_webpush` block
+  per course were added by hand and by `Teaching App/scripts/patch-rules.mjs`
+  (idempotent); (2) in `Teaching App/sender`: `node vapid-keys.mjs --private |
+  npx wrangler secret put VAPID_PRIVATE_JWK`, then `npx wrangler deploy`;
+  (3) on site.html press *Fetch the key*. Until (3) no student is asked.
+  The private key is never written anywhere; a new pair invalidates every
+  browser subscription (they re-subscribe when next offered).
+- `/assets/icon-192.png` and `icon-512.png` (a JEM monogram) are the
+  notification and Home-Screen icons — the first files in `/assets/` that
+  belong to no course besides the root og-image.
 
 ### Passwords, join codes and the hand-off (18 Oct 2026)
 

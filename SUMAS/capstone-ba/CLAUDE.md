@@ -279,3 +279,24 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   `week1-slides.html` is the instructor's session deck with notes).
 
 - **Week 3 deck (28 Oct 2026, Jan Erik: "there are no slides for week 3? if not add them and give me a transcript for two hours")**: `week3-slides.html`, 35 slides, generated from `week6-slides.html`'s head and engine (the build script lived in the session scratchpad, not in `_build/`; edit the HTML directly from now on). Every number is computed from the page's own fitter rows (19.8 %, R² 0.94; ±20 % per row; 2040 at 600 GW: 58.5 / 49.7 / 41.8 from $79) or sourced on the slide (Wright 1936, Nagy 2013, Way 2022, IRENA 2023 falls 90/70/63 %, UK AR5, Mata v. Avianca, Ørsted Q3/FY 2023, Vinuesa, TOP500 Nov 2024, Google Aug 2025). The exercises use the existing Week 3 canvas boxes, so `canvas.html` did not change. The script is `_private/week3-transcript.md`; it says to check Ørsted's full-year figures in the 2023 annual report before speaking. Linked in all three places (top of `week3.html`, its learning-focus card, `index.html` `SLIDES[3]`). Week 3's Wednesday in `schedule.js` was 21 Oct 2026; the deck names no date.
+- **`phase1.html` — "Phase 1, step by step" (1 Nov 2026).** Jan Erik: the
+  instructions "were not precise or easy to understand and the students were
+  unhappy and confused"; the page must be "clear, precise and adapted to
+  BBA level". An activity read on 1 Nov found no report text and no hand-in
+  in either team, no forum posts after Week 2 (f3a–f6 empty), Week 4 canvas
+  empty, and Lucía's Week 1 answer "I am not sure I understand this
+  question". The page: what Phase 1 is (no recommendation yet), where/how
+  long (≈ 250 words a section)/how to hand in, a Mon–Sun plan, a role →
+  section table, one team-level note per team (Wind of Change: assign
+  sections, one Ørsted figure, the "2026" sensitivity row; AeroFlow: keep
+  the charter's split, one wind-share figure, 101.6 TWh not 101,616), five
+  rules for numbers, then sections 1–7 each as: one plain question · must
+  include · "you already have" · a sentence starter · a common mistake;
+  section 6 is a five-step 2×2 recipe; an 11-item checklist saved in
+  `localStorage capstone-ba_p1check`. Not a module, no data-step/data-work.
+  The deadline on the page is read from `schedule.js`; **the three link
+  banners (hub above the grade row, `week5.html` under the hero,
+  `report.html` above the cover) hard-code "Sunday 8 November" — remove
+  them after the deadline.** Plain language is the standard for this
+  course's student pages from now on: short sentences, one question per
+  section, no unexplained jargon.
