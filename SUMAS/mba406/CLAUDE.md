@@ -172,3 +172,39 @@ presence needing an account) applies. What differs:
   10.85%, 101.75). Fields `w4_re · w4_wacc · w4_project · w4_verdict` in
   `courses.json → project.sections` ("Week 4 · What hurdle rate?"). Run
   sheet `_private/week4-runsheet.md`.
+- **Week 5 — valuation (`week5.html`, `week5-homework.html`, built 1 Nov
+  2026 for the 26 Nov session)** on the Week 4 engine (blocks byte-copied
+  from week4.html, `w4`→`w5`); Week 4's `waccOf()` and constants are kept,
+  since this week values at those rates. **The hook: a hotel-furnishing
+  group offers CHF 2.5 million for 100% of the shares** (2.5× book 1,000).
+  **The canonical valuation** — `rochatDCF(o)` in the page is the one
+  definition: Léa's plan for the Nyon business, sales +3% a year
+  2026–2030, EBIT margin 15%, depreciation 120, capex 150, working capital
+  510 ⁄ 2,400 = 21.25% of sales, then 2% forever, at the company WACC
+  8.44% → FCF 251.34 · 259.78 · 268.47 · 277.43 · 286.65, PV 1,055.02, TV
+  4,540.12 (PV 3,027.75, 74%), **EV 4,082.77, equity 3,412.77** (net debt
+  760 − 90 = 670), **+ Lausanne's NPV 122.47 at 9.70% = 3,535.24**. FCF
+  2025 = 288 + 120 − 280 − 130 = **−2** (Week 6's hook: profitable, no
+  cash). Multiples are **illustrative course assumptions** (7–9× EBITDA
+  480 → 2,690–3,650; 12–16× earnings 240 → 2,880–3,840); the DCF implies
+  8.5× and 14.2×, the offer 6.6× and 10.4×. Also: bond 5y 3% at 4% 95.55;
+  Week 2's router loan at 8% 114,415.62; Week 4's comparable as a share
+  2.80 ⁄ (10% − 3%) = 40; Rochat by dividends 1,030 (the wrong model —
+  it retains 71% at ROE 24%). Widgets: minimum-price instinct, bond walk,
+  price–yield curve (2/5/10 years), share walk, growth-sensitivity curve
+  with a prediction, FCF walk, DCF walk, the editable DCF table (forecast
+  rows + EV/equity bar), multiples walk, the offer against four ranges.
+  The deck shrinks any slide taller than the stage (`zoom` in `render()`,
+  as in MBA401 Week 5); weeks 1–4's decks do not. Denominator
+  `EXTRA_STEPS (15) + EXERCISES (9) + .cl-row (12) + .q (10) +
+  [data-work] (4) = 50`; deck 27 slides. Headless probe 50/50, every
+  section, 9/9 exercises, quiz 10/10; homework 18/18. Homework: **Nyon
+  Cycles** — bonds and its e-bike loan (50,000 at 5%, 36 months: 1,498.54,
+  48,532.57 at 7%), shares at its 8.2%, FCF 2025 = 12, plan +4% at the
+  2025 margin and working-capital share, capex 80, at the 7.15% WACC →
+  EV 3,384.37, equity 2,964.37 (+ Morges 118.00 = 3,082.37); peers 7×
+  EBITDA → 1,680. **Deliberately, its DCF implies 11.3× EBITDA**: the
+  last problem asks what to question (the terminal value, 79% of EV).
+  Fields `w5_fcf · w5_dcf · w5_mult · w5_offer` in `courses.json →
+  project.sections` ("Week 5 · What is the business worth?"). Run sheet
+  `_private/week5-runsheet.md`.

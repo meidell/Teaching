@@ -55,7 +55,11 @@
         secs: [['s1', '4B.1', 'Geneva or Lausanne?'], ['s2', '4B.2', 'Two large samples'], ['s3', '4B.3', 'Two small samples, pooled'],
                ['s4', '4B.4', 'Paired samples'], ['s5', '4B.5', 'Two proportions'], ['s6', '4B.6', 'How many in each group?'],
                ['s7', '4B.7', 'Independent or paired?'], ['ex', '4B.8', 'Exercises — worked together'], ['s8', '4B.9', 'Checkpoint'], ['s9', '4B.10', 'Workshop']] } ] },
-    { n: 5, title: 'Correlation and regression', parts: [{ mod: 'w5', k: '', t: 'r, the line, inference on the slope', locked: true }] },
+    { n: 5, title: 'Correlation and regression', parts: [
+      { mod: 'w5', k: '', t: 'Correlation and regression', href: 'week5.html', hw: 'week5-homework.html',
+        secs: [['s1', '5.1', 'Fourteen pizzerias, one line'], ['s2', '5.2', 'How strong, and which way'], ['s3', '5.3', 'The line that misses least'],
+               ['s4', '5.4', 'Is the slope real?'], ['s5', '5.5', 'How much of y does x explain?'], ['s6', '5.6', 'The average one — or the next one?'],
+               ['s7', '5.7', 'A complete example'], ['ex', '5.8', 'Exercises — worked together'], ['s8', '5.9', 'Checkpoint'], ['s9', '5.10', 'Workshop']] } ] },
     { n: 6, title: 'Chi-square tests and F-tests', parts: [{ mod: 'w6', k: '', t: 'Independence, goodness of fit, ANOVA', locked: true }] },
     { n: 7, title: 'PCA and non-parametric tests', parts: [{ mod: 'w7', k: '', t: 'Beyond the textbook', locked: true }] },
     { n: 8, title: 'Exercises and repetition', parts: [{ mod: 'w8', k: '', t: 'Exercises and repetition', locked: true }] },

@@ -129,6 +129,33 @@ releases, the progress-denominator trap) still applies. What differs:
   (the 390px clipping is a headless-window artefact, identical before).
   The old `.book` block stays for the deck (`.lect-body .book`) and the
   exercise section.
+- **Week 5 · correlation and regression (Saylor ch. 10), built 1 Nov 2026**
+  — `week5.html` (`w5`) + `week5-homework.html` (`w5-hw`). NOT a port of
+  HEG: the engine and chrome are `week4b.html`'s; every section is new, in
+  the Saylor grammar, §10.1–§10.8 in the book's order. Ten sections: s1
+  hook (guess r + verdict, closed in s4) · s2 §10.1–10.2 · s3 §10.3–10.4 ·
+  s4 §10.5 · s5 §10.6 · s6 §10.7 · s7 §10.8 complete example (`x-complete`)
+  · ex Part 2 (10 odd-numbered exercises, `StatsEx`) · s8 checkpoint (10) ·
+  s9 workshop (`w5_pair`, `w5_line`, `w5_pred` — project section "5" in
+  courses.json). All 13 Examples walked in the book's words, 11 your-turns
+  on EVEN-numbered exercises (no key; computed in Python), classify groups
+  `corrRows` (8) and `ciRows` (9), 35 `EXTRA_STEPS`; `courseprogress.js`
+  totals 10 and 14. The pizzeria thread is Week 1A's 14 shops: ŷ =
+  −2.29x + 23.89, r = −0.962, T = −12.29 on 12 df.
+  ⚠ **§10.8 misprint, flagged on the page with `.corr`:** the book computes
+  sε = √(SSE ⁄ 26) = 12.12; it is √(3819.18 ⁄ 24) = **12.6148**. So T =
+  −4.817 (printed −5.013), β₁ interval ± 2.24 = (−7.47, −2.99), at five
+  absences ± 7.20 and ± 27.02. No conclusion changes. The slope widget
+  guards one-tailed α = 0.02, which Figure 12.3 has no column for.
+  **The deck now shrinks a slide that is taller than the stage** (a few
+  lines in `render()`, `zoom` down to 0.6) — the stage is
+  `overflow:hidden`, so long book quotations used to lose their title and
+  last lines; and the complete example's solution is split over four
+  slides (68 in all). ⚠ Week 4B's deck has the same clipping (slides 14,
+  15, 25, 34, 51, 62 at 1280×720) and does NOT have the fix yet.
+  Stat labels that are symbols carry `.l.m` (no uppercase — it turned β̂
+  into B and n into N). Probed headless: no errors, every step and
+  s1–s9 complete, 10/10 quiz, 17/17 classify, homework 13/13.
 - **Own namespace `mba401` and localStorage prefix `mba401_`**; its rules
   block is in `firebase-database-rules.json` and must be deployed.
 - **Theme `/shared/themes/sumas-stats.css`** (heg.css colour-mapped to SUMAS
