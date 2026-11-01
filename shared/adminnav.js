@@ -153,6 +153,7 @@
 
     h += link('/admin/', ico('settings'), 'Admin console', PATH === '/admin/');
     h += link('/shared/inbox.html', ico('inbox'), 'Inbox · all courses', PATH === '/shared/inbox.html');
+    h += link('/admin/student.html', ico('users'), 'Students · across courses', PATH === '/admin/student.html');
 
     h += '<div class="ak">Course' + (c || id ? ' · <em>' + esc(c ? (c.code || c.id) : id) + '</em>' : '') + '</div>';
     TOOLS.forEach(function (t) {

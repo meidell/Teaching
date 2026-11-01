@@ -157,6 +157,7 @@ details.arch summary{cursor:pointer;font-size:12.5px;color:var(--a-grey);font-we
   <div class="ahd-tools">
     <a class="ab" href="/shared/inbox.html" id="hInbox"><i data-ic="inbox"></i><span class="lbl">Inbox</span></a>
     <a class="ab" href="/shared/chat.html"><i data-ic="chat"></i><span class="lbl">Messages</span></a>
+    <a class="ab" href="/admin/student.html"><i data-ic="users"></i><span class="lbl">Students</span></a>
     <a class="ab" href="/shared/admin2.html"><i data-ic="dashboard"></i><span class="lbl">Dashboards</span></a>
     <a class="ab" href="/shared/insights.html"><i data-ic="insights"></i><span class="lbl">Insights</span></a>
     <a class="ab" href="/shared/site.html"><i data-ic="site"></i><span class="lbl">Site</span></a>
@@ -191,12 +192,28 @@ details.arch summary{cursor:pointer;font-size:12.5px;color:var(--a-grey);font-we
       <p>Signed in as the instructor: every course page shows your extra buttons, and the bar at the bottom of a course page switches to the student view. Signing out here signs this device out of everything.</p>
       <button class="ab" id="bOut"><i data-ic="logout"></i>Sign out of this device</button>
     </div>
+    <div class="box acard">
+      <h3><i data-ic="lock"></i>Downloads password</h3>
+      <p>Opens every protected file on the course pages (the 🔒 PDF links). Give it to students in class. A new one works at once; the old one stops. <span id="vState"></span></p>
+      <div id="vSetup" style="display:none">
+        <p style="margin-bottom:6px">First time on this account: paste the file key, printed by <code>node shared/vault-tool.mjs key</code> in the repo.</p>
+        <input type="password" id="vKey" autocomplete="off" placeholder="file key (44 characters)">
+      </div>
+      <input type="password" id="vp1" autocomplete="new-password" placeholder="new downloads password">
+      <input type="password" id="vp2" autocomplete="new-password" placeholder="the same again">
+      <div><button class="ab primary" id="bVault"><i data-ic="check"></i>Set downloads password</button></div>
+      <div class="msg" id="vMsg"></div>
+      <p style="margin:12px 0 6px">Protect another file: choose it, save the <code>.enc</code> it gives you into the course folder, and link it with <code>data-vault</code>.</p>
+      <input type="file" id="vFile" style="max-width:100%">
+      <div class="msg" id="vfMsg"></div>
+    </div>
   </div>
 </div>
 
 <script src="/shared/config.js"></script>
 <script src="/shared/admin-gate.js"></script>
 <script src="/shared/fb-auth.js"></script>
+<script src="/shared/vault.js"></script>
 <script>
 "use strict";
 var DB=window.CourseConfig.DB;
@@ -454,6 +471,52 @@ $('bOut').addEventListener('click',function(){
 });
 $('bRefresh').addEventListener('click',function(){loadAll(true);});
 
+/* ---- downloads password: /shared/vault.js. The file key sits in _site/vaultkey
+   (instructor-only); the password only wraps it in _site/vault, so a change
+   re-wraps one node and no file is touched. ---- */
+var VKEY=null;
+async function put(path,val){
+  var r=await fetch(DB+'/'+path+'.json?'+await authQ(),{method:'PUT',body:JSON.stringify(val)});
+  if(!r.ok)throw new Error(r.status===401?'refused — publish the _site rules block':'HTTP '+r.status);
+}
+async function vaultLoad(){
+  try{
+    VKEY=await get('_site/vaultkey');
+    var n=await get('_site/vault',null,true);
+    $('vState').textContent=n&&n.ts?'Last set '+ago(n.ts)+' ago.':'Not set yet: students cannot open protected files.';
+  }catch(e){
+    VKEY=null;$('vState').innerHTML='<b>Rules not published</b> — publish <code>firebase-database-rules.json</code> first.';
+  }
+  $('vSetup').style.display=VKEY?'none':'';
+}
+$('bVault').addEventListener('click',async function(){
+  var a=$('vp1').value,b=$('vp2').value,m=$('vMsg');m.className='msg';
+  var key=VKEY||$('vKey').value.trim();
+  if(!key||key.length!==44){m.className='msg bad';m.textContent='Paste the file key (44 characters).';return;}
+  if(!a){m.className='msg bad';m.textContent='Type the new password.';return;}
+  if(a!==b){m.className='msg bad';m.textContent='The two do not match.';return;}
+  m.textContent='Setting…';
+  try{
+    var node=await JEMVault.wrap(JEMVault.unb64(key),a);
+    if(!VKEY)await put('_site/vaultkey',key);
+    await put('_site/vault',node);
+    $('vp1').value=$('vp2').value=$('vKey').value='';
+    m.className='msg ok';m.textContent='Done. Students use the new password from now on.';
+    vaultLoad();
+  }catch(e){m.className='msg bad';m.textContent='Not saved: '+e.message;}
+});
+$('vFile').addEventListener('change',async function(){
+  var f=this.files[0],m=$('vfMsg');m.className='msg';if(!f)return;
+  if(!VKEY){m.className='msg bad';m.textContent='Set the downloads password first.';return;}
+  m.textContent='Encrypting…';
+  var out=await JEMVault.seal(new Uint8Array(await f.arrayBuffer()),JEMVault.unb64(VKEY));
+  var u=URL.createObjectURL(new Blob([out])),x=document.createElement('a');
+  x.href=u;x.download=f.name+'.enc';document.body.appendChild(x);x.click();x.remove();
+  setTimeout(function(){URL.revokeObjectURL(u);},60000);
+  m.className='msg ok';m.textContent='Saved '+f.name+'.enc — link it with data-vault="/…/'+f.name+'.enc" data-file="'+f.name+'".';
+  this.value='';
+});
+
 /* ---- boot: one password, then everything ---- */
 AdminGate.mount({brand:'JANERIKMEIDELL.COM · ADMIN',title:'Instructor sign-in',
   blurb:'One password for every course, dashboard and message. This device will remember it.',
@@ -462,10 +525,10 @@ AdminGate.mount({brand:'JANERIKMEIDELL.COM · ADMIN',title:'Instructor sign-in',
       COURSES=reg.courses.filter(function(c){return c.status!=='superseded';});
       drawWeek(); drawAll();
       FBAuth.restore(function(u){
-        if(u){loadAll(false);return;}
+        if(u){loadAll(false);vaultLoad();return;}
         $('warn').style.display='flex';
         $('warn').innerHTML=ic('alert')+'<div style="flex:1"><div style="margin-bottom:8px">Signed out — sign in to read the courses.</div><div id="wf"></div></div>';
-        FBAuth.form($('wf'),function(){$('warn').style.display='none';loadAll(false);},'');
+        FBAuth.form($('wf'),function(){$('warn').style.display='none';loadAll(false);vaultLoad();},'');
       });
       /* every minute: the quick reads only; progress is cached 15 min and re-read with ↻ */
       setInterval(function(){ if(!document.hidden)loadAll(false); },60000);

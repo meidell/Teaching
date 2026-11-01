@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Students · Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+<!--
+  ADMIN · ONE STUDENT ACROSS EVERY COURSE (1 Nov 2026).
+      /admin/student.html            the directory: every student, every course
+      /admin/student.html?sid=<sid>  one student, course by course
+  Jan Erik: "in the admin, give me the possibility to follow a student and
+  how that student does in the different courses."
+
+  A student is their `sid` — the slug of their name, the same in every
+  course (sign-in is shared per school, and the slug is the same across
+  schools). So "the same student" across courses is a NAME match: two
+  people with the same name would be merged here. The page says so.
+
+  WHAT IT READS, with the instructor token:
+    directory  <ns>/_roster (names) + <ns>?shallow=true (who has a node),
+               for every course with a namespace, three at a time
+    one student  each of their namespaces WHOLE, so the numbers are the
+               dashboard's: course % = sections done ÷ the cohort's highest
+               total per module (admin2's course_pct), then the cohort
+               median and the student's rank, time, last seen, quizzes,
+               workbook fields, presence, hand-ins and their DM thread.
+  Every course row links into admin2 with ?student=<sid> (opens their
+  drawer there) and into chat.html at their thread. It reads; it writes
+  nothing.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/admin.css">
+<script src="/shared/adminui.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--a-font);color:var(--a-ink);background:var(--a-page);line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;}
+a{color:inherit;}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 50px;}
+.dim{color:var(--a-faint);}
+.ld::after{content:"…";color:var(--a-faint);}
+
+/* directory */
+.find{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.find input{height:38px;border:1px solid var(--a-line);border-radius:9px;padding:0 12px;font:inherit;font-size:14px;flex:1;min-width:220px;max-width:420px;background:var(--a-card);}
+.find input:focus{outline:none;border-color:var(--a-accent-line);box-shadow:0 0 0 3px var(--a-accent-pale);}
+.find .n{font-size:12.5px;color:var(--a-grey);font-weight:600;}
+.dir{margin-top:12px;overflow:hidden;}
+.dir a.p{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--a-line);text-decoration:none;}
+.dir a.p:last-child{border-bottom:none;}
+.dir a.p:hover{background:var(--a-wash);}
+.dir .nm{font-weight:800;font-size:14px;min-width:200px;}
+.dir .cs{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
+.dir .cnt{font-size:12px;color:var(--a-grey);font-weight:700;white-space:nowrap;}
+.dir .more{padding:10px 16px;font-size:12.5px;color:var(--a-grey);}
+
+/* one student */
+.who{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-top:6px;}
+.who h2{font-size:26px;font-weight:800;letter-spacing:-.5px;}
+.who .sid{font-size:12px;color:var(--a-grey);font-weight:600;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px;}
+.tile{padding:12px 14px;}
+.tile .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--a-grey);}
+.tile .v{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-top:2px;}
+.tile .s{font-size:12px;color:var(--a-grey);}
+.course{margin-top:12px;overflow:hidden;}
+.chd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--a-wash);border-bottom:1px solid var(--a-line);flex-wrap:wrap;}
+.chd h3{font-size:15px;font-weight:800;}
+.chd .code{font:800 10.5px var(--a-font);letter-spacing:.08em;text-transform:uppercase;color:var(--a-accent);}
+.chd .sp{flex:1;}
+.links{display:flex;gap:4px;flex-wrap:wrap;}
+.links a{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;text-decoration:none;color:var(--a-ink2);border:1px solid var(--a-line);border-radius:7px;padding:3px 8px;white-space:nowrap;background:var(--a-card);}
+.links a .ic{width:12px;height:12px;color:var(--a-grey);}
+.links a:hover{border-color:var(--a-accent-line);color:var(--a-accent);}
+.cbody{display:grid;grid-template-columns:260px 1fr;gap:0;}
+.facts{padding:14px 16px;border-right:1px solid var(--a-line);display:flex;flex-direction:column;gap:10px;}
+.big{display:flex;align-items:baseline;gap:8px;}
+.big b{font-size:30px;font-weight:800;letter-spacing:-.6px;}
+.big span{font-size:12.5px;color:var(--a-grey);font-weight:600;}
+.meter{position:relative;height:10px;border-radius:5px;background:var(--a-wash);border:1px solid var(--a-line);}
+.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;}
+.meter em{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--a-ink);opacity:.55;}
+.fl{font-size:12.5px;display:flex;justify-content:space-between;gap:8px;border-top:1px dashed var(--a-line);padding-top:6px;}
+.fl span{color:var(--a-grey);} .fl b{font-weight:700;text-align:right;}
+.mods{padding:10px 16px 14px;overflow-x:auto;}
+.mods table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.mods th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-grey);font-weight:800;text-align:left;padding:6px 8px;border-bottom:1px solid var(--a-line);white-space:nowrap;}
+.mods td{padding:6px 8px;border-bottom:1px solid var(--a-line);white-space:nowrap;}
+.mods tr:last-child td{border-bottom:none;}
+.mods td.l{white-space:normal;min-width:160px;font-weight:600;}
+.mods td.r{text-align:right;}
+.mbar{display:inline-block;width:90px;height:7px;border-radius:4px;background:var(--a-wash);border:1px solid var(--a-line);vertical-align:middle;margin-right:6px;overflow:hidden;}
+.mbar i{display:block;height:100%;}
+.untouched td{color:var(--a-faint);}
+.b1{background:#B91C1C;} .b2{background:#D97706;} .b3{background:#CA8A04;} .b4{background:#65A30D;} .b5{background:#15803D;}
+.note{font-size:12px;color:var(--a-grey);margin-top:14px;}
+.empty{padding:14px 16px;font-size:13px;color:var(--a-grey);}
+@media(max-width:760px){ .cbody{grid-template-columns:1fr;} .facts{border-right:none;border-bottom:1px solid var(--a-line);} .dir .nm{min-width:0;} }
+</style>
+</head>
+<body>
+<header class="ahd"><div class="ahd-in">
+  <div class="ahd-title">
+    <div class="ahd-k">Jan Erik Meidell · instructor</div>
+    <h1 id="hTitle">Students</h1>
+  </div>
+  <span class="sp"></span>
+  <div class="ahd-tools">
+    <a class="ab" href="/admin/"><i data-ic="settings"></i><span class="lbl">Console</span></a>
+    <a class="ab" href="/admin/student.html" id="hAll" style="display:none"><i data-ic="users"></i><span class="lbl">All students</span></a>
+    <button class="ab icon" id="bRefresh" title="Read again"><i data-ic="refresh"></i></button>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div class="awarn" id="warn" style="display:none"></div>
+  <div id="view"></div>
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+"use strict";
+var DB=window.CourseConfig.DB;
+var $=function(id){return document.getElementById(id);};
+var ic=function(n){return window.AdminUI?AdminUI.icon(n):'';};
+var COURSES=[], PEOPLE={}, NSDATA={}, DIRDONE=false;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function title(c){var t=c.title||{};return typeof t==='string'?t:(t.en||t.fr||c.id);}
+function short(c){return c.code||c.id;}
+function ago(ts){if(!ts)return '—';var m=Math.round((Date.now()-ts)/60000);if(m<1)return 'just now';if(m<60)return m+' min ago';var h=Math.round(m/60);if(h<24)return h+' h ago';var d=Math.round(h/24);return d<60?d+' days ago':new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
+function dur(s){if(!s)return '—';s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);if(h)return h+' h'+(m?' '+m+' min':'');if(m)return m+' min';return s+' s';}
+function band(p){return 'b'+(Math.min(4,Math.floor((p||0)/20))+1);}
+function slugName(sid){return sid.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+async function authQ(){ if(!window.__fbUser)return ''; try{return 'auth='+await window.__fbUser.getIdToken();}catch(e){return '';} }
+async function get(path,qs){
+  var q=[]; if(qs)q.push(qs); var a=await authQ(); if(a)q.push(a);
+  var r=await fetch(DB+'/'+path+'.json'+(q.length?'?'+q.join('&'):''),{cache:'no-store'});
+  var j=null; try{j=await r.json();}catch(e){}
+  if(!r.ok||(j&&j.error))throw new Error((j&&j.error)||('HTTP '+r.status));
+  return j;
+}
+async function pool(list,n,fn){var q=list.slice();async function w(){while(q.length){var x=q.shift();try{await fn(x);}catch(e){}}}var ws=[];for(var i=0;i<n;i++)ws.push(w());await Promise.all(ws);}
+function wantSid(){try{return new URLSearchParams(location.search).get('sid')||'';}catch(e){return '';}}
+
+/* ---------- the directory ---------- */
+async function readDirectory(){
+  PEOPLE={};
+  var failed=[];
+  await pool(COURSES,3,async function(c){
+    try{
+      var res=await Promise.all([get(c.ns+'/_roster').catch(function(){return null;}),get(c.ns,'shallow=true')]);
+      var ros=res[0]||{}, top=res[1]||{};
+      var sids={};
+      Object.keys(ros).forEach(function(s){sids[s]=1;});
+      Object.keys(top).forEach(function(s){sids[s]=1;});
+      Object.keys(sids).forEach(function(sid){
+        if(sid.charAt(0)==='_')return;
+        var p=PEOPLE[sid]=PEOPLE[sid]||{sid:sid,name:'',courses:[]};
+        if(ros[sid]&&ros[sid].name&&!p.name)p.name=ros[sid].name;
+        if(p.courses.indexOf(c.id)<0)p.courses.push(c.id);
+      });
+    }catch(e){failed.push(short(c));}
+    if(!wantSid())drawDirectory();
+  });
+  Object.keys(PEOPLE).forEach(function(s){if(!PEOPLE[s].name)PEOPLE[s].name=slugName(s);});
+  DIRDONE=true;
+  if(failed.length){$('warn').style.display='flex';$('warn').innerHTML=ic('alert')+'<div>Could not read: '+esc(failed.join(', '))+' — usually rules not published for that namespace.</div>';}
+}
+var Q='';
+function drawDirectory(){
+  $('hTitle').textContent='Students'; $('hAll').style.display='none';
+  var byId={}; COURSES.forEach(function(c){byId[c.id]=c;});
+  var all=Object.keys(PEOPLE).map(function(s){return PEOPLE[s];});
+  var q=Q.trim().toLowerCase();
+  var list=all.filter(function(p){
+    if(!q)return true;
+    if(p.name.toLowerCase().indexOf(q)>=0||p.sid.indexOf(q)>=0)return true;
+    return p.courses.some(function(id){var c=byId[id];return c&&(short(c).toLowerCase().indexOf(q)>=0||title(c).toLowerCase().indexOf(q)>=0);});
+  }).sort(function(a,b){return b.courses.length-a.courses.length||a.name.localeCompare(b.name);});
+  var box=$('dirList');
+  if(!box){
+    $('view').innerHTML='<div class="asec">Find a student <small id="dirLbl"></small></div>'+
+      '<div class="find"><input id="q" type="search" placeholder="Name, or a course code to list its students" autocomplete="off"><span class="n" id="qn"></span></div>'+
+      '<div class="dir acard" id="dirList"></div>'+
+      '<div class="note">A student is matched across courses by their name as they typed it (their sign-in id). Two people with the same name would appear as one.</div>';
+    $('q').value=Q;
+    $('q').addEventListener('input',function(){Q=this.value;drawDirectory();});
+    setTimeout(function(){$('q').focus();},50);
+    box=$('dirList');
+  }
+  $('dirLbl').textContent=DIRDONE?all.length+' students in '+COURSES.length+' courses':'reading the courses…';
+  $('qn').textContent=q?list.length+' found':'';
+  var MAX=150;
+  box.innerHTML=list.length?list.slice(0,MAX).map(function(p){
+    return '<a class="p" href="?sid='+encodeURIComponent(p.sid)+'"><span class="nm">'+esc(p.name)+'</span><span class="cs">'+
+      p.courses.map(function(id){var c=byId[id];return '<span class="apill '+(c&&c.status==='archived'?'q':'acc')+'" title="'+esc(c?title(c):id)+'">'+esc(c?short(c):id)+'</span>';}).join('')+
+      '</span><span class="cnt">'+p.courses.length+' course'+(p.courses.length>1?'s':'')+'</span></a>';
+  }).join('')+(list.length>MAX?'<div class="more">'+(list.length-MAX)+' more — narrow the search.</div>':'')
+  :'<div class="more">'+(DIRDONE?'Nobody matches.':'Reading…')+'</div>';
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest&&e.target.closest('a.p');
+  if(!a||e.metaKey||e.ctrlKey)return;
+  e.preventDefault(); history.pushState(null,'',a.getAttribute('href')); route();
+});
+window.addEventListener('popstate',route);
+
+/* ---------- one student ---------- */
+function analyse(c,root,sid){
+  var mods=c.modules||[];
+  var rows=[];
+  Object.keys(root||{}).forEach(function(s){
+    if(s.charAt(0)==='_')return;
+    var n=root[s]; if(n&&typeof n==='object'&&(n.mod||n.name))rows.push({sid:s,node:n});
+  });
+  var expect={};
+  mods.forEach(function(m){var mx=0;rows.forEach(function(r){var x=r.node.mod&&r.node.mod[m.id];if(x&&x.total>mx)mx=x.total;});expect[m.id]=mx;});
+  function doneOf(x){var d=0,o=(x&&x.done)||{};for(var k in o)if(o[k])d++;return d;}
+  function pct(node){var d=0,t=0;mods.forEach(function(m){var e=expect[m.id];if(!e)return;t+=e;d+=Math.min(e,doneOf(node.mod&&node.mod[m.id]));});return t?Math.round(d/t*100):null;}
+  function last(node){var t=node.updatedAt||0;for(var k in (node.mod||{})){var u=node.mod[k]&&node.mod[k].updatedAt;if(u>t)t=u;}for(var w in (node.work||{})){var v=node.work[w]&&node.work[w].ts;if(v>t)t=v;}return t;}
+  var me=(root||{})[sid]||null;
+  var all=rows.map(function(r){return pct(r.node);}).filter(function(p){return p!=null;}).sort(function(a,b){return a-b;});
+  var med=all.length?(all.length%2?all[(all.length-1)/2]:Math.round((all[all.length/2-1]+all[all.length/2])/2)):null;
+  var out={c:c,n:rows.length,median:med,node:me,roster:((root||{})._roster||{})[sid]||null};
+  if(!me){return out;}
+  out.pct=pct(me);
+  out.rank=out.pct==null?null:1+all.filter(function(p){return p>out.pct;}).length;
+  out.last=last(me);
+  out.first=me.createdAt||0;
+  var secs=0,qd=0,qc=0;
+  out.mods=mods.map(function(m){
+    var x=me.mod&&me.mod[m.id]; var e=expect[m.id]||0; var d=doneOf(x);
+    if(x&&x.secs)secs+=x.secs;
+    if(x&&x.firstSeen&&(!out.first||x.firstSeen<out.first))out.first=x.firstSeen;
+    var q=(x&&x.quiz)||{},qa=0,qok=0; for(var k in q){if(q[k]){qa++;if(q[k].c)qok++;}} qd+=qa;qc+=qok;
+    return {id:m.id,label:m.label||m.id,e:e,d:Math.min(d,e||d),p:e?Math.round(Math.min(d,e)/e*100):null,secs:x&&x.secs||0,score:x&&x.score||'',qa:qa,qok:qok,at:x&&x.updatedAt||0,seen:!!x};
+  });
+  out.secs=secs; out.qa=qd; out.qok=qc;
+  out.work=Object.keys(me.work||{}).filter(function(k){var w=me.work[k];return w&&w.v!=null&&String(w.v).trim()!=='';}).length;
+  /* presence: sessions held (someone marked, or open), of the student's group when the id carries one */
+  var P=(root||{})._presence||{}, grp=(out.roster&&out.roster.grp)||me.grp||'';
+  var held=0,here=0,missed=[];
+  Object.keys(P).forEach(function(id){
+    var x=P[id]; if(!x||typeof x!=='object')return;
+    var any=false; for(var k in (x.marks||{}))if(k.charAt(0)!=='_'){any=true;break;}
+    if(!any&&!x.open)return;
+    var g=/-(g\d+)$/.exec(id); if(g&&grp&&g[1]!==grp)return;
+    held++; if(x.marks&&x.marks[sid])here++; else if(!x.open)missed.push(x.label||id);
+  });
+  out.pres=held?{held:held,here:here,missed:missed}:null;
+  var S=((root||{})._submissions||{})[sid]||{}, files=Object.keys(S).map(function(k){return S[k];}).filter(function(u){return u&&u.ts;});
+  out.subs=files.length?{n:files.length,last:Math.max.apply(null,files.map(function(u){return u.ts;}))}:null;
+  var T=((root||{})._chat||{})['dm-'+sid], msgs=T&&T.msgs?Object.keys(T.msgs).map(function(k){return T.msgs[k];}):[];
+  var mine=msgs.filter(function(m){return m&&m.by==='s';});
+  out.dm={s:mine.length,i:msgs.length-mine.length,last:mine.length?Math.max.apply(null,mine.map(function(m){return m.ts||0;})):0};
+  return out;
+}
+var LOADING=0;
+async function drawStudent(sid,force){
+  var token=++LOADING;
+  $('hAll').style.display='';
+  var p=PEOPLE[sid];
+  var name=p?p.name:slugName(sid);
+  $('hTitle').textContent=name;
+  document.title=name+' · Students';
+  var byId={}; COURSES.forEach(function(c){byId[c.id]=c;});
+  var ids=p?p.courses.slice():[];
+  $('view').innerHTML='<div class="who"><h2>'+esc(name)+'</h2><span class="sid">'+esc(sid)+'</span></div>'+
+    '<div class="tiles" id="tiles"></div><div id="courses"><div class="asec">Courses <small class="ld">reading</small></div></div>';
+  if(!ids.length){$('courses').innerHTML='<div class="acard empty">'+(DIRDONE?'This student is in no course.':'Reading the courses…')+'</div>';return;}
+  var res={};
+  await pool(ids,2,async function(id){
+    var c=byId[id]; if(!c)return;
+    if(force||!NSDATA[c.ns])NSDATA[c.ns]=await get(c.ns);
+    res[id]=analyse(c,NSDATA[c.ns],sid);
+    if(token===LOADING)paintStudent(sid,ids,res,false);
+  });
+  if(token===LOADING)paintStudent(sid,ids,res,true);
+}
+function paintStudent(sid,ids,res,done){
+  var list=ids.map(function(id){return res[id];}).filter(Boolean);
+  /* most recently active first; archived courses last */
+  list.sort(function(a,b){return (a.c.status==='archived')-(b.c.status==='archived')||(b.last||0)-(a.last||0);});
+  var secs=0,last=0,held=0,here=0,qa=0,qok=0,above=0,cmp=0;
+  list.forEach(function(r){secs+=r.secs||0;if((r.last||0)>last)last=r.last;if(r.pres){held+=r.pres.held;here+=r.pres.here;}qa+=r.qa||0;qok+=r.qok||0;
+    if(r.pct!=null&&r.median!=null){cmp++;if(r.pct>=r.median)above++;}});
+  $('tiles').innerHTML=
+    tile('Courses',list.length,list.filter(function(r){return r.c.status!=='archived';}).length+' current')+
+    tile('Last seen',last?ago(last).replace(' ago',''):'—',last?new Date(last).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'nothing recorded')+
+    tile('Time on pages',dur(secs),'all courses together')+
+    tile('Presence',held?here+' / '+held:'—',held?Math.round(here/held*100)+'% of sessions held':'no register')+
+    tile('Quiz answers',qa?Math.round(qok/qa*100)+'%':'—',qa?qok+' right of '+qa+' answered':'none answered')+
+    tile('Against the cohort',cmp?above+' of '+cmp:'—',cmp?'courses at or above the median':'');
+  $('courses').innerHTML='<div class="asec">Courses <small class="'+(done?'':'ld')+'">'+(done?'':'reading')+'</small></div>'+list.map(function(r){return courseCard(sid,r);}).join('');
+  if(window.AdminUI&&AdminUI.icons)AdminUI.icons($('view'));
+}
+function tile(k,v,s){return '<div class="tile acard"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+esc(s||'')+'</div></div>';}
+function courseCard(sid,r){
+  var c=r.c, q=encodeURIComponent(c.id), s=encodeURIComponent(sid);
+  var links='<div class="links">'+
+    '<a href="/shared/admin2.html?course='+q+'&student='+s+'"><i data-ic="dashboard"></i>Dashboard</a>'+
+    '<a href="/shared/chat.html?course='+q+'&t=dm-'+s+'"><i data-ic="chat"></i>Messages'+(r.dm&&r.dm.s?' · '+r.dm.s:'')+'</a>'+
+    (c.home?'<a href="/'+encodeURI(c.home)+'" target="_blank" rel="noopener"><i data-ic="external"></i>Course</a>':'')+'</div>';
+  var head='<div class="chd"><span class="code">'+esc(short(c))+'</span><h3>'+esc(title(c))+'</h3>'+
+    (c.status==='archived'?'<span class="apill q">archived</span>':'')+(r.roster&&r.roster.grp?'<span class="apill q">'+esc(r.roster.grp)+'</span>':'')+
+    '<span class="sp"></span>'+links+'</div>';
+  if(!r.node)return '<div class="course acard">'+head+'<div class="empty">Registered'+(r.roster&&r.roster.ts?' '+ago(r.roster.ts):'')+', nothing done on the pages yet.</div></div>';
+  var P=r.pct;
+  var facts='<div class="facts">'+
+    '<div class="big"><b>'+(P==null?'—':P+'%')+'</b><span>of the course so far</span></div>'+
+    (P==null?'':'<div class="meter" title="the line is the cohort median"><i class="'+band(P)+'" style="width:'+P+'%"></i>'+(r.median!=null?'<em style="left:'+r.median+'%"></em>':'')+'</div>')+
+    '<div class="fl"><span>Cohort median</span><b>'+(r.median==null?'—':r.median+'%')+(r.rank?' · rank '+r.rank+' of '+r.n:'')+'</b></div>'+
+    '<div class="fl"><span>Last seen</span><b>'+ago(r.last)+'</b></div>'+
+    '<div class="fl"><span>Time on pages</span><b>'+dur(r.secs)+'</b></div>'+
+    '<div class="fl"><span>Started</span><b>'+(r.first?new Date(r.first).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—')+'</b></div>'+
+    (r.pres?'<div class="fl"><span>Presence</span><b>'+r.pres.here+' / '+r.pres.held+'</b></div>'+(r.pres.missed.length?'<div class="fl"><span>Missed</span><b style="font-weight:600">'+esc(r.pres.missed.join(', '))+'</b></div>':''):'')+
+    '<div class="fl"><span>Quiz answers right</span><b>'+(r.qa?r.qok+' / '+r.qa:'—')+'</b></div>'+
+    '<div class="fl"><span>Workbook answers</span><b>'+(r.work||'—')+'</b></div>'+
+    (r.subs?'<div class="fl"><span>Handed in</span><b>'+r.subs.n+' file'+(r.subs.n>1?'s':'')+' · '+ago(r.subs.last)+'</b></div>':'')+
+    '<div class="fl"><span>Messages to you</span><b>'+(r.dm.s?r.dm.s+' · last '+ago(r.dm.last):'none')+'</b></div>'+
+    '</div>';
+  var rows=(r.mods||[]).filter(function(m){return m.e||m.seen;});
+  var tbl=rows.length?'<table><thead><tr><th>Module</th><th>Sections</th><th class="r">Time</th><th>Score</th><th>Last</th></tr></thead><tbody>'+
+    rows.map(function(m){
+      return '<tr class="'+(m.seen?'':'untouched')+'"><td class="l">'+esc(m.label)+'</td>'+
+        '<td>'+(m.e?'<span class="mbar"><i class="'+band(m.p)+'" style="width:'+m.p+'%"></i></span>'+m.d+' / '+m.e:(m.seen?'opened':'—'))+'</td>'+
+        '<td class="r">'+(m.secs?dur(m.secs):'—')+'</td>'+
+        '<td>'+esc(m.score||(m.qa?m.qok+'/'+m.qa:'—'))+'</td>'+
+        '<td>'+(m.at?ago(m.at):'—')+'</td></tr>';
+    }).join('')+'</tbody></table>':'<div class="empty">This course has no modules in the registry.</div>';
+  return '<div class="course acard">'+head+'<div class="cbody">'+facts+'<div class="mods">'+tbl+'</div></div></div>';
+}
+
+/* ---------- routing + boot ---------- */
+function route(){ var sid=wantSid(); if(sid)drawStudent(sid,false); else drawDirectory(); }
+$('bRefresh').addEventListener('click',async function(){ NSDATA={}; await readDirectory(); var s=wantSid(); if(s)drawStudent(s,true); else drawDirectory(); });
+async function start(){
+  var reg=await window.CourseConfig.load();
+  COURSES=reg.courses.filter(function(c){return c.ns;});
+  route();
+  await readDirectory();
+  route();
+}
+AdminGate.mount({brand:'JANERIKMEIDELL.COM · ADMIN',title:'Instructor sign-in',
+  blurb:'One password for every course, dashboard and message. This device will remember it.',
+  onUnlock:function(){
+    FBAuth.restore(function(u){
+      if(u){start();return;}
+      $('warn').style.display='flex';
+      $('warn').innerHTML=ic('alert')+'<div style="flex:1"><div style="margin-bottom:8px">Signed out — sign in to read the courses.</div><div id="wf"></div></div>';
+      FBAuth.form($('wf'),function(){$('warn').style.display='none';start();},'');
+    });
+  }});
+</script>
+<script src="/shared/adminnav.js" defer></script>
+</body>
+</html>

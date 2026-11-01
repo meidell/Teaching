@@ -142,3 +142,11 @@ global `EscWall`; `courseprogress.js` a port).
   AES-256-GCM ransomware/wiper demo (WebCrypto), amplification calculator
   (CISA TA14-017A factors). Close: team attack path → `_wall/w4` as
   `P:<4 of a|b|c>|B:<1-4>`; Reflection 4 = `refl5_*` on the EP study.
+
+- **Bueger & Liebetrau (2021) as a protected PDF (1 Nov 2026).** The article
+  is Taylor & Francis, paywalled — NOT open access (the hub and Session 3
+  said so wrongly until 1 Nov; now "journal"). It is served only encrypted,
+  `readings/bueger-liebetrau-2021.pdf.enc`, through `/shared/vault.js` (see
+  root CLAUDE.md §3): a `🔒 PDF` link beside the DOI on the hub's S4 card
+  (`rdv`/`rdf` in `TERM`), Session 3's Reflection 3 box and Session 4 step 1.
+  Never commit the plain PDF.
