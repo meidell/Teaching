@@ -324,12 +324,57 @@ define their project and who participates."* Everything below follows from it.
   Free tiers named (ChatGPT and Gemini file attachment) were NOT
   re-verified on 26 Oct 2026 — check before the séance. Séance 5 needs:
   the student's CV and a real job/internship offer as text.
+- **Séance 5 — *Le CV automatisé* (`seance5.tpl.html`, 1 Nov 2026, for
+  Tue 10 Nov 13h30–16h45, break 15h00)**, the class's priority n° 2, on
+  séance 4's engine (blocks copied, `w4`→`w5`; séance 4's agent-card
+  builder `AF`/`lintAgent`/`cardText`/`buildAgents` copied verbatim).
+  5.0 the student's CV + a real offer in two boxes (kept in
+  `gen110_w5_cv` / `gen110_w5_off`, **never sent**) and a **🔐 detector**
+  (`PRIV`: e-mail and phone replaced inline; lines with an address, a
+  birth date or age, a nationality, a marital status, an ID number or a
+  photo dropped) that writes the **version for the AI**; *Use Awa's CV and
+  offer* loads **Awa Ndiaye** (invented, 1st-year BBA, family fabric shop)
+  and a **Wax & Co internship offer** (Canva, Google Sheets, WhatsApp,
+  Instagram AND TikTok, the Monday report, a campaign) — the CV has no
+  TikTok, no campaign, no report, so a writer without a rule adds them.
+  5.1 an extraction instruction (copied with the offer appended), the
+  AI's list pasted into `w5_exigences`, and the **coverage**: each
+  requirement line's words (accent-free, `STOP` list, 6-letter stems)
+  looked up in the CV, ≥ half = covered; per missing line *true, not
+  written* / *I do not have it* (`gen110_w5_proof`); an ATS explainer
+  (extract · file · search; the "75 % rejected by robots" figure named
+  as unsourced). Awa: **44 % FR / 56 % EN** before — the languages differ
+  because "commerce, marketing ou gestion" shares fewer words with her CV
+  than "business, marketing or management". 5.2 two cards (writer seeded
+  **without a rule**, 4/5; truth checker 5/5), relay `w5_cv_ia` →
+  `w5_controle`, and **Find what was added** (`added()`: numbers, `TOOLS`
+  in the CV's own casing, proper names mid-sentence, responsibility words
+  checked word by word — ⚠ not "is any claim word in the original",
+  which Bacca*lauréat* broke) + coverage after (probe: TikTok · 2 000 ·
+  30 % · "Responsable de la communication…", 44 → 67 %). 5.3 the message
+  (`w5_lettre`) with `lintLetter` — 80–180 words · company name (`#coName`,
+  `gen110_w5_co`) · ≥ 2 requirements quoted · ≤ 1 stock phrase (`CLICHE`,
+  one list per language) · a request at the end; step at 4/5. 5.4 the
+  recruiter instruction built from the company + the requirement lines
+  (copy = step `recruiter`), `w5_entretien` with a 3-check answer linter
+  (≥ 40 words · "j'ai/I" · a digit — advisory, not required), classify
+  automate / re-read / never (`A J V J J V`; the Amazon 2018 CV tool,
+  Reuters). Quiz on `_release/w5/quiz`, positions `1 3 0 2 2 0 3 1`. 5.6
+  final CV as PDF, `w5_projet`, bring **ten real examples** of a repeated
+  task to séance 6. Denominator `EXTRA_STEPS (13) + .cl-row (6) + .q (8) +
+  [data-work] (6) = 33`; `total:7`. Six `w5_*` fields in `courses.json →
+  project` (section "5"), module `w5`; hub card 5 rewritten to what was
+  built and `live:true`; `nav.js` lists the sections. Probed headlessly in
+  both editions (fetch stubbed): no errors, all 13 steps, sections
+  s0–s4 + s6 complete, 25/33 with the quiz locked, no personal datum left
+  in the AI copy. The project page's `PROJECTS[].plan[5]` was not
+  rewritten.
 - **Adding a séance** = write `_build/seanceN.tpl.html` (copy séance 1's,
   keep the engine, change the sections), add it to `PAGES` in `build.py`,
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the
   module and its carnet fields to `courses.json`, and set `live:true` on the
   hub's `SEANCES` entry (in the template). Run the headless probe on both
-  editions before pushing. Séances 1–4 exist; 5–10 are `live:false`.
+  editions before pushing. Séances 1–5 exist; 6–10 are `live:false`.
 - **Own namespace `gen110`, prefix `gen110_`**; the rules block in
   `firebase-database-rules.json` must be deployed before the link goes to
   students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`

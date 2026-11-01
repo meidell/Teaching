@@ -113,3 +113,32 @@ global `EscWall`; `courseprogress.js` a port).
   team page; Close sends `Q:`. Manual +/− stays behind a button. Tested headlessly
   (fake DB, 20 checks). Tamperable like every wall; the scores that count are the
   master's browser.
+
+- **Session 4 = "The arsenal" (`week4.html`, inserted 1 Nov 2026, `total:6`).**
+  Jan Erik: "put in another week instead of week 4 (and make week 4 week 5)
+  where we explain the main weapons and how this actually is done — by
+  creating interactive gadgets". The plan shifted: **S5 = cables and
+  satellites** (13 Nov, reading Bueger, Liebetrau & Franken 2022, European
+  Parliament PE 702.557), **S6 = supply chain + risk frameworks merged**
+  (20 Nov, topics 6+7, ENISA; NIST CSF for reference); the midterm stays S7
+  on 27 Nov. Changed together: the hub's `TERM` (+ its header comment and the
+  hero figure's S4/S5 labels), `courseprogress.js`, `courses.json` modules,
+  `roles.html` (duty 5 is now Session 6, 20 Nov), and Session 3's "Session 4
+  is about the physical layer" → Session 5. Session 3's sealed `w3_nx`
+  prediction (cables as targets) and its Reflection 3 (Bueger & Liebetrau
+  2021, `refl4_*`, due 6 Nov) were NOT moved: the reflection is drawn in S4
+  step 1, the prediction opens in S5.
+  Gadgets, all local simulations (nothing sent anywhere): URL dissector
+  (registered domain read from the right; look-alike, punycode, brand-in-name
+  verdicts), a phishing mail with five tells (`w4_tells`, step needs ≥ 3), a
+  password guessing-time table (four illustrative speeds + "reused = 0 s"),
+  a SQL-injection login backed by a real mini WHERE interpreter (`sqRun`:
+  strings, `--`, AND/OR/NOT, parameterised toggle), a 16-byte buffer overflow
+  into `is_admin` and the return address, the patch gap (MS17-010 → WannaCry
+  59 d / NotPetya 105 d, Struts → Equifax 67 d), a lateral-movement simulation
+  (9 machines, 5 defences; **the smallest set that contains it is patch +
+  unique local admin + admin workstations — keep it so no single switch is
+  enough**), a beacon in a seeded firewall log (answer GVA-PC-0231), real
+  AES-256-GCM ransomware/wiper demo (WebCrypto), amplification calculator
+  (CISA TA14-017A factors). Close: team attack path → `_wall/w4` as
+  `P:<4 of a|b|c>|B:<1-4>`; Reflection 4 = `refl5_*` on the EP study.

@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/enterprise-security/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 4 · The arsenal · IIG</title>
+<meta name="description" content="Session 4 of Enterprise Security, Cyber Warfare & Asset Protection. How cyber attacks are actually done: phishing and stolen passwords, injection and memory bugs, the patch gap, moving inside a network, the beacon home, ransomware, wipers and floods — each one run on the page, then put back on the kill chain.">
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#0a2540">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/iig.css">
+<link rel="stylesheet" href="esc.css">
+<style>
+/* Session 4's own additions. Everything else is esc.css. */
+.gad{border:1px solid var(--line);border-radius:14px;margin:14px 0;background:#fff;overflow:hidden;}
+.gad .gh{background:var(--surface);padding:10px 15px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.gad .gh .gs{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:700;color:var(--grey);}
+.gad .gb{padding:14px 16px;font-size:13.5px;line-height:1.6;color:var(--ink);}
+.gad .gb p{font-size:13.5px;}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+.chipb{display:inline-block;font:700 12px inherit;color:var(--navy);background:#fff;border:1.5px solid var(--line);border-radius:4px;padding:5px 10px;margin:0 5px 6px 0;cursor:pointer;}
+.chipb.on{background:var(--navy-surface);border-color:var(--navy-surface);color:#fff;}
+.chipb:disabled{opacity:.5;cursor:default;}
+.res{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface);font-size:13px;line-height:1.55;}
+.res.bad{background:#FBEAE6;color:#7A2414;} .res.ok{background:#E6F3EA;color:#1D5A35;}
+.res b{color:inherit;}
+.gin{width:100%;font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;border:1.5px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--ink);background:#fff;}
+.gin:focus{outline:none;border-color:var(--accent);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:620px){.g2{grid-template-columns:1fr;}}
+.lbl2{font-size:11px;font-weight:800;color:var(--grey);letter-spacing:.6px;text-transform:uppercase;margin:8px 0 4px;display:block;}
+/* URL dissector */
+.url{font:15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all;padding:10px 12px;background:#fff;border:1px dashed var(--line);border-radius:8px;margin-top:8px;}
+.url .sch{color:var(--grey);} .url .sub{color:#8A94A0;} .url .reg{background:#FFF1C9;color:#5C3D00;font-weight:800;border-radius:3px;padding:0 2px;} .url .pth{color:#8A94A0;}
+/* the email */
+.mail{border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px;}
+.mail .mh{background:#F6F7F9;padding:10px 14px;border-bottom:1px solid var(--line);line-height:1.7;}
+.mail .mh span.k{display:inline-block;width:72px;color:var(--grey);font-size:12px;}
+.mail .mb{padding:14px;line-height:1.65;}
+.tl{cursor:pointer;border-bottom:1.5px dotted #B8C0CA;}
+.tl:hover{background:#FFF7E0;}
+.tl.hit{background:#FBEAE6;border-bottom-color:#B3402A;}
+.tl.miss{background:#EEF1F4;border-bottom-color:transparent;}
+.attach{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin-top:8px;background:#fff;}
+/* password meter */
+.pwt{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+.pwt td{padding:7px 8px;border-bottom:1px solid var(--line);}
+.pwt td:last-child{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+/* SQL */
+.q{font:13.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0F1B2D;color:#D8E1EC;border-radius:8px;padding:11px 13px;margin-top:10px;white-space:pre-wrap;word-break:break-all;}
+.q .inj{background:#7A2414;color:#fff;border-radius:2px;}
+.q .cm{color:#6B7A8C;text-decoration:line-through;}
+/* memory */
+.mem{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:10px;}
+.mem .c{font:11.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:center;border-radius:3px;padding:5px 0;background:#EEF1F4;color:var(--ink);}
+.mem .c.buf{background:#E3ECF7;} .mem .c.flag{background:#F3E6C6;} .mem .c.ret{background:#E9DFF2;}
+.mem .c.over{background:#B3402A;color:#fff;}
+.mem .c small{display:block;font-size:9px;color:var(--grey);}
+.mem .c.over small{color:#fff;}
+.memkey{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--grey);margin-top:6px;}
+.memkey i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
+/* patch gap */
+.gap{margin-top:8px;}
+.gap .gr{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;margin:9px 0;font-size:12.5px;}
+.gap .gt{font-weight:800;color:var(--navy);}
+.gap .gl{position:relative;height:26px;background:#EEF1F4;border-radius:4px;}
+.gap .gl i{position:absolute;top:0;bottom:0;background:#F3D3CB;border-radius:4px;}
+.gap .gl b{position:absolute;top:-1px;font-size:10.5px;transform:translateX(-50%);white-space:nowrap;}
+.gap .gl .pin{position:absolute;top:0;bottom:0;width:2px;background:var(--navy);}
+@media(max-width:620px){.gap .gr{grid-template-columns:1fr;}}
+/* network */
+.net{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.net .n{border:1.5px solid var(--line);border-radius:8px;padding:8px 9px;font-size:12px;line-height:1.35;background:#fff;}
+.net .n b{display:block;font-size:12.5px;color:var(--navy);}
+.net .n small{color:var(--grey);}
+.net .n.own{border-color:#B3402A;background:#FBEAE6;}
+.net .n.own b{color:#7A2414;}
+.net .n.new{box-shadow:0 0 0 3px rgba(179,64,42,.25);}
+.net .n.ot{border-style:dashed;}
+.tg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 4px;}
+.tg label{font-size:12.5px;color:var(--ink-soft);display:flex;gap:6px;align-items:center;cursor:pointer;}
+.log{width:100%;border-collapse:collapse;font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:8px;}
+.log td,.log th{padding:5px 7px;border-bottom:1px solid var(--line);text-align:left;}
+.log th{font:800 10px inherit;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);font-family:inherit;}
+.logwrap{max-height:290px;overflow:auto;border:1px solid var(--line);border-radius:8px;}
+/* ransomware */
+.files{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+@media(max-width:620px){.files,.net{grid-template-columns:1fr 1fr;}}
+.files .f{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;min-height:110px;}
+.files .f b{display:block;font-size:12px;color:var(--navy);margin-bottom:4px;}
+.files .f .ct{font:10.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7A2414;word-break:break-all;}
+.files .f.enc{background:#FBEAE6;}
+/* weapon cards */
+.wc4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;}
+@media(max-width:620px){.wc4{grid-template-columns:1fr;}}
+.wc4 .w{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:11px 13px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);}
+.wc4 .w b{display:block;color:var(--navy);font-size:13px;margin-bottom:3px;}
+/* attack path */
+.path{display:grid;gap:10px;margin-top:10px;}
+.path .ps{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;}
+.path .ps .pt{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin-bottom:6px;}
+.range{width:100%;}
+</style>
+</head>
+<body data-course="escwa" data-module="w4">
+
+<div class="topbar">
+  <picture><source srcset="iig-logo.avif" type="image/avif"><img class="logo" src="iig-logo.png" alt="International Institute in Geneva"></picture>
+  <span class="tb-sess">Session 04 · Fri 6 Nov</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 04 · Friday 6 November 2026 · 17:00–19:00</div>
+    <h1>The arsenal: how it is actually done</h1>
+    <div class="when">Bring a laptop. Reflection 3 (Bueger &amp; Liebetrau) is due before 17:00.</div>
+    <p class="lead">Session 3 drew the kill chain as a map. This session opens each stage and runs the weapon used there, on the page: the email that gets someone to type a password, the input that turns a login form against its own database, the twenty characters that overwrite a memory flag, the reused password that hands an intruder every machine in the company, the beacon that calls home every sixty seconds, the encryption that makes a terminal's files unreadable, and the flood that multiplies a small request into a large one. <b>Everything runs in your browser against a simulated Arvane.</b> Nothing is sent anywhere, and nothing here is aimed at a real system. The point of seeing each mechanism work is to see exactly where it can be stopped.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 6</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="Where insurance did not make the victim whole|w4_counter">
+    <span class="tick">✅</span>
+    <span class="clock">Step 1 · 10 min</span>
+    <h2>Open: the claim, and the reading</h2>
+    <p>Session 3 left a claim to break: <em>"A company can buy its way out of cyber risk. With enough insurance, a NotPetya-scale attack is just a cost."</em> If you found a case where the policy excluded the loss, the cover ran out, or the damage was something no policy pays for (lost customers, a lost licence), write it below: a name, a figure and a source.</p>
+    <p>Then the reading. Three students are drawn from those who handed in <b>Reflection 3</b> on Bueger &amp; Liebetrau's "Protecting hidden infrastructure". Each reads their phrase and says in one minute why it matters. Keep the paper in mind: cutting a cable is the last weapon on today's list, and the whole of Session 5.</p>
+    <p id="instRefl" hidden style="font-size:13px;"><a href="reflections.html" style="font-weight:800;">📖 All the reflections, and the draw of three →</a> <span style="color:var(--grey)">(instructor only)</span></p>
+    <script>(function(){try{var inst=localStorage.getItem('jem_instructor')||(JSON.parse(localStorage.getItem('jem_fb_session')||'null')||{}).rt;
+      if(inst&&localStorage.getItem('jem_view')!=='student')document.getElementById('instRefl').hidden=false;}catch(e){}})();</script>
+    <div class="cap">
+      <label for="f_counter">A case where insurance did not make the victim whole, if you found one</label>
+      <div class="hint">Name, figure, source. Leave empty if none; press Done either way.</div>
+      <textarea id="f_counter" data-work="w4_counter" data-worklabel="W4 · insurance counterexample" style="min-height:64px"></textarea>
+    </div>
+    <button class="btn" id="openBtn">Done</button>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2" data-board="The tell that would have stopped Arvane's clerk|w4_tell">
+    <span class="tick">✅</span>
+    <span class="clock">Step 2 · 25 min · kill-chain stages 1–3</span>
+    <h2>The way in: a link, a password</h2>
+    <p>Most intrusions do not begin with clever code. They begin with a person giving away something that opens a door: a password typed into the wrong page, or a document opened that runs code. Colonial Pipeline, which shut down the fuel supply of the US East Coast in May 2021, was entered through <b>one password for an old VPN account that had no second factor</b>, as its chief executive told the US Senate; Mandiant, which investigated, said the password had turned up in a batch of leaked passwords. Three gadgets, each one piece of that door.</p>
+
+    <h3>1 · Who does a link really belong to?</h3>
+    <p>A web address is read <b>from the right</b>. The part that decides who owns the page is the registered domain: the last label before the ending (<span class="mono">.ch</span>, <span class="mono">.com</span>) plus that ending. Everything to its left is a subdomain, which the owner of that domain can name anything at all, including <span class="mono">arvane.ch</span>. Paste or pick a link; the highlighted part is the owner.</p>
+    <div class="gad">
+      <div class="gh">URL dissector <span class="gs">runs locally</span></div>
+      <div class="gb">
+        <div id="urlPicks"></div>
+        <input class="gin" id="urlIn" type="text" spellcheck="false" autocomplete="off" value="https://arvane.ch.login-secure.net/sso/owa">
+        <div class="url" id="urlOut"></div>
+        <div class="res" id="urlRes"></div>
+      </div>
+    </div>
+    <p>The fourth example deserves a second look. It is printed with a Cyrillic <span class="mono">а</span>, which looks exactly like a Latin <span class="mono">a</span>. The browser has to turn it into plain ASCII to look it up (the <span class="mono">xn--</span> form), and that is the only place the difference shows. Modern browsers display the <span class="mono">xn--</span> form when scripts are mixed in a suspicious way; an email client often does not.</p>
+
+    <h3>2 · Find the five tells</h3>
+    <p>Below is an email of the kind Arvane's staff receive. <b>Click every part you think is a tell.</b> There are five; some parts that look odd are innocent.</p>
+    <div class="gad">
+      <div class="gh">Inbox · Arvane Commodities <span class="gs" id="tellScore">0 / 5 found</span></div>
+      <div class="gb">
+        <div class="mail" id="mail">
+          <div class="mh">
+            <span class="k">From</span><span class="tl" data-t="from">Arvane IT Service Desk &lt;it-support@arvane-ch.com&gt;</span><br>
+            <span class="k">To</span><span class="tl" data-t="to">l.morel@arvane.ch</span><br>
+            <span class="k">Subject</span><span class="tl" data-t="subj">Action required: your mailbox will be closed in 24 hours</span>
+          </div>
+          <div class="mb">
+            <span class="tl" data-t="hello">Dear user,</span><br><br>
+            Following the migration of the Constanța terminal to the new mail platform, your mailbox has not been validated. <span class="tl" data-t="urgent">Mailboxes not validated by 17:00 tomorrow will be permanently deleted with their contents.</span><br><br>
+            Please validate now: <span class="tl" data-t="link">https://arvane.ch/mail/validate</span><br><br>
+            The updated berth schedule is attached for your reference.<br>
+            <span class="attach tl" data-t="att">📎 Berth_schedule_Nov.docm · 84 KB</span><br><br>
+            <span class="tl" data-t="sig">Kind regards,<br>IT Service Desk · Arvane Commodities SA · Rue du Rhône, Geneva · +41 22 000 00 00</span>
+          </div>
+        </div>
+        <div class="res" id="tellRes">Click a part of the message.</div>
+      </div>
+    </div>
+    <div class="callout"><span class="ct">The second factor, and how it is beaten</span>A one-time code from an app stops a stolen password from being enough. Two techniques get around it, and both are routine. <b>The relay</b>: the fake page sits between the victim and the real login page, passes the password <em>and</em> the code through in real time, and keeps the session cookie the real site hands back. With that cookie the intruder is logged in and never needs the code again. <b>Fatigue</b>: the intruder triggers push approvals again and again, at night, until the tired victim taps "approve". The defences are a second factor that is bound to the real site's address (a security key or passkey, which a relay page cannot use) and push prompts that require typing a number shown on screen.</div>
+
+    <h3>3 · How long does a password last?</h3>
+    <p>When a company's password database leaks, the attacker does not get the passwords; they get <b>hashes</b>, one-way fingerprints of them. They then guess: hash a candidate, compare, repeat. How long that takes depends on how many candidates there are and how fast each guess is. Type a made-up password (never a real one). Nothing leaves this page.</p>
+    <div class="gad">
+      <div class="gh">Guessing time <span class="gs">illustrative speeds, orders of magnitude</span></div>
+      <div class="gb">
+        <input class="gin" id="pwIn" type="text" spellcheck="false" autocomplete="off" value="Arvane2026!">
+        <div id="pwOut"></div>
+      </div>
+    </div>
+    <p>The meter's lesson is in its last row. A long random password guessed offline holds for centuries; <b>any password used on another site that leaked holds for zero seconds</b>, because the attacker simply tries the leaked pair everywhere (credential stuffing). That is why the defences that matter are a second factor bound to the site, a password manager so that nothing is reused, and slow hashing on the company's side.</p>
+    <div class="cap">
+      <label for="f_tell">Which one tell, if Arvane's staff checked it on every message, would have stopped the most attacks — and why</label>
+      <input type="text" id="f_tell" data-work="w4_tell" data-worklabel="W4 · the tell that matters most" autocomplete="off" placeholder="e.g. the owner of the link, read from the right — because…">
+    </div>
+    <button class="btn" id="wayBtn">Done</button>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3" data-board="Arvane's patch window: how many days, for which systems|w4_patch">
+    <span class="tick">✅</span>
+    <span class="clock">Step 3 · 25 min · kill-chain stage 4</span>
+    <h2>The break-in: making a program do what it was never meant to</h2>
+    <p>Exploitation means feeding a program input its author did not expect, so that the input is treated as <b>instructions</b> rather than <b>data</b>. Every exploit in the news, from a website's login form to the Windows flaw NotPetya used, is a version of that confusion. Two of the oldest and still most common, then the question that decides whether either matters: how fast the hole is closed.</p>
+
+    <h3>1 · SQL injection: the login form that logs anyone in</h3>
+    <p>Arvane's supplier portal checks a login by building one sentence for its database out of what you type, and asking it for a matching row. Type a name and a password and watch the sentence being built. Then try the three inputs under the form. The database below is a real, if tiny, interpreter: it reads the sentence exactly as written.</p>
+    <div class="gad">
+      <div class="gh">Supplier portal · login <span class="gs">simulated database, three users</span></div>
+      <div class="gb">
+        <div class="g2">
+          <div><span class="lbl2">Name</span><input class="gin" id="sqN" type="text" spellcheck="false" autocomplete="off" value="anna"></div>
+          <div><span class="lbl2">Password</span><input class="gin" id="sqP" type="text" spellcheck="false" autocomplete="off" value="guess"></div>
+        </div>
+        <div style="margin-top:9px"><span class="lbl2" style="display:inline;margin-right:6px">Try</span>
+          <button type="button" class="chipb" data-n="anna" data-p="guess">anna / guess</button>
+          <button type="button" class="chipb" data-n="admin'--" data-p="">admin'--</button>
+          <button type="button" class="chipb" data-n="x" data-p="' OR '1'='1">' OR '1'='1</button>
+          <button type="button" class="chipb" data-n="o'brien" data-p="x">o'brien</button>
+        </div>
+        <div class="tg"><label><input type="checkbox" id="sqSafe"> The developer's fix: send the input as data, separately from the sentence (a parameterised query)</label></div>
+        <div class="q" id="sqQ"></div>
+        <div class="res" id="sqR"></div>
+      </div>
+    </div>
+    <p>The <span class="mono">o'brien</span> try shows why this bug is so common: a perfectly honest name with an apostrophe already breaks the sentence. A developer who sees that error and "fixes" it by stripping apostrophes has not fixed the cause. The cause is <b>mixing code and data in one string</b>; the cure is to keep them apart, which every database library has supported for twenty years.</p>
+
+    <h3>2 · A memory bug: twenty characters that make you an administrator</h3>
+    <p>Programs written in C or C++ keep their working data side by side in memory. Here a program reserves <b>16 bytes</b> for your user name; right after it sits a flag, <span class="mono">is_admin</span> (zero means no), and after that the address the program returns to when it finishes. The copy routine copies <b>whatever you type, however long</b>. Type a longer name.</p>
+    <div class="gad">
+      <div class="gh">Memory, byte by byte <span class="gs" id="memState"></span></div>
+      <div class="gb">
+        <input class="gin" id="memIn" type="text" spellcheck="false" autocomplete="off" value="l.morel" maxlength="40">
+        <div class="tg"><label><input type="checkbox" id="memSafe"> Bounds-checked copy (what a memory-safe language does by default)</label></div>
+        <div class="mem" id="mem"></div>
+        <div class="memkey"><span><i style="background:#E3ECF7"></i>name buffer · 16 bytes</span><span><i style="background:#F3E6C6"></i>is_admin · 4 bytes</span><span><i style="background:#E9DFF2"></i>return address · 4 bytes</span><span><i style="background:#B3402A"></i>overwritten</span></div>
+        <div class="res" id="memR"></div>
+      </div>
+    </div>
+    <p>Overwriting a flag is the gentle version. Overwriting the <b>return address</b> is the serious one: the program then jumps wherever the attacker's bytes point, and runs the attacker's instructions with the program's own rights. Modern systems add hurdles (randomised addresses, memory that cannot be executed), and attackers chain several bugs to clear them. Microsoft's security response centre reported in 2019 that about <b>70 % of the vulnerabilities it fixes each year are memory-safety bugs</b> of this family, which is why governments now urge vendors to move to memory-safe languages.</p>
+
+    <h3>3 · The patch gap</h3>
+    <p>A bug that has been fixed is only fixed on machines that installed the fix. The time between the patch and the installation is the attacker's window, and it is measured in weeks. Three real windows, drawn to scale:</p>
+    <div class="gad">
+      <div class="gh">Patch published → attack <span class="gs">days</span></div>
+      <div class="gb"><div class="gap" id="gap"></div>
+        <p style="margin-top:8px;font-size:12.5px;color:var(--grey)">Microsoft bulletin MS17-010, 14 Mar 2017 · WannaCry, 12 May 2017 · NotPetya, 27 Jun 2017 · Apache Struts fix for CVE-2017-5638, 7 Mar 2017; Equifax intruders in from 13 May 2017, records of about 147 million people taken (Equifax's final count; timeline from US GAO-18-559, 2018).</p></div>
+    </div>
+    <p>A <b>zero-day</b> is the case with no window at all: a flaw nobody but the attacker knows, so there is no patch to install. Stuxnet used four. They are rare and expensive, which is why states keep them for targets that matter; almost everything else that happens to companies uses flaws whose patch had already been published.</p>
+    <div class="cap">
+      <label for="f_patch">Arvane's patch window: within how many days must a critical fix be installed, and on which systems first</label>
+      <input type="text" id="f_patch" data-work="w4_patch" data-worklabel="W4 · Arvane's patch window" autocomplete="off" placeholder="e.g. 7 days for anything facing the internet (VPN, mail, the supplier portal), 30 for the rest — because…">
+    </div>
+    <button class="btn" id="breakBtn">Done</button>
+  </div>
+
+  <div class="quiet">☕ <b>Break.</b> Then: once inside, how one machine becomes all of them.</div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="The one setting that stopped the spread|w4_spread">
+    <span class="tick">✅</span>
+    <span class="clock">Step 4 · 25 min · kill-chain stages 5–6</span>
+    <h2>Inside: how one machine becomes every machine</h2>
+    <p>The first machine an intruder controls is rarely the one they want. They want the <b>domain controller</b>, the server that holds every account and can push software to every computer, and from there the file servers, the backups and, at Arvane, the terminal's control systems. Getting there is called <b>lateral movement</b>, and it mostly uses no exploit at all. Windows keeps the credentials of whoever logged on recently in memory; a free tool (Mimikatz, published in 2011) reads them out; the intruder logs on to the next machine <em>as that person</em>. NotPetya carried exactly such a credential reader, which is how it reached machines that had been patched.</p>
+
+    <h3>1 · Arvane's office network, one phished clerk</h3>
+    <p>Lucie Morel's PC in Geneva is compromised (red). Each round, the intruder reads the credentials cached on every machine they hold and tries them, and the unpatched Windows flaw from Step 3, everywhere they can reach. <b>Run it as it is, then switch on defences one at a time</b> and see which ones change the outcome.</p>
+    <div class="gad">
+      <div class="gh">Lateral movement <span class="gs" id="netState"></span></div>
+      <div class="gb">
+        <div class="tg" id="netTg"></div>
+        <div class="net" id="net"></div>
+        <div style="margin-top:10px"><button class="btn" id="netStep" type="button">Next round</button> <button class="btn ghost" id="netRun" type="button">Run to the end</button> <button class="btn ghost" id="netReset" type="button">Reset</button></div>
+        <div class="res" id="netR"></div>
+      </div>
+    </div>
+    <div class="callout"><span class="ct">What the simulation assumes, plainly</span>The local administrator password is the same on every PC (it was set once, when the PCs were imaged). An IT administrator set up Lucie's scanner last week with his domain-administrator account, so that credential is still cached on her PC. The terminal administrator logs on to the control system from his ordinary office PC. The terminal's control system is joined to the same domain as the office. The backups are on a server that domain administrators can log on to. All five are common, and each is one switch in the panel. <b>Find the smallest set of switches that contains the intrusion to Lucie's PC</b>: no single one does it.</div>
+
+    <h3>2 · The beacon: find the machine that is calling home</h3>
+    <p>An installed backdoor has to receive instructions. It does so by <b>calling out</b>, because outgoing web traffic is allowed almost everywhere: every so often it asks an outside server "anything for me?". That regular call is the <b>beacon</b>, and it is how defenders find a foothold the antivirus missed. Below are ten minutes of outgoing connections from three machines. <b>Which one is beaconing?</b></p>
+    <div class="gad">
+      <div class="gh">Firewall log · outbound · Fri 06 Nov <span class="gs">10 minutes, 3 hosts</span></div>
+      <div class="gb">
+        <div class="logwrap"><table class="log" id="log"></table></div>
+        <div style="margin-top:10px" id="beaconPick"></div>
+        <div class="res" id="beaconR">Pick a machine.</div>
+      </div>
+    </div>
+    <div class="cap">
+      <label for="f_spread">The one setting in the network panel that changed the outcome most, and what it costs Arvane to switch it on</label>
+      <input type="text" id="f_spread" data-work="w4_spread" data-worklabel="W4 · the setting that stopped the spread" autocomplete="off" placeholder="e.g. separate admin workstations — costs a second PC and some annoyance for three IT staff">
+    </div>
+    <button class="btn" id="spreadBtn">Done</button>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="The payload that would hurt Arvane most|w4_payload">
+    <span class="tick">✅</span>
+    <span class="clock">Step 5 · 20 min · kill-chain stage 7</span>
+    <h2>The payloads: lock, wipe, flood, cut</h2>
+    <p>Everything so far was preparation. The last stage is the one that makes the news, and it comes in four kinds.</p>
+
+    <h3>1 · Ransomware, and the wiper wearing its mask</h3>
+    <p>Ransomware does not damage files; it <b>encrypts</b> them with a key only the attacker holds. The encryption is the same mathematics that protects online banking, which is exactly why it cannot be broken. Below are three Arvane files. The page will encrypt them with real AES-256, in your browser.</p>
+    <div class="gad">
+      <div class="gh">Constanța terminal · file share <span class="gs" id="rwState">plain</span></div>
+      <div class="gb">
+        <div class="files" id="files"></div>
+        <div style="margin-top:10px">
+          <button class="btn" id="rwEnc" type="button">Encrypt</button>
+          <button class="btn ghost" id="rwDec" type="button" disabled>Decrypt with the key ("pay")</button>
+          <button class="btn ghost" id="rwWipe" type="button" disabled>Throw the key away (wiper)</button>
+          <button class="btn ghost" id="rwReset" type="button">Reset</button>
+        </div>
+        <div class="res" id="rwR"></div>
+      </div>
+    </div>
+    <p>In real ransomware the file key is itself locked with the attacker's <b>public key</b>, so the only thing that can unlock it is a private key that never leaves the attacker; that is the product sold for the ransom. Two refinements matter to a company. <b>Double extortion</b>: since around 2019 the gangs copy the data out <em>before</em> encrypting it, so a company with perfect backups still faces publication. And the <b>wiper</b>: NotPetya displayed a ransom note, but the identifier it showed the victim was random, so even the attacker could not have produced the right key. Paying bought nothing. A wiper wearing ransomware's mask buys the attacker deniability and the victim nothing.</p>
+
+    <h3>2 · The flood: turning a small request into a large one</h3>
+    <p>A denial-of-service attack sends more traffic than a link can carry. The cheap way is <b>amplification</b>: the attacker sends small questions to public servers on the internet, with the <em>victim's</em> address forged as the sender, and the servers send their much larger answers to the victim. The multiplier depends on the service. Set the attacker's own bandwidth and pick a service.</p>
+    <div class="gad">
+      <div class="gh">Amplification <span class="gs">factors: CISA alert TA14-017A</span></div>
+      <div class="gb">
+        <div id="ampPick"></div>
+        <span class="lbl2">Attacker's own upload · <span id="ampBwL"></span></span>
+        <input type="range" class="range" id="ampBw" min="0" max="100" value="30">
+        <div class="res" id="ampR"></div>
+      </div>
+    </div>
+    <p>The record at the time it happened: on 28 February 2018 GitHub was hit by <b>1.35 terabits per second</b> of memcached amplification. It was unreachable for about five minutes, until its traffic was routed through a scrubbing service large enough to absorb it. The defence against floods is almost never on the victim's own premises: it is capacity rented from someone larger.</p>
+
+    <h3>3 · Four weapons that are not code</h3>
+    <div class="wc4">
+      <div class="w"><b>The anchor</b>A ship drags its anchor across a seabed cable or pipeline. Balticconnector, October 2023: the Finnish investigation found the anchor of the <i>Newnew Polar Bear</i>, recovered from the seabed beside the damaged pipe. Cheap, deniable, and slow to repair. Session 5.</div>
+      <div class="w"><b>The jammer</b>A transmitter of a few watts drowns the satellite navigation signal. Session 2 measured it: a 1 W jammer at 10 km arrives about 23,000 times stronger than the satellites. Spoofing goes further and sends a false position.</div>
+      <div class="w"><b>The insider</b>An employee, contractor or cleaner with legitimate access does what no outsider can: carries a USB stick across an air gap (Stuxnet's probable route), photographs a screen, or approves a payment.</div>
+      <div class="w"><b>The story</b>Disinformation is a payload too: a forged document about Arvane's cargo, released the day a contract is signed, does damage without touching a computer. Session 8.</div>
+    </div>
+    <div class="cap">
+      <label for="f_payload">Which payload would hurt Arvane most, and which single preparation would most reduce it</label>
+      <input type="text" id="f_payload" data-work="w4_payload" data-worklabel="W4 · the payload that would hurt most" autocomplete="off" placeholder="e.g. a wiper on the terminal — an offline backup restored in a drill, twice a year">
+    </div>
+    <button class="btn" id="payBtn">Done</button>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6" data-board="Where the room breaks the attack on Arvane|w4_path">
+    <span class="tick">✅</span>
+    <span class="clock">Step 6 · 30 min · the team's attack path</span>
+    <h2>The close: build the attack, then break it</h2>
+    <p>Each team plays Arvane's adversary for ten minutes. Choose one weapon per stage from what you ran today, so the path is coherent (the way in must lead to something the break-in can use). Then switch sides: name the <b>earliest stage where Arvane breaks your path</b>, and with what. The room's break points go on the wall.</p>
+    <div class="cap">
+      <label>Your team</label>
+      <div class="hint">The team board: join yours, name it, add or remove members. The same board is on the course page.</div>
+      <div id="teamsBox" class="teams"></div>
+      <select id="f_teamsel" hidden><option value="">Team…</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+      <input type="hidden" id="f_mates">
+      <input type="hidden" id="f_team" data-work="w4_team" data-worklabel="W4 · team">
+    </div>
+    <div class="path" id="path"></div>
+    <input type="hidden" id="f_path" data-work="w4_path" data-worklabel="W4 · attack path and break point">
+    <div class="cap">
+      <label for="f_why">How Arvane breaks it there, in one sentence</label>
+      <input type="text" id="f_why" data-work="w4_why" data-worklabel="W4 · how Arvane breaks the path" autocomplete="off">
+    </div>
+    <button class="btn" id="pathBtn">Put the team's break point on the wall</button>
+    <button class="btn ghost" id="pathWallBtn">Show the room</button>
+    <div class="savenote" id="pathNote"></div>
+    <div class="wall" id="pathWall" style="display:none"></div>
+
+    <div class="claim">
+      <div class="ch">Break this claim · by next Friday</div>
+      <div class="cq">"A state-level attacker always gets in. A company's defences only matter against criminals."</div>
+      <div class="cn">Attack it with a case where a state's operation against a company or an infrastructure operator was detected or stopped by the defender's own controls — a name, a date, a source. The best counterexample opens Session 5.</div>
+    </div>
+
+    <div class="quiet">Session 3's sealed prediction, whether a cable or a satellite carrying critical traffic is a legitimate military target, opens in <b>Session 5</b>, the session on the physical layer.</div>
+
+    <div class="refl" id="refl">
+      <div class="rh">Weekly reflection 4 · due before Friday 13 November, 17:00</div>
+      <h3>Bueger, C., Liebetrau, T. &amp; Franken, J. (2022). <i>Security threats to undersea communications cables and infrastructure: consequences for the EU</i>. European Parliament, Policy Department for External Relations, PE 702.557</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:8px;">Free PDF: <a href="https://www.europarl.europa.eu/thinktank/en/document/EXPO_IDA(2022)702557" target="_blank" rel="noopener" style="color:var(--navy-bright);font-weight:800;">europarl.europa.eu →</a>. Read the executive summary and chapter 3, on the threats. Pick <b>one phrase, one to five lines</b>, that captures a core aspect of the text. Then write <b>up to 300 words</b> on why it is crucial to the rest of the text and what the authors are trying to say. One important aspect, <b>not a summary</b>. Three reflections are picked at random on Friday. Not submitted = 0/100.</p>
+      <div class="cap">
+        <label for="r_quote">The phrase, exactly as printed</label>
+        <textarea id="r_quote" data-work="refl5_quote" data-worklabel="Reflection 4 · quotation" style="min-height:64px"></textarea>
+      </div>
+      <div class="cap">
+        <label for="r_ref">Reference</label>
+        <input type="text" id="r_ref" data-work="refl5_ref" data-worklabel="Reflection 4 · reference" placeholder="(Bueger, Liebetrau &amp; Franken, 2022, p. 00)" autocomplete="off">
+      </div>
+      <div class="cap">
+        <label for="r_text">Your reflection · max 300 words</label>
+        <textarea id="r_text" data-work="refl5_text" data-worklabel="Reflection 4 · text" style="min-height:180px"></textarea>
+        <div class="wc" id="r_wc">0 / 300 words</div>
+      </div>
+      <div class="cap">
+        <label for="r_ai">AI use, if any</label>
+        <div class="hint">The syllabus requires disclosure: tool name and how you used it. Leave empty if none.</div>
+        <input type="text" id="r_ai" data-work="refl5_ai" data-worklabel="Reflection 4 · AI disclosure" autocomplete="off">
+      </div>
+      <button class="btn" id="reflBtn">Submit my reflection</button>
+      <div class="savenote" id="reflNote">Saved as you type; submitting stamps the time. It can still be improved until 17:00 on the day.</div>
+      <input type="hidden" id="f_reflts" data-work="refl5_submitted" data-worklabel="Reflection 4 · submitted at">
+    </div>
+
+    <div class="quiet"><b>What you should be able to say after today</b>, in an exam: how a link's owner is read and why a subdomain proves nothing; why a second factor stops a stolen password and the two ways it is defeated; why a reused password lasts zero seconds; what SQL injection and a buffer overflow have in common (input treated as instructions) and the fix for each; what a patch gap and a zero-day are, with the WannaCry, NotPetya and Equifax windows; how cached credentials let an intruder move from one PC to the domain controller, and which four settings stop it; what a beacon is and how it is spotted; how ransomware, double extortion and a wiper differ; how amplification multiplies a flood; and on which kill-chain stage each of these sits.</div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Session 4 of 14 · International Institute in Geneva
+    <div style="margin-top:8px;"><a href="#" id="resetLink" style="color:var(--grey);font-weight:400;">Reset my answers and progress for Session 4 on this device</a></div>
+    <div style="margin-top:10px;font-size:11.5px;line-height:1.6;">Sources named on this page: J. Blount, testimony to the US Senate Homeland Security Committee, 8 Jun 2021, and Mandiant via Bloomberg, 4 Jun 2021 (Colonial Pipeline) · Microsoft MSRC, M. Miller, "Trends, challenges and strategic shifts in the software vulnerability mitigation landscape", BlueHat IL 2019 · Microsoft Security Bulletin MS17-010 (14 Mar 2017) · US GAO-18-559 (2018), Equifax · Hutchins, Cloppert &amp; Amin (2011), kill chain · CISA alert TA14-017A, UDP-based amplification attacks <a href="https://www.cisa.gov/news-events/alerts/2014/01/17/udp-based-amplification-attacks" target="_blank" rel="noopener">cisa.gov</a> · GitHub Engineering, "February 28th DDoS incident report" (2018) · Finnish National Bureau of Investigation (2023), Balticconnector · Bueger, Liebetrau &amp; Franken (2022) <a href="https://www.europarl.europa.eu/thinktank/en/document/EXPO_IDA(2022)702557" target="_blank" rel="noopener">European Parliament</a></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 4 — the arsenal (inserted 1 Nov 2026; Jan Erik: "explain the
+   main weapons and how this actually is done, by creating interactive
+   gadgets"). Every gadget is a local simulation: nothing is sent, and
+   the only network calls are the course's own (progress, wall, teams).
+
+   ⚠ THE PROGRESS DENOMINATOR IS THE SIX STEPS. courseprogress.js carries
+   total:6 for w4. The reflection collected here is refl5_* (due before
+   Session 5), not a step.
+
+   ⚠ WALL: _wall/w4 as 'P:<4 letters>|B:<stage 1-4>' (meta ≤ 120, n ≤ 40).
+   Covered by the _wall/$mod wildcard; nothing to deploy.
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6'];
+var K='escwa';
+
+/* ---- storage helpers --------------------------------------------------- */
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(K+'_'+k);if(v===null)localStorage.removeItem(K+'_'+k);else localStorage.setItem(K+'_'+k,v);}catch(e){return null;}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function $(id){return document.getElementById(id);}
+function firstName(){try{var a=JSON.parse(localStorage.getItem(K+'_auth')||'null');return ((a&&a.name)||'').split(' ')[0];}catch(e){return '';}}
+function setWork(id,v){var el=$(id);if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}
+
+/* ---- step 2.1: the URL dissector --------------------------------------- */
+var URLS=[
+ ['Arvane’s own','https://arvane.ch/intranet/berths'],
+ ['subdomain trick','https://arvane.ch.login-secure.net/sso/owa'],
+ ['one letter','https://arvame.ch/payroll'],
+ ['look-alike script','https://аrvane.ch/login'],
+ ['brand in the name','https://sharepoint.com.arvane-docs.com/view'],
+ ['a real third party','https://login.microsoftonline.com/common/oauth2']
+];
+var SUFFIX2=['co.uk','com.sg','com.au','co.jp','com.br','org.uk','gov.uk','ac.uk'];
+function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++){d[i]=[i];}for(j=0;j<=n;j++)d[0][j]=j;
+  for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n];}
+function dissect(raw){
+  var s=String(raw||'').trim();if(!s)return null;if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(s))s='https://'+s;
+  var u;try{u=new URL(s);}catch(e){return {err:true};}
+  var host=u.hostname.replace(/\.$/,''),labels=host.split('.');
+  var n=SUFFIX2.indexOf(labels.slice(-2).join('.'))>=0?3:2;
+  var reg=labels.slice(-n).join('.'),sub=labels.slice(0,-n).join('.');
+  return {scheme:u.protocol+'//',sub:sub,reg:reg,path:u.pathname+u.search,host:host,typed:raw};
+}
+function paintUrl(){
+  var d=dissect($('urlIn').value),o=$('urlOut'),r=$('urlRes');
+  if(!d){o.innerHTML='';r.textContent='';return;}
+  if(d.err){o.textContent=$('urlIn').value;r.className='res bad';r.textContent='Not a valid address.';return;}
+  o.innerHTML='<span class="sch">'+esc(d.scheme)+'</span>'+(d.sub?'<span class="sub">'+esc(d.sub)+'.</span>':'')+'<span class="reg">'+esc(d.reg)+'</span><span class="pth">'+esc(d.path)+'</span>';
+  var name=d.reg.split('.')[0],msg,cls;
+  if(d.reg==='arvane.ch'){cls='ok';msg='This page belongs to <b>arvane.ch</b>: Arvane’s own domain.';}
+  else if(/^xn--/.test(name)){cls='bad';msg='Owner: <b>'+esc(d.reg)+'</b>. The name contains characters from another alphabet; this is its real, encoded form. What you were shown looks like Arvane, and is not.';}
+  else if(name.indexOf('arvane')>=0){cls='bad';msg='Owner: <b>'+esc(d.reg)+'</b>. It contains the word “arvane”, but anyone can register a name containing a brand. Not Arvane.';}
+  else if(lev(name,'arvane')<=2){cls='bad';msg='Owner: <b>'+esc(d.reg)+'</b>, '+lev(name,'arvane')+' letter'+(lev(name,'arvane')>1?'s':'')+' away from “arvane”. A look-alike registration.';}
+  else if(d.sub.indexOf('arvane')>=0){cls='bad';msg='Owner: <b>'+esc(d.reg)+'</b>. “arvane.ch” here is only a subdomain, a label the owner of '+esc(d.reg)+' chose. Read from the right.';}
+  else {cls='';msg='Owner: <b>'+esc(d.reg)+'</b>. Not Arvane, which is not the same as malicious: whether to trust it is a question about <i>that</i> company.';}
+  r.className='res '+cls;r.innerHTML=msg;
+}
+function mountUrl(){
+  $('urlPicks').innerHTML=URLS.map(function(u,i){return '<button type="button" class="chipb" data-i="'+i+'">'+(i+1)+' · '+u[0]+'</button>';}).join('');
+  Array.prototype.forEach.call($('urlPicks').children,function(b){b.addEventListener('click',function(){$('urlIn').value=URLS[+b.dataset.i][1];paintUrl();
+    Array.prototype.forEach.call($('urlPicks').children,function(x){x.classList.toggle('on',x===b);});});});
+  $('urlIn').addEventListener('input',paintUrl);paintUrl();
+}
+
+/* ---- step 2.2: the five tells ------------------------------------------ */
+var TELLS={
+ from:[1,'The sender’s domain is <b>arvane-ch.com</b>, not arvane.ch: a look-alike anyone could register for ten francs. The display name “Arvane IT Service Desk” is free text and proves nothing.'],
+ subj:[0,'An action in the subject line is normal for real IT messages too. On its own, not a tell; the deadline in the body is.'],
+ to:[0,'Her real address. Attackers get it from the website, LinkedIn or an earlier leak. Not a tell.'],
+ hello:[1,'“Dear user”: the real service desk knows her name. A message sent to thousands is written to nobody.'],
+ urgent:[1,'Urgency plus a threat (“permanently deleted”) is there to stop her from checking with a colleague. The single most reliable tell.'],
+ link:[1,'The text shows arvane.ch/mail/validate; the link behind it goes to <b>https://arvane.ch.login-secure.net/validate</b>. Hover before clicking: the status bar shows the real target. Read it from the right (gadget 1).'],
+ att:[1,'<b>.docm</b> is a Word file with macros, small programs that run when allowed. A berth schedule has no reason to contain code. This is the delivery stage in a single file.'],
+ sig:[0,'Plausible address and phone number, copied from Arvane’s website. A signature costs nothing to fake and is not a tell either way.']
+};
+function tellState(){try{return JSON.parse(ls('w4_tells')||'{}');}catch(e){return {};}}
+function paintTells(last){
+  var st=tellState(),found=0;
+  Array.prototype.forEach.call(document.querySelectorAll('#mail .tl'),function(el){var k=el.dataset.t;el.classList.remove('hit','miss');if(st[k])el.classList.add(TELLS[k][0]?'hit':'miss');if(st[k]&&TELLS[k][0])found++;});
+  $('tellScore').textContent=found+' / 5 found';
+  if(last){var t=TELLS[last];$('tellRes').className='res '+(t[0]?'bad':'');$('tellRes').innerHTML=(t[0]?'<b>A tell.</b> ':'<b>Not a tell.</b> ')+t[1]+(found===5?'<br><br><b>All five.</b> Note which one would have been enough alone: the link’s real owner, or the sender’s domain.':'');}
+}
+function mountTells(){
+  Array.prototype.forEach.call(document.querySelectorAll('#mail .tl'),function(el){el.addEventListener('click',function(){var st=tellState();st[el.dataset.t]=1;ls('w4_tells',JSON.stringify(st));paintTells(el.dataset.t);});});
+  paintTells();
+}
+
+/* ---- step 2.3: guessing time ------------------------------------------- */
+var COMMON=['password','passwort','motdepasse','welcome','bienvenue','qwerty','azerty','letmein','admin','arvane','geneva','geneve','genève','summer','winter','spring','autumn','sommer','hiver','soleil','monkey','dragon','football','iloveyou','123456','sunshine','princess','trustno1'];
+var SPEEDS=[
+ ['Online, the site locks the account after a few tries',10/3600,'10 guesses an hour'],
+ ['Online, no lockout',100,'100 a second'],
+ ['Leaked database, slow hash (bcrypt-style), one graphics card',1e4,'~10 thousand a second'],
+ ['Leaked database, fast unsalted hash, one graphics card',1e11,'~100 billion a second']
+];
+function dur(s){
+  if(!isFinite(s)||s>1e15*3.15e7)return 'longer than the universe';
+  if(s<1)return 'instantly';var u=[[3.15e7*1e9,'billion years'],[3.15e7*1e6,'million years'],[3.15e7*1000,'thousand years'],[3.15e7,'years'],[86400,'days'],[3600,'hours'],[60,'minutes'],[1,'seconds']];
+  for(var i=0;i<u.length;i++)if(s>=u[i][0]){var v=s/u[i][0];return (v<10?v.toFixed(1):Math.round(v).toLocaleString('en-GB'))+' '+u[i][1];}
+  return Math.round(s)+' seconds';
+}
+function paintPw(){
+  var p=$('pwIn').value,L=p.length,cs=0;
+  if(/[a-z]/.test(p))cs+=26;if(/[A-Z]/.test(p))cs+=26;if(/[0-9]/.test(p))cs+=10;if(/[^a-zA-Z0-9]/.test(p))cs+=33;
+  var brute=L?Math.pow(cs,L):0,base=p.toLowerCase().replace(/[^a-zà-ÿ]/g,''),pattern=null;
+  /* the guesser's first move: a dictionary word, capitalised, plus digits and a symbol */
+  for(var i=0;i<COMMON.length;i++){if(base.indexOf(COMMON[i])===0||(base.length>=4&&COMMON[i].indexOf(base)===0)){pattern=COMMON[i];break;}}
+  var space=brute,how='every combination of '+cs+' possible characters over '+L+' positions = '+(brute?brute.toExponential(1).replace('e+',' × 10^'):'0');
+  if(pattern){space=Math.min(brute,1e9);how='a common word (“'+esc(pattern)+'”) with capitals, digits and a symbol added: guessers try that pattern first, roughly the first <b>billion</b> candidates';}
+  if(!p){$('pwOut').innerHTML='';return;}
+  var rows=SPEEDS.map(function(s){return '<tr><td>'+s[0]+' <small style="color:var(--grey)">('+s[2]+')</small></td><td>'+dur(space/2/s[1])+'</td></tr>';}).join('');
+  rows+='<tr><td><b>Used on any other site that has leaked</b> (credential stuffing)</td><td style="color:#B3402A">0 seconds</td></tr>';
+  $('pwOut').innerHTML='<div class="res">Search space: '+how+'. Expected time = half the space ÷ speed.</div><table class="pwt">'+rows+'</table>';
+}
+
+/* ---- step 3.1: SQL injection ------------------------------------------- */
+var USERS=[{name:'anna',pass:'Tr4ding!Desk',role:'buyer'},{name:'admin',pass:'k9#Lq2v!Wm',role:'administrator'},{name:'marc',pass:'Rh0ne-1955',role:'buyer'}];
+function sqTok(s){
+  var t=[],i=0;
+  while(i<s.length){var c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(s.substr(i,2)==='--'){t.push({k:'cm',v:s.slice(i)});break;}
+    if(c==="'"){var j=i+1,v='';for(;;){if(j>=s.length)throw new Error('unterminated');if(s[j]==="'"){if(s[j+1]==="'"){v+="'";j+=2;continue;}break;}v+=s[j++];}t.push({k:'str',v:v});i=j+1;continue;}
+    if(/[0-9]/.test(c)){var m=/^[0-9]+/.exec(s.slice(i))[0];t.push({k:'num',v:m});i+=m.length;continue;}
+    if(/[A-Za-z_]/.test(c)){var w=/^[A-Za-z_][A-Za-z0-9_]*/.exec(s.slice(i))[0];var u=w.toUpperCase();t.push(['AND','OR','NOT','SELECT','FROM','WHERE'].indexOf(u)>=0?{k:'kw',v:u}:{k:'id',v:w.toLowerCase()});i+=w.length;continue;}
+    if(s.substr(i,2)==='<>'||s.substr(i,2)==='!='){t.push({k:'op',v:'<>'});i+=2;continue;}
+    if(c==='='||c==='('||c===')'||c==='*'||c===';'||c===','){t.push({k:'op',v:c});i++;continue;}
+    throw new Error('unexpected '+c);
+  }
+  return t;
+}
+function sqRun(sql){
+  var T=sqTok(sql).filter(function(x){return x.k!=='cm';}),p=0;
+  function peek(){return T[p];} function eat(k,v){var x=T[p];if(!x||x.k!==k||(v&&x.v!==v))throw new Error('syntax');p++;return x;}
+  eat('kw','SELECT');eat('op','*');eat('kw','FROM');eat('id');eat('kw','WHERE');
+  function val(){var x=T[p++];if(!x)throw new Error('syntax');if(x.k==='str'||x.k==='num')return function(){return x.v;};if(x.k==='id')return function(r){if(!(x.v in r))throw new Error('no column '+x.v);return r[x.v];};
+    if(x.k==='op'&&x.v==='('){var e=or();eat('op',')');return e;}throw new Error('syntax');}
+  function cmp(){var a=val();var x=peek();if(x&&x.k==='op'&&(x.v==='='||x.v==='<>')){p++;var b=val();return x.v==='='?function(r){return String(a(r))===String(b(r));}:function(r){return String(a(r))!==String(b(r));};}
+    return function(r){var v=a(r);return v===true||(v!==false&&v!==''&&v!=='0');};}
+  function not(){var x=peek();if(x&&x.k==='kw'&&x.v==='NOT'){p++;var e=not();return function(r){return !e(r);};}return cmp();}
+  function and(){var e=not();while(peek()&&peek().k==='kw'&&peek().v==='AND'){p++;var a=e,b=not();e=(function(a,b){return function(r){return a(r)&&b(r);};})(a,b);}return e;}
+  function or(){var e=and();while(peek()&&peek().k==='kw'&&peek().v==='OR'){p++;var a=e,b=and();e=(function(a,b){return function(r){return a(r)||b(r);};})(a,b);}return e;}
+  var where=or();if(peek()&&peek().k==='op'&&peek().v===';')p++;if(p<T.length)throw new Error('syntax');
+  return USERS.filter(function(r){return where(r);});
+}
+function paintSql(){
+  var n=$('sqN').value,pw=$('sqP').value,safe=$('sqSafe').checked;
+  var head="SELECT * FROM users WHERE name = '",mid="' AND pass = '",tail="'";
+  if(safe){
+    $('sqQ').innerHTML=esc("SELECT * FROM users WHERE name = ? AND pass = ?")+'\n<span style="color:#9FB3C8">-- sent separately, as data: ['+esc(JSON.stringify(n))+', '+esc(JSON.stringify(pw))+']</span>';
+    var hit=USERS.filter(function(u){return u.name===n&&u.pass===pw;});
+    $('sqR').className='res '+(hit.length?'ok':'');$('sqR').innerHTML=hit.length?'Logged in as <b>'+esc(hit[0].name)+'</b>.':'<b>Login refused.</b> The input was compared as text, character for character, quotes and all. Nothing in it can change the sentence.';
+    return;
+  }
+  var sql=head+n+mid+pw+tail;
+  /* highlight: the user's input in red; everything after a -- greyed out */
+  var html=esc(head)+'<span class="inj">'+esc(n)+'</span>'+esc(mid)+'<span class="inj">'+esc(pw)+'</span>'+esc(tail);
+  var ci=-1;try{var tk=sqTok(sql);tk.forEach(function(x){if(x.k==='cm')ci=sql.length-x.v.length;});}catch(e){}
+  if(ci>=0){var plain=sql.slice(0,ci),rest=sql.slice(ci);
+    var a=head.length,b=a+n.length,c=b+mid.length,d=c+pw.length;
+    function seg(s,e,cls){return s<e?(cls?'<span class="'+cls+'">':'')+esc(sql.slice(s,e))+(cls?'</span>':''):'';}
+    function piece(s,e){var out='',cuts=[[0,a,''],[a,b,'inj'],[b,c,''],[c,d,'inj'],[d,sql.length,'']];cuts.forEach(function(x){out+=seg(Math.max(s,x[0]),Math.min(e,x[1]),x[2]);});return out;}
+    html=piece(0,ci)+'<span class="cm">'+esc(rest)+'</span>';}
+  $('sqQ').innerHTML=html;
+  var R=$('sqR');
+  try{var rows=sqRun(sql);
+    if(!rows.length){R.className='res';R.innerHTML='<b>Login refused.</b> No row matches.';}
+    else{R.className='res bad';var honest=USERS.some(function(u){return u.name===n&&u.pass===pw;});
+      R.innerHTML=honest?'Logged in as <b>'+esc(rows[0].name)+'</b>: the right password.':'<b>Logged in as '+esc(rows[0].name)+' ('+esc(rows[0].role)+')</b> without knowing the password. '+(ci>=0?'Everything after <span class="mono">--</span> became a comment, so the password check was never read.':'The condition <span class="mono">OR \'1\'=\'1\'</span> is true for every row, so the database returned all '+rows.length+' and the portal took the first.');}
+  }catch(e){R.className='res';R.innerHTML='<b>Database error:</b> '+esc(e.message==='syntax'||/unterminated|unexpected/.test(e.message)?'syntax error near the quote':e.message)+'. The input broke the sentence. An attacker reads that error as “this field is injectable”.';}
+}
+function mountSql(){
+  ['sqN','sqP','sqSafe'].forEach(function(id){$(id).addEventListener('input',paintSql);$(id).addEventListener('change',paintSql);});
+  Array.prototype.forEach.call(document.querySelectorAll('#s3 .chipb[data-n]'),function(b){b.addEventListener('click',function(){$('sqN').value=b.dataset.n;$('sqP').value=b.dataset.p;paintSql();});});
+  paintSql();
+}
+
+/* ---- step 3.2: the memory bug ------------------------------------------ */
+function paintMem(){
+  var s=$('memIn').value,safe=$('memSafe').checked,bytes=[];
+  for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);bytes.push(c>255?63:c);}
+  var w=safe?bytes.slice(0,15):bytes;            /* a safe copy keeps room for the terminating zero */
+  var mem=[];for(i=0;i<24;i++)mem.push({v:0,o:false});
+  mem[20].v=0x08;mem[21].v=0x04;mem[22].v=0x1f;mem[23].v=0x40;   /* a plausible return address, stored low byte first */
+  for(i=0;i<w.length&&i<24;i++){mem[i].v=w[i];if(i>=16)mem[i].o=true;}
+  if(w.length<24){mem[w.length].v=0;if(w.length>=16)mem[w.length].o=true;}
+  $('mem').innerHTML=mem.map(function(m,i){var cls=i<16?'buf':i<20?'flag':'ret',ch=m.v>=32&&m.v<127?String.fromCharCode(m.v):'·';
+    return '<div class="c '+cls+(m.o?' over':'')+'">'+esc(ch)+'<small>'+('0'+m.v.toString(16)).slice(-2)+'</small></div>';}).join('');
+  var flag=mem[16].v|mem[17].v|mem[18].v|mem[19].v,retHit=w.length>20;
+  $('memState').textContent=s.length+' characters typed · 16 reserved';
+  var R=$('memR');
+  if(retHit){R.className='res bad';R.innerHTML='<b>is_admin = '+(flag?'non-zero → administrator':'0')+', and the return address is overwritten.</b> When this function ends the program will jump to the address spelled by your characters 21–24. An attacker chooses those bytes to point at code they supplied: that is remote code execution.';}
+  else if(flag){R.className='res bad';R.innerHTML='<b>is_admin is no longer zero.</b> Characters 17 onwards spilled out of the name buffer into the flag. The program now treats this user as an administrator. No password was involved.';}
+  else{R.className='res';R.innerHTML=safe&&bytes.length>15?'The safe copy stopped at 15 characters and ended the string. The flag is untouched: <b>is_admin = 0</b>.':'Fits in the buffer. <b>is_admin = 0.</b> Try a name of 17 characters or more.';}
+}
+
+/* ---- step 3.3: the patch gap ------------------------------------------- */
+var GAPS=[
+ {t:'WannaCry',p:'2017-03-14',a:'2017-05-12',w:'MS17-010 → WannaCry'},
+ {t:'NotPetya',p:'2017-03-14',a:'2017-06-27',w:'MS17-010 → NotPetya'},
+ {t:'Equifax',p:'2017-03-07',a:'2017-05-13',w:'Struts fix → intrusion'}
+];
+function days(a,b){return Math.round((Date.parse(b)-Date.parse(a))/864e5);}
+function paintGap(){var max=120;
+  $('gap').innerHTML=GAPS.map(function(g){var d=days(g.p,g.a);return '<div class="gr"><span class="gt">'+g.t+'<br><small style="font-weight:400;color:var(--grey)">'+g.w+'</small></span><div class="gl"><i style="left:0;width:'+(d/max*100)+'%"></i><span class="pin" style="left:'+(d/max*100)+'%"></span><b style="left:calc('+(d/max*100)+'% + 7px);top:5px;transform:none">'+d+' days</b></div></div>';}).join('')+
+  '<div class="gr"><span class="gt">A zero-day</span><div class="gl"><span class="pin" style="left:0"></span><b style="left:7px;top:5px;transform:none">0 days: no patch exists</b></div></div>';
+}
+
+/* ---- step 4.1: lateral movement ---------------------------------------- */
+var NODES=[
+ {id:'pc1',t:'Geneva PC · L. Morel',s:'clerk, phished; IT set up her scanner',seg:'office'},
+ {id:'pc2',t:'Geneva PC · trader',s:'trading desk',seg:'office'},
+ {id:'pc3',t:'Singapore PC',s:'freight desk',seg:'office'},
+ {id:'pc4',t:'Constanța office PC',s:'terminal admin',seg:'office'},
+ {id:'fs',t:'File server',s:'contracts, cargo files',seg:'server'},
+ {id:'dc',t:'Domain controller',s:'every account',seg:'server'},
+ {id:'bk',t:'Backup server',s:'nightly copies',seg:'server'},
+ {id:'ot1',t:'Terminal control',s:'conveyors, tank valves',seg:'ot'},
+ {id:'ot2',t:'Terminal HMI',s:'operators’ screens',seg:'ot'}
+];
+var DEF=[
+ {k:'patch',t:'MS17-010 installed everywhere'},
+ {k:'laps',t:'Unique local admin password per PC'},
+ {k:'tier',t:'Admins use a separate admin workstation'},
+ {k:'seg',t:'Terminal network separated, own accounts'},
+ {k:'off',t:'One backup copy kept offline'}
+];
+var NET={own:{pc1:1},round:0,fresh:{},cred:{}};
+function defs(){try{return JSON.parse(ls('w4_def')||'{}');}catch(e){return {};}}
+function netReset(){NET={own:{pc1:1},round:0,fresh:{pc1:1},cred:{},how:{pc1:'phishing'}};paintNet();}
+function netRound(){
+  var D=defs(),add={},how={};
+  function take(id,why){if(!NET.own[id]&&!add[id]){add[id]=1;how[id]=why;}}
+  Object.keys(NET.own).forEach(function(h){
+    var n=NODES.filter(function(x){return x.id===h;})[0];
+    if(n.seg==='office'){
+      if(!D.laps)NODES.forEach(function(x){if(x.seg==='office')take(x.id,'same local admin password');});
+      if(!D.patch)NODES.forEach(function(x){if(x.seg==='office'||x.seg==='server')take(x.id,'unpatched SMB flaw');});
+      if(h==='pc1'&&!D.tier)NET.cred.da=1;
+      if(h==='pc4'&&!D.tier)NET.cred.term=1;
+    }
+  });
+  if(NET.cred.da){NODES.forEach(function(x){if(x.seg==='server')take(x.id,'domain admin credential');if(x.seg==='ot'&&!D.seg)take(x.id,'domain admin, same domain');});}
+  if(NET.own.dc)NODES.forEach(function(x){if(x.seg==='office')take(x.id,'pushed from the domain controller');if(x.seg==='ot'&&!D.seg)take(x.id,'pushed from the domain controller');});
+  if(NET.cred.term)NODES.forEach(function(x){if(x.seg==='ot')take(x.id,'terminal admin’s login, cached on his office PC');});
+  NET.fresh=add;Object.keys(add).forEach(function(k){NET.own[k]=1;NET.how[k]=how[k];});NET.round++;
+  return Object.keys(add).length;
+}
+function paintNet(){
+  var D=defs();
+  $('net').innerHTML=NODES.map(function(n){var o=NET.own[n.id];return '<div class="n'+(o?' own':'')+(NET.fresh[n.id]&&NET.round?' new':'')+(n.seg==='ot'?' ot':'')+'"><b>'+n.t+'</b><small>'+n.s+(o&&NET.how[n.id]?'<br>⟵ '+NET.how[n.id]:'')+'</small></div>';}).join('');
+  var c=Object.keys(NET.own).length;
+  $('netState').textContent='round '+NET.round+' · '+c+' of '+NODES.length+' held';
+  var R=$('netR'),done=NET.round>0&&!Object.keys(NET.fresh).length;
+  if(!NET.round){R.className='res';R.innerHTML='One PC held. Press <b>Next round</b>.';return;}
+  var dc=NET.own.dc,ot=NET.own.ot1,bk=NET.own.bk;
+  var msg='<b>'+c+' of 9 machines held after '+NET.round+' round'+(NET.round>1?'s':'')+'.</b> ';
+  if(done){
+    msg+=dc?'The intruder holds the domain controller: every account, and a way to push software to every machine at once. ':'The domain controller was never reached. ';
+    msg+=ot?'The terminal’s control system is reachable: conveyors and valves. ':'The terminal’s control network stayed out of reach. ';
+    msg+=bk?(D.off?'The backup server is held, but the offline copy is not: recovery is days, not months.':'The backup server is held: an encrypting payload now takes the backups with it, which is what turns an incident into a disaster.'):'The backups are untouched.';
+    msg+=c<=2?' <b>Contained.</b>':'';
+  } else msg+='Newly taken machines are outlined. Press again.';
+  R.className='res '+(done&&c<=2?'ok':(dc||ot?'bad':''));R.innerHTML=msg;
+}
+function mountNet(){
+  var D=defs();
+  $('netTg').innerHTML=DEF.map(function(d){return '<label><input type="checkbox" data-k="'+d.k+'"'+(D[d.k]?' checked':'')+'> '+d.t+'</label>';}).join('');
+  Array.prototype.forEach.call($('netTg').querySelectorAll('input'),function(cb){cb.addEventListener('change',function(){var D=defs();D[cb.dataset.k]=cb.checked?1:0;ls('w4_def',JSON.stringify(D));netReset();});});
+  $('netStep').addEventListener('click',function(){if(NET.round&&!Object.keys(NET.fresh).length)return;netRound();paintNet();ls('w4_ran','1');});
+  $('netRun').addEventListener('click',function(){var g=0;while(g++<8&&(netRound()||NET.round<1)){}paintNet();ls('w4_ran','1');});
+  $('netReset').addEventListener('click',netReset);
+  netReset();
+}
+
+/* ---- step 4.2: the beacon ---------------------------------------------- */
+var LOG=(function(){
+  /* a fixed, seeded log: the beacon is PC2's, every ~60 s ± 3 s, 412–418 bytes */
+  var rows=[],seed=7;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+  var t0=9*3600+12*60;
+  for(var i=0;i<10;i++){var t=t0+i*60+Math.round(rnd()*6-3);rows.push([t,'GVA-PC-0231','cdn-sync-update.net',412+Math.round(rnd()*6)]);}
+  var other=[['GVA-PC-0117','login.microsoftonline.com'],['GVA-PC-0117','outlook.office365.com'],['GVA-PC-0117','www.bloomberg.com'],['GVA-PC-0117','www.reuters.com'],
+             ['CTA-PC-0042','windowsupdate.com'],['CTA-PC-0042','teams.microsoft.com'],['CTA-PC-0042','www.marinetraffic.com'],['CTA-PC-0042','teams.microsoft.com']];
+  for(i=0;i<16;i++){var o=other[Math.floor(rnd()*other.length)];rows.push([t0+Math.round(rnd()*600),o[0],o[1],Math.round(800+rnd()*90000)]);}
+  rows.sort(function(a,b){return a[0]-b[0];});return rows;
+})();
+function hms(t){function z(n){return ('0'+n).slice(-2);}return z(Math.floor(t/3600))+':'+z(Math.floor(t/60)%60)+':'+z(t%60);}
+function paintLog(){
+  $('log').innerHTML='<tr><th>time</th><th>host</th><th>destination</th><th>bytes out</th></tr>'+LOG.map(function(r){return '<tr><td>'+hms(r[0])+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3].toLocaleString('en-GB')+'</td></tr>';}).join('');
+  var hosts=['GVA-PC-0117','GVA-PC-0231','CTA-PC-0042'];
+  $('beaconPick').innerHTML=hosts.map(function(h){return '<button type="button" class="chipb" data-h="'+h+'">'+h+'</button>';}).join('');
+  Array.prototype.forEach.call($('beaconPick').children,function(b){b.addEventListener('click',function(){
+    ls('w4_beacon',b.dataset.h);Array.prototype.forEach.call($('beaconPick').children,function(x){x.classList.toggle('on',x===b);});
+    var R=$('beaconR');
+    if(b.dataset.h==='GVA-PC-0231'){R.className='res ok';R.innerHTML='<b>Yes.</b> Three things give it away together: the <b>rhythm</b> (one call a minute, give or take three seconds, ten times in a row, nobody clicks that regularly), the <b>size</b> (about 415 bytes every time: a question, not a download), and the <b>destination</b> (a domain no other machine at Arvane talks to). Real backdoors add random jitter to the rhythm for exactly this reason; detection tools look for the regularity that survives it.';}
+    else{R.className='res';R.innerHTML='Not this one. Its traffic goes to well-known services, at irregular times, in sizes that vary with what a person is doing. Look for a rhythm, a constant size and a destination nobody else uses.';}
+  });});
+  var cur=ls('w4_beacon');if(cur){var b=$('beaconPick').querySelector('[data-h="'+cur+'"]');if(b)b.click();}
+}
+
+/* ---- step 5.1: ransomware ---------------------------------------------- */
+var FILES=[
+ ['berths_nov.csv','Berth 2 · MV Danube Star · 06–08 Nov · 32,000 t wheat · agent Sea-Link SRL'],
+ ['invoice_4471.txt','Arvane Commodities SA → Nordgrain AG · USD 7,912,400.00 · due 30 Nov'],
+ ['crew_list.txt','MV Danube Star · master A. Popescu · 21 crew · next port Alexandria']
+];
+var RW={key:null,ct:null,iv:null,state:'plain'};
+function b64(buf){var s='',b=new Uint8Array(buf);for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+function paintFiles(){
+  $('files').innerHTML=FILES.map(function(f,i){var enc=RW.state!=='plain';return '<div class="f'+(enc?' enc':'')+'"><b>'+(enc?f[0]+'.locked':f[0])+'</b>'+(enc?'<span class="ct">'+esc(RW.ct[i].slice(0,120))+'…</span>':esc(f[1]))+'</div>';}).join('');
+  $('rwState').textContent=RW.state==='plain'?'plain':RW.state==='enc'?'encrypted · key held by the attacker':'encrypted · key destroyed';
+  $('rwDec').disabled=RW.state!=='enc';$('rwWipe').disabled=RW.state!=='enc';$('rwEnc').disabled=RW.state!=='plain';
+}
+function rwEncrypt(){
+  var C=window.crypto&&crypto.subtle;if(!C){$('rwR').textContent='This browser has no Web Crypto; try another.';return;}
+  C.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']).then(function(k){
+    RW.key=k;RW.iv=FILES.map(function(){return crypto.getRandomValues(new Uint8Array(12));});
+    return Promise.all(FILES.map(function(f,i){return C.encrypt({name:'AES-GCM',iv:RW.iv[i]},k,new TextEncoder().encode(f[1]));}));
+  }).then(function(cts){RW.raw=cts;RW.ct=cts.map(b64);RW.state='enc';paintFiles();ls('w4_rw','1');
+    return crypto.subtle.exportKey('raw',RW.key);}).then(function(raw){
+    var hex=Array.prototype.map.call(new Uint8Array(raw),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
+    $('rwR').className='res bad';$('rwR').innerHTML='<b>Encrypted with AES-256.</b> The key is 256 bits: <span class="mono" style="font-size:11px;word-break:break-all">'+hex+'</span>. Trying every key at a billion billion a second would take about 10<sup>51</sup> years. Without this string, the files are noise.';});
+}
+function rwDecrypt(){
+  Promise.all(RW.raw.map(function(c,i){return crypto.subtle.decrypt({name:'AES-GCM',iv:RW.iv[i]},RW.key,c);})).then(function(){
+    RW.state='plain';paintFiles();$('rwR').className='res ok';$('rwR').innerHTML='<b>Decrypted.</b> With the key, recovery takes a second. That second is what the ransom buys, if the attacker delivers, if the decryptor works at scale, and if the data was not also copied out first.';});
+}
+function rwWipe(){RW.key=null;RW.state='wiped';paintFiles();$('rwR').className='res bad';$('rwR').innerHTML='<b>The key is gone.</b> The files are exactly as encrypted as before and now nobody, including the attacker, can open them. On screen this is indistinguishable from ransomware. Only a backup the attacker could not reach brings them back.';}
+
+/* ---- step 5.2: amplification ------------------------------------------- */
+var AMP=[['DNS',54,'open resolvers'],['NTP',556.9,'the monlist command'],['CharGEN',358.8,'an old test service'],['Memcached',51000,'caching servers left open']];
+function bwOf(v){return Math.round(Math.pow(10,v/25))||1;}   /* 0..100 → 1 Mbit/s .. 10 Gbit/s, log scale */
+function fmtBw(m){return m>=1e6?(m/1e6).toFixed(m>=1e7?0:1)+' Tbit/s':m>=1000?(m/1000).toFixed(m>=1e4?0:1)+' Gbit/s':m+' Mbit/s';}
+function paintAmp(){
+  var k=+(ls('w4_amp')||1),a=AMP[k],bw=bwOf(+$('ampBw').value),out=bw*a[1];
+  $('ampBwL').textContent=fmtBw(bw);
+  Array.prototype.forEach.call($('ampPick').children,function(b,i){b.classList.toggle('on',i===k);});
+  var link=1000,r=out/link;
+  $('ampR').className='res '+(r>=1?'bad':'');
+  $('ampR').innerHTML='<b>'+fmtBw(bw)+' × '+a[1].toLocaleString('en-GB')+' ('+a[0]+', '+a[2]+') = '+fmtBw(Math.round(out))+'</b> arriving at the victim. Arvane’s Geneva internet link is 1 Gbit/s: '+(r>=1?'<b>'+(r>=10?Math.round(r):r.toFixed(1))+' times what it can carry.</b> Everything behind it, mail, trading screens, the VPN, is offline while it lasts.':'it carries '+Math.round(r*100)+' % of the link. Slow, not down.');
+}
+
+/* ---- step 6: the attack path ------------------------------------------- */
+var PATH=[
+ {t:'1 · The way in',o:[['a','Phishing link to a fake login page'],['b','A .docm attachment with a macro'],['c','A password leaked elsewhere, reused on the VPN']]},
+ {t:'2 · The break-in',o:[['a','SQL injection on the supplier portal'],['b','An unpatched server flaw (the patch gap)'],['c','None needed: the stolen login is enough']]},
+ {t:'3 · Inside',o:[['a','Cached admin credentials, PC to PC'],['b','A beacon, quiet for weeks, then the domain controller'],['c','Straight to the file server with the user’s own rights']]},
+ {t:'4 · The payload',o:[['a','Ransomware with data copied out first'],['b','A wiper dressed as ransomware'],['c','Quiet theft of cargo and pricing data']]}
+];
+function pathState(){var s=ls('w4_pathsel')||'----';while(s.length<5)s+='-';return s.split('');}
+function paintPath(){
+  var st=pathState();
+  $('path').innerHTML=PATH.map(function(p,i){return '<div class="ps"><div class="pt">'+p.t+'</div>'+p.o.map(function(o){return '<button type="button" class="chipb'+(st[i]===o[0]?' on':'')+'" data-i="'+i+'" data-v="'+o[0]+'">'+o[1]+'</button>';}).join('')+'</div>';}).join('')+
+    '<div class="ps" style="border-color:var(--accent)"><div class="pt">Arvane breaks it at the earliest stage</div>'+[1,2,3,4].map(function(n){return '<button type="button" class="chipb'+(st[4]===String(n)?' on':'')+'" data-i="4" data-v="'+n+'">Stage '+n+'</button>';}).join('')+'</div>';
+  Array.prototype.forEach.call($('path').querySelectorAll('.chipb'),function(b){b.addEventListener('click',function(){if(ls('w4_path_posted')==='1')return;var s=pathState();s[+b.dataset.i]=b.dataset.v;ls('w4_pathsel',s.join(''));paintPath();pathSync();});});
+}
+function pathSync(){var s=pathState(),t=[];PATH.forEach(function(p,i){p.o.forEach(function(o){if(o[0]===s[i])t.push(o[1]);});});
+  setWork('f_path',(t.length?t.join(' → '):'')+(s[4]!=='-'?' · broken at stage '+s[4]:''));}
+function wallFail(res){if(res.reason==='instructor')return 'Instructor device: a demo answer, not posted to the wall.';return 'The wall could not be read'+(res.reason==='rules'?' (its database rules are not published yet)':'')+'. Your own answers are saved; the class can be projected from the dashboard.';}
+function loadPathWall(){
+  var note=$('pathNote'),box=$('pathWall');box.style.display='block';note.textContent='Loading the room…';
+  EscWall.read('w4').then(function(res){
+    if(!res.ok){box.innerHTML='<div class="wh">Where the room breaks the attack <span class="st">unavailable</span></div><div class="empty">'+wallFail(res)+'</div>';note.textContent='';return;}
+    var c=[0,0,0,0],n=0,ways={a:0,b:0,c:0};
+    res.rows.forEach(function(r){var m=/^P:([abc])[abc][abc][abc]\|B:([1-4])$/.exec(r.src||'');if(!m)return;n++;c[+m[2]-1]++;ways[m[1]]++;});
+    var rows=c.map(function(v,i){return '<div class="dr"><span>Stage '+(i+1)+' · '+PATH[i].t.replace(/^\d · /,'')+'</span><span class="bar"><i style="width:'+(n?v/n*100:0)+'%"></i></span><span class="n">'+v+'</span></div>';}).join('');
+    box.innerHTML='<div class="wh">Where the room breaks the attack on Arvane <span class="st">'+n+' on the wall</span></div><div class="dist" style="display:block;padding:12px 15px">'+rows+'</div>';
+    note.textContent='';
+  });
+}
+
+/* ---- completion -------------------------------------------------------- */
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_w4')||'{}')[id];}catch(e){return false;}}
+function markDone(id){
+  var el=$(id);if(el)el.classList.add('done');
+  if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  else{try{var o=JSON.parse(localStorage.getItem(K+'_done_w4')||'{}');o[id]=true;localStorage.setItem(K+'_done_w4',JSON.stringify(o));}catch(e){}}
+  paintProgress();
+}
+function paintProgress(){
+  var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=$(s);if(el)el.classList.add('done');}});
+  var pct=Math.round(n/SECTIONS.length*100);
+  $('spLbl').textContent=n+' / '+SECTIONS.length;$('spPct').textContent=pct+'%';$('spFill').style.width=pct+'%';
+}
+function words(s){return (String(s).trim().match(/\S+/g)||[]).length;}
+function paintWC(){var n=words($('r_text').value),el=$('r_wc');el.textContent=n+' / 300 words';el.classList.toggle('over',n>300);}
+function need(id,msg){if(!$(id).value.trim()){alert(msg);return false;}return true;}
+
+/* ---- wiring ------------------------------------------------------------ */
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:'w4',title:'Session 4 · The arsenal',total:SECTIONS.length});
+  if(window.StatsTrack&&StatsTrack.complete)SECTIONS.forEach(function(s){if(isDone(s))StatsTrack.complete(s);});
+  if(window.CourseProgress)CourseProgress.render({bar:$('cbar'),compact:true});
+
+  paintProgress();mountUrl();mountTells();
+  $('pwIn').addEventListener('input',paintPw);paintPw();
+  mountSql();
+  $('memIn').addEventListener('input',paintMem);$('memSafe').addEventListener('change',paintMem);paintMem();
+  paintGap();mountNet();paintLog();
+  paintFiles();$('rwEnc').addEventListener('click',rwEncrypt);$('rwDec').addEventListener('click',rwDecrypt);$('rwWipe').addEventListener('click',rwWipe);
+  $('rwReset').addEventListener('click',function(){RW={key:null,ct:null,iv:null,state:'plain'};paintFiles();$('rwR').className='res';$('rwR').textContent='';});
+  $('ampPick').innerHTML=AMP.map(function(a,i){return '<button type="button" class="chipb" data-i="'+i+'">'+a[0]+' · ×'+a[1].toLocaleString('en-GB')+'</button>';}).join('');
+  Array.prototype.forEach.call($('ampPick').children,function(b){b.addEventListener('click',function(){ls('w4_amp',b.dataset.i);paintAmp();});});
+  $('ampBw').addEventListener('input',paintAmp);paintAmp();
+  paintPath();pathSync();paintWC();
+  if(ls('w4_path_posted')==='1'){var pb=$('pathBtn');pb.textContent='On the wall ✓';pb.disabled=true;}
+  var rs=ls('w4_refl_ts');if(rs)$('reflNote').textContent='Submitted '+new Date(+rs).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'. It can still be improved until 17:00 on Friday 13 November.';
+
+  $('openBtn').addEventListener('click',function(){markDone('s1');});
+  $('wayBtn').addEventListener('click',function(){
+    var f=0,st=tellState();for(var k in st)if(TELLS[k]&&TELLS[k][0])f++;
+    if(f<3){alert('Find at least three of the five tells in the email first ('+f+' so far).');return;}
+    if(need('f_tell','Name the one tell that matters most, and why.'))markDone('s2');
+  });
+  $('breakBtn').addEventListener('click',function(){if(need('f_patch','Give Arvane a patch window: how many days, which systems first.'))markDone('s3');});
+  $('spreadBtn').addEventListener('click',function(){
+    if(ls('w4_ran')!=='1'){alert('Run the lateral-movement simulation at least once.');return;}
+    if(!ls('w4_beacon')){alert('Pick the machine you think is beaconing.');return;}
+    if(need('f_spread','Name the setting that changed the outcome most, and its cost.'))markDone('s4');
+  });
+  $('payBtn').addEventListener('click',function(){
+    if(ls('w4_rw')!=='1'){alert('Encrypt the three files once (gadget 1) first.');return;}
+    if(need('f_payload','Name the payload and the one preparation.'))markDone('s5');
+  });
+
+  function syncTeam(){var t=$('f_teamsel').value,m=$('f_mates').value;setWork('f_team',[t?('Team '+t):'',m].filter(Boolean).join(' · '));}
+  if(window.EscTeams){
+    EscTeams.mount($('teamsBox'),{onChange:function(t,mates){$('f_teamsel').value=t||'';$('f_mates').value=mates.join(', ');syncTeam();}});
+    if(!EscTeams.myTeam()){var src0=ls('work_w3_team')||ls('work_w1_team')||'',t0=(src0.split(' · ')[0]||'').replace('Team ','');if(/^[A-E]$/.test(t0))EscTeams.join(t0,true);}
+  }
+  $('pathBtn').addEventListener('click',function(){
+    var s=pathState();if(s.indexOf('-')!==-1){alert('Pick one option in each of the four stages, and the stage where Arvane breaks it.');return;}
+    if(!need('f_why','One sentence: how Arvane breaks it there.'))return;
+    pathSync();var note=$('pathNote');note.textContent='Posting…';
+    EscWall.post('w4',{n:(firstName()||'someone').slice(0,40),src:'P:'+s.slice(0,4).join('')+'|B:'+s[4]}).then(function(r){
+      note.textContent=r.ok?'On the wall ✓. Press "Show the room" when told.':'Saved on this device. '+wallFail(r);});
+    ls('w4_path_posted','1');var pb=$('pathBtn');pb.textContent='On the wall ✓';pb.disabled=true;
+    markDone('s6');
+  });
+  $('pathWallBtn').addEventListener('click',loadPathWall);
+
+  $('r_text').addEventListener('input',paintWC);
+  $('reflBtn').addEventListener('click',function(){
+    var q=$('r_quote').value.trim(),r=$('r_ref').value.trim(),n=words($('r_text').value);
+    if(!q||!r){alert('The quotation and its reference (Author, date, p.) are both required.');return;}
+    if(n<50){alert('That is under fifty words. A reflection needs an argument.');return;}
+    if(n>300){alert('Over 300 words ('+n+'). The limit is part of the exercise; cut it down.');return;}
+    var ts=Date.now();ls('w4_refl_ts',String(ts));setWork('f_reflts',new Date(ts).toISOString());
+    $('reflNote').textContent='Submitted ✓ '+new Date(ts).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'. It can still be improved until 17:00 on Friday 13 November.';
+  });
+
+  $('resetLink').addEventListener('click',function(e){
+    e.preventDefault();if(!confirm('Reset your Session 4 answers and progress on this device?'))return;
+    try{Object.keys(localStorage).forEach(function(k){
+      if(k.indexOf(K+'_')!==0||k===K+'_auth')return;
+      if(/_w4(_|$)/.test(k)||k.indexOf(K+'_work_refl5_')===0)localStorage.removeItem(k);
+    });}catch(err){}
+    location.reload();
+  });
+
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;
+    var w=$('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}
+    $('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+  chip();window.addEventListener('statstrack:named',chip);
+});
+</script>
+
+<script src="courseprogress.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

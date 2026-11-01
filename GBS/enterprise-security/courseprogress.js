@@ -23,9 +23,9 @@ window.CourseProgress=(function(){
     {mod:'w1',  short:'S1', name:'Session 01 · Who was the target?',                    total:7, live:true, href:'week1.html'},
     {mod:'w2',  short:'S2', name:'Session 02 · Below the threshold',                    total:7, live:true, href:'week2.html'},
     {mod:'w3',  short:'S3', name:'Session 03 · Will cyber war take place?',             total:6, live:true, href:'week3.html'},
-    {mod:'w4',  short:'S4', name:'Session 04 · Cables, satellites and the sky',         total:6, live:false},
-    {mod:'w5',  short:'S5', name:'Session 05 · The update you trusted',                 total:6, live:false},
-    {mod:'w6',  short:'S6', name:'Session 06 · Putting a number on it',                 total:6, live:false},
+    {mod:'w4',  short:'S4', name:'Session 04 · The arsenal',                            total:6, live:true, href:'week4.html'},
+    {mod:'w5',  short:'S5', name:'Session 05 · Cables, satellites and the sky',         total:6, live:false},
+    {mod:'w6',  short:'S6', name:'Session 06 · The update you trusted, and a number',   total:6, live:false},
     /* Session 07 is the midterm — no page, no chapter. */
     {mod:'w8',  short:'S8', name:'Session 08 · Hybrid threats, resilient firms',        total:6, live:false},
     {mod:'w9',  short:'S9', name:'Session 09 · The tabletop: 72 hours',                 total:6, live:false},
