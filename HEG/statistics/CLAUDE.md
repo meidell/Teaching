@@ -305,3 +305,30 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   `numIn` alone reads as a thousands separator. Its SPEC entry was removed from
   `_build/scaffold.py`. **No Week 7 homework page yet** — the page links the practice
   arena and the exam cards instead.
+
+- **Week 8 (Saylor ch. 9, two-sample problems) was built on 1 Nov 2026 as a port of
+  `SUMAS/mba401/week4b.html`**, the way Week 7 was ported from 4A, then EXTENDED (Jan Erik:
+  "improve on the explanations and add interactive tools … make the examples look visually
+  good"). The book's text, all fifteen walked Examples, ten your-turns (even-numbered), ten
+  Part 2 exercises (odd-numbered) and the classify groups are 4B's. Ours, added between the
+  book's blocks: four `.prose.why` explainer notes (variances add like a hypotenuse; what
+  pooling and df mean; why pairing removes the between-unit spread; why halving E quadruples
+  n), five figures — the SE triangle (s2, step `tri`), a means panel on the two-sample
+  machine, a slope chart under Tables 9.1–9.2, **paired vs independent simulated 200 times**
+  (s4, step `psim`) and the n-against-E curve — each with a `.pred` "predict first" row; a
+  **result ribbon** (`.xres`, from `RES`) that every Example ends on; and **givens chips**
+  (`.givens`) under the stems that reuse an earlier Example's numbers. Two deck slides for the
+  triangle and the simulation (67 slides). CSS for all of it is page-local, light values as
+  `var()` fallbacks. Ten sections → `courseprogress.js` total 10; denominator 73 (36 steps +
+  10 exercises + 14 classify rows + 10 quiz + 3 fields). Builder kept in the session
+  scratchpad, not the repo. ⚠ The simulation corrected an intuition: analysed as if
+  independent, paired data make the pooled t not merely weak but **mis-calibrated** — with
+  pizzerias differing (σᵤ = 3) it rejects ~0% even when H₀ is true, not 5%. The copy says so.
+- **`week8-homework.html`** (`w8-hw`, total 14) is the Week 6 engine with thirteen odd-numbered
+  ch. 9 exercises not done in class (§9.1 #3, 7, 15 · §9.2 #3, 7, 15 · §9.3 #3, 7, 9 ·
+  §9.4 #3, 7, 15 · §9.5 #3). Recomputed in Python: the key has two SIGN slips, flagged in the
+  solutions (§9.3 #7 and §9.4 #15 subtract in the opposite order to the stem) and §9.3 #7
+  writes "t0.10" for t0.01 = 2.821. **§9.2 #13 (mercury) was left out**: its key's ±0.2182
+  does not follow from the printed data (±0.1475). Workbook fields `w8_design`, `w8_test`,
+  `w8_n` are in `courses.json → project.sections`; the w8 SPEC entry is gone from
+  `_build/scaffold.py`.

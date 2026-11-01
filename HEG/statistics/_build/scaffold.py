@@ -22,31 +22,7 @@ def S(u): return SAY+u
 
 SPEC=[
  # Week 7 was written by hand on 26 Oct 2026 (a port of SUMAS/mba401/week4a.html) — its SPEC entry is gone.
- dict(n=8,slug='Two-sample problems',emoji='⚔️',
-  title='Do lakeside pizzerias <em>really</em> charge more?',
-  sub='One sample tested one claim. Most business questions compare two things: two neighbourhoods, before and after a menu change, two proportions. This week is the two-sample toolkit — independent samples large and small, paired samples, two proportions — and, above all, the judgement of which one applies.',
-  ch='Saylor ch. 9',
-  reads=[('Saylor §9.1 — Two means, large independent samples',S('s13-01-comparison-of-two-population-m.html')),('Saylor §9.2 — Two means, small independent samples',S('s13-02-comparison-of-two-population-m.html')),('Saylor §9.3 — Paired samples',S('s13-03-comparison-of-two-population-m.html')),('Saylor §9.4 — Two population proportions',S('s13-04-comparison-of-two-population-p.html')),('Saylor §9.5 — Sample size considerations',S('s13-05-sample-size-considerations.html'))],
-  objectives=['Build a confidence interval and a test for the difference of two means with large independent samples.','Do the same with small samples using the pooled t.','Tell paired from independent samples, and run the paired test on the differences.','Compare two proportions.','Choose the right two-sample procedure for a business question — the exam\'s real test.'],
-  sections=[
-   ('The hook','Lake vs station','Estimate the price gap between lakeside and station pizzerias',['Slider: "lakeside pizzerias charge on average __ francs more." Lock it.'],'Hook'),
-   ('Two means, large samples','The difference and its standard error','x̄₁ − x̄₂ and √(σ₁²/n₁ + σ₂²/n₂) (§9.1)',['Widget: two strips of prices (lake, station); the difference of means, its standard error, the interval and the z test. Exam card c16.'],'Independent'),
-   ('Two means, small samples','Pooled t','s_p² and df = n₁ + n₂ − 2 (§9.2)',['Widget: the same with 8 and 10 pizzerias; pooled variance built step by step. Exam card c17.'],'Pooled'),
-   ('Paired samples','Before and after the new menu','The test on the mean difference d̄ (§9.3)',['Widget: the same 12 pizzerias before and after; watch the paired analysis find a difference the independent one misses — variance between pizzerias vanishes.','Classify (6 rows): paired or independent? — the most important six rows of the semester. Exam card c18.'],'Paired'),
-   ('Two proportions','Share over CHF 20, lake vs station','p̂₁ − p̂₂ and the pooled proportion (§9.4) · sample size (§9.5)',['Widget: two proportions, the pooled p̂ for the test, the unpooled SE for the interval. Exam card c19.'],'Proportions'),
-   ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: SE of a difference, a two-sample z, a pooled t, paired vs independent ×3, two proportions, and one sample-size question.'],'Quiz'),
-   ('Workshop','The pizzeria file · instalment eight','Workbook fields',['w8_design — an A/B test for your pizzeria (two recipes, two prices, two evenings): what is compared, paired or independent, and why.','w8_result — what result would make you change the menu, in numbers.'],'Exercise')],
-  slides=['Applied Statistics · Week 8 — Two-sample problems','Recap → today: from one claim to two things','Poll: the lake–station price gap','The difference of two means and its SE','Large samples: z','Small samples: the pooled t','Paired samples: the difference is the data','Paired or independent? — the decision','Two proportions','Your turn — checkpoint live','Takeaways · homework · Week 9'],
-  ex=[('Independent or paired?',12,'eight designs — the decision that carries the chapter'),
-      ('The SE of a difference',12,'√(σ₁²/n₁ + σ₂²/n₂), and why it is not σ₁ + σ₂'),
-      ('Two means, large samples',18,'lake vs station: the interval and the test'),
-      ('Pooled variance',15,'s_p² step by step, df = n₁ + n₂ − 2'),
-      ('Two means, small samples',15,'eight and ten pizzerias, the pooled t'),
-      ('The paired test',18,'the same twelve before and after — and what the independent test misses'),
-      ('Two proportions',15,'pooled p̂ for the test, unpooled SE for the interval'),
-      ('Design your A/B test',10,'two recipes, two evenings: what is compared, and how')],
-  tools=[('exam-cards.html','Exam cards c16–c19')]),
-
+ # Week 8 likewise, on 1 Nov 2026 (a port of SUMAS/mba401/week4b.html, extended).
  dict(n=9,slug='Correlation and regression',emoji='📈',
   title='Does a higher price buy a <em>better rating</em>?',
   sub='Week 1 warned you that the price–rating scatter had a lurking variable in it. This week you fit the line anyway — properly: the correlation coefficient r, the least-squares line, inference on its slope, the coefficient of determination r², and prediction with an honest interval. Then, with the tools in hand, the lurking variable comes back.',
