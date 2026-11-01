@@ -87,3 +87,31 @@ applies. What differs:
   kit (Loom decks, Courtney postures, BLUF/SCQA, CFO branching scenario,
   Section 5 strategic implications) is team-based strategy work and was
   deliberately not used here.
+- **Week 6 signpost section (1 Nov 2026, omba500 only — not ported to
+  `wind` or `capstone-ba`)**: "Turn each early signal into a signpost",
+  between s2 and s3, no `data-step`. Indicator + checkpoint + value per world
+  + band; baselines verified: EU-27 offshore ~21 GW end-2024 (Europe 37),
+  Europe connected 2.6 GW in 2024 (3.8 expected) — WindEurope; member
+  states' 2030 goal 86–89 GW (Dec 2024; 111 GW in Jan 2023) → ~11 GW a year
+  needed. Worked 2030 values on Week 4's matrix are ILLUSTRATIVE (50 / 42 /
+  36 / 30 GW, band ±3). A signpost-check widget (`spA…spD`, `spU`, `spO`,
+  step `sp`), the Danish zero-bid North Sea tender (5 Dec 2024, cancelled
+  Jan 2025) read on both axes, and a new field `w6_signposts` (w6 total
+  11 → 12 via `count.py`; added to `courses.json → project.sections`).
+  ⚠ **Same day, the AI-energy figures were corrected**: "0.3–10 Wh per
+  GPT-4-class query" was attributed to Luccioni et al., who tested open
+  models ≤ 11B parameters (text generation 0.047 Wh/query; images 2.9 Wh
+  mean, 11.5 Wh for SDXL ≈ half a phone charge — Table 2 and §4.1, not
+  Table 3). Large assistants now use the 2025 published figures (Google
+  0.24 Wh median Gemini prompt; OpenAI 0.34 Wh; Epoch ~0.3 Wh GPT-4o). The
+  calculator defaults are 0.3 Wh/turn and 2.9 Wh/image, quiz Q4 is 7.9 g,
+  the Forum 12 brief and Week 7's quiz were reworded. **Week 7's water
+  calculator still defaults to 3 Wh per turn** (it feeds the off-site water
+  estimate built on Li et al.'s assumptions) — revisit when Week 7 is built.
+- **Activity check, 1 Nov 2026** (anonymous reads of `_forum/<id>/posts`
+  and `<ns>/<sid>`): omba500 has 6 posting students and 64 posts/replies
+  since 18 Oct (latest 31 Oct, Forum 10). **`wind` has none**: one probe
+  post, and its only student node is Horst Prescher (an omba500 student)
+  carried across by the school-wide sign-in. Weekly enrichment is therefore
+  done in omba500 only; `_roster` cannot be listed anonymously, so a wind
+  student who registered and never posted would not show.

@@ -82,3 +82,15 @@ a namespace (`wind`, prefix `wind`), the SUMAS theme, and `listed:false`.
   leaves the showcase and PDF indexable. Mirror entry in
   `/shared/config.js`; the SUMAS landing page picks the course up from
   `courses.json` by itself.
+- ⚠ **Passive since 1 Nov 2026: `status:"archived"` in `courses.json`**
+  (Jan Erik: "make mba500 passive", after an activity check found no posts
+  and no students of its own; all the work is in `SUMAS/omba500`). Effect:
+  it leaves the instructor inbox, the /admin/ console counts, the left-hand
+  admin menu's course list and the "running now" highlighting, and the
+  SUMAS landing page lists it under *Archived*. Nothing else changed: every
+  page, forum, rule and the dashboard (`/shared/admin2.html?course=wind`)
+  still work by direct link, no student banner was added, and there is no
+  `supersededBy` — omba500 is a parallel edition, not a replacement.
+  `wind-showcase` (same folder) is a separate entry and stays `evergreen`.
+  New capstone weeks are built in omba500 only; to revive wind, set
+  `status` back to `live`.
