@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 3 · Where the numbers come from · GBS</title>
+<meta name="description" content="Session 3 of Business Intelligence (MIM). Why ÒRBITA's billing database cannot answer an analytic question; warehouse, lake and lakehouse in the terms that distinguish them; the grain machine — six questions, six candidate fact tables, the fewest that answer all six; facts, dimensions and the star schema; each team designs the star for its KPI contract and writes a source-to-target map with a governance line for every column, published as the second page of its Netlify site.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="bi.css">
+<style>
+/* Session 3 — the grain machine, the star drawings, the map, the design note */
+.memo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13px;line-height:1.55;}
+.memo h4{font-size:13.5px;color:var(--navy);margin:12px 0 4px;}
+.memo h4:first-child{margin-top:0;}
+.memo .miss{color:var(--no,#B00020);font-weight:700;}
+.memo table{border-collapse:collapse;width:100%;font-size:12px;}
+.memo td,.memo th{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left;}
+.memowrap{overflow-x:auto;}
+.cmp{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;margin:10px 0;}
+.cmp th,.cmp td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left;line-height:1.4;}
+.cmp th{background:var(--surface);color:var(--navy);font-size:11.5px;}
+.cmpwrap{overflow-x:auto;}
+.gm{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:10px 0;}
+.gm label{display:flex;gap:8px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.35;cursor:pointer;}
+.gm label.on{border-color:var(--accent);background:var(--accent-pale);}
+.gm label b{display:block;color:var(--navy);font-size:12.5px;}
+.gm label small{color:var(--grey);font-size:11.5px;}
+.gq{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+.gq td,.gq th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+.gq th{background:var(--surface);color:var(--navy);font-size:11.5px;}
+.gq td.y{color:#1B7A3E;font-weight:700;white-space:nowrap;} .gq td.n{color:#B00020;font-weight:700;white-space:nowrap;}
+.starbox{overflow-x:auto;margin:10px 0;background:#fff;border:1px solid var(--line);border-radius:12px;}
+.starbox svg{display:block;min-width:620px;width:100%;height:auto;}
+.dchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.dchips button{font:inherit;font-size:12.5px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;cursor:pointer;color:var(--ink);}
+.dchips button.on{border-color:var(--accent);background:var(--accent-pale);font-weight:700;}
+.mapt td{min-width:120px;} .mapt td.cr{min-width:30px;text-align:center;}
+.mapt textarea{min-height:38px;}
+.mapt tr.bad td.cr{background:#FDECEC;color:#B00020;font-weight:800;}
+.mapt tr.ok td.cr{background:#E8F5EC;color:#1B7A3E;font-weight:800;}
+.star2{border-top:1px dashed var(--line);margin-top:16px;padding-top:6px;}
+</style>
+</head>
+<body data-course="bi" data-module="w4">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Week 04 · Session 3 · Thu 5 Nov</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Week 04 · Session 3 · Thursday 5 November 2026 · 16:30–18:30</div>
+    <h1>Where the numbers come from</h1>
+    <div class="when">Group work, self-run: your team works through this page on its own; the instructor walks around and helps. Bring a laptop per team, signed in to this site.</div>
+    <p class="lead"><b>The mandate.</b> ÒRBITA's CFO writes: <i>"Thank you for the KPI memo. IT says none of those KPIs can be computed from our systems as they are, and asks what to build. Before I sign a warehouse budget I want the design on one page: which tables, at what level of detail, filled from which of our five systems, and who answers for each column."</i></p>
+    <div class="doit"><div class="dh">Your deliverable · handed in on this page before the quiz (Step 6)</div><p>A one-page <b>warehouse design note to ÒRBITA's CFO</b>, written as a team: <b>1.</b> the star schema for your KPI contract — the fact table, its grain in one sentence, its dimensions and measures, drawn · <b>2.</b> the source-to-target map: for every column, the source system and column, the transformation rule, the owner, the sensitivity and the check · <b>3.</b> the definition your design forced you to change in last week's contract, or why none changed. The page builds the note and the drawing from what your team writes in Steps 4–6; the team adds it to its <b>Netlify</b> site as a second page, <b>schema.html</b>, next to last week's memo, and one member presses <b>Hand in</b>.</p><p style="margin-top:8px"><b>Then, the last 20 minutes: a team quiz</b>, on today's work and on your own design note.</p></div>
+    <p class="lead" style="font-size:13.5px">Why it is hard: a KPI contract names a <em>grain</em>, and last week that was one field out of eight. Today it decides everything. A table built one row per ride cannot say who churned; a table built one row per subscriber per month cannot say what hour people ride; a table of daily totals per city answers almost nothing. The session turns on that one word, and ends with your star schema and a governance line for every column.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 7</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <div class="plan">
+    <h2>How to work</h2>
+    <div class="ps">Do the steps in order, as a team, on one laptop or several. Each step says what to do, numbered, and ends with a button. What one member types in a team field appears on every member's page. Stuck? Read the step again, then raise a hand. Aim for the times on the right; the hand-in is due at <b>18:10</b>, before the quiz.</div>
+    <ol>
+      <li><span class="t">1</span><span class="n"><b>Somewhere for the number to live.</b> Why billing cannot answer; warehouse, lake, lakehouse. Sort twelve statements.</span><span class="m">15 min</span></li>
+      <li><span class="t">2</span><span class="n"><b>The grain machine.</b> Six questions, six candidate tables: the fewest that answer all six.</span><span class="m">15 min</span></li>
+      <li><span class="t">3</span><span class="n"><b>Read: facts, dimensions, the star.</b> Sort eight of ÒRBITA's columns.</span><span class="m">12 min</span></li>
+      <li><span class="t">—</span><span class="n">Break, when your team wants it.</span><span class="m">5 min</span></li>
+      <li><span class="t">4</span><span class="n"><b>Your star schema.</b> The fact table for your contract, its grain, dimensions and measures (note part 1).</span><span class="m">20 min</span></li>
+      <li><span class="t">5</span><span class="n"><b>The source-to-target map.</b> A governance line for every column (note part 2).</span><span class="m">18 min</span></li>
+      <li><span class="t">6</span><span class="n"><b>Publish and hand in.</b> The definition that changed (part 3), schema.html on your Netlify site, a prediction for Session 4.</span><span class="m">15 min</span></li>
+      <li><span class="t">7</span><span class="n"><b>Team quiz.</b> Jeopardy, team against team, on the screen. Laptops closed except one per team, for showing your design note.</span><span class="m">20 min</span></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="Why billing cannot answer the question|w4_oltp">
+    <span class="tick">✅</span>
+    <span class="clock">Step 1 · 15 min</span>
+    <h2>Somewhere for the number to live</h2>
+    <div id="mine"></div>
+    <ol><li>Each member reads "Two databases, two jobs" and sorts the six requests below it.</li><li>Read "Warehouse, lake, lakehouse" and sort the six statements below the table.</li><li>Write one line in the box: why the billing database cannot answer your team's outcome KPI. Then press <b>Done</b>. The step is done when all twelve are sorted correctly.</li></ol>
+
+    <h3>Two databases, two jobs</h3>
+    <p>ÒRBITA's billing system is an <b>operational</b> database (OLTP, online transaction processing). It is built to do one small thing thousands of times a day, safely: charge a card, pause a subscription, change a plan. Each request reads or writes a handful of rows, and the tables are split so that every fact is stored once and an update touches one place. It is very good at that job.</p>
+    <p>A KPI is a different job. "Monthly churn by city and plan for the last twelve months" reads every subscription for a year, joins it to rides from telematics and tickets from the help desk, and adds it up. That is <b>analytic</b> work (OLAP, online analytical processing): few requests, each one reading millions of rows. Run it on the billing database and three things go wrong. It competes with the card payments for the same machine. It cannot see rides or tickets, which live in other systems with other keys. And its columns carry billing's definitions — the <i>status</i> column from Session 1 — not the ones your contract wrote down. A warehouse is a second database, built for the second job and filled from the first.</p>
+    <div class="lab">
+      <div class="lab-title">Operational or analytic? Six requests</div>
+      <div id="otRows"></div>
+      <div class="caption" id="otCap"></div>
+    </div>
+
+    <h3>Warehouse, lake, lakehouse</h3>
+    <p>Three names for where analytic data is kept. They are distinguished by <b>when the structure is imposed</b> and <b>who reads the data</b>, not by brand.</p>
+    <div class="cmpwrap"><table class="cmp">
+      <tr><th></th><th>Data warehouse</th><th>Data lake</th><th>Lakehouse</th></tr>
+      <tr><th>What is stored</th><td>Tables with fixed, documented columns</td><td>Files of any kind, as they arrived: CSV, JSON, logs, images</td><td>Files in open table formats (Delta Lake, Apache Iceberg, Apache Hudi) on cheap cloud storage</td></tr>
+      <tr><th>Structure</th><td><b>Schema on write</b>: a row that does not fit is rejected when it is loaded</td><td><b>Schema on read</b>: the structure is applied by whoever reads the files</td><td>Schema enforced on the files by a transaction layer</td></tr>
+      <tr><th>Who reads it</th><td>SQL and dashboards: the board's numbers</td><td>Data scientists and engineers, often in Python</td><td>Both, from one copy of the data</td></tr>
+      <tr><th>Typical failure</th><td>Slow and expensive to change when a new question arrives</td><td>The "data swamp": nobody knows what a file means or whether it is current</td><td>Newer; more parts to run well</td></tr>
+    </table></div>
+    <p>The lakehouse is described in Armbrust, Ghodsi, Xin and Zaharia, <i>Lakehouse: A New Generation of Open Platforms that Unify Data Warehousing and Advanced Analytics</i> (CIDR 2021). Whichever ÒRBITA buys, the design question is the same: what one row of each table means. That is Step 2.</p>
+    <div class="lab">
+      <div class="lab-title">Warehouse · Lake · Lakehouse</div>
+      <div id="wlRows"></div>
+      <div class="caption" id="wlCap"></div>
+    </div>
+    <div class="cap">
+      <label for="f_oltp">Why the billing database cannot compute your team's outcome KPI, in one line</label>
+      <input type="text" id="f_oltp" data-work="w4_oltp" data-worklabel="W4 · why billing cannot answer" autocomplete="off" placeholder="e.g. 90-day retention needs rides from telematics, and billing only knows payments">
+    </div>
+    <button class="btn" id="s1Btn">Done</button>
+    <div class="savenote" id="s1Note"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2" data-board="How many fact tables does ÒRBITA need?|w4_grain_pred">
+    <span class="tick">✅</span>
+    <span class="clock">Step 2 · 15 min</span>
+    <h2>The grain machine</h2>
+    <p>The <b>grain</b> of a table is what one row means, said in one sentence that starts "one row per…". It is chosen before any column, because it decides which questions the table can ever answer. Below are six questions from last week's contracts and six candidate tables, each with a different grain. Row counts are for one month, from ÒRBITA's sizes: 47,700 accounts on billing's books, about 560,000 rides (roughly 14 per paying subscriber), about 3,800 tickets, six cities, three ad channels.</p>
+    <ol><li>On your own, before the machine opens: how many tables does ÒRBITA need, at the least, to answer all six questions? Pick one and press <b>Seal it</b>.</li><li>Switch tables on and off. The question list shows which table answers each one. Find the <b>smallest set that answers all six</b>.</li><li>The step is done when all six are answered with the fewest tables. Read the explanation that opens.</li></ol>
+    <div class="cap">
+      <label>Each member · the fewest tables that answer all six</label>
+      <div class="opts" id="pGrain"></div>
+      <input type="hidden" id="f_gpred" data-work="w4_grain_pred" data-worklabel="W4 · prediction: fewest fact tables">
+    </div>
+    <button class="btn" id="gSeal">Seal it</button>
+    <div class="savenote" id="gNote"></div>
+    <div class="lab" id="gLab" style="display:none">
+      <div class="lab-title">Six candidate tables · one month of ÒRBITA</div>
+      <div class="gm" id="gTabs"></div>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="gQ">—</div><div class="l">questions answered</div></div>
+        <div class="stat"><div class="v" id="gT">—</div><div class="l">tables switched on</div></div>
+        <div class="stat"><div class="v" id="gR">—</div><div class="l">rows a month</div></div>
+      </div>
+      <div class="cmpwrap"><table class="gq" id="gQs"></table></div>
+      <div class="caption" id="gCap"></div>
+    </div>
+    <div id="gReveal" style="display:none">
+      <h3>Four tables, one per business process</h3>
+      <p>No single grain answers all six. Rides, subscriptions, tickets and ad spend are four <b>business processes</b>, each with its own natural grain: one row per ride, one row per account per month, one row per ticket, one row per city, channel and week. The subscriber-per-day table also answers the churn and retention questions, at thirty times the rows; it is the right choice only if a question needs the day. The city-per-day summary answers nothing on the list: once rows are added up, the subscriber, the hour and the fourteen-day window are gone, and no query can bring them back.</p>
+      <p>This is Kimball's rule, from <i>The Data Warehouse Toolkit</i> (Kimball and Ross, 3rd ed., 2013): <b>one fact table per business process, at the most detailed grain the process produces</b>. The design runs in four steps — choose the process, declare the grain, identify the dimensions, identify the facts — in that order.</p>
+      <div class="wall" id="gWall" style="display:none"></div>
+      <button class="btn small ghost" id="gWallBtn" type="button">Show the room's predictions</button>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3">
+    <span class="tick">✅</span>
+    <span class="clock">Step 3 · 12 min · reading</span>
+    <h2>Read: facts, dimensions, the star</h2>
+    <p><b>Do this:</b> each member reads this step (about 8 minutes) and sorts the eight columns at the end. The step is done when all eight are sorted correctly. You need it for Step 4.</p>
+    <p>Once the grain is declared, every column of a fact table is one of two kinds. A <b>fact</b> (or measure) is a number the process produces at that grain, usually one you add up: kilometres ridden, minutes, euros of revenue, hours to resolve. A <b>dimension</b> is the context you filter and group by: when, where, who, which plan, which channel. Dimensions live in their own tables, wide and descriptive, and the fact table holds a <b>key</b> to each. Drawn, the fact table sits in the middle and the dimensions around it: a <b>star schema</b>.</p>
+    <div class="starbox" id="exStar1"></div>
+    <p>Five terms that come with it:</p>
+    <ul>
+      <li><b>Date dimension.</b> One row per calendar day, with weekday, month, quarter, public holiday, fiscal period. Every fact table has one, so "by month" or "excluding holidays" is a filter, not a calculation.</li>
+      <li><b>Conformed dimension.</b> A dimension shared by several fact tables: dim_city and dim_date are used by both fact_ride and fact_spend. That is what lets you put rides and ad spend per city per week in one chart (drill across). Two copies of "city" with different spellings make it impossible.</li>
+      <li><b>Surrogate key.</b> The warehouse gives every dimension row its own number, instead of reusing the source's id. Telematics and billing can then disagree about ids without breaking the join.</li>
+      <li><b>Slowly changing dimension, type 2.</b> When Anna Kowalski changes her email or her plan, the warehouse does not overwrite her row (that is type 1, and history is lost). It closes the old row (valid_to) and opens a new one (valid_from), so last month's rides stay with last month's plan.</li>
+      <li><b>Three kinds of fact table.</b> <i>Transaction</i>: one row per event (a ride). <i>Periodic snapshot</i>: one row per thing per period (an account per month: its status on the 1st, cancelled or not). <i>Accumulating snapshot</i>: one row per thing that moves through stages, updated as it goes (a ticket: opened, first reply, resolved).</li>
+    </ul>
+    <div class="starbox" id="exStar2"></div>
+    <div class="lab">
+      <div class="lab-title">Fact, dimension or key? Eight of ÒRBITA's columns from Session 1</div>
+      <div id="fdRows"></div>
+      <div class="caption" id="fdCap"></div>
+    </div>
+  </div>
+
+  <div class="quiet">☕ <b>Break</b> — five minutes, when your team is ready. Then Step 4.</div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="Star 1 · grain|w4_grain1;Star 1 · measures|w4_meas1">
+    <span class="tick">✅</span>
+    <span class="clock">Step 4 · 20 min · note part 1</span>
+    <h2>Your star schema</h2>
+    <p>Design the warehouse table your outcome KPI needs, following the four steps from Step 2. If one of your driver KPIs comes from a different business process, design a second star for it below the first.</p>
+    <ol><li>Check you are in a team (the board below). Last week's contract is shown under it: start from its outcome KPI.</li><li>Star 1: choose the business process, write the grain as one sentence starting "One row per", click the dimensions, and list the measures, one per line. The drawing updates as you type.</li><li>The <b>Star check</b> shows what is still missing — aim for 5 / 5. Then add Star 2 if a driver KPI needs another process (optional).</li><li>Press <b>Save the team's star</b>. This is part 1 of your note.</li></ol>
+    <div class="cap">
+      <label>Your team</label>
+      <div class="hint">The stars, the map and the note are your team's: what one member writes appears on every member's page.</div>
+      <div id="teamsBox" class="teams"></div>
+    </div>
+    <div class="ktab" id="lastK"></div>
+
+    <div id="starForm1"></div>
+    <div class="starbox" id="star1"></div>
+    <div class="lint" id="lint1"></div>
+
+    <div class="star2">
+      <h3>Star 2 · optional · for a driver KPI from another process</h3>
+      <div id="starForm2"></div>
+      <div class="starbox" id="star2" style="display:none"></div>
+      <div class="lint" id="lint2"></div>
+    </div>
+    <input type="hidden" id="f_star" data-work="w4_star" data-worklabel="W4 · team · star schema">
+    <button class="btn" id="starBtn">Save the team's star</button>
+    <div class="savenote" id="starNote"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="Source-to-target map|w4_map">
+    <span class="tick">✅</span>
+    <span class="clock">Step 5 · 18 min · note part 2</span>
+    <h2>The source-to-target map</h2>
+    <p>A source-to-target map says, for every column of the warehouse, where it comes from and what is done to it on the way. It is what next week's load is built from and what an auditor reads when a number moves. The last three columns are the <b>governance line</b>: who answers for the column, how sensitive it is, and the check that stops a bad row.</p>
+    <ol><li>Read ÒRBITA's example map below: six columns of fact_ride and fact_spend. Notice the rules: they are Session 1's traps, written down.</li><li>Press <b>Fill the targets from our star</b>: the first column fills with your star's keys and measures. Add or rename rows as you need.</li><li>Fill the six other cells of every row. One member types (cells are shared with the team); another checks each rule against the Session 1 traps: timezones, failed unlocks, the changed email, duplicated exports, currencies, paused accounts.</li><li>The map check marks each row. At least <b>six complete rows</b>, then press <b>Save the map</b>. This is part 2 of your note.</li></ol>
+    <div class="ktab" id="mapEx"></div>
+    <div class="callout"><span class="ct">Sensitivity, in one line</span>Under the GDPR, data that identifies a person is <b>personal</b>, and a pseudonymous id that can be linked back to them (subscriber_id, a hashed email) is still personal data (Recital 26). ÒRBITA operates in the EU, so every such column needs an owner and a stated purpose. <b>Internal</b>: business data that is not about a person, such as ad spend. <b>Public</b>: could be published as it stands, such as the list of cities.</div>
+    <div class="btn-row"><button class="btn small ghost" id="mapFill" type="button">Fill the targets from our star</button></div>
+    <div class="ktab mapt" id="mapTab"></div>
+    <div class="lint" id="mapLint"></div>
+    <input type="hidden" id="f_map" data-work="w4_map" data-worklabel="W4 · team · source-to-target map">
+    <div class="btn-row"><button class="btn" id="mapBtn">Save the map</button><span id="mapMsg" class="savenote"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6" data-board="The definition the design changed|w4_team_chg;Next week: rows that will fail|w4_next">
+    <span class="tick">✅</span>
+    <span class="clock">Step 6 · 15 min · publish and hand in</span>
+    <h2>Publish and hand in</h2>
+    <h3>6a · The definition that changed · 4 min</h3>
+    <p>Session 2 ended on a claim: <i>"No KPI tree survives contact with the data. The first query changes a definition."</i> Your star is the first contact. Compare it with last week's contract (shown in Step 4).</p>
+    <ol><li>Together, write which field of last week's contract the design forced you to change, and how: the grain, the formula, the source. If nothing changed, say why the contract already fitted.</li><li>Read the note preview under it. Anything marked <b>missing</b> is still to do.</li></ol>
+    <div class="cap">
+      <label for="f_chg">Team · the definition our design changed (note part 3)</label>
+      <div class="hint">A team field, max. 500 characters.</div>
+      <textarea id="f_chg" maxlength="500" data-work="w4_team_chg" data-worklabel="W4 · team · the definition the design changed" placeholder="e.g. The contract said grain 'one subscriber'. Retention needs a status on the 1st of each month, so the grain became 'one account per month', and 'paying on day 90' became 'paying in month 3'."></textarea>
+    </div>
+    <div class="memo" id="memo"></div>
+    <input type="hidden" id="f_doc" data-work="w4_doc" data-worklabel="W4 · warehouse design note (handed in)">
+
+    <h3>6b · Add it to your Netlify site · 8 min · one team member</h3>
+    <ol><li>Find the <b>orbita-memo</b> folder from Session 2 (the one with <b>index.html</b> in it). If that member is absent, Netlify can give it back: open the project → <b>Deploys</b> → the latest deploy → <b>Download</b>.</li>
+      <li>Press <b>Download the design note</b> below. A file called <b>schema.html</b> lands in your Downloads folder. Move it into the <b>orbita-memo</b> folder, next to index.html. Do not rename it.</li>
+      <li>Double-click <b>schema.html</b> to check it: the drawing, the map and part 3 are there. If something is wrong, fix it on this page, download again and replace the file.</li>
+      <li>Sign in at <a href="https://app.netlify.com" target="_blank" rel="noopener">app.netlify.com</a>, open your team's project → <b>Deploys</b>, and drag the <b>whole orbita-memo folder</b> onto the upload box at the bottom. The address stays the same; the new page is at the address followed by <b>/schema.html</b>.</li>
+      <li>Open it in a private window to check, then paste the full address below.</li></ol>
+    <div class="btn-row"><button class="btn ghost" id="docDl" type="button">Download the design note</button><button class="btn ghost" id="docCopy" type="button">Copy the note as text</button></div>
+    <div class="cap">
+      <label for="f_site">Team · our design note's address</label>
+      <div class="hint" id="siteHint">Starts with https://, ends with .netlify.app/schema.html.</div>
+      <input type="text" id="f_site" maxlength="200" data-work="w4_site" data-worklabel="W4 · team · design note on Netlify" placeholder="https://orbita-kpi-team-a-rates.netlify.app/schema.html" autocomplete="off">
+    </div>
+
+    <h3>6c · Hand in · 3 min</h3>
+    <ol><li>One member presses <b>Hand in the design note</b>. The note and its address are saved in every team member's record, with the time, and the address goes on the class list.</li><li>Then each member seals a prediction for Session 4, at the bottom of this step.</li></ol>
+    <div class="btn-row"><button class="btn" id="docBtn">Hand in the design note</button><span id="docNote" class="savenote"></span></div>
+    <div class="wall" id="siteWall" style="margin-top:12px"><div class="wh">The class's design notes <span class="st" id="siteStat">not loaded yet</span></div><div class="empty">Press Refresh to see every team's note.</div></div>
+    <button class="btn ghost" id="siteWallBtn" type="button">Refresh</button>
+    <h3>Five terms from today</h3>
+    <ul>
+      <li><b>OLTP and OLAP</b>: many small writes that run the business, or few large reads that analyse it. Two jobs, two databases.</li>
+      <li><b>Schema on write, schema on read</b>: the warehouse checks a row when it is loaded; the lake leaves it to whoever reads.</li>
+      <li><b>Grain</b>: what one row means, in a sentence starting "one row per". Declared first; it decides which questions the table can answer.</li>
+      <li><b>Star schema</b>: one fact table per business process, holding measures at the grain, with keys to the dimensions around it.</li>
+      <li><b>Source-to-target map</b>: for every column, the source, the rule, the owner, the sensitivity and the check.</li>
+    </ul>
+    <div class="cap">
+      <label>Each member · next week's prediction, sealed today</label>
+      <div class="hint">Session 4 loads ÒRBITA's five extracts into a star like yours and runs the checks from your map. What share of the rows will fail at least one check?</div>
+      <div class="opts" id="pNext"></div>
+      <input type="hidden" id="f_next" data-work="w4_next" data-worklabel="W4 · prediction for session 4">
+    </div>
+    <button class="btn" id="nextBtn">Seal it</button>
+    <div class="savenote" id="nextNote"></div>
+    <div class="quiet"><b>What you should be able to say after today</b>: why an operational database cannot run an analytic workload; what separates a warehouse, a lake and a lakehouse; what a grain is and why it is declared first; why ÒRBITA needs four fact tables and not one; the difference between a fact, a dimension and a key; what a conformed dimension and a type 2 change are for; and what a governance line says about a column.</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s7">
+    <span class="tick">✅</span>
+    <span class="clock">Step 7 · 20 min · team quiz</span>
+    <h2>Team quiz: Jeopardy</h2>
+    <p>The last 20 minutes: team against team, on the screen at the front. Six categories, 100 to 500 points. Five are on today's material; the sixth, <b>Your design</b>, asks the team whose turn it is about its own design note.</p>
+    <ol><li>Close the laptops, except <b>one per team</b>: keep your design note open on it (your Netlify address followed by /schema.html).</li>
+      <li>Teams take turns choosing a category and a value. The team that chose answers first; one answer per team, agreed in 10 seconds.</li>
+      <li>A right answer wins the points; a wrong one loses them, and the next team may try.</li>
+      <li>When the quiz is over, press the button below.</li></ol>
+    <button class="btn" id="quizBtn">We played the quiz — done for today</button>
+    <div class="savenote" id="quizNote"></div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Week 04 · Session 3 of 11 · Geneva Business School
+    <div style="margin-top:8px;"><a href="#" id="resetLink" style="color:var(--grey);font-weight:400;">Reset my answers and progress for Session 3 on this device</a></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 3 (module w4) — a self-run mandate, like Session 2 (built
+   2 Nov 2026): OLTP/OLAP + warehouse/lake/lakehouse sorts, the grain
+   machine, the facts/dimensions sort, the team's star(s), the
+   source-to-target map, the design note published as schema.html next
+   to Session 2's memo on the team's Netlify site, the team quiz
+   (jeopardy.html?set=s3).
+
+   ⚠ THE PROGRESS DENOMINATOR IS THE SEVEN STEPS. courseprogress.js
+   carries total:7 for w4; the two must agree.
+
+   The grain machine's row counts are per month, from ÒRBITA's stated
+   sizes: 47,700 accounts (billing's books, Session 1) × 30 days =
+   1,431,000; ~560,000 rides (≈14 per paying subscriber, 40,100 paying);
+   ~3,800 tickets; 6 cities × 3 channels × ~4.3 weeks ≈ 80; 6 × 30 = 180.
+   The minimum cover is 4 tables (ride, account-month, ticket, spend) =
+   611,580 rows; recomputed in Python, 2 Nov 2026.
+
+   Team keys (teams.js): w4_p1 w4_g1 w4_d1 w4_m1 (star 1), w4_p2 … (star 2),
+   w4_star_done, w4_mp_<r>_<c> (map cells, 8 × 7), w4_map_done, w4_chg,
+   w4_site, w4_handin. Wall nodes: w4g ("G:<n>", the grain predictions),
+   w4s (the class's design notes). Last week's contract is READ from the
+   team's w3_k_<c>_<r>, falling back to this device's bi_w3_k.
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6','s7'];
+var K='bi';
+var TEAMS=['A','B','C','D','E','F'];
+var NEXTS3=[{k:'bill',t:'Billing — the pauses'},{k:'tele',t:'Telematics — the timezones'},{k:'supp',t:'Support — the emails'},{k:'mkt',t:'Marketing — currencies and duplicates'},{k:'fin',t:'Finance — the spreadsheet'}];
+var NEXTS=[{k:'0',t:'None: our checks are right'},{k:'1',t:'Under 1 %'},{k:'5',t:'1 to 5 %'},{k:'20',t:'5 to 20 %'},{k:'99',t:'More than 20 %'}];
+var GPRED=[{k:'1',t:'1'},{k:'2',t:'2'},{k:'3',t:'3'},{k:'4',t:'4'},{k:'5',t:'5 or more'}];
+
+/* ---- step 1 sorts (answers mixed) ---- */
+var OT=[['T','Operational'],['A','Analytic']];
+var OTR=[
+ {s:'Charge subscriber 10482\'s card for November.',a:'T',w:'One row read, one row written, in a second, while thousands of others do the same. The job billing was built for.'},
+ {s:'Monthly churn by city and plan, for the last twelve months.',a:'A',w:'Reads a year of every subscription and adds it up. One request, millions of rows.'},
+ {s:'Rides per new subscriber in their first fourteen days, by signup month.',a:'A',w:'Joins billing (who is new) to telematics (who rode) over months of history.'},
+ {s:'Mark ride 88122 as a failed unlock.',a:'T',w:'An update to one row, in the system that owns it.'},
+ {s:'Marketing spend per new subscriber, by city and quarter.',a:'A',w:'Joins two systems, converts three currencies and sums a quarter.'},
+ {s:'Change Anna Kowalski\'s email address.',a:'T',w:'One row, in the help desk. In the warehouse the same change is a type 2 row (Step 3).'}
+];
+var WL=[['W','Warehouse'],['L','Lake'],['H','Lakehouse']];
+var WLR=[
+ {s:'Every raw telematics ping is stored as JSON files in cloud storage; nobody has decided yet how they will be used.',a:'L',w:'Files as they arrived, structure left to whoever reads them later.'},
+ {s:'A row whose currency code is missing is rejected at load, so the board\'s query returns the same number every Monday.',a:'W',w:'Schema on write: the check happens before the row is stored.'},
+ {s:'The same tables on cloud storage are queried by the Looker Studio dashboard and read by the Python churn model, with transactions on the files.',a:'H',w:'One copy serving BI and machine learning, with a transaction layer: the lakehouse\'s whole claim.'},
+ {s:'Billing, support and finance data are loaded into fixed, documented tables, modelled for SQL questions.',a:'W',w:'Structured, governed, built for SQL: the warehouse.'},
+ {s:'The structure is applied when someone reads the data, not when it is stored.',a:'L',w:'Schema on read, the defining property of a lake.'},
+ {s:'Open table formats such as Apache Iceberg or Delta Lake add schema enforcement and versioning to files in object storage.',a:'H',w:'These formats are what turn a lake into a lakehouse.'}
+];
+
+/* ---- step 2: the grain machine ---- */
+var GT=[
+ {k:'ride',t:'One row per ride',p:'Rides · transaction',rows:560000},
+ {k:'sday',t:'One row per account per day',p:'Subscriptions · daily snapshot',rows:1431000},
+ {k:'smon',t:'One row per account per month',p:'Subscriptions · monthly snapshot',rows:47700},
+ {k:'tick',t:'One row per ticket',p:'Support · from opened to resolved',rows:3800},
+ {k:'spend',t:'One row per city, channel and week',p:'Marketing spend',rows:80},
+ {k:'cday',t:'One row per city per day',p:'A daily summary: rides, sign-ups, spend added up',rows:180}
+];
+var GQ=[
+ {q:'Rides per new subscriber in the first 14 days',by:['ride','sday'],why:'needs each subscriber\'s rides by day: the ride table, or a daily account row with its ride count'},
+ {q:'Monthly churn, under any of last week\'s five switches',by:['smon','sday'],why:'needs every account\'s status on the 1st, whether it cancelled, whether that was reversed — including accounts that never ride'},
+ {q:'Rides by local hour of the day, per city',by:['ride'],why:'only the ride row still has a start time'},
+ {q:'Retention in month 3 of each signup cohort',by:['smon','sday'],why:'needs each account\'s status month after month'},
+ {q:'Ad spend in euros, by city, channel and week',by:['spend'],why:'spend is not recorded per subscriber or per ride at all'},
+ {q:'Median time to first resolution, by ticket category',by:['tick'],why:'needs one row per ticket with opened and resolved times'}
+];
+function gState(){return lsGet('w4_gm',{});}
+function paintGrain(){
+  var s=gState(),host=document.getElementById('gTabs');host.innerHTML='';
+  GT.forEach(function(g){
+    var l=document.createElement('label');l.className=s[g.k]?'on':'';
+    l.innerHTML='<input type="checkbox"'+(s[g.k]?' checked':'')+'><span><b>'+g.t+'</b><small>'+g.p+' · '+g.rows.toLocaleString('en-GB')+' rows</small></span>';
+    l.querySelector('input').addEventListener('change',function(e){s[g.k]=e.target.checked;lsSet('w4_gm',s);paintGrain();});
+    host.appendChild(l);
+  });
+  var on=GT.filter(function(g){return s[g.k];}),rows=0;on.forEach(function(g){rows+=g.rows;});
+  var ans=0,h='<tr><th>Question</th><th>Answered by</th><th>Why</th></tr>';
+  GQ.forEach(function(q){var hit=q.by.filter(function(k){return s[k];});if(hit.length)ans++;
+    h+='<tr><td>'+q.q+'</td>'+(hit.length?'<td class="y">✓ '+hit.map(function(k){return GT.filter(function(g){return g.k===k;})[0].t.replace('One row per ','per ');}).join(', ')+'</td>':'<td class="n">✗ not yet</td>')+'<td>'+q.why+'</td></tr>';});
+  document.getElementById('gQs').innerHTML=h;
+  document.getElementById('gQ').textContent=ans+' / 6';document.getElementById('gT').textContent=on.length;document.getElementById('gR').textContent=rows.toLocaleString('en-GB');
+  var cap;
+  if(!on.length)cap='Switch a table on.';
+  else if(ans<6)cap=(s.cday?'The city-per-day summary is on and answers none of the six: added-up rows have lost the subscriber, the hour and the window. ':'')+(6-ans)+' question'+(6-ans>1?'s':'')+' still unanswered.';
+  else if(on.length>4)cap='All six, with '+on.length+' tables. Some are doing nothing a smaller set does not already do. Switch one off and see if all six still hold.';
+  else{cap='All six, with four tables'+(s.sday?' — but the daily account table has thirty times the rows of the monthly one, and no question here needs the day. Try the monthly one.':'. That is the minimum.');}
+  document.getElementById('gCap').textContent=cap;
+  if(ans===6&&on.length===4){document.getElementById('gReveal').style.display='block';markDone('s2');}
+}
+
+/* ---- step 3: the example stars and the sort ---- */
+var DIMS=[
+ {k:'date',t:'dim_date',a:'date · weekday · month · holiday'},
+ {k:'time',t:'dim_time',a:'hour · local time band'},
+ {k:'city',t:'dim_city',a:'country · timezone · currency'},
+ {k:'sub',t:'dim_subscriber',a:'email · signup month · type 2'},
+ {k:'plan',t:'dim_plan',a:'plan · monthly price'},
+ {k:'status',t:'dim_status',a:'paying · paused · trial · unpaid'},
+ {k:'veh',t:'dim_vehicle',a:'e-bike or scooter · model'},
+ {k:'chan',t:'dim_channel',a:'channel · platform'},
+ {k:'cat',t:'dim_category',a:'ticket category'}
+];
+var PROC=[{k:'',t:'— choose the business process —',f:'fact_?'},{k:'ride',t:'Rides (telematics)',f:'fact_ride'},{k:'sub',t:'Subscriptions (billing)',f:'fact_subscription'},{k:'tick',t:'Support tickets (help desk)',f:'fact_ticket'},{k:'spend',t:'Marketing spend (ad platforms)',f:'fact_spend'}];
+var EX1={fact:'fact_ride',grain:'one row per ride',dims:['date','time','city','sub','veh'],meas:['km','duration_min','failed_unlock (0/1)']};
+var EX2={fact:'fact_subscription',grain:'one row per account per month',dims:['date','city','sub','plan','status'],meas:['mrr_eur','cancelled (0/1)','reversed_30d (0/1)','rides_in_month']};
+var FD=[['F','Fact (measure)'],['D','Dimension'],['K','Key']];
+var FDR=[
+ {s:'<b>km</b>, from telematics',a:'F',w:'A number the ride produces, and it adds up: kilometres per city per week.'},
+ {s:'<b>city</b>, from telematics',a:'D',w:'Context you filter and group by. It goes in dim_city, with country, timezone and currency.'},
+ {s:'<b>subscriber_id</b>, from billing',a:'K',w:'It identifies a row of dim_subscriber. In the warehouse it is replaced by a surrogate key, so that sources can disagree about ids.'},
+ {s:'<b>spend</b>, from marketing',a:'F',w:'A measure — once it is converted to one currency. Before that it does not add up.'},
+ {s:'<b>plan</b>, from billing',a:'D',w:'Describes the subscription. A plan change is a type 2 row in the dimension, not an edit.'},
+ {s:'<b>email</b>, from the support desk',a:'D',w:'An attribute of the subscriber, personal data, and it changes: Anna Kowalski. Type 2.'},
+ {s:'<b>resolved_h</b>, from the support desk',a:'F',w:'A measure of the ticket. Careful: it is empty while a ticket is open, and a median is more honest than a mean.'},
+ {s:'<b>ride_id</b>, from telematics',a:'K',w:'It identifies the row itself. Kimball calls it a degenerate dimension: a key with no table of its own.'}
+];
+function dimOf(k){for(var i=0;i<DIMS.length;i++)if(DIMS[i].k===k)return DIMS[i];return null;}
+/* an inline SVG with literal colours, so the same drawing works in the downloaded schema.html */
+function starSVG(sp){
+  var W=760,H=400,cx=W/2,cy=H/2,dims=(sp.dims||[]).map(function(k){return typeof k==='string'?(dimOf(k)||{t:k,a:''}):k;});
+  var meas=(sp.meas||[]).slice(0,6),fw=230,fh=58+16*Math.max(1,meas.length);
+  var s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Star schema '+esc(sp.fact)+'" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">';
+  var pos=[];dims.forEach(function(d,i){var ang=-Math.PI/2+i*2*Math.PI/Math.max(1,dims.length);pos.push([cx+Math.cos(ang)*270,cy+Math.sin(ang)*150]);});
+  pos.forEach(function(p){s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0].toFixed(0)+'" y2="'+p[1].toFixed(0)+'" stroke="#B9C0D0" stroke-width="1.5"/>';});
+  dims.forEach(function(d,i){var p=pos[i],w=196,h=44,x=Math.max(4,Math.min(W-w-4,p[0]-w/2)),y=Math.max(4,Math.min(H-h-4,p[1]-h/2));
+    s+='<rect x="'+x.toFixed(0)+'" y="'+y.toFixed(0)+'" width="'+w+'" height="'+h+'" rx="8" fill="#FFFFFF" stroke="#101F44" stroke-width="1.3"/>';
+    s+='<text x="'+(x+10).toFixed(0)+'" y="'+(y+18).toFixed(0)+'" font-size="13" font-weight="700" fill="#101F44">'+esc(d.t)+'</text>';
+    s+='<text x="'+(x+10).toFixed(0)+'" y="'+(y+34).toFixed(0)+'" font-size="10.5" fill="#5A6275">'+esc(String(d.a).slice(0,34))+'</text>';});
+  var fx=cx-fw/2,fy=cy-fh/2;
+  s+='<rect x="'+fx+'" y="'+fy+'" width="'+fw+'" height="'+fh+'" rx="10" fill="#FDF3E6" stroke="#D58517" stroke-width="2"/>';
+  s+='<text x="'+(fx+12)+'" y="'+(fy+21)+'" font-size="14.5" font-weight="800" fill="#101F44">'+esc(sp.fact||'fact_?')+'</text>';
+  s+='<text x="'+(fx+12)+'" y="'+(fy+38)+'" font-size="11" font-style="italic" fill="#A8620A">'+esc(String(sp.grain||'grain not declared').slice(0,38))+'</text>';
+  if(!meas.length)s+='<text x="'+(fx+12)+'" y="'+(fy+56)+'" font-size="11" fill="#B00020">no measures yet</text>';
+  meas.forEach(function(m,i){s+='<text x="'+(fx+12)+'" y="'+(fy+56+16*i)+'" font-size="11.5" fill="#1F2633">• '+esc(String(m).slice(0,32))+'</text>';});
+  return s+'</svg>';
+}
+
+/* ---- step 4: the team's stars ---- */
+function starForm(n){
+  var host=document.getElementById('starForm'+n);
+  host.innerHTML='<div class="cap"><label for="f_p'+n+'">'+(n===1?'Star 1 · ':'')+'1 · The business process</label><select id="f_p'+n+'">'+PROC.map(function(p){return '<option value="'+p.k+'">'+p.t+'</option>';}).join('')+'</select></div>'+
+   '<div class="cap"><label for="f_g'+n+'">2 · The grain, in one sentence</label><div class="hint">Starts "One row per". One thing, not a total.</div><input type="text" id="f_g'+n+'" data-work="w4_grain'+n+'" data-worklabel="W4 · team · star '+n+' grain" autocomplete="off" placeholder="'+(n===1?'One row per account per month':'One row per ride')+'"></div>'+
+   '<div class="cap"><label id="lab_d'+n+'">3 · The dimensions · click to add</label><div class="dchips" id="dc'+n+'"></div><input type="hidden" id="f_d'+n+'"></div>'+
+   '<div class="cap"><label for="f_m'+n+'">4 · The measures, one per line</label><div class="hint">Numbers the process produces at this grain. Units in the name: _eur, _km, _min, (0/1).</div><textarea id="f_m'+n+'" data-work="w4_meas'+n+'" data-worklabel="W4 · team · star '+n+' measures" placeholder="'+(n===1?'mrr_eur&#10;cancelled (0/1)&#10;reversed_30d (0/1)':'km&#10;duration_min')+'"></textarea></div>';
+  var dc=document.getElementById('dc'+n);
+  DIMS.forEach(function(d){var b=document.createElement('button');b.type='button';b.dataset.k=d.k;b.textContent=d.t;b.title=d.a;
+    b.addEventListener('click',function(){var cur=dimList(n),i=cur.indexOf(d.k);if(i>=0)cur.splice(i,1);else cur.push(d.k);setDims(n,cur);if(window.BiTeams)BiTeams.share('w4_d'+n,cur.join(','));});dc.appendChild(b);});
+  ['f_p'+n,'f_g'+n,'f_m'+n].forEach(function(id){document.getElementById(id).addEventListener('input',function(){paintStar(n);});document.getElementById(id).addEventListener('change',function(){paintStar(n);});});
+  var saved=lsGet('w4_star'+n,null);if(saved){document.getElementById('f_p'+n).value=saved.p||'';if(!val('f_g'+n))document.getElementById('f_g'+n).value=saved.g||'';if(!val('f_m'+n))document.getElementById('f_m'+n).value=saved.m||'';setDims(n,(saved.d||'').split(',').filter(Boolean),true);}
+}
+function dimList(n){var e=document.getElementById('f_d'+n);return ((e&&e.value)||'').split(',').filter(Boolean);}
+function setDims(n,list,quiet){document.getElementById('f_d'+n).value=list.join(',');Array.prototype.forEach.call(document.getElementById('dc'+n).children,function(b){b.classList.toggle('on',list.indexOf(b.dataset.k)>=0);});paintStar(n);}
+function starSpec(n){var p=val('f_p'+n),pr=PROC.filter(function(x){return x.k===p;})[0]||PROC[0];return {p:p,fact:pr.f,grain:val('f_g'+n),dims:dimList(n),meas:val('f_m'+n).split('\n').map(function(x){return x.trim();}).filter(Boolean)};}
+function starUsed(n){var sp=starSpec(n);return !!(sp.p||sp.grain||sp.dims.length||sp.meas.length);}
+var DIMWORD=/^(city|plan|channel|date|day|month|week|subscriber|customer|email|category|status|name|vehicle|country|time|hour)s?\b/i;
+function starLint(n){
+  var sp=starSpec(n),g=sp.grain;
+  var c=[
+    {ok:!!sp.p,t:'A business process',w:'Rides, subscriptions, tickets or spend: one fact table per process.'},
+    {ok:/^one row per\s+\S{3,}/i.test(g),t:'The grain starts "One row per…"',w:'"One row per account per month", "One row per ride". If it does not fit that sentence, it is not a grain yet.'},
+    {ok:!!g&&!/\b(total|totals|sum|summary|average|avg|aggregate|kpi)\b/i.test(g),t:'The grain is one thing, not a total',w:'A grain of totals is the city-per-day summary from Step 2: it answers almost nothing.'},
+    {ok:sp.dims.indexOf('date')>=0&&sp.dims.length>=3,t:'dim_date and at least two other dimensions ('+sp.dims.length+')',w:'Every fact table has a date. Who, where, which plan are the usual others.'},
+    {ok:sp.meas.length>0&&sp.meas.every(function(m){return !DIMWORD.test(m);}),t:sp.meas.length?'Measures are numbers, not context':'At least one measure',w:'"city" or "plan" in the measures belongs in a dimension. A measure is something you add up or take the median of.'}
+  ];
+  return c;
+}
+function paintStar(n){
+  var sp=starSpec(n),box=document.getElementById('star'+n),lb=document.getElementById('lint'+n);
+  lsSet('w4_star'+n,{p:sp.p,g:sp.grain,d:sp.dims.join(','),m:val('f_m'+n)});
+  if(n===2&&!starUsed(2)){box.style.display='none';lb.innerHTML='';paintMemo();return 0;}
+  box.style.display='block';box.innerHTML=starSVG(sp);
+  var c=starLint(n),k=c.filter(function(x){return x.ok;}).length;
+  lb.innerHTML='<div class="lh"><span>Star check'+(n===2?' · star 2':'')+'</span><b class="'+(k===5?'ok':'')+'">'+k+' / 5</b></div>'+c.map(function(x){return '<div class="lr'+(x.ok?' ok':'')+'"><span class="lm">'+(x.ok?'✓':'○')+'</span><span class="lt">'+x.t+'</span>'+(x.ok?'':'<span class="lw">'+x.w+'</span>')+'</div>';}).join('');
+  paintMemo();
+  return k;
+}
+function starText(n){var sp=starSpec(n);return sp.fact+' · grain: '+sp.grain+'\n  dimensions: '+sp.dims.map(function(k){return (dimOf(k)||{t:k}).t;}).join(', ')+'\n  measures: '+sp.meas.join(', ');}
+
+/* last week's contract, read-only */
+var KFIELDS=['Name','Formula','Source','Grain','Owner','Cadence','Target','Counter-metric'];
+function lastContract(){
+  var loc=lsGet('w3_k',[[],[],[]]),out=[[],[],[]];
+  for(var c=0;c<3;c++)for(var r=0;r<8;r++){var sh=window.BiTeams&&BiTeams.shared('w3_k_'+c+'_'+r);out[c][r]=(sh&&sh.v)||(loc[c]&&loc[c][r])||'';}
+  return out;
+}
+function paintLastK(){
+  var v=lastContract(),box=document.getElementById('lastK'),any=v.some(function(col){return col.some(function(x){return x;});});
+  if(!any){box.innerHTML='<div class="quiet">Last week\'s contract is not on this device and your team has not shared one yet. Open your Session 2 memo on Netlify in another tab, or start from ÒRBITA\'s example (Step 3).</div>';return;}
+  var cols=['Outcome KPI','Driver KPI 1','Driver KPI 2'],rows=[0,1,2,3];
+  box.innerHTML='<div class="sh">Last week · your team\'s KPI contract (name, formula, source, grain)</div><table><thead><tr><th>Field</th>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr><td class="cr"><b>'+KFIELDS[r]+'</b></td>'+[0,1,2].map(function(c){return '<td>'+esc(v[c][r])+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+}
+
+/* ---- step 5: the map ---- */
+var MCOLS=['Target column','Source system','Source column','Rule','Owner','Sensitivity','Check'];
+var MROWS=8;
+var MEX=[
+ ['fact_ride.date_key','Telematics','start_utc','convert UTC to the city\'s local time (Europe/Madrid, Europe/Lisbon …), then take the date','Head of fleet','Internal','never empty; within the load\'s dates'],
+ ['fact_ride.km','Telematics','km','keep rides with km > 0.2 and duration > 2 min; the rest are failed unlocks, flagged, not counted','Head of fleet','Internal','between 0.2 and 80'],
+ ['fact_ride.subscriber_key','Telematics → dim_subscriber','subscriber_id','look up the dim_subscriber row valid on the ride date (type 2)','Head of growth','Personal','every ride finds a subscriber'],
+ ['dim_city.city_name','Telematics','city','map to the six-city list: "Milano" → "Milan"','Head of operations','Public','one of six values'],
+ ['dim_subscriber.email','Support desk + billing','email','lower-case; a changed email opens a new type 2 row, the subscriber key stays','Head of support','Personal','one current row per subscriber'],
+ ['fact_spend.spend_eur','Marketing','spend, currency','drop duplicate export rows (same week, city, channel, amount); convert at the ECB reference rate of the week\'s Monday','CMO','Internal','one row per city, channel, week']
+];
+function mapVals(){return lsGet('w4_mp',[]);}
+function mapCell(r,c){var v=mapVals();return (v[r]&&v[r][c])||'';}
+function setMapCell(r,c,x){var v=mapVals();if(!v[r])v[r]=[];v[r][c]=x;lsSet('w4_mp',v);}
+/* personal data, matched on the COLUMN name only (after the last dot), word by word: 'ip' must not match 'subscription' */
+var PERS=/(^|[_\s,])(email|e-mail|name|first_name|last_name|full_name|address|phone|iban|card|gps|lat|lon|latitude|longitude|subscriber|subscriber_id|customer|customer_id|ip)(?=$|[_\s,])/i;
+function colOf(x){x=String(x||'').trim();var i=x.lastIndexOf('.');return i>=0?x.slice(i+1):x;}
+function mapRowState(r){
+  var t=mapCell(r,0).trim();if(!t)return null;
+  var miss=[];for(var c=1;c<7;c++)if(!mapCell(r,c).trim())miss.push(MCOLS[c].toLowerCase());
+  var src=mapCell(r,1),sens=mapCell(r,5);
+  if(src&&!/(billing|telematics|support|help ?desk|marketing|ad|finance|derived|calendar|generated|warehouse|dim_|fact_)/i.test(src))miss.push('a source system ÒRBITA has');
+  if(sens&&!/(personal|internal|public)/i.test(sens))miss.push('sensitivity = Personal, Internal or Public');
+  if((PERS.test(colOf(t))||PERS.test(mapCell(r,2)))&&sens&&!/personal/i.test(sens))miss.push('"Personal": this column identifies a person');
+  return {t:t,miss:miss};
+}
+function paintMapTab(){
+  var box=document.getElementById('mapTab');
+  var h='<table><thead><tr><th>#</th>'+MCOLS.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead><tbody>';
+  for(var r=0;r<MROWS;r++){h+='<tr data-r="'+r+'"><td class="cr">'+(r+1)+'</td>'+MCOLS.map(function(c,j){return '<td><textarea data-r="'+r+'" data-c="'+j+'" rows="2" maxlength="300">'+esc(mapCell(r,j))+'</textarea></td>';}).join('')+'</tr>';}
+  box.innerHTML=h+'</tbody></table>';
+  box.querySelectorAll('textarea').forEach(function(t){
+    var tm=null,key='w4_mp_'+t.dataset.r+'_'+t.dataset.c;
+    function flush(){if(tm===null)return;clearTimeout(tm);tm=null;if(window.BiTeams)BiTeams.share(key,t.value);}
+    t.addEventListener('input',function(){setMapCell(+t.dataset.r,+t.dataset.c,t.value);paintMapLint();clearTimeout(tm);tm=setTimeout(flush,900);});
+    t.addEventListener('blur',flush);
+    t._pending=function(){return tm!==null;};
+  });
+  paintMapLint();
+}
+function paintMapLint(){
+  var n=0,ok=0,issues=[];
+  for(var r=0;r<MROWS;r++){var s=mapRowState(r),tr=document.querySelector('#mapTab tr[data-r="'+r+'"]');if(tr)tr.className='';if(!s)continue;n++;
+    if(!s.miss.length){ok++;if(tr)tr.className='ok';}else{if(tr)tr.className='bad';issues.push('Row '+(r+1)+' ('+s.t+'): '+s.miss.join(', '));}}
+  document.getElementById('mapLint').innerHTML='<div class="lh"><span>Map check</span><b class="'+(ok>=6?'ok':'')+'">'+ok+' complete of '+n+'</b></div>'+(issues.length?issues.slice(0,6).map(function(x){return '<div class="lr"><span class="lm">○</span><span class="lt">'+esc(x)+'</span></div>';}).join(''):'<div class="lr ok"><span class="lm">✓</span><span class="lt">'+(n?'Every row has its governance line.':'No rows yet: press "Fill the targets from our star".')+'</span></div>');
+  paintMemo();
+  return ok;
+}
+function mapTargets(){
+  var out=[];[1,2].forEach(function(n){if(n===2&&!starUsed(2))return;var sp=starSpec(n);
+    sp.dims.forEach(function(k){out.push(sp.fact+'.'+(dimOf(k)||{t:k}).t.replace(/^dim_/,'')+'_key');});
+    sp.meas.forEach(function(m){out.push(sp.fact+'.'+m.replace(/\s*\(.*\)$/,'').replace(/\s+/g,'_'));});});
+  return out;
+}
+function mapText(){var lines=[];for(var r=0;r<MROWS;r++){if(!mapCell(r,0).trim())continue;lines.push(MCOLS.map(function(c,j){return mapCell(r,j).trim();}).join(' | '));}return MCOLS.join(' | ')+'\n'+lines.join('\n');}
+
+/* ---- helpers ---- */
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(K+'_'+k);if(v===null)localStorage.removeItem(K+'_'+k);else localStorage.setItem(K+'_'+k,v);}catch(e){return null;}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function firstName(){try{var a=JSON.parse(localStorage.getItem(K+'_auth')||'null');return ((a&&a.name)||'').split(' ')[0];}catch(e){return '';}}
+function setWork(id,v){var el=document.getElementById(id);if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}
+function val(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
+function labelOf(list,k){for(var i=0;i<list.length;i++)if(list[i].k===k)return list[i].t;return '';}
+function lsGet(k,d){try{var v=JSON.parse(localStorage.getItem(K+'_'+k));return v==null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(K+'_'+k,JSON.stringify(v));}catch(e){}}
+function chips(hostId,list,key,onPick){
+  var host=document.getElementById(hostId),cur=ls(key);host.innerHTML='';
+  list.forEach(function(o){var b=document.createElement('button');b.type='button';b.className='opt'+(cur===o.k?' on':'');b.textContent=o.t;b.dataset.k=o.k;
+    b.addEventListener('click',function(){if(b.disabled)return;ls(key,o.k);Array.prototype.forEach.call(host.children,function(x){x.classList.toggle('on',x===b);});if(onPick)onPick(o);});host.appendChild(b);});
+}
+function lockChips(hostId){Array.prototype.forEach.call(document.getElementById(hostId).children,function(b){b.disabled=true;});}
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_w4')||'{}')[id];}catch(e){return false;}}
+function markDone(id){
+  var el=document.getElementById(id);if(el)el.classList.add('done');
+  if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  else{try{var o=JSON.parse(localStorage.getItem(K+'_done_w4')||'{}');o[id]=true;localStorage.setItem(K+'_done_w4',JSON.stringify(o));}catch(e){}}
+  paintProgress();
+}
+function paintProgress(){
+  var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=document.getElementById(s);if(el)el.classList.add('done');}});
+  var pct=Math.round(n/SECTIONS.length*100);
+  document.getElementById('spLbl').textContent=n+' / '+SECTIONS.length;document.getElementById('spPct').textContent=pct+'%';document.getElementById('spFill').style.width=pct+'%';
+}
+function wallFail(res){if(res.reason==='instructor')return 'Instructor device: a demo answer, not posted to the wall.';return 'The wall could not be read'+(res.reason==='rules'?' (its database rules are not published yet)':'')+'. Your own answers are saved.';}
+function distHTML(counts,order,labels,mine){
+  var tot=0;order.forEach(function(k){tot+=counts[k]||0;});
+  if(!tot)return '<div class="dr"><span>no answers yet</span><span></span><span></span></div>';
+  return order.map(function(k){var n=counts[k]||0;return '<div class="dr'+(k===mine?' me':'')+'"><span>'+esc(labels[k])+(k===mine?' · you':'')+'</span><span class="bar"><i style="width:'+(n/tot*100)+'%"></i></span><span class="n">'+n+'</span></div>';}).join('');
+}
+/* classify builder (first attempt wins; onAll fires when every row is right) */
+var CLS={};
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,onAll){
+  var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0,st=lsGet(rowsId,{});
+  function capText(n,full){cap.textContent=n+' of '+VARS.length+' placed'+(full?' — '+doneMsg:'');}
+  VARS.forEach(function(v,i){
+    var row=document.createElement('div');row.className='cl-row';
+    row.innerHTML='<div class="st">'+v.s+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button type="button" data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
+    function attempt(valx,btn,quiet){
+      if(row.dataset.done)return;
+      if(valx===v.a){row.dataset.done='1';row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Yes.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);if(!quiet){st[i]=(st[i]||[]).concat([valx]);lsSet(rowsId,st);}if(done===VARS.length){CLS[rowsId]=true;if(onAll)onAll();}}
+      else{btn.classList.add('no');btn.disabled=true;if(!quiet){st[i]=(st[i]||[]).concat([valx]);lsSet(rowsId,st);}}
+    }
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){attempt(b.dataset.v,b,false);});});
+    box.appendChild(row);
+    (st[i]||[]).forEach(function(valx){var btn=null;row.querySelectorAll('button').forEach(function(x){if(x.getAttribute('data-v')===valx)btn=x;});if(btn)attempt(valx,btn,true);});
+  });
+  capText(done,done===VARS.length);
+}
+
+/* ---- the design note ---- */
+function myTeamId(){return (window.BiTeams&&BiTeams.myTeam())||'';}
+function docData(){
+  var me=myTeamId(),rows=[];for(var r=0;r<MROWS;r++){if(mapCell(r,0).trim())rows.push(MCOLS.map(function(c,j){return mapCell(r,j);}));}
+  var mapOk=0;for(var q=0;q<MROWS;q++){var s=mapRowState(q);if(s&&!s.miss.length)mapOk++;}
+  return {teamId:me,team:me?(window.BiTeams?BiTeams.label(me):'Team '+me):'',stars:[1,2].filter(function(n){return n===1||starUsed(2);}).map(starSpec),
+    starOk:starLint(1).filter(function(x){return x.ok;}).length,rows:rows,mapOk:mapOk,chg:val('f_chg')};
+}
+function docMissing(d){var x=[];if(!d.teamId)x.push('a team (Step 4)');if(d.starOk<4)x.push('star 1, at least 4 / 5 on the check (Step 4)');if(d.mapOk<6)x.push('six complete map rows (Step 5)');if(!d.chg)x.push('part 3, the definition that changed (Step 6a)');return x;}
+function docHTML(d,full){
+  var miss='<span class="miss">missing</span>',H=full?'h2':'h4',nl=function(s){return esc(s).replace(/\n/g,'<br>');};
+  var h=(full?'<h1>':'<h4>')+'Warehouse design note to ÒRBITA\'s CFO · '+(d.team?esc(d.team):miss)+(full?'</h1><p>Geneva Business School · Business Intelligence · Session 3, 5 November 2026 · <a href="index.html">← our KPI memo</a></p>':'</h4>');
+  h+='<'+H+'>1 · The star schema</'+H+'>';
+  d.stars.forEach(function(sp,i){
+    h+='<div><b>'+esc(sp.fact)+'</b> — grain: '+(sp.grain?esc(sp.grain):miss)+'<br>Dimensions: '+(sp.dims.length?sp.dims.map(function(k){return esc((dimOf(k)||{t:k}).t);}).join(', '):miss)+'<br>Measures: '+(sp.meas.length?sp.meas.map(esc).join(', '):miss)+'</div>';
+    if(full)h+='<div style="overflow-x:auto;margin:8px 0 14px">'+starSVG(sp).replace('<svg ','<svg style="min-width:620px;width:100%;height:auto" ')+'</div>';
+  });
+  h+='<'+H+'>2 · The source-to-target map</'+H+'>'+(d.rows.length?'<div class="memowrap"><table><tr>'+MCOLS.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr>'+d.rows.map(function(r){return '<tr>'+r.map(function(x){return '<td>'+nl(x)+'</td>';}).join('')+'</tr>';}).join('')+'</table></div>':'<div>'+miss+'</div>')+(d.mapOk<6?'<div>'+miss+': '+(6-d.mapOk)+' more complete row'+(6-d.mapOk>1?'s':'')+'</div>':'');
+  h+='<'+H+'>3 · The definition our design changed</'+H+'><div>'+(d.chg?nl(d.chg):miss)+'</div>';
+  return h;
+}
+function docPlain(d){
+  return 'WAREHOUSE DESIGN NOTE TO ÒRBITA\'S CFO · '+d.team+(val('f_site')?'\nOnline: '+val('f_site'):'')+'\n\n1 · The star schema\n'+d.stars.map(function(sp,i){return starText(i+1);}).join('\n')+'\n\n2 · The source-to-target map\n'+mapText()+'\n\n3 · The definition our design changed\n'+d.chg;
+}
+function paintMemo(){var b=document.getElementById('memo');if(b&&document.getElementById('f_chg'))b.innerHTML=docHTML(docData(),false);}
+function loadSites(){
+  var box=document.getElementById('siteWall');document.getElementById('siteStat').textContent='loading…';
+  BiWall.read('w4s').then(function(res){
+    if(!res.ok){box.innerHTML='<div class="wh">The class\'s design notes <span class="st">unavailable</span></div><div class="empty">'+wallFail(res)+'</div>';return;}
+    var by={};res.rows.forEach(function(r){if(SITE_RE.test(r.src||''))by[r.n]=r.src;});
+    var k=Object.keys(by).sort();
+    box.innerHTML='<div class="wh">The class\'s design notes <span class="st">'+k.length+'</span></div>'+(k.length?'<table><tbody>'+k.map(function(n){return '<tr><td class="dom">'+esc(n)+'</td><td><a href="'+esc(by[n])+'" target="_blank" rel="noopener">'+esc(by[n])+'</a></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">No design note handed in yet.</div>');
+  });
+}
+var SITE_RE=/^https:\/\/[a-z0-9-]+\.netlify\.app\/schema(\.html)?$/i;
+/* the star forms carry data-work fields, so they are built before progress.js scans the page */
+starForm(1);starForm(2);
+
+/* ---- wiring ---- */
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:'w4',title:'Session 3 · Where the numbers come from',total:SECTIONS.length});
+  if(window.StatsTrack&&StatsTrack.complete)SECTIONS.forEach(function(s){if(isDone(s))StatsTrack.complete(s);});
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('cbar'),compact:true});
+  paintProgress();
+  /* step 1 */
+  var nx=ls('w3_nx');document.getElementById('mine').innerHTML=nx?'<div class="sealed"><div class="sh">Sealed on 29 October · yours</div><div class="sv">Hardest source to load: '+esc(labelOf(NEXTS3,nx))+'\nIt is opened in Session 4, when the extracts are loaded. Today, that source gets the first rows of your map in Step 5.</div></div>':'';
+  function s1Check(){if(CLS.otRows&&CLS.wlRows&&ls('w4_s1ok')==='1'){document.getElementById('s1Note').textContent='Done ✓';markDone('s1');}}
+  buildClassify('otRows','otCap',OT,OTR,'three requests that run the business, three that analyse it.',s1Check);
+  buildClassify('wlRows','wlCap',WL,WLR,'two of each. The difference is when the structure is imposed and who reads it.',s1Check);
+  document.getElementById('s1Btn').addEventListener('click',function(){
+    if(!val('f_oltp')){alert('One line on why billing cannot compute your outcome KPI.');return;}
+    ls('w4_s1ok','1');
+    if(!(CLS.otRows&&CLS.wlRows)){document.getElementById('s1Note').textContent='Saved. Sort all twelve statements to finish the step.';return;}
+    s1Check();
+  });
+  /* step 2 */
+  chips('pGrain',GPRED,'w4_gp',function(o){setWork('f_gpred',o.t);});
+  function openMachine(){lockChips('pGrain');var b=document.getElementById('gSeal');b.disabled=true;b.textContent='Sealed ✓';document.getElementById('gLab').style.display='block';paintGrain();}
+  if(ls('w4_gp_sealed')==='1')openMachine();
+  document.getElementById('gSeal').addEventListener('click',function(){
+    if(!ls('w4_gp')){alert('Pick a number first. It costs nothing to be wrong.');return;}
+    ls('w4_gp_sealed','1');openMachine();
+    BiWall.post('w4g',{n:firstName()||'someone',src:'G:'+ls('w4_gp')}).then(function(r){document.getElementById('gNote').textContent=r.ok?'Sealed ✓ — the machine is open.':'Sealed on this device. '+wallFail(r);});
+  });
+  document.getElementById('gWallBtn').addEventListener('click',function(){
+    var box=document.getElementById('gWall');box.style.display='block';box.innerHTML='<div class="wh">The room\'s predictions <span class="st">loading…</span></div>';
+    BiWall.read('w4g').then(function(res){
+      if(!res.ok){box.innerHTML='<div class="wh">The room\'s predictions <span class="st">unavailable</span></div><div class="empty">'+wallFail(res)+'</div>';return;}
+      var c={},n=0;res.rows.forEach(function(r){var m=/^G:([1-5])$/.exec(r.src||'');if(m){c[m[1]]=(c[m[1]]||0)+1;n++;}});
+      var lab={};GPRED.forEach(function(g){lab[g.k]=g.t+(g.k==='4'?' ✓':'');});
+      box.innerHTML='<div class="wh">The room\'s predictions <span class="st">'+n+' sealed</span></div><div class="dist" style="display:block;padding:12px 15px">'+distHTML(c,['1','2','3','4','5'],lab,ls('w4_gp'))+'</div>';
+    });
+  });
+  /* step 3 */
+  document.getElementById('exStar1').innerHTML=starSVG(EX1);
+  document.getElementById('exStar2').innerHTML=starSVG(EX2);
+  buildClassify('fdRows','fdCap',FD,FDR,'three facts, three dimensions, two keys. Next: your own star.',function(){markDone('s3');});
+  /* step 4 */
+  paintStar(1);paintStar(2);paintLastK();
+  /* step 5 */
+  document.getElementById('mapEx').innerHTML='<div class="sh">ÒRBITA\'s example · six columns of fact_ride and fact_spend</div><table><thead><tr>'+MCOLS.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+MEX.map(function(r){return '<tr>'+r.map(function(x,j){return '<td'+(j===0?' class="cr"':'')+'>'+esc(x)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+  paintMapTab();
+  /* step 6 */
+  chips('pNext',NEXTS,'w4_nx',function(o){setWork('f_next',o.t);});
+  if(ls('w4_nx_sealed')==='1'){lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Sealed ✓';}
+
+  /* TEAM answers (teams.js) */
+  if(window.BiTeams){
+    BiTeams.mount(document.getElementById('teamsBox'),{});
+    BiTeams.onLoad(function(){paintLastK();paintMemo();var s=BiTeams.shared('w3_site');if(s&&s.v&&!val('f_site'))document.getElementById('siteHint').innerHTML='Last week\'s memo is at <b>'+esc(s.v)+'</b>, so this one is <b>'+esc(s.v.replace(/\/$/,''))+'/schema.html</b>.';});
+    [1,2].forEach(function(n){
+      BiTeams.field('f_p'+n,'w4_p'+n);BiTeams.field('f_g'+n,'w4_g'+n);BiTeams.field('f_m'+n,'w4_m'+n);
+      BiTeams.state('w4_d'+n,function(v){setDims(n,String(v||'').split(',').filter(Boolean));});
+    });
+    BiTeams.field('f_chg','w4_chg');BiTeams.field('f_site','w4_site');
+    for(var mr=0;mr<MROWS;mr++)for(var mc=0;mc<7;mc++)(function(r,c){
+      function cell(){return document.querySelector('#mapTab textarea[data-r="'+r+'"][data-c="'+c+'"]');}
+      BiTeams.state('w4_mp_'+r+'_'+c,function(v){setMapCell(r,c,v);var t=cell();if(t)t.value=v;paintMapLint();},
+        function(){var t=cell();return !!t&&(document.activeElement===t||(t._pending&&t._pending()));});
+    })(mr,mc);
+    BiTeams.state('w4_star_done',function(v){if(v!=='1')return;setWork('f_star',starText(1)+(starUsed(2)?'\n'+starText(2):''));document.getElementById('starNote').textContent='Saved ✓ by your team';markDone('s4');});
+    BiTeams.state('w4_map_done',function(v){if(v!=='1')return;setWork('f_map',mapText());document.getElementById('mapMsg').textContent='Saved ✓ by your team';markDone('s5');});
+    BiTeams.state('w4_handin',function(v){if(!v)return;document.getElementById('docNote').textContent='Handed in ✓ by your team · '+v;markDone('s6');});
+  }
+  document.getElementById('starBtn').addEventListener('click',function(){
+    var k=paintStar(1);
+    if(!myTeamId()){alert('Join a team first (the board above).');return;}
+    if(k<4){alert('Star 1 scores '+k+' / 5 on the check. Fix what is marked first.');return;}
+    if(starUsed(2)&&paintStar(2)<4&&!confirm('Star 2 is incomplete. Save anyway (it will appear as it is)?'))return;
+    setWork('f_star',starText(1)+(starUsed(2)?'\n'+starText(2):''));
+    document.getElementById('starNote').textContent='Saved ✓';markDone('s4');if(window.BiTeams)BiTeams.share('w4_star_done','1');
+  });
+  document.getElementById('mapFill').addEventListener('click',function(){
+    var t=mapTargets(),have=[];for(var r=0;r<MROWS;r++)have.push(mapCell(r,0).trim());
+    if(!t.length){alert('Your star has no dimensions or measures yet (Step 4).');return;}
+    var added=0;t.forEach(function(x){if(have.indexOf(x)>=0)return;var r=have.indexOf('');if(r<0)return;have[r]=x;setMapCell(r,0,x);if(window.BiTeams)BiTeams.share('w4_mp_'+r+'_0',x);added++;});
+    paintMapTab();document.getElementById('mapMsg').textContent=added?added+' target'+(added>1?'s':'')+' added.':(have.indexOf('')<0?'The map is full: eight rows. Keep the columns that matter most.':'Every target is already in the map.');
+  });
+  document.getElementById('mapBtn').addEventListener('click',function(){
+    var ok=paintMapLint();
+    if(ok<6){alert('Six complete rows are needed; the check shows '+ok+'.');return;}
+    setWork('f_map',mapText());document.getElementById('mapMsg').textContent='Saved ✓';markDone('s5');if(window.BiTeams)BiTeams.share('w4_map_done','1');
+  });
+  document.getElementById('f_chg').addEventListener('input',paintMemo);
+  setTimeout(paintMemo,700);setInterval(paintMemo,9000);
+  document.getElementById('docDl').addEventListener('click',function(){
+    var d=docData(),h='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>ÒRBITA warehouse design · '+esc(d.team)+'</title><style>body{font:14px/1.55 Georgia,serif;max-width:900px;margin:30px auto;padding:0 18px;color:#111}h1{font-size:20px}h2{font-size:15px;margin-top:22px}table{border-collapse:collapse;width:100%;font:12px/1.4 system-ui,sans-serif}td,th{border:1px solid #ccc;padding:5px 7px;vertical-align:top;text-align:left}th{background:#f3f4f7}.miss{color:#b00020;font-weight:700}a{color:#A8620A}footer{margin-top:30px;font-size:11.5px;color:#666;border-top:1px solid #ddd;padding-top:8px}</style></head><body>'+docHTML(d,true)+'<footer>ÒRBITA is a fictional company, invented for the course. A student design note, not advice.</footer></body></html>';
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h],{type:'text/html'}));a.download='schema.html';document.body.appendChild(a);a.click();a.remove();
+    document.getElementById('docNote').textContent='Downloaded schema.html. Move it into the orbita-memo folder (6b).';
+  });
+  document.getElementById('docCopy').addEventListener('click',function(){var t=docPlain(docData()),n=document.getElementById('docNote');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){n.textContent='✓ Copied.';},function(){n.textContent='Select the note and copy it.';});});
+  document.getElementById('docBtn').addEventListener('click',function(){
+    var d=docData(),miss=docMissing(d);
+    if(miss.length){alert('Still missing: '+miss.join(', ')+'.');return;}
+    if(!SITE_RE.test(val('f_site'))){alert('Paste the design note\'s full address first (6b). It looks like https://orbita-kpi-team-a-rates.netlify.app/schema.html');return;}
+    var when=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    setWork('f_doc',docPlain(d)+'\n\nHanded in '+when);
+    document.getElementById('docNote').textContent='Handed in ✓ · '+when;markDone('s6');
+    if(window.BiTeams){BiTeams.share('w4_site',val('f_site'));BiTeams.share('w4_handin',when);}
+    if(window.BiWall)BiWall.post('w4s',{n:(d.team||'Team').slice(0,40),src:val('f_site').slice(0,200)}).then(function(){loadSites();});
+  });
+  document.getElementById('siteWallBtn').addEventListener('click',loadSites);
+  document.getElementById('nextBtn').addEventListener('click',function(){
+    if(!ls('w4_nx')){alert('Pick one. It costs nothing to be wrong.');return;}
+    ls('w4_nx_sealed','1');lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Sealed ✓';
+    document.getElementById('nextNote').textContent='Sealed ✓. It opens next Thursday.';
+  });
+  document.getElementById('quizBtn').addEventListener('click',function(){document.getElementById('quizNote').textContent='Done ✓ — see you next Thursday.';markDone('s7');});
+  document.getElementById('resetLink').addEventListener('click',function(e){
+    e.preventDefault();
+    if(!confirm('Reset your Session 3 answers and progress on this device?'))return;
+    try{Object.keys(localStorage).forEach(function(k){if(k.indexOf(K+'_')!==0||k===K+'_auth')return;if(/_w4(_|$)/.test(k)||['bi_otRows','bi_wlRows','bi_fdRows'].indexOf(k)>=0)localStorage.removeItem(k);});}catch(err){}
+    location.reload();
+  });
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}document.getElementById('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+  chip();window.addEventListener('statstrack:named',chip);
+});
+</script>
+<script src="courseprogress.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

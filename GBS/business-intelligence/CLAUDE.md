@@ -122,3 +122,29 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   week2/week3, Session 1's decision wall `T:<A–F>`, and the quiz board
   (adds Team F to a saved score sheet). The A–E *switches* of the
   definition machine are not teams and stay five.
+- **Session 3 (`week4.html`, `w4`, Thu 5 Nov 2026) built 2 Nov 2026 — a
+  self-run mandate like Session 2.** The CFO asks for the warehouse design
+  on one page. Seven counted steps (`total:7`): s1 OLTP/OLAP sort (6) +
+  warehouse/lake/lakehouse sort (6) + one line `w4_oltp`, opens `w3_nx`;
+  s2 the **grain machine** — a sealed prediction (`w4_grain_pred`, wall
+  `w4g` as `G:<n>`), then six candidate tables × six questions; done at
+  6/6 with 4 tables (ride · account-month · ticket · city-channel-week =
+  611,580 rows a month; account-day is the 1.43 m-row alternative; the
+  city-day summary answers nothing). Sizes are stated on the page: 47,700
+  accounts, ~560,000 rides (≈14 per paying subscriber), ~3,800 tickets,
+  6 cities × 3 channels. s3 reading (star, date dim, conformed dims,
+  surrogate keys, SCD type 2 = Anna Kowalski, three fact-table types) +
+  fact/dimension/key sort (8 S1 columns); s4 the team's **star** (team
+  keys `w4_p/g/d/m` 1 and 2, star 2 optional; five-check lint; inline SVG
+  with literal colours so it survives the download), last week's contract
+  read from `w3_k_<c>_<r>`; s5 the **source-to-target map** (8 rows × 7
+  cells, team keys `w4_mp_<r>_<c>`, ≥6 complete rows; personal-data check
+  on the column name only — "ip" once matched "subscription"); s6 part 3
+  "the definition the design changed" (answers S2's claim), download
+  `schema.html` into the S2 `orbita-memo` folder, redeploy via Netlify
+  Deploys, hand-in requires `…netlify.app/schema(.html)`, wall `w4s`;
+  prediction `w4_nx` (share of rows failing checks — opens in S4);
+  s7 quiz = `jeopardy.html?set=s3`. Kimball & Ross (2013) and Armbrust et
+  al. (CIDR 2021) are the two citations. Probed 2 Nov 2026: 7/7, no
+  errors, no overflow at 500 px. Session 4 loads the extracts into these
+  stars and should open `w4_nx`.

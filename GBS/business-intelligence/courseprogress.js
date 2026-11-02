@@ -39,7 +39,7 @@ window.CourseProgress=(function(){
   var CHAPTERS=[
     {mod:'w2',  short:'W2', name:'Week 02 · The decision, not the dashboard',    total:7, live:true, href:'week2.html'},
     {mod:'w3',  short:'W3', name:'Week 03 · KPIs that survive contact',          total:7, live:true, href:'week3.html'},
-    {mod:'w4',  short:'W4', name:'Week 04 · Where the numbers come from',        total:6, live:false},
+    {mod:'w4',  short:'W4', name:'Week 04 · Where the numbers come from',        total:7, live:true, href:'week4.html'},
     {mod:'w5',  short:'W5', name:'Week 05 · ETL — the part that breaks',         total:6, live:false},
     {mod:'w6',  short:'W6', name:'Week 06 · Describe it honestly',               total:6, live:false},
     {mod:'w7',  short:'W7', name:'Week 07 · Is the difference real?',            total:6, live:false},

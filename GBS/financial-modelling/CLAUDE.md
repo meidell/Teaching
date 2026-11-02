@@ -124,9 +124,37 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   ⚠ **A data table's input cell must be on the table's own sheet.** Session
   1's page originally put the WACC × g table on the Cover with inputs on
   Inputs, which Excel refuses; fixed 26 Oct 2026 (it lives on Inputs).
-  ⚠ **Session 3 needs Meridia's historical balance sheet and cash flow
-  statement**, which exist nowhere yet; they must agree with the canonical
-  history above.
+- **Session 3 — *The three statements, linked* (`week4.html`, built 2 Nov
+  2026), `total:7`, a self-run MANDATE on Session 2's pattern.** The data
+  room is open; Boreal's due-diligence advisers (fictional **Halden & Co.**)
+  write that the FY2024/FY2025 balance sheets do not balance and the cash
+  flow statement does not end on the balance-sheet cash; the CFO hands
+  the team the draft pack. **Meridia's historical statements are defined
+  here for the first time** and agree with the canonical history: interest
+  3.4 · 3.3 · 3.2, tax = 24 % of PBT rounded to 0.1 (2.4 · 3.1 · 3.6), net
+  income 7.8 · 9.7 · 11.6, dividends 3.0 · 3.4 · 6.4, debt repaid 2.0 a
+  year (debt 75.0 → 73.0 · 71.0 · 69.0), cash 11.8 → 11.0 · 10.5 · 9.0,
+  receivables 24.6 · 26.4 · 28.1 · 29.6, inventory 2.1 · 2.2 · 2.3 · 2.4,
+  payables 12.7 · 13.4 · 13.8 · 14.3, fixed assets 120.0 → 122.4 · 125.8 ·
+  129.4, share capital 40.0, retained earnings 30.8 → 35.6 · 41.9 · 47.1
+  (FY2022 = the opening column). **The draft's three planted errors (four
+  cells):** CF FY2024 working capital +1.4 (sign) · CF FY2025 dividends
+  paid 0.0 (missing) · BS FY2024 RE 45.0 from profit BEFORE tax · BS
+  FY2025 RE 50.2 (carried forward). Steps: letter + pack (`w4_team`) ·
+  link map (A B B C A D E E) + four €1.0 m events (ΔNI/Δcash 0/−1 ·
+  −0.76/+0.24 · 0/+1 · 0/−1) + bike-shop drawer · six checks × FY2024/25
+  (−3.1/−3.1 · 2.8/9.2 · 2.8/6.4 · 3.1/0 · 2.8/0 · 0/0; balance checks
+  say THAT, movement checks say WHERE) · fix (causes S M W F, corrections
+  checked live until every check is 0.0) · price (€2.48 unchanged; draft
+  cash → ND 50.8 → €2.71; no dividend → €2.64; €0.16 a share = leakage) ·
+  reply (4 parts) → Netlify `meridia-tieout-team-…` (a NEW project) →
+  hand in (`w4_memo`, `w4_site`) · **`jeopardy.html?set=s3`** (sets now
+  carry their own back link). Optional workbook
+  `files/meridia-cold-historicals-draft.xlsx` (values only, the draft,
+  generator `_private/gen-meridia-historicals.py`). Every figure
+  recomputed in Python and in the page's own model under Node, 2 Nov
+  2026; probed headlessly 7/7, no errors, no overflow at 500 px. Run sheet
+  `_private/week4-runsheet.md`. Session 4 starts from the corrected pack.
 
 ### Session parameters (for /new-session)
 

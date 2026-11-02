@@ -179,6 +179,49 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   and W11 (14 Jan), plus referrers in `/shared/site.html`. Run sheet:
   `_private/week3-runsheet.md`.
 
+- **Session 4 — *The creator draft* (`week4.html`, built 1 Nov 2026 for Thu 5
+  Nov), seven steps, `total:7`.** Step 1 = the Session 3 experiment's Week 1
+  check (`w4_gsc`, `w4_quoted`). Step 2, four mechanisms at Session 1 depth:
+  **A distribution** (Mosseri 31 May 2023: per-surface ranking, Feed by
+  follow graph, Reels/Explore by interest; TikTok Newsroom 18 Jun 2020:
+  "neither follower count nor … previous high-performing videos are direct
+  factors"; median vs mean of last 10; ER denominators — HypeAuditor 2025:
+  Instagram 1.59 % in 2024, TikTok < 10k 10.3 %) with a ratio toy; **B the
+  funnel** sales = views × action rate × share who can buy × shop CVR, a
+  calculator with views-to-break-even; **C counting** (UTM per Google
+  Analytics help 10917952, codes leak to coupon sites, affiliate cookies,
+  last click, holdout → S6) with a tagged-link builder; **D the fee**
+  (deliverable, usage rights, exclusivity; IMH survey: about half pay nano/
+  micro < USD 500). ⚠ The benchmark literature contradicts itself by an
+  order of magnitude (secondary sites, unstated denominators); only the
+  figures above were traced to the publisher on 1 Nov 2026 — keep it that
+  way. Step 3: the brief — **Sonnaz Audio SA (fictional)**, Sonnaz Q1,
+  CHF 199, ships only in CH, margin CHF 90, shop CVR 3.0 %, budget
+  CHF 6,000, ≤ 3 creators; a **pool of 16 FICTIONAL creators** (`POOL`;
+  TERM had said "real live profiles" — real people's fees and audiences
+  cannot be published or verified, so each team instead measures one real
+  profile's median views, `w4_real`); shortlist `w4_short`; registration
+  `_wall/w4teams`. Step 4: **snake draft replayed from the wall** —
+  `_wall/w4pick1..3` (one node per round, because `CreatorWall.post` PUTs
+  over the device's own row), order = hash of team names (registered
+  before the first pick), a slot waits for its team or is skipped when the
+  next team posts > 2 min after the previous pick; budget and taken
+  enforced in `replay()`; picks saved to `w4_picks`; a manual fallback if
+  the board fails. Step 5 locks `w4_cpa`/`w4_sales`/`w4_why` (`w4_locked`)
+  → `_wall/w4cpa`. Step 6 opens only after the lock: the brand's fictional
+  spring campaign (CPA 48 / 350 / 1,238), the verified public figures,
+  the class's predictions, then **the simulation** — `HID` = hidden
+  action rate and fit per creator, sales = views × tap × 2 × CH share ×
+  3 % × fit, views log-normal (σ 0.35) seeded by a djb2 hash of the id —
+  calibrated in Python (scratch `sim.py`) and identical in the browser:
+  CPA from CHF 23 (zug.commute) and 38 (leman.sound) to 1,900 (techbro.ch);
+  the hidden values are shown with a reason each. Step 7: `w4_change`,
+  `w4_sign`, the pick list to copy. Probed headlessly: a five-team draft
+  with stubbed walls resolves the snake, budget and taken rules, all seven
+  steps complete, no errors, no overflow at 500 px. Run sheet:
+  `_private/week4-runsheet.md`. Session 5 (negotiation) should reuse
+  `w4_picks` — one of the team's own creators.
+
 ### Session parameters (for /new-session)
 
 - Language EN; no textbook — content is our own, every operator claim from
