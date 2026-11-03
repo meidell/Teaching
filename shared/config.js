@@ -33,6 +33,25 @@ window.CourseConfig = (function () {
     try { return localStorage.getItem("jem_lms_test") === id; } catch (e) { return false; }
   }
 
+  /* BEFORE a course moves: /shared/lmslink.js asks every student who is
+     signed in the old way to add their email, and links their Firebase
+     history to it (3 Nov 2026). A course id listed here turns it on; a
+     course that is already lms:true never needs it. On localhost,
+     localStorage.jem_lmslink_test = "<course id>" turns it on for one. */
+  var LMS_LINK = {};
+  function lmsLinkOn(id) {
+    var c = COURSES[id]; if (!c || !c.ns || lmsOn(id, c)) return false;
+    if (local()) { try { if (localStorage.getItem("jem_lmslink_test") === id) return true; } catch (e) {} }
+    return !!LMS_LINK[id];
+  }
+  function lmsLinkBoot() {
+    if (window.__lmsLink) return;
+    var id = currentId(); if (!id || !lmsLinkOn(id)) return;
+    window.__lmsLink = true;
+    var s = document.createElement("script"); s.src = "/shared/lmslink.js"; s.defer = true; document.head.appendChild(s);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", lmsLinkBoot); else setTimeout(lmsLinkBoot, 0);
+
   /* deep = headings · bar = announcement bar · main = buttons & borders
      glow = highlight on the bar · pale = soft panel · surface = page bg */
   var THEMES = {
@@ -209,6 +228,7 @@ window.CourseConfig = (function () {
     DB: DB,
     lmsApi: lmsApi,
     lmsBoot: lmsBoot,
+    lmsLinkOn: lmsLinkOn,
     themes: THEMES,
     strings: function (lang) { return STR[lang] || STR.en; },
     ids: function () { return Object.keys(COURSES); },

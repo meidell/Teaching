@@ -81,7 +81,7 @@
   function edition() { var e = jget(edKey(), null), s = sess(); return e && s && e.uid === s.user.id ? e : null; }
 
   function call(method, path, body, keepalive) {
-    var s = sess(), h = { 'content-type': 'application/json' };
+    var s = sess(), h = body ? { 'content-type': 'application/json' } : {};
     if (s && s.t) h.authorization = 'Bearer ' + s.t;
     return fetch(API + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive: !!keepalive })
       .then(function (r) {

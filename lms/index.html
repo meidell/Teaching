@@ -85,7 +85,8 @@ const ic = n => AdminUI.icon(n);
 
 /* ---- the API ---- */
 async function call(method, path, body) {
-  const s = ls.get(SKEY), h = { 'content-type': 'application/json' };
+  /* no content-type without a body: Fastify refuses an empty JSON body (the calendar and re-read buttons send none) */
+  const s = ls.get(SKEY), h = body ? { 'content-type': 'application/json' } : {};
   if (s && s.t) h.authorization = 'Bearer ' + s.t;
   let r;
   try { r = await fetch(API + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined }); }
@@ -434,8 +435,13 @@ async function tSettings() {
       ${a ? `<div class="row"><button class="ab primary" id="eB">${ic('check')}Save</button></div><div class="msg" id="eX"></div>` : '<p class="small muted">Only a department administrator changes these.</p>'}
       <p class="small muted">Join code: students who type it after signing in are enrolled. Leave it empty to allow only the pasted roster. Archived editions keep their data.</p></div>
     <div class="acard tw"><h2>Modules</h2><p class="small muted">From courses.json; each page reports its own number of steps.</p>
-      <table class="t"><tr><th>Id</th><th>Title</th><th class="n">Steps</th></tr>${ed.modules.map(m => `<tr><td><span class="ahd-code">${esc(m.module_id)}</span></td><td>${m.href ? `<a href="/${esc(ed.dir)}/${esc(m.href)}" target="_blank" rel="noopener">${esc(m.title || m.module_id)}</a>` : esc(m.title || m.module_id)}</td><td class="n">${m.total || '—'}</td></tr>`).join('')}</table></div></div>`;
+      <table class="t"><tr><th>Id</th><th>Title</th><th class="n">Steps</th></tr>${ed.modules.map(m => `<tr><td><span class="ahd-code">${esc(m.module_id)}</span></td><td>${m.href ? `<a href="/${esc(ed.dir)}/${esc(m.href)}" target="_blank" rel="noopener">${esc(m.title || m.module_id)}</a>` : esc(m.title || m.module_id)}</td><td class="n">${m.total || '—'}</td></tr>`).join('')}</table></div>
+    ${ed.legacy ? `<div class="acard tw"><h2>From the old sign-in</h2>
+      <p><b>${ed.legacy.linked}</b> of <b>${ed.legacy.total}</b> students of the old site have linked an email to their history${ed.legacy.total ? ` (${Math.round(ed.legacy.linked / ed.legacy.total * 100)} %)` : ''}.</p>
+      <p class="small muted">Students are asked to link on the course's pages while it still runs on the old site (the course must be in LMS_LINK in /shared/config.js). On the day the course switches, press the button: every linked student's latest work on the old site is read again and merged here, so nothing done between linking and switching is lost. Safe to press more than once.</p>
+      ${a ? `<div class="row"><button class="ab" id="lgB">${ic('refresh')}Re-read the old site for linked students</button></div><div class="msg" id="lgX"></div>` : ''}</div>` : ''}</div>`;
   AdminUI.icons(pane());
+  if (a && $('lgB')) $('lgB').onclick = () => act($('lgX'), () => call('POST', `/editions/${ed.id}/legacy-refresh`), null, r => `${r.students} linked students re-read (${r.live} reached on the old site).`);
   if (a) $('eB').onclick = () => act($('eX'), () => call('PATCH', `/editions/${ed.id}`, { label: $('eL').value.trim(), starts_on: $('eS').value || null, ends_on: $('eE').value || null, join_code: $('eJ').value.trim().toUpperCase() || null, status: $('eT').value }), () => loadDept(st.dept.id, ed.id));
 }
 
