@@ -84,10 +84,10 @@ window.AdminUI = (function () {
   function theme(t) {
     if (!t) return;
     var r = document.documentElement.style;
-    var a = t.accent || t.main || '#152a5e';
+    var a = t.accent || t.main || '#176B87';
     r.setProperty('--a-accent', a);
     r.setProperty('--a-accent-bright', t.accentBright || a);
-    r.setProperty('--a-glow', t.glow || '#f0b33d');
+    r.setProperty('--a-glow', t.glow || '#9FD3E6');
     r.setProperty('--a-accent-pale', rgba(a, .1));
     r.setProperty('--a-accent-line', rgba(a, .3));
   }
