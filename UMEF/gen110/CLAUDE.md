@@ -351,7 +351,13 @@ define their project and who participates."* Everything below follows from it.
   (`HUNT[]`) — 9 🧹 in the file (an error, an odd row, the true CA) and 3 🤖
   on agent use (raw vs corrected, dates read in the wrong format, a question
   the file cannot answer → MANQUE). 10 pts each, find 12 20 → 130; hints −2/−3/−4,
-  wrong −1, floor 2 (4). Answers checked as djb2 hashes of a normalised
+  wrong −1, floor 2 (4). ⚠ **The error type is hidden (3 Nov 2026, Jan Erik:
+  the list was "too easy" — the title named what to look for)**: H1–H7 and
+  H9 carry a `q0` (the EFFECT of the error only: "one order adds more than a
+  million") and the card draws 🔍 "À trouver" + `q0` until hint 1 is taken or
+  the find is solved; then the real `ico`/`t`/`q`. Hint 1 = the type + the
+  prompt to ask. H8/H10/H11 (agent) and H12 (the CA) were never typed.
+  Answers checked as djb2 hashes of a normalised
   answer (`hh()`; numbers sorted, MC `id:index`, CA rounded to thousands);
   the why-texts and notes carry no answer numbers. A copyable **detective
   agent card**. Score → hidden `data-work="w4_chasse"` (a number; in

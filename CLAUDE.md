@@ -784,6 +784,16 @@ you are, and no account password is ever typed into a page or stored.
 
 ## 8. Working on this repo
 
+- ⚠ **Wording on slides, titles and exercise instructions is EXPLICIT (3 Nov 2026).**
+  Jan Erik: "you are doing it again… word games on the slides. MAKE THE WORDING
+  EXPLICIT." No slogans, puns, metaphors, two-beat contrasts or teaser titles; a
+  title names the topic in plain words and the body says the facts in full
+  sentences. And **no story prop standing in for a description**: "produire le
+  rapport du lundi avec trois agents" leaves the reader asking "why Monday?" —
+  say what the thing is ("produire le rapport des ventes de Wax & Co : cinq
+  chiffres sur juillet–octobre…") and only then use the case's name for it. A
+  score ("5 sur 5") is named together with what it counts. Students are
+  first-year, often non-native readers; every unexplained word costs them.
 - **Never retrofit wholesale.** 232 pages of working HTML is an asset. Adopt the shared
   layer in new pages; backport an old page only when you are already editing it.
 - **Test by opening the file**, or `python3 -m http.server` from the repo root when a
