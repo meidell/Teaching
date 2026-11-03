@@ -33,7 +33,7 @@ window.CourseProgress=(function(){
     {mod:'w1', short:'S1', name:T('Séance 1 · L’IA, on commence par s’en servir','Session 1 · AI: we start by using it'),                        total:8, live:true, href:T('seance1.html','seance1-en.html')},
     {mod:'w2', short:'S2', name:T('Séance 2 · Bien demander I — le texte','Session 2 · Asking well I — text'),                                   total:9, live:true, href:T('seance2.html','seance2-en.html')},
     {mod:'w3', short:'S3', name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),         total:8, live:true, href:T('seance3.html','seance3-en.html')},
-    {mod:'w4', short:'S4', name:T('Séance 4 · Des agents qui travaillent ensemble','Session 4 · Agents working together'),                total:7, live:true, href:T('seance4.html','seance4-en.html')},
+    {mod:'w4', short:'S4', name:T('Séance 4 · Des agents qui travaillent ensemble','Session 4 · Agents working together'),                total:8, live:true, href:T('seance4.html','seance4-en.html')},
     {mod:'w5', short:'S5', name:T('Séance 5 · Le CV automatisé','Session 5 · The automated CV'),      total:7, live:true, href:T('seance5.html','seance5-en.html')},
     {mod:'w6', short:'S6', name:T('Séance 6 · Le prompt engineering pour le travail','Session 6 · Prompt engineering for work'),           total:8, live:false},
     {mod:'w7', short:'S7', name:T('Séance 7 · Automatiser — un agent qui travaille seul','Session 7 · Automating — an agent that works alone'),                              total:8, live:false},

@@ -23,8 +23,11 @@ define their project and who participates."* Everything below follows from it.
   `deck1.js`.** Every section of a séance page is something the room does
   **at the same time**, each on their own laptop, the instructor in front —
   the section badge says *Ensemble / Together*. The deck CSS in `ia.css` is
-  kept for a course that wants it; nothing here uses it. Do not put a lecture
-  deck back into this course.
+  kept for a course that wants it. Do not put a lecture deck back into this
+  course — **except séance 4** (3 Nov 2026), where Jan Erik asked for one
+  explicitly: "give me a good hour's slideshow (integrated at the top) so
+  that I can walk them through the theory and the use of the exercises".
+  Add a deck to another séance only when he asks for that séance.
 - ⚠ **Every page is GENERATED, from one bilingual template.**
   `_build/<name>.tpl.html` carries every piece of copy as
   `⟦texte français⫽English text⟧` (unicode brackets that never occur in HTML
@@ -290,10 +293,10 @@ define their project and who participates."* Everything below follows from it.
   CSV without them (`;`, BOM). Kept in `gen110_w4_data` (≤ 300 kB), never
   sent. "Use the shop's file" loads **Wax & Co** (`WAX_CSV`, 80 orders
   Jul–Oct 2026 + 1 duplicate, generated in Python, seed 1103) with SEVEN
-  planted problems: duplicate order 1039 · dates ISO and dd/mm/yyyy ·
-  four spellings of "Robe wax" · five prices typed "18 000 F" · two empty
-  prices (rows of Sac en pagne and Boubou bazin) · order 1030 = 120 bags
-  (really 1) · "OM" for Orange Money; invented first names and phone
+  planted problems (a duplicate order · dates ISO and dd/mm/yyyy ·
+  four spellings of "Robe wax" · prices typed "18 000 F" · two empty
+  prices · an impossible quantity · "OM" for Orange Money — order numbers
+  left out on purpose, the 3 Nov file reuses some of them for the hunt); invented first names and phone
   numbers so the 🔐 flag has something to catch. **`TRUTH` (Python, on the
   file corrected with "Aminata"): CA 1 918 000 FCFA · top Boubou bazin
   490 000 = 25.55 % · Oct 622 000 vs Jul 442 000 = +40.72 % · basket
@@ -324,6 +327,52 @@ define their project and who participates."* Everything below follows from it.
   Free tiers named (ChatGPT and Gemini file attachment) were NOT
   re-verified on 26 Oct 2026 — check before the séance. Séance 5 needs:
   the student's CV and a real job/internship offer as text.
+- ⚠ **Séance 4 REWORKED the morning of the séance, 3 Nov 2026** — Jan Erik:
+  (1) "increase ×3 the size of the dataset and let them only use the one you
+  suggest", (2) "make it into a competition — find (give hints)
+  particularities that might be discovered when using the agents rightly,
+  wrongly", (3) "integrate the 'à faire maintenant' card into each actual
+  card", (4) "a good hour's slideshow (integrated at the top)". What changed,
+  and supersedes the 26 Oct description above where they differ:
+  **One file for the whole class** — `WAX_CSV` is now **240 orders + 2
+  duplicate rows** (`_private/wax240.py`, seed 20261103; NOT in `_build`
+  because it holds the hunt's answers). 4.0 has no paste/upload any more:
+  "Charger le fichier de la boutique" → portrait → 🔐 → download. 4.4's
+  "your file" card is gone; 4.5 (the project) is cards only, the round on
+  the student's own data is homework for remise 3. ⚠ **The true figures
+  and the hunt's answers are in `_private/wax240.py` and
+  `_private/HUNT-answers.md` only** — this file is public (it is served at
+  /UMEF/gen110/CLAUDE.md), so never write them here. `TRUTH` is base-36 encoded in the page and the 4.2
+  truth table shows ✓/✗ only until hunt find 12 is solved (it would give
+  the answer away). **Sections are now eight**: 4.0 file · 4.1 cards · 4.2
+  relay · **4.3 la chasse** · 4.4 team vs single + simulator + set-ups ·
+  4.5 your team · 4.6 quiz · 4.7 keep (`total:8` in courseprogress, nav.js,
+  `markSection('s6')` for the quiz). **The hunt (4.3)**: twelve finds
+  (`HUNT[]`) — 9 🧹 in the file (an error, an odd row, the true CA) and 3 🤖
+  on agent use (raw vs corrected, dates read in the wrong format, a question
+  the file cannot answer → MANQUE). 10 pts each, find 12 20 → 130; hints −2/−3/−4,
+  wrong −1, floor 2 (4). Answers checked as djb2 hashes of a normalised
+  answer (`hh()`; numbers sorted, MC `id:index`, CA rounded to thousands);
+  the why-texts and notes carry no answer numbers. A copyable **detective
+  agent card**. Score → hidden `data-work="w4_chasse"` (a number; in
+  `courses.json → project` section 4), `data-board` on the score card so
+  board.html shows the class's scores without names; state in
+  `gen110_w4_hunt`. The 4.2 "who should have stopped it?" items moved to
+  OTHER businesses (pharmacy, stationery, restaurant…) so they do not give
+  the hunt away; Aminata's 4.2 reply now names only dates and OM.
+  **▶ À faire strips** (`.doit`) sit inside every card (20 of them); no
+  `.card.todo` is left; the time line under each title (`.sec-time`) is
+  computed from `SECTIONS[].at/end/min`. **The slideshow**: 31 slides in
+  `SLIDES[]` with a chapter key (`open` = 15 slides of opening + theory,
+  13h30–13h55, then 1–4 per section), MBA406's `#lect` engine, speaker
+  notes (N), PDF, "→ L'exercice" closes on the chapter's section, a
+  ▶ Diapos button per section and a chapter card on the home screen; the
+  top-bar button is hidden under 600 px. Timetable: deck 13h30 · 4.0 13h55
+  · 4.1 14h05 · 4.2 14h25 · break 15h00 · 4.3 15h15 · 4.4 15h55 · 4.5 16h15
+  · quiz 16h30 · 4.7 16h40. Denominator `EXTRA_STEPS (14) + .cl-row (12) +
+  .q (8) + [data-work] (6) = 40`. Probed headlessly in both editions (all
+  widgets, all 12 finds, the score after one wrong / one hint / one wrong MC,
+  values revealed after find 12, every slide fits 1280×720, 390 px).
 - **Séance 5 — *Le CV automatisé* (`seance5.tpl.html`, 1 Nov 2026, for
   Tue 10 Nov 13h30–16h45, break 15h00)**, the class's priority n° 2, on
   séance 4's engine (blocks copied, `w4`→`w5`; séance 4's agent-card
