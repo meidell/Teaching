@@ -163,6 +163,7 @@
 
     h += '<div class="ak">Site</div>';
     h += link('/shared/site.html', ico('site'), 'Statistics & alerts', PATH === '/shared/site.html');
+    h += link('/lms/', ico('school'), 'Platform · new', PATH.indexOf('/lms/') === 0);
 
     if (REG && REG.courses) {
       var list = REG.courses.filter(function (x) { return x.ns && x.status !== 'archived'; });

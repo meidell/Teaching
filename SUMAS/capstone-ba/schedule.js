@@ -55,10 +55,8 @@
     b: { name:'Eni', country:'Italy', bet:'hedged', d:'An integrated oil & gas major that has moved its renewables, retail and e-mobility into Plenitude, and holds minority stakes in offshore wind (Dogger Bank, Vårgrønn in Norway) rather than leading projects. A hedged transition strategy.' }
   };
 
-  /* Grade weights. ⚠ ASSUMED from the Moodle gradebook items (Online
-     Discussion Forums · Case Study Written Analysis · Capstone: AI for
-     Good · Capstone Final Results) and Week 9's "55% of your course
-     grade". The MAM/MBA syllabus PDF is the authority — confirm. */
+  /* Grade weights. Confirmed by SUMAS (Giorgia, 2 Nov 2026, "Ok for the
+     grades") against the BBA syllabus Part 2 sent to her. */
   var GRADES = [
     { pct: 10, name: 'Discussion forums',       d: 'posts and replies, on this site, every week' },
     { pct: 10, name: 'Phase 1 + Phase 2 reports', d: 'system analysis (W5) · data analysis (W8) · handed in on this site' },

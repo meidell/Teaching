@@ -51,6 +51,8 @@ window.CourseLogin = (function () {
   if (!CFG) { console.warn("login.js: /shared/config.js must load first"); return null; }
   var C = CFG.current();
   if (!C) return null;
+  /* on the new platform /shared/lms.js signs students in (by email code) */
+  if (C.lms) { CFG.lmsBoot(); return window.CourseLogin; }
 
   var DB = CFG.DB, NS = C.ns, K = C.key, T = C.theme;
 

@@ -18,6 +18,21 @@ window.CourseConfig = (function () {
 
   var DB = "https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app";
 
+  /* The new platform (Teaching API on Render, 3 Nov 2026). A course whose
+     entry below carries `lms:true` keeps its pages as they are, but
+     progress.js and login.js step aside and /shared/lms.js records to the
+     API instead of Firebase. On localhost, localStorage `jem_lms_api`
+     points at a local API and `jem_lms_test` = a course id switches that
+     one course over for testing. */
+  var LMS_API = "https://teaching-api-1t2r.onrender.com";
+  function local() { return /^(localhost|127\.0\.0\.1)$/.test(location.hostname); }
+  function lmsApi() { if (local()) { try { var a = localStorage.getItem("jem_lms_api"); if (a) return a; } catch (e) {} } return LMS_API; }
+  function lmsOn(id, c) {
+    if (c.lms) return true;
+    if (!local()) return false;
+    try { return localStorage.getItem("jem_lms_test") === id; } catch (e) { return false; }
+  }
+
   /* deep = headings · bar = announcement bar · main = buttons & borders
      glow = highlight on the bar · pale = soft panel · surface = page bg */
   var THEMES = {
@@ -156,6 +171,7 @@ window.CourseConfig = (function () {
       lang:   (window.COURSE_LANG && STR[window.COURSE_LANG]) ? window.COURSE_LANG : (c.lang || "en"),
       label:  c.label || id,
       login:  !!c.login,
+      lms:    lmsOn(id, c),     /* recorded on the new platform (lms.js), not Firebase */
       school: c.school || "",     /* the school FOLDER (first segment of `dir` in courses.json) — what makes two courses siblings for sign-in */
       groups: c.groups || null,
       theme:  THEMES[c.theme] || THEMES.navy,
@@ -164,8 +180,35 @@ window.CourseConfig = (function () {
     };
   }
 
+  /* Called by progress.js and login.js on an lms course. Installs stand-ins
+     for StatsTrack and CourseLogin that queue every call, then loads
+     /shared/lms.js, which replaces them and replays the queue — so a page
+     calling StatsTrack.init() on DOMContentLoaded loses nothing while the
+     script is still on its way. Idempotent. */
+  function lmsBoot() {
+    if (window.__lmsBoot) return; window.__lmsBoot = true;
+    var Q = window.__lmsQ = [];
+    function later(o, name) { return function () { Q.push([o, name, [].slice.call(arguments)]); }; }
+    function saved() { try { var c = get(currentId()), a = JSON.parse(localStorage.getItem(c.key + "_auth") || "null"); return a && a.lms ? a : null; } catch (e) { return null; } }
+    window.StatsTrack = {
+      init: later("StatsTrack", "init"), complete: later("StatsTrack", "complete"), setScore: later("StatsTrack", "setScore"),
+      quizAnswer: later("StatsTrack", "quizAnswer"), attach: later("StatsTrack", "attach"), askName: later("StatsTrack", "askName"),
+      setIdentity: later("StatsTrack", "setIdentity"),
+      identified: function () { return !!saved(); }, name: function () { var a = saved(); return a ? a.name : ""; },
+      sid: function () { var a = saved(); return a ? a.sid : ""; }, course: function () { return get(currentId()); }
+    };
+    window.CourseLogin = {
+      open: later("CourseLogin", "open"), logout: later("CourseLogin", "logout"), sync: function () {},
+      current: saved, handoffUrl: function (u) { return u || location.href; }, inApp: function () { return false; },
+      groups: function () { return []; }, group: function () { return ""; }, groupLabel: function (g) { return g; }
+    };
+    var s = document.createElement("script"); s.src = "/shared/lms.js"; document.head.appendChild(s);
+  }
+
   return {
     DB: DB,
+    lmsApi: lmsApi,
+    lmsBoot: lmsBoot,
     themes: THEMES,
     strings: function (lang) { return STR[lang] || STR.en; },
     ids: function () { return Object.keys(COURSES); },

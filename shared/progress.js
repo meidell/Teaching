@@ -30,6 +30,8 @@
 
   var C = CFG.current();
   if (!C) { console.warn("progress.js: unknown or missing data-course"); return; }
+  /* on the new platform /shared/lms.js records instead (config.js → lms) */
+  if (C.lms) { CFG.lmsBoot(); return; }
 
   var DB = CFG.DB, NS = C.ns, K = C.key, T = C.theme;
 

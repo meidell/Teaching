@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Platform admin · janerikmeidell.com</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏫</text></svg>">
+<link rel="stylesheet" href="/shared/admin.css">
+<script src="/shared/config.js"></script>
+<script src="/shared/adminui.js"></script>
+<!--
+  The new platform's admin (3 Nov 2026) — the Teaching API on Render.
+  One page for department admins, teachers and assistants: the API decides
+  what each may see and do (SPEC.md §5); this page only hides what the API
+  would refuse anyway. Signs in with the same email code as lms.js and
+  shares its session (localStorage `jem_lms`).
+
+  Department view: courses and editions · rooms · people · timetable and
+  student clashes. Edition view: Students (roster, groups, staff) ·
+  Timetable · Attendance · Grades · Settings. Times are Geneva time.
+-->
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:var(--a-page);color:var(--a-ink);font:14px/1.5 var(--a-font);}
+main{max-width:1180px;margin:0 auto;padding:18px 20px 80px;}
+h2{font-size:18px;margin:0 0 4px;letter-spacing:-.2px;}
+.muted{color:var(--a-grey);} .small{font-size:12.5px;}
+.acard{padding:16px 18px;margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 16px;}
+table.t{width:100%;border-collapse:collapse;font-size:13px;}
+table.t th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-grey);font-weight:800;padding:8px 8px;border-bottom:1px solid var(--a-line);white-space:nowrap;}
+table.t td{padding:8px 8px;border-bottom:1px solid var(--a-line);vertical-align:middle;}
+table.t tr.click{cursor:pointer;} table.t tr.click:hover td{background:var(--a-wash);}
+table.t td.n{text-align:right;font-variant-numeric:tabular-nums;}
+.tw{overflow-x:auto;}
+input.f,select.f,textarea.f{font:13.5px var(--a-font);border:1px solid var(--a-line);border-radius:8px;padding:7px 9px;background:#fff;color:var(--a-ink);}
+input.f:focus,select.f:focus,textarea.f:focus{outline:none;border-color:var(--a-accent-line);box-shadow:0 0 0 3px var(--a-accent-pale);}
+textarea.f{width:100%;min-height:120px;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:8px 0;}
+.row label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:800;color:var(--a-grey);letter-spacing:.04em;text-transform:uppercase;}
+.bar{height:7px;border-radius:5px;background:var(--a-wash);border:1px solid var(--a-line);overflow:hidden;min-width:90px;}
+.bar i{display:block;height:100%;background:var(--a-accent-bright);}
+.msg{font-size:13px;margin:6px 0;min-height:1em;} .msg.err{color:var(--a-bad);} .msg.ok{color:var(--a-good);}
+.att button{border:1px solid var(--a-line);background:#fff;border-radius:7px;padding:4px 9px;font:700 12px var(--a-font);cursor:pointer;color:var(--a-ink2);}
+.att button.on.present{background:var(--a-good-bg);border-color:var(--a-good);color:var(--a-good);}
+.att button.on.late{background:var(--a-warn-bg);border-color:var(--a-warn);color:var(--a-warn);}
+.att button.on.absent{background:var(--a-bad-bg);border-color:var(--a-bad);color:var(--a-bad);}
+.att button.on.excused{background:var(--a-accent-pale);border-color:var(--a-accent-line);color:var(--a-accent);}
+input.pts{width:64px;text-align:right;}
+.cancelled td{color:var(--a-faint);text-decoration:line-through;}
+#gate{max-width:400px;margin:60px auto;}
+#gate h2{margin-bottom:6px;}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:#fff;border-left:1px solid var(--a-line);box-shadow:-20px 0 40px -30px rgba(0,0,0,.4);z-index:60;overflow:auto;padding:18px 20px;display:none;}
+#drawer.on{display:block;}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:4px 12px;font-size:13px;}
+.work{background:var(--a-wash);border:1px solid var(--a-line);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px;white-space:pre-wrap;}
+.empty{padding:18px;text-align:center;color:var(--a-grey);}
+@media(max-width:700px){ main{padding:12px 12px 80px;} .kv{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<header class="ahd"><div class="ahd-in">
+  <div class="ahd-title"><div class="ahd-k">Platform · admin</div><h1 id="hTitle">Courses</h1><div class="sub" id="hSub"></div></div>
+  <div class="ahd-tools">
+    <select class="apick" id="pDept" hidden></select>
+    <select class="apick" id="pEd" hidden></select>
+    <button class="ab" id="bCal" hidden title="My calendar link"><i data-ic="calendar"></i><span class="lbl">Calendar</span></button>
+    <button class="ab" id="bOut" hidden><i data-ic="logout"></i><span class="lbl">Sign out</span></button>
+  </div>
+</div></header>
+<main id="main"></main>
+<aside id="drawer"></aside>
+
+<script>
+(function () {
+"use strict";
+const API = CourseConfig.lmsApi(), SKEY = 'jem_lms', TZ = 'Europe/Zurich';
+const $ = id => document.getElementById(id), main = $('main');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ls = { get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+             set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const ic = n => AdminUI.icon(n);
+
+/* ---- the API ---- */
+async function call(method, path, body) {
+  const s = ls.get(SKEY), h = { 'content-type': 'application/json' };
+  if (s && s.t) h.authorization = 'Bearer ' + s.t;
+  let r;
+  try { r = await fetch(API + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined }); }
+  catch (e) { throw new Error('The server could not be reached.'); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && s) { ls.del(SKEY); gate('Your session has ended. Sign in again.'); throw new Error('Signed out.'); }
+  if (!r.ok) { const e = new Error(j.error || j.message || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+  return j;
+}
+
+/* ---- Geneva time, whatever the reader's computer says ---- */
+function parts(d) {
+  const p = {}; new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(d).forEach(x => p[x.type] = x.value); return p;
+}
+function toISO(date, time) {                 /* "2026-11-05", "16:30" in Geneva → an instant */
+  const [y, mo, d] = date.split('-').map(Number), [h, mi] = time.split(':').map(Number);
+  let t = Date.UTC(y, mo - 1, d, h, mi);
+  for (let i = 0; i < 2; i++) { const p = parts(new Date(t)); const shown = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute); t += Date.UTC(y, mo - 1, d, h, mi) - shown; }
+  return new Date(t).toISOString();
+}
+const fDay = d => new Date(d).toLocaleDateString('en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+const fTime = d => new Date(d).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+const fWhen = d => d ? new Date(d).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+const dIn = d => { const p = parts(new Date(d)); return `${p.year}-${p.month}-${p.day}`; };
+const hrs = s => s ? (s >= 3600 ? (s / 3600).toFixed(1) + ' h' : Math.round(s / 60) + ' min') : '—';
+
+/* ---- state ---- */
+const st = { me: null, depts: [], dept: null, courses: [], ed: null, tab: ls.get('lmsadm_tab') || 'students' };
+
+/* ---- sign-in (same code flow as lms.js, same session) ---- */
+function gate(note) {
+  ['pDept', 'pEd', 'bOut', 'bCal'].forEach(id => $(id).hidden = true);
+  $('hTitle').textContent = 'Courses'; $('hSub').textContent = '';
+  main.innerHTML = `<div class="acard" id="gate"><h2>Sign in</h2><p class="muted small">With your email: a 6-digit code arrives within a minute. No password.</p>
+    ${note ? `<div class="awarn">${ic('alert')}<div>${esc(note)}</div></div>` : ''}
+    <div class="row"><label style="flex:1">Email<input class="f" id="gE" type="email" autocomplete="email" style="width:100%"></label></div>
+    <div id="gC" hidden class="row"><label style="flex:1">Code<input class="f" id="gK" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:100%;letter-spacing:5px;font-size:18px"></label></div>
+    <div class="msg err" id="gX"></div><button class="ab primary" id="gB">Email me a code</button></div>`;
+  let sent = false;
+  const go = async () => {
+    $('gX').textContent = ''; $('gB').disabled = true;
+    try {
+      if (!sent) { await call('POST', '/auth/start', { email: $('gE').value.trim() }); sent = true; $('gC').hidden = false; $('gB').textContent = 'Sign in'; $('gK').focus(); }
+      else { const r = await call('POST', '/auth/verify', { email: $('gE').value.trim(), code: $('gK').value }); ls.set(SKEY, { t: r.token, user: r.user }); await start(); }
+    } catch (e) { $('gX').textContent = e.message; }
+    $('gB').disabled = false;
+  };
+  $('gB').onclick = go; main.querySelectorAll('input').forEach(i => i.onkeydown = e => { if (e.key === 'Enter') go(); });
+  $('gE').focus();
+}
+
+async function start() {
+  if (!ls.get(SKEY)) return gate();
+  try { st.me = await call('GET', '/me'); } catch (e) { return; }
+  st.depts = await call('GET', '/departments').catch(() => []);
+  /* a teacher without a department membership still sees the departments of what they teach */
+  const extra = [...new Set(st.me.teaching.map(t => t.department_id))].filter(d => !st.depts.some(x => x.id === d));
+  extra.forEach(d => st.depts.push({ id: d, name: d.toUpperCase(), teachOnly: true }));
+  $('bOut').hidden = false; $('bCal').hidden = false;
+  if (!st.depts.length) {
+    main.innerHTML = `<div class="acard empty">Signed in as <b>${esc(st.me.user.email)}</b>. You do not administer or teach any course yet — a department administrator adds you to one.</div>`;
+    return;
+  }
+  const want = new URLSearchParams(location.search);
+  $('pDept').innerHTML = st.depts.map(d => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join('');
+  $('pDept').hidden = false;
+  const d0 = want.get('dept') || ls.get('lmsadm_dept');
+  $('pDept').value = st.depts.some(d => d.id === d0) ? d0 : st.depts[0].id;
+  await loadDept($('pDept').value, want.get('ed') || ls.get('lmsadm_ed'));
+}
+
+/* ---- department ---- */
+async function loadDept(id, edWanted) {
+  st.dept = st.depts.find(d => d.id === id); ls.set('lmsadm_dept', id);
+  st.courses = await call('GET', `/departments/${id}/courses`).catch(e => { main.innerHTML = `<div class="acard empty">${esc(e.message)}</div>`; return null; });
+  if (!st.courses) return;
+  const eds = [];
+  st.courses.forEach(c => c.editions.forEach(e => eds.push({ e, c })));
+  $('pEd').innerHTML = `<option value="">— department overview —</option>` +
+    st.courses.filter(c => c.editions.length).map(c => `<optgroup label="${esc(c.code || c.id)} · ${esc(c.title)}">${c.editions.map(e => `<option value="${e.id}">${esc(c.title)} · ${esc(e.label)}${e.status !== 'live' ? ' (' + e.status + ')' : ''}</option>`).join('')}</optgroup>`).join('');
+  $('pEd').hidden = false;
+  if (edWanted && eds.some(x => x.e.id === edWanted)) { $('pEd').value = edWanted; return loadEd(edWanted); }
+  $('pEd').value = ''; ls.del('lmsadm_ed'); return deptView();
+}
+function isAdmin() { return st.me.user.is_superadmin || st.me.memberships.some(m => m.department_id === st.dept.id && m.role === 'admin'); }
+function head(t, s) { $('hTitle').textContent = t; $('hSub').textContent = s || ''; }
+function nav(q) { const u = new URL(location.href); u.search = new URLSearchParams(q).toString(); history.replaceState(null, '', u); }
+
+async function deptView() {
+  st.ed = null; nav({ dept: st.dept.id }); head(st.dept.name, 'Department overview');
+  const admin = isAdmin();
+  const from = new Date(), to = new Date(Date.now() + 14 * 864e5);
+  const [rooms, people, tt, clash] = await Promise.all([
+    call('GET', `/departments/${st.dept.id}/rooms`).catch(() => []),
+    admin ? call('GET', `/departments/${st.dept.id}/members`).catch(() => []) : [],
+    call('GET', `/departments/${st.dept.id}/timetable?from=${from.toISOString()}&to=${to.toISOString()}`).catch(() => []),
+    admin ? call('GET', `/departments/${st.dept.id}/conflicts?from=${from.toISOString()}&to=${new Date(Date.now() + 120 * 864e5).toISOString()}`).catch(() => []) : [],
+  ]);
+  main.innerHTML = `
+    <div class="asec">Courses and editions <small class="muted">${st.courses.length} courses</small></div>
+    <div class="acard tw"><table class="t"><tr><th>Course</th><th>Edition</th><th>Status</th><th>Join code</th><th class="n">Students</th><th>Dates</th></tr>
+      ${st.courses.map(c => c.editions.length ? c.editions.map(e => `<tr class="click" data-ed="${e.id}"><td><span class="ahd-code">${esc(c.code || c.id)}</span> ${esc(c.title)}</td><td>${esc(e.label)}</td>
+        <td><span class="apill ${e.status === 'live' ? 'ok' : 'q'}">${esc(e.status)}</span></td><td>${esc(e.join_code || '—')}</td><td class="n">${e.students}</td>
+        <td class="small muted">${e.starts_on ? fDay(e.starts_on) : ''}${e.ends_on ? ' – ' + fDay(e.ends_on) : ''}</td></tr>`).join('')
+        : `<tr><td><span class="ahd-code">${esc(c.code || c.id)}</span> ${esc(c.title)}</td><td colspan="5" class="muted small">no edition${admin ? ` · <a href="#" data-newed="${esc(c.id)}">create one</a>` : ''}</td></tr>`).join('')}
+    </table></div>
+    <div class="asec">Next 14 days <small class="muted">${tt.length} sessions · Geneva time</small></div>
+    <div class="acard tw">${tt.length ? `<table class="t"><tr><th>When</th><th>Course</th><th>Group</th><th>Room / link</th><th>Teacher</th></tr>
+      ${tt.map(m => `<tr class="${m.status === 'cancelled' ? 'cancelled' : ''}"><td>${fDay(m.starts_at)} · ${fTime(m.starts_at)}–${fTime(m.ends_at)}</td><td>${esc(m.course)}${m.title ? ' · ' + esc(m.title) : ''}</td>
+        <td>${esc(m.group_label || 'all')}</td><td>${esc(m.room || (m.online_url ? 'online' : '—'))}</td><td>${esc(m.teacher || '—')}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions in the next 14 days.</div>'}</div>
+    ${admin ? `<div class="asec">Students booked in two places at once <small class="muted">next 120 days · allowed, but worth knowing</small></div>
+    <div class="acard tw">${clash.length ? `<table class="t"><tr><th>Student</th><th>From</th></tr>${clash.map(c => `<tr><td>${esc(c.name || c.email)}</td><td>${fWhen(c.overlap_from)}</td></tr>`).join('')}</table>` : '<div class="empty">No clashes.</div>'}</div>` : ''}
+    <div class="grid2">
+      <div><div class="asec">Rooms</div><div class="acard">
+        ${rooms.length ? `<table class="t">${rooms.map(r => `<tr><td>${esc(r.name)}</td><td class="n muted">${r.capacity ? r.capacity + ' seats' : ''}</td></tr>`).join('')}</table>` : '<p class="muted small">No rooms yet. Online-only courses need none.</p>'}
+        ${admin ? `<div class="row"><label>Room<input class="f" id="rN" placeholder="e.g. Room 3.12"></label><label>Seats<input class="f" id="rC" type="number" min="1" style="width:80px"></label><button class="ab" id="rB">${ic('plus')}Add</button></div><div class="msg" id="rX"></div>` : ''}
+      </div></div>
+      ${admin ? `<div><div class="asec">People with a role here</div><div class="acard">
+        ${people.length ? `<table class="t">${people.map(p => `<tr><td>${esc(p.name || p.email)}<div class="small muted">${esc(p.email)}</div></td><td><span class="apill acc">${esc(p.role)}</span></td>
+          <td class="n"><button class="ab sm ghost" data-rm="${p.id}|${p.role}" title="Remove">${ic('x')}</button></td></tr>`).join('')}</table>` : '<p class="muted small">Nobody yet.</p>'}
+        <div class="row"><label style="flex:1">Email<input class="f" id="pE" type="email"></label><label>Role<select class="f" id="pR"><option value="teacher">teacher</option>${st.me.user.is_superadmin ? '<option value="admin">admin</option>' : ''}</select></label><button class="ab" id="pB">${ic('plus')}Add</button></div>
+        <div class="msg" id="pX"></div><p class="small muted">A teacher sees only the editions they are added to (an edition's Students tab). Admins see the whole department.</p>
+      </div></div>` : ''}
+    </div>`;
+  AdminUI.icons(main);
+  main.querySelectorAll('[data-ed]').forEach(tr => tr.onclick = () => { $('pEd').value = tr.dataset.ed; loadEd(tr.dataset.ed); });
+  main.querySelectorAll('[data-newed]').forEach(a => a.onclick = e => { e.preventDefault(); newEdition(a.dataset.newed); });
+  if (admin) {
+    $('rB').onclick = () => act($('rX'), () => call('POST', `/departments/${st.dept.id}/rooms`, { name: $('rN').value.trim(), capacity: $('rC').value || null }), deptView);
+    $('pB').onclick = () => act($('pX'), () => call('POST', `/departments/${st.dept.id}/members`, { email: $('pE').value.trim(), role: $('pR').value }), deptView);
+    main.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const [u, r] = b.dataset.rm.split('|'); if (confirm('Remove this role?')) act(null, () => call('DELETE', `/departments/${st.dept.id}/members/${u}/${r}`), deptView); });
+  }
+}
+async function newEdition(courseId) {
+  const label = prompt('Label for the new edition, e.g. "Spring 2027"'); if (!label) return;
+  try { const e = await call('POST', `/courses/${encodeURIComponent(courseId)}/editions`, { label, status: 'draft' }); await loadDept(st.dept.id, e.id); } catch (e) { alert(e.message); }
+}
+
+/* a button's action: run, show the error or the success, then re-render */
+async function act(msgEl, fn, after, okText) {
+  if (msgEl) { msgEl.className = 'msg'; msgEl.textContent = '…'; }
+  const say = (cls, text) => { const el = msgEl && (document.getElementById(msgEl.id) || msgEl); if (el) { el.className = 'msg ' + cls; el.textContent = text; } };
+  let r;
+  try { r = await fn(); } catch (e) { if (msgEl) say('err', e.message); else alert(e.message); return; }
+  const text = okText ? okText(r) : 'Saved.';
+  say('ok', text);
+  /* the re-render replaces the element; say it again on the new one */
+  if (after) { try { await after(r); } catch (e) {} say('ok', text); }
+  return r;
+}
+
+/* ---- edition ---- */
+async function loadEd(id) {
+  if (!id) { ls.del('lmsadm_ed'); return deptView(); }
+  ls.set('lmsadm_ed', id); nav({ dept: st.dept.id, ed: id });
+  try { st.ed = await call('GET', `/editions/${id}`); } catch (e) { main.innerHTML = `<div class="acard empty">${esc(e.message)}</div>`; return; }
+  head(st.ed.course, `${st.ed.label} · ${st.ed.status}${st.ed.join_code ? ' · code ' + st.ed.join_code : ''}`);
+  return edView();
+}
+const TABS = [['students', 'users', 'Students'], ['timetable', 'calendar', 'Timetable'], ['attendance', 'presence', 'Attendance'], ['grades', 'star', 'Grades'], ['settings', 'settings', 'Settings']];
+function edView() {
+  main.innerHTML = `<div class="tabs">${TABS.map(([k, i, l]) => `<button class="ab ${st.tab === k ? 'on' : ''}" data-tab="${k}">${ic(i)}<span>${l}</span></button>`).join('')}</div><div id="pane"><div class="empty">Loading…</div></div>`;
+  main.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; ls.set('lmsadm_tab', st.tab); edView(); });
+  return ({ students: tStudents, timetable: tTimetable, attendance: tAttendance, grades: tGrades, settings: tSettings })[st.tab]();
+}
+const pane = () => $('pane');
+
+/* Students: the cohort, the roster paste, groups, staff */
+async function tStudents() {
+  const ed = st.ed, d = await call('GET', `/editions/${ed.id}/students`);
+  const groupOpts = sel => `<option value="">—</option>` + ed.groups.map(g => `<option value="${g.id}" ${sel === g.id ? 'selected' : ''}>${esc(g.label)}</option>`).join('');
+  pane().innerHTML = `
+    <div class="acard tw"><h2>${d.students.length} enrolled${d.waiting.length ? ` · <span class="muted">${d.waiting.length} waiting to sign in</span>` : ''}</h2>
+      ${d.students.length ? `<table class="t"><tr><th>Student</th><th>Group</th><th>Progress</th><th class="n">Time</th><th>Last active</th><th>Status</th></tr>
+      ${d.students.map(s => `<tr class="click" data-u="${s.id}"><td>${esc(s.name || '—')}<div class="small muted">${esc(s.email)}</div></td>
+        <td><select class="f" data-grp="${s.id}" onclick="event.stopPropagation()">${groupOpts(s.group_id)}</select></td>
+        <td>${s.pct == null ? '<span class="muted small">no counted modules</span>' : `<div class="bar" title="${s.pct}%"><i style="width:${s.pct}%"></i></div><span class="small muted">${s.pct}%</span>`}</td>
+        <td class="n">${hrs(s.secs)}</td><td class="small">${fWhen(s.last_activity || s.last_seen)}</td>
+        <td><span class="apill ${s.status === 'active' ? 'ok' : 'q'}">${s.status}</span></td></tr>`).join('')}</table>` : '<div class="empty">Nobody enrolled yet. Paste the class list below, or give students the join code.</div>'}
+      ${d.waiting.length ? `<div class="asec">Waiting <small class="muted">enrolled automatically the first time they sign in with this address</small></div>
+        <table class="t">${d.waiting.map(w => `<tr><td>${esc(w.email)}</td><td>${esc(w.name)}</td><td class="n"><button class="ab sm ghost" data-unr="${esc(w.email)}" title="Remove">${ic('x')}</button></td></tr>`).join('')}</table>` : ''}
+    </div>
+    <div class="grid2">
+      <div class="acard"><h2>Add students</h2><p class="small muted">One per line: <b>email</b>, optionally <b>, name</b> and <b>, group</b>. Known addresses are enrolled at once; the others when they first sign in.${ed.join_code ? ` Students can also join themselves with the code <b>${esc(ed.join_code)}</b>.` : ''}</p>
+        <textarea class="f" id="rL" placeholder="ana.martin@school.ch, Ana Martin, Group 1"></textarea>
+        <div class="row"><button class="ab primary" id="rB">${ic('plus')}Add to the course</button></div><div class="msg" id="rX"></div></div>
+      <div class="acard"><h2>Groups</h2><p class="small muted">For a course taught in several rooms or slots. A session can then be for one group only.</p>
+        ${ed.groups.length ? `<table class="t">${ed.groups.map(g => `<tr><td>${esc(g.label)}</td><td class="n muted">${g.students} students</td></tr>`).join('')}</table>` : ''}
+        <div class="row"><input class="f" id="gL" placeholder="Group 1"><button class="ab" id="gB">${ic('plus')}Add group</button></div><div class="msg" id="gX"></div>
+        <h2 style="margin-top:18px">Teaching staff</h2>
+        ${ed.staff.length ? `<table class="t">${ed.staff.map(s => `<tr><td>${esc(s.name || s.email)}<div class="small muted">${esc(s.email)}</div></td><td><span class="apill acc">${s.role}</span></td>
+          <td class="n">${ed.can.admin ? `<button class="ab sm ghost" data-unstaff="${s.id}" title="Remove">${ic('x')}</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="small muted">Nobody yet.</p>'}
+        ${ed.can.admin ? `<div class="row"><input class="f" id="sE" type="email" placeholder="teacher@school.ch" style="flex:1"><select class="f" id="sR"><option value="teacher">teacher</option><option value="assistant">assistant (no grades)</option></select><button class="ab" id="sB">${ic('plus')}Add</button></div><div class="msg" id="sX"></div>` : ''}
+      </div>
+    </div>`;
+  AdminUI.icons(pane());
+  pane().querySelectorAll('[data-u]').forEach(tr => tr.onclick = () => drawer(tr.dataset.u));
+  pane().querySelectorAll('[data-grp]').forEach(s => s.onchange = () => act(null, () => call('PATCH', `/editions/${ed.id}/students/${s.dataset.grp}`, { group_id: s.value || null })));
+  pane().querySelectorAll('[data-unr]').forEach(b => b.onclick = () => act(null, () => call('DELETE', `/editions/${ed.id}/pending/${encodeURIComponent(b.dataset.unr)}`), tStudents));
+  $('rB').onclick = () => act($('rX'), () => call('POST', `/editions/${ed.id}/roster`, { lines: $('rL').value }), () => loadEd(ed.id),
+    r => `${r.enrolled} enrolled, ${r.waiting} waiting${r.rejected.length ? ' · not an email: ' + r.rejected.join(', ') : ''}.`);
+  $('gB').onclick = () => act($('gX'), () => call('POST', `/editions/${ed.id}/groups`, { label: $('gL').value.trim() }), () => loadEd(ed.id));
+  if (ed.can.admin) {
+    $('sB').onclick = () => act($('sX'), () => call('POST', `/editions/${ed.id}/staff`, { email: $('sE').value.trim(), role: $('sR').value }), () => loadEd(ed.id));
+    pane().querySelectorAll('[data-unstaff]').forEach(b => b.onclick = () => { if (confirm('Remove from the teaching staff?')) act(null, () => call('DELETE', `/editions/${ed.id}/staff/${b.dataset.unstaff}`), () => loadEd(ed.id)); });
+  }
+}
+
+/* one student: progress per module, workbook, attendance */
+async function drawer(uid) {
+  const dr = $('drawer'); dr.classList.add('on'); dr.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const s = await call('GET', `/editions/${st.ed.id}/students/${uid}`);
+    const per = {}; s.done.forEach(d => (per[d.module_id] = per[d.module_id] || []).push(d.section_id));
+    const secs = {}; s.stats.forEach(x => secs[x.module_id] = x);
+    const att = { present: 0, late: 0, absent: 0, excused: 0, none: 0 }; s.attendance.forEach(a => att[a.status || 'none']++);
+    dr.innerHTML = `<div class="row" style="justify-content:space-between;margin:0"><h2>${esc(s.user.name || s.user.email)}</h2><button class="ab icon ghost" id="dC">${ic('x')}</button></div>
+      <p class="small muted">${esc(s.user.email)} · ${esc(s.user.status)}</p>
+      <div class="asec">Modules</div><table class="t"><tr><th>Module</th><th class="n">Done</th><th class="n">Time</th><th class="n">Score</th></tr>
+      ${st.ed.modules.map(m => `<tr><td>${esc(m.title || m.module_id)}</td><td class="n">${(per[m.module_id] || []).length}${m.total ? ' / ' + m.total : ''}</td>
+        <td class="n">${hrs(secs[m.module_id] && secs[m.module_id].secs)}</td><td class="n">${secs[m.module_id] && secs[m.module_id].score != null ? Number(secs[m.module_id].score) + ' / ' + Number(secs[m.module_id].score_max) : '—'}</td></tr>`).join('')}</table>
+      <div class="asec">Attendance <small class="muted">${s.attendance.length} past sessions</small></div>
+      <p class="small">${att.present} present · ${att.late} late · ${att.absent} absent · ${att.excused} excused · ${att.none} not marked</p>
+      <div class="asec">Workbook <small class="muted">${s.work.length} answers</small></div>
+      ${s.work.length ? s.work.map(w => `<div class="small muted">${esc(w.module_id)} · ${esc(w.label || w.field_id)} · ${fWhen(w.updated_at)}</div><div class="work">${esc(w.value)}</div>`).join('') : '<p class="small muted">None.</p>'}
+      <div class="row"><button class="ab sm" id="dW">${s.user.status === 'active' ? 'Mark as withdrawn' : 'Re-activate'}</button></div>`;
+    AdminUI.icons(dr);
+    $('dC').onclick = () => dr.classList.remove('on');
+    $('dW').onclick = () => act(null, () => call('PATCH', `/editions/${st.ed.id}/students/${uid}`, { status: s.user.status === 'active' ? 'withdrawn' : 'active' }), () => { drawer(uid); tStudents(); });
+  } catch (e) { dr.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('drawer').classList.remove('on'); });
+
+/* Timetable: sessions of this edition; add one or a weekly series */
+async function tTimetable() {
+  const ed = st.ed, ms = await call('GET', `/editions/${ed.id}/meetings`);
+  const rooms = await call('GET', `/departments/${ed.department_id}/rooms`).catch(() => []);
+  const today = dIn(new Date());
+  pane().innerHTML = `
+    <div class="acard"><h2>Add sessions</h2><p class="small muted">Geneva time. A room or a teacher cannot be booked twice; the database refuses it.</p>
+      <div class="row">
+        <label>Date<input class="f" type="date" id="mD" value="${today}"></label>
+        <label>Start<input class="f" type="time" id="mS" value="09:00"></label>
+        <label>End<input class="f" type="time" id="mE" value="12:00"></label>
+        <label>Repeat weekly<select class="f" id="mR">${[1, 2, 4, 6, 8, 10, 12, 14].map(n => `<option value="${n}">${n === 1 ? 'once' : n + ' weeks'}</option>`).join('')}</select></label>
+        <label>Group<select class="f" id="mG"><option value="">whole class</option>${ed.groups.map(g => `<option value="${g.id}">${esc(g.label)}</option>`).join('')}</select></label>
+        <label>Room<select class="f" id="mO"><option value="">—</option>${rooms.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select></label>
+        <label>Teacher<select class="f" id="mT"><option value="">—</option>${ed.staff.filter(s => s.role === 'teacher').map(s => `<option value="${esc(s.email)}">${esc(s.name || s.email)}</option>`).join('')}</select></label>
+        <label>Kind<select class="f" id="mK"><option>class</option><option>exam</option><option>other</option></select></label>
+      </div>
+      <div class="row"><label style="flex:1">Title (optional)<input class="f" id="mN" placeholder="e.g. Session 4 · Loading the warehouse"></label><label style="flex:1">Online link (optional)<input class="f" id="mU" placeholder="https://…"></label>
+        <button class="ab primary" id="mB">${ic('plus')}Add</button></div><div class="msg" id="mX"></div></div>
+    <div class="acard tw"><h2>${ms.length} sessions</h2>${ms.length ? `<table class="t"><tr><th>When</th><th>Title</th><th>Group</th><th>Room / link</th><th>Teacher</th><th></th></tr>
+      ${ms.map(m => `<tr class="${m.status === 'cancelled' ? 'cancelled' : ''}"><td>${fDay(m.starts_at)} · ${fTime(m.starts_at)}–${fTime(m.ends_at)}${m.kind !== 'class' ? ` <span class="apill new">${m.kind}</span>` : ''}</td>
+        <td>${esc(m.title)}</td><td>${esc(m.group_label || 'all')}</td><td>${m.room ? esc(m.room) : m.online_url ? `<a href="${esc(m.online_url)}" target="_blank" rel="noopener">online</a>` : '—'}</td><td>${esc(m.teacher || '—')}</td>
+        <td class="n" style="white-space:nowrap">${ed.can.teacher ? `<button class="ab sm" data-cx="${m.id}|${m.status}">${m.status === 'cancelled' ? 'Restore' : 'Cancel'}</button> <button class="ab sm ghost" data-del="${m.id}" title="Delete">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions yet.</div>'}</div>`;
+  AdminUI.icons(pane());
+  $('mB').onclick = () => act($('mX'), async () => {
+    const n = Number($('mR').value), out = [];
+    for (let i = 0; i < n; i++) {
+      const d = new Date($('mD').value + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 7 * i);
+      const day = d.toISOString().slice(0, 10);
+      try {
+        await call('POST', `/editions/${ed.id}/meetings`, { starts_at: toISO(day, $('mS').value), ends_at: toISO(day, $('mE').value), group_id: $('mG').value || null,
+          room_id: $('mO').value || null, teacher_email: $('mT').value || null, kind: $('mK').value, title: $('mN').value.trim(), online_url: $('mU').value.trim() || null });
+        out.push(day);
+      } catch (e) { throw new Error(`${out.length} added; ${fDay(day)}: ${e.status === 409 ? 'that room or teacher is already booked then.' : e.message}`); }
+    }
+    return out;
+  }, tTimetable, r => `${r.length} session${r.length > 1 ? 's' : ''} added.`);
+  pane().querySelectorAll('[data-cx]').forEach(b => b.onclick = () => { const [id, s] = b.dataset.cx.split('|'); act(null, () => call('PATCH', `/meetings/${id}`, { status: s === 'cancelled' ? 'scheduled' : 'cancelled' }).catch(e => { throw e.status === 409 ? new Error('Cannot restore: the room or teacher has been booked in the meantime.') : e; }), tTimetable); });
+  pane().querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Delete this session?')) act(null, () => call('DELETE', `/meetings/${b.dataset.del}`), tTimetable); });
+}
+
+/* Attendance: pick a session, mark each student, save once */
+async function tAttendance(meetingId) {
+  const ed = st.ed, ms = (await call('GET', `/editions/${ed.id}/meetings`)).filter(m => m.status === 'scheduled');
+  if (!ms.length) { pane().innerHTML = '<div class="acard empty">No sessions in the timetable yet — add them in the Timetable tab first.</div>'; return; }
+  const now = Date.now();
+  const def = meetingId || (ms.filter(m => new Date(m.starts_at) <= now + 3600e3).pop() || ms[0]).id;
+  const list = await call('GET', `/meetings/${def}/attendance`);
+  const marks = {}; list.forEach(s => marks[s.id] = s.status || '');
+  const S = ['present', 'late', 'absent', 'excused'];
+  pane().innerHTML = `<div class="acard"><div class="row" style="margin-top:0"><label style="flex:1">Session<select class="f" id="aM">${ms.map(m => `<option value="${m.id}" ${m.id === def ? 'selected' : ''}>${fDay(m.starts_at)} · ${fTime(m.starts_at)}${m.group_label ? ' · ' + esc(m.group_label) : ''}${m.title ? ' · ' + esc(m.title) : ''}</option>`).join('')}</select></label>
+      <button class="ab" id="aAll">All present</button><button class="ab primary" id="aB">${ic('check')}Save</button></div><div class="msg" id="aX"></div>
+    ${list.length ? `<table class="t att">${list.map(s => `<tr><td>${esc(s.name || s.email)}</td><td class="n">${S.map(k => `<button class="${k} ${marks[s.id] === k ? 'on' : ''}" data-s="${s.id}|${k}">${k}</button>`).join(' ')}</td></tr>`).join('')}</table>` : '<div class="empty">Nobody enrolled in this session’s group.</div>'}</div>`;
+  AdminUI.icons(pane());
+  const paint = () => pane().querySelectorAll('[data-s]').forEach(b => { const [u, k] = b.dataset.s.split('|'); b.classList.toggle('on', marks[u] === k); });
+  pane().querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const [u, k] = b.dataset.s.split('|'); marks[u] = k; paint(); });
+  $('aAll').onclick = () => { list.forEach(s => { if (!marks[s.id]) marks[s.id] = 'present'; }); paint(); };
+  $('aM').onchange = () => tAttendance($('aM').value);
+  $('aB').onclick = () => act($('aX'), () => call('PUT', `/meetings/${def}/attendance`, { marks: Object.keys(marks).filter(u => marks[u]).map(u => ({ user_id: u, status: marks[u] })) }), null, r => `${r.marked} marked.`);
+}
+
+/* Grades: assessments with weights, a grid of points, the weighted total */
+async function tGrades() {
+  const ed = st.ed, g = await call('GET', `/editions/${ed.id}/gradebook`);
+  const teach = ed.can.teacher, wsum = g.assessments.reduce((a, x) => a + Number(x.weight), 0);
+  const pts = {}; g.grades.forEach(x => pts[x.assessment_id + '|' + x.user_id] = x.points == null ? '' : Number(x.points));
+  pane().innerHTML = `
+    <div class="acard tw"><h2>Assessments <span class="small muted">· weights add up to ${wsum}%${wsum !== 100 && g.assessments.length ? ' <span class="apill new">not 100</span>' : ''}</span></h2>
+      ${g.assessments.length ? `<table class="t"><tr><th>Title</th><th class="n">Weight %</th><th class="n">Out of</th><th>Due</th><th></th></tr>
+      ${g.assessments.map(a => `<tr><td>${teach ? `<input class="f" data-at="${a.id}" value="${esc(a.title)}" style="width:100%">` : esc(a.title)}</td>
+        <td class="n">${teach ? `<input class="f pts" data-aw="${a.id}" type="number" min="0" value="${Number(a.weight)}">` : Number(a.weight)}</td>
+        <td class="n">${teach ? `<input class="f pts" data-am="${a.id}" type="number" min="1" value="${Number(a.max_points)}">` : Number(a.max_points)}</td>
+        <td class="small">${a.due_at ? fDay(a.due_at) : '—'}</td><td class="n">${teach ? `<button class="ab sm ghost" data-adel="${a.id}" title="Delete">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</table>
+        ${teach ? `<div class="row"><button class="ab" id="aS">${ic('check')}Save assessments</button></div>` : ''}` : '<div class="empty">No assessments yet.</div>'}
+      ${teach ? `<div class="row"><label style="flex:1">New assessment<input class="f" id="nT" placeholder="e.g. Final exam"></label><label>Weight %<input class="f pts" id="nW" type="number" min="0" value="0"></label><label>Out of<input class="f pts" id="nM" type="number" min="1" value="100"></label>
+        <label>Due<input class="f" id="nD" type="date"></label><button class="ab" id="nB">${ic('plus')}Add</button></div>` : '<p class="small muted">Assistants can read the gradebook but not grade.</p>'}
+      <div class="msg" id="nX"></div></div>
+    ${g.assessments.length && g.students.length ? `<div class="acard tw"><h2>Gradebook</h2><p class="small muted">Points per assessment. The total is weighted over what has been graded so far. Every change is logged with who made it.</p>
+      <table class="t"><tr><th>Student</th>${g.assessments.map(a => `<th class="n">${esc(a.title)}<div class="muted" style="text-transform:none;letter-spacing:0">/ ${Number(a.max_points)} · ${Number(a.weight)}%</div></th>`).join('')}<th class="n">Total %</th></tr>
+      ${g.students.map(s => `<tr><td>${esc(s.name || s.email)}</td>${g.assessments.map(a => `<td class="n">${teach ? `<input class="f pts" type="number" min="0" max="${Number(a.max_points)}" step="any" data-g="${a.id}|${s.id}" value="${pts[a.id + '|' + s.id] ?? ''}">` : (pts[a.id + '|' + s.id] ?? '—')}</td>`).join('')}
+        <td class="n"><b>${s.total == null ? '—' : s.total}</b></td></tr>`).join('')}</table>
+      ${teach ? `<div class="row"><button class="ab primary" id="gS">${ic('check')}Save grades</button></div>` : ''}<div class="msg" id="gX"></div></div>` : ''}`;
+  AdminUI.icons(pane());
+  if (!teach) return;
+  $('nB').onclick = () => act($('nX'), () => call('POST', `/editions/${ed.id}/assessments`, { title: $('nT').value.trim(), weight: $('nW').value, max_points: $('nM').value, due_at: $('nD').value ? toISO($('nD').value, '23:59') : null, position: g.assessments.length }), tGrades);
+  if ($('aS')) $('aS').onclick = () => act($('nX'), async () => {
+    for (const a of g.assessments) {
+      const body = { title: pane().querySelector(`[data-at="${a.id}"]`).value.trim(), weight: Number(pane().querySelector(`[data-aw="${a.id}"]`).value), max_points: Number(pane().querySelector(`[data-am="${a.id}"]`).value) };
+      if (body.title !== a.title || body.weight !== Number(a.weight) || body.max_points !== Number(a.max_points)) await call('PATCH', `/assessments/${a.id}`, body);
+    }
+  }, tGrades);
+  pane().querySelectorAll('[data-adel]').forEach(b => b.onclick = () => { if (confirm('Delete this assessment?')) act($('nX'), () => call('DELETE', `/assessments/${b.dataset.adel}`), tGrades); });
+  if ($('gS')) $('gS').onclick = () => act($('gX'), async () => {
+    const by = {};
+    pane().querySelectorAll('[data-g]').forEach(i => {
+      const [a, u] = i.dataset.g.split('|'), was = pts[a + '|' + u] ?? '', now = i.value === '' ? '' : Number(i.value);
+      if (String(was) !== String(now)) (by[a] = by[a] || []).push({ user_id: u, points: now === '' ? null : now });
+    });
+    let n = 0; for (const a of Object.keys(by)) { await call('PUT', `/assessments/${a}/grades`, { grades: by[a] }); n += by[a].length; }
+    return n;
+  }, tGrades, n => n ? `${n} grade${n > 1 ? 's' : ''} saved.` : 'Nothing changed.');
+}
+
+/* Settings: label, dates, join code, status; the modules the pages report into */
+async function tSettings() {
+  const ed = st.ed, a = ed.can.admin;
+  pane().innerHTML = `<div class="grid2"><div class="acard"><h2>Edition</h2>
+      <div class="row"><label style="flex:1">Label<input class="f" id="eL" value="${esc(ed.label)}" ${a ? '' : 'disabled'}></label></div>
+      <div class="row"><label>Starts<input class="f" type="date" id="eS" value="${ed.starts_on ? dIn(ed.starts_on) : ''}" ${a ? '' : 'disabled'}></label><label>Ends<input class="f" type="date" id="eE" value="${ed.ends_on ? dIn(ed.ends_on) : ''}" ${a ? '' : 'disabled'}></label></div>
+      <div class="row"><label>Join code<input class="f" id="eJ" value="${esc(ed.join_code || '')}" ${a ? '' : 'disabled'} style="text-transform:uppercase;width:120px"></label>
+        <label>Status<select class="f" id="eT" ${a ? '' : 'disabled'}>${['draft', 'live', 'archived'].map(s => `<option ${ed.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label></div>
+      ${a ? `<div class="row"><button class="ab primary" id="eB">${ic('check')}Save</button></div><div class="msg" id="eX"></div>` : '<p class="small muted">Only a department administrator changes these.</p>'}
+      <p class="small muted">Join code: students who type it after signing in are enrolled. Leave it empty to allow only the pasted roster. Archived editions keep their data.</p></div>
+    <div class="acard tw"><h2>Modules</h2><p class="small muted">From courses.json; each page reports its own number of steps.</p>
+      <table class="t"><tr><th>Id</th><th>Title</th><th class="n">Steps</th></tr>${ed.modules.map(m => `<tr><td><span class="ahd-code">${esc(m.module_id)}</span></td><td>${m.href ? `<a href="/${esc(ed.dir)}/${esc(m.href)}" target="_blank" rel="noopener">${esc(m.title || m.module_id)}</a>` : esc(m.title || m.module_id)}</td><td class="n">${m.total || '—'}</td></tr>`).join('')}</table></div></div>`;
+  AdminUI.icons(pane());
+  if (a) $('eB').onclick = () => act($('eX'), () => call('PATCH', `/editions/${ed.id}`, { label: $('eL').value.trim(), starts_on: $('eS').value || null, ends_on: $('eE').value || null, join_code: $('eJ').value.trim().toUpperCase() || null, status: $('eT').value }), () => loadDept(st.dept.id, ed.id));
+}
+
+/* ---- the header ---- */
+$('pDept').onchange = () => loadDept($('pDept').value);
+$('pEd').onchange = () => loadEd($('pEd').value);
+$('bOut').onclick = async () => { await call('POST', '/auth/logout').catch(() => {}); ls.del(SKEY); gate(); };
+$('bCal').onclick = async () => {
+  try { const r = await call('POST', '/me/ical'); prompt('Your personal calendar link (Google, Apple or Outlook: "subscribe by URL"). Asking again makes a new link and stops the old one.', r.url); }
+  catch (e) { alert(e.message); }
+};
+AdminUI.icons(document.querySelector('.ahd'));
+start();
+})();
+</script>
+</body>
+</html>

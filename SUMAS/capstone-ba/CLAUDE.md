@@ -191,7 +191,7 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   4–10 are still the online-course copies; continue the same pattern. Week 1's group hour is *form the team*; its
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.
-- **Grade weights are the same assumption as `wind`'s** (10/10/55/25).
+- **Grade weights 10/10/55/25 CONFIRMED by SUMAS** (Giorgia, 2 Nov 2026, on the BBA syllabus Part 2). ⚠ Same day she said the on-campus Bachelors follow the CAMPUS calendar, ending early February with the final exam — the site runs 10 weeks to the 7–14 Dec exam. Unresolved; Jan Erik to decide.
 - **`stakeholders-to-systems-slides.html`** (8 Oct 2026) is a second deck on
   the Week 1 deck's engine: a 30-slide, two-hour session (18:15–20:15,
   `data-clock` per slide) on toolkit idea 4 — inventory → interactions →
