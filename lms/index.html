@@ -52,6 +52,24 @@ input.pts{width:64px;text-align:right;}
 .cancelled td{color:var(--a-faint);text-decoration:line-through;}
 #gate{max-width:400px;margin:60px auto;}
 #gate h2{margin-bottom:6px;}
+/* the Overview tab (3 Nov 2026): admin2's "what do I do before the next session" for a switched course */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.kpi{background:var(--a-card);border:1px solid var(--a-line);border-radius:var(--a-r);padding:12px 14px;}
+.kpi .k{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--a-accent);font-weight:800;}
+.kpi .v{font-family:var(--a-serif);font-size:28px;color:var(--a-head);line-height:1.1;margin:4px 0 2px;} .kpi .v small{font-size:14px;color:var(--a-grey);font-family:var(--a-font);}
+.kpi .n{font-size:12px;color:var(--a-grey);}
+.act{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--a-line);font-size:13.5px;}
+.act:last-child{border-bottom:none;} .act i.sev{flex:none;width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--a-faint);}
+.act i.sev.high{background:var(--a-bad);} .act i.sev.mid{background:var(--a-warn);} .act i.sev.low{background:var(--a-good);}
+.act .go{margin-left:auto;flex:none;}
+.fbar{display:flex;align-items:center;gap:8px;} .fbar .bar{flex:1;} .fbar .bar i.c{background:var(--a-good);}
+.qmod{border:1px solid var(--a-line);border-radius:10px;margin-bottom:8px;} .qmod summary{cursor:pointer;padding:10px 14px;font-weight:700;display:flex;gap:10px;align-items:center;flex-wrap:wrap;list-style:none;}
+.qmod summary::-webkit-details-marker{display:none;} .qmod summary .w{font-weight:600;color:var(--a-grey);font-size:12.5px;}
+.qq{padding:8px 14px 10px;border-top:1px solid var(--a-line);font-size:13px;} .qq .qt{font-weight:700;margin-bottom:4px;}
+.qq .opt{display:grid;grid-template-columns:1fr 120px 36px;gap:8px;align-items:center;font-size:12.5px;color:var(--a-ink2);padding:2px 0;}
+.qq .opt.ok{color:var(--a-good);font-weight:700;} .qq .opt .bar{height:6px;} .qq .opt .bar i{background:var(--a-faint);} .qq .opt.ok .bar i{background:var(--a-good);}
+.pct{font-weight:800;} .pct.bad{color:var(--a-bad);} .pct.mid{color:var(--a-warn);} .pct.ok{color:var(--a-good);}
+.wrow{cursor:pointer;} .wrow:hover td{background:var(--a-wash);}
 #drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:#fff;border-left:1px solid var(--a-line);box-shadow:-20px 0 40px -30px rgba(0,0,0,.4);z-index:60;overflow:auto;padding:18px 20px;display:none;}
 #drawer.on{display:block;}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:4px 12px;font-size:13px;}
@@ -115,7 +133,7 @@ const dIn = d => { const p = parts(new Date(d)); return `${p.year}-${p.month}-${
 const hrs = s => s ? (s >= 3600 ? (s / 3600).toFixed(1) + ' h' : Math.round(s / 60) + ' min') : '—';
 
 /* ---- state ---- */
-const st = { me: null, depts: [], dept: null, courses: [], ed: null, tab: ls.get('lmsadm_tab') || 'students' };
+const st = { me: null, depts: [], dept: null, courses: [], ed: null, tab: ls.get('lmsadm_tab') || 'overview' };
 
 /* ---- sign-in (same code flow as lms.js, same session) ---- */
 function gate(note) {
@@ -247,13 +265,96 @@ async function loadEd(id) {
   head(st.ed.course, `${st.ed.label} · ${st.ed.status}${st.ed.join_code ? ' · code ' + st.ed.join_code : ''}`);
   return edView();
 }
-const TABS = [['students', 'users', 'Students'], ['timetable', 'calendar', 'Timetable'], ['attendance', 'presence', 'Attendance'], ['grades', 'star', 'Grades'], ['settings', 'settings', 'Settings']];
+const TABS = [['overview', 'dashboard', 'Overview'], ['students', 'users', 'Students'], ['timetable', 'calendar', 'Timetable'], ['attendance', 'presence', 'Attendance'], ['grades', 'star', 'Grades'], ['settings', 'settings', 'Settings']];
 function edView() {
   main.innerHTML = `<div class="tabs">${TABS.map(([k, i, l]) => `<button class="ab ${st.tab === k ? 'on' : ''}" data-tab="${k}">${ic(i)}<span>${l}</span></button>`).join('')}</div><div id="pane"><div class="empty">Loading…</div></div>`;
   main.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; ls.set('lmsadm_tab', st.tab); edView(); });
-  return ({ students: tStudents, timetable: tTimetable, attendance: tAttendance, grades: tGrades, settings: tSettings })[st.tab]();
+  return ({ overview: tOverview, students: tStudents, timetable: tTimetable, attendance: tAttendance, grades: tGrades, settings: tSettings })[st.tab]();
 }
 const pane = () => $('pane');
+
+/* Overview: what to do before the next session — admin2's level 1 and the
+   per-question quiz table, read from the platform. Flags are RELATIVE to
+   this cohort (behind = well under its median), never a fixed threshold. */
+async function tOverview() {
+  const ed = st.ed, o = await call('GET', `/editions/${ed.id}/overview`);
+  const S = o.students.filter(s => s.status === 'active');
+  const days = d => d ? (Date.now() - new Date(d)) / 864e5 : Infinity;
+  const median = a => { if (!a.length) return 0; const b = a.slice().sort((x, y) => x - y), m = Math.floor(b.length / 2); return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+  const lastOf = s => s.last_activity || s.last_seen;
+  const started = S.filter(s => s.done > 0 || s.secs >= 30), never = S.filter(s => !(s.done > 0 || s.secs >= 30));
+  const med = Math.round(median(S.map(s => s.pct || 0))), medT = median(S.map(s => s.secs));
+  const seen7 = S.filter(s => days(lastOf(s)) <= 7).length;
+  const cut = Math.max(8, med - 25);
+  const behind = S.length >= 4 ? started.filter(s => (s.pct || 0) < cut).sort((a, b) => (a.pct || 0) - (b.pct || 0)) : [];
+  const quiet = started.filter(s => days(lastOf(s)) > 7).sort((a, b) => days(lastOf(a)) - days(lastOf(b)));
+  /* funnel: who reached each module, who completed it */
+  const secsBy = {}; o.stats.forEach(x => (secsBy[x.user_id] = secsBy[x.user_id] || {})[x.module_id] = x.secs);
+  const funnel = ed.modules.map(m => { let reach = 0, comp = 0; S.forEach(s => { const d = s.modules[m.module_id] || 0, sec = (secsBy[s.id] || {})[m.module_id] || 0; if (d > 0 || sec >= 30) { reach++; if (m.total && d >= m.total) comp++; } }); return { m, reach, comp }; });
+  const live = funnel.filter(f => f.reach > 0); let drop = null;
+  for (let i = 1; i < live.length; i++) { const d = live[i - 1].reach - live[i].reach; if (d >= Math.max(2, S.length * 0.25) && (!drop || d > drop.d)) drop = { d, from: live[i - 1], to: live[i] }; }
+  /* quiz: per module, per question */
+  const qagg = {}; o.quiz.forEach(x => qagg[x.module_id + '|' + x.q] = x);
+  const quizMods = o.quizmeta.map(qm => {
+    const rows = qm.qs.map((qq, i) => { const a = qagg[qm.module_id + '|q' + i] || { n: 0, ok: 0, picks: {} }; return { i, q: qq, n: a.n, ok: a.ok, p: a.n ? a.ok / a.n : null, picks: a.picks || {} }; });
+    const answered = rows.filter(r => r.n), mean = answered.length ? Math.round(100 * answered.reduce((x, r) => x + r.p, 0) / answered.length) : null;
+    const weakest = answered.filter(r => r.n >= 3).sort((a, b) => a.p - b.p)[0] || null;
+    const title = (ed.modules.find(m => m.module_id === qm.module_id) || {}).title || qm.title || qm.module_id;
+    return { qm, title, rows, mean, weakest, n: Math.max(0, ...rows.map(r => r.n)) };
+  });
+  let worstQ = null; quizMods.forEach(x => { if (x.weakest && (!worstQ || x.weakest.p < worstQ.p)) worstQ = { ...x.weakest, title: x.title }; });
+  if (worstQ && worstQ.p >= 0.7) worstQ = null;
+  /* workbook: the field fewest have filled, over the students who wrote anything */
+  const writers = o.writers || 0;
+  const weakF = writers >= 3 && o.work.length ? o.work.slice().sort((a, b) => a.n - b.n)[0] : null;
+  const weakFp = weakF ? weakF.n / writers : 1;
+  /* ranked actions */
+  const A = [];
+  const names = list => list.slice(0, 4).map(s => esc(s.name || s.email)).join(' · ') + (list.length > 4 ? '…' : '');
+  if (never.length) A.push({ sev: never.length >= S.length / 3 ? 'high' : 'mid', t: `<b>${never.length} ${never.length > 1 ? 'have' : 'has'} never started</b> (${names(never)}).`, go: 'students' });
+  if (quiet.length) A.push({ sev: 'mid', t: `<b>${quiet.length} ${quiet.length > 1 ? 'have' : 'has'} not been seen for more than a week</b> (${names(quiet)}).`, go: 'students' });
+  if (behind.length) A.push({ sev: 'mid', t: `<b>${behind.length} ${behind.length > 1 ? 'are' : 'is'} well behind the cohort median</b> of ${med} % (${behind.slice(0, 4).map(s => esc(s.name || s.email) + ' ' + (s.pct || 0) + ' %').join(' · ')}${behind.length > 4 ? '…' : ''}).`, go: 'students' });
+  if (drop) A.push({ sev: 'high', t: `<b>${drop.d} students stop between ${esc(drop.from.m.title || drop.from.m.module_id)} and ${esc(drop.to.m.title || drop.to.m.module_id)}</b> (${drop.from.reach} reached the first, ${drop.to.reach} the second).`, go: 'funnel' });
+  if (worstQ) A.push({ sev: worstQ.p < 0.5 ? 'high' : 'mid', t: `<b>Only ${Math.round(worstQ.p * 100)} % got one quiz question right</b> (${esc(worstQ.title)}: “${esc(worstQ.q.q).slice(0, 90)}”, ${worstQ.n} answers). Worth five minutes next session.`, go: 'quiz' });
+  if (weakF && weakFp < 0.6) A.push({ sev: 'low', t: `<b>Only ${weakF.n} of ${writers} filled in “${esc(weakF.label || weakF.field_id)}”</b> (${esc(weakF.module_id)}).`, go: 'work' });
+  const pctCls = p => p == null ? '' : p < 0.5 ? 'bad' : p < 0.7 ? 'mid' : 'ok';
+  pane().innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="k">Cohort</div><div class="v">${S.length}</div><div class="n">${never.length ? never.length + ' never started' : 'everyone has started'}</div></div>
+      <div class="kpi"><div class="k">Seen this week</div><div class="v">${seen7}<small> / ${S.length}</small></div><div class="n">${S.length ? Math.round(seen7 / S.length * 100) : 0} % of the cohort</div></div>
+      <div class="kpi"><div class="k">Median progress</div><div class="v">${med} %</div><div class="n">of every module with a known length</div></div>
+      <div class="kpi"><div class="k">Median time</div><div class="v">${hrs(medT)}</div><div class="n">on the course so far</div></div>
+    </div>
+    <div class="asec">Before the next session</div>
+    <div class="acard">${A.length ? A.map(a => `<div class="act"><i class="sev ${a.sev}"></i><div>${a.t}</div>${a.go ? `<button class="ab sm ghost go" data-go="${a.go}">${a.go === 'students' ? 'Students' : 'See'}</button>` : ''}</div>`).join('') : '<div class="empty">Nothing stands out. The cohort is moving together.</div>'}</div>
+    <div class="grid2">
+      <div><div class="asec" id="funnel">Where they stop <small class="muted">reached · completed</small></div><div class="acard">
+        ${ed.modules.length ? `<table class="t">${funnel.map(f => `<tr><td>${esc(f.m.title || f.m.module_id)}</td><td style="width:45%"><div class="fbar"><div class="bar"><i style="width:${S.length ? f.reach / S.length * 100 : 0}%"></i></div><span class="small muted" style="width:30px;text-align:right">${f.reach}</span></div>
+          <div class="fbar"><div class="bar"><i class="c" style="width:${S.length ? f.comp / S.length * 100 : 0}%"></i></div><span class="small muted" style="width:30px;text-align:right">${f.comp}</span></div></td></tr>`).join('')}</table>` : '<div class="empty">No modules.</div>'}</div></div>
+      <div><div class="asec" id="work">Workbook <small class="muted">${o.work.length} fields · ${writers} students wrote something · click a field to read every answer</small></div><div class="acard tw">
+        ${o.work.length ? `<table class="t"><tr><th>Module</th><th>Field</th><th>Filled</th><th>Last</th></tr>${o.work.map(w => `<tr class="wrow" data-field="${esc(w.field_id)}" data-label="${esc(w.label || w.field_id)}"><td class="small muted">${esc(w.module_id)}</td><td>${esc(w.label || w.field_id)}</td>
+          <td><div class="fbar"><div class="bar"><i style="width:${writers ? w.n / writers * 100 : 0}%"></i></div><span class="small muted">${w.n}</span></div></td><td class="small muted">${fWhen(w.last)}</td></tr>`).join('')}</table>` : '<div class="empty">Nothing written yet.</div>'}</div></div>
+    </div>
+    <div class="asec" id="quiz">Quiz, question by question <small class="muted">${quizMods.length} module${quizMods.length === 1 ? '' : 's'} · closed, each shows its mean and its weakest question</small></div>
+    <div class="acard">${quizMods.length ? quizMods.map(x => `<details class="qmod"${x.weakest && x.weakest.p < 0.7 ? ' open' : ''}><summary>${esc(x.title)} <span class="pct ${pctCls(x.mean == null ? null : x.mean / 100)}">${x.mean == null ? '—' : x.mean + ' %'}</span><span class="w">${x.n} answered${x.weakest ? ' · weakest: “' + esc(x.weakest.q.q).slice(0, 70) + '” ' + Math.round(x.weakest.p * 100) + ' %' : ''}</span></summary>
+      ${x.rows.map(r => `<div class="qq"><div class="qt">${r.i + 1}. ${esc(r.q.q)} <span class="pct ${pctCls(r.p)}">${r.p == null ? 'no answers' : Math.round(r.p * 100) + ' % right · ' + r.n}</span></div>
+        ${r.q.opts.map((opt, j) => `<div class="opt ${j === r.q.a ? 'ok' : ''}"><span>${esc(opt)}</span><div class="bar"><i style="width:${r.n ? (r.picks[j] || 0) / r.n * 100 : 0}%"></i></div><span class="n">${r.picks[j] || 0}</span></div>`).join('')}</div>`).join('')}</details>`).join('')
+      : '<div class="empty">No quiz answered yet. The questions appear here after the first answers.</div>'}</div>`;
+  AdminUI.icons(pane());
+  pane().querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const g = b.dataset.go; if (g === 'students') { st.tab = 'students'; ls.set('lmsadm_tab', 'students'); edView(); } else { const el = $(g); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+  pane().querySelectorAll('.wrow').forEach(tr => tr.onclick = () => reader(tr.dataset.field, tr.dataset.label));
+}
+/* every answer to one field, with names, in the drawer */
+async function reader(field, label) {
+  const dr = $('drawer'); dr.classList.add('on'); dr.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const rows = await call('GET', `/editions/${st.ed.id}/work/${encodeURIComponent(field)}`);
+    dr.innerHTML = `<div class="row" style="justify-content:space-between;margin:0"><h2>${esc(label)}</h2><button class="ab icon ghost" id="dC">${ic('x')}</button></div>
+      <p class="small muted">${rows.length} answer${rows.length === 1 ? '' : 's'} · newest first</p>
+      ${rows.map(r => `<div class="small"><b>${esc(r.name || r.email)}</b> <span class="muted">· ${fWhen(r.updated_at)}</span></div><div class="work">${esc(r.value)}</div>`).join('') || '<p class="small muted">Nobody has written in this field.</p>'}`;
+    AdminUI.icons(dr); $('dC').onclick = () => dr.classList.remove('on');
+  } catch (e) { dr.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
 
 /* Students: the cohort, the roster paste, groups, staff */
 async function tStudents() {

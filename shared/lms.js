@@ -46,7 +46,7 @@
       codeL: 'Code', go: 'Sign in', other: 'use another address', later: 'not now',
       joinH: 'One more step', joinP: 'You are signed in, but not yet enrolled in this course. Type the course code your teacher gave you.',
       joinL: 'Course code', join: 'Join the course',
-      out: 'Sign out', signedAs: 'Signed in as {e}',
+      out: 'Sign out', signedAs: 'Signed in as {e}', home: 'My courses: progress, sessions, grades',
       net: 'The server could not be reached. Your work is kept on this device; try again in a moment.',
       expired: 'Your session has ended. Sign in again — nothing on this device is lost.'
     },
@@ -58,7 +58,7 @@
       codeL: 'Code', go: 'Se connecter', other: 'utiliser une autre adresse', later: 'plus tard',
       joinH: 'Encore une étape', joinP: 'Vous êtes connecté, mais pas encore inscrit à ce cours. Tapez le code du cours donné par votre professeur.',
       joinL: 'Code du cours', join: 'Rejoindre le cours',
-      out: 'Se déconnecter', signedAs: 'Connecté en tant que {e}',
+      out: 'Se déconnecter', signedAs: 'Connecté en tant que {e}', home: 'Mes cours : progression, séances, notes',
       net: 'Le serveur est injoignable. Votre travail reste sur cet appareil ; réessayez dans un instant.',
       expired: 'Votre session a expiré. Reconnectez-vous — rien n’est perdu sur cet appareil.'
     }
@@ -121,7 +121,17 @@
       part.forEach(function (k) { chunk[k] = workQ[k]; delete workQ[k]; });
       call('PUT', '/editions/' + id + '/work', { fields: chunk }, keep).then(synced, failed);
     }
-    Object.keys(quizQ).forEach(function (mod) { var a = quizQ[mod]; delete quizQ[mod]; call('PUT', '/editions/' + id + '/quiz', { module: mod, answers: a }, keep).then(synced, failed); });
+    Object.keys(quizQ).forEach(function (mod) { var a = quizQ[mod]; delete quizQ[mod]; pushQuizMeta(); call('PUT', '/editions/' + id + '/quiz', { module: mod, answers: a }, keep).then(synced, failed); });
+  }
+  /* the quiz's question text, once per module and edition (progress.js wrote
+     _quizmeta to Firebase): the dashboard's per-question statistics need it */
+  function pushQuizMeta() {
+    var Q = window.COURSE_QUIZ || window.E1410_QUIZ;
+    if (!canSend() || !S.mod || !Q || !Q.length) return;
+    var stamp = S.mod + '|' + Q.length + '|' + String((Q[0] && Q[0].q) || '').length, key = K + '_lmsqmeta_' + S.mod + '_' + S.ed.id;
+    if (lsGet(key) === stamp) return;
+    call('PUT', '/editions/' + S.ed.id + '/quizmeta', { module: S.mod, title: S.title, qs: Q.map(function (it) { return { q: it.q, opts: it.opts || [], a: it.a == null ? -1 : it.a }; }) })
+      .then(function () { lsSet(key, stamp); }, function () {});
   }
   function synced() { setPill('ok'); }
   function failed(e) { if (e && e.status === 401) return; setPill('off'); }
@@ -281,7 +291,8 @@
       document.getElementById('lms-o').onclick = logout;
     } else {
       b.innerHTML = '<h3>' + esc(t.h) + '</h3><p>' + esc(t.signedAs.replace('{e}', s.user.email)) + (S.ed ? ' · ' + esc(S.ed.label) : '') + '</p>' +
-        '<button class="go" id="lms-o">' + esc(t.out) + '</button><button class="ln" id="lms-l">OK</button>';
+        '<a class="go" href="/lms/me.html?lang=' + (FR ? 'fr' : 'en') + '" style="display:block;box-sizing:border-box;text-align:center;text-decoration:none;margin-bottom:10px;">' + esc(t.home) + '</a>' +
+        '<button class="ln" id="lms-o">' + esc(t.out) + '</button><button class="ln" id="lms-l">OK</button>';
       document.getElementById('lms-o').onclick = logout;
     }
     var l = document.getElementById('lms-l'); if (l && !l.onclick) l.onclick = close;

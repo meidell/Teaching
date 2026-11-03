@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>My courses · janerikmeidell.com</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<link rel="stylesheet" href="/shared/admin.css">
+<script src="/shared/config.js"></script>
+<script src="/shared/adminui.js"></script>
+<!--
+  The student's own page on the new platform (3 Nov 2026): every course I am
+  enrolled in, with my progress, the next sessions, my attendance so far and
+  my grades as they are entered. Reads GET /me/home with the same session as
+  the course pages (localStorage `jem_lms`); signs in with the same email
+  code. French or English (?lang=, else the site's remembered choice, else
+  the browser). Linked from the course pages' sign-in box ("My courses").
+  No instructor chrome here: admin.css is the stylesheet only.
+-->
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:var(--a-page);color:var(--a-ink);font:14.5px/1.55 var(--a-font);}
+main{max-width:900px;margin:0 auto;padding:18px 20px 80px;}
+h2{font-family:var(--a-serif);color:var(--a-head);font-size:22px;margin:0 0 2px;}
+h3{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--a-accent);font-weight:800;margin:16px 0 6px;}
+.muted{color:var(--a-grey);} .small{font-size:12.5px;}
+.course{background:var(--a-card);border:1px solid var(--a-line);border-radius:var(--a-r);box-shadow:var(--a-shadow);padding:18px 20px;margin-bottom:16px;}
+.chd{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;}
+.chd .sp{flex:1;min-width:200px;}
+.prog{display:flex;align-items:center;gap:10px;margin:10px 0 2px;}
+.prog .bar{flex:1;height:9px;border-radius:5px;background:var(--a-wash);border:1px solid var(--a-line);overflow:hidden;}
+.prog .bar i{display:block;height:100%;background:var(--a-accent-bright);}
+.prog b{font-family:var(--a-serif);font-size:20px;color:var(--a-head);min-width:54px;text-align:right;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;}
+@media(max-width:640px){.two{grid-template-columns:1fr;}}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.t td{padding:6px 6px 6px 0;border-bottom:1px solid var(--a-line);vertical-align:top;} table.t tr:last-child td{border-bottom:none;}
+table.t td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.tot{font-family:var(--a-serif);font-size:18px;color:var(--a-head);}
+.gate{max-width:420px;margin:50px auto;}
+input.f{font:15px var(--a-font);border:1px solid var(--a-line);border-radius:8px;padding:9px 10px;background:#fff;color:var(--a-ink);width:100%;}
+input.f:focus{outline:none;border-color:var(--a-accent-line);box-shadow:0 0 0 3px var(--a-accent-pale);}
+label.l{display:block;font-size:11px;font-weight:800;color:var(--a-grey);letter-spacing:.04em;text-transform:uppercase;margin:10px 0 4px;}
+.msg{font-size:13px;margin:8px 0;min-height:1em;color:var(--a-bad);font-weight:700;}
+.empty{padding:18px;text-align:center;color:var(--a-grey);}
+.miss{color:var(--a-bad);}
+.lang{display:inline-flex;border:1px solid rgba(255,255,255,.3);border-radius:20px;overflow:hidden;}
+.lang button{background:none;border:none;color:rgba(255,255,255,.7);font:800 11px var(--a-font);letter-spacing:1px;padding:6px 10px;cursor:pointer;}
+.lang button.on{background:var(--a-glow);color:#0F4C60;}
+</style>
+</head>
+<body>
+<header class="ahd"><div class="ahd-in">
+  <div class="ahd-title"><span class="ahd-k">janerikmeidell.com</span><h1 id="hTitle">My courses</h1><span class="sub" id="hSub"></span></div>
+  <span class="sp"></span>
+  <div class="ahd-tools">
+    <span class="lang"><button data-l="fr">FR</button><button data-l="en">EN</button></span>
+    <button class="ab" id="bCal" hidden><i data-ic="calendar"></i><span class="lbl" data-t="cal"></span></button>
+    <button class="ab ghost" id="bOut" hidden><i data-ic="logout"></i><span class="lbl" data-t="out"></span></button>
+  </div>
+</div></header>
+<main id="main"></main>
+<script>
+(function () {
+'use strict';
+const API = CourseConfig.lmsApi(), SKEY = 'jem_lms', TZ = 'Europe/Zurich';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ls = { get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
+const ic = n => AdminUI.icon(n);
+const main = $('main');
+
+/* ---- language ---- */
+const STR = {
+  en: { title: 'My courses', cal: 'Calendar', out: 'Sign out', signin: 'Sign in', lead: 'With your email: a 6-digit code arrives within a minute. No password.',
+    email: 'Email', code: 'Code', send: 'Email me a code', go: 'Sign in', none: 'You are not enrolled in any course yet. Open a course page and sign in there, or ask your teacher.',
+    progress: 'Progress', time: 'time on the course', open: 'Open the course', next: 'Next sessions', nonext: 'No session scheduled yet.', online: 'online',
+    att: 'Attendance', attS: (p, n) => `Present at ${p} of ${n} session${n === 1 ? '' : 's'}`, late: 'late', excused: 'excused', missed: 'Missed:', noatt: 'No session held yet.',
+    grades: 'Grades', nograde: 'Nothing graded yet.', total: 'Total so far', weight: 'weight', pending: 'not graded', group: 'Group',
+    calLead: 'Your personal calendar link. In Google, Apple or Outlook calendar choose “subscribe by URL” and paste it. Asking again makes a new link and stops the old one.',
+    hello: 'Signed in as' },
+  fr: { title: 'Mes cours', cal: 'Calendrier', out: 'Se déconnecter', signin: 'Se connecter', lead: 'Avec votre e-mail : un code à 6 chiffres arrive en moins d’une minute. Pas de mot de passe.',
+    email: 'E-mail', code: 'Code', send: 'Recevoir un code par e-mail', go: 'Se connecter', none: 'Vous n’êtes inscrit·e à aucun cours pour l’instant. Ouvrez la page d’un cours et connectez-vous là, ou demandez à votre professeur.',
+    progress: 'Progression', time: 'de temps sur le cours', open: 'Ouvrir le cours', next: 'Prochaines séances', nonext: 'Aucune séance programmée pour l’instant.', online: 'en ligne',
+    att: 'Présence', attS: (p, n) => `Présent·e à ${p} séance${p === 1 ? '' : 's'} sur ${n}`, late: 'en retard', excused: 'excusé·e', missed: 'Absences :', noatt: 'Aucune séance tenue pour l’instant.',
+    grades: 'Notes', nograde: 'Rien de noté pour l’instant.', total: 'Total à ce jour', weight: 'pondération', pending: 'pas encore noté', group: 'Groupe',
+    calLead: 'Votre lien de calendrier personnel. Dans l’agenda Google, Apple ou Outlook, choisissez « s’abonner par URL » et collez-le. Redemander un lien crée un nouveau lien et désactive l’ancien.',
+    hello: 'Connecté·e en tant que' }
+};
+let LANG = (new URLSearchParams(location.search).get('lang') || localStorage.getItem('siteLang') || (navigator.language || '').slice(0, 2)) === 'fr' ? 'fr' : 'en';
+const T = () => STR[LANG];
+function setLang(l) { LANG = l; try { localStorage.setItem('siteLang', l); } catch (e) {} document.documentElement.lang = l; document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.l === l));
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = T()[e.dataset.t]); $('hTitle').textContent = T().title; document.title = T().title + ' · janerikmeidell.com'; }
+document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { setLang(b.dataset.l); start(); });
+
+const fDay = d => new Date(d).toLocaleDateString(LANG === 'fr' ? 'fr-CH' : 'en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' });
+const fTime = d => new Date(d).toLocaleTimeString(LANG === 'fr' ? 'fr-CH' : 'en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+const hrs = s => s ? (s >= 3600 ? (s / 3600).toFixed(1) + ' h' : Math.round(s / 60) + ' min') : '0 min';
+
+async function call(method, path, body) {
+  const s = ls.get(SKEY), h = body ? { 'content-type': 'application/json' } : {};
+  if (s && s.t) h.authorization = 'Bearer ' + s.t;
+  let r;
+  try { r = await fetch(API + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined }); }
+  catch (e) { throw new Error(LANG === 'fr' ? 'Le serveur est injoignable.' : 'The server could not be reached.'); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && s) { ls.del(SKEY); gate(); throw new Error('signed out'); }
+  if (!r.ok) { const e = new Error(j.error || j.message || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+  return j;
+}
+
+function gate() {
+  const t = T(); $('bOut').hidden = true; $('bCal').hidden = true; $('hSub').textContent = '';
+  main.innerHTML = `<div class="course gate"><h2>${esc(t.signin)}</h2><p class="muted small">${esc(t.lead)}</p>
+    <label class="l">${esc(t.email)}</label><input class="f" id="gE" type="email" autocomplete="email">
+    <div id="gC" hidden><label class="l">${esc(t.code)}</label><input class="f" id="gK" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="letter-spacing:5px;font-size:18px;text-align:center"></div>
+    <div class="msg" id="gX"></div><button class="ab primary" id="gB">${esc(t.send)}</button></div>`;
+  let sent = false;
+  const go = async () => {
+    $('gX').textContent = ''; $('gB').disabled = true;
+    try {
+      if (!sent) { await call('POST', '/auth/start', { email: $('gE').value.trim() }); sent = true; $('gC').hidden = false; $('gB').textContent = t.go; $('gK').focus(); }
+      else { const r = await call('POST', '/auth/verify', { email: $('gE').value.trim(), code: $('gK').value }); ls.set(SKEY, { t: r.token, user: r.user }); await start(); }
+    } catch (e) { $('gX').textContent = e.message; }
+    $('gB').disabled = false;
+  };
+  $('gB').onclick = go; main.querySelectorAll('input').forEach(i => i.onkeydown = e => { if (e.key === 'Enter') go(); });
+  $('gE').focus();
+}
+
+async function start() {
+  setLang(LANG);
+  if (!ls.get(SKEY)) return gate();
+  let h;
+  try { h = await call('GET', '/me/home'); } catch (e) { if (e.message !== 'signed out') main.innerHTML = `<div class="course empty">${esc(e.message)}</div>`; return; }
+  const t = T();
+  $('bOut').hidden = false; $('bCal').hidden = false;
+  $('hSub').textContent = `${t.hello} ${h.user.name ? h.user.name + ' · ' : ''}${h.user.email}`;
+  if (!h.courses.length) { main.innerHTML = `<div class="course empty">${esc(t.none)}</div>`; return; }
+  main.innerHTML = h.courses.map(c => {
+    const graded = c.assessments.filter(a => c.grades.some(g => g.assessment_id === a.id && g.points !== null));
+    return `<section class="course">
+      <div class="chd"><div class="sp"><h2>${esc(c.title)}</h2><div class="small muted">${esc(c.code || c.course_id)} · ${esc(c.label)} · ${esc(c.department)}${c.group_label ? ' · ' + t.group + ' ' + esc(c.group_label) : ''}${c.status !== 'live' ? ' · ' + esc(c.status) : ''}</div></div>
+        <a class="ab primary" href="/${esc(c.dir)}/">${ic('external')}<span>${esc(t.open)}</span></a></div>
+      <h3>${esc(t.progress)}</h3>
+      <div class="prog"><div class="bar"><i style="width:${c.pct || 0}%"></i></div><b>${c.pct == null ? '—' : c.pct + ' %'}</b></div>
+      <div class="small muted">${hrs(c.secs)} ${esc(t.time)}${c.modules.length ? ' · ' + c.modules.filter(m => m.done > 0).length + ' / ' + c.modules.length + (LANG === 'fr' ? ' modules commencés' : ' modules started') : ''}</div>
+      <div class="two">
+        <div><h3>${esc(t.next)}</h3>${c.next.length ? `<table class="t">${c.next.map(m => `<tr><td>${fDay(m.starts_at)}</td><td class="n">${fTime(m.starts_at)}–${fTime(m.ends_at)}</td><td class="muted">${esc(m.room || (m.online_url ? t.online : ''))}${m.title ? ' · ' + esc(m.title) : ''}</td></tr>`).join('')}</table>` : `<p class="small muted">${esc(t.nonext)}</p>`}
+          <h3>${esc(t.att)}</h3>${c.attendance.past ? `<p>${esc(t.attS(c.attendance.present + c.attendance.late, c.attendance.past))}${c.attendance.late ? ` (${c.attendance.late} ${t.late})` : ''}${c.attendance.excused ? ` · ${c.attendance.excused} ${t.excused}` : ''}.</p>
+            ${c.attendance.missed.length ? `<p class="small miss">${esc(t.missed)} ${c.attendance.missed.map(fDay).join(', ')}</p>` : ''}` : `<p class="small muted">${esc(t.noatt)}</p>`}</div>
+        <div><h3>${esc(t.grades)}</h3>${c.assessments.length ? `<table class="t">${c.assessments.map(a => { const g = c.grades.find(x => x.assessment_id === a.id); return `<tr><td>${esc(a.title)}<div class="small muted">${esc(t.weight)} ${Number(a.weight)} %</div></td>
+            <td class="n">${g && g.points !== null ? `<b>${Number(g.points)}</b> / ${Number(a.max_points)}` : `<span class="muted small">${esc(t.pending)}</span>`}${g && g.comment ? `<div class="small muted">${esc(g.comment)}</div>` : ''}</td></tr>`; }).join('')}
+            ${graded.length ? `<tr><td>${esc(t.total)}<div class="small muted">${graded.map(a => esc(a.title)).join(', ')}</div></td><td class="n tot">${c.total == null ? '—' : c.total + ' %'}</td></tr>` : ''}</table>` : `<p class="small muted">${esc(t.nograde)}</p>`}</div>
+      </div></section>`;
+  }).join('');
+  AdminUI.icons(main);
+}
+$('bOut').onclick = async () => { await call('POST', '/auth/logout').catch(() => {}); ls.del(SKEY); gate(); };
+$('bCal').onclick = async () => { try { const r = await call('POST', '/me/ical'); prompt(T().calLead, r.url); } catch (e) { alert(e.message); } };
+AdminUI.icons(document.querySelector('.ahd'));
+start();
+})();
+</script>
+</body>
+</html>

@@ -39,6 +39,12 @@
    It reads `<ns>.json?shallow=true` for the sids, then `<sid>/work.json`
    per student — never the whole namespace, which carries every chat
    thread of the term. Re-read every 10 s while auto-refresh is on.
+   ⚠ A course on the NEW PLATFORM (`lms:true` in config.js, 3 Nov 2026)
+   is read from the Teaching API instead: GET /courses/<id>/board?f=…
+   returns each panel's answers with a keyed hash per student and NO id —
+   the server never hands one out. That path needs the platform session
+   (`jem_lms`, the same email-code sign-in as lms.js), not the Firebase
+   account; the sign-in box is drawn here when it is missing.
    ===================================================================== */
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#0E1A33;--card:#17264A;--line:rgba(255,255,255,.14);--ink:#fff;--soft:rgba(255,255,255,.78);--dim:rgba(255,255,255,.5);--acc:#F39229;}
@@ -110,6 +116,7 @@ h1{font-size:clamp(30px,3.6vw,54px);line-height:1.1;font-weight:800;letter-spaci
 (function(){
 var DB=CourseConfig.DB, Q=new URLSearchParams(location.search);
 var CID=Q.get('course')||'', C=CourseConfig.get(CID), NS=C&&C.ns;
+var LMS=!!(C&&C.lms), API=CourseConfig.lmsApi(), API_GROUPS=null, API_FIELDS=null;
 var main=document.getElementById('main');
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -144,6 +151,43 @@ async function load(){
   WORK=rows; $('auth')&&($('auth').innerHTML='');
   render();
 }
+/* ---- the platform path: the same panels, read from the API ---------- */
+function lmsSess(){try{var s=JSON.parse(localStorage.getItem('jem_lms')||'null');return s&&s.t?s:null;}catch(e){return null;}}
+async function lmsCall(method,path,body){
+  var s=lmsSess(),h=body?{'content-type':'application/json'}:{};if(s)h.authorization='Bearer '+s.t;
+  var r=await fetch(API+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined});
+  var j=await r.json().catch(function(){return {};});
+  if(!r.ok){var e=new Error(j.error||j.message||('HTTP '+r.status));e.status=r.status;throw e;}
+  return j;
+}
+async function loadLms(){
+  if(!lmsSess()){needLmsAuth();return;}
+  try{
+    if(PANELS.length){var r=await lmsCall('GET','/courses/'+encodeURIComponent(CID)+'/board?f='+encodeURIComponent(PANELS.map(function(p){return p.f.join('+');}).join(';')));API_GROUPS=r.groups;}
+    else{var r2=await lmsCall('GET','/courses/'+encodeURIComponent(CID)+'/board');API_FIELDS=r2.fields;}
+  }catch(e){
+    if(e.status===401){try{localStorage.removeItem('jem_lms');}catch(x){}needLmsAuth();return;}
+    if(e.status===403){stop();dead('Not allowed','This account is not staff on this course. Sign in with the instructor account on the platform.');return;}
+    throw e;
+  }
+  WORK=[];render();
+}
+function needLmsAuth(){
+  stop();
+  main.innerHTML='<div class="note"><h2>Sign in to read the answers</h2><p style="margin-bottom:14px">This course runs on the new platform: sign in with your email, the code arrives within a minute.</p>'+
+    '<div id="la"><input id="laE" type="email" placeholder="you@example.com" style="width:100%;box-sizing:border-box;font:16px inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;color:#111">'+
+    '<input id="laC" inputmode="numeric" maxlength="6" placeholder="6-digit code" style="display:none;width:100%;box-sizing:border-box;font:20px inherit;letter-spacing:6px;text-align:center;padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;color:#111">'+
+    '<div id="laX" style="color:#ffb4a8;font-weight:700;min-height:18px;margin-bottom:6px"></div><button class="ctl on" id="laB">Email me a code</button></div></div>';
+  var sent=false;
+  $('laB').onclick=async function(){
+    $('laX').textContent='';$('laB').disabled=true;
+    try{
+      if(!sent){await lmsCall('POST','/auth/start',{email:$('laE').value.trim()});sent=true;$('laC').style.display='block';$('laB').textContent='Sign in';$('laC').focus();}
+      else{var r=await lmsCall('POST','/auth/verify',{email:$('laE').value.trim(),code:$('laC').value});localStorage.setItem('jem_lms',JSON.stringify({t:r.token,user:r.user}));await loadLms();start();}
+    }catch(e){$('laX').textContent=e.message;}
+    $('laB').disabled=false;
+  };
+}
 function needAuth(){
   stop();
   main.innerHTML='<div class="note"><h2>Sign in to read the answers</h2><p style="margin-bottom:14px">The answers sit in each student\'s own record, which only the instructor account can read.</p><div id="auth"></div></div>';
@@ -153,6 +197,7 @@ function needAuth(){
 /* answers for one panel: one entry per student who wrote anything */
 function answers(p){
   var out=[];
+  if(LMS){var g=API_GROUPS&&API_GROUPS[PANELS.indexOf(p)];(g?g.rows:[]).forEach(function(r){out.push({k:parseInt(r.h.slice(0,8),16),vals:r.vals});});out.sort(function(a,b){return a.k-b.k;});return out;}
   (WORK||[]).forEach(function(r){
     var vals=p.f.map(function(f){var x=r.w[f];return x&&typeof x.v==='string'?x.v.trim():'';}).filter(Boolean);
     if(vals.length)out.push({k:hash(r.sid+'|'+p.f.join('+')),vals:vals});
@@ -162,6 +207,7 @@ function answers(p){
 }
 function labelOf(p){
   if(p.t)return p.t;
+  if(LMS){var g=API_GROUPS&&API_GROUPS[PANELS.indexOf(p)];return (g&&g.label)||p.f.join(' + ');}
   for(var i=0;i<(WORK||[]).length;i++){var x=WORK[i].w[p.f[0]];if(x&&x.label)return x.label;}
   return p.f.join(' + ');
 }
@@ -223,7 +269,8 @@ function render(){
 /* no ?p= : every field the class has written in, grouped by session */
 function picker(){
   var f={};
-  WORK.forEach(function(r){for(var id in r.w){var x=r.w[id];if(!x||typeof x.v!=='string'||!x.v.trim())continue;
+  if(LMS)(API_FIELDS||[]).forEach(function(x){f[x.field_id]={label:x.label||x.field_id,mod:x.module_id||'—',n:x.n};});
+  else WORK.forEach(function(r){for(var id in r.w){var x=r.w[id];if(!x||typeof x.v!=='string'||!x.v.trim())continue;
     if(!f[id])f[id]={label:x.label||id,mod:x.mod||'—',n:0};f[id].n++;}});
   var by={};Object.keys(f).forEach(function(id){(by[f[id].mod]=by[f[id].mod]||[]).push(id);});
   var mods=Object.keys(by).sort();
@@ -235,7 +282,7 @@ function picker(){
 }
 
 /* ---- controls ------------------------------------------------------- */
-function start(){stop();if(AUTO)TIMER=setInterval(function(){if(!document.hidden)load().catch(function(){});},10000);}
+function start(){stop();if(AUTO)TIMER=setInterval(function(){if(!document.hidden)(LMS?loadLms():load()).catch(function(){});},10000);}
 function stop(){if(TIMER){clearInterval(TIMER);TIMER=null;}}
 $('bAuto').onclick=function(){AUTO=!AUTO;this.classList.toggle('on',AUTO);AUTO?start():stop();};
 $('bHide').onclick=function(){REVEALED[CUR]=false;LAST='';render();};
@@ -259,7 +306,8 @@ if(!C||!NS){dead('Unknown course','<code>?course='+esc(CID)+'</code> is not a co
 document.title='The room · '+(C.label||CID);
 $('crs').textContent=C.label||CID;$('bar').style.display='flex';
 main.innerHTML='<div class="empty">Reading the room…</div>';
-FBAuth.restore(function(u){
+if(LMS){loadLms().then(start).catch(function(){dead('Could not read','The platform did not answer. Check the network and reload.');});}
+else FBAuth.restore(function(u){
   load().then(start).catch(function(){dead('Could not read','The database did not answer. Check the network and reload.');});
 });
 })();
