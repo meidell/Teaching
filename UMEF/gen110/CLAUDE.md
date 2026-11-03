@@ -357,6 +357,14 @@ define their project and who participates."* Everything below follows from it.
   million") and the card draws 🔍 "À trouver" + `q0` until hint 1 is taken or
   the find is solved; then the real `ico`/`t`/`q`. Hint 1 = the type + the
   prompt to ask. H8/H10/H11 (agent) and H12 (the CA) were never typed.
+  **`jeopardy.html?set=s4` (3 Nov 2026)** — the room screen for the end of
+  séance 4, BI's engine in French with the deck's colours: 6 categories × 5
+  (how the assistant answers · asking well · sound/image/video · agents ·
+  what never to paste · **Votre projet**, which asks the team on turn
+  about its own project, the prof judges), teams A–F, scores in this
+  browser only (`gen110_jeo_s4`). Every answer is a séance page's own
+  wording (mostly the quizzes'). Not linked from a student page; answers
+  are in its source, like every Jeopardy in the repo.
   Answers checked as djb2 hashes of a normalised
   answer (`hh()`; numbers sorted, MC `id:index`, CA rounded to thousands);
   the why-texts and notes carry no answer numbers. A copyable **detective

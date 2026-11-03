@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/gen110/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · GEN 110 · Swiss UMEF</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<style>
+/* =====================================================================
+   GEN 110 · Jeopardy for the room screen (3 Nov 2026). ?set=s4 = séances
+   1 à 4 — how an AI assistant produces its answer, how to ask, sound /
+   image / video, agents working together, what must never be pasted —
+   plus a last category "Votre projet" that asks the team on turn about
+   its own project (the instructor's check that the work was done).
+   Engine copied from GBS/business-intelligence/jeopardy.html (6 columns,
+   teams A–F, scores in this browser only: gen110_jeo_<set>). Projector
+   page: no progress, no sign-in, never counted. Colours are the séance 4
+   deck's (deep teal → dark, teal cells, pale-blue accent).
+   Every answer below is the session pages' own wording.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:linear-gradient(160deg,#0F4C60,#232A31);color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#9FD3E6;font-size:13px;}
+.top a{color:#9FD3E6;font-size:13px;text-decoration:none;margin-left:auto;}
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:0 20px;}
+.cat{background:#0A3341;border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(11px,1.4vw,16px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cat.own{background:#7A3E0E;}
+.cell{background:#176B87;border:none;border-radius:10px;color:#FFD58A;font:800 clamp(20px,3.2vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2A93B0;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:150px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#FFD58A;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(10,30,40,.95);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:1000px;width:100%;text-align:center;}
+#modal .mc{color:#9FD3E6;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.6vw,42px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.3vw,27px);color:#FFD58A;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#0F4C60;border:none;border-radius:30px;padding:10px 16px;font:800 14px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#9FD3E6;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#9FD3E6;text-decoration:underline;cursor:pointer;font:inherit;}
+</style>
+</head>
+<body data-course="gen110">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="seance4.html">← Séance 4</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Cliquez une case · « Réponse » · puis l’équipe qui a répondu juste (+) ou faux (−). Les noms des équipes se modifient. <button id="reset">Nouvelle partie</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  s4:{name:'Séances 1 à 4 · les assistants d’IA, comment ils répondent et comment les utiliser',cats:[
+    ['Comment l’assistant produit sa réponse',[
+      ['Un assistant comme ChatGPT produit son texte en faisant quoi, mot après mot ?','Il choisit, mot après mot (jeton après jeton), une suite probable d’après les textes qu’il a vus. Rien n’est cherché ni copié ; tout est continué.'],
+      ['Vous posez deux fois la même question et obtenez deux réponses différentes. Pourquoi ?','Le jeton suivant est tiré au sort parmi les suites probables : c’est la température. Même prompt, autre tirage.'],
+      ['Qu’est-ce qu’une « hallucination » d’un assistant ?','Une réponse fausse mais formulée avec assurance. Le modèle n’a pas de case « je ne sais pas » ; vérifier est à votre charge.'],
+      ['Après une longue conversation, l’assistant ne respecte plus vos consignes du début. Pourquoi ?','La fenêtre de contexte est pleine : il relit toute la conversation à chaque réponse, seulement ce qui tient dans la fenêtre, et le début n’est plus lu. Répétez les consignes.'],
+      ['Vous collez un exemple dans le prompt et la réponse prend son style. Qu’est-ce qui se passe exactement ?','L’exemple fait partie du texte que le modèle continue : la suite la plus probable d’un document qui commence par votre exemple lui ressemble. Rien n’est appris ; tout est oublié à la conversation suivante.']]],
+    ['Bien demander',[
+      ['Les cinq parties d’un bon prompt.','Le rôle, le contexte, la tâche, le format, les exemples et contraintes. « S’il te plaît » n’est pas une information.'],
+      ['Laquelle de ces lignes est une instruction de format : « Tu es juriste », « Le client attend depuis deux semaines », « 150 mots, trois paragraphes, vouvoiement », « Rédige une relance » ?','« 150 mots, trois paragraphes, vouvoiement » : longueur, structure, ton, langue, avec des chiffres.'],
+      ['La réponse est générique, bonne pour n’importe quelle entreprise. Le meilleur premier geste ?','Lui demander de poser d’abord ses trois questions : il manque du contexte, et ses questions sont la liste de ce que vous avez oublié. Un nouvel onglet jette ce qui était bon.'],
+      ['L’assistant cite un article de loi avec un numéro précis. Que faites-vous avant de l’utiliser ?','Vous vérifiez le texte de loi vous-même. « Es-tu sûr ? » obtient « oui », ou un autre numéro inventé ; un second assistant invente aussi.'],
+      ['Pourquoi « Écris un bon e-mail professionnel, s’il te plaît » donne-t-il un moins bon e-mail que le prompt de 120 mots avec rôle, contexte, tâche, format et date limite ?','Ce que vous ne dites pas, le modèle l’invente. « Bon » et « s’il te plaît » ne sont pas des informations ; le rôle, le contexte, le format et la contrainte en sont.']]],
+    ['Son, image, vidéo',[
+      ['Pour que la voix générée lise « 2 000 FCFA » correctement, comment l’écrivez-vous ?','En toutes lettres : « deux mille francs CFA ». Le texte lu n’est pas le texte affiché ; chiffres, sigles et noms s’écrivent comme ils se prononcent.'],
+      ['Un générateur d’images part de quoi pour produire l’image ?','D’un bruit, qu’il retire par étapes (une cinquantaine), guidé par le texte du prompt. Rien n’est cherché ni collé ; deux générations ne sont jamais identiques.'],
+      ['Un modèle de transcription reçoit quoi en entrée ?','Une image du son, le spectrogramme, environ cent colonnes par seconde. Un nom qu’il n’a jamais vu écrit devient le mot courant qui lui ressemble.'],
+      ['Transcrire → résumer → traduire. À quel maillon corrige-t-on les noms et les chiffres ?','Juste après la transcription, avant de résumer : une erreur née tôt traverse tous les maillons suivants.'],
+      ['Sur une image générée en 2026 pour une campagne, le défaut à chercher en premier.','Un détail inventé : un prix, un numéro, un lieu que vous n’avez pas donnés. L’outil complète ce qui manque avec le plus probable ; les mains à six doigts, c’était 2023.']]],
+    ['Des agents qui travaillent ensemble',[
+      ['Dans ce cours, qu’est-ce qu’un « agent » ?','Un modèle avec une fiche : un rôle, une mission, une entrée, un format de sortie, des règles, et à qui il passe son résultat. Le modèle est le même ; la fiche change.'],
+      ['Le contrôleur reçoit seulement le message de la rédactrice, pas le fichier, et répond « tout est cohérent ». Qu’a-t-il vérifié ?','Seulement que le texte ne se contredit pas. Sans la source, il n’a pas pu recalculer ; un texte faux peut être parfaitement cohérent.'],
+      ['Cinq agents à la chaîne, chacun juste 90 fois sur 100, sans contrôle. Combien de rapports justes sur 100, environ ?','Environ 59 : 0,9 × 0,9 × 0,9 × 0,9 × 0,9 ≈ 0,59. Les erreurs s’empilent ; la chaîne vaut mieux que l’agent seul seulement si chaque étape est contrôlée.'],
+      ['Une commande de 120 sacs dans un fichier où toutes les autres vont de 1 à 3. Que doit faire l’agent analyste ?','La signaler et laisser une personne trancher. Seule la patronne sait si c’est une faute de frappe ; un agent qui corrige de lui-même invente une donnée.'],
+      ['« Un client écrit ; selon la demande, le message part au SAV, à la comptabilité ou au commercial. » Chaîne, chef et spécialistes, ou débat et juge ?','Le chef et les spécialistes : le chemin dépend de la demande, un agent lit et répartit, chaque spécialiste a sa fiche.']]],
+    ['Ce qu’il ne faut jamais faire',[
+      ['Lequel ne doit pas être collé dans un assistant grand public : un article de presse, votre brouillon de lettre, le règlement des études, la liste des clients avec leurs téléphones ?','La liste nominative des clients avec leurs numéros : des données personnelles de tiers envoyées à un service qui peut les conserver, interdit sans base légale (nLPD, RGPD).'],
+      ['Avant de donner le fichier des ventes d’une boutique à un assistant gratuit, que retirez-vous ?','Les colonnes nom, téléphone, adresse : le calcul n’en a pas besoin. N’envoyer que le nécessaire est la seule protection qui ne dépend pas des réglages de l’outil.'],
+      ['Un détecteur en ligne dit « 87 % IA » d’une vidéo. Que faites-vous ?','Vous cherchez la source : première publication, autre angle, date. Les détecteurs se trompent dans les deux sens ; la provenance est la seule méthode qui tient.'],
+      ['Votre classificateur d’images reconnaît votre tasse sur fond blanc mais échoue sur fond noir. L’explication la plus probable ?','Il a appris le fond autant que la tasse : les exemples n’étaient pas assez variés. Si le fond était toujours blanc, le fond blanc fait partie de « tasse ».'],
+      ['L’équipe d’agents a fait mieux que l’agent seul sur Wax & Co. Qu’en concluez-vous pour votre propre projet ?','Qu’il faut essayer les deux sur vos données et compter les erreurs. Une équipe coûte plus de temps ; elle vaut le coup quand chaque étape se vérifie, et on le sait en mesurant.']]],
+    ['Votre projet',[
+      ['Le nom de votre projet, et pour qui il est fait.','L’équipe répond pour son propre projet. Le prof juge : la personne ou l’entreprise doit être nommée.'],
+      ['Le problème que votre projet résout, en une phrase, sans le mot « IA ».','La phrase de la remise 1 (« le problème »). Sans « IA », « automatique », « intelligent ».'],
+      ['Les trois agents de votre projet : le rôle de chacun, dans l’ordre où ils se passent le travail.','Les trois fiches de 4.5 : par exemple trieur → rédacteur → contrôleur. Trois rôles nommés, un ordre.'],
+      ['Quelles données reçoit votre contrôleur, et quelles colonnes avez-vous retirées avant de les donner à un assistant ?','Le contrôleur reçoit la source (le fichier, la liste des prix…), pas seulement le message. Les colonnes retirées : noms, téléphones, adresses, e-mails.'],
+      ['Une erreur que l’agent pourrait faire dans votre projet, et qui l’arrêterait.','Une erreur concrète (un prix inventé, un doublon compté deux fois, un nom mal transcrit) et le maillon qui la voit : le contrôleur avec la source, ou la personne qui décide.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'s4';
+var S=SETS[setId]||SETS.s4, SK='gen110_jeo_'+setId;
+var st={used:{},teams:[['Équipe A',0],['Équipe B',0],['Équipe C',0],['Équipe D',0],['Équipe E',0],['Équipe F',0]]};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams)st=o;}catch(e){}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='';
+  S.cats.forEach(function(c,ci){h+='<div class="cat'+(ci===S.cats.length-1?' own':'')+'">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Réponse</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Fermer</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Effacer les scores et recommencer ?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
