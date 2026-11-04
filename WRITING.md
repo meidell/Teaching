@@ -34,8 +34,8 @@ of every session; edit it freely.
    ventes : cinq chiffres sur juillet–octobre") before using the case's name
    for it. A score ("5 sur 5") is named together with what it counts.
 
-6. **Every number is specific:** its unit, its currency (dollars for the
-   exercises; a source in pounds or euros is converted at a stated rate), its
+6. **Every number is specific:** its unit, its currency (euros for the
+   exercises; a source in pounds or dollars is converted at a stated rate), its
    baseline ("higher than the $127 baseline by"), its source and its year.
    "Change vs £95" with no explanation of the £95 is not allowed.
 
