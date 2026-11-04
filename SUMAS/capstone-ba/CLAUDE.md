@@ -191,6 +191,18 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   4–10 are still the online-course copies; continue the same pattern. Week 1's group hour is *form the team*; its
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.
+- ⚠ **One week lost: Week 4 = Wed 4 Nov 2026 (Jan Erik, 4 Nov 2026: "week 4 is today").**
+  `schedule.js → GAP_AFTER_WEEK = 3, GAP_WEEKS = 1` inside `weekMonday()`, so
+  Weeks 4–10, every forum/phase deadline and the exam window sit one week
+  later (W5 11 Nov · W6 18 Nov · … · W10 16 Dec; Phase 1 due **Sun 15 Nov**,
+  Phase 2 proposal Fri 20 Nov, Phase 2 Sun 6 Dec, Phase 3 Sun 13 Dec, exam
+  14–21 Dec — ⚠ the exam now ends 21 Dec, not resolved with SUMAS's campus
+  calendar, see below). `weekOfToday()` walks the weeks instead of dividing.
+  `courses.json → schedule.dates` lists the ten dates with the gap. Literal
+  dates were moved on the four decks (slide 1 and the Phase 1 slide; PDFs
+  reprinted), the three "Sunday 8 November" banners (now 15), `phase1.html`'s
+  week plan (9–15 Nov). Tonight's session (W4) = scenario analysis first,
+  then the economics deck; the grid deck is W5 on 11 Nov.
 - **Grade weights 10/10/55/25 CONFIRMED by SUMAS** (Giorgia, 2 Nov 2026, on the BBA syllabus Part 2). ⚠ Same day she said the on-campus Bachelors follow the CAMPUS calendar, ending early February with the final exam — the site runs 10 weeks to the 7–14 Dec exam. Unresolved; Jan Erik to decide.
 - **`stakeholders-to-systems-slides.html`** (8 Oct 2026) is a second deck on
   the Week 1 deck's engine: a 30-slide, two-hour session (18:15–20:15,

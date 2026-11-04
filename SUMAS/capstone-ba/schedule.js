@@ -165,7 +165,10 @@
   function tzFor(d){ /* Europe/Zurich: CEST until the last Sunday of October 2026 (25 Oct, 03:00) */
     return d.getTime() < Date.parse('2026-10-25T03:00:00+02:00') ? '+02:00' : '+01:00';
   }
-  function weekMonday(wk){ var d=new Date(START+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+7*(wk-1)); return d; }
+  /* 4 Nov 2026, Jan Erik: "week 4 is today" — the cohort lost a week, so Weeks 4–10 (and every
+     deadline and the exam derived from them) sit one week later than START + 7·(wk−1). */
+  var GAP_AFTER_WEEK = 3, GAP_WEEKS = 1;
+  function weekMonday(wk){ var d=new Date(START+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+7*(wk-1)+(wk>GAP_AFTER_WEEK?7*GAP_WEEKS:0)); return d; }
   function at(wk,day,time){
     var m=weekMonday(wk); m.setUTCDate(m.getUTCDate()+day);
     var iso=m.toISOString().slice(0,10)+'T'+(time||'23:59')+':00';
@@ -185,7 +188,8 @@
   function weekOfToday(){
     var now=Date.now(), s=at(1,0,"00:00").getTime(); /* Monday 00:00 Geneva, not noon UTC */
     if(now<s)return 0;
-    var w=Math.floor((now-s)/(7*86400000))+1; return w>10?11:w;
+    var w=0; for(var k=1;k<=10;k++){ if(now>=at(k,0,"00:00").getTime()) w=k; }
+    if(w===10 && now>=at(11,0,"00:00").getTime()) return 11; return w;
   }
 
   /* resolve every deadline once, so pages can just read .due / .reDue */
