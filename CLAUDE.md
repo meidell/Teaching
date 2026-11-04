@@ -2,6 +2,10 @@
 
 Interactive course material for Jan Erik Meidell, served at **https://janerikmeidell.com**.
 
+> **Every word a student reads follows [WRITING.md](WRITING.md)** — read it first; it is short.
+
+@WRITING.md
+
 > **This repo IS the live web root.** Every committed file is publicly downloadable.
 > Nothing secret goes in a tracked file — not answer keys, not passwords, not raw
 > student data. See [Secrets](#secrets) before adding anything.
@@ -784,54 +788,10 @@ you are, and no account password is ever typed into a page or stored.
 
 ## 8. Working on this repo
 
-- ⚠ **THE WRITING STANDARD for every student-facing word (3–4 Nov 2026).** Jan
-  Erik: "you are doing it again… word games on the slides. MAKE THE WORDING
-  EXPLICIT"; "you are not using a language clear and specific enough, and
-  that everywhere". The readers are BBA and MBA business students, many
-  reading in their second language. Apply all of this to slides, titles,
-  kickers, exercise instructions, group-hour plans, canvas boxes, captions,
-  glossary entries and quiz questions, in English and in French:
-  1. **A named idea is defined where it is used, in one plain sentence,
-     before anything is said about it.** "The cone of uncertainty — the
-     further out, the wider the range" leaves the student guessing what a
-     cone has to do with it. Write: "The cone of uncertainty: the range of
-     possible futures is narrow for next year and grows wider the further
-     ahead you look, like a cone opening from today." Same for every term
-     (orthogonal, capture rate, LCOE, redispatch…): the first use on a page
-     or slide carries its definition, even if the glossary has one.
-  2. **Say what the student must DO, with the exact place and the exact
-     thing**: which page, which box, which column, which numbers, what a
-     good answer looks like. "Vote on impact and uncertainty" is not an
-     instruction; "everyone types two numbers in the chat, impact 1–5 and
-     uncertainty 1–5, the scribe writes the middle value in the table" is.
-  3. **Say WHY before HOW.** A task starts with the reason it exists in
-     the course ("your report needs four scenarios, so…"), in two or three
-     sentences a first-year student follows.
-  4. **No slogans, puns, metaphors, two-beat contrasts, teaser titles or
-     punchlines.** A title states the fact or the task in full words ("A
-     wind farm is quicker to build than the line it needs"), not a hook
-     ("Europe does not lack turbines. It lacks wires.").
-  5. **No story prop standing in for a description**: "produire le rapport
-     du lundi" leaves the reader asking why Monday; say what the thing is
-     ("le rapport des ventes : cinq chiffres sur juillet–octobre") before
-     using the case's name for it. A score ("5 sur 5") is named together
-     with what it counts.
-  6. **Every number is specific**: its unit, its currency (dollars for
-     this cohort's exercises; a source in pounds is converted at a stated
-     rate), its baseline ("higher than the $127 baseline by"), its source
-     and year. "Change vs £95" with no explanation of the £95 is not
-     allowed.
-  7. **No minute-by-minute timings on student pages** (they stress the
-     students); numbered steps instead. The instructor's deck keeps its
-     clock.
-  8. **Short sentences, one idea each; the concrete word over the abstract
-     one** ("the line that carries the power" rather than "transmission
-     infrastructure") — then the technical term in brackets once.
-  Before shipping: read every title and every instruction as a
-  nineteen-year-old who has never heard the term, and ask "do I know what
-  this is, and what I have to do?" If not, rewrite. A standing rule, in
-  force for every course in this repo; the short version is also in memory
-  (`feedback-explicit-wording`).
+- ⚠ **The writing standard is [WRITING.md](WRITING.md)** (Jan Erik, 3–4 Nov 2026:
+  "MAKE THE WORDING EXPLICIT"; "a language clear and specific enough, and that
+  everywhere"). Eight rules for every student-facing word, loaded at the top
+  of this file. The short version is also in memory (`feedback-explicit-wording`).
 - **Never retrofit wholesale.** 232 pages of working HTML is an asset. Adopt the shared
   layer in new pages; backport an old page only when you are already editing it.
 - **Test by opening the file**, or `python3 -m http.server` from the repo root when a
