@@ -203,6 +203,28 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   reprinted), the three "Sunday 8 November" banners (now 15), `phase1.html`'s
   week plan (9–15 Nov). Tonight's session (W4) = scenario analysis first,
   then the economics deck; the grid deck is W5 on 11 Nov.
+- **Dollars, not pounds, for the Week 4/6 exercise figures (4 Nov 2026, Jan Erik:
+  "prices in usd not pounds").** The Arup/DESNZ source is in pounds; every
+  figure on the economics deck, the Week 4 calculator (defaults $5,330/kW ·
+  $186k/MW/yr · contract $122.30), the Week 6 slider and deck, the two Week 4
+  canvas boxes and the glossary's CfD entry is converted at **$1.34 per £**
+  (open.er-api.com, 4 Nov 2026 00:02 UTC), stated once on the deck and the
+  page. Model results: $127.1/MWh at 6.2 % (capital part $85.1 = 67 %);
+  108/127/148/169 at 4.2/6.2/8.2/10.2 %; shocks +16/+10/+11 %, all three
+  +43 % → $181; the bid exercise capex $4,560/kW: 6.0 % bids ($113.1),
+  7.5 % walks ($126.0) against $122.30. UK facts that are not exercise
+  inputs (£1.7 bn constraint costs, the £1.5 bn Mingyang factory, the
+  auction rounds in 2012 prices) stay in pounds with ≈ $ beside them.
+- **The course menu, `nav.js` + `nav.css` (4 Nov 2026, "make a course menu")**
+  — GEN 110's menu ported (English only): a ☰ Menu pill bottom-left on the
+  19 student pages (weeks 1–10, hub, report, phase1, handin, canvas,
+  wednesday, forum, toolkit, glossary; not the decks, the stubs or
+  followup). `NAV` lists each week's counted sections by `data-step` with a
+  short name (keep in step with the pages' h2s); ✓ from
+  `capstone-ba_capdone_<mod>` / `_done_<mod>`; `week4.html#s3` scrolls to
+  `[data-step="s3"]` on arrival (two retries, 300 and 1200 ms). Then the
+  project pages and the two reference pages. One `<script src="nav.js"
+  defer>` is the whole opt-in for a new page.
 - **Grade weights 10/10/55/25 CONFIRMED by SUMAS** (Giorgia, 2 Nov 2026, on the BBA syllabus Part 2). ⚠ Same day she said the on-campus Bachelors follow the CAMPUS calendar, ending early February with the final exam — the site runs 10 weeks to the 7–14 Dec exam. Unresolved; Jan Erik to decide.
 - **`stakeholders-to-systems-slides.html`** (8 Oct 2026) is a second deck on
   the Week 1 deck's engine: a 30-slide, two-hour session (18:15–20:15,
