@@ -243,6 +243,21 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   note that their "TotalEnergies" reads Eni here). Everything else on the site.
 - ⚠ **The two folders are independent.** A fix in `wind` reaches
   `capstone-ba` only if ported by hand, and vice versa.
+- ⚠ **`week4-slides.html` REWRITTEN 4 Nov 2026 (Jan Erik: "with that new prompt in
+  mind, redo these slides and let them have the same style as earlier SUMAS
+  slides"): 23 slides, 18:15–19:15 on 4 Nov, then the economics deck.** Every
+  term defined where it is used (scenario analysis, forecast, write-down,
+  cone of uncertainty, trend/uncertainty, anchor, early signal, robust /
+  flexible / bet, the independence check with "orthogonal" named once),
+  plain titles, the why on slide 4, one exercise (both teams' axes checked
+  on the screen, canvas box `verdict`, retitled "The verdict on the axes").
+  Look = MBA406's `#lect` (white stage, letter-spaced green kicker, Georgia
+  title in #2C5530, dark gradient title slide with the logo, the white
+  footer bar with logo · course strip · planned/now clock · n / N),
+  written into this deck's own CSS (`.slide`, `.dk`, `.foot`, `.def`,
+  `.badge`), same keyboard/print engine. PDF reprinted (23 pages); the
+  hub's `SLIDES[4]` lists it first as "Taught". The 27 Oct notes below
+  describe the previous 29-slide version.
 - **Week 4 session deck (27 Oct 2026, for Wed 28 Oct, online, 18:15–20:00 —
   1 h 45 at Jan Erik's request; `schedule.js → SESSION.cls` still says 20:15
   for every week and was NOT changed)**: `week4-slides.html`, 29 slides on
