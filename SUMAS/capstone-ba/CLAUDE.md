@@ -105,6 +105,26 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   hides the frame and prints the link). `_private/week1-transcript.md` is
   the spoken script for that deck and `_private/week1-runsheet.md` is
   generated from the deck's notes — regenerate both if the deck changes.
+- **Sources and a figure under every numbered report section (4 Nov 2026).**
+  Jan Erik: "allow them to add their citations" and "the report/canvas asks
+  for a graph. allow them to add html in a field to do that graph". Each
+  `r*` section has two folded `<details>` under its text: **Sources for this
+  section** (one per line, printed as a numbered list with live links in the
+  document view, never counted as words) and **A figure for this section, as
+  HTML** (a caption input + an HTML textarea; the preview and the document
+  view draw it in an `<iframe sandbox="allow-scripts" srcdoc>` — an opaque
+  origin, so a pasted script cannot reach the page, `localStorage` or the
+  instructor's `jem_fb_session`; headless-tested 4 Nov 2026, `parent.localStorage`
+  throws SecurityError inside it). Same record (`report/<sec>` gains
+  `src`, `cap`, `fig`), same lock, saved together; the owner `<select>` and
+  `load()` carry the three fields; a hand-in freezes them in `extra:{sec:{src,cap,fig}}`
+  and `?v=` reads them back. Client-side caps 8,000 / 300 / 60,000 chars; the
+  rules only validate `v` ≤ 40,000, so no deployment was needed. The canvas
+  gets the same two boxes at the end of EVERY week's block (`EXTRA` in
+  `canvas.html`, keys `src` and `fig`, `fig` drawn the same way, 20,000-char
+  rule cap on `v`). Phase 1's "upload Fig. 1 as a PDF" notes now point at the
+  figure box; the Commission's *European grids* page joined Week 4's reading
+  list and the hub's reference list the same day.
 - **The shared canvas is `canvas.html` — on the site since 8 Oct 2026, not a
   Google Doc.** The group hour's output (the scribe's table, the one line to
   bring to 18:15) is written there: one block per team per week, both blocks
