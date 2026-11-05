@@ -207,4 +207,17 @@ presence needing an account) applies. What differs:
   last problem asks what to question (the terminal value, 79% of EV).
   Fields `w5_fcf · w5_dcf · w5_mult · w5_offer` in `courses.json →
   project.sections` ("Week 5 · What is the business worth?"). Run sheet
-  `_private/week5-runsheet.md`.
+  `_private/week5-runsheet.md`. **Rewritten to WRITING.md on 5 Nov 2026**
+  (Jan Erik: "be specific … 'Book equity is what was put in' is an example
+  of unclear writing"; then "on the old slide 5 you do not show how you find
+  the numbers for that calculation"): every term defined where first used
+  (book equity, present value, bond/coupon/face value/maturity/yield,
+  par/discount/premium, share/dividend/r_E, EBIT/depreciation/capex/working
+  capital, terminal value, enterprise value, multiple/EBITDA/P/E, synergy),
+  the slogans gone ("Book value is what was put in. Value is what will come
+  out"), no minute timings on the page, and **every factor derived on the
+  slide and in the walker** (1.04⁵ = 1.216653 → DF 0.821927 → AF 4.451822;
+  0.08/12 → 1.006667⁶⁰ = 1.489846 → 49.318433; DF_t = 1/1.0844^t with the
+  five PVs 231.8…191.2; 1.0844⁵ = 1.499504 → 0.666887). Still 27 slides, 15
+  in Part 1, same `site:` anchors; three dense slides shrink to zoom 0.84–0.88.
+  Numbers unchanged. The homework page was not touched.
