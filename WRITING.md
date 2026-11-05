@@ -45,6 +45,12 @@ of every session; edit it freely.
 8. **Short sentences, one idea each; the concrete word before the abstract
    one** ("the line that carries the power", then "(transmission)" once).
 
+9. **Every sentence has a verb. No strings of nouns joined by dots, colons
+   or arrows** (Jan Erik, 5 Nov 2026: "always use verbs!"). This applies to
+   labels, field captions, placeholders and table notes too. "Platform ·
+   followers · median" is not an instruction. "Write which platform the
+   account is on, how many followers it has, and what the median is" is.
+
 **Before shipping anything:** read every title and every instruction as a
 nineteen-year-old who has never heard the term, and ask "do I know what this
 is, and what I have to do?" If not, rewrite.
