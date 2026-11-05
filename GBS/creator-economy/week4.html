@@ -263,8 +263,9 @@ CPA   = fee ÷ sales</div>
       · The fees on the cards are final: no negotiating today. That is Session 5.</div>
     <div class="cap">
       <label for="f_team">Your team's name and members</label>
-      <div class="hint">Same team as Session 3. The board in Step 4 shows the team name you type here, so every member should type it the same way.</div>
+      <div class="hint">Same team as Session 3. Type the team name, then a dash, then the members' first names. The board in Step 4 uses only the part before the dash as the team name. If a member of your team has already registered, do not type the name: press "Join this team" next to it below, so every member uses exactly the same name.</div>
       <input type="text" id="f_team" data-work="w4_team" data-worklabel="W4 · team name and members" placeholder="e.g. Team Rates — Ana, Louis, Mei" autocomplete="off">
+      <div id="teamsNow" style="margin-top:8px"></div>
     </div>
     <p><b>The pool: 16 content creators, fictional, built on realistic numbers.</b> Every number on a card is what the content creator would show a brand: their own audience insights and their last 10 posts. Read each card through the four mechanisms in Step 2.</p>
     <ol>
@@ -560,7 +561,16 @@ function readDraft(){
     var seen={};D.teams=[];
     r[0].rows.forEach(function(x){var n=(x.n||'').trim();if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;D.teams.push({n:n,ts:x.ts||0});}});
     D.picks=[r[1].rows,r[2].rows,r[3].rows];
+    paintTeamsNow();
   });
+}
+function paintTeamsNow(){
+  var box=$('teamsNow');if(!box)return;
+  if(!D.teams.length){box.innerHTML='<div class="savenote">No team has registered yet.</div>';return;}
+  var me=teamName().toLowerCase();
+  box.innerHTML='<div class="savenote" style="margin-bottom:4px">Teams registered so far:</div>'+D.teams.map(function(t){
+    var mine=t.n.toLowerCase()===me;
+    return '<div style="margin:3px 0"><b>'+esc(t.n)+'</b> '+(mine?'<span class="savenote">✓ this is your team name</span>':'<button class="chip" type="button" data-join="'+esc(t.n)+'">Join this team</button>')+'</div>';}).join('');
 }
 function draftOrder(){
   var first=Infinity;D.picks.forEach(function(rs){rs.forEach(function(x){if(x.ts<first)first=x.ts;});});
@@ -592,19 +602,30 @@ function replay(){
       }
       /* nothing from T: skipped only if a later team in this round posted after the wait */
       var later=seq.slice(i+1).map(function(x){return x.toLowerCase();});
-      var jumped=D.picks[r].some(function(x){return later.indexOf((x.n||'').trim().toLowerCase())>=0&&x.ts>prevTs+WAIT;});
+      var jumped=D.picks[r].some(function(x){return later.indexOf((x.n||'').trim().toLowerCase())>=0&&x.ts>prevTs+WAIT;})
+        /* the team on turn is the last of its round: the first other team of the next round may jump in (5 Nov 2026) */
+        ||(!later.length&&r+1<ROUNDS&&D.picks[r+1].some(function(x){return (x.n||'').trim().toLowerCase()!==T.toLowerCase()&&x.ts>prevTs+WAIT;}));
       if(jumped){slots.push({r:r,t:T,id:'skip'});continue;}
       cur={r:r,t:T,i:i,seq:seq,since:prevTs};break outer;
     }
   }
   return {order:order,taken:taken,spent:spent,got:got,slots:slots,cur:cur};
 }
-function canPick(st,me){
-  if(!st.cur||!me)return false;
-  if(st.cur.t.toLowerCase()===me.toLowerCase())return true;
+/* the round (0-based) in which `me` may pick now, or -1 */
+function pickRound(st,me){
+  if(!st.cur||!me)return -1;
+  var m=me.toLowerCase();
+  if(st.cur.t.toLowerCase()===m)return st.cur.r;
+  if(Date.now()<=st.cur.since+WAIT)return -1;
   var nx=st.cur.seq[st.cur.i+1];
-  return !!(nx&&nx.toLowerCase()===me.toLowerCase()&&Date.now()>st.cur.since+WAIT);
+  if(nx)return nx.toLowerCase()===m?st.cur.r:-1;
+  /* the waiting team is the last of its round: the next round's first other team may pick */
+  var r2=st.cur.r+1;if(r2>=ROUNDS)return -1;
+  var s2=r2%2?st.order.slice().reverse():st.order.slice();
+  var first=s2.filter(function(t){return t.toLowerCase()!==st.cur.t.toLowerCase();})[0];
+  return first&&first.toLowerCase()===m?r2:-1;
 }
+function canPick(st,me){return pickRound(st,me)>=0;}
 var ST=null;
 function paintDraft(){
   var me=teamName(); ST=replay();
@@ -614,7 +635,7 @@ function paintDraft(){
   else{
     var mine=me&&st.order.some(function(t){return t.toLowerCase()===me.toLowerCase();});
     if(!st.cur)h+='<div class="turn">The draft is complete.</div>';
-    else if(canPick(st,me))h+='<div class="turn me">Your turn'+(st.cur.t.toLowerCase()===me.toLowerCase()?'':' ('+esc(st.cur.t)+' took more than 2 minutes)')+': round '+(st.cur.r+1)+'. Pick a content creator below, or <button class="chip" type="button" id="passBtn">pass</button></div>';
+    else if(canPick(st,me))h+='<div class="turn me">Your turn'+(st.cur.t.toLowerCase()===me.toLowerCase()?'':' ('+esc(st.cur.t)+' took more than 2 minutes)')+': round '+(pickRound(st,me)+1)+'. Pick a content creator below, or <button class="chip" type="button" id="passBtn">pass</button></div>';
     else h+='<div class="turn">Round '+(st.cur.r+1)+' · waiting for <b>'+esc(st.cur.t)+'</b>'+(mine?'':' · your team is not registered — Step 3')+'</div>';
     for(var r=0;r<ROUNDS;r++){
       var seq=r%2?st.order.slice().reverse():st.order;
@@ -644,7 +665,8 @@ function postPick(id){
   var me=teamName();
   if(id!=='pass'&&!confirm('Pick '+BYID[id].h+' for CHF '+fmt(BYID[id].fee)+'? This cannot be undone.'))return;
   $('dNote').textContent='Sending…';
-  CreatorWall.post('w4pick'+(ST.cur.r+1),{n:me,src:'C:'+id,meta:id==='pass'?'pass':(BYID[id].h+' · CHF '+BYID[id].fee).slice(0,120)}).then(function(r){
+  var pr=pickRound(ST,me);if(pr<0){readDraft().then(paintDraft);return;}
+  CreatorWall.post('w4pick'+(pr+1),{n:me,src:'C:'+id,meta:id==='pass'?'pass':(BYID[id].h+' · CHF '+BYID[id].fee).slice(0,120)}).then(function(r){
     $('dNote').textContent=r.ok?'Sent ✓':'Not sent — '+(r.reason==='rules'?'rules not published':'check the connection')+'.';
     readDraft().then(paintDraft);
   });
@@ -761,6 +783,14 @@ window.addEventListener('DOMContentLoaded',function(){
       markDone('s3');poll(true);readDraft().then(paintDraft);go('s4');
     });
   });
+  $('teamsNow').addEventListener('click',function(e){
+    var b=e.target.closest('[data-join]');if(!b)return;
+    var n=b.getAttribute('data-join'),parts=val('f_team').split(/\s[—–-]\s/);
+    $('f_team').value=n+(parts.length>1?' — '+parts.slice(1).join(' — '):'');
+    $('f_team').dispatchEvent(new Event('input'));paintTeamsNow();
+  });
+  $('f_team').addEventListener('focus',function(){readDraft().then(paintDraft);});
+  setInterval(function(){var s3=$('s3');if(!document.hidden&&s3&&s3.getBoundingClientRect().top<innerHeight&&s3.getBoundingClientRect().bottom>0)readDraft().then(paintDraft);},8000);
   $('pool4').addEventListener('click',function(e){var b=e.target.closest('[data-pick]');if(b&&!b.disabled)postPick(b.getAttribute('data-pick'));});
   $('dRefresh').addEventListener('click',function(){readDraft().then(paintDraft);});
   $('manBtn').addEventListener('click',function(){

@@ -271,6 +271,19 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   for 2,400 vs @zug.commute ≈ 4.6 for 350) were recomputed from `POOL`;
   the hidden `HID` values are never on a slide before Step 6. Linked from
   week4.html's banner. The deck is the instructor's: it keeps its clock.
+- **Draft fixes during the session (5 Nov 2026, 15:45).** Jan Erik: "they
+  are actually selecting several at the same time". Simultaneous clicks
+  were already safe (each device posts its own row; `replay()` keeps the
+  team's earliest valid row; duplicate registrations dedupe by name). Two
+  real risks were fixed: (1) a team that never picks and stands LAST in
+  its round froze the draft, because only the next team in the SAME round
+  could jump in; now, after the 2-minute wait, the first other team of
+  the next round may pick (`pickRound()` returns the round to post into;
+  `replay()` skips the slot when that team posted after the wait);
+  (2) team names typed differently by teammates made two teams, so Step 3
+  now lists the registered teams (`#teamsNow`, refreshed every 8 s while
+  Step 3 is on screen) with "Join this team", which copies the exact name.
+  Probed with a stubbed board (three teams, the absent one last).
 
 ### Session parameters (for /new-session)
 
