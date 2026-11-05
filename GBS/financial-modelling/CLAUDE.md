@@ -155,6 +155,15 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   recomputed in Python and in the page's own model under Node, 2 Nov
   2026; probed headlessly 7/7, no errors, no overflow at 500 px. Run sheet
   `_private/week4-runsheet.md`. Session 4 starts from the corrected pack.
+- **`week4-slides.html` — the instructor's deck for Session 3 (5 Nov 2026,
+  the day of the session).** Jan Erik: "create slides for week 4". The GBS
+  deck engine (as `session2-slides.html`), 15 slides, ~21 min of slides
+  opening each step, written to WRITING.md. **Answers only on the slide after
+  their step**: the four events (0/−1 · −0.76/+0.24 · 0/+1 · 0/−1), the
+  twelve checks (−3.1/−3.1 · 2.8/9.2 · 2.8/6.4 · 3.1/0 · 2.8/0 · 0/0), the
+  four corrections (+1.4 → −1.4 · 0.0 → −6.4 · 45.0 → 41.9 · 50.2 → 47.1)
+  and the prices (2.48 · 2.71 · 2.64 · dividend 0.16 a share = leakage).
+  A gold "▶ Slides" button in week4.html's top bar.
 
 ### Session parameters (for /new-session)
 
