@@ -1,7 +1,7 @@
 /* =====================================================================
    GBS · Business Intelligence — THE TEAMS, and the team's shared answers.
 
-   Six teams (A–F since 29 Oct 2026; A–E before, the ids every page already uses: the red-team chips,
+   Seven teams (A–G since 5 Nov 2026, A–F since 29 Oct 2026; A–E before, the ids every page already uses: the red-team chips,
    "T:<A-E>" on the decision wall). Students join a team themselves, any
    member can rename it, and — since 22 Oct 2026 — a field that belongs to
    the TEAM (the sealed decision, the one number, the red-team verdict, the
@@ -37,7 +37,7 @@
    ===================================================================== */
 window.BiTeams=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",NS="bi";
-  var IDS=['A','B','C','D','E','F'],K='bi',MAXNAME=30,MAXV=500,POLL=8000;
+  var IDS=['A','B','C','D','E','F','G'],K='bi',MAXNAME=30,MAXV=500,POLL=8000;
   var pending=0,st={members:{},names:{},ok:true,loaded:false},hooks=[],el=null,opts={},started=false;
   var wallRaw=null,shared={},binds=[],applying=false;
   /* the board's styles travel with it, so the hub (which does not load bi.css) draws it too */
