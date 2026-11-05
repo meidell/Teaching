@@ -221,3 +221,15 @@ presence needing an account) applies. What differs:
   five PVs 231.8…191.2; 1.0844⁵ = 1.499504 → 0.666887). Still 27 slides, 15
   in Part 1, same `site:` anchors; three dense slides shrink to zoom 0.84–0.88.
   Numbers unchanged. The homework page was not touched.
+- **`jeopardy.html` — the revision game on Weeks 1–5 (5 Nov 2026).** Jan
+  Erik: "let's do a jeopardy on the first 5 weeks … add it to the course
+  landing page". The GEN 110 / BI engine (6 columns × 5 values, editable
+  player names, scores in `localStorage mba406_jeo_w15` only, never
+  counted) in the SUMAS greens: columns Week 1 statements · Week 2 time
+  value · Week 3 capital budgeting · Week 4 cost of capital · Week 5
+  valuation · **Atelier Rochat** (the case itself, the amber "own" column).
+  Thirty questions, each answer carrying its computation; every number is
+  the week pages' own (recomputed 5 Nov 2026). Six player cards for a class
+  of five (the sixth is spare). Linked from the hub as a second `.primer`
+  under the crash course. Played in the last 45 minutes of a session;
+  students can open it alone to revise. `?set=` is ready for a later set.
