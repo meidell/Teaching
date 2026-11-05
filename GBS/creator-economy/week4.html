@@ -65,6 +65,17 @@
 .order{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0;}
 .order span{font-size:11.5px;font-weight:700;border:1px solid var(--line);border-radius:14px;padding:2px 9px;background:#fff;color:var(--ink-soft);}
 .order span.now{background:var(--navy);color:#fff;border-color:var(--navy);}
+body.boardmode{background:#0E1B3D;}
+body.boardmode>*:not(#classView){display:none !important;}
+#classView{display:none;}
+body.boardmode #classView{display:block;padding:28px 36px;color:#fff;font-family:inherit;}
+#classView h1{font-size:30px;margin:0 0 6px;color:#fff;} #classView .cvturn{font-size:26px;font-weight:800;background:#F2B544;color:#0E1B3D;border-radius:14px;padding:14px 20px;margin:14px 0 18px;}
+#classView table{width:100%;border-collapse:collapse;font-size:19px;background:#fff;color:#14213D;border-radius:12px;overflow:hidden;}
+#classView th{background:#1F3264;color:#fff;text-align:left;padding:10px 12px;font-size:15px;}
+#classView td{padding:10px 12px;border-bottom:1px solid #DDE2EC;vertical-align:top;}
+#classView td.now{background:#F2B544;font-weight:800;} #classView td.r{text-align:right;white-space:nowrap;}
+#classView .free{margin-top:18px;font-size:17px;line-height:1.7;color:#DDE3F2;} #classView .free b{color:#fff;}
+#classView .cvsmall{font-size:14px;color:#AFC0E0;margin-top:14px;}
 .order span.done{color:var(--grey);text-decoration:line-through;}
 .locked{opacity:.55;pointer-events:none;filter:grayscale(.4);}
 .gate{border:1px dashed var(--accent);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--accent-deep);font-weight:700;background:var(--accent-pale);margin:10px 0;}
@@ -300,6 +311,7 @@ CPA   = fee ÷ sales</div>
       <li>Press "Refresh the board" to see which team's turn it is and which content creators are already taken.</li>
     </ol>
     <div id="draftHead"></div>
+    <p><a class="btn ghost small" href="week4.html?board=1" target="_blank" rel="noopener">📺 Open the class view of the board (full screen, for the projector)</a></p>
     <div class="pool" id="pool4"></div>
     <div class="savenote" id="dNote"></div>
     <input type="hidden" id="f_picks" data-work="w4_picks" data-worklabel="W4 · our picks (creator ids)">
@@ -659,6 +671,30 @@ function paintDraft(){
   var pb=$('passBtn');if(pb)pb.onclick=function(){postPick('pass');};
   if(myT){var ids=st.got[myT].join(',');if(ids&&ids!==work('w4_picks'))setHidden('f_picks',ids);}
   paintMyList();
+  if(BOARD)paintClass(st);
+}
+var BOARD=/[?&]board=1/.test(location.search);
+function paintClass(st){
+  var box=$('classView');if(!box){box=document.createElement('div');box.id='classView';document.body.appendChild(box);}
+  var h='<h1>Session 4 · The teams take turns choosing content creators</h1><div class="cvsmall">Each team chooses one content creator per round, three rounds, budget CHF '+fmt(BUDGET)+'. The order turns around in round 2. This screen refreshes every 4 seconds.</div>';
+  if(!D.ok)h+='<div class="cvturn">The class board is unavailable'+(D.reason==='rules'?' (rules not published)':'')+'.</div>';
+  else if(!st.order.length)h+='<div class="cvturn">No team has registered yet. Teams register at the end of Step 3.</div>';
+  else if(!st.cur)h+='<div class="cvturn">The draft is complete. Every team presses "All three rounds are over" and goes to Step 5.</div>';
+  else{var left=Math.max(0,Math.ceil((st.cur.since+WAIT-Date.now())/1000));
+    h+='<div class="cvturn">Round '+(st.cur.r+1)+': it is the turn of '+esc(st.cur.t)+'. '+(left>0?left+' seconds left before the next team may choose instead.':'The 2 minutes are over: the next team may choose now.')+'</div>';}
+  h+='<table><tr><th>Team</th><th>Round 1</th><th>Round 2</th><th>Round 3</th><th style="text-align:right">Spent (CHF)</th><th style="text-align:right">Left (CHF)</th></tr>';
+  st.order.forEach(function(t){
+    h+='<tr><td><b>'+esc(t)+'</b></td>';
+    for(var r=0;r<ROUNDS;r++){
+      var sl=st.slots.filter(function(x){return x.r===r&&x.t===t;})[0], now=st.cur&&st.cur.r===r&&st.cur.t===t;
+      h+='<td'+(now?' class="now"':'')+'>'+(sl?(sl.id==='pass'?'passed':sl.id==='skip'?'skipped (2 minutes over)':esc(BYID[sl.id].h)+' · CHF '+fmt(BYID[sl.id].fee)):(now?'choosing now':'—'))+'</td>';
+    }
+    h+='<td class="r">'+fmt(st.spent[t]||0)+'</td><td class="r">'+fmt(BUDGET-(st.spent[t]||0))+'</td></tr>';
+  });
+  h+='</table>';
+  var free=POOL.filter(function(c){return !st.taken[c.id];});
+  h+='<div class="free"><b>Still free ('+free.length+' of '+POOL.length+'):</b> '+free.map(function(c){return esc(c.h)+' (CHF '+fmt(c.fee)+')';}).join(' · ')+'</div>';
+  box.innerHTML=h;
 }
 function postPick(id){
   if(!ST||!ST.cur)return;
@@ -791,6 +827,7 @@ window.addEventListener('DOMContentLoaded',function(){
   });
   $('f_team').addEventListener('focus',function(){readDraft().then(paintDraft);});
   setInterval(function(){if(document.hidden||POLL)return;var on=['s3','s4'].some(function(id){var e=$(id);if(!e)return false;var r=e.getBoundingClientRect();return r.top<innerHeight&&r.bottom>0;});if(on)readDraft().then(paintDraft);},8000);
+  if(BOARD){document.body.classList.add('boardmode');poll(true);readDraft().then(paintDraft);setInterval(function(){if(ST)paintClass(ST);},1000);}
   $('pool4').addEventListener('click',function(e){var b=e.target.closest('[data-pick]');if(b&&!b.disabled)postPick(b.getAttribute('data-pick'));});
   $('dRefresh').addEventListener('click',function(){readDraft().then(paintDraft);});
   $('manBtn').addEventListener('click',function(){
