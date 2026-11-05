@@ -236,7 +236,19 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   4's own `<title>`, `<h1>` and description carry the new title. The
   `nextCard` prints `w.title`, so the long titles show there too. A future
   session page must take its title from the hub entry, and when it is built
-  the blurb may need the mechanics the page actually has.
+  the blurb may need the mechanics the page actually has. **The word is
+  "content creator", everywhere** (5 Nov 2026, Jan Erik: "what is a
+  creator?" … "use rather content creator everywhere"): defined on the S4
+  card and page (publishes under their own name on a platform, has
+  followers there, earns from them, among other ways by being paid by a
+  brand to show a product; the older word is influencer), and every prose
+  "creator(s)" on the hub, S1, S3, S4, the two module-name strings and the
+  presence labels now reads "content creator(s)". Untouched: the course
+  name, `data-course="creator"`, the `creator_*` keys, `?course=creator`,
+  `CreatorWall`, the namespace comments, paths. S4's title was then made
+  explicit about the brand PAYING them ("huh? employing creators?"):
+  "Paying content creators to sell a product: how a sponsored post turns
+  into a sale, and which content creators to pay with a fixed budget".
 
 ### Session parameters (for /new-session)
 
