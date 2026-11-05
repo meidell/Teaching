@@ -222,6 +222,22 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   `_private/week4-runsheet.md`. Session 5 (negotiation) should reuse
   `w4_picks` — one of the team's own creators.
 
+- **Hub titles and blurbs rewritten from Session 4 on (5 Nov 2026).** Jan
+  Erik: "your titles for the sessions are so unclear, noone realizes what we
+  will do. Give a title that indicates what we will learn … make them CLEAR
+  AND SPECIFIC". Every `TERM` entry from `w4` to `wp` (and the two gap
+  cards and both section heads) now has a title that states what is learned
+  ("How to negotiate a creator contract: the fee, usage rights, exclusivity
+  and disclosure") and a blurb in two parts, **What you learn** (each term
+  defined in one sentence: CPA, usage rights, exclusivity, disclosure, reach,
+  impressions, engagement rate, earned media value, bought followers, live
+  shopping stream, playbook) and **What you do** (the exact activity), per
+  WRITING.md. Sessions 1–3 were left as they were (already taught). Session
+  4's own `<title>`, `<h1>` and description carry the new title. The
+  `nextCard` prints `w.title`, so the long titles show there too. A future
+  session page must take its title from the hub entry, and when it is built
+  the blurb may need the mechanics the page actually has.
+
 ### Session parameters (for /new-session)
 
 - Language EN; no textbook — content is our own, every operator claim from
