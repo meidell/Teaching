@@ -148,3 +148,12 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   al. (CIDR 2021) are the two citations. Probed 2 Nov 2026: 7/7, no
   errors, no overflow at 500 px. Session 4 loads the extracts into these
   stars and should open `w4_nx`.
+- **`week4-slides.html` — the instructor's deck for Session 3 (5 Nov 2026,
+  the day of the session).** Jan Erik: "give me slides for session 4 for
+  this as well" (he meant week4.html). The GBS deck engine, 18 slides,
+  ~22 min of slides opening each step and ~90 min of team work, written to
+  WRITING.md (verbs, every term defined: OLTP/OLAP, warehouse/lake/
+  lakehouse, grain, business process, fact, dimension, star schema, date
+  dimension, conformed dimension, surrogate key, type 2, the three fact
+  tables, source-to-target map, GDPR sensitivity). Numbers from `GT`, `GQ`,
+  `EX2`, `MEX`. A gold "▶ Slides" button in week4.html's top bar.

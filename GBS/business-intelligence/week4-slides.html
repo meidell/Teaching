@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex">
+<title>Week 4 · Session 3 · How a data warehouse is designed · slides · Business Intelligence · GBS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗄️</text></svg>">
+<style>
+/* ---- The GBS deck engine (financial-modelling/session2-slides.html), navy and gold.
+   ← → / space / click to move · N speaker notes · P print view (⌘P → PDF, one slide per page).
+   Business Intelligence, Week 04 · Session 3 (module w4), Thu 5 Nov 2026, 16:30–18:30: the
+   instructor's slides for week4.html, a self-run mandate. About 22 minutes of slides spread
+   before each step, about 93 minutes of team work, a 5-minute break, the 20-minute quiz.
+   Every number is week4.html's own (GT, GQ, EX1, EX2, MEX). ---- */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#101F44;--gold:#D58517;--gold-d:#A8620A;--ink:#1B2333;--soft:#4A5468;--line:#DCE1EA;--paper:#F6F7FA;--ok:#2F855A;--bad:#9B2335;}
+html,body{height:100%;background:var(--navy);font-family:'Avenir Next',Avenir,'Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;background:var(--paper);padding:5vh 6vw 7vh;}
+.slide.on{display:flex;}
+.slide.dark{background:var(--navy);color:#fff;}
+.kick{font-size:1.6vh;letter-spacing:.3em;text-transform:uppercase;font-weight:800;color:var(--gold-d);margin-bottom:1.6vh;}
+.dark .kick{color:var(--gold);}
+.slide h2{font-family:Georgia,'Times New Roman',serif;font-size:4.8vh;line-height:1.12;color:var(--navy);margin-bottom:2.6vh;letter-spacing:-.01em;}
+.dark h2{color:#fff;} .slide h2 em{font-style:italic;color:var(--gold-d);} .dark h2 em{color:var(--gold);}
+.slide h3{font-family:Georgia,serif;font-size:2.9vh;color:var(--navy);margin-bottom:1vh;}
+.body{flex:1;font-size:2.75vh;line-height:1.45;color:var(--soft);display:flex;flex-direction:column;min-height:0;}
+.dark .body{color:rgba(255,255,255,.88);}
+.body p{margin-bottom:1.6vh;} .body ul,.body ol{margin-left:4vh;} .body li{margin-bottom:1vh;}
+.body b{color:var(--ink);} .dark .body b{color:#fff;}
+.big{font-family:Georgia,serif;font-size:4vh;line-height:1.3;color:var(--ink);max-width:34ch;}
+.dark .big{color:#fff;}
+.dim{font-size:2vh;color:#7A8396;margin-top:auto;padding-top:1vh;}
+.dark .dim{color:rgba(255,255,255,.55);}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:3vw;margin-bottom:2vh;}
+.cols.three{grid-template-columns:1fr 1fr 1fr;gap:2vw;}
+.card{background:#fff;border-radius:1.8vh;padding:2.2vh 2vw;border:1px solid var(--line);}
+.card h3{margin-bottom:.8vh;} .card p{font-size:2.4vh;margin-bottom:.8vh;}
+.card.hl{border-left:.7vh solid var(--gold);}
+.dark .card{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);} .dark .card h3{color:#fff;} .dark .card p{color:rgba(255,255,255,.88);}
+table{border-collapse:collapse;width:100%;font-size:2.35vh;background:#fff;border-radius:1.4vh;overflow:hidden;}
+th,td{text-align:right;padding:.9vh 1.2vw;border-bottom:1px solid var(--line);vertical-align:top;}
+th:first-child,td:first-child{text-align:left;} td.l{text-align:left;}
+th{background:var(--navy);color:#fff;font-size:1.8vh;letter-spacing:.08em;text-transform:uppercase;}
+tr.hl td{background:#FFF4E3;font-weight:800;color:var(--ink);}
+td.bad{color:var(--bad);font-weight:800;} td.ok{color:var(--ok);font-weight:800;}
+.flow{display:flex;gap:.8vw;align-items:stretch;margin:1.6vh 0;}
+.flow>div{flex:1;background:#fff;border:1px solid var(--line);border-radius:1.4vh;padding:1.5vh 1vw;font-size:2.1vh;line-height:1.35;}
+.flow>div b{display:block;font-family:Georgia,serif;font-size:2.5vh;color:var(--navy);margin-bottom:.5vh;}
+.flow>div.now{background:#FFF4E3;border:2px solid var(--gold);}
+.formula{font-family:Georgia,serif;font-size:3.3vh;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:1.6vh;padding:2vh 2vw;margin:1vh 0 1.8vh;text-align:center;}
+.dark .formula{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2);}
+.reveal{visibility:hidden;} .reveal.show{visibility:visible;}
+.q{background:#fff;border-left:.7vh solid var(--gold);border-radius:1.2vh;padding:1.8vh 2vw;font-family:Georgia,serif;font-size:3.1vh;color:var(--navy);margin:1vh 0 1.8vh;}
+.dark .q{background:rgba(255,255,255,.08);color:#fff;}
+.do{background:#FFF4E3;border:1px solid #F0C98A;border-radius:1.4vh;padding:1.6vh 1.6vw;font-size:2.5vh;color:var(--ink);margin:1vh 0 1.6vh;}
+.do b{color:var(--gold-d);}
+.hud{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;gap:2vw;padding:1vh 2vw;font-size:1.9vh;color:rgba(255,255,255,.75);background:rgba(16,31,68,.94);z-index:5;}
+.hud b{color:#fff;} .hud .sp{flex:1;} .hud .late{color:#F4B183;} .hud .early{color:#A8D5A2;}
+.notes{display:none;position:fixed;left:0;right:0;bottom:4.2vh;max-height:34vh;overflow:auto;background:#0B1633;color:#EEF1F7;padding:2.2vh 4vw;font-size:2.2vh;line-height:1.5;border-top:.4vh solid var(--gold);z-index:4;}
+body.notes .slide.on .notes{display:block;}
+body.notes .slide.on .body{padding-bottom:34vh;}
+.help{position:fixed;top:1vh;right:1vw;font-size:1.7vh;color:rgba(128,140,160,.8);z-index:5;}
+@media print{
+  @page{size:A4 landscape;margin:10mm;}
+  html,body{background:#fff;height:auto;} .deck{width:auto;height:auto;overflow:visible;}
+  .slide{position:static;display:flex !important;min-height:180mm;page-break-after:always;padding:30px 40px;background:#fff !important;color:var(--ink) !important;border:1px solid #ccc;margin-bottom:10px;}
+  .dark h2,.dark .big,.dark .body,.dark .body b,.dark .formula,.dark .q,.dark .card h3,.dark .card p{color:var(--ink) !important;}
+  .slide h2{font-size:30px;} .kick{font-size:11px;} .body{font-size:17px;} .big{font-size:22px;} .dim{font-size:12px;}
+  .card p,.flow>div{font-size:14px;} table{font-size:14px;} th{font-size:10px;} th,td{padding:5px 9px;} .formula{font-size:20px;} .q{font-size:19px;} .do{font-size:15px;}
+  .reveal{visibility:visible;}
+  .notes{display:block !important;position:static;max-height:none;background:#F4F6FA;color:var(--ink);font-size:12.5px;padding:10px 14px;margin-top:12px;border-top:2px solid var(--gold);}
+  .notes:before{content:"Notes · ";font-weight:800;color:var(--gold-d);}
+  .hud,.help{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="help">← → move · N notes · P print</div>
+<div class="deck" id="deck">
+
+<!-- 1 -->
+<section class="slide dark" data-clock="16:30">
+  <div class="kick">Geneva Business School · Business Intelligence · Week 4 · Session 3 · Thursday 5 November 2026</div>
+  <h2>How a data warehouse is designed: what one row of a table means, and your team's star schema for ÒRBITA</h2>
+  <div class="body">
+    <p class="big">Last week your team wrote down how ÒRBITA should measure its key numbers. Today your team designs the tables that will store the data for those numbers, and says where each column comes from.</p>
+    <div class="dim">Open the course page → Week 04 · Session 3. Your team works through the page on its own; these slides open each step. One laptop per team is enough.</div>
+  </div>
+  <div class="notes">ÒRBITA: the fictional e-bike and scooter subscription company in Barcelona from Sessions 1 and 2. Check every team is on the team board (six teams, A to F).</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-clock="16:32">
+  <div class="kick">The plan · 120 minutes</div>
+  <h2>Seven steps. A short explanation opens each step, then your team works on the page.</h2>
+  <div class="body">
+    <table>
+      <tr><th>Step</th><th class="l" style="text-align:left">What your team does</th><th>Slides</th><th>Team work</th></tr>
+      <tr><td>1</td><td class="l">Learns why the billing system cannot calculate the key numbers, and sorts twelve statements</td><td>4 min</td><td>10 min</td></tr>
+      <tr><td>2</td><td class="l">Finds the fewest tables that answer six questions (the page calls this the grain machine)</td><td>4 min</td><td>11 min</td></tr>
+      <tr><td>3</td><td class="l">Reads what facts, dimensions and a star schema are, and sorts eight columns</td><td>3 min</td><td>7 min</td></tr>
+      <tr><td>—</td><td class="l">Takes a break, when the team is ready</td><td></td><td>5 min</td></tr>
+      <tr><td>4</td><td class="l">Draws the team's star schema</td><td>3 min</td><td>16 min</td></tr>
+      <tr><td>5</td><td class="l">Fills in the source-to-target map, one line for every column</td><td>2 min</td><td>14 min</td></tr>
+      <tr><td>6</td><td class="l">Writes the definition that changed, publishes schema.html on Netlify, and hands in by 18:10</td><td>1 min</td><td>13 min</td></tr>
+      <tr><td>7</td><td class="l">Plays the team quiz on the screen</td><td>1 min</td><td>19 min</td></tr>
+    </table>
+    <div class="dim">Slides take about 22 minutes in total, spread before the steps. Team work takes about 90 minutes, plus the break and the quiz.</div>
+  </div>
+  <div class="notes">16:30 start · Step 1 to 16:48 · Step 2 to 17:03 · Step 3 to 17:13 · break to 17:18 · Step 4 to 17:37 · Step 5 to 17:53 · Step 6 to 18:10 (hand-in deadline) · quiz 18:10–18:30.</div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-clock="16:34">
+  <div class="kick">The mandate · what the client asks for today</div>
+  <h2>ÒRBITA's chief financial officer wants the warehouse design on one page before signing the budget</h2>
+  <div class="body">
+    <div class="q">"Thank you for the KPI memo. IT says none of those KPIs can be computed from our systems as they are, and asks what to build. Before I sign a warehouse budget I want the design on one page: which tables, at what level of detail, filled from which of our five systems, and who answers for each column."</div>
+    <p><b>What your team hands in today</b> is a one-page design note with three parts:</p>
+    <ol>
+      <li>The <b>star schema</b> for the KPI your team defined last week: the central table, what one row of it means, and the tables around it. The page draws it for you.</li>
+      <li>The <b>source-to-target map</b>: for every column, which system and which column it comes from, what is done to it, who is responsible for it, how sensitive it is, and how a bad value is caught.</li>
+      <li>The <b>definition that changed</b>: which part of last week's KPI definition your design forced you to change, or why nothing changed.</li>
+    </ol>
+  </div>
+  <div class="notes">A KPI is a key performance indicator: the number a manager is judged on (churn, rides per subscriber). Last week each team wrote a "KPI contract": one KPI, defined in eight fields.</div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-clock="16:36">
+  <div class="kick">Step 1 · why a second database is needed</div>
+  <h2>The billing system is built to charge cards one at a time; a KPI needs millions of rows read at once</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card hl"><h3>An operational database (OLTP)</h3><p>OLTP means online transaction processing. ÒRBITA's billing system is one. It does a small job thousands of times a day: it charges a card, pauses a subscription, changes a plan. Each request reads or writes a few rows. It stores every fact once, so an update changes one place.</p></div>
+      <div class="card hl"><h3>An analytic database (OLAP)</h3><p>OLAP means online analytical processing. "Monthly churn by city and plan for twelve months" reads every subscription for a year, joins rides from the telematics system and tickets from the help desk, and adds them up. Few requests, each reading millions of rows.</p></div>
+    </div>
+    <p><b>Three things go wrong if the billing system answers a KPI question.</b> The query slows down the card payments on the same machine. The billing system cannot see rides or tickets, because they are stored in other systems with other customer numbers. And its columns use billing's definitions, not the definitions your team wrote last week. So the company builds a second database for analysis, filled from the first: a <b>data warehouse</b>.</p>
+  </div>
+  <div class="notes">Telematics: the system that records each ride from the vehicle (start time, kilometres, city).</div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-clock="16:38">
+  <div class="kick">Step 1 · three places to keep data for analysis</div>
+  <h2>A warehouse, a lake and a lakehouse differ in when the structure of the data is checked, and in who reads it</h2>
+  <div class="body">
+    <table>
+      <tr><th></th><th class="l" style="text-align:left">Data warehouse</th><th class="l" style="text-align:left">Data lake</th><th class="l" style="text-align:left">Lakehouse</th></tr>
+      <tr><td class="l"><b>What it stores</b></td><td class="l">tables with fixed, documented columns</td><td class="l">files of any kind, as they arrived: CSV, JSON, logs, images</td><td class="l">files in open table formats (Delta Lake, Apache Iceberg) on cheap cloud storage</td></tr>
+      <tr><td class="l"><b>When the structure is checked</b></td><td class="l">when a row is loaded: a row that does not fit is rejected ("schema on write")</td><td class="l">when someone reads the file: the reader decides what it means ("schema on read")</td><td class="l">a control layer checks the structure of the files</td></tr>
+      <tr><td class="l"><b>Who reads it</b></td><td class="l">SQL queries and dashboards: the board's numbers</td><td class="l">data scientists and engineers, often in Python</td><td class="l">both, from one copy of the data</td></tr>
+      <tr><td class="l"><b>How it usually fails</b></td><td class="l">it is slow and expensive to change when a new question comes</td><td class="l">nobody knows what a file means or whether it is current</td><td class="l">it is newer and has more parts to run well</td></tr>
+    </table>
+    <p style="margin-top:1.4vh">Source for the lakehouse: Armbrust, Ghodsi, Xin and Zaharia (CIDR 2021). Whatever ÒRBITA buys, your design question is the same: what does one row of each table mean?</p>
+  </div>
+  <div class="notes">Say "schema" once: the list of columns of a table and what each holds.</div>
+</section>
+
+<!-- 6 -->
+<section class="slide dark" data-clock="16:40">
+  <div class="kick">Step 1 · your team, 10 minutes</div>
+  <h2>Do Step 1 on the page now</h2>
+  <div class="body">
+    <ol>
+      <li>Each member reads "Two databases, two jobs" and sorts the six requests under it: operational or analytic.</li>
+      <li>Each member reads "Warehouse, lake, lakehouse" and sorts the six statements under the table.</li>
+      <li>The team writes one sentence in the box: why the billing database cannot calculate the team's main KPI from last week.</li>
+      <li>Press <b>Done</b>. The step counts when all twelve answers are right.</li>
+    </ol>
+    <div class="dim">At 16:48 the next slide explains Step 2.</div>
+  </div>
+  <div class="notes">Walk the room. The usual mistake: sorting "the CFO's monthly report" as operational because it is about money.</div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-clock="16:48">
+  <div class="kick">Step 2 · the most important word of today</div>
+  <h2>The grain of a table is what one row of it means, written in one sentence that starts "One row per…"</h2>
+  <div class="body">
+    <p>You decide the grain before any column, because it decides which questions the table can ever answer.</p>
+    <div class="cols three">
+      <div class="card"><h3>One row per ride</h3><p>About 560,000 rows a month. It can say at what hour people ride. It cannot say who cancelled, because a customer who never rides has no row.</p></div>
+      <div class="card"><h3>One row per account per month</h3><p>47,700 rows a month, one for every account on billing's books. It can say who cancelled. It cannot say at what hour anyone rode.</p></div>
+      <div class="card"><h3>One row per city per day</h3><p>180 rows a month: six cities, thirty days. Everything is already added up, so the customer, the hour and the first fourteen days are gone, and no query can bring them back.</p></div>
+    </div>
+    <div class="q">A table cannot answer a question about something smaller than its row.</div>
+  </div>
+  <div class="notes">ÒRBITA's sizes, from the page: 47,700 accounts on billing's books, about 560,000 rides a month (about 14 per paying subscriber), about 3,800 tickets, six cities, three ad channels.</div>
+</section>
+
+<!-- 8 -->
+<section class="slide dark" data-clock="16:51">
+  <div class="kick">Step 2 · your team, 11 minutes</div>
+  <h2>Find the fewest tables that together answer all six questions</h2>
+  <div class="body">
+    <ol>
+      <li><b>First, alone:</b> each member guesses how many tables ÒRBITA needs at the least to answer all six questions, and presses <b>Seal it</b>. A sealed guess cannot be changed.</li>
+      <li>Switch the six candidate tables on and off. The list shows which table answers each question.</li>
+      <li>Find the smallest set of tables that answers all six. The page shows the rows a month for your set.</li>
+      <li>Read the explanation that opens when you have it.</li>
+    </ol>
+    <p>The six questions include: rides per new subscriber in the first 14 days · monthly churn · rides by local hour per city · retention in month 3 · ad spend in euros by city, channel and week · median time to resolve a ticket.</p>
+    <div class="dim">At 17:03 the answer goes on the screen.</div>
+  </div>
+  <div class="notes">Show the room's sealed guesses with the button on the page before the debrief. Most guess one or two.</div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-clock="17:03">
+  <div class="kick">Step 2 · the answer</div>
+  <h2>ÒRBITA needs four tables, one for each business process, each at the most detailed level the process produces</h2>
+  <div class="body">
+    <table>
+      <tr><th class="l" style="text-align:left">Business process</th><th class="l" style="text-align:left">Grain: one row per…</th><th>Rows a month</th><th class="l" style="text-align:left">Answers</th></tr>
+      <tr><td class="l">Rides (telematics)</td><td class="l">ride</td><td>560,000</td><td class="l">rides in the first 14 days, rides by local hour</td></tr>
+      <tr><td class="l">Subscriptions (billing)</td><td class="l">account per month</td><td>47,700</td><td class="l">monthly churn, month-3 retention</td></tr>
+      <tr><td class="l">Support (help desk)</td><td class="l">ticket</td><td>3,800</td><td class="l">time to resolve a ticket</td></tr>
+      <tr><td class="l">Marketing spend (ad platforms)</td><td class="l">city, channel and week</td><td>80</td><td class="l">ad spend by city, channel and week</td></tr>
+      <tr class="hl"><td class="l">Total</td><td class="l">four tables</td><td>611,580</td><td class="l">all six questions</td></tr>
+    </table>
+    <p style="margin-top:1.4vh">A <b>business process</b> is one activity of the company that produces data: a ride, a monthly subscription, a support ticket, an ad campaign. The rule comes from Kimball and Ross, <i>The Data Warehouse Toolkit</i> (3rd ed., 2013): one central table per business process, at the most detailed grain. A table with one row per account per day would also answer churn, but with 1,431,000 rows a month, thirty times more.</p>
+  </div>
+  <div class="notes">The city-per-day summary answers none of the six. That is the lesson: once data is added up, the detail is gone.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-clock="17:05">
+  <div class="kick">Step 3 · facts, dimensions, the star</div>
+  <h2>A star schema puts one table of numbers in the middle and the descriptive tables around it</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card hl"><h3>A fact (also called a measure)</h3><p>A number the process produces at the table's grain, usually one you add up: kilometres ridden, minutes, euros of revenue, hours to resolve a ticket. Facts are stored in the <b>fact table</b>, in the middle.</p></div>
+      <div class="card hl"><h3>A dimension</h3><p>The context you filter and group by: when, where, who, which plan, which channel. Each dimension has its own table around the fact table (dim_date, dim_city, dim_subscriber). The fact table holds a key that points to each one.</p></div>
+    </div>
+    <div class="formula">fact_ride · one row per ride · measures: km, duration in minutes, failed unlock (0 or 1) · dimensions: date, time, city, subscriber, vehicle</div>
+    <p>Drawn, the fact table sits in the middle and the dimension tables around it, like the points of a star. That drawing is a <b>star schema</b>, and it is what your team draws in Step 4.</p>
+  </div>
+  <div class="notes">A failed unlock is when a customer unlocks a scooter and does not ride; Session 1's trap (rides under 0.2 km or 2 minutes).</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-clock="17:07">
+  <div class="kick">Step 3 · five more terms you will need in Step 4</div>
+  <h2>Five terms that come with a star schema, each with ÒRBITA's example</h2>
+  <div class="body">
+    <ul>
+      <li><b>Date dimension:</b> a table with one row per calendar day, which says the weekday, month, quarter and public holidays. Every fact table points to it, so "by month" or "without holidays" becomes a filter, not a calculation.</li>
+      <li><b>Conformed dimension:</b> a dimension that several fact tables share. dim_city is used by fact_ride and by fact_spend, so rides and ad spend per city can go in one chart. Two different spellings of "city" would make that impossible.</li>
+      <li><b>Surrogate key:</b> the warehouse gives every dimension row its own number instead of the source system's customer number. Telematics and billing can then use different numbers for the same customer without breaking the join.</li>
+      <li><b>Type 2 change:</b> when Anna Kowalski changes her email or plan, the warehouse does not overwrite her row. It closes the old row with an end date and opens a new row with a start date, so last month's rides stay with last month's plan.</li>
+      <li><b>Three kinds of fact table:</b> one row per event (a ride), one row per thing per period (an account per month), or one row per thing that moves through stages and is updated (a ticket: opened, answered, resolved).</li>
+    </ul>
+  </div>
+  <div class="notes">Anna Kowalski is the customer from Session 1 whose email changed.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide dark" data-clock="17:08">
+  <div class="kick">Step 3 · your team, 7 minutes · then the break</div>
+  <h2>Do Step 3 on the page, then take a five-minute break</h2>
+  <div class="body">
+    <ol>
+      <li>Each member reads Step 3 on the page. The slides have shown the main points; the page has the details.</li>
+      <li>Each member sorts the eight ÒRBITA columns at the end of the step: fact, dimension or key.</li>
+      <li>The step counts when all eight answers are right.</li>
+      <li>Take a five-minute break when your team is ready. Be back by 17:18.</li>
+    </ol>
+    <div class="dim">After the break, Step 4: your team's star schema.</div>
+  </div>
+  <div class="notes">The two hard ones: email is a dimension attribute (and personal data), ride_id is a key with no table of its own.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-clock="17:18">
+  <div class="kick">Step 4 · note part 1 · how to design the star</div>
+  <h2>Design the star in four decisions, in this order: the process, the grain, the dimensions, the measures</h2>
+  <div class="body">
+    <table>
+      <tr><th class="l" style="text-align:left">Decision</th><th class="l" style="text-align:left">The question to answer</th><th class="l" style="text-align:left">Example for churn</th></tr>
+      <tr><td class="l">1 · the business process</td><td class="l">Which activity produces the data your KPI counts?</td><td class="l">Subscriptions, from billing</td></tr>
+      <tr><td class="l">2 · the grain</td><td class="l">What does one row mean? Write "One row per…".</td><td class="l">One row per account per month</td></tr>
+      <tr><td class="l">3 · the dimensions</td><td class="l">By what will the KPI be filtered and grouped?</td><td class="l">date, city, subscriber, plan, status</td></tr>
+      <tr><td class="l">4 · the measures</td><td class="l">Which numbers does one row hold?</td><td class="l">monthly revenue in euros, cancelled (0 or 1), reversed within 30 days (0 or 1), rides in the month</td></tr>
+    </table>
+    <p style="margin-top:1.4vh"><b>Start from last week's KPI contract.</b> The page shows it under the team board. If one of your secondary KPIs comes from another process (for example rides, for a churn KPI), design a second star for it.</p>
+  </div>
+  <div class="notes">This is EX2 on the page. A team that picks "one row per ride" for a churn KPI will see the Star check fail: accounts that never ride have no row.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide dark" data-clock="17:21">
+  <div class="kick">Step 4 · your team, 16 minutes</div>
+  <h2>Draw your team's star schema on the page</h2>
+  <div class="body">
+    <ol>
+      <li>Check that your team is on the board at the top of Step 4. Last week's KPI contract appears under it.</li>
+      <li>For Star 1, choose the business process, write the grain as one sentence starting "One row per", click the dimensions, and type the measures, one per line. The drawing updates as you type.</li>
+      <li>The <b>Star check</b> shows what is still missing. Aim for 5 out of 5.</li>
+      <li>Add Star 2 only if a secondary KPI needs another process.</li>
+      <li>Press <b>Save the team's star</b>. What one member types appears on every member's page.</li>
+    </ol>
+    <div class="dim">At 17:37 the next slide explains Step 5.</div>
+  </div>
+  <div class="notes">Walk the room; check the grain sentences. "One row per customer" is not a grain for churn: per customer per month is.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-clock="17:37">
+  <div class="kick">Step 5 · note part 2 · the source-to-target map</div>
+  <h2>For every column of your star, the map says where it comes from, what is done to it, and who is responsible</h2>
+  <div class="body">
+    <table>
+      <tr><th class="l" style="text-align:left">Warehouse column</th><th class="l" style="text-align:left">Source</th><th class="l" style="text-align:left">Rule applied on the way</th><th class="l" style="text-align:left">Owner</th><th class="l" style="text-align:left">Sensitivity</th><th class="l" style="text-align:left">Check</th></tr>
+      <tr><td class="l">fact_ride.km</td><td class="l">Telematics · km</td><td class="l">keep rides over 0.2 km and 2 minutes; flag the rest as failed unlocks</td><td class="l">Head of fleet</td><td class="l">Internal</td><td class="l">between 0.2 and 80</td></tr>
+      <tr><td class="l">fact_spend.spend_eur</td><td class="l">Marketing · spend, currency</td><td class="l">drop duplicate export rows; convert at the ECB rate of the week's Monday</td><td class="l">CMO</td><td class="l">Internal</td><td class="l">one row per city, channel, week</td></tr>
+      <tr><td class="l">dim_subscriber.email</td><td class="l">Support desk and billing · email</td><td class="l">lower-case; a changed email opens a new type 2 row</td><td class="l">Head of support</td><td class="l">Personal</td><td class="l">one current row per subscriber</td></tr>
+    </table>
+    <p style="margin-top:1.4vh"><b>Sensitivity.</b> Under the GDPR, the EU data-protection law, data that identifies a person is <b>personal</b>. A customer number that can be linked back to a person is still personal (Recital 26), so it needs an owner and a stated purpose. <b>Internal</b> is business data not about a person, such as ad spend. <b>Public</b> could be published as it is, such as the list of cities.</p>
+  </div>
+  <div class="notes">The rules are Session 1's traps written down: time zones, failed unlocks, the changed email, duplicated exports, currencies, paused accounts.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide dark" data-clock="17:39">
+  <div class="kick">Step 5 · your team, 14 minutes</div>
+  <h2>Fill in the source-to-target map for your star</h2>
+  <div class="body">
+    <ol>
+      <li>Read ÒRBITA's example map on the page: six rows.</li>
+      <li>Press <b>Fill the targets from our star</b>. The first column fills with your star's keys and measures.</li>
+      <li>One member types the six other cells of every row. Another member checks each rule against the six traps from Session 1: time zones, failed unlocks, the changed email, duplicated exports, three currencies, paused accounts.</li>
+      <li>The map check marks each row. Complete at least six rows, then press <b>Save the map</b>.</li>
+    </ol>
+    <div class="dim">At 17:53 the next slide explains Step 6. The hand-in is due at 18:10.</div>
+  </div>
+  <div class="notes">Check that every personal column has an owner. Teams forget the sensitivity of subscriber keys.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide dark" data-clock="17:53">
+  <div class="kick">Step 6 · note part 3 · publish and hand in by 18:10</div>
+  <h2>Write what changed, put schema.html on your Netlify site, and hand in</h2>
+  <div class="body">
+    <ol>
+      <li><b>What changed.</b> Write which field of last week's KPI contract your design forced you to change (the grain, the formula or the source), or why nothing changed. 500 characters at most.</li>
+      <li><b>Download.</b> Press <b>Download the design note</b>. Move schema.html into the orbita-memo folder from Session 2, next to index.html. Do not rename it.</li>
+      <li><b>Publish.</b> Open app.netlify.com → your team's project → Deploys, and drag the whole orbita-memo folder onto the upload box. The page is then at your address followed by /schema.html.</li>
+      <li><b>Hand in.</b> Paste the full address, then one member presses <b>Hand in the design note</b>.</li>
+      <li><b>Predict.</b> Each member answers the question at the bottom and presses Seal it: what share of ÒRBITA's rows will fail at least one check next week?</li>
+    </ol>
+    <div class="dim">The folder is lost? On Netlify open the project → Deploys → the latest deploy → Download.</div>
+  </div>
+  <div class="notes">18:10: hand-in closes and the quiz starts, finished or not.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide dark" data-clock="18:10">
+  <div class="kick">Step 7 · 20 minutes · the whole class</div>
+  <h2>The team quiz: Jeopardy on today's work and on your own design note</h2>
+  <div class="body">
+    <ul>
+      <li>Close all laptops except one per team. That laptop is for showing your design note when the question asks for it.</li>
+      <li>Teams answer in turn. The last column asks the team on turn about its own design note.</li>
+      <li>Then press <b>We played the quiz</b> on the page.</li>
+    </ul>
+    <div class="dim">Next week, Session 4: your team loads ÒRBITA's five data extracts into a star like yours and finds out what does not fit. Your sealed prediction is opened then.</div>
+  </div>
+  <div class="notes">Open jeopardy.html?set=s3 on the screen.</div>
+</section>
+
+</div>
+<div class="hud"><span><b id="num">1 / 18</b></span><span>plan <b id="plan">16:30</b></span><span>now <b id="now">—</b></span><span id="delta"></span><span class="sp"></span><span>Business Intelligence · Week 4 · Session 3 · 5 Nov 2026 · Jan Erik Meidell · Geneva Business School</span></div>
+<script>
+(function(){
+  var S=[].slice.call(document.querySelectorAll('.slide')), i=0, hud={num:document.getElementById('num'),plan:document.getElementById('plan'),now:document.getElementById('now'),delta:document.getElementById('delta')};
+  try{ i=Math.min(S.length-1,parseInt(location.hash.slice(1),10)||0); }catch(e){}
+  function pad(n){return (n<10?'0':'')+n;}
+  function show(){ S.forEach(function(s,j){s.classList.toggle('on',j===i);}); location.hash=i; hud.num.textContent=(i+1)+' / '+S.length; hud.plan.textContent=S[i].getAttribute('data-clock'); tick(); }
+  function tick(){ var d=new Date(); hud.now.textContent=pad(d.getHours())+':'+pad(d.getMinutes()); var p=S[i].getAttribute('data-clock').split(':'), pm=+p[0]*60+ +p[1], nm=d.getHours()*60+d.getMinutes(), df=nm-pm; hud.delta.textContent=df>3?'· '+df+' min behind plan':(df<-3?'· '+(-df)+' min ahead':''); hud.delta.className=df>3?'late':(df<-3?'early':''); }
+  setInterval(tick,15000);
+  function next(){ var hid=S[i].querySelector('.reveal:not(.show)'); if(hid){hid.classList.add('show');return;} if(i<S.length-1){i++;show();} }
+  function prev(){ if(i>0){i--;show();} }
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='n'||e.key==='N'){document.body.classList.toggle('notes');}
+    else if(e.key==='p'||e.key==='P'){window.print();}
+    else if(e.key==='Home'){i=0;show();} else if(e.key==='End'){i=S.length-1;show();}
+  });
+  document.getElementById('deck').addEventListener('click',function(e){ if(e.target.closest('a'))return; if(e.clientX<window.innerWidth*0.2)prev(); else next(); });
+  show();
+})();
+</script>
+</body>
+</html>
