@@ -150,13 +150,30 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   stars and should open `w4_nx`.
 - **`week4-slides.html` — the instructor's deck for Session 3 (5 Nov 2026,
   the day of the session).** Jan Erik: "give me slides for session 4 for
-  this as well" (he meant week4.html). The GBS deck engine, 18 slides,
+  this as well" (meaning week4.html). The GBS deck engine, 18 slides,
   ~22 min of slides opening each step and ~90 min of team work, written to
   WRITING.md (verbs, every term defined: OLTP/OLAP, warehouse/lake/
   lakehouse, grain, business process, fact, dimension, star schema, date
   dimension, conformed dimension, surrogate key, type 2, the three fact
   tables, source-to-target map, GDPR sensitivity). Numbers from `GT`, `GQ`,
   `EX2`, `MEX`. A gold "▶ Slides" button in week4.html's top bar.
+  ⚠ **REDONE the same afternoon, 25 slides** (Jan Erik, quoting the hand-in
+  slide: "for every column, which system and which column it comes from, -
+  huh? the slides are not specific enough"). Every slide now shows ÒRBITA's
+  own names and rows: the five systems with their Session 1 columns (slide
+  5, the one to point at when "which system, which column" comes up), the
+  three parts of the note each with a churn example, the same data as three
+  tables of sample rows (Session 1's rides 88120–88122 and accounts
+  10482/10483/10491), ride 88120 as one fact_ride row (22:40 UTC = 00:40 on
+  5 Oct in Barcelona, so date_key 20261005) pointing at dim_city row 1,
+  Anna Kowalski's two type 2 rows, the seven map cells each with what to
+  write and an example, a map line read as one sentence, the six Session 1
+  problems with their system, column and rule, four columns classed by GDPR
+  sensitivity. About 34 min of slides and 63 of work. Sample values not on
+  the page (city-per-day totals, subscriber_key 5521, Anna's valid dates)
+  are marked illustrative in the notes. week4.html's intro (part 2) and
+  Step 5's "Why this step exists" now name the systems and columns too.
+  Per-team findings about last week's contracts: `_private/` only.
 - **week4.html REWRITTEN in plain sentences, 5 Nov 2026 (the day of the
   session).** Jan Erik: "The grain machine — if this is a row then call it
   that. redo the whole session … use verbs, call things for what they are,
