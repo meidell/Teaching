@@ -184,3 +184,16 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
 - **Grading** 50% participation (the student's own file and the page's
   fields) · 50% final group presentation. No homework page, no checkpoint
   quiz, no glossary page: the Close step's term list is the glossary.
+- **The team board (5 Nov 2026, before Session 3).** Jan Erik: "show the
+  teams and let them change as with the Business Intelligence class".
+  `wall.js` and `teams.js` are copies of BI's (namespace `finmod`, globals
+  `FmWall` / `FmTeams`, six teams A–F, keys `finmod_team`): join, move,
+  rename, "+ Add a member", × to remove, polled every 8 s. Mounted on the
+  hub (`#teams`, under the presence button) and in week4.html Step 1 above
+  the team line; joining fills `f_team` with "Team X · name — members"
+  unless a member has typed their own line. No shared team fields yet
+  (one laptop per team). Writes go to `finmod/_wall/...`: the deployed
+  rules have no `_wall` block for finmod, so today the `$sid` wildcard
+  carries them (read true, any non-deleting write); a proper `_wall`
+  block, identical to bi's, was added to `firebase-database-rules.json`
+  and takes effect when the file is next published.
