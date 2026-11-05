@@ -197,3 +197,5 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   carries them (read true, any non-deleting write); a proper `_wall`
   block, identical to bi's, was added to `firebase-database-rules.json`
   and takes effect when the file is next published.
+
+- **Week 4 without Netlify (5 Nov 2026, during class).** Jan Erik: "replace netlify with an upload possibility or something else". Step 6 now hands the reply in on the page only: "Hand in the reply" saves it to `w4_memo` (read in admin2). The address field `f_site` and the folder/drop steps 6b–6c are gone; "Show the reply full screen" opens it in a new tab for the quiz. Deck slides 14–15, the Jeopardy "Your reply" question and the hub blurb follow. Session 2 still used Netlify.
