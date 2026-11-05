@@ -250,6 +250,28 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   "Paying content creators to sell a product: how a sponsored post turns
   into a sale, and which content creators to pay with a fixed budget".
 
+- **`week4-slides.html` — the instructor's deck for Session 4 (5 Nov 2026,
+  the morning of the session).** Jan Erik: "make slides for this session 4 ·
+  include also a 'safety plan' (redo) for those who did not do the page or
+  not completely · be specific · low grade bba business students · how much
+  time for slides and how much for exercise?" The GBS deck engine
+  (finmod's `session2-slides.html`: navy/gold, `data-clock` HUD, N notes, P
+  print), 23 slides, **about 35 min of slides and 70 of page work in the
+  105-min slot** (clock plan in slide 2's notes). Slides 5–7 are the safety
+  plan, written from the sheets read at 12:57 that day; **the per-team
+  findings are in `_private/week4-runsheet.md` only** (a first commit that
+  named teams on the public deck was refused): no Week 0 → today is Week 1
+  and say so in the Plan tab; empty columns → "not recorded", never filled
+  from memory; wrong labels → correct them; unshared sheet → send the link in
+  the message panel; "not on Google" → Request indexing and date it; a
+  non-buying question → keep it, add Q4 from Week 1; no page → republish
+  during Step 3, today = Week 0. The worked funnel numbers (20,000 views ×
+  1 % × 80 % × 3 % = 4.8 sales, CHF 83; 140,000 × 1 % × 6 % × 3 % = 2.5,
+  CHF 2,200; break-even views at 6 % ≈ 247,000; @genevadaily ≈ 1.1 sales
+  for 2,400 vs @zug.commute ≈ 4.6 for 350) were recomputed from `POOL`;
+  the hidden `HID` values are never on a slide before Step 6. Linked from
+  week4.html's banner. The deck is the instructor's: it keeps its clock.
+
 ### Session parameters (for /new-session)
 
 - Language EN; no textbook — content is our own, every operator claim from
