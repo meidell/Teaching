@@ -193,3 +193,20 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   table stands for, and where every column comes from" (hub, with a What you
   learn / What you do blurb), "Designing the data warehouse" in
   courseprogress.js, presence.js and the quiz; the slides follow.
+- **Session 3 switched to ONE GIVEN KPI for every team (5 Nov 2026, 16:15,
+  just before class).** Jan Erik: "for today we do not ask for their kpi -
+  rather create [a kpi] and ask them to create the tables and all from that
+  kpi … make things explicitly clear". The KPI card (`#kpiTop` under the
+  CFO's message, copied into Step 4's `#lastK` by `paintLastK()`, and slide
+  3b of the deck): monthly churn by city and by plan; paying on the 1st =
+  active + paused, trial and unpaid excluded; cancellations undone within 30
+  days removed; owner head of growth; 2nd working day; target < 3.0 % by
+  May 2027 (Oct 2026 2.62 %, finance); counter-metric = share paused;
+  driver = rides in the first 14 days (Star 2, from telematics). Last week's
+  contracts (`w3_k_*`) are no longer read. **Part 3 of the note changed**:
+  not "the definition that changed" but "how our design gives each account
+  a city" — billing has no city column, so each team writes the rule, the
+  system and column it reads, and one unclear account (same field
+  `w4_team_chg`, new label). Title now "… for ÒRBITA's monthly churn KPI: …"
+  on the page, the deck and the hub `TERM`. Step 1's sentence asks why
+  billing cannot calculate churn by city.
