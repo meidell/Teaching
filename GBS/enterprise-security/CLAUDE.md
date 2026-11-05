@@ -149,4 +149,11 @@ global `EscWall`; `courseprogress.js` a port).
   `readings/bueger-liebetrau-2021.pdf.enc`, through `/shared/vault.js` (see
   root CLAUDE.md §3): a `🔒 PDF` link beside the DOI on the hub's S4 card
   (`rdv`/`rdf` in `TERM`), Session 3's Reflection 3 box and Session 4 step 1.
-  Never commit the plain PDF.
+  Never commit the plain PDF. **Replaced 5 Nov 2026** (Jan Erik: "add this
+  article to download here … replace the old link"): the three `🔒 PDF`
+  links now point at the authors' own copy on ResearchGate
+  (`…/links/656d7129ce88b8703131aefb/Protecting-hidden-infrastructure-….pdf`),
+  with the DOI kept beside it as the version of record. The `.enc` file and
+  the `vault.js` script tags stay (nothing else uses them yet; the vault is
+  still the mechanism for the next paywalled file). ResearchGate answers 403
+  to curl; it serves the PDF to a browser.
