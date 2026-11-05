@@ -157,3 +157,22 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   dimension, conformed dimension, surrogate key, type 2, the three fact
   tables, source-to-target map, GDPR sensitivity). Numbers from `GT`, `GQ`,
   `EX2`, `MEX`. A gold "▶ Slides" button in week4.html's top bar.
+- **week4.html REWRITTEN in plain sentences, 5 Nov 2026 (the day of the
+  session).** Jan Erik: "The grain machine — if this is a row then call it
+  that. redo the whole session … use verbs, call things for what they are,
+  be specific"; "what do you actually want here?"; "make that table below
+  the grain machine show — you should not have to click seal to open it".
+  Every heading, instruction, label, button, sort explanation, check message
+  and alert is now a sentence with a verb. Names: "the grain machine" →
+  Step 2 "Decide what one row of each table stands for" (grain defined there
+  once); "Seal it" → **Lock my guess**; "the mandate" → "What the client asks
+  for"; "outcome KPI" → main KPI; "driver KPI" → secondary KPI (defined);
+  "governance line" → the owner, sensitivity and check columns. Step 2 opens
+  with "Your task" (switch tables on until all six questions have a ✓, with
+  as few tables as possible) and **the six tables show from the start**:
+  `gLab` is no longer `display:none`, `paintGrain()` runs at boot, and
+  `openMachine()` only locks the guess. No id, `data-work` key or storage
+  key changed. Title now "Design the data warehouse: what one row of each
+  table stands for, and where every column comes from" (hub, with a What you
+  learn / What you do blurb), "Designing the data warehouse" in
+  courseprogress.js, presence.js and the quiz; the slides follow.
