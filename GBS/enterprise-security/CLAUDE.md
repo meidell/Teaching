@@ -194,3 +194,21 @@ global `EscWall`; `courseprogress.js` a port).
   would log in. Headless-tested (all four, toggle, injection + normal reject).
   IIG skeleton, reference page (no courseprogress). Linked from the hub, Session
   4's footer and `lab.html`; `demos.html` ↔ `lab.html` cross-link.
+
+- **`code-anatomy.html` — "What the code looks like" (6 Nov 2026).** Jan Erik,
+  after the demos: students ask how the password-trying is coded and what
+  malware looks like — "put up bogey code that still gives the idea". A
+  reference page in two parts, all **illustrative skeleton, nothing runnable**
+  (the one network line and every malware body are left as plain-English
+  comments; a safe-use callout states the legal line). Part 1: the guessing is
+  a `for pw in passwords: try_login(...)` loop — a human types nothing — with
+  the single network line marked in red and NOT written, then "what the server
+  sees" (a login-log burst of failures from one address) and the defences
+  (lockout/MFA/slow hash/log-watching). Part 2: malware as four parts
+  (delivery+trigger · persistence · payload · call-home), each a one-line
+  commented skeleton + "in the wild" + the WannaCry/NotPetya case + "what
+  catches it" (patching, EDR on new services, file-rate monitoring, egress
+  control). Deliberately NO working brute-forcer and NO example malware — the
+  earlier two refusals held; this is the teachable version (shape + detection).
+  Call-home is tied back to demo 3 ("just a socket"). IIG skeleton, reference
+  page. Linked from the hub, Session 4 footer and demos.html.

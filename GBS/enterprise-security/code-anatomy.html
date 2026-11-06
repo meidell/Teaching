@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/enterprise-security/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What the code looks like · the loop and the anatomy of malware · IIG</title>
+<meta name="description" content="Enterprise Security, Cyber Warfare & Asset Protection — what attack code actually looks like: the loop that guesses passwords (and what the server sees), and the four parts every piece of malware is built from, each shown as illustrative skeleton code and paired with how it is detected. No working attack code.">
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#0a2540">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/iig.css">
+<link rel="stylesheet" href="esc.css">
+<style>
+/* "What the code looks like" — reference page. Everything else is esc.css. */
+.safe{border:1.5px solid var(--accent);background:#FBF4E2;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:14px;line-height:1.6;color:var(--ink);}
+.safe b{color:var(--accent-deep);}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+.code{background:#0C1726;border-radius:10px;padding:14px 16px;margin:12px 0;font:13.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#D8E1EC;white-space:pre-wrap;word-break:break-word;overflow-x:auto;}
+.code .c{color:#7E8EA3;}          /* comment */
+.code .k{color:#C9A961;}          /* keyword */
+.code .s{color:#54D98C;}          /* string */
+.code .ar{color:#FF8D7B;}         /* the one dangerous / network line */
+.codecap{font:600 11px Montserrat,system-ui,sans-serif;color:var(--grey);letter-spacing:.7px;text-transform:uppercase;margin:0 0 -4px 2px;}
+.log{background:var(--surface);border:1px solid var(--line);border-left:3px solid #B3402A;border-radius:8px;padding:11px 13px;margin:12px 0;font:12.5px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);white-space:pre-wrap;}
+.log b{color:#7A2414;}
+.lesson{border-left:3px solid var(--accent);padding:4px 0 4px 13px;margin:13px 0;font-size:14px;line-height:1.6;}
+.lesson .t{font-weight:800;color:var(--accent-deep);text-transform:uppercase;letter-spacing:.6px;font-size:11px;display:block;margin-bottom:3px;}
+.defend{background:#E6F3EA;border-radius:8px;padding:10px 13px;margin:12px 0;font-size:13.5px;line-height:1.6;color:#1D5A35;}
+.defend .t{font-weight:800;text-transform:uppercase;letter-spacing:.6px;font-size:11px;display:block;margin-bottom:3px;}
+/* the four parts of malware */
+.part4{border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden;background:#fff;}
+.part4 .ph{background:var(--navy-surface);color:#fff;padding:10px 15px;font:800 14px Cormorant Garamond,Georgia,serif;display:flex;align-items:baseline;gap:9px;}
+.part4 .ph .n{font:800 12px Montserrat,system-ui,sans-serif;color:var(--accent);letter-spacing:.5px;}
+.part4 .pb{padding:13px 16px;font-size:13.5px;line-height:1.6;color:var(--ink);}
+.part4 .pb .sk{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0C1726;color:#D8E1EC;border-radius:7px;padding:9px 12px;margin:2px 0 11px;white-space:pre-wrap;}
+.part4 .pb .sk .c{color:#7E8EA3;} .part4 .pb .sk .k{color:#C9A961;}
+.part4 .pb .row{display:grid;grid-template-columns:116px 1fr;gap:4px 12px;margin-top:7px;}
+.part4 .pb .row .lk{font:800 11px Montserrat,system-ui,sans-serif;color:var(--grey);letter-spacing:.4px;text-transform:uppercase;padding-top:1px;}
+.part4 .pb .row .lk.d{color:#1D5A35;}
+@media(max-width:560px){.part4 .pb .row{grid-template-columns:1fr;gap:1px;}.part4 .pb .row .lk{padding-top:7px;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <picture><source srcset="iig-logo.avif" type="image/avif"><img class="logo" src="iig-logo.png" alt="International Institute in Geneva"></picture>
+  <span class="tb-sess">Session 4 · What the code looks like</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 4 · The arsenal · what the attacker's code actually looks like</div>
+    <h1>What the code looks like</h1>
+    <p class="lead">Two questions come up every time: a person does not sit and type thousands of passwords, so what does the code that does it look like? And when we say "malware", what is actually inside it? This page answers both by showing the <b>shape</b> of the code — enough to understand it — and then, for every part, how a defender sees it. The point you keep is that each piece has a known detection, named beside it.</p>
+  </div>
+
+  <div class="safe">
+    <b>What is on this page, and what is not.</b> The code below is illustrative skeleton: it shows the structure, and every line that would do real harm — the network request, the payload, the way malware copies itself — is left as a plain-English comment, not written out. It is here to be read and understood, not run. Writing or pointing a working version of any of this at a system you do not own is a crime in Switzerland and almost everywhere else; that boundary is part of the profession, not a footnote to it.
+  </div>
+
+  <!-- PART A · THE GUESSING LOOP -->
+  <div class="step">
+    <h2>1 · A person does not type the guesses — a loop does</h2>
+    <p>In demo 1 the guesses appeared one after another. Nobody typed them. The whole "tool" is a short loop: take a list of likely passwords, try each one, stop when one works. That is why the guessing is fast, and it is why the student's instinct — "surely someone notices" — points straight at the defence.</p>
+
+    <div class="codecap">illustrative — the shape of a guessing tool, not a working one</div>
+    <div class="code"><span class="c"># a list of common passwords — real lists hold tens of millions of lines</span>
+passwords = load_list(<span class="s">"common-passwords.txt"</span>)
+
+<span class="k">for</span> pw <span class="k">in</span> passwords:
+    ok = try_login(<span class="s">"arvane_ops"</span>, pw)   <span class="ar"># &lt;-- in a real tool THIS sends one login request</span>
+                                       <span class="ar">#     over the network. We leave it unwritten.</span>
+    <span class="k">if</span> ok:
+        print(<span class="s">"found the password:"</span>, pw)
+        <span class="k">break</span></div>
+
+    <p>Read it once and the whole idea is there. The loop is the attacker. A human types nothing. The only line that reaches the outside world is <span class="mono">try_login(...)</span>, one request per guess — and we deliberately do not write what is inside it, because the loop is the lesson and the request is the weapon. How fast the attack runs is simply how fast that one request comes back, which is set by the <b>server</b>, not by the password box.</p>
+
+    <h3 style="margin-top:16px;">What the server sees</h3>
+    <p>Here is the same attack from the defender's side — the login server's log during one minute of that loop:</p>
+    <div class="log">12:04:01  POST /login  user=arvane_ops  from 203.0.113.9  <b>FAIL</b>
+12:04:01  POST /login  user=arvane_ops  from 203.0.113.9  <b>FAIL</b>
+12:04:01  POST /login  user=arvane_ops  from 203.0.113.9  <b>FAIL</b>
+12:04:01  POST /login  user=arvane_ops  from 203.0.113.9  <b>FAIL</b>
+          … 3,900 more in this minute, all the same account, all from one address …</div>
+    <p>No human logs in four thousand times a minute. The <b>pattern</b> is the detection: many failures, one account, one source, in seconds. A defender does not need to see the attacker's code to catch this; they need to watch their own logs.</p>
+
+    <div class="lesson"><span class="t">The lesson</span>The attack is a loop around one network request. You cannot stop someone writing the loop, so the defence lives where the requests arrive — on the server — and in the log pattern the loop cannot hide.</div>
+    <div class="defend"><span class="t">The defences, in order of effect</span>Lock or slow the account after a few failures (the loop stalls or trips an alert) · require a second factor so a guessed password alone is not enough · store passwords under a slow salted hash so a stolen file is not a shortcut (demo 2) · and watch the logs for the burst above. Any one of these turns the loop from a threat into a line in a report.</div>
+  </div>
+
+  <!-- PART B · ANATOMY OF MALWARE -->
+  <div class="step">
+    <h2>2 · What malware is made of — four parts</h2>
+    <p>"Malware" is not one thing. Almost every piece, from a simple virus to NotPetya, is built from the same four parts. Seeing the parts is what lets you reason about a new one you have never met: you ask which part is which, and each part has a known defence. Below, each part is one line of skeleton — the harmful body replaced by a comment — then how it works in the wild, how it looked in a real case, and what catches it.</p>
+
+    <div class="codecap">illustrative anatomy — every harmful step is left as a comment, not code</div>
+    <div class="code"><span class="c"># This is a LABELLED SKELETON, not a program. Nothing here is implemented.</span>
+
+<span class="k">def</span> deliver():     <span class="c"># how it arrives: an email attachment, a fake update, a USB stick</span>
+    ...
+<span class="k">def</span> persist():     <span class="c"># how it survives a reboot: add itself to the system's startup list</span>
+    ...
+<span class="k">def</span> payload():     <span class="c"># the harmful act: encrypt files, wipe the disk, or steal data</span>
+    ...
+<span class="k">def</span> call_home():   <span class="c"># open ONE outbound connection to the attacker (this is demo 3)</span>
+    ...</div>
+
+    <div class="part4">
+      <div class="ph"><span class="n">PART 1</span> Delivery &amp; trigger — how it gets in, and what sets it off</div>
+      <div class="pb">
+        <div class="sk"><span class="k">def</span> deliver(): <span class="c"># arrive and run: a clicked attachment, a booby-trapped update, a worm that needs no click</span></div>
+        <div class="row"><span class="lk">In the wild</span><span>Most malware is invited in: someone opens an attachment or runs a fake installer. The dangerous kind is a <b>worm</b>, which uses a software flaw to spread with no click at all.</span></div>
+        <div class="row"><span class="lk">In WannaCry</span><span>May 2017. No click. It used a Windows network flaw (EternalBlue) to copy itself from one unpatched machine to the next, across the world in hours.</span></div>
+        <div class="row"><span class="lk d">What catches it</span><span>Patching the flaw it rides (Part 1 of the patch-gap lesson) · blocking macros and unknown attachments · controlling USB devices · network segments so one infected machine cannot reach every other.</span></div>
+      </div>
+    </div>
+
+    <div class="part4">
+      <div class="ph"><span class="n">PART 2</span> Persistence — how it survives a reboot</div>
+      <div class="pb">
+        <div class="sk"><span class="k">def</span> persist(): <span class="c"># register to run at every startup — a service, a scheduled task, a startup entry</span></div>
+        <div class="row"><span class="lk">In the wild</span><span>A reboot clears a program from memory. To last, malware writes itself into one of the handful of places the system runs automatically at boot — a service, a scheduled task, a registry startup key.</span></div>
+        <div class="row"><span class="lk">In WannaCry</span><span>It installed itself as a Windows <b>service</b> so it restarted with the machine and kept encrypting.</span></div>
+        <div class="row"><span class="lk d">What catches it</span><span>EDR (endpoint detection) watches exactly these startup locations and flags a <b>new</b> service or task that no admin created — one of the loudest signals a defender has.</span></div>
+      </div>
+    </div>
+
+    <div class="part4">
+      <div class="ph"><span class="n">PART 3</span> Payload — the harmful act</div>
+      <div class="pb">
+        <div class="sk"><span class="k">def</span> payload(): <span class="c"># the point of the whole thing: encrypt files for ransom, wipe the disk, or quietly steal data</span></div>
+        <div class="row"><span class="lk">In the wild</span><span>The payload is why the malware exists. Ransomware encrypts your files and sells back the key. A wiper destroys them. Spyware copies data out. Same anatomy, different payload.</span></div>
+        <div class="row"><span class="lk">In WannaCry</span><span>Ransomware: it encrypted documents on each machine and demanded about $300 in Bitcoin. <b>NotPetya</b> (the course's running case) looked identical but its payload was a <b>wiper</b> — it never meant to give the files back.</span></div>
+        <div class="row"><span class="lk d">What catches it</span><span>The payload is fast and visible: thousands of files changed in seconds, unusual disk writes, backups being deleted. EDR and file-monitoring flag the rate. Offline backups are what let you recover anyway.</span></div>
+      </div>
+    </div>
+
+    <div class="part4">
+      <div class="ph"><span class="n">PART 4</span> Call-home (command &amp; control) — the connection back</div>
+      <div class="pb">
+        <div class="sk"><span class="k">def</span> call_home(): <span class="c"># open one outbound connection to the attacker — report in, fetch orders, send stolen data</span></div>
+        <div class="row"><span class="lk">In the wild</span><span>Most malware phones home: to report it landed, to fetch the next instruction, or to send data out. Mechanically this is <b>exactly</b> demo 3 — one outbound socket. The malicious part is not clever; it is the direction and the destination.</span></div>
+        <div class="row"><span class="lk">In WannaCry</span><span>It checked for a specific web address first — the "kill switch" a researcher registered, which stopped the outbreak. Other malware uses this same channel to take live orders from the attacker.</span></div>
+        <div class="row"><span class="lk d">What catches it</span><span>Egress firewall rules (which machines may call out, and to where) · alerts on a connection to a brand-new or odd destination · a document viewer that suddenly opens a socket. You watch the connection, because the connection is simple.</span></div>
+      </div>
+    </div>
+
+    <div class="lesson"><span class="t">The lesson</span>You do not memorise viruses; you read a new one in four questions — how did it get in, how does it survive, what does it do, where does it call. Each answer points at a defence you already have. That is why the anatomy matters more than any one sample.</div>
+    <div class="defend"><span class="t">Where the chain breaks</span>Patching closes Part 1. EDR catches Parts 2 and 3. Egress control and network monitoring catch Part 4. Offline backups undo Part 3 even if everything else fails. No single control is enough, and none has to be — the attacker needs all four parts to work; the defender needs to break one.</div>
+  </div>
+
+  <div class="step">
+    <h2>Close · back to the arsenal</h2>
+    <p>You have now seen the two things the demos could not show on their own: the loop that drives the guessing, and the four parts inside the word "malware". Run the attacks again with this in mind — the <a href="demos.html">browser demos</a> or the <a href="lab.html">real terminal lab</a> — and each one is no longer a trick but a mechanism with a named defence.</p>
+    <div class="foot"><a href="index.html">← Course</a> · <a href="week4.html">Session 4 · The arsenal</a> · <a href="demos.html">Run the demos</a> · © 2026 Jan Erik Meidell · International Institute in Geneva</div>
+  </div>
+
+</div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
