@@ -28,7 +28,6 @@
                                  open it, reply, or mark it handled)
       <ns>/_roster?shallow     → how many students registered
       <ns>/_presence_now       → is a presence window open right now
-      <ns>/_submissions?shallow→ how many students have handed something in
   then, in a second, slower pass (two at a time, cached 15 min in
   sessionStorage, re-read with ↻):
       <ns>                     → every student's node, for the PROGRESS
@@ -116,6 +115,9 @@ td.c,th.c{text-align:center;}
 .links a{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;text-decoration:none;color:var(--a-ink2);border:1px solid var(--a-line);border-radius:7px;padding:3px 8px;white-space:nowrap;background:var(--a-card);}
 .links a .ic{width:12px;height:12px;color:var(--a-grey);}
 .links a:hover{border-color:var(--a-accent-line);color:var(--a-accent);} .links a:hover .ic{color:var(--a-accent);}
+.links a.hot{background:#FFFBEB;border-color:rgba(180,83,9,.55);color:#92400E;} .links a.hot .ic{color:#B45309;}
+.links a.hot .n{background:#B45309;color:#fff;border-radius:9px;padding:0 6px;font-size:10.5px;line-height:16px;margin-left:2px;}
+.links a.live{background:#B91C1C;border-color:#B91C1C;color:#fff;} .links a.live .ic{color:#fff;}
 .links a.main{background:var(--a-accent);color:#fff;border-color:var(--a-accent);} .links a.main .ic{color:#fff;}
 .dim{color:var(--a-faint);}
 .ld::after{content:"…";color:var(--a-faint);}
@@ -168,7 +170,7 @@ details.arch summary{cursor:pointer;font-size:12.5px;color:var(--a-grey);font-we
 <div class="wrap">
   <div class="awarn" id="warn" style="display:none"></div>
 
-  <div class="asec">Now <small id="nowLbl"></small></div>
+  <div class="asec" id="nowHd" style="display:none">Needs attention</div>
   <div class="now" id="now"></div>
 
   <div class="asec">This week <small id="weekLbl"></small></div>
@@ -266,8 +268,6 @@ async function readCourse(c){
   ];
   if((c.features||[]).indexOf('presence')>=0)
     jobs.push(get(c.ns+'/_presence_now').then(function(j){s.pres=presenceOpen(j);}));
-  if(c.handins||(c.features||[]).indexOf('workbook')>=0)
-    jobs.push(get(c.ns+'/_submissions','shallow=true').then(function(j){s.handed=j?Object.keys(j).length:0;}));
   var res=await Promise.allSettled(jobs);
   s.failed=res.filter(function(r){return r.status==='rejected';}).length;
   s.at=Date.now();
@@ -360,19 +360,10 @@ function drawNow(){
   });
   var nWait=wait.reduce(function(a,x){return a+x.n;},0);
   wait.sort(function(a,b){return b.n-a.n;});
-  var h='<div class="nowc acard'+(nWait?' hot':'')+'"><div class="h">'+ic('inbox')+'Messages waiting for an answer<span class="v">'+nWait+'</span></div>'+
-    (wait.length?'<div class="chips">'+wait.map(function(x){
-      return '<a class="chip" href="/shared/chat.html?course='+encodeURIComponent(x.c.id)+'"><span class="c">'+esc(x.c.code||x.c.id)+'</span><span class="k">'+x.n+' waiting</span>'+ic('right')+'</a>';}).join('')+
-      '<a class="chip" href="/shared/inbox.html">'+ic('inbox')+'Open the inbox</a></div>'
-     :'<div class="none">'+(read<withNs?'Reading…':'<b>Nothing is waiting.</b> Every student message has been seen.')+'</div>')+'</div>';
-  h+='<div class="nowc acard'+(open.length?' live':'')+'"><div class="h">'+ic('presence')+'Presence windows open now<span class="v">'+open.length+'</span></div>'+
-    (open.length?'<div class="chips">'+open.map(function(x){
-      return '<a class="chip" href="/shared/admin2.html?course='+encodeURIComponent(x.c.id)+'#presence"><span class="c">'+esc(x.c.code||x.c.id)+'</span><span class="l">● open</span><small>'+esc(x.p.label||x.p.mod||'')+(x.p._g?' · '+esc(x.p._g):'')+'</small>'+ic('right')+'</a>';}).join('')+'</div>'
-     :'<div class="none">'+(read<withNs?'Reading…':'No window is open. A window opens from a course\'s dashboard → Presence, and students mark themselves while it is.')+'</div>')+'</div>';
+  var h='';
   if(miss.length)h+='<div class="nowc acard bad"><div class="h">'+ic('alert')+'Database rules not published<span class="v">'+miss.length+'</span></div><div class="chips">'+miss.map(function(c){
       return '<span class="chip" title="The '+esc(c.ns)+' block is in firebase-database-rules.json but not in the deployed rules: publish the file in the Firebase console"><span class="c">'+esc(c.code||c.id)+'</span><span class="l">'+esc(c.ns)+'</span></span>';}).join('')+'</div></div>';
-  $('now').innerHTML=h;
-  $('nowLbl').textContent=stud+' registered students across '+withNs+' courses with data';
+  $('now').innerHTML=h; $('nowHd').style.display=h?'':'none';
   if(window.AdminUI)AdminUI.badge($('hInbox'),nWait);
   document.title=(nWait?'('+nWait+') ':'')+'Admin · janerikmeidell.com';
 }
@@ -387,14 +378,14 @@ function drawAll(){
     var home=SCHOOL_HOME[k], stud=0; live.forEach(function(c){stud+=(ST[c.id]||{}).students||0;});
     return '<div class="school acard"><div class="shd"><h2>'+ic('school')+esc(k)+'</h2><span class="meta">'+live.length+' course'+(live.length===1?'':'s')+(stud?' · '+stud+' students':'')+'</span><span class="sp"></span>'+
       (home?'<a class="ab sm ghost" href="'+home+'">School page '+ic('external')+'</a>':'')+'</div>'+
-      '<table class="ct">'+COLS+'<thead><tr><th>Course</th><th class="c">Students</th><th>Progress</th><th class="hide-s">Active</th><th class="c hide-s">Handed in</th></tr></thead><tbody>'+
+      '<table class="ct">'+COLS+'<thead><tr><th>Course</th><th class="c">Students</th><th>Progress</th><th class="hide-s">Active</th></tr></thead><tbody>'+
       live.slice().sort(byPeriod).map(row).join('')+'</tbody></table>'+
       (arch.length?'<details class="arch" style="padding:0 16px 8px"><summary>'+arch.length+' archived</summary><table class="ct">'+COLS+'<tbody>'+arch.map(row).join('')+'</tbody></table></details>':'')+
       '</div>';
   }).join('');
   if(window.AdminUI)AdminUI.icons();
 }
-var COLS='<colgroup><col><col class="n"><col class="p"><col class="a hide-s"><col class="n hide-s"></colgroup>';
+var COLS='<colgroup><col><col class="n"><col class="p"><col class="a hide-s"></colgroup>';
 var PRANK={now:0,soon:1,unknown:2,open:3,later:3,ended:4};
 function byPeriod(a,b){ if(!window.CoursePeriod)return 0; return (PRANK[CoursePeriod.of(a).state]||0)-(PRANK[CoursePeriod.of(b).state]||0); }
 function cell(v,load){return v==null?(load?'<span class="ld"></span>':'<span class="dim">—</span>'):v;}
@@ -422,8 +413,13 @@ function row(c){
   var links='<a class="main" href="'+esc(home)+'">'+ic('home')+'Course</a>';
   if(c.ns){
     links+='<a href="/shared/admin2.html?course='+id+'">'+ic('dashboard')+'Dashboard</a>';
-    if(f.indexOf('presence')>=0)links+='<a href="/shared/admin2.html?course='+id+'#presence">'+ic('presence')+'Presence</a>';
-    links+='<a href="/shared/chat.html?course='+id+'">'+ic('chat')+'Messages</a><a href="/shared/insights.html?course='+id+'">'+ic('insights')+'Insights</a><a href="/shared/board.html?course='+id+'">'+ic('board')+'Board</a>';
+    if(f.indexOf('presence')>=0)links+=s.pres
+      ?'<a class="live" href="/shared/admin2.html?course='+id+'#presence" title="A presence window is open now'+esc(s.pres.label||s.pres.mod?': '+(s.pres.label||s.pres.mod):'')+'">'+ic('presence')+'Presence · open now</a>'
+      :'<a href="/shared/admin2.html?course='+id+'#presence">'+ic('presence')+'Presence</a>';
+    links+=(s.waiting
+      ?'<a class="hot" href="/shared/chat.html?course='+id+'" title="'+s.waiting+' thread'+(s.waiting===1?'':'s')+' with a student message you have not opened">'+ic('chat')+'Messages<span class="n">'+s.waiting+'</span></a>'
+      :'<a href="/shared/chat.html?course='+id+'">'+ic('chat')+'Messages</a>')+
+      '<a href="/shared/insights.html?course='+id+'">'+ic('insights')+'Insights</a>';
   }
   var meta=[c.term,(c.schedule||{}).day,(c.schedule||{}).time,st].filter(Boolean).join(' · ');
   return '<tr class="'+PD.cls.trim()+'"><td><div class="cn"><div class="t1"><span class="ahd-code">'+esc(c.code||c.id)+'</span><span class="tt">'+esc(title(c))+'</span></div>'+
@@ -431,8 +427,7 @@ function row(c){
     '<div class="links">'+links+'</div></div></td>'+
     '<td class="c num">'+(c.ns?cell(s.students,load):'<span class="dim" title="No namespace: this course stores no student data">no data</span>')+'</td>'+
     '<td>'+progCell(c)+'</td>'+
-    '<td class="hide-s">'+actCell(c)+'</td>'+
-    '<td class="c hide-s num">'+cell(s.handed,load&&(c.handins||f.indexOf('workbook')>=0))+'</td></tr>';
+    '<td class="hide-s">'+actCell(c)+'</td></tr>';
 }
 
 var BUSY=false, PBUSY=false;
