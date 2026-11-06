@@ -193,7 +193,15 @@ global `EscWall`; `courseprogress.js` a port).
   glued-in query, the parameterised version rejects it; a real account name
   would log in. Headless-tested (all four, toggle, injection + normal reject).
   IIG skeleton, reference page (no courseprogress). Linked from the hub, Session
-  4's footer and `lab.html`; `demos.html` ↔ `lab.html` cross-link.
+  4's footer and `lab.html`; `demos.html` ↔ `lab.html` cross-link. **6 Nov 2026
+  the hashing demo (section 2) gained a make-a-hash-and-crack-it widget** (Jan
+  Erik: "add a small hash generator so that they can produce a hash and guess a
+  very simple password"): `#d2pw` → *Make its hash* shows the real SHA-256
+  (`sha256hex` via WebCrypto), *Crack the hash* loops the `CRACKLIST` of 20
+  common passwords, hashing each and comparing to the target — a weak one is
+  recovered (never reversed), a password not on the list honestly reports "did
+  not crack". The point is the password↔hash connection, and that a slow hash
+  helps only by making each of those guesses cost more.
 
 - **`code-anatomy.html` — "What the code looks like" (6 Nov 2026).** Jan Erik,
   after the demos: students ask how the password-trying is coded and what
