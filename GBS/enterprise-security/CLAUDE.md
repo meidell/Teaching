@@ -157,3 +157,23 @@ global `EscWall`; `courseprogress.js` a port).
   the `vault.js` script tags stay (nothing else uses them yet; the vault is
   still the mechanism for the next paywalled file). ResearchGate answers 403
   to curl; it serves the PDF to a browser.
+
+- **`lab.html` + `lab/` — live terminal demos (6 Nov 2026).** Jan Erik: a
+  screen-shared Mac demo "to show how hackers connect, exploit, try out
+  passwords". Four **pure-stdlib, localhost-only** Python scripts (macOS ships
+  Python 3, no pip, no network) that run the Session 4 weapons for real, each
+  paired with its defence: `demo1_passwords.py` (in-process guessing sim vs a
+  toy account; `--defended` adds PBKDF2 + lockout-at-5 — attacker and victim
+  are the SAME process, deliberately not a network brute-forcer), `demo2_hashing.py`
+  (SHA-256 vs PBKDF2-200k guesses/sec on the room's laptop; small slow-hash
+  sample scaled to a rate so it finishes in ~10 s), `demo3_connection.py`
+  (two terminals, `listen`/`connect`, a text relay on `127.0.0.1:65432` —
+  port 9000 was already taken on the Mac; **deliberately NOT wired to a shell**,
+  and the code/README say so as the lesson), `demo4_sqli.py` (`' OR '1'='1' --`
+  against an in-memory sqlite table, glued-in query vs parameterised). All four
+  tested here. `lab.html` is the IIG-skeleton instructor run sheet (safety rule
+  callout "every target is this laptop", command/output/lesson/defence +
+  download per demo); a reference page, NOT a counted session (no
+  courseprogress/`total`). Linked from the hub's "Course reference" list and
+  Session 4's footer. Safe to be public: every script is non-weaponizable by
+  design.
