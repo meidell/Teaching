@@ -177,3 +177,20 @@ global `EscWall`; `courseprogress.js` a port).
   courseprogress/`total`). Linked from the hub's "Course reference" list and
   Session 4's footer. Safe to be public: every script is non-weaponizable by
   design.
+
+- **`demos.html` — the four demos run in the BROWSER (6 Nov 2026).** Jan Erik:
+  "is there a way to present them as demos on the site for students?". A
+  student-facing page: each of the four `lab/` scripts as an animated terminal
+  (mac-dot titlebar, ▶ Run, output types out line by line), all client-side,
+  nothing touches a network. Demo 1 mirrors the script with a Defences off/on
+  segmented toggle (locks out at 5). Demo 2 **really measures** on the viewer's
+  device via WebCrypto (SHA-256 batch vs PBKDF2-200k) — browser async overhead
+  makes the ratio smaller than the Python's (~few-thousand× not 130k×), so the
+  lesson text says "a huge factor", not a number. Demo 3 animates the two panes
+  (listener/caller) and the "never wired to a shell" line. Demo 4 is interactive:
+  a username box (default `' OR '1'='1' --`) feeds a compact in-page WHERE
+  matcher (`whereMatch`/`atom`/`sidev`) — the injection logs in against the
+  glued-in query, the parameterised version rejects it; a real account name
+  would log in. Headless-tested (all four, toggle, injection + normal reject).
+  IIG skeleton, reference page (no courseprogress). Linked from the hub, Session
+  4's footer and `lab.html`; `demos.html` ↔ `lab.html` cross-link.

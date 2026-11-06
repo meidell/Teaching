@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/enterprise-security/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The arsenal · run it in the browser · IIG</title>
+<meta name="description" content="Enterprise Security, Cyber Warfare & Asset Protection — four attacks you run in a terminal in the browser: guessing weak passwords, cracking a stolen password file, what a connection is, and SQL injection. Each one is a safe simulation, and each is paired with the defence that stops it.">
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#0a2540">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/iig.css">
+<link rel="stylesheet" href="esc.css">
+<style>
+/* Student-facing "run it in the browser" page. Everything else is esc.css. */
+.safe{border:1.5px solid var(--accent);background:#FBF4E2;border-radius:12px;padding:14px 16px;margin:16px 0;font-size:14px;line-height:1.6;color:var(--ink);}
+.safe b{color:var(--accent-deep);}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+
+/* the terminal */
+.term{background:#0C1726;border-radius:11px;overflow:hidden;margin:12px 0;border:1px solid #0A1420;box-shadow:0 2px 14px rgba(10,20,40,.18);}
+.term .bar{background:#13233A;padding:8px 13px;display:flex;align-items:center;gap:7px;border-bottom:1px solid #0A1420;}
+.term .bar i{width:11px;height:11px;border-radius:50%;display:inline-block;}
+.term .bar .r{background:#FF5F57;} .term .bar .y{background:#FEBC2E;} .term .bar .g{background:#28C840;}
+.term .bar .lbl{margin-left:8px;font:600 12px Montserrat,system-ui,sans-serif;color:#7E8EA3;letter-spacing:.3px;}
+.term .body{font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#D8E1EC;padding:13px 15px;min-height:64px;max-height:340px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;}
+.term .body .pr{color:#C9A961;}           /* prompt / command */
+.term .body .ok{color:#54D98C;}           /* good / match */
+.term .body .bad{color:#FF8D7B;}          /* attack succeeds / danger */
+.term .body .dim{color:#7E8EA3;}          /* comment / note */
+.term .body .inj{background:#7A2414;color:#fff;border-radius:2px;padding:0 1px;}
+.term .body .cur{display:inline-block;width:8px;height:15px;background:#D8E1EC;vertical-align:-2px;animation:bl 1s steps(1) infinite;}
+@keyframes bl{50%{opacity:0;}}
+
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+.runbtn{font:800 13px Montserrat,system-ui,sans-serif;color:#0a2540;background:var(--accent);border:none;border-radius:8px;padding:9px 16px;cursor:pointer;letter-spacing:.3px;}
+.runbtn:hover{filter:brightness(1.05);} .runbtn:disabled{opacity:.5;cursor:default;}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;}
+.seg button{font:700 12.5px Montserrat,system-ui,sans-serif;border:none;background:#fff;color:var(--grey);padding:8px 13px;cursor:pointer;}
+.seg button.on{background:var(--navy-surface);color:#fff;}
+.ginj{font:13.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;border:1.5px solid var(--line);border-radius:8px;padding:8px 11px;color:var(--ink);background:#fff;flex:1;min-width:220px;}
+.ginj:focus{outline:none;border-color:var(--accent);}
+
+.lesson{border-left:3px solid var(--accent);padding:4px 0 4px 13px;margin:13px 0 4px;font-size:14px;line-height:1.6;}
+.lesson .t{font-weight:800;color:var(--accent-deep);text-transform:uppercase;letter-spacing:.6px;font-size:11px;display:block;margin-bottom:3px;}
+.defend{background:#E6F3EA;border-radius:8px;padding:10px 13px;margin:10px 0 0;font-size:13.5px;line-height:1.6;color:#1D5A35;}
+.defend .t{font-weight:800;text-transform:uppercase;letter-spacing:.6px;font-size:11px;display:block;margin-bottom:3px;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:640px){.two{grid-template-columns:1fr;}}
+.lblm{display:block;font:700 11px Montserrat,system-ui,sans-serif;color:var(--grey);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <picture><source srcset="iig-logo.avif" type="image/avif"><img class="logo" src="iig-logo.png" alt="International Institute in Geneva"></picture>
+  <span class="tb-sess">The arsenal · run it</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 4 · The arsenal · run each attack in your browser</div>
+    <h1>The arsenal, running in a terminal</h1>
+    <p class="lead">Four of the attacks from Session 4, each one a terminal you run with a button. You watch the attack work, then the single change that stops it. Nothing here touches a real system or a network — every panel is a safe simulation running inside this page. The point to keep is not the trick; it is that the defence beside it is small, specific and known.</p>
+  </div>
+
+  <div class="safe">
+    <b>Why this is safe, and the rule it stands for.</b> These panels only pretend — they compute their output inside your browser and reach nothing outside it. In real life you run tools like these only against systems you own or have written permission to test. That boundary is the professional lesson as much as any attack on the page.
+  </div>
+
+  <!-- 1 · PASSWORDS -->
+  <div class="step">
+    <h2>1 · Guessing a weak password</h2>
+    <p>One account, a password a person chose. The attacker tries a short list of the most common weak passwords. Switch the defences on and run it again: the same guesses now get locked out.</p>
+    <div class="ctrl" style="margin-bottom:8px;">
+      <span class="seg" id="d1seg">
+        <button class="on" data-def="0">Defences off</button>
+        <button data-def="1">Defences on</button>
+      </span>
+    </div>
+    <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">python3 demo1_passwords.py</span></div><div class="body" id="d1"><span class="dim">Press Run to start the guessing.</span></div></div>
+    <div class="ctrl"><button class="runbtn" id="d1run">▶ Run</button></div>
+    <div class="lesson"><span class="t">The lesson</span>The guessing is identical both times. Only the victim's settings change. You cannot stop an attacker from guessing — you make each guess cost more and cap how many they get.</div>
+    <div class="defend"><span class="t">The defence</span>A slow, salted password hash; a lockout or rate-limit after a few wrong tries; and passwords long enough that a common-word list never contains them.</div>
+  </div>
+
+  <!-- 2 · HASHING -->
+  <div class="step">
+    <h2>2 · Cracking a stolen password file</h2>
+    <p>A breach hands the attacker the hashes, not the passwords. How fast they turn hashes back into passwords depends only on how the defender stored them. This measures the speed on <b>your own device</b>, right now.</p>
+    <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">python3 demo2_hashing.py</span></div><div class="body" id="d2"><span class="dim">Press Run — it measures for a few seconds.</span></div></div>
+    <div class="ctrl"><button class="runbtn" id="d2run">▶ Run</button></div>
+    <div class="lesson"><span class="t">The lesson</span>Same stolen file, same attacker, same device. The defender's one choice — a fast hash or a slow salted one — moves the answer by a huge factor.</div>
+    <div class="defend"><span class="t">The defence</span>Never store passwords in the clear or under a plain fast hash. Store them salted, under a deliberately slow hash (PBKDF2, bcrypt, scrypt, Argon2), with the work factor turned up.</div>
+  </div>
+
+  <!-- 3 · CONNECTION -->
+  <div class="step">
+    <h2>3 · What "a connection" actually is</h2>
+    <p>One machine waits for a call; the other calls out; text passes between them. A command-and-control beacon — the thing malware opens once it lands — is, mechanically, exactly this.</p>
+    <div class="two">
+      <div><span class="lblm">The machine that waits</span>
+        <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">listen</span></div><div class="body" id="d3a" style="min-height:130px"><span class="dim">—</span></div></div></div>
+      <div><span class="lblm">The machine that calls out</span>
+        <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">connect</span></div><div class="body" id="d3b" style="min-height:130px"><span class="dim">—</span></div></div></div>
+    </div>
+    <div class="ctrl"><button class="runbtn" id="d3run">▶ Run</button></div>
+    <div class="lesson"><span class="t">The lesson</span>The only difference between this harmless chat and a weapon is whether the far end is wired to a shell. This demo deliberately is not — that is the line between a demonstration and an attack tool, and naming it is half the lesson.</div>
+    <div class="defend"><span class="t">The defence</span>The malicious part is not clever; it is one outbound connection. So the defences watch the connection itself: egress firewall rules (which machines may call out, and to where) and EDR that flags a document viewer suddenly opening a socket.</div>
+  </div>
+
+  <!-- 4 · SQL INJECTION -->
+  <div class="step">
+    <h2>4 · SQL injection — walk past the login</h2>
+    <p>Type something into the username box where a login expects a name, then run it. You will see the same input two ways: glued straight into the database query, and passed as a parameter. The classic input is already filled in; try your own.</p>
+    <div class="ctrl" style="margin-bottom:8px;">
+      <input class="ginj" id="d4in" value="' OR '1'='1' --" spellcheck="false" autocomplete="off" aria-label="attacker username">
+      <button class="runbtn" id="d4run">▶ Run</button>
+    </div>
+    <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">python3 demo4_sqli.py</span></div><div class="body" id="d4"><span class="dim">Type a username above and press Run.</span></div></div>
+    <div class="lesson"><span class="t">The lesson</span>In the first query the apostrophe ends the username and <span class="mono">OR '1'='1'</span> makes every row match, so the first user is logged in with no password. In the second the input is only ever data. One line of code is the entire difference.</div>
+    <div class="defend"><span class="t">The defence</span>Never build a query by pasting user input into a string. Pass input as parameters (prepared statements), so the database treats it as data and never as part of the command.</div>
+  </div>
+
+  <div class="step">
+    <h2>Close · put each one back on the kill chain</h2>
+    <p>Each attack has a place on the chain: stolen passwords and injection are how the attacker gets in; the connection is how they stay and reach back out; the defences beside each one are where the chain breaks. You have now watched the break happen, not just read that it can.</p>
+    <div class="foot"><a href="index.html">← Course</a> · <a href="week4.html">Session 4 · The arsenal</a> · <a href="lab.html">Run these in a real terminal</a> · © 2026 Jan Erik Meidell · International Institute in Geneva</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+
+  // ---- the terminal typewriter ----------------------------------------
+  // lines: array of {h:htmlString, d:delayAfterMs}. Appends one per tick.
+  function play(bodyEl, lines, btns, done){
+    btns.forEach(function(b){b.disabled=true;});
+    bodyEl.innerHTML="";
+    var i=0;
+    (function step(){
+      if(i>=lines.length){
+        btns.forEach(function(b){b.disabled=false;});
+        if(done)done();
+        return;
+      }
+      var ln=lines[i++];
+      var div=document.createElement("div");
+      div.innerHTML=ln.h;
+      bodyEl.appendChild(div);
+      bodyEl.scrollTop=bodyEl.scrollHeight;
+      setTimeout(step, ln.d==null?150:ln.d);
+    })();
+  }
+  function L(h,d){return {h:h,d:d};}
+
+  // ---- 1 · passwords ---------------------------------------------------
+  var GUESSES=["123456","password","qwerty","letmein","admin","welcome",
+    "monkey","dragon","football","iloveyou","Summer2023","Spring2024",
+    "Summer2024","Autumn2024","P@ssw0rd"];
+  var REAL="Summer2024", d1def=0;
+  var d1seg=$("d1seg");
+  d1seg.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b)return;
+    [].forEach.call(d1seg.children,function(x){x.classList.remove("on");});
+    b.classList.add("on"); d1def=+b.getAttribute("data-def");
+  });
+  $("d1run").addEventListener("click",function(){
+    var MAXTRIES=d1def?5:999, lines=[];
+    lines.push(L('<span class="pr">$ python3 demo1_passwords.py'+(d1def?' --defended':'')+'</span>',250));
+    lines.push(L('  target account : arvane_ops',200));
+    lines.push(L('  defences       : '+(d1def?'<span class="ok">ON  (slow hash · lockout after 5)</span>':'<span class="bad">OFF (fast hash · no lockout)</span>'),350));
+    lines.push(L('  '+'-'.repeat(44),200));
+    var found=false;
+    for(var i=0;i<GUESSES.length;i++){
+      var n=i+1;
+      if(n>MAXTRIES){
+        lines.push(L('  '+'-'.repeat(44),120));
+        lines.push(L('  <span class="ok">&gt;&gt; account LOCKED after 5 wrong tries.</span>',150));
+        lines.push(L('  <span class="ok">   the attacker never reached guess #'+n+'. password never found.</span>',150));
+        break;
+      }
+      var g=GUESSES[i], hit=(g===REAL);
+      lines.push(L('  try '+(n<10?' ':'')+n+': '+esc(g)+' '.repeat(Math.max(1,13-g.length))+(hit?'<span class="bad">OK  &lt;== MATCH</span>':'<span class="dim">no</span>'),hit?250:170));
+      if(hit){
+        lines.push(L('  '+'-'.repeat(44),120));
+        lines.push(L('  <span class="bad">&gt;&gt; cracked in '+n+' guesses.</span> a real list runs millions a second.',150));
+        found=true; break;
+      }
+    }
+    play($("d1"),lines,[$("d1run")]);
+  });
+
+  // ---- 2 · hashing speed (measured for real via WebCrypto) ------------
+  async function measure(){
+    var enc=new TextEncoder();
+    // fast: time a batch of SHA-256 digests
+    var N=3000, t0=performance.now();
+    for(var i=0;i<N;i++){ await crypto.subtle.digest("SHA-256", enc.encode("guess"+i)); }
+    var fast=N/((performance.now()-t0)/1000);
+    // slow: time a few PBKDF2(200k) derivations
+    var M=12; t0=performance.now();
+    for(var j=0;j<M;j++){
+      var key=await crypto.subtle.importKey("raw",enc.encode("guess"+j),{name:"PBKDF2"},false,["deriveBits"]);
+      await crypto.subtle.deriveBits({name:"PBKDF2",salt:enc.encode("saltsalt"),iterations:200000,hash:"SHA-256"},key,256);
+    }
+    var slow=M/((performance.now()-t0)/1000);
+    return {fast:fast, slow:slow};
+  }
+  $("d2run").addEventListener("click",function(){
+    var btn=$("d2run"); btn.disabled=true;
+    $("d2").innerHTML='<div><span class="pr">$ python3 demo2_hashing.py</span></div><div class="dim">  measuring on your device…</div>';
+    var go = (crypto.subtle ? measure() : Promise.resolve({fast:1400000,slow:11}));
+    go.then(function(r){
+      var factor=r.slow?r.fast/r.slow:0;
+      var lines=[
+        L('<span class="pr">$ python3 demo2_hashing.py</span>',250),
+        L('  attacker has the hash file. how fast can they guess through it?',250),
+        L('  '+'-'.repeat(50),200),
+        L('  fast hash  (SHA-256)      '+Math.round(r.fast).toLocaleString()+' guesses / second',400),
+        L('  slow hash  (PBKDF2 200k)  '+Math.round(r.slow).toLocaleString()+' guesses / second',400),
+        L('  '+'-'.repeat(50),200),
+        L('  <span class="ok">the slow hash is about '+Math.round(factor).toLocaleString()+'x harder to guess through.</span>',200),
+        L('  <span class="dim">same stolen file. the storage choice is the whole game.</span>',150)
+      ];
+      play($("d2"),lines,[btn]);
+    }).catch(function(){
+      btn.disabled=false;
+      $("d2").innerHTML='<div class="dim">  (your browser blocked the measurement — the point stands: a slow salted hash is tens of thousands of times harder to crack than a fast one.)</div>';
+    });
+  });
+
+  // ---- 3 · the connection ---------------------------------------------
+  $("d3run").addEventListener("click",function(){
+    var A=$("d3a"), B=$("d3b"), btn=$("d3run"); btn.disabled=true;
+    A.innerHTML=""; B.innerHTML="";
+    function put(el,h){var d=document.createElement("div");d.innerHTML=h;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+    var steps=[
+      function(){put(A,'<span class="dim">[listener] waiting on 127.0.0.1:65432 …</span>');},
+      function(){put(B,'<span class="dim">[caller] calling out to 127.0.0.1:65432 …</span>');},
+      function(){put(A,'<span class="ok">[listener] a connection arrived.</span>');put(B,'<span class="ok">[caller] connected.</span>');},
+      function(){put(B,'<span class="pr">you &gt; are you there?</span>');},
+      function(){put(A,'  them &gt; are you there?');},
+      function(){put(A,'<span class="pr">you &gt; yes — sending the file list</span>');},
+      function(){put(B,'  them &gt; yes — sending the file list');},
+      function(){put(A,'<span class="dim">  (this demo carries only text — it is never wired to a shell.)</span>');}
+    ];
+    var k=0;(function tick(){ if(k>=steps.length){btn.disabled=false;return;} steps[k++](); setTimeout(tick,650); })();
+  });
+
+  // ---- 4 · SQL injection (real mini matcher) --------------------------
+  var USERS=[{name:"arvane_ops",password:"Summer2024",role:"operator"},
+             {name:"admin",password:"9f3$Kx!2qL",role:"administrator"}];
+  function sidev(s,row){
+    s=s.trim();
+    if(s.charAt(0)==="'"){ return s.replace(/^'/,"").replace(/'$/,""); }
+    if(Object.prototype.hasOwnProperty.call(row,s)) return String(row[s]);
+    return s;
+  }
+  function atom(a,row){ var m=a.match(/^(.+?)=(.+)$/); if(!m)return false; return sidev(m[1],row)===sidev(m[2],row); }
+  function whereMatch(expr,row){
+    return expr.split(/\bOR\b/i).some(function(o){
+      return o.split(/\bAND\b/i).every(function(a){ return atom(a.trim(),row); });
+    });
+  }
+  function vulnRows(user,pw){
+    var where="name = '"+user+"' AND password = '"+pw+"'";
+    var cut=where.indexOf("--"); if(cut>=0) where=where.slice(0,cut);
+    try{ return USERS.filter(function(r){return whereMatch(where,r);}); }catch(e){ return []; }
+  }
+  $("d4run").addEventListener("click",function(){
+    var user=$("d4in").value, pw="anything";
+    var hasComment=user.indexOf("--")>=0;
+    var vq='SELECT name, role FROM users WHERE name = \'<span class="inj">'+esc(user)+'</span>\''
+         + (hasComment?' <span class="dim">AND password = … (ignored after --)</span>'
+                      :' AND password = \''+esc(pw)+'\'');
+    var rows=vulnRows(user,pw);
+    var paramOk=USERS.some(function(r){return r.name===user && r.password===pw;});
+    var lines=[
+      L('<span class="pr">$ python3 demo4_sqli.py</span>',250),
+      L('  attacker username : <span class="inj">'+esc(user)+'</span>',300),
+      L('  '+'='.repeat(52),180),
+      L('  <span class="dim">1) VULNERABLE — username glued into the query:</span>',250),
+      L('     '+vq,350),
+      L(rows.length
+          ? '     <span class="bad">&gt;&gt; LOGGED IN as: '+esc(rows[0].name)+' ('+esc(rows[0].role)+') — no password needed.</span>'
+          : '     <span class="ok">&gt;&gt; rejected.</span>',450),
+      L('  <span class="dim">2) FIXED — username passed as a parameter:</span>',250),
+      L('     SELECT name, role FROM users WHERE name = ? AND password = ?',300),
+      L('     <span class="dim">params = ['+esc(JSON.stringify(user))+', "anything"]</span>',300),
+      L(paramOk
+          ? '     <span class="dim">&gt;&gt; logged in (a real matching account).</span>'
+          : '     <span class="ok">&gt;&gt; rejected — the input is just a username that does not exist.</span>',200)
+    ];
+    play($("d4"),lines,[$("d4run")]);
+  });
+  $("d4in").addEventListener("keydown",function(e){ if(e.key==="Enter")$("d4run").click(); });
+
+})();
+</script>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
