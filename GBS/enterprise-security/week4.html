@@ -47,6 +47,17 @@
 .pwt{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
 .pwt td{padding:7px 8px;border-bottom:1px solid var(--line);}
 .pwt td:last-child{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.pwhash{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface);font-size:13px;line-height:1.55;}
+.pwhash .ph-lbl{color:var(--ink);}
+.pwhash code{display:block;margin-top:6px;font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent-deep);word-break:break-all;line-height:1.5;}
+.whereurl{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:13px 15px;margin:14px 0;}
+.whereurl .wh{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin-bottom:8px;}
+.whereurl > p{font-size:13.5px;line-height:1.6;margin:8px 0;}
+.urlex{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin:8px 0 2px;word-break:break-all;line-height:1.8;}
+.urlex .host{color:var(--grey);}
+.urlex .val{background:#E6F3EA;border-radius:3px;padding:1px 4px;color:#1D5A35;font-weight:700;}
+.urlex .inj{background:#FBEAE6;border-radius:3px;padding:1px 4px;color:#7A2414;font-weight:700;}
+.urlcap{font-size:12.5px;color:var(--grey);line-height:1.55;margin:0 0 10px;}
 /* SQL */
 .q{font:13.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0F1B2D;color:#D8E1EC;border-radius:8px;padding:11px 13px;margin-top:10px;white-space:pre-wrap;word-break:break-all;}
 .q .inj{background:#7A2414;color:#fff;border-radius:2px;}
@@ -198,6 +209,7 @@
       <div class="gh">Guessing time <span class="gs">illustrative speeds, orders of magnitude</span></div>
       <div class="gb">
         <input class="gin" id="pwIn" type="text" spellcheck="false" autocomplete="off" value="Arvane2026!">
+        <div class="pwhash"><span class="ph-lbl">Here is the SHA-256 hash of what you typed — the one-way fingerprint a breach hands the attacker instead of your password. Change one character and the whole fingerprint changes, yet it stays the same length however long the password is, and nothing in it spells out the letters.</span><code id="pwHash"></code></div>
         <div id="pwOut"></div>
       </div>
     </div>
@@ -236,10 +248,24 @@
         <div class="res" id="sqR"></div>
       </div>
     </div>
-    <p>The <span class="mono">o'brien</span> try shows why this bug is so common: a perfectly honest name with an apostrophe already breaks the sentence. A developer who sees that error and "fixes" it by stripping apostrophes has not fixed the cause. The cause is <b>mixing code and data in one string</b>; the cure is to keep them apart, which every database library has supported for twenty years.</p>
+    <p>The <span class="mono">o'brien</span> try shows why this bug is so common. To look you up, the site wraps your name in quote marks and glues it into the sentence, so the name has to start with a quote and end with a quote. The name <span class="mono">o'brien</span> carries an apostrophe — a quote mark — in the middle, so the database now sees three quote marks where it expected two, loses track of where the name ends, and errors out. That is an ordinary customer with an Irish surname, not an attacker; the attacker simply does the same slip on purpose, adding <span class="mono">' OR '1'='1</span> to turn the broken sentence into one that matches everyone.</p>
+    <p>Suppose the developer reacts by deleting every apostrophe people type. That blocks this one trick and locks out Mr o'brien, but it does not fix the real problem: the text you typed was glued into the sentence at all. The real fix is to never build the sentence out of your text. The site writes the sentence once, with a blank where the name goes, and hands your name to the database separately, labelled "this is only a value to match, never part of the instruction." The database then compares it as data and can never run it as a command — this is the <b>parameterised query</b>, the checkbox marked "the developer's fix" above. Every database tool has offered it for twenty years.</p>
+
+    <div class="whereurl">
+      <div class="wh">Where an attacker actually types this</div>
+      <p>There is no special hacker screen for this. The attacker types the trick into the ordinary boxes the website already offers everyone, and very often into the web address itself. A website asks its database a question every time you log in, search, or open a page that shows one item. Anywhere the site takes what you supplied and builds a database sentence from it, this trick can be tried — a login box, a search field, a "find my order" form.</p>
+      <p>The web address is one of those boxes. Many pages carry a value inside the address, after the question mark. That part is called the <b>query string</b>: the site reads it to decide what to show you. When you open one supplier's page, the address looks like this, and the <span class="val">4071</span> is the supplier number the site then drops straight into its database sentence, exactly as the login form dropped your name into it:</p>
+      <div class="urlex"><span class="host">https://arvane.ch/supplier?id=</span><span class="val">4071</span></div>
+      <p class="urlcap">The site returns supplier number 4071.</p>
+      <p>So the attacker edits that value in the address bar — no login needed — and presses Enter:</p>
+      <div class="urlex"><span class="host">https://arvane.ch/supplier?id=</span><span class="inj">4071' OR '1'='1' --</span></div>
+      <p class="urlcap">The same confusion of code and data happens, and the condition is true for every row, so the page returns the whole supplier list instead of one. Nothing was used but the browser's address bar.</p>
+      <p>Anyone on the internet can reach that address, that login box and that search field, so attackers run automated tools that fire thousands of these inputs at thousands of sites. That is why the fix — keep what the visitor supplied as data, never as part of the sentence — has to cover every place the site reads input, not the login alone.</p>
+    </div>
 
     <h3>2 · A memory bug: twenty characters that make you an administrator</h3>
-    <p>Programs written in C or C++ keep their working data side by side in memory. Here a program reserves <b>16 bytes</b> for your user name; right after it sits a flag, <span class="mono">is_admin</span> (zero means no), and after that the address the program returns to when it finishes. The copy routine copies <b>whatever you type, however long</b>. Type a longer name.</p>
+    <p>Picture the computer's memory as a long row of numbered boxes, each holding one character, standing side by side with no wall between them. To do its job the program sets boxes aside in advance: here it reserves the first <b>16 boxes</b> for your user name, which is what "16 bytes" means — room for 16 characters. The very next box is a yes/no switch called <span class="mono">is_admin</span>, where <span class="mono">0</span> means "treat this person as an ordinary user, not an administrator". The boxes after that hold a note telling the program where to carry on once it has finished this task.</p>
+    <p>Now the catch. The routine that writes your name copies one character into one box and keeps going down the row; in C and C++ it is the programmer's job to make it stop at box 16, and this one forgot. So if you type a name of 20 characters, the first 16 fill the name boxes and the last 4 <b>spill straight past them</b> into the <span class="mono">is_admin</span> switch and the note beyond it, writing over whatever was there. You were never shown an "administrator" option, yet by typing a long enough name you can flip that switch to yes — only because the program trusted that your name would fit. This is a <b>buffer overflow</b>: a buffer is the set-aside boxes, and the overflow is your input running off the end of them into what sits next door. Type a longer name below and watch the characters cross into the switch.</p>
     <div class="gad">
       <div class="gh">Memory, byte by byte <span class="gs" id="memState"></span></div>
       <div class="gb">
@@ -251,6 +277,15 @@
       </div>
     </div>
     <p>Overwriting a flag is the gentle version. Overwriting the <b>return address</b> is the serious one: the program then jumps wherever the attacker's bytes point, and runs the attacker's instructions with the program's own rights. Modern systems add hurdles (randomised addresses, memory that cannot be executed), and attackers chain several bugs to clear them. Microsoft's security response centre reported in 2019 that about <b>70 % of the vulnerabilities it fixes each year are memory-safety bugs</b> of this family, which is why governments now urge vendors to move to memory-safe languages.</p>
+
+    <div class="whereurl">
+      <div class="wh">How a cyber-pirate uses this</div>
+      <p>In the demo you typed into a name box, but the set-aside boxes exist anywhere a program reads a chunk of input of some length — the name on a login, a file someone opens, a photo, a document, or a message that arrives over the network. The attacker almost never sits at Arvane's keyboard. Instead they <b>send the vulnerable program a specially-built chunk of data</b> where it expects an ordinary one, and they make it longer than the boxes set aside for it.</p>
+      <p>Because the program copies that input without checking its length, the attacker's extra characters run off the end, and the attacker chooses exactly what those characters are. The gentle move sets the <span class="mono">is_admin</span> switch to yes, as you just did. The dangerous move writes over the "where to continue next" note so that it points at <b>instructions the attacker hid inside the very same input</b>. The program then stops doing its own task and starts carrying out the attacker's commands, with the program's own rights.</p>
+      <p>Often nothing has to be clicked. A booby-trapped document emailed to Arvane's staff fires the overflow the moment it is opened; a crafted message sent to a server that Arvane exposes to the internet fires the moment the server reads it, with no login at all. If that server runs with administrator rights, the attacker is now running commands as the administrator of that machine — reading its data, installing more tools, reaching the next machine along. Taking a program over from across the network with one crafted input like this is called <b>remote code execution</b>, and it is the most prized bug of all: the 2017 worms in the patch-gap chart below used a memory bug of this family to jump from machine to machine over the network, while people slept.</p>
+      <p><b>A real case — WannaCry, May 2017.</b> The part of Windows that lets office computers share folders and printers had exactly this kind of overflow, in the code that reads a message coming from the network. An unknown group built a <b>worm</b> — a program that copies itself from one computer to the next — which sent that service a crafted message, longer than the boxes set aside, with its own instructions riding in the overflow. Nobody had to click anything; a computer only had to be switched on and reachable. The smuggled instructions did two things: they locked up the machine's files and demanded about <b>$300</b> in Bitcoin to unlock them, and they sent the same crafted message on to every computer they could reach, so the worm spread on its own. Within days it hit <b>about 200,000 computers in roughly 150 countries</b> (Europol estimate, May 2017), and in Britain it froze hospital systems and forced about <b>19,500 medical appointments and operations to be cancelled</b> (UK National Audit Office, 2017).</p>
+      <p>Here is the part to remember as a manager. Microsoft had already published the fix <b>two months earlier</b>, on 14 March 2017 — it is the WannaCry bar in the chart just below. Every computer that had installed that update was untouched, and all of the damage fell on machines that had not yet applied a patch that already existed. The flaw was clever; the reason it became a global disaster was ordinary — the gap between a fix being available and a fix being installed, which is exactly what the next section measures.</p>
+    </div>
 
     <h3>3 · The patch gap</h3>
     <p>A bug that has been fixed is only fixed on machines that installed the fix. The time between the patch and the installation is the attacker's window, and it is measured in weeks. Three real windows, drawn to scale:</p>
@@ -531,6 +566,19 @@ function dur(s){
   if(s<1)return 'instantly';var u=[[3.15e7*1e9,'billion years'],[3.15e7*1e6,'million years'],[3.15e7*1000,'thousand years'],[3.15e7,'years'],[86400,'days'],[3600,'hours'],[60,'minutes'],[1,'seconds']];
   for(var i=0;i<u.length;i++)if(s>=u[i][0]){var v=s/u[i][0];return (v<10?v.toFixed(1):Math.round(v).toLocaleString('en-GB'))+' '+u[i][1];}
   return Math.round(s)+' seconds';
+}
+function pwSha256(s){
+  var C=window.crypto&&crypto.subtle;
+  if(!C)return Promise.reject();
+  return C.digest('SHA-256',new TextEncoder().encode(s)).then(function(buf){
+    return [].map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
+  });
+}
+function paintPwHash(){
+  var p=$('pwIn').value,el=$('pwHash');if(!el)return;
+  if(!p){el.textContent='';return;}
+  pwSha256(p).then(function(h){if($('pwIn').value===p)el.textContent=h;},
+                    function(){el.textContent='(this browser cannot compute the hash here)';});
 }
 function paintPw(){
   var p=$('pwIn').value,L=p.length,cs=0;
@@ -826,7 +874,7 @@ window.addEventListener('DOMContentLoaded',function(){
   if(window.CourseProgress)CourseProgress.render({bar:$('cbar'),compact:true});
 
   paintProgress();mountUrl();mountTells();
-  $('pwIn').addEventListener('input',paintPw);paintPw();
+  $('pwIn').addEventListener('input',function(){paintPw();paintPwHash();});paintPw();paintPwHash();
   mountSql();
   $('memIn').addEventListener('input',paintMem);$('memSafe').addEventListener('change',paintMem);paintMem();
   paintGap();mountNet();paintLog();
