@@ -52,6 +52,24 @@ in schools in India, Dubai, Bangkok and Switzerland; everything is online and re
   unrelated real paper (Jeon et al. 2023, Seoul — 10.1016/j.atmosenv.2023.119733) and one
   that 404s (10.1038/s41893-022-00874-q). Re-check both before reusing: a 404 DOI can be
   assigned later. The next-token probabilities in Session 2 are invented and say so.
+- **Session 1 video kit (6 Nov 2026)** — Jan Erik: "slides and a transcript for a one
+  hour video (in case no one comes online); if they come online I will only do the slides."
+  Audience adapted to 15–17-year-olds in India/Dubai, goal = create interest in
+  sustainability. Two self-contained files, NOT counted modules, `noindex,nofollow`,
+  unlinked from student nav (reached by direct URL; the recording is what students watch):
+  - `session1-slides.html` — a projected deck, 24 slides, own dark-green CSS (palette from
+    sumas-stats.css), keyboard/click/swipe nav, `#n` deep-link, `S` toggles per-slide
+    presenter notes (the `data-note`), print = one slide per page. Opens on the three
+    local facts (Delhi PM2.5 178 µg/m³ winter 2024 vs WHO 5, CSE/WHO; Dubai 142 mm on 16
+    Apr 2024, UAE NCM; India 160,000 t/day waste, CPCB 2020–21), then the methodology of
+    `session1.html` at a teen level (4 steps, 3 essays→report, PICK properties, Journal,
+    rules, two "do this now" breaks, before-Session-2).
+  - `session1-script.html` — the one-hour spoken script, keyed slide by slide, print-
+    friendly, with a two-scenario how-to header (live = prompt + run the breaks; recorded =
+    read aloud). ~4,500 spoken words ≈ ~40 min talking + the two activities ≈ one hour.
+    The words are at the students' level; the framing/cues are for Jan Erik.
+  Facts are sourced on-slide per WRITING.md. ⚠ The slide deck and the script share slide
+  numbers (1–24) — change a slide's content in BOTH, as with the calendar table.
 - Own `ns`/`keyPrefix` `green-ai`, joinCode `GRAI`, unlisted, in robots.txt; the SUMAS
   landing page picks it up from courses.json. ⚠ **The `green-ai` rules block (a copy of
   capstone-ba's without `_teams`, `_forum`, `_wall`) must be DEPLOYED** before the link
