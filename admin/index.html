@@ -368,6 +368,21 @@ function drawNow(){
   document.title=(nWait?'('+nWait+') ':'')+'Admin · janerikmeidell.com';
 }
 
+/* ---- come back where you left (6 Nov 2026): the scroll position is kept per tab
+   in sessionStorage on leaving, and re-applied after each render until the page is
+   tall enough, or for 20 s, or until the reader scrolls themselves ---- */
+var SCR={want:0,t0:Date.now(),mine:false};
+try{ if('scrollRestoration' in history)history.scrollRestoration='manual'; SCR.want=+(sessionStorage.getItem('jem_admin_scroll')||0); }catch(e){}
+['wheel','touchstart','keydown','mousedown'].forEach(function(ev){ addEventListener(ev,function(){SCR.mine=true;},{passive:true}); });
+function saveScroll(){ try{ sessionStorage.setItem('jem_admin_scroll',String(Math.round(scrollY))); }catch(e){} }
+addEventListener('pagehide',saveScroll);
+document.addEventListener('visibilitychange',function(){ if(document.hidden)saveScroll(); });
+function restoreScroll(){
+  if(!SCR.want||SCR.mine||Date.now()-SCR.t0>20000)return;
+  scrollTo(0,SCR.want);
+  if(Math.abs(scrollY-SCR.want)<2&&!BUSY&&!PBUSY)SCR.want=0;
+}
+
 /* ---- the table ---- */
 function drawAll(){
   drawNow();
@@ -384,6 +399,7 @@ function drawAll(){
       '</div>';
   }).join('');
   if(window.AdminUI)AdminUI.icons();
+  restoreScroll();
 }
 var COLS='<colgroup><col><col class="n"><col class="p"><col class="a hide-s"></colgroup>';
 var PRANK={now:0,soon:1,unknown:2,open:3,later:3,ended:4};
