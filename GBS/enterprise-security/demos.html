@@ -48,6 +48,9 @@
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 @media(max-width:640px){.two{grid-template-columns:1fr;}}
 .lblm{display:block;font:700 11px Montserrat,system-ui,sans-serif;color:var(--grey);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;}
+.mkhash{margin:16px 0 2px;padding-top:12px;border-top:1px dashed var(--line);}
+.mkh-intro{font-size:14px;line-height:1.6;margin:0 0 8px;}
+.mkh-intro b{color:var(--accent-deep);}
 </style>
 </head>
 <body>
@@ -95,6 +98,17 @@
     <p>A breach hands the attacker the hashes, not the passwords. How fast they turn hashes back into passwords depends only on how the defender stored them. This measures the speed on <b>your own device</b>, right now.</p>
     <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">python3 demo2_hashing.py</span></div><div class="body" id="d2"><span class="dim">Press Run — it measures for a few seconds.</span></div></div>
     <div class="ctrl"><button class="runbtn" id="d2run">▶ Run</button></div>
+
+    <div class="mkhash">
+      <p class="mkh-intro"><b>Now make one yourself, and crack it.</b> A hash is the scrambled form a website stores in place of your real password: the same password always produces the same hash, but you cannot turn a hash back into the password. Type a simple password below and press <b>Make its hash</b>. Then press <b>Crack the hash</b> and watch the attacker recover the password anyway — not by reversing the hash, but by hashing a list of common passwords and comparing each result to yours.</p>
+      <div class="ctrl" style="margin-bottom:8px;">
+        <input class="ginj" id="d2pw" value="qwerty" spellcheck="false" autocomplete="off" aria-label="password to turn into a hash" maxlength="32">
+        <button class="runbtn" id="d2mk">Make its hash</button>
+        <button class="runbtn" id="d2crack" disabled>Crack the hash</button>
+      </div>
+      <div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="lbl">hash &amp; crack</span></div><div class="body" id="d2h"><span class="dim">Type a password above and press “Make its hash”.</span></div></div>
+    </div>
+
     <div class="lesson"><span class="t">The lesson</span>Same stolen file, same attacker, same device. The defender's one choice — a fast hash or a slow salted one — moves the answer by a huge factor.</div>
     <div class="defend"><span class="t">The defence</span>Never store passwords in the clear or under a plain fast hash. Store them salted, under a deliberately slow hash (PBKDF2, bcrypt, scrypt, Argon2), with the work factor turned up.</div>
   </div>
@@ -239,6 +253,66 @@
       $("d2").innerHTML='<div class="dim">  (your browser blocked the measurement — the point stands: a slow salted hash is tens of thousands of times harder to crack than a fast one.)</div>';
     });
   });
+
+  // ---- 2b · make a hash, then crack it by guessing --------------------
+  var CRACKLIST=["123456","password","qwerty","111111","abc123","letmein",
+    "iloveyou","admin","welcome","monkey","dragon","football","12345678",
+    "sunshine","princess","qwerty123","000000","superman","hello","summer"];
+  function sha256hex(s){
+    return crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)).then(function(buf){
+      return [].map.call(new Uint8Array(buf),function(b){return b.toString(16).padStart(2,"0");}).join("");
+    });
+  }
+  var d2target=null;
+  if($("d2mk")){
+    $("d2mk").addEventListener("click",function(){
+      var pw=$("d2pw").value;
+      if(!pw||!crypto.subtle)return;
+      var mk=$("d2mk"), cr=$("d2crack"); mk.disabled=true; cr.disabled=true;
+      sha256hex(pw).then(function(hex){
+        d2target=hex;
+        var lines=[
+          L('<span class="pr">&gt; sha256("'+esc(pw)+'")</span>',250),
+          L('  <span class="ok">'+hex+'</span>',300),
+          L('  <span class="dim">this is what a breached file stores — not the password itself.</span>',200),
+          L('  <span class="dim">you cannot read the password out of these 64 characters. press “Crack the hash”.</span>',150)
+        ];
+        play($("d2h"),lines,[mk],function(){ mk.disabled=false; cr.disabled=false; });
+      });
+    });
+    $("d2crack").addEventListener("click",function(){
+      if(!d2target)return;
+      var mk=$("d2mk"), cr=$("d2crack"); mk.disabled=true; cr.disabled=true;
+      var body=$("d2h"); body.innerHTML="";
+      function put(h){var d=document.createElement("div");d.innerHTML=h;body.appendChild(d);body.scrollTop=body.scrollHeight;}
+      put('<span class="pr">&gt; hashing a list of common passwords, comparing each to the stolen hash…</span>');
+      var i=0, found=false;
+      (function stepGuess(){
+        if(i>=CRACKLIST.length){
+          if(!found){
+            put('  '+'-'.repeat(44));
+            put('  <span class="ok">&gt;&gt; not in the common-password list — this one the dictionary did not crack.</span>');
+            put('  <span class="dim">a longer, unusual password is what put it out of reach, not a better hash.</span>');
+          }
+          mk.disabled=false; cr.disabled=false; return;
+        }
+        var g=CRACKLIST[i++];
+        sha256hex(g).then(function(h){
+          var hit=(h===d2target);
+          put('  try '+(i<10?' ':'')+i+': '+esc(g)+' '.repeat(Math.max(1,12-g.length))+'<span class="dim">'+h.slice(0,12)+'…</span>  '+(hit?'<span class="bad">&lt;== MATCH</span>':'<span class="dim">no</span>'));
+          if(hit){
+            found=true;
+            put('  '+'-'.repeat(44));
+            put('  <span class="bad">&gt;&gt; the password was: '+esc(g)+'</span>');
+            put('  <span class="dim">the hash was never reversed. the attacker hashed guesses until one matched.</span>');
+            mk.disabled=false; cr.disabled=false; return;
+          }
+          setTimeout(stepGuess,200);
+        });
+      })();
+    });
+    $("d2pw").addEventListener("keydown",function(e){ if(e.key==="Enter")$("d2mk").click(); });
+  }
 
   // ---- 3 · the connection ---------------------------------------------
   $("d3run").addEventListener("click",function(){
