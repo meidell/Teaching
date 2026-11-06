@@ -52,6 +52,37 @@ window.CourseConfig = (function () {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", lmsLinkBoot); else setTimeout(lmsLinkBoot, 0);
 
+  /* ATTENDANCE ON/OFF PER COURSE (6 Nov 2026). Jan Erik: "an option for each
+     class to switch on and off attendance - if off, then tools related to
+     attendance on the course pages do not show". The switch is on /admin/ and
+     writes _site/attendance/<course id> = false (off) or removes it (on).
+     Every presence.js copy draws into #presSlot or an element of class .pres,
+     so one style rule hides them all. The last answer is cached per device
+     (jem_att_off_<id>) and applied at once, so a switched-off button does not
+     flash up while the database answers. */
+  function attBoot() {
+    var id = currentId(); if (!id) return;
+    var KEY = "jem_att_off_" + id, st = null;
+    function apply(off) {
+      if (off && !st) {
+        st = document.createElement("style"); st.id = "jem-att-off";
+        st.textContent = "#presSlot,.pres{display:none!important}";
+        document.head.appendChild(st);
+      } else if (!off && st) { st.remove(); st = null; }
+      window.ATTENDANCE_OFF = !!off;
+    }
+    try { if (localStorage.getItem(KEY) === "1") apply(true); } catch (e) {}
+    fetch(DB + "/_site/attendance/" + encodeURIComponent(id) + ".json")
+      .then(function (r) { return r.ok ? r.json() : undefined; })
+      .then(function (v) {
+        if (v === undefined) return;            /* rules not published or offline: keep the cached answer */
+        var off = v === false;
+        try { if (off) localStorage.setItem(KEY, "1"); else localStorage.removeItem(KEY); } catch (e) {}
+        apply(off);
+      }).catch(function () {});
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attBoot); else setTimeout(attBoot, 0);
+
   /* deep = headings · bar = announcement bar · main = buttons & borders
      glow = highlight on the bar · pale = soft panel · surface = page bg */
   var THEMES = {

@@ -118,6 +118,9 @@ td.c,th.c{text-align:center;}
 .links a.hot{background:#FFFBEB;border-color:rgba(180,83,9,.55);color:#92400E;} .links a.hot .ic{color:#B45309;}
 .links a.hot .n{background:#B45309;color:#fff;border-radius:9px;padding:0 6px;font-size:10.5px;line-height:16px;margin-left:2px;}
 .links a.live{background:#B91C1C;border-color:#B91C1C;color:#fff;} .links a.live .ic{color:#fff;}
+.links a.att{gap:6px;} .links a.att .sw{width:22px;height:12px;border-radius:6px;background:#15803D;position:relative;flex:none;}
+.links a.att .sw:after{content:"";position:absolute;top:2px;left:12px;width:8px;height:8px;border-radius:50%;background:#fff;}
+.links a.att.off{color:var(--a-grey);} .links a.att.off .sw{background:#B8BEC6;} .links a.att.off .sw:after{left:2px;}
 .links a.main{background:var(--a-accent);color:#fff;border-color:var(--a-accent);} .links a.main .ic{color:#fff;}
 .dim{color:var(--a-faint);}
 .ld::after{content:"…";color:var(--a-faint);}
@@ -429,7 +432,9 @@ function row(c){
   var links='<a class="main" href="'+esc(home)+'">'+ic('home')+'Course</a>';
   if(c.ns){
     links+='<a href="/shared/admin2.html?course='+id+'">'+ic('dashboard')+'Dashboard</a>';
-    if(f.indexOf('presence')>=0)links+=s.pres
+    var attOff=ATT[c.id]===false;
+    if(f.indexOf('presence')>=0)links+='<a href="#" class="att'+(attOff?' off':'')+'" data-att="'+esc(c.id)+'" title="'+(attOff?'Attendance is switched OFF: students see no attendance button on this course. Click to switch it on.':'Attendance is switched ON: students see the attendance button on this course. Click to switch it off.')+'"><span class="sw"></span>Attendance '+(attOff?'off':'on')+'</a>';
+    if(f.indexOf('presence')>=0&&!attOff)links+=s.pres
       ?'<a class="live" href="/shared/admin2.html?course='+id+'#presence" title="A presence window is open now'+esc(s.pres.label||s.pres.mod?': '+(s.pres.label||s.pres.mod):'')+'">'+ic('presence')+'Presence · open now</a>'
       :'<a href="/shared/admin2.html?course='+id+'#presence">'+ic('presence')+'Presence</a>';
     links+=(s.waiting
@@ -447,8 +452,11 @@ function row(c){
 }
 
 var BUSY=false, PBUSY=false;
+var ATT={};
+async function loadAtt(){ try{ ATT=(await get('_site/attendance',null,true))||{}; }catch(e){ ATT={}; } }
 async function loadAll(force){
   if(BUSY)return; BUSY=true;
+  await loadAtt();
   $('readLbl').className='ld'; $('readLbl').textContent='reading every course';
   var q=COURSES.filter(function(c){return c.ns&&c.status!=='archived';}).slice();
   async function worker(){ while(q.length){ var c=q.shift(); try{await readCourse(c);}catch(e){} drawAll(); } }
@@ -481,6 +489,21 @@ $('bOut').addEventListener('click',function(){
   FBAuth.signOut(function(){ AdminGate.lock(); location.reload(); });
 });
 $('bRefresh').addEventListener('click',function(){loadAll(true);});
+/* attendance on/off per course: _site/attendance/<id> = false, or removed (= on) */
+$('schools').addEventListener('click',async function(e){
+  var a=e.target.closest('a[data-att]'); if(!a)return; e.preventDefault();
+  var id=a.getAttribute('data-att'), c=COURSES.filter(function(x){return x.id===id;})[0]||{id:id}, off=ATT[id]===false;
+  var name=(c.code||c.id)+' · '+title(c);
+  if(!confirm(off?'Switch attendance ON for '+name+'?\n\nStudents will see the attendance button on the course pages again.'
+                 :'Switch attendance OFF for '+name+'?\n\nThe attendance button disappears from every page of this course. The register and the marks already made are kept, and you can switch it on again at any time.'))return;
+  try{
+    await put('_site/attendance/'+encodeURIComponent(id),off?null:false);
+    if(off)delete ATT[id]; else ATT[id]=false;
+    drawAll();
+  }catch(err){
+    alert('Not saved: '+(/refused/.test(err.message)?'the database refused the change. Publish firebase-database-rules.json in the Firebase console (it has the new _site/attendance block), then try again.':err.message));
+  }
+});
 
 /* ---- downloads password: /shared/vault.js. The file key sits in _site/vaultkey
    (instructor-only); the password only wraps it in _site/vault, so a change
