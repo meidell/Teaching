@@ -18,6 +18,12 @@
 .hbox{background:var(--card);border:1px solid var(--surface-2);border-radius:16px;padding:22px 24px;margin:18px 0;box-shadow:var(--shadow);}
 .you{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--surface-2);border-radius:10px;padding:11px 14px;font-size:13.5px;color:var(--ink-soft);margin-bottom:16px;}
 .you b{color:var(--ink);} .you .sp{flex:1;}
+.idform{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;}
+@media(max-width:560px){.idform{grid-template-columns:1fr;}}
+.flbl{display:block;font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.fin{width:100%;border:1.5px solid var(--surface-2);border-radius:9px;padding:9px 11px;font-size:14px;color:var(--ink);background:var(--white);}
+.fin:focus{outline:none;border-color:var(--accent);}
+.idnote{flex-basis:100%;font-size:12.5px;color:var(--ink-soft);margin-top:6px;}
 .drop{display:block;border:2px dashed rgba(74,139,58,.5);border-radius:14px;background:var(--accent-pale);padding:30px 20px;text-align:center;cursor:pointer;transition:.15s;}
 .drop:hover,.drop.over{background:rgba(74,139,58,.14);border-color:var(--accent);}
 .drop .big{font-size:34px;line-height:1;}
@@ -70,7 +76,7 @@
 <div class="hero">
   <div class="eyebrow" id="hEye">Hand-in</div>
   <h1 id="hTitle">Hand in</h1>
-  <p class="sub" id="hSub">Upload your phase report here, on this page. Each phase is one PDF, handed in against your name — I can see it on my side the moment it arrives, and you get a receipt.</p>
+  <p class="sub" id="hSub">Upload your phase report here, on this page — <b>no account and no code</b>. Just type your name and email, choose your PDF, and hand it in. I can see it the moment it arrives, and you get a receipt.</p>
 </div>
 
 <div class="facts" id="facts"></div>
@@ -189,7 +195,7 @@ var HBRIEFS={
   var B=HBRIEFS[PID]||{sub:'',h:'<h2>'+P.name+'</h2>',wk:P.wk};
   var DEADLINE=P.due.getTime();
   var INST=!!(window.AdminGate&&AdminGate.isUnlocked&&AdminGate.isUnlocked());
-  var ME=null, picked=null;
+  var ME=null, ID=null, picked=null;
 
   function el(id){return document.getElementById(id);}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -221,28 +227,42 @@ var HBRIEFS={
     try{var n=localStorage.getItem(K+'_name'),s=localStorage.getItem(K+'_sid');if(n&&s)return {sid:s,name:n};}catch(e){}
     return null;
   }
+  /* identity without a sign-in: the student types their name and email on the form */
+  function slug(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
+  function curName(){var e=el('hName');return e?e.value.trim():'';}
+  function curEmail(){var e=el('hEmail');return e?e.value.trim():'';}
+  function validEmail(x){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);}
+  function meNow(){var n=curName();if(!n)return null;var sid=(ID&&ID.sid&&slug(ID.name)===slug(n))?ID.sid:slug(n);if(!sid)return null;return {sid:sid,name:n,email:curEmail()};}
+  function canGo(){return !!picked&&!INST&&!!curName()&&validEmail(curEmail());}
+  function refreshGo(){el('goBtn').disabled=!canGo();}
+  function showWho(){
+    var n=curName(),ok=validEmail(curEmail()),w=el('whoLine'),w2=el('whoLine2');
+    if(w)w.textContent=n?(ok?'Recorded under '+n:'Add a valid email'):'';
+    if(w2)w2.innerHTML=n?('This report will be handed in under <b>'+esc(n)+'</b>'+(ok?' · '+esc(curEmail()):'')+'. No account or code needed.'):'No account and no code — just your name and email, then the file.';
+  }
   function renderYou(){
     var y=el('hYou');
     if(INST){ y.innerHTML='<b>Instructor device.</b> Hand-ins are listed on the dashboard\'s <a href="/shared/admin2.html?course='+K+'#subs">Handed in</a> tab; this page is what a student sees.<span class="sp"></span>'; el('goBtn').disabled=true; return; }
-    if(!ME){
-      y.innerHTML='<b>Sign in first</b> — with the same name and six-digit code you use everywhere on the site, so the file is recorded against you.<span class="sp"></span><button type="button" class="b sm" id="hSignin">Sign in</button>';
-      var b=el('hSignin'); if(b)b.addEventListener('click',function(){ if(window.CourseLogin&&CourseLogin.open)CourseLogin.open(); else alert('The sign-in box did not load. Reload the page and try again.'); });
-      el('goBtn').disabled=true; el('whoLine').textContent='';
-      return;
-    }
-    y.innerHTML='Handing in as <b>'+esc(ME.name)+'</b>.<span class="sp"></span><span style="font-size:12px;color:var(--grey)">Not you? Sign out from the pill bottom-right.</span>';
-    el('whoLine').textContent='Recorded against '+ME.name+'.';
-    if(picked)el('goBtn').disabled=false;
+    y.innerHTML='<div class="idform">'
+      +'<div><label class="flbl" for="hName">Your full name</label><input class="fin" id="hName" type="text" autocomplete="name" placeholder="the name your report should be marked under"></div>'
+      +'<div><label class="flbl" for="hEmail">Your email</label><input class="fin" id="hEmail" type="email" autocomplete="email" placeholder="so I can match your report to you"></div>'
+      +'</div><div class="idnote" id="whoLine2"></div>';
+    if(ID&&ID.name)el('hName').value=ID.name;
+    var se=''; try{se=localStorage.getItem(K+'_email')||'';}catch(e){} if(se)el('hEmail').value=se;
+    ['hName','hEmail'].forEach(function(id){el(id).addEventListener('input',function(){refreshGo();showWho();});});
+    el('hName').addEventListener('blur',showPrior);
+    showWho(); refreshGo();
   }
 
   /* ---- what this student has already handed in (their own node, readable without sign-in) ---- */
-  function priorFromServer(){
-    if(!ME)return Promise.resolve(null);
-    return fetch(DB+'/'+NS+'/'+encodeURIComponent(ME.sid)+'/work/handin_'+PID+'.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+  function priorFromServer(sid){
+    if(!sid)return Promise.resolve(null);
+    return fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/work/handin_'+PID+'.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
   }
   function showPrior(){
+    var me=meNow()||ID, sid=me&&me.sid;
     var prev=null; try{prev=JSON.parse(localStorage.getItem(K+'_handin_'+PID)||'null');}catch(e){}
-    priorFromServer().then(function(srv){
+    priorFromServer(sid).then(function(srv){
       var rec=(srv&&srv.ts&&(!prev||srv.ts>prev.ts))?{f:(srv.v||'').split(' · ')[0],ts:srv.ts}:prev;
       if(rec&&rec.f)say('You handed in <b>'+esc(rec.f)+'</b> on '+when(rec.ts)+'. Uploading again replaces it — the most recent file is the one marked.','ok');
     });
@@ -256,7 +276,7 @@ var HBRIEFS={
     if(!f.size){say('That file is empty. Check you picked the right one.','err');return;}
     hide();picked=f;
     el('pFn').textContent=f.name;el('pFs').textContent=fmt(f.size)+(f.name!==P.file?' · the brief asks for '+P.file+' — fine either way, I record the name it came with':'');
-    el('picked').classList.add('on');el('goBtn').disabled=!(ME&&!INST);
+    el('picked').classList.add('on');refreshGo();
   }
   el('file').addEventListener('change',function(){take(this.files&&this.files[0]);});
   el('clearBtn').addEventListener('click',function(e){e.preventDefault();picked=null;el('file').value='';el('picked').classList.remove('on');el('goBtn').disabled=true;hide();});
@@ -313,7 +333,7 @@ var HBRIEFS={
   }
   function record(f,up){
     var late=up.ts>DEADLINE;
-    var rec={n:ME.name,sid:ME.sid,f:f.name,sz:f.size,ct:f.type||'',ts:up.ts,st:up.store,k:PID,kn:P.name};
+    var rec={n:ME.name,sid:ME.sid,email:ME.email||'',f:f.name,sz:f.size,ct:f.type||'',ts:up.ts,st:up.store,k:PID,kn:P.name};
     if(up.store==='storage'){rec.p=up.p;rec.u=up.u;} else {rec.fid=up.fid;rec.ch=up.ch;rec.p='_files/'+ME.sid+'/'+up.fid;}
     if(late)rec.late=1;
     var a=fetch(DB+'/'+NS+'/_submissions/'+encodeURIComponent(ME.sid)+'.json',{method:'POST',body:JSON.stringify(rec)})
@@ -335,7 +355,11 @@ var HBRIEFS={
     window.scrollTo({top:0,behavior:'smooth'});
   }
   el('goBtn').addEventListener('click',function(){
-    if(!picked||!ME||INST)return;
+    if(!picked||INST)return;
+    ME=meNow();
+    if(!ME){say('Add your name first.','err');return;}
+    if(!validEmail(ME.email)){say('Add a valid email so I can match your report to you.','err');return;}
+    try{localStorage.setItem(K+'_email',ME.email);}catch(e){}
     var f=picked,btn=this;
     btn.disabled=true;btn.textContent='Sending…';
     el('bar').classList.add('on');el('barF').style.width='3%';hide();
@@ -364,8 +388,8 @@ var HBRIEFS={
   }
 
   function boot(){
-    ME=auth(); renderYou(); renderNav(); showPrior();
-    window.addEventListener('statstrack:named',function(){ME=auth();renderYou();showPrior();});
+    ID=auth(); renderYou(); renderNav(); showPrior();
+    window.addEventListener('statstrack:named',function(){ID=auth();renderYou();showPrior();});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
 })();

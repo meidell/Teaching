@@ -115,3 +115,25 @@ applies. What differs:
   carried across by the school-wide sign-in. Weekly enrichment is therefore
   done in omba500 only; `_roster` cannot be listed anonymously, so a wind
   student who registered and never posted would not show.
+
+- **Site hand-in for the phase reports (7 Nov 2026).** Moodle's submission tab
+  for course 1307 was never set up (Marilou Rouzioux reported it to Student
+  Affairs), so the three phase reports are handed in **on the site**, not
+  Moodle. `handin.html` is capstone-ba's uploader ported (NS/K `omba500`,
+  Ørsted vs TotalEnergies briefs, individual — no teams/report/glossary):
+  `?p=p1|p2p|p2|p3` from `schedule.js PHASES`, file base64-chunked to
+  `_files/<sid>`, receipt to `_submissions/<sid>`, one-line summary to
+  `<sid>/work/handin_<pid>` (admin2's Handed in tab reads it). ⚠ **No course
+  sign-in** (Jan Erik: "should not need to sign with a name nor a code"): the
+  student types **name + email** on the form, `sid` = slugified name (or the
+  signed-in sid if one exists); email is stored on the record. A prominent
+  `.upbanner` on `index.html` points at the next still-open phase (auto, from
+  schedule.js), and the "submitted on Moodle" copy became "handed in here".
+  ⚠ **The `_files`/`_submissions` rules blocks were added to omba500 in
+  `firebase-database-rules.json` and DEPLOYED + probed live 7 Nov 2026**
+  (anonymous writes 200, whole-ns read 401). Three `_rulestest` probe nodes
+  remain under omba500 (undeletable anonymously; dashboards skip `_` ids —
+  delete from the console Data tab if wanted). Phase 1 due **Sun 8 Nov 23:59
+  CET**. **Still open:** the 30-minute session booking Marilou also raised — no
+  scheduler built yet; and omba500's `fmtDay` still formats in the reader's
+  timezone (the Geneva-time fix in capstone-ba was not ported).
