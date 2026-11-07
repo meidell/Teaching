@@ -22,25 +22,39 @@ the EEA/exam coverage split).
 | Assessment | **EEA** (exercice d'étude autonome, 100 pts, **20 %** of the grade, groups of 2–4, open book, 3–4 h, published at séance 1, due **Mon 14 Dec 2026 23:59 sous réserve de confirmation** — the official rule says 7 Dec, which is before the last session; raised with Laïla) · **written exam Mon 25 Jan 2027**, Inspera, 120 min, 120 pts, open book + calculatrice |
 | Présence | aucune obligation (PEA) |
 
-### Calendar (plan de cours FL III 2027)
+### Calendar (set by Jan Erik on 7 Nov 2026 — replaces the plan de cours draft)
 
 | # | Date | Time | Format | Theme | Module id |
 |---|---|---|---|---|---|
 | 1 | Tue 10.11.2026 | 17:30–21:00 | Zoom | Introduction · Création | `w1` |
-| 2 | Thu 12.11.2026 | 17:30–21:00 | Zoom | Transformation | `w2` |
-| 3 | Tue 17.11.2026 | 17:30–21:00 | Zoom | Fusion | `w3` |
+| 2 | Tue 17.11.2026 | 17:30–21:00 | Zoom | Transformation | `w2` |
+| 3 | Thu 19.11.2026 | 17:30–21:00 | Zoom | Fusion | `w3` |
 | 4 | Sat 21.11.2026 | 09:30–13:00 | hybride | Scission et transfert de patrimoine | `w4` |
 | 5 | Sat 21.11.2026 | 14:00–17:30 | hybride | Assainissement | `w5` |
 | 6 | Tue 24.11.2026 | 17:30–21:00 | Zoom | Liquidation | `w6` |
-| 7 | Thu 26.11.2026 | 17:30–21:00 | Zoom | Évaluation d'entreprise | `w7` |
-| 8 | Thu 10.12.2026 | 17:30–21:00 | Zoom | Comptes consolidés : fondements · BC 1 → BC 2 | `w8` |
-| 9 | Sat 12.12.2026 | 09:30–13:00 | hybride | Consolidation subséquente et éliminations | `w9` |
-| 10 | Sat 12.12.2026 | 14:00–17:30 | hybride | Mise en équivalence · préparation à l'examen | `w10` |
+| 7 | Tue 01.12.2026 | 17:30–21:00 | Zoom | Évaluation d'entreprise | `w7` |
+| 8 | Tue 08.12.2026 | 17:30–21:00 | Zoom | Comptes consolidés : fondements · BC 1 → BC 2 | `w8` |
+| 9 | Thu 10.12.2026 | 17:30–21:00 | Zoom | Consolidation subséquente et éliminations | `w9` |
+| 10 | Tue 15.12.2026 | 17:30–21:00 | Zoom | Mise en équivalence · préparation à l'examen | `w10` |
 
-Évaluation (séance 7) comes before consolidation on purpose: it is independent,
-and it lets the group finish EEA §§ 1–6 before the two-week break after 26 Nov.
+The plan de cours sent to the school (Sept 2026) had S2 Thu 12.11, S3 Tue
+17.11, S7 Thu 26.11, S8 Thu 10.12 and S9–S10 on Sat 12.12 (hybride); Jan Erik
+replaced those on 7 Nov 2026. One hybrid Saturday only (21 Nov); S9 and S10
+are Zoom evenings now (their block times and "Rue de Bourg" lines were
+changed). The Saturday is ONE entry on the school landing page ("Séances
+4–5 · 09:30–17:30"): `/Kalaidos/index.html` merges same-course same-day
+sessions; the hub keeps one card per page.
+⚠ **EEA deadline conflict (open, 7 Nov 2026):** the remise stays Mon 14 Dec
+2026 23:59 (the coordination's "Monday of the last course week" rule), but
+séance 10 — which takes EEA questions — is now Tue 15 Dec, the day AFTER.
+The pages say "remis la veille"; Jan Erik to settle with Laïla Fournier
+(move the remise, or move the EEA questions to séance 9).
+Évaluation (séance 7) still comes before consolidation: it is independent,
+and EEA §§ 1–6 are feasible before séances 8–9. There is NO two-week break
+any more — every "pause de deux semaines / 26 novembre" line was rewritten.
 A date change touches courses.json `schedule`, the hub's `SEANCES`, each
-page's eyebrow and presence.js `SESSIONS` — together.
+page's eyebrow, the "Avant la séance N" lines, séance 1's plan table,
+`seance1-slides.html` (slides 4 and 21) and presence.js `SESSIONS` — together.
 
 ### EEA milestones the pages must mention (plan de cours, "Jalon EEA")
 
@@ -139,3 +153,44 @@ EEA 20 % + exam 80 % — the 20 % is not yet confirmed by the coordination.
 Not yet done: a `sam` Jeopardy link from the hub (only from 4.7); PDFs of the
 séances (mfb545 has a `_build/pdf.py` to copy if wanted); the `fl3` rules
 block is NOT deployed.
+
+## 7 Nov 2026 — the look, the dates, and séance 1 completed
+
+- **De-branded, SUMAS structure** (Jan Erik: "keep somewhat the style from
+  Kalaidos but make the structure and design more similar to courses on
+  SUMAS"; "remove links to Kalaidos and their contact and their name in the
+  title and the bar below"). `/Kalaidos/index.html` and both hubs (fl3, flc)
+  now use `.kal-nav` (a light sticky bar: small logo + instructor/course tag +
+  "← Tous les cours"), a centred hero, `.kal-phase` headings on white and a
+  one-line `.kal-footer` — no kalaidos-fh.ch / CampusNet links, no Rue de
+  Bourg address, no school name in `<title>` or eyebrow (séance and bloc
+  page titles end "· Jan Erik Meidell"). Kept: Barlow, the teal band of
+  square cards for "Les prochaines séances" on the landing page, the
+  square `.kal-card`s and the `.kal-bloc` page skin. `.kal-head`, `.kal-foot`,
+  `.kal-hero` stay in kalaidos.css unused. The logo in the bar is the one
+  identity mark left — one line to remove if wanted.
+- **Checked against the approved exam (variantes A/B, 25 Jan 2027, 120 min,
+  120 pts: 50 cas particuliers · 50 consolidés · 20 évaluation)** — the hub's
+  exam panel and séance 1's table now print the three section weights; the
+  Inspera question types listed match the paper. ⚠ The EEA weighting 20 %
+  (and so "examen 80 %") is still the 2025 figure, not in the plan de cours
+  or PEA — unconfirmed by the coordination.
+- **Séance 1 now has** (Jan Erik's checklist: 2 videos, 1 reading, home
+  exercises, 3–4 last-hour exercises, slides, widgets): two YouTube videos
+  on the home screen with runtimes read from YouTube's own metadata —
+  STARTUPSTV, *Créer une SA (société anonyme) en Suisse: Guide de Startups.ch*
+  (`pNL7LIeTPos`, 9:17, Nov 2025) and Ingenious Finance, *Comment Créer Sa
+  Société en Suisse (SA/Sàrl) ? Guide Complet* (`FKJhtsfDYS4`, 26:19, Apr
+  2024) — entrepreneur's-eye views, framed as such; the reading (CF3 chap.
+  2) plus "faire les exercices du chapitre" and a three-item warm-up
+  `homeNum` (h1–h3, NOT counted); the last hour **1.6 = four exercises**
+  (A Vitrerie du Léman SA agio · B Ferblanterie Gilliéron SA libération
+  partielle 50 %/100 % · C Ébénisterie Grandjean SA apport en nature with a
+  170'000 hypothèque reprise, apport net 250'000 · D Jardins Chuard Sàrl
+  parts at 125 %), ids `bj/bn`, `cj/cn`, `dj/dn`, all asserted in
+  `_private/check_s1.py`; the SNC Favre & Dumont atelier is 1.5 on its own;
+  the quiz is 1.7 (a new Q6 on the hypothèque). Sections 6 → **7**
+  (`courseprogress.js` w1 total 7). Deck `seance1-slides.html` (22 slides,
+  Kalaidos palette, the green-ai engine; `S` = notes, `#n`), linked 🖥️ in
+  the topbar; the hub's séances note points to it. The "Avant la séance 2"
+  line now says "faire les exercices du chapitre 4" too.

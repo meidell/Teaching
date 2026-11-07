@@ -9,7 +9,7 @@
    /shared/progress.js), then refines from Firebase fl3/<sid>/mod
    when the student is signed in through /shared/login.js (fl3_auth).
 
-   Ten séances of 3 h 30 (Zoom evenings, two hybrid Saturdays). `total` = SECTIONS.length of that bloc page. The exam (15 Mar 2027)
+   Ten séances of 3 h 30 (Zoom evenings, two hybrid Saturdays). `total` = SECTIONS.length of that bloc page. The exam (25 Jan 2027, Inspera)
    is not a chapter. Module ids w1…w10, pages seance1.html … seance10.html. `total` is SECTIONS.length of that page — 0 until the page ships (a 0 total counts as 0 %, never divides).
    ⚠ Adding a REQUIRED chapter mid-course lowers every student's displayed
    percentage; a tool page (the Jeopardy, a simulator) must be opt:true or
@@ -20,7 +20,7 @@ window.CourseProgress=(function(){
   var NS="fl3", K="fl3";
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
-    {mod:'w1', short:'S1', name:'Séance 1 · Introduction · Création d’entreprise', total:6, live:true, href:'seance1.html'},
+    {mod:'w1', short:'S1', name:'Séance 1 · Introduction · Création d’entreprise', total:7, live:true, href:'seance1.html'},
     {mod:'w2', short:'S2', name:'Séance 2 · Transformation', total:5, live:true, href:'seance2.html'},
     {mod:'w3', short:'S3', name:'Séance 3 · Fusion', total:6, live:true, href:'seance3.html'},
     {mod:'w4', short:'S4', name:'Séance 4 · Scission et transfert de patrimoine', total:7, live:true, href:'seance4.html'},

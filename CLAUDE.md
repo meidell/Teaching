@@ -647,7 +647,12 @@ trusts. The two are not the same thing and one cannot replace the other.
   hub), `kal-bloc` (flc.css session pages). The fonts are SELF-HOSTED in
   `/Kalaidos/fonts/` (SIL OFL, licences beside them) — the no-external-fonts
   rule below still holds. `Kalaidos/digital banking` (evergreen, its own
-  bespoke design) has NOT been restyled.
+  bespoke design) has NOT been restyled. ⚠ **De-branded 7 Nov 2026** (Jan
+  Erik: SUMAS structure, no links to the school, no address, no school name
+  in titles): the landing page and both hubs use `.kal-nav` / `.kal-phase` /
+  `.kal-footer`; the teal band, the square cards, Barlow and the small logo
+  in the bar are what remains of the school's look. `.kal-head`, `.kal-foot`,
+  `.kal-hero` are unused.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
   `/shared/fb-auth.js` `import()`s *only* once per device, to migrate a session a

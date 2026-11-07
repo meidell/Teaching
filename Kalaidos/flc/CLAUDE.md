@@ -161,3 +161,15 @@ still completes every section. The sign-in modal is /shared/login.js and is
 deliberately left as it is. The school landing page `/Kalaidos/index.html`
 renders this course's four sessions from `schedule.dates/times/where` (added
 for it) and its exam card from `schedule.exam`.
+
+**De-branded on 7 Nov 2026** (Jan Erik, on the Kalaidos landing page and the
+courses: SUMAS structure, "remove links to Kalaidos and their contact and
+their name in the title"): the hub's `.kal-head` header and `.kal-foot`/
+`.kal-wedge` footer became the light `.kal-nav` bar and the one-line
+`.kal-footer` (no kalaidos-fh.ch / CampusNet links, no Rue de Bourg, no
+school name in `<title>` or eyebrow; bloc titles end "· Jan Erik Meidell");
+`schedule.where` in courses.json says "présentiel · Lausanne" so the landing
+page prints no address. The bloc pages keep the room address for the
+in-person Saturday. See `Kalaidos/fl3/CLAUDE.md` § 7 Nov 2026 for the shared
+CSS. The two Saturday blocs are ONE entry on the landing page ("Blocs 1–2 ·
+09:30–17:30", merged by the page from same-day sessions).
