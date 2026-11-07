@@ -647,12 +647,18 @@ trusts. The two are not the same thing and one cannot replace the other.
   hub), `kal-bloc` (flc.css session pages). The fonts are SELF-HOSTED in
   `/Kalaidos/fonts/` (SIL OFL, licences beside them) — the no-external-fonts
   rule below still holds. `Kalaidos/digital banking` (evergreen, its own
-  bespoke design) has NOT been restyled. ⚠ **De-branded 7 Nov 2026** (Jan
-  Erik: SUMAS structure, no links to the school, no address, no school name
-  in titles): the landing page and both hubs use `.kal-nav` / `.kal-phase` /
-  `.kal-footer`; the teal band, the square cards, Barlow and the small logo
-  in the bar are what remains of the school's look. `.kal-head`, `.kal-foot`,
-  `.kal-hero` are unused.
+  bespoke design) has NOT been restyled. ⚠ **The school's look was DROPPED
+  on 7 Nov 2026** (Jan Erik: "I really do not like this style. keep the
+  colours, but use the rest from the HEG style"). No page loads
+  `/Kalaidos/kalaidos.css` any more (kept with its fonts, unused): the
+  Kalaidos pages are **the HEG pages in teal** — `/Kalaidos/index.html` is
+  `/HEG/index.html`'s CSS and card markup with `kalaidos-full.css`, the hubs
+  are the HEG hub (sans 800 headings, `.nav`, `.phase`, rounded `.card`
+  grid), the séance/bloc pages run on `fl3.css`/`flc.css`, which are
+  `HEG/statistics/stats.css` recoloured (the one Georgia override they had
+  was removed). Also from that day: no link to the school's sites, no
+  address, no school name in titles; the small logo in the bar is the one
+  identity mark.
 - **Self-contained pages.** No CDN scripts, no external fonts, no build step. If a page
   needs a library, inline it. The one exception is the Firebase SDK, which
   `/shared/fb-auth.js` `import()`s *only* once per device, to migrate a session a

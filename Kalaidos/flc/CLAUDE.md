@@ -149,8 +149,9 @@ before the link goes to the students.
 
 ## The Kalaidos look (25 Oct 2026)
 
-Jan Erik asked for kalaidos-fh.ch's style on the Kalaidos classes. Every page
-here now loads `/Kalaidos/kalaidos.css` AFTER its own stylesheet: the bloc
+Jan Erik asked for kalaidos-fh.ch's style on the Kalaidos classes. **Reversed
+on 7 Nov 2026 — see the end of this section.** Until then every page
+here loaded `/Kalaidos/kalaidos.css` AFTER its own stylesheet: the bloc
 pages carry `class="kal-bloc"` on `<body>`, the hub `class="kal-hub"` (its
 header, the teal « bloc par bloc » band of square cards and the dark footer
 are Kalaidos markup; the blocs are drawn from `BLOCS` as `.kal-card`), and
@@ -162,14 +163,17 @@ deliberately left as it is. The school landing page `/Kalaidos/index.html`
 renders this course's four sessions from `schedule.dates/times/where` (added
 for it) and its exam card from `schedule.exam`.
 
-**De-branded on 7 Nov 2026** (Jan Erik, on the Kalaidos landing page and the
-courses: SUMAS structure, "remove links to Kalaidos and their contact and
-their name in the title"): the hub's `.kal-head` header and `.kal-foot`/
-`.kal-wedge` footer became the light `.kal-nav` bar and the one-line
-`.kal-footer` (no kalaidos-fh.ch / CampusNet links, no Rue de Bourg, no
-school name in `<title>` or eyebrow; bloc titles end "· Jan Erik Meidell");
-`schedule.where` in courses.json says "présentiel · Lausanne" so the landing
-page prints no address. The bloc pages keep the room address for the
-in-person Saturday. See `Kalaidos/fl3/CLAUDE.md` § 7 Nov 2026 for the shared
-CSS. The two Saturday blocs are ONE entry on the landing page ("Blocs 1–2 ·
-09:30–17:30", merged by the page from same-day sessions).
+**The school's look was dropped on 7 Nov 2026** (Jan Erik: "I really do
+not like this style. keep the colours, but use the rest from the HEG
+style"). The hub and the four bloc pages no longer load `/Kalaidos/kalaidos.css`
+or carry `kal-hub` / `kal-bloc`: they are the HEG hub and the HEG week
+pages in teal (`flc.css` = `HEG/statistics/stats.css` recoloured; its
+Georgia override removed; the hub renders `BLOCS` as the HEG rounded
+`.card` grid with `.phase` / `.plead`, `.nav` with "← Tous les cours", a
+`.foot`). Also: no kalaidos-fh.ch / CampusNet links, no Rue de Bourg, no
+school name in `<title>` or eyebrow (bloc titles end "· Jan Erik Meidell");
+`schedule.where` in courses.json says "présentiel · Lausanne" so the
+landing page prints no address — the bloc pages keep the room address for
+the in-person Saturday, which the landing page shows as ONE entry
+("Séances 1–2 · 09:30–17:30", merged from same-day sessions). Details of the
+shared decision: `Kalaidos/fl3/CLAUDE.md` § 7 Nov 2026.

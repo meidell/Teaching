@@ -68,7 +68,7 @@ or numbers; the course case is Alpibois.
 ## Teaching design — one theme per séance, 3 h 30, two parties
 
 Each séance page = `seanceN.html` on the flc engine (`bloc.js`, `fl3.css`,
-`body class="kal-bloc"`, `/Kalaidos/kalaidos.css` loaded after `fl3.css`).
+no skin: the school's `kalaidos.css` was dropped on 7 Nov 2026 — see below).
 `DAY.blocks` = two parties (`17h30–19h00` / `19h15–21h00`; Saturdays
 `09h30–11h05` / `11h20–13h00` and `14h00–15h30` / `15h45–17h30`). Every section
 is 🎤 exposé (written in full), 🛠 atelier (students work, in pairs in Zoom
@@ -156,19 +156,25 @@ block is NOT deployed.
 
 ## 7 Nov 2026 — the look, the dates, and séance 1 completed
 
-- **De-branded, SUMAS structure** (Jan Erik: "keep somewhat the style from
-  Kalaidos but make the structure and design more similar to courses on
-  SUMAS"; "remove links to Kalaidos and their contact and their name in the
-  title and the bar below"). `/Kalaidos/index.html` and both hubs (fl3, flc)
-  now use `.kal-nav` (a light sticky bar: small logo + instructor/course tag +
-  "← Tous les cours"), a centred hero, `.kal-phase` headings on white and a
-  one-line `.kal-footer` — no kalaidos-fh.ch / CampusNet links, no Rue de
-  Bourg address, no school name in `<title>` or eyebrow (séance and bloc
-  page titles end "· Jan Erik Meidell"). Kept: Barlow, the teal band of
-  square cards for "Les prochaines séances" on the landing page, the
-  square `.kal-card`s and the `.kal-bloc` page skin. `.kal-head`, `.kal-foot`,
-  `.kal-hero` stay in kalaidos.css unused. The logo in the bar is the one
-  identity mark left — one line to remove if wanted.
+- **The HEG look, in teal** — in two steps the same day. First Jan Erik
+  asked for the SUMAS structure with the Kalaidos skin kept and the school's
+  links/address/name removed; then, seeing it: "I really do not like this
+  style. keep the colours, but use the rest from the HEG style." So:
+  **no page loads `/Kalaidos/kalaidos.css` any more** (Barlow, square cards,
+  dark strips, teal bands — kept on disk, unused). The séance pages simply
+  lost the `<link>` and `class="kal-bloc"`: `fl3.css` IS `HEG/statistics/
+  stats.css` recoloured (its one Georgia-headings override, inherited from
+  UMEF, was removed too — HEG headings are sans 800). The hub is the HEG hub
+  verbatim (its `.nav` with who/👁/tag/"← Tous les cours", `.phase` labels,
+  `.plead`, the rounded `.card` grid with `mnum`/`mk`/`date`/`ch`/`dec`/
+  `badge`, a dashed `.card.exam`). `/Kalaidos/index.html` is `/HEG/index.html`'s
+  CSS and card markup (Georgia h1 on the landing, as HEG's) with
+  `kalaidos-full.css`; sessions are `.card.sess` with the date as a hot
+  chip, the same-day merge kept. The deck uses the Helvetica stack. Still
+  true: no kalaidos-fh.ch / CampusNet links, no Rue de Bourg, no school
+  name in `<title>` or eyebrow (séance and bloc titles end "· Jan Erik
+  Meidell"); the small logo in the bar is the one identity mark — one line
+  to remove if wanted.
 - **Checked against the approved exam (variantes A/B, 25 Jan 2027, 120 min,
   120 pts: 50 cas particuliers · 50 consolidés · 20 évaluation)** — the hub's
   exam panel and séance 1's table now print the three section weights; the
