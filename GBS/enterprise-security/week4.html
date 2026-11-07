@@ -321,7 +321,8 @@
     <p>The first machine an intruder controls is rarely the one they want. They want the <b>domain controller</b>, the server that holds every account and can push software to every computer, and from there the file servers, the backups and, at Arvane, the terminal's control systems. Getting there is called <b>lateral movement</b>, and it mostly uses no exploit at all. Windows keeps the credentials of whoever logged on recently in memory; a free tool (Mimikatz, published in 2011) reads them out; the intruder logs on to the next machine <em>as that person</em>. NotPetya carried exactly such a credential reader, which is how it reached machines that had been patched.</p>
 
     <h3>1 · Arvane's office network, one phished clerk</h3>
-    <p>Lucie Morel's PC in Geneva is compromised (red). Each round, the intruder reads the credentials cached on every machine they hold and tries them, and the unpatched Windows flaw from Step 3, everywhere they can reach. <b>Run it as it is, then switch on defences one at a time</b> and see which ones change the outcome.</p>
+    <p>Lucie Morel, a clerk in Geneva, clicked a phishing link, so the intruder already controls her PC — that is the one red box. Every other machine is still clean. The panel plays out what happens next, one <b>round</b> at a time. In each round the intruder takes every machine it can reach from the machines it already holds, using the two tricks from the pages above: the passwords left sitting in the memory of a machine it owns, and the unpatched Windows flaw from Step 3. Press <b>Next round</b> to watch the red spread step by step, or <b>Run to the end</b> to let it finish.</p>
+    <p>The five checkboxes at the top are defences Arvane could switch on; each one closes one of the ways the intruder spreads, and what each means is listed under the panel. Here is the point of the exercise, and the part that surprises people: <b>turn the defences on one at a time and the whole network still falls every single time — no defence on its own stops the spread.</b> Your task is to find the <b>smallest combination</b> of them that keeps the intruder trapped on Lucie's PC. Switch some on, press <b>Run to the end</b>, and keep adding defences until eight of the nine boxes stay clean and the panel reads <b>Contained</b> — only Lucie's box should be left red.</p>
     <div class="gad">
       <div class="gh">Lateral movement <span class="gs" id="netState"></span></div>
       <div class="gb">
@@ -331,7 +332,7 @@
         <div class="res" id="netR"></div>
       </div>
     </div>
-    <div class="callout"><span class="ct">What the simulation assumes, plainly</span>The local administrator password is the same on every PC (it was set once, when the PCs were imaged). An IT administrator set up Lucie's scanner last week with his domain-administrator account, so that credential is still cached on her PC. The terminal administrator logs on to the control system from his ordinary office PC. The terminal's control system is joined to the same domain as the office. The backups are on a server that domain administrators can log on to. All five are common, and each is one switch in the panel. <b>Find the smallest set of switches that contains the intrusion to Lucie's PC</b>: no single one does it.</div>
+    <div class="callout"><span class="ct">Why each machine falls — and the switch that closes it</span>All five situations below are ordinary in a real office, and each matches one checkbox in the panel. <b>(1)</b> Every PC was given the <b>same</b> local-administrator password when it was first set up, so one stolen password opens all of them → <i>give every PC its own password</i>. <b>(2)</b> An IT administrator set up Lucie's scanner last week using his powerful domain-administrator account, and Windows left that account's password sitting in her PC's memory, so the intruder picks it up from her machine → <i>let admins sign in only from a separate admin-only PC, so their password is never left on an ordinary one</i>. <b>(3)</b> The terminal administrator signs in to the control system from his normal office PC, leaving his password there too → same fix as (2). <b>(4)</b> The terminal's control computers share one login system (one "domain") with the office, so an office admin account can log straight into them → <i>keep the terminal network separate, with its own accounts</i>. <b>(5)</b> The backups sit on a server that administrators can log on to, so whoever takes the admin account takes the backups as well → <i>keep one copy offline, out of reach of any login</i>. <b>No single switch keeps the intruder on Lucie's PC, and no pair is enough on its own either</b> — you are hunting for the one set that closes every way out of her machine at the same time.</div>
 
     <h3>2 · The beacon: find the machine that is calling home</h3>
     <p>An installed backdoor has to receive instructions. It does so by <b>calling out</b>, because outgoing web traffic is allowed almost everywhere: every so often it asks an outside server "anything for me?". That regular call is the <b>beacon</b>, and it is how defenders find a foothold the antivirus missed. Below are ten minutes of outgoing connections from three machines. <b>Which one is beaconing?</b></p>
@@ -344,8 +345,8 @@
       </div>
     </div>
     <div class="cap">
-      <label for="f_spread">The one setting in the network panel that changed the outcome most, and what it costs Arvane to switch it on</label>
-      <input type="text" id="f_spread" data-work="w4_spread" data-worklabel="W4 · the setting that stopped the spread" autocomplete="off" placeholder="e.g. separate admin workstations — costs a second PC and some annoyance for three IT staff">
+      <label for="f_spread">Which set of switches contained the intrusion to Lucie's PC, and if Arvane could fund only one of them first, which would you pick and what does it cost?</label>
+      <input type="text" id="f_spread" data-work="w4_spread" data-worklabel="W4 · the set that stopped the spread" autocomplete="off" placeholder="e.g. the update + a unique password per PC + admin-only PCs; fund admin-only PCs first — a second PC and some annoyance for three IT staff">
     </div>
     <button class="btn" id="spreadBtn">Done</button>
   </div>
@@ -709,11 +710,11 @@ var NODES=[
  {id:'ot2',t:'Terminal HMI',s:'operators’ screens',seg:'ot'}
 ];
 var DEF=[
- {k:'patch',t:'MS17-010 installed everywhere'},
- {k:'laps',t:'Unique local admin password per PC'},
- {k:'tier',t:'Admins use a separate admin workstation'},
- {k:'seg',t:'Terminal network separated, own accounts'},
- {k:'off',t:'One backup copy kept offline'}
+ {k:'patch',t:'Install the Windows update on every machine (closes the Step-3 flaw)'},
+ {k:'laps',t:'Give every PC its own different local-admin password'},
+ {k:'tier',t:'Let IT admins sign in only from a separate admin-only PC'},
+ {k:'seg',t:'Keep the terminal’s control network separate, with its own accounts'},
+ {k:'off',t:'Keep one backup copy offline, where no login can reach it'}
 ];
 var NET={own:{pc1:1},round:0,fresh:{},cred:{}};
 function defs(){try{return JSON.parse(ls('w4_def')||'{}');}catch(e){return {};}}
