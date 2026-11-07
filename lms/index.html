@@ -50,6 +50,17 @@ textarea.f{width:100%;min-height:120px;}
 .att button.on.excused{background:var(--a-accent-pale);border-color:var(--a-accent-line);color:var(--a-accent);}
 input.pts{width:64px;text-align:right;}
 .cancelled td{color:var(--a-faint);text-decoration:line-through;}
+/* the teacher planner (7 Nov 2026): one typical week per teacher, read side by side */
+.gw{overflow-x:auto;}
+table.g{border-collapse:separate;border-spacing:3px;}
+table.g th{font-size:10.5px;font-weight:800;color:var(--a-grey);letter-spacing:.04em;text-transform:uppercase;padding:3px 2px;white-space:nowrap;}
+table.g th.h{text-align:right;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums;padding-right:6px;}
+table.g td{width:46px;min-width:40px;height:26px;border-radius:5px;background:var(--a-wash);border:1px solid var(--a-line);text-align:center;font:800 12px var(--a-font);color:var(--a-ink2);}
+table.g td.y{background:#CFEBD9;border-color:#A9DCBB;color:#1B6B3A;} table.g td.m{background:#FFE9B8;border-color:#F5D88A;color:#8A5A00;} table.g td.n{background:#F6C9C9;border-color:#EFA9A9;color:#A12626;}
+table.g td.hm{color:var(--a-ink);cursor:default;} table.g td.hm small{color:#8A5A00;font-weight:700;}
+.sw{display:inline-flex;width:18px;height:18px;border-radius:5px;align-items:center;justify-content:center;font:900 11px var(--a-font);vertical-align:middle;margin-right:4px;}
+.sw.y{background:#CFEBD9;color:#1B6B3A;} .sw.m{background:#FFE9B8;color:#8A5A00;} .sw.n{background:#F6C9C9;color:#A12626;}
+.apill.warn{background:var(--a-warn-bg);color:var(--a-warn);}
 #gate{max-width:400px;margin:60px auto;}
 #gate h2{margin-bottom:6px;}
 /* the Overview tab (3 Nov 2026): admin2's "what do I do before the next session" for a switched course */
@@ -84,6 +95,7 @@ input.pts{width:64px;text-align:right;}
   <div class="ahd-tools">
     <select class="apick" id="pDept" hidden></select>
     <select class="apick" id="pEd" hidden></select>
+    <a class="ab" id="bPlan" href="/lms/planner.html" hidden title="Mark the hours you can teach, term by term"><i data-ic="grid"></i><span class="lbl">My availability</span></a>
     <button class="ab" id="bCal" hidden title="My calendar link"><i data-ic="calendar"></i><span class="lbl">Calendar</span></button>
     <button class="ab" id="bOut" hidden><i data-ic="logout"></i><span class="lbl">Sign out</span></button>
   </div>
@@ -137,7 +149,7 @@ const st = { me: null, depts: [], dept: null, courses: [], ed: null, tab: ls.get
 
 /* ---- sign-in (same code flow as lms.js, same session) ---- */
 function gate(note) {
-  ['pDept', 'pEd', 'bOut', 'bCal'].forEach(id => $(id).hidden = true);
+  ['pDept', 'pEd', 'bOut', 'bCal', 'bPlan'].forEach(id => $(id).hidden = true);
   $('hTitle').textContent = 'Courses'; $('hSub').textContent = '';
   main.innerHTML = `<div class="acard" id="gate"><h2>Sign in</h2><p class="muted small">With your email: a 6-digit code arrives within a minute. No password.</p>
     ${note ? `<div class="awarn">${ic('alert')}<div>${esc(note)}</div></div>` : ''}
@@ -150,8 +162,8 @@ function gate(note) {
     try {
       if (!sent) { await call('POST', '/auth/start', { email: $('gE').value.trim() }); sent = true; $('gC').hidden = false; $('gB').textContent = 'Sign in'; $('gK').focus(); }
       else { const r = await call('POST', '/auth/verify', { email: $('gE').value.trim(), code: $('gK').value }); ls.set(SKEY, { t: r.token, user: r.user }); await start(); }
-    } catch (e) { $('gX').textContent = e.message; }
-    $('gB').disabled = false;
+    } catch (e) { if ($('gX')) $('gX').textContent = e.message; }
+    if ($('gB')) $('gB').disabled = false;   /* start() may have replaced the gate already */
   };
   $('gB').onclick = go; main.querySelectorAll('input').forEach(i => i.onkeydown = e => { if (e.key === 'Enter') go(); });
   $('gE').focus();
@@ -164,7 +176,7 @@ async function start() {
   /* a teacher without a department membership still sees the departments of what they teach */
   const extra = [...new Set(st.me.teaching.map(t => t.department_id))].filter(d => !st.depts.some(x => x.id === d));
   extra.forEach(d => st.depts.push({ id: d, name: d.toUpperCase(), teachOnly: true }));
-  $('bOut').hidden = false; $('bCal').hidden = false;
+  $('bOut').hidden = false; $('bCal').hidden = false; $('bPlan').hidden = false;
   if (!st.depts.length) {
     main.innerHTML = `<div class="acard empty">Signed in as <b>${esc(st.me.user.email)}</b>. You do not administer or teach any course yet — a department administrator adds you to one.</div>`;
     return;
@@ -175,6 +187,7 @@ async function start() {
   const d0 = want.get('dept') || ls.get('lmsadm_dept');
   $('pDept').value = st.depts.some(d => d.id === d0) ? d0 : st.depts[0].id;
   await loadDept($('pDept').value, want.get('ed') || ls.get('lmsadm_ed'));
+  if (want.get('term')) termView(want.get('term'));
 }
 
 /* ---- department ---- */
@@ -198,11 +211,12 @@ async function deptView() {
   st.ed = null; nav({ dept: st.dept.id }); head(st.dept.name, 'Department overview');
   const admin = isAdmin();
   const from = new Date(), to = new Date(Date.now() + 14 * 864e5);
-  const [rooms, people, tt, clash] = await Promise.all([
+  const [rooms, people, tt, clash, terms] = await Promise.all([
     call('GET', `/departments/${st.dept.id}/rooms`).catch(() => []),
     admin ? call('GET', `/departments/${st.dept.id}/members`).catch(() => []) : [],
     call('GET', `/departments/${st.dept.id}/timetable?from=${from.toISOString()}&to=${to.toISOString()}`).catch(() => []),
     admin ? call('GET', `/departments/${st.dept.id}/conflicts?from=${from.toISOString()}&to=${new Date(Date.now() + 120 * 864e5).toISOString()}`).catch(() => []) : [],
+    call('GET', `/departments/${st.dept.id}/terms`).catch(() => []),
   ]);
   main.innerHTML = `
     <div class="asec">Courses and editions <small class="muted">${st.courses.length} courses</small></div>
@@ -218,6 +232,19 @@ async function deptView() {
         <td>${esc(m.group_label || 'all')}</td><td>${esc(m.room || (m.online_url ? 'online' : '—'))}</td><td>${esc(m.teacher || '—')}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions in the next 14 days.</div>'}</div>
     ${admin ? `<div class="asec">Students booked in two places at once <small class="muted">next 120 days · allowed, but worth knowing</small></div>
     <div class="acard tw">${clash.length ? `<table class="t"><tr><th>Student</th><th>From</th></tr>${clash.map(c => `<tr><td>${esc(c.name || c.email)}</td><td>${fWhen(c.overlap_from)}</td></tr>`).join('')}</table>` : '<div class="empty">No clashes.</div>'}</div>` : ''}
+    <div class="asec">Terms and teacher availability <small class="muted">each teacher marks one typical week per term; the timetable is built from those weeks</small></div>
+    <div class="acard tw">
+      ${terms.length ? `<table class="t"><tr><th>Term</th><th>Dates</th><th>Grid</th><th>Enter by</th><th class="n">Entered</th><th></th></tr>
+        ${terms.map(t => `<tr><td><b>${esc(t.label)}</b></td><td class="small">${fDay(t.starts_on)} – ${fDay(t.ends_on)}</td><td class="small muted">${gridLabel(t)}</td>
+          <td class="small">${t.deadline ? fDay(t.deadline) : '—'}</td><td class="n">${t.filled} / ${t.expected}${t.filled < t.expected ? ` <span class="apill warn" title="${t.expected - t.filled} not entered">${t.expected - t.filled} missing</span>` : ''}</td>
+          <td class="n" style="white-space:nowrap">${admin ? `<button class="ab sm" data-term="${t.id}">${ic('users')}All teachers</button> ` : ''}<a class="ab sm ghost" href="/lms/planner.html?term=${t.id}">${ic('grid')}My week</a></td></tr>`).join('')}</table>`
+        : `<p class="muted small" style="margin:0 0 6px">No term opened yet. ${admin ? 'Open one below: every teacher of the department then sees it on <b>My availability</b> and marks the hours they can teach.' : 'Once the department opens one, you mark your hours on <b>My availability</b> (top right).'}</p>`}
+      ${admin ? `<div class="row" style="margin-top:12px"><label>Term label<input class="f" id="tL" placeholder="e.g. Spring 2027" style="width:150px"></label><label>First day<input class="f" type="date" id="tS"></label><label>Last day<input class="f" type="date" id="tE"></label>
+          <label>Grid from<select class="f" id="tF">${hourOpts(8)}</select></label><label>Grid to<select class="f" id="tT">${hourOpts(22)}</select></label>
+          <label>Days<select class="f" id="tD"><option value="5">Mon–Fri</option><option value="6" selected>Mon–Sat</option><option value="7">Mon–Sun</option></select></label>
+          <label>Enter by<input class="f" type="date" id="tX"></label><button class="ab" id="tB">${ic('plus')}Open the term</button></div>
+        <div class="row"><label style="flex:1">What to tell the teachers (optional)<input class="f" id="tN" placeholder="e.g. Evening courses run 17:30–21:00; Saturday blocks 09:30–17:30."></label></div><div class="msg" id="tX2"></div>` : ''}
+    </div>
     <div class="grid2">
       <div><div class="asec">Rooms</div><div class="acard">
         ${rooms.length ? `<table class="t">${rooms.map(r => `<tr><td>${esc(r.name)}</td><td class="n muted">${r.capacity ? r.capacity + ' seats' : ''}</td></tr>`).join('')}</table>` : '<p class="muted small">No rooms yet. Online-only courses need none.</p>'}
@@ -233,6 +260,9 @@ async function deptView() {
   AdminUI.icons(main);
   main.querySelectorAll('[data-ed]').forEach(tr => tr.onclick = () => { $('pEd').value = tr.dataset.ed; loadEd(tr.dataset.ed); });
   main.querySelectorAll('[data-newed]').forEach(a => a.onclick = e => { e.preventDefault(); newEdition(a.dataset.newed); });
+  main.querySelectorAll('[data-term]').forEach(b => b.onclick = () => termView(b.dataset.term));
+  if (admin && $('tB')) $('tB').onclick = () => act($('tX2'), () => call('POST', `/departments/${st.dept.id}/terms`, { label: $('tL').value.trim(), starts_on: $('tS').value, ends_on: $('tE').value,
+    day_from: $('tF').value, day_to: $('tT').value, days: $('tD').value, deadline: $('tX').value || null, note: $('tN').value.trim() }), deptView, () => 'The term is open. Teachers see it on My availability.');
   if (admin) {
     $('rB').onclick = () => act($('rX'), () => call('POST', `/departments/${st.dept.id}/rooms`, { name: $('rN').value.trim(), capacity: $('rC').value || null }), deptView);
     $('pB').onclick = () => act($('pX'), () => call('POST', `/departments/${st.dept.id}/members`, { email: $('pE').value.trim(), role: $('pR').value }), deptView);
@@ -242,6 +272,70 @@ async function deptView() {
 async function newEdition(courseId) {
   const label = prompt('Label for the new edition, e.g. "Spring 2027"'); if (!label) return;
   try { const e = await call('POST', `/courses/${encodeURIComponent(courseId)}/editions`, { label, status: 'draft' }); await loadDept(st.dept.id, e.id); } catch (e) { alert(e.message); }
+}
+
+/* ---- the planner's view of one term (7 Nov 2026): every teacher's week side by side ---- */
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const hh = h => String(h).padStart(2, '0') + ':00';
+const hourOpts = sel => Array.from({ length: 25 }, (_, h) => `<option value="${h}" ${h === sel ? 'selected' : ''}>${hh(h)}</option>`).join('');
+const gridLabel = t => `${DOW[0]}–${DOW[t.days - 1]} · ${hh(t.day_from)}–${hh(t.day_to)}`;
+const MARK = { y: '✓', m: '–', n: '✕' };
+/* one week table; cell(k) returns [className, innerHTML, title] */
+function weekTable(t, cell) {
+  const hours = []; for (let h = t.day_from; h < t.day_to; h++) hours.push(h);
+  const days = []; for (let d = 1; d <= t.days; d++) days.push(d);
+  return `<div class="gw"><table class="g"><tr><th></th>${days.map(d => `<th>${DOW[d - 1]}</th>`).join('')}</tr>
+    ${hours.map(h => `<tr><th class="h">${hh(h)}</th>${days.map(d => { const k = `${d}-${String(h).padStart(2, '0')}`, c = cell(k); return `<td class="${c[0]}" title="${esc(c[2] || '')}">${c[1]}</td>`; }).join('')}</tr>`).join('')}</table></div>`;
+}
+async function termView(id) {
+  let r;
+  try { r = await call('GET', `/terms/${id}/availability`); } catch (e) { main.innerHTML = `<div class="acard empty">${esc(e.message)}</div>`; return; }
+  const t = r.term, T = r.teachers, entered = T.filter(x => x.entry), missing = T.filter(x => !x.entry && !x.former);
+  st.ed = null; nav({ dept: st.dept.id, term: id }); head(t.label, `Teacher availability · ${st.dept.name}`);
+  const who = (k, s) => entered.filter(x => x.entry.slots[k] === s).map(x => x.name || x.email);
+  const hmCell = k => { const y = who(k, 'y'), m = who(k, 'm'), n = who(k, 'n'); const cls = y.length ? 'hm y' : m.length ? 'hm m' : n.length === entered.length && n.length ? 'hm n' : 'hm';
+    const title = [y.length ? 'Available: ' + y.join(', ') : '', m.length ? 'If needed: ' + m.join(', ') : '', n.length ? 'Unavailable: ' + n.join(', ') : ''].filter(Boolean).join('\n');
+    return [cls, (y.length || m.length) ? `${y.length || ''}${m.length ? `<small>${y.length ? ' +' : ''}${m.length}</small>` : ''}` : '', title]; };
+  main.innerHTML = `
+    <div class="row" style="margin:0 0 10px"><button class="ab ghost" id="bBack">${ic('back')}Department</button></div>
+    <div class="asec">The week, every teacher together <small class="muted">${entered.length} of ${T.filter(x => !x.former).length} teachers have entered · a cell shows how many are available, +how many if needed · hover a cell for the names</small></div>
+    <div class="acard">${entered.length ? weekTable(t, hmCell) : '<div class="empty">Nobody has entered a week yet.</div>'}
+      <p class="small muted" style="margin:10px 0 0">${t.deadline ? `Teachers were asked to enter by ${fDay(t.deadline)}. ` : ''}Hours are Geneva time. The timetable tab of every edition checks a session against these marks before adding it.</p></div>
+    <div class="asec">Teachers <small class="muted">hours per week they want, at most per day, and what they marked</small></div>
+    <div class="acard tw"><table class="t"><tr><th>Teacher</th><th>Role</th><th class="n">Hours / week</th><th class="n">Max / day</th><th class="n"><span class="sw y">✓</span>Available</th><th class="n"><span class="sw m">–</span>If needed</th><th class="n"><span class="sw n">✕</span>Unavailable</th><th>Last saved</th><th>Note</th></tr>
+      ${T.map(x => x.entry ? `<tr class="click" data-who="${x.id}"><td>${esc(x.name || x.email)}<div class="small muted">${esc(x.email)}</div></td><td class="small">${x.roles.join(', ') || (x.former ? 'no role any more' : '')}</td>
+          <td class="n">${x.entry.hours_week || '—'}</td><td class="n">${x.entry.max_day || '—'}</td><td class="n">${x.entry.counts.y}</td><td class="n">${x.entry.counts.m}</td><td class="n">${x.entry.counts.n}</td>
+          <td class="small">${fWhen(x.entry.updated_at)}</td><td class="small">${esc(x.entry.note)}</td></tr>`
+        : `<tr><td>${esc(x.name || x.email)}<div class="small muted">${esc(x.email)}</div></td><td class="small">${x.roles.join(', ')}</td><td colspan="7"><span class="apill warn">nothing entered</span></td></tr>`).join('')}</table>
+      ${missing.length ? `<div class="row" style="margin-top:10px"><button class="ab sm" id="bMail">${ic('mail')}Copy the ${missing.length} email address${missing.length > 1 ? 'es' : ''} of those who have not entered</button><span class="msg" id="mlX" style="margin:0"></span></div>` : ''}</div>
+    <div class="asec">Term settings</div>
+    <div class="acard">
+      <div class="row"><label>Label<input class="f" id="eL" value="${esc(t.label)}" style="width:150px"></label><label>First day<input class="f" type="date" id="eS" value="${dIn(t.starts_on)}"></label><label>Last day<input class="f" type="date" id="eE" value="${dIn(t.ends_on)}"></label>
+        <label>Grid from<select class="f" id="eF">${hourOpts(t.day_from)}</select></label><label>Grid to<select class="f" id="eT">${hourOpts(t.day_to)}</select></label>
+        <label>Days<select class="f" id="eD">${[5, 6, 7].map(d => `<option value="${d}" ${t.days === d ? 'selected' : ''}>Mon–${DOW[d - 1]}</option>`).join('')}</select></label>
+        <label>Enter by<input class="f" type="date" id="eX" value="${t.deadline ? dIn(t.deadline) : ''}"></label></div>
+      <div class="row"><label style="flex:1">What to tell the teachers<input class="f" id="eN" value="${esc(t.note)}"></label><button class="ab primary" id="eB">${ic('check')}Save</button><button class="ab ghost" id="eDel">${ic('trash')}Delete the term</button></div>
+      <div class="msg" id="eX2"></div>
+      <p class="small muted">Shrinking the grid keeps the marks outside it in the database but hides them; teachers will not see them again until the grid grows back.</p></div>`;
+  AdminUI.icons(main);
+  $('bBack').onclick = deptView;
+  main.querySelectorAll('[data-who]').forEach(tr => tr.onclick = () => {
+    const x = T.find(y => y.id === tr.dataset.who), e = x.entry, d = $('drawer');
+    d.innerHTML = `<div class="row" style="justify-content:space-between;margin:0 0 8px"><h2>${esc(x.name || x.email)}</h2><button class="ab ghost icon" id="dX">${ic('x')}</button></div>
+      <div class="kv"><span class="muted">Hours / week</span><b>${e.hours_week || '—'}</b><span class="muted">At most per day</span><b>${e.max_day || '—'}</b><span class="muted">Last saved</span><span>${fWhen(e.updated_at)}</span></div>
+      ${e.note ? `<div class="work">${esc(e.note)}</div>` : ''}
+      <div style="margin-top:12px">${weekTable(t, k => [e.slots[k] || '', MARK[e.slots[k]] || '', ''])}</div>`;
+    AdminUI.icons(d); d.classList.add('on'); $('dX').onclick = () => d.classList.remove('on');
+  });
+  if ($('bMail')) $('bMail').onclick = async () => { const list = missing.map(x => x.email).join(', ');
+    try { await navigator.clipboard.writeText(list); $('mlX').className = 'msg ok'; $('mlX').textContent = 'Copied.'; } catch (e) { prompt('Copy these addresses:', list); } };
+  $('eB').onclick = () => act($('eX2'), () => call('PATCH', `/terms/${id}`, { label: $('eL').value.trim(), starts_on: $('eS').value, ends_on: $('eE').value, day_from: $('eF').value, day_to: $('eT').value, days: $('eD').value, deadline: $('eX').value || null, note: $('eN').value.trim() }), () => termView(id));
+  $('eDel').onclick = async () => {
+    if (!confirm(`Delete the term "${t.label}"?`)) return;
+    try { await call('DELETE', `/terms/${id}`); }
+    catch (e) { if (e.status !== 409 || !confirm(e.message + '\n\nDelete the term AND every teacher\'s entries for it?')) { alert(e.message); return; } try { await call('DELETE', `/terms/${id}?force=1`); } catch (e2) { alert(e2.message); return; } }
+    deptView();
+  };
 }
 
 /* a button's action: run, show the error or the success, then re-render */
@@ -448,6 +542,15 @@ async function tTimetable() {
   AdminUI.icons(pane());
   $('mB').onclick = () => act($('mX'), async () => {
     const n = Number($('mR').value), out = [];
+    /* did the teacher offer that hour this term? (the planner, 7 Nov 2026) — a warning, never a refusal */
+    const tu = $('mT').value && ed.staff.find(s => s.email === $('mT').value);
+    if (tu) {
+      const chk = await call('GET', `/departments/${ed.department_id}/availability/check?user_id=${tu.id}&starts_at=${encodeURIComponent(toISO($('mD').value, $('mS').value))}&ends_at=${encodeURIComponent(toISO($('mD').value, $('mE').value))}`).catch(() => null);
+      if (chk && chk.term && chk.worst !== 'y') {
+        const w = { m: 'marked this time as "if needed"', n: 'marked this time as UNAVAILABLE', none: 'did not mark this time as available', nothing: 'has not entered any availability' }[chk.worst];
+        if (!confirm(`${tu.name || tu.email} ${w} for ${chk.term.label}. Add the session${n > 1 ? 's' : ''} anyway?`)) throw new Error('Not added.');
+      }
+    }
     for (let i = 0; i < n; i++) {
       const d = new Date($('mD').value + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 7 * i);
       const day = d.toISOString().slice(0, 10);
