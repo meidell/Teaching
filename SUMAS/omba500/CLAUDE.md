@@ -137,3 +137,46 @@ applies. What differs:
   CET**. **Still open:** the 30-minute session booking Marilou also raised — no
   scheduler built yet; and omba500's `fmtDay` still formats in the reader's
   timezone (the Geneva-time fix in capstone-ba was not ported).
+
+- **Week 7 rebuilt (9 Nov 2026, omba500 only — not ported to `wind` or
+  `capstone-ba`)**: the WRITING.md pass over the whole page (every term —
+  cumulative capacity, LCOE, learning rate, CRF, capacity factor, boundary vs
+  threshold, WUE/PUE/EWIF — defined where it is used; two "By hand" boxes
+  before each formula; instructions say which rows, which chart, which
+  words), plus a new section between s2 and s3, **"Where the curve bent,
+  2021–2024, and the three mechanisms that bend it"** (no `data-step`): a
+  verified table of the cost reversal (IRENA June 2025: global offshore LCOE
+  $0.079/kWh in 2024, +4 % on 2023, Europe $0.065 → $0.080, installed cost
+  $2,852/kW; UK CfD strike prices in 2012 £: AR4 £37.35 (Jul 2022), AR5
+  ceiling £44 with no offshore bids (Sep 2023), AR6 £58.87 for 4.9 GW (Sep
+  2024); Ørsted Ocean Wind 1+2 stopped 1 Nov 2023, DKK 28.4 bn impairments
+  of which 19.9 bn on OW1, "supplier delays and rising long-dated US
+  interest rates"; Siemens Gamesa 4.X/5.X blades and bearings, €1.6 bn
+  charge, Siemens Energy FY2023 loss ≈ €4.5 bn), three mechanisms (cost of
+  capital with the CRF formula — 4 % → 7 % on $2,852/kW, 25 y, 45 % CF, $90
+  O&M = $69 → $85/MWh, +23 %; supply chain and quality; learning slowing —
+  the fitter's own rows learn 18 %/doubling 2010–24 but 6.5 % 2020–24), a
+  cost-of-capital LCOE widget (`lc`) and one new field **`w7_bend`** (w7
+  total 10 → 11 via `count.py`; added to `courses.json → project.sections`).
+  The planetary-boundaries section gained a **rare-earth calculator** (`re`)
+  on USGS MCS 2025 (world 390,000 t REO 2024, China 270,000 = 69 %, Burma
+  43,000 → 31,000, Nd oxide $134 → $56/kg 2022–24) and IEA 2021 (DD-PMSG
+  ≈ 95 % of offshore by 2040, REE demand from wind >3× by 2040, ~90 % of
+  processing in China; the DD-PMSG bar on p. 64 reads 150–300 kg/MW — the
+  calculator defaults to 200 and says so): at 11 GW/yr ≈ 2,100 t/yr = 0.5 %
+  of world output — the boundary binds through processing concentration and
+  dysprosium, not tonnage. The "last year's cohort 31×" line is gone. ⚠ **The
+  water calculator was rebuilt on Li et al.'s own formula** (on-site =
+  energy × WUE 0.55, off-site = energy × PUE 1.17 × EWIF 3.14 L/kWh, Table 1
+  US average; 2.2 + 14.7 ml per request, 29.6 requests per 500 ml; training
+  700,000 L on-site / 5.4 million L total) with two Wh-per-turn presets:
+  **4 Wh**, Li et al.'s GPT-3 assumption (§3.3.2, 0.004 kWh from OpenAI's
+  0.4 kWh/100 pages) — the default, so the page reproduces their numbers —
+  and **0.3 Wh**, the 2025 published figure Week 6 uses; the page says the
+  two differ by 13× and asks the student to state which they used. The old
+  "15 ml per turn + 2 L/kWh + 3 Wh" defaults mixed sources and are gone.
+  Forum briefs f7a/b/c in `forum.html` re-written to match; quiz Q3 (LCOE +23 %)
+  and Q5 (rare earths) are new. Every figure is asserted in
+  `_private/check_w7.py` (gitignored). Not changed: the Wright fitter
+  (`CAP.wright`), the nine-boundary tap widget's structure, the recall
+  questions, the Week 8 preview.

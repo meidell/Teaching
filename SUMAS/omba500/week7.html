@@ -6,13 +6,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex">
 <title>Week 7 · Learning curves and their limits · Capstone · SUMAS</title>
-<meta name="description" content="MA/MBA500 Capstone, Week 7 — fit Wright's Law to your own indicator, produce three 2040 projections, then ask where the curve breaks: Rockström's planetary boundaries and the water footprint of AI (Li et al.).">
+<meta name="description" content="MA/MBA500 Capstone, Week 7 — fit Wright's Law to your own indicator, produce three 2040 projections, then find where the curve bends: the 2021–2024 cost reversal, the cost of capital, the supply chain, Rockström's planetary boundaries and the water footprint of AI (Li et al.).">
 <meta name="theme-color" content="#2C5530">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌬️</text></svg>">
 <link rel="stylesheet" href="/shared/themes/sumas.css">
 <link rel="stylesheet" href="capstone.css">
 <script src="schedule.js"></script>
 <script src="/shared/admin-gate.js"></script>
+<!--
+  Week 7 rebuilt 9 Nov 2026 (omba500 only): the WRITING.md pass (every term
+  defined where it is used, every instruction says where and what, every
+  number carries unit, source and year) plus a new section between s2 and
+  s3 — "Where the curve bent, 2021–2024" — with the verified cost reversal
+  (IRENA 2025, UK CfD AR4/AR5/AR6, Ørsted 1 Nov 2023, Siemens Energy 2023),
+  the three mechanisms that bend a learning curve, a cost-of-capital LCOE
+  table (step `lc`), a rare-earth tonnage calculator on USGS 2025 + IEA 2021
+  (step `re`) and one new field `w7_bend`. The water calculator now follows
+  Li et al.'s own formula (energy × WUE on-site, energy × PUE × EWIF
+  off-site) with their Table 1 U.S.-average factors and their 4 Wh/request
+  GPT-3 assumption as the default, 0.3 Wh (2025 published) as the other
+  preset. Every figure is checked in _private/check_w7.py.
+-->
 <style>
 .pb{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:10px 0;}
 .pb button{background:#fff;border:1.5px solid var(--surface-2);border-radius:12px;padding:10px 12px;text-align:left;font:13px 'Helvetica Neue',Arial,sans-serif;color:var(--ink-soft);cursor:pointer;}
@@ -20,6 +34,12 @@
 .pb button .st{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;font-weight:700;}
 .pb button.x .st{color:var(--terra);} .pb button.ok .st{color:var(--accent);}
 .pb button.on{border-color:var(--accent-deep);background:var(--accent-pale);}
+.preset{display:inline-flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px;}
+.preset button{background:#fff;border:1.5px solid var(--surface-2);border-radius:999px;padding:4px 11px;font:12.5px 'Helvetica Neue',Arial,sans-serif;color:var(--ink-soft);cursor:pointer;}
+.preset button.on{border-color:var(--accent-deep);background:var(--accent-pale);color:var(--ink);}
+.tw td.c,.tw th.c{text-align:center;}
+.hand{background:var(--accent-pale);border-left:4px solid var(--accent-deep);border-radius:10px;padding:12px 16px;margin:12px 0;font-size:15px;}
+.hand b{color:var(--accent-deep);}
 </style>
 </head>
 <body data-course="omba500" data-module="w7" data-week="7" data-title="Week 7 · Learning curves and their limits">
@@ -38,7 +58,7 @@
 <div class="hero">
   <div class="eyebrow">Week 7 · <span data-week-dates></span> · Instructor: Dr. Jan Erik Meidell</div>
   <h1>Learning curves and <em>their limits</em></h1>
-  <p class="sub">Last week you committed to your indicators, your method and your hypothesis. This week you do the work. But there is a twist: the technique you are applying — Wright's Law — quietly assumes that scaling is unbounded. Every doubling of cumulative capacity reduces unit cost by some fixed percentage, for ever. That assumption is the engine driving every optimistic 2040 wind forecast in circulation. <b>The planet says otherwise.</b></p>
+  <p class="sub">Last week you chose your indicators, your method and your hypothesis. This week you apply the method to your own data. Most of you will use Wright's Law: the rule that every doubling of the total capacity ever built cuts the unit cost by the same percentage. The rule has no upper limit built into it, and every optimistic 2040 wind forecast relies on it. Between 2021 and 2024 the cost of offshore wind went up, not down. So this week has two halves: fit the curve to your data, then find out where it bends and why.</p>
   <span class="role">Your role this week · technology analyst</span>
 </div>
 
@@ -59,96 +79,162 @@
   <span class="kicker read">Learning focus · required materials</span>
   <h2>This week you will</h2>
   <ul class="ck">
-    <li>Fit Wright's Law (or your chosen method) to your real historical data</li>
-    <li>Produce conservative / central / aggressive 2040 projections for your headline indicator</li>
-    <li>Apply Rockström's planetary-boundaries framework to identify the ecological ceilings on wind scaling</li>
-    <li>Confront the water footprint of the AI tools you are using to do all of this</li>
+    <li>Fit Wright's Law to the historical series of your headline indicator and read the learning rate off the fit</li>
+    <li>Produce a conservative, a central and an aggressive value for 2040, each tied to one of your Phase 1 worlds</li>
+    <li>Name the mechanism most likely to bend your curve before 2040 — the cost of capital, the supply chain or the slowing of learning itself — and put a number on it</li>
+    <li>Use Rockström's planetary boundaries to say which physical limits European wind presses on, with one quantity for each</li>
+    <li>Estimate the water used by the AI assistants you work with, on-site and off-site, in litres</li>
   </ul>
-  <p><b>This week's deliverables: two forum posts, no formal hand-in.</b> But the analysis you do this week becomes the spine of your Phase 2 report, due Sunday of Week 8. Start writing as you go, not at the end.</p>
+  <p><b>This week's deliverables are two forum posts; there is no hand-in.</b> The analysis you do here becomes the core of your Phase 2 report, due on <span data-due="p2"></span>. Write the report as you go: each forum post below is a section of it in draft.</p>
   <h3>Read</h3>
-  <div class="ref"><div class="rt">Rockström, J., Steffen, W., Noone, K. et al. (2009) <i>A safe operating space for humanity.</i> Nature, 461, 472–475.</div><div class="rd"><a href="https://doi.org/10.1038/461472a" target="_blank" rel="noopener">doi.org/10.1038/461472a ↗</a>. Focus on Figure 1 — the nine boundaries and which are already crossed; the distinction between <b>boundaries</b> (hard biophysical limits) and <b>thresholds</b> (where the system flips into a new state); and the boundaries most directly relevant to wind: climate change, biosphere integrity, biogeochemical flows, freshwater, novel entities (rare-earth processing residues). For the updated picture: <a href="https://doi.org/10.1126/sciadv.adh2458" target="_blank" rel="noopener">Richardson et al. (2023), Science Advances ↗</a> — six of the nine boundaries are now transgressed.</div></div>
-  <div class="ref"><div class="rt">Li, P., Yang, J., Islam, M.A. &amp; Ren, S. (2025) <i>Making AI Less 'Thirsty': Uncovering and Addressing the Secret Water Footprint of AI Models.</i> Communications of the ACM, 68(7), 54–63.</div><div class="rd"><a href="https://doi.org/10.1145/3724499" target="_blank" rel="noopener">CACM ↗</a> · <a href="https://arxiv.org/abs/2304.03271" target="_blank" rel="noopener">open preprint on arXiv ↗</a>. Focus on how the authors distinguish <b>on-site</b> (data-centre cooling) from <b>off-site</b> (electricity generation) water use; per-query water consumption and how it scales; and the geographic dimension — which regions actually bear the water cost of AI training and inference.</div></div>
+  <div class="ref"><div class="rt">Rockström, J., Steffen, W., Noone, K. et al. (2009) <i>A safe operating space for humanity.</i> Nature, 461, 472–475.</div><div class="rd"><a href="https://doi.org/10.1038/461472a" target="_blank" rel="noopener">doi.org/10.1038/461472a ↗</a>. Read Figure 1 first: nine boundaries, drawn as a circle, with the ones already crossed shown in red. Then read the definitions: a <b>boundary</b> is a value of one physical variable, such as the CO₂ concentration in the air, that the authors propose humanity should stay below; a <b>threshold</b> is the point at which the Earth system itself flips into a different state, which may be some way beyond the boundary. For wind, the boundaries that matter are climate change, biosphere integrity, biogeochemical flows, freshwater and novel entities (new man-made substances, which here means the waste from rare-earth processing). For the current status, read <a href="https://doi.org/10.1126/sciadv.adh2458" target="_blank" rel="noopener">Richardson et al. (2023), Science Advances ↗</a>: six of the nine boundaries are now crossed.</div></div>
+  <div class="ref"><div class="rt">Li, P., Yang, J., Islam, M.A. &amp; Ren, S. (2025) <i>Making AI Less 'Thirsty': Uncovering and Addressing the Secret Water Footprint of AI Models.</i> Communications of the ACM, 68(7), 54–61.</div><div class="rd"><a href="https://doi.org/10.1145/3724499" target="_blank" rel="noopener">CACM ↗</a> · <a href="https://arxiv.org/abs/2304.03271" target="_blank" rel="noopener">open preprint on arXiv ↗</a>. Read Section 1 and Table 1. The paper separates <b>on-site</b> water, which evaporates in the cooling towers of the data centre, from <b>off-site</b> water, which the power plants use to generate the electricity the data centre buys. Both are in Table 1, for the same model trained in different places. Note the two numbers you will use below: a 500 ml bottle of water for roughly 10 to 50 medium-length GPT-3 responses, and 5.4 million litres to train GPT-3 once in an average US data centre, of which 700,000 litres on-site.</div></div>
   <h3>Watch</h3>
-  <p><a href="https://www.ted.com/talks/johan_rockstrom_let_the_environment_guide_our_development" target="_blank" rel="noopener">Johan Rockström — "Let the environment guide our development" ↗</a> (TED). The original framing of why boundaries matter for development decisions.</p>
+  <p><a href="https://www.ted.com/talks/johan_rockstrom_let_the_environment_guide_our_development" target="_blank" rel="noopener">Johan Rockström — "Let the environment guide our development" ↗</a> (TED, 2010). Rockström presents the nine boundaries himself and explains why a development decision should be checked against them.</p>
 </section>
 
 <section class="sec" data-step="s2">
   <span class="kicker">Core concepts · 1 and 2</span>
   <h2>Fitting your curve, and producing three projections</h2>
-  <p>Wright's Law in standard form: <b>Cost(Q) = Cost(Q₀) × (Q / Q₀)^(−b)</b>, where Q is cumulative installed capacity, b the learning parameter, and the learning rate = 1 − 2^(−b). A learning rate of 15% means every doubling of cumulative capacity reduces unit cost by 15%.</p>
-  <p>For offshore wind LCOE, published learning rates fall in the range of <b>9–18%</b> depending on time window and geographic scope. Onshore wind is typically 8–12%. Solar PV is famously 20%+ over the long run — which is why solar has surprised every forecaster who ever projected it linearly. You are not committing to a published number. You are fitting one to <i>your</i> data, and interpreting it.</p>
+  <p>Two terms first. <b>Cumulative installed capacity</b> is the total capacity ever built, in gigawatts (GW): not what is built this year, but everything built up to this year added together. <b>LCOE</b>, the levelised cost of electricity, is the price per megawatt-hour (MWh) at which a power plant exactly pays back the cost of building and running it over its life; it is the one number that lets you compare a wind farm with a gas plant.</p>
+  <div class="hand"><b>By hand, before the formula.</b> Global offshore wind: about $203 per MWh in 2010 when 3.1 GW had been built, about $79 per MWh in 2024 when 83 GW had been built (rounded IRENA and GWEC figures, the fitter's default rows). From 3.1 GW to 83 GW the cumulative capacity doubled 4.74 times (because 2<sup>4.74</sup> = 26.8 = 83 ÷ 3.1). The cost fell to 79 ÷ 203 = 0.389 of its 2010 value. Spread over 4.74 doublings, that is 0.389<sup>1/4.74</sup> = 0.820 per doubling: each doubling left 82% of the cost, so it removed <b>18%</b>. That 18% is the learning rate.</div>
+  <p><b>Wright's Law</b> writes the same idea as a formula: <b>Cost(Q) = Cost(Q₀) × (Q ⁄ Q₀)<sup>−b</sup></b>. Q is cumulative capacity now, Q₀ the cumulative capacity at your starting point, Cost(Q₀) the cost at that starting point, and b the learning parameter. The learning rate is 1 − 2<sup>−b</sup>; a learning rate of 15% means b = 0.234, and every doubling of Q leaves 85% of the cost.</p>
+  <p>Published learning rates for offshore wind LCOE fall between <b>9% and 18%</b>, depending on the years and the countries in the sample. Onshore wind is usually 8% to 12%. Solar photovoltaics has run above 20% for four decades, which is why every forecaster who extended solar's cost in a straight line was wrong. You are not choosing one of these published numbers. You are fitting a rate to <i>your</i> series and then saying what it means.</p>
   <h3>Three checks before you trust your fit</h3>
   <ul>
-    <li><b>Visual inspection</b> — does the log-log plot actually look linear? If it is curving, Wright's Law is not the right model.</li>
-    <li><b>Residuals</b> — are the deviations from the curve random, or systematic? Systematic residuals mean a missing variable.</li>
-    <li><b>Sanity</b> — does the projected 2040 cost make physical sense? An offshore LCOE below $30/MWh by 2040 should make you nervous. So should one above $120.</li>
+    <li><b>Look at the plot.</b> The fitter below draws cost against cumulative capacity with both axes in logarithms. Wright's Law is a straight line on that plot. If the dots curve away from the line, the learning rate is changing over time and Wright's Law is the wrong model for the series.</li>
+    <li><b>Look at the residuals.</b> A residual is the distance between a dot and the line. If the dots fall above the line for the early years and below it for the late years (or the other way round), something besides capacity is moving the cost: interest rates, steel prices, a supply-chain crisis. Name it in your post.</li>
+    <li><b>Check the 2040 number against the world.</b> An offshore LCOE below $30 per MWh in 2040 means your assumed 2040 capacity is too high or your early data too expensive; above $120 per MWh means the opposite. Both should send you back to the rows.</li>
   </ul>
   <div class="widget" id="wright"></div>
-  <h3>Conservative / central / aggressive is not a hedge</h3>
-  <p>It is a structured way to <b>surface your assumptions</b>:</p>
+  <div class="hand"><b>By hand, a second time, on the last four years only.</b> 2020: $86 per MWh at 34.4 GW. 2024: $79 at 83 GW. Capacity doubled 1.27 times (83 ÷ 34.4 = 2.41 = 2<sup>1.27</sup>); cost fell to 0.919 of its value; per doubling 0.919<sup>1/1.27</sup> = 0.935, a learning rate of <b>6.5%</b>. The whole series learns at 18% a doubling; the last four years learn at a third of that. A fit that gives every year the same weight hides this. Report both numbers.</div>
+  <h3>Conservative, central and aggressive are three sets of assumptions, not a margin of error</h3>
+  <p>From the fitter's last row ($79 per MWh at 83 GW) to 600 GW in 2040, the three standard rates give:</p>
   <div class="tw"><table>
-    <tr><th>Scenario</th><th>What you are assuming</th><th>When this is plausible</th></tr>
-    <tr><td><b>Conservative</b></td><td>Learning rate slows; supply chain binds; financing costs stay elevated</td><td>Fragmented Europe, broken supply chains, high rates persist</td></tr>
-    <tr><td><b>Central</b></td><td>Historical learning rate continues; modest supply-chain adjustment</td><td>Roughly the world we are in now, extrapolated</td></tr>
-    <tr><td><b>Aggressive</b></td><td>Learning accelerates; supply-chain reorganisation succeeds; capital becomes abundant</td><td>Coordinated Europe, technology breakthroughs, the rate cycle turns</td></tr>
+    <tr><th>Scenario</th><th class="c">Learning rate</th><th class="c">2040 LCOE at 600 GW</th><th>What the rate assumes</th><th>Which Phase 1 world this is</th></tr>
+    <tr><td><b>Conservative</b></td><td class="c">10%</td><td class="c">$58 / MWh</td><td>Learning slows; the supply chain stays short of vessels and turbines; interest rates stay high</td><td>A fragmented Europe with expensive capital</td></tr>
+    <tr><td><b>Central</b></td><td class="c">15%</td><td class="c">$50 / MWh</td><td>The 2010–2024 rate continues; the supply chain adjusts slowly</td><td>Today's world, extended</td></tr>
+    <tr><td><b>Aggressive</b></td><td class="c">20%</td><td class="c">$42 / MWh</td><td>Learning speeds up; ports, vessels and factories are built; capital becomes cheap again</td><td>A coordinated Europe with cheap capital</td></tr>
   </table></div>
-  <p>Notice how these map directly onto the 2×2 you built in Phase 1. That is the point. <b>Your three projections are not arbitrary — they are the quantified versions of your scenarios.</b></p>
+  <p>The right-hand column is the point. <b>Each projection is one of your Phase 1 worlds, measured in dollars per MWh.</b> When you write the central projection into your Phase 2 report, name the world it belongs to and the assumptions it carries.</p>
+</section>
+
+<section class="sec">
+  <span class="kicker">Core concepts · between the fit and the limits</span>
+  <h2>Where the curve bent, 2021–2024, and the three mechanisms that bend it</h2>
+  <p>Your Phase 2 report needs more than a fitted line, because the line has just been contradicted. Here is what happened to offshore wind costs in the last four years, with sources, and then the three mechanisms that explain it. Each mechanism is a reason your central projection could be wrong, and each has a number you can put in your report.</p>
+
+  <h3>1 · What happened</h3>
+  <div class="tw"><table>
+    <tr><th>Reading</th><th>Value</th><th>Source</th></tr>
+    <tr><td>Global average LCOE of new offshore wind, 2024</td><td>$0.079 per kWh (= $79 per MWh), <b>4% higher</b> than in 2023; Europe rose from $0.065 to $0.080 per kWh</td><td>IRENA, <i>Renewable Power Generation Costs in 2024</i> (June 2025)</td></tr>
+    <tr><td>Installed cost of offshore wind, 2024</td><td>$2,852 per kW, unchanged from 2023 while every other renewable technology fell by more than 10%</td><td>IRENA, same report</td></tr>
+    <tr><td>UK offshore wind auctions, the price the state guarantees per MWh (in 2012 pounds)</td><td>July 2022: <b>£37.35</b>. September 2023: a ceiling of <b>£44</b> and <b>no offshore project bid at all</b>. September 2024: <b>£58.87</b> for 4.9 GW of new fixed-bottom projects</td><td>UK Department for Energy Security and Net Zero, Contracts for Difference allocation rounds 4, 5 and 6</td></tr>
+    <tr><td>Ørsted stops two US projects (Ocean Wind 1 and 2, New Jersey)</td><td>1 November 2023; write-downs of <b>DKK 28.4 billion</b> (about €3.8 billion), DKK 19.9 billion of it on Ocean Wind 1; reasons given: supplier delays and rising long-term US interest rates</td><td>Ørsted company announcement, 1 November 2023</td></tr>
+    <tr><td>Siemens Gamesa, the largest European turbine maker, finds faults in its 4.X and 5.X onshore turbines (rotor blades and main bearings)</td><td>A charge of <b>€1.6 billion</b> to repair them, €2.2 billion for wind in total; the parent Siemens Energy closed its 2023 financial year with a loss of about <b>€4.5 billion</b></td><td>Siemens Energy press release, 7 August 2023, and full-year results, November 2023</td></tr>
+  </table></div>
+  <p>Read the UK row twice. In two years the guaranteed price for new offshore wind rose by 58%, from £37.35 to £58.87 per MWh in the same 2012 pounds, while cumulative capacity kept growing. On a Wright's Law plot that is a point far above the line. Your fit must either explain it or admit that it cannot.</p>
+
+  <h3>2 · Mechanism one: the cost of capital</h3>
+  <p>A wind farm is almost all up-front cost: the turbines, foundations and cables are paid for before the first MWh is sold. That is why the interest rate matters more for wind than for a gas plant, whose main cost is fuel bought year by year. The formula makes the effect visible:</p>
+  <p style="text-align:center"><b>LCOE = (installed cost per kW × capital recovery factor + annual O&amp;M per kW) ÷ MWh produced per kW per year</b></p>
+  <p>The <b>capital recovery factor</b> (CRF) turns a one-off investment into an equal annual payment over the plant's life, exactly like a mortgage: CRF = r(1+r)<sup>n</sup> ⁄ ((1+r)<sup>n</sup> − 1), where r is the cost of capital and n the life in years. <b>O&amp;M</b> is operation and maintenance, the yearly running cost. MWh per kW per year = 8.76 × the capacity factor, because a kilowatt running every hour of the year would make 8.76 MWh, and a wind farm runs at a fraction of that (its <b>capacity factor</b>, about 45% to 52% for new offshore farms).</p>
+  <div class="hand"><b>By hand.</b> Installed cost $2,852 per kW (IRENA 2024), life 25 years, O&amp;M $90 per kW per year, capacity factor 45%. At a cost of capital of 4%: CRF = 0.0640, so the capital costs $182.6 per kW per year; add $90 of O&amp;M = $272.6; divide by 8.76 × 0.45 = 3.94 MWh: <b>LCOE = $69 per MWh</b>. At 7%, with nothing else changed: CRF = 0.0858, capital $244.7, total $334.7, <b>LCOE = $85 per MWh</b>. Three percentage points on the interest rate add 23% to the cost of electricity, with the same turbines on the same site. Between 2021 and 2023, long-term rates in the US and Europe rose by about three points. That is most of the UK row.</div>
+  <div class="widget"><div class="wt">Cost of capital and LCOE · change one input, read the result</div>
+    <div class="row">
+      <div><label>Installed cost, $ per kW</label><input type="number" id="lcCap" value="2852" step="50" min="0"></div>
+      <div><label>Cost of capital, % a year</label><input type="number" id="lcR" value="7" step="0.5" min="0" max="20"></div>
+      <div><label>Life, years</label><input type="number" id="lcN" value="25" step="1" min="5" max="40"></div>
+      <div><label>Capacity factor, %</label><input type="number" id="lcCF" value="45" step="1" min="10" max="65"></div>
+      <div><label>O&amp;M, $ per kW per year</label><input type="number" id="lcOM" value="90" step="5" min="0"></div>
+    </div>
+    <div class="out" id="lcOut"></div>
+    <p class="note">The result is compared with the same plant at a 4% cost of capital, the level European offshore projects financed around 2020. Try 4%, 7% and 9%, then try the 2010 installed cost of about $5,400 per kW at 4% to see why learning and cheap money together produced the 2010–2020 fall. Inputs are IRENA 2024 for the installed cost; the O&amp;M and capacity-factor defaults are round mid-range values for you to replace with your project's.</p>
+  </div>
+
+  <h3>3 · Mechanism two: the supply chain and the quality of what it delivers</h3>
+  <p>Wright's Law assumes that building more makes each unit cheaper. In 2021–2023 the industry built more and each unit got <i>more</i> expensive, for three reasons you have already met. Turbine makers raced to 13–15 MW machines and some of the new platforms failed early: Siemens Gamesa's €1.6 billion repair bill is the price of learning too fast. Installation vessels able to lift a 15 MW nacelle are few, and Week 5 showed that the non-Chinese fleet cannot carry the 2030 pipeline. Steel, copper and shipping prices rose with inflation after 2021. Week 6's turbine timeline showed the rating curve flattening at 13–15 MW from 2023 to 2027: when the machine stops growing, one of the two engines of the learning curve (bigger turbines spread fixed costs over more MWh) stops running.</p>
+
+  <h3>4 · Mechanism three: learning itself slows</h3>
+  <p>The second by-hand calculation above is the evidence: 18% a doubling over 2010–2024, 6.5% over 2020–2024. Learning rates are not constants of nature. They are high while a technology moves from prototypes to factories, and they fall as the easy improvements are used up. Two things to test on your own series: fit the first half and the second half of your years separately and compare the two rates; and check whose capacity your Q column counts. Most of the 83 GW of global offshore wind at the end of 2024 was built in China, at Chinese prices. A European cost series fitted against a global capacity series borrows learning that European projects may never see.</p>
+
+  <h3>5 · What this does to your three projections</h3>
+  <p>Add the mechanism to the scenario, as a second line under each learning rate. The conservative world is not only "10% learning"; it is 10% learning <i>and</i> a cost of capital of 7%, which the table above turns into dollars. The aggressive world is 20% learning <i>and</i> 4% capital <i>and</i> a vessel fleet that is built in time. Write your central projection with its bend named: which mechanism, how large, and what evidence would tell you by 2030 that it has started.</p>
+  <div class="wb">
+    <div><label>The mechanism most likely to bend your central projection, the size of the effect on your 2040 number, and the figure behind it</label><textarea data-work="w7_bend" data-worklabel="Phase 2 · the mechanism that bends the central projection, its size and its evidence" placeholder="e.g. Cost of capital. Central 2040 LCOE $50/MWh assumes 4%; at 7% the same plant costs 23% more (CRF 0.0858 vs 0.0640, IRENA 2024 installed cost), so my central case becomes $61. Evidence to watch: the UK CfD strike price in 2012 pounds, AR7 and AR8."></textarea></div>
+  </div>
+  <p class="small">Sources: IRENA, <i>Renewable Power Generation Costs in 2024</i> (June 2025); UK Contracts for Difference results, allocation rounds 4 (7 July 2022), 5 (8 September 2023) and 6 (3 September 2024), strike prices in 2012 prices; Ørsted company announcement 1 November 2023; Siemens Energy Q3 FY2023 press release (7 August 2023). The capital recovery factors are computed, not quoted.</p>
 </section>
 
 <section class="sec" data-step="s3">
   <span class="kicker">Core concepts · 3</span>
   <h2>Where the curve breaks — planetary boundaries</h2>
-  <p>Rockström and colleagues defined nine planetary boundaries. The 2023 update concluded that six are now in the danger zone: climate change, biosphere integrity, biogeochemical flows, land-system change, freshwater, and novel entities. European wind scaling pushes against several of them. Tap each boundary:</p>
-  <div class="widget"><div class="wt">The nine boundaries · which does wind press on, and how?</div><div class="pb" id="pbs"></div><div class="out" id="pbOut">Tap a boundary. Red = transgressed in the 2023 assessment.</div></div>
-  <p><b>The pattern matters: wind solves one planetary-boundary problem partly by pressing on others.</b> That is not a reason to stop building it. It is a reason to be honest about the trade-offs when you make your final recommendation. The same logic applies to AI: Luccioni gave you the energy and carbon. Li et al. give you the water.</p>
+  <p>Rockström and colleagues (2009) defined nine planetary boundaries. Richardson and colleagues (2023) found six of them crossed: climate change, biosphere integrity, biogeochemical flows, land-system change, freshwater change and novel entities. European wind presses on several of them. Tap each boundary to read how:</p>
+  <div class="widget"><div class="wt">The nine boundaries · which does wind press on, and how?</div><div class="pb" id="pbs"></div><div class="out" id="pbOut">Tap a boundary. Red = crossed in the 2023 assessment.</div></div>
+  <p>The pattern to state in your report: <b>wind relieves one boundary (climate) partly by pressing on others</b> (biosphere, novel entities, freshwater). That is not an argument against building it. It is the trade-off a consultant writes down, so that the client decides with it in view. The same applies to the AI you use: Luccioni (Week 6) gave you its energy and carbon; Li et al. give you its water.</p>
+
+  <h3>Rare earths: how much, and where it binds</h3>
+  <p>The offshore turbines being built today are mostly <b>direct-drive machines with permanent magnets</b>: no gearbox, and a generator ring of magnets made of neodymium and praseodymium, hardened with dysprosium, all rare-earth elements. The IEA (2021) expects these machines to be about 95% of the offshore market by 2040, and rare-earth demand from wind to more than triple by 2040 in its sustainable-development scenario. Its chart (p. 64) draws the rare-earth content of a direct-drive permanent-magnet turbine between 150 and 300 kg per MW; a gearbox turbine with an induction generator, the onshore standard, uses almost none. Put Week 6's build rate through that:</p>
+  <div class="widget"><div class="wt">Rare earths for Europe's offshore build · tonnes a year, and the share of the world's supply</div>
+    <div class="row">
+      <div><label>EU-27 offshore additions, GW a year</label><input type="number" id="reGW" value="11" step="1" min="0"></div>
+      <div><label>Share built with permanent magnets, %</label><input type="number" id="rePM" value="95" step="5" min="0" max="100"></div>
+      <div><label>Rare earths per MW, kg</label><input type="number" id="reKG" value="200" step="10" min="0"></div>
+    </div>
+    <div class="out" id="reOut"></div>
+    <p class="note">11 GW a year is what the member states' 2030 goal needs (Week 6). The world mined 390,000 tonnes of rare-earth oxides in 2024 (USGS, <i>Mineral Commodity Summaries 2025</i>), of which China 270,000 tonnes (69%); Burma, the main source of the heavy rare earths such as dysprosium, fell from 43,000 to 31,000 tonnes between 2023 and 2024. China also does about 90% of the processing that turns ore into oxides, metals and magnets (IEA 2021). The price of neodymium oxide fell from $134 per kg in 2022 to $56 in 2024 (USGS), so the market shows no shortage today.</p>
+  </div>
+  <p>Read the result as a consultant would: Europe's whole offshore build needs about half a percent of what the world mines each year. <b>The boundary does not bind through tonnage. It binds through where the processing happens</b> (one country, about 90%), what it leaves behind (the thorium-bearing tailings and acid waste at Bayan Obo in Inner Mongolia and at the Lynas plant that treats Mount Weld ore, which is the "novel entities" boundary), and the one element whose supply is genuinely thin, dysprosium. That is the sentence Forum 14 asks you to write for your own two boundaries.</p>
 </section>
 
 <section class="sec" data-step="s4">
   <span class="kicker">Core concepts · 4</span>
-  <h2>The water you didn't measure last week</h2>
-  <p>Last week's AI audit estimated your project's energy and carbon. It almost certainly did not include water. Li et al.'s headline numbers: training GPT-3 used ~700,000 litres of fresh water, almost all for data-centre cooling; a short ChatGPT conversation (~20–50 queries) consumes roughly <b>500 ml</b> — a small bottle; and off-site water (used by the power plants generating the data centre's electricity) often <i>exceeds</i> on-site cooling water.</p>
-  <div class="widget"><div class="wt">Water footprint of your project to date · extend Week 6's audit</div>
+  <h2>The water you did not measure last week</h2>
+  <p>Last week's AI audit estimated the energy and carbon of your Phase 1 work. It did not include water. Li et al. (2025) measure it in two places. <b>On-site</b> water evaporates in the cooling towers that keep the servers cool; they express it as a water-usage effectiveness, <b>WUE</b>, in litres per kWh the servers use (0.55 litres per kWh for an average US data centre, Table 1). <b>Off-site</b> water is what the power plants use to generate the data centre's electricity, mainly steam cooling at gas, coal and nuclear plants; they express it as <b>EWIF</b>, litres per kWh of electricity (3.14 litres per kWh for the average US grid, Table 1), applied to the data centre's whole draw, which is the server energy times the <b>PUE</b> (power-usage effectiveness, 1.17: for every kWh the servers use, the building uses 1.17). Their headline figures: training GPT-3 once in an average US data centre used 5.4 million litres, 700,000 of them on-site; and GPT-3 "drinks" a 500 ml bottle for 10 to 50 medium-length responses, 29.6 responses in the US average, 10.5 in Washington State, 70.4 in Ireland.</p>
+  <div class="widget"><div class="wt">Water footprint of your project to date · Li et al.'s formula with their Table 1 factors</div>
     <div class="row">
       <div><label>Text turns so far (all phases)</label><input type="number" id="wT" value="250" min="0"></div>
-      <div><label>On-site cooling, ml per turn</label><input type="number" id="wOn" value="15" step="1" min="0"></div>
-      <div><label>Wh per turn</label><input type="number" id="wWh" value="3" step="0.1" min="0"></div>
-      <div><label>Off-site water, litres per kWh of generation</label><input type="number" id="wOff" value="2" step="0.1" min="0"></div>
+      <div><label>Wh per turn (server energy)</label><input type="number" id="wWh" value="4" step="0.1" min="0"></div>
+      <div><label>WUE, litres on-site per kWh</label><input type="number" id="wWUE" value="0.55" step="0.05" min="0"></div>
+      <div><label>PUE</label><input type="number" id="wPUE" value="1.17" step="0.01" min="1"></div>
+      <div><label>EWIF, litres per kWh generated</label><input type="number" id="wEWIF" value="3.14" step="0.1" min="0"></div>
     </div>
+    <div class="preset"><span class="note" style="align-self:center">Wh per turn:</span><button type="button" data-wh="4" class="on">4 Wh — Li et al.'s GPT-3 assumption (2023)</button><button type="button" data-wh="0.3">0.3 Wh — 2025 published figures for a short prompt</button></div>
     <div class="out" id="wOut"></div>
-    <p class="note">15 ml per turn is Li et al.'s 500 ml ÷ ~30 queries, a mid-point; the off-site factor depends entirely on the generation mix — thermal plants withdraw litres per kWh, wind and solar almost none, which is itself a finding for your report. Where does the water land? Data centres cluster in regions chosen for cheap electricity and cool climates: Arizona, Iowa, parts of Spain and Ireland. Use <a href="https://www.wri.org/aqueduct" target="_blank" rel="noopener">WRI Aqueduct ↗</a> for the water-stress index of the region you think your provider routes through.</p>
+    <p class="note">On-site litres = turns × Wh ÷ 1,000 × WUE. Off-site litres = turns × Wh ÷ 1,000 × PUE × EWIF. The two presets are the two honest answers to "how much energy does one turn use": Li et al. assume 4 Wh per GPT-3 response (0.004 kWh, from OpenAI's 2020 figure of 0.4 kWh per 100 pages); Google, OpenAI and Epoch AI published 0.24–0.34 Wh for a short prompt to a 2025 assistant (Week 6). They differ by a factor of 13, and your report should say which one you used and why. For the place: Washington State's factors are WUE 0.95 and EWIF 9.5, Ireland's 0.02 and 1.48 (Table 1); a data centre on a wind-heavy grid has an EWIF near 0.1. Look up the region you think your provider routes through on <a href="https://www.wri.org/aqueduct" target="_blank" rel="noopener">WRI Aqueduct ↗</a> to see whether that water is scarce there.</p>
   </div>
-  <p>This matters for your final recommendation. If you are going to argue that wind helps decarbonise Europe, and you are using AI to make that argument, you should be able to say something honest about the water cost of your method.</p>
+  <p>Why this belongs in a recommendation about wind: if you argue that wind helps decarbonise Europe and you built the argument with an assistant whose data centre draws water in a dry region, your client is entitled to know. Li et al. project that AI will withdraw 4.2 to 6.6 billion cubic metres of water worldwide in 2027. Say what your share was, in litres, and whether a wind-powered data centre would have changed it.</p>
 </section>
 
 <section class="sec" data-step="s5">
   <span class="kicker talk">Activities · this week's forums</span>
-  <h2>Fit it, then break it</h2>
+  <h2>Forum 13 fits the curve. Forum 14 finds where it stops holding.</h2>
 
   <div class="fcard" data-forum="f7a">
-    <p>Apply your chosen analytical method to your headline indicator. Produce three 2040 projections.</p>
+    <p>Apply your chosen method to your headline indicator and produce three 2040 values.</p>
     <div class="steps">
-      <div class="step"><b>Pull the historical series</b> for your headline indicator — likely offshore wind LCOE, EU wind capacity, or wind's share of EU generation. Aim for at least 10 data points across 10+ years.</div>
-      <div class="step"><b>Use Claude / ChatGPT / Perplexity to fit the curve.</b> Sample prompt: <i>"I have annual offshore wind LCOE data from 2010 to 2024 [paste data]. Fit a Wright's Law curve of the form Cost(Q) = Cost(Q₀) × (Q/Q₀)^(−b) using cumulative installed capacity. Report the learning rate. Project 2030, 2035 and 2040 under three scenarios: 10% learning rate (conservative), 15% (central), 20% (aggressive)."</i></div>
-      <div class="step"><b>Verify the maths yourself.</b> Don't trust the AI. Spot-check at least one calculation by hand or in a spreadsheet — or in the fitter above.</div>
-      <div class="step"><b>Produce a chart</b> — log-log plot of your fit plus the three forward projections. A screenshot is fine at this stage; this is not your final Phase 2 figure.</div>
-      <div class="step"><b>Post 350–450 words:</b> your learning rate and how it compares to published figures · your three 2040 projections · which scenario is closest to the central trajectory of your Phase 1 matrix, and why · one thing the AI got wrong or had to be pushed on · one sanity check that surprised you.</div>
+      <div class="step"><b>Pull the historical series</b> for your headline indicator: offshore wind LCOE in $ per MWh, EU wind capacity in GW, or wind's share of EU generation in %. You need at least 10 yearly values over 10 or more years, each with its source. For a Wright's Law fit you also need the cumulative global (or European, say which) capacity in each of those years.</div>
+      <div class="step"><b>Fit the curve with your assistant.</b> A prompt that works: <i>"Here are yearly values of offshore wind LCOE in $/MWh and cumulative installed capacity in GW from 2010 to 2024 [paste the table]. Fit Wright's Law, Cost(Q) = Cost(Q₀) × (Q/Q₀)^(−b), by linear regression of log(cost) on log(capacity). Report b, the learning rate 1 − 2^(−b), and R². Then project 2030, 2035 and 2040 at cumulative capacities of 160, 330 and 600 GW under learning rates of 10%, 15% and 20%."</i></div>
+      <div class="step"><b>Check one number yourself.</b> Paste the same rows into the fitter above, or redo one projection by hand as in the two grey boxes. If the assistant's learning rate and the fitter's differ by more than one percentage point, find out why before you post.</div>
+      <div class="step"><b>Make the chart</b>: cost against cumulative capacity, both axes logarithmic, your dots, your fitted line, the three dashed projections. A screenshot of the fitter or of your spreadsheet is enough this week.</div>
+      <div class="step"><b>Post 350–450 words</b> containing: your learning rate and how it compares with the 9–18% published range · your three 2040 values with the capacity you assumed · which of the three is closest to the central world of your Phase 1 matrix, and why · one thing the assistant got wrong or had to be corrected on · the learning rate of your last five years alone, and what the difference tells you.</div>
     </div>
-    <p>Reply to two peers by Sunday evening: focus on whether their <b>assumptions</b> are defensible, not whether their numbers match yours.</p>
+    <p>Reply to two peers by Sunday evening. Comment on whether their <b>assumptions</b> hold (the capacity path, the years included, the cost of capital), not on whether their numbers match yours.</p>
   </div>
 
   <div class="fcard" data-forum="f7b">
-    <p>Apply the planetary-boundaries framework to your specific consulting question.</p>
+    <p>Apply the planetary-boundaries framework to your consulting question.</p>
     <ol>
-      <li>Of Rockström's nine boundaries, identify the <b>two</b> most likely to constrain European wind scaling to 2040. Be specific about <i>which materials, ecosystems or processes</i> are doing the constraining.</li>
-      <li>Find at least one piece of quantitative evidence for each — projected rare-earth demand vs supply, biodiversity impact studies, water intensity of steel production, end-of-life blade volumes.</li>
-      <li>Ask: at what level of European wind deployment does each boundary start to bind? Be quantitative if you can. <i>"Neodymium demand for permanent-magnet turbines exceeds X% of current global production at roughly Y GW/year of additions"</i> is the kind of sentence you are aiming for.</li>
-      <li><b>Post 300–400 words:</b> your two boundaries and why these rather than others · the evidence · what this means for your <b>aggressive</b> 2040 scenario — does it remain plausible once you account for these constraints? · whether this changes which company (Ørsted or TotalEnergies) is better positioned, and why.</li>
+      <li>Of Rockström's nine boundaries, choose the <b>two</b> most likely to limit European wind before 2040. Name the material, ecosystem or process that does the limiting: dysprosium supply, North Sea seabed habitat, fresh water for steel-making, blade waste at end of life.</li>
+      <li>Find one quantity for each, with its source and year: tonnes of rare earths per year against world output, hectares of seabed against the marine spatial plan, cubic metres of blade waste per GW decommissioned.</li>
+      <li>Say at what level of European deployment each limit starts to bind, and how. The rare-earth calculator above gives you the form of the sentence: <i>"At 11 GW a year of EU offshore additions, rare-earth demand is about 2,100 tonnes a year, 0.5% of world mine output; the limit is not tonnage but processing, 90% of which is in one country."</i></li>
+      <li><b>Post 300–400 words</b> containing: your two boundaries and why these two · the quantity for each · what they do to your <b>aggressive</b> 2040 projection: does it survive them? · whether they change which company, Ørsted or TotalEnergies, is better placed, and why.</li>
     </ol>
-    <p><b>This is the activity that distinguishes a consultant from a fan of wind energy. Anyone can project the curve. Few can tell you when it breaks.</b></p>
+    <p>Projecting the curve is the first half of the analyst's job. This forum asks for the second half: the point at which the projection stops holding, with a number.</p>
   </div>
 
   <div class="fcard" data-forum="f7c">
-    <p>Extend your Week 6 AI audit to include water, using Li et al.'s figures and the calculator above. Distinguish on-site (cooling) from off-site (electricity) water. If you can identify which data-centre region your provider routes through (most publish sustainability disclosures), use a region-specific water-stress index — WRI Aqueduct is the standard. A 100–200-word reflection is enough. The point is honesty: you are using a tool that has a water cost, in regions that may be water-stressed. A recommendation that ignores this is incomplete.</p>
+    <p>Extend your Week 6 AI audit to water, using the calculator above and Li et al.'s Table 1. Give the on-site and the off-site litres separately, say which Wh-per-turn preset you used and why, and name the data-centre region you assumed (most providers publish one in their sustainability disclosures) with its WRI Aqueduct water-stress class. 100–200 words. The point is to be exact about your own method's cost, in the same units you use for the client's.</p>
   </div>
 </section>
 
@@ -157,17 +243,18 @@
   <h2>Data for the fit and for the limits</h2>
   <div class="two">
     <div><h4>For the fit</h4><ul>
-      <li><a href="https://www.irena.org/Energy-Transition/Technology/Costs" target="_blank" rel="noopener">IRENA renewable cost database ↗</a> — full historical LCOE series</li>
+      <li><a href="https://www.irena.org/Energy-Transition/Technology/Costs" target="_blank" rel="noopener">IRENA renewable cost database ↗</a> — LCOE and installed cost by technology and year, 2010 onwards; the June 2025 report covers 2024</li>
       <li><a href="https://windeurope.org/intelligence-platform/" target="_blank" rel="noopener">WindEurope statistics ↗</a> — EU offshore and onshore capacity by year</li>
-      <li><a href="https://gwec.net/" target="_blank" rel="noopener">GWEC ↗</a> — global cumulative offshore capacity, which the learning curve needs</li>
-      <li><b>ChatGPT</b> Advanced Data Analysis (Plus) is useful for the log-log plots; <b>Claude</b> for step-through verification of the maths</li>
+      <li><a href="https://gwec.net/" target="_blank" rel="noopener">GWEC ↗</a> — global cumulative offshore capacity, which a learning curve on global cost needs</li>
+      <li><a href="https://www.gov.uk/government/collections/contracts-for-difference-cfd-allocation-round-results" target="_blank" rel="noopener">UK Contracts for Difference results ↗</a> — the strike prices by round, in 2012 prices: the cleanest public series of what offshore wind is actually sold for</li>
+      <li><b>ChatGPT</b> with data analysis for the log-log plot; <b>Claude</b> to check the regression step by step</li>
     </ul></div>
     <div><h4>For the limits</h4><ul>
-      <li><a href="https://www.iea.org/topics/critical-minerals" target="_blank" rel="noopener">IEA critical minerals ↗</a> — rare-earth and material demand projections</li>
-      <li><a href="https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries" target="_blank" rel="noopener">USGS Mineral Commodity Summaries ↗</a> — rare-earth production by country</li>
-      <li><a href="https://www.stockholmresilience.org/research/planetary-boundaries.html" target="_blank" rel="noopener">Stockholm Resilience Centre — planetary boundaries ↗</a> — current status of all nine</li>
-      <li><a href="https://doi.org/10.1126/science.1259855" target="_blank" rel="noopener">Steffen et al. (2015) ↗</a> — the first major update · <a href="https://doi.org/10.1126/sciadv.adh2458" target="_blank" rel="noopener">Richardson et al. (2023) ↗</a> — the most recent assessment</li>
-      <li><a href="https://www.wri.org/aqueduct" target="_blank" rel="noopener">WRI Aqueduct ↗</a> — water stress by region</li>
+      <li><a href="https://www.iea.org/reports/the-role-of-critical-minerals-in-clean-energy-transitions" target="_blank" rel="noopener">IEA, The Role of Critical Minerals in Clean Energy Transitions (2021) ↗</a> — mineral content per MW by turbine type (p. 64), demand to 2040, processing shares</li>
+      <li><a href="https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-rare-earths.pdf" target="_blank" rel="noopener">USGS Mineral Commodity Summaries 2025, rare earths ↗</a> — world mine production by country, 2023 and 2024, and prices</li>
+      <li><a href="https://www.stockholmresilience.org/research/planetary-boundaries.html" target="_blank" rel="noopener">Stockholm Resilience Centre — planetary boundaries ↗</a> — the current status of all nine</li>
+      <li><a href="https://doi.org/10.1126/science.1259855" target="_blank" rel="noopener">Steffen et al. (2015) ↗</a> — the first major update · <a href="https://doi.org/10.1126/sciadv.adh2458" target="_blank" rel="noopener">Richardson et al. (2023) ↗</a> — the latest assessment</li>
+      <li><a href="https://www.wri.org/aqueduct" target="_blank" rel="noopener">WRI Aqueduct ↗</a> — water stress by region, for the data centre you assume</li>
     </ul></div>
   </div>
 </section>
@@ -176,8 +263,8 @@
   <span class="kicker">Your consulting file</span>
   <h2>Two notes to yourself</h2>
   <div class="wb">
-    <div><label>Your fitted learning rate, three 2040 numbers, and the sanity check that surprised you</label><textarea data-work="w7_fit" data-worklabel="Fitted rate, three 2040 projections, the surprising sanity check" placeholder="e.g. 14.1% on IRENA 2010–2024 (R² 0.93). 2040: $66 / $55 / $46 at 600 GW. Surprise: dropping 2010 alone moved the rate to 11% — the early points carry the fit."></textarea></div>
-    <div><label>Your two binding boundaries, the evidence, and the deployment level at which each binds</label><textarea data-work="w7_boundaries" data-worklabel="Two binding boundaries with evidence and the level at which they bind" placeholder="e.g. Novel entities (rare earths): neodymium demand at 30 GW/yr of EU additions ≈ 12% of 2024 global NdPr output (IEA). Biosphere integrity: …"></textarea></div>
+    <div><label>Your fitted learning rate, your three 2040 values, and the check that surprised you</label><textarea data-work="w7_fit" data-worklabel="Fitted rate, three 2040 projections, the surprising sanity check" placeholder="e.g. 19.8% on the fitter's default IRENA/GWEC rows (R² 0.94). 2040 at 600 GW: $58 / $50 / $42 at 10 / 15 / 20%. Surprise: 2020–2024 alone learns at 6.5% a doubling, a third of the long-run rate."></textarea></div>
+    <div><label>Your two binding boundaries, the quantity for each, and the deployment level at which each binds</label><textarea data-work="w7_boundaries" data-worklabel="Two binding boundaries with evidence and the level at which they bind" placeholder="e.g. Novel entities (rare earths): 11 GW/yr × 95% permanent-magnet × 200 kg/MW ≈ 2,100 t/yr, 0.5% of the 390,000 t mined in 2024 (USGS 2025) — binds through processing (China ~90%, IEA 2021) and dysprosium, not tonnage. Biosphere integrity: …"></textarea></div>
   </div>
   <div class="wbs" id="wbSave"></div>
 </section>
@@ -192,16 +279,16 @@
   <span class="kicker">Learning checkpoint</span>
   <h2>By Sunday you should be able to</h2>
   <ul class="ck">
-    <li>Fit a learning curve to your indicator and interpret the learning rate</li>
-    <li>Produce three defensible 2040 projections grounded in your Phase 1 scenarios</li>
-    <li>Name at least two planetary boundaries that constrain European wind scaling, with evidence</li>
-    <li>Explain how rare-earth supply, biodiversity or freshwater could break your aggressive projection</li>
-    <li>Estimate the water footprint of your AI use within an order of magnitude</li>
-    <li>Articulate one trade-off that wind <i>solves</i> and one that wind <i>creates</i></li>
+    <li>Fit a learning curve to your indicator, report the learning rate, and say what one doubling of capacity does to the cost</li>
+    <li>Give three 2040 values, each tied to one Phase 1 world and its assumptions</li>
+    <li>Explain, with the capital recovery factor, why three points of interest rate add about a quarter to the cost of offshore electricity</li>
+    <li>Name two planetary boundaries that limit European wind, with one quantity and one source for each</li>
+    <li>State the water your AI use consumed, on-site and off-site, in litres, and the energy assumption behind it</li>
+    <li>Write one trade-off that wind <i>relieves</i> and one that wind <i>creates</i>, in one sentence each</li>
   </ul>
-  <p>You now have the analytical core of your Phase 2 report. Next week is integration — turning these analyses into a 2,000-word data analysis report with proper visualisations and uncertainty bands.</p>
+  <p>You now have the analytical core of your Phase 2 report. Week 8 turns it into a 2,000-word data-analysis report with charts and uncertainty bands.</p>
   <h3>Week 8 preview · Forecasting under uncertainty (Phase 2 due)</h3>
-  <p>Time-series forecasting layered on your curve fit; uncertainty bands; cross-checks against BloombergNEF, IEA and DNV. <b>The reading shifts to Rolnick et al. (2022)</b> — <i>Tackling Climate Change with Machine Learning</i> — the most comprehensive survey of where ML actually helps climate action and where it doesn't. Bring your fitted curve and three projections, your planetary-boundaries analysis, and a rough outline of your Phase 2 report: section headings, key charts, central claim.</p>
+  <p>Time-series forecasting on top of your curve fit; uncertainty bands; cross-checks against BloombergNEF, the IEA and DNV. <b>The reading is Rolnick et al. (2022)</b>, <i>Tackling Climate Change with Machine Learning</i>, the survey of where machine learning helps climate action and where it does not. Bring your fitted curve and three projections, your two boundaries with their quantities, and an outline of your Phase 2 report: section headings, the charts you will draw, the central claim in one sentence.</p>
   <p>— Jan Erik</p>
 </section>
 
@@ -212,42 +299,69 @@
 <script src="capstone.js"></script>
 <script>
 CAP.recall([
-  {q:'A good Phase 2 indicator is trackable, forecastable and:',opts:['Popular','Discriminating — it differs across your scenarios','Official','Monthly'],a:1,why:'If all four worlds give the same number it cannot tell you which world you are in.'},
+  {q:'A good Phase 2 indicator is trackable, forecastable and:',opts:['Popular','Discriminating — it takes different values in your different worlds','Official','Monthly'],a:1,why:'If all four worlds give the same number, a reading cannot tell you which world you are in.'},
   {q:'For a typical short text prompt to a large assistant, the figures published in 2025 are roughly:',opts:['0.2–0.35 Wh','1–3 kWh','0.003 Wh','100 Wh'],a:0,why:'Google 0.24 Wh (median Gemini prompt), OpenAI 0.34 Wh (average ChatGPT query), Epoch AI about 0.3 Wh (GPT-4o). Watt-hours, not kilowatt-hours: small per query, large at a billion queries a day.'}
 ]);
 
 CAP.wright('wright',{title:'Wright\'s Law fitter · replace the rows with YOUR indicator\'s series',data:[[2010,203,3.1],[2012,180,5.4],[2014,171,8.7],[2016,143,14.4],[2018,127,23.5],[2020,86,34.4],[2022,81,63],[2024,79,83]],future:[[2030,160],[2035,330],[2040,600]]});
 
-/* planetary boundaries */
+/* cost of capital → LCOE (step lc) */
 (function(){
-  var B=[['Climate change',1,'Wind reduces emissions — so here the loop runs the right way. The one boundary wind unambiguously helps.'],
-         ['Biosphere integrity',1,'Offshore wind affects marine ecosystems: underwater noise during piling, electromagnetic fields from cables, displacement of fishing. Onshore wind affects bird and bat populations. Binding through permitting and spatial conflict, not through physics.'],
-         ['Biogeochemical flows (N, P)',1,'Modest for wind — mostly through fertiliser and process inputs in the steel supply chain.'],
-         ['Land-system change',1,'Onshore wind and the grid build-out take land; offshore takes sea space, which the marine spatial plans already contest (military zones restrict up to 30% of sea area in places).'],
-         ['Freshwater change',1,'Turbine manufacturing is water-intensive; the steel and rare-earth supply chains even more so. And the AI you use to analyse it draws cooling water somewhere else.'],
-         ['Novel entities',1,'Rare-earth mining and processing — Bayan Obo in Inner Mongolia, Lynas Mt Weld in Western Australia — generate radioactive thorium tailings and acid waste at scale. Last year\'s cohort put the praseodymium multiple at up to 31× by 2040. China holds ~90% of processing.'],
-         ['Ocean acidification',0,'Not yet transgressed. Wind\'s effect is indirect and positive, via lower CO₂.'],
-         ['Atmospheric aerosol loading',0,'Not assessed as transgressed globally. Marginal for wind.'],
-         ['Stratospheric ozone',0,'The one boundary moving the right way (Montreal Protocol). Irrelevant to wind.']];
+  var o=document.getElementById('lcOut');function v(id){return +document.getElementById(id).value||0;}
+  function crf(r,n){ if(r<=0)return 1/n; var a=Math.pow(1+r,n); return r*a/(a-1); }
+  function lcoe(cap,r,n,cf,om){ var mwh=8.76*cf; return mwh>0?(cap*crf(r,n)+om)/mwh:0; }
+  function f(){ var cap=v('lcCap'),r=v('lcR')/100,n=v('lcN'),cf=v('lcCF')/100,om=v('lcOM');
+    var a=lcoe(cap,r,n,cf,om),b=lcoe(cap,0.04,n,cf,om),c=crf(r,n);
+    o.innerHTML='<span class="big">$'+CAP.fmt(a,0)+' per MWh</span> at a '+CAP.fmt(r*100,1)+'% cost of capital — '+(Math.abs(a-b)<0.5?'the same as at 4%.':CAP.fmt(Math.abs(a/b-1)*100,0)+'% '+(a>b?'more':'less')+' than the same plant at 4% ($'+CAP.fmt(b,0)+').')+
+      '<br><span class="note">Capital recovery factor '+CAP.fmt(c,4)+': the $'+CAP.fmt(cap,0)+' per kW becomes $'+CAP.fmt(cap*c,0)+' a year; plus $'+CAP.fmt(om,0)+' O&amp;M = $'+CAP.fmt(cap*c+om,0)+' per kW per year; divided by '+CAP.fmt(8.76*cf,2)+' MWh produced per kW per year.</span>';
+    if(Math.abs(r-0.07)>0.0001||cap!==2852)CAP.step('lc'); }
+  ['lcCap','lcR','lcN','lcCF','lcOM'].forEach(function(id){document.getElementById(id).addEventListener('input',f);});f();
+})();
+
+/* planetary boundaries (step pb) */
+(function(){
+  var B=[['Climate change',1,'Wind replaces gas and coal generation, so here the pressure runs the other way: the one boundary wind clearly relieves. Ember counted wind at about 17% of EU electricity in 2024.'],
+         ['Biosphere integrity',1,'Offshore wind changes marine ecosystems: pile-driving noise during construction, electromagnetic fields around cables, fishing displaced from the farm area. Onshore wind kills birds and bats. The limit arrives through permits and spatial conflict, not through physics: a project is refused, delayed or shrunk.'],
+         ['Biogeochemical flows (N, P)',1,'Small for wind: nitrogen and phosphorus flows come from fertiliser; wind touches them only through the steel and concrete supply chain.'],
+         ['Land-system change',1,'Onshore turbines and the new grid lines take land; offshore farms take sea space that marine spatial plans already allocate to shipping, fishing, nature and the military (which closes up to 30% of some countries\' sea area).'],
+         ['Freshwater change',1,'Steel-making and rare-earth processing use large volumes of fresh water, and so do the data centres running the assistants you analyse wind with. The litres appear in another country than the turbine.'],
+         ['Novel entities',1,'Rare-earth processing leaves thorium-bearing tailings and acid waste: at Bayan Obo in Inner Mongolia, and at the Lynas plant in Malaysia that treats ore from Mount Weld in Western Australia. The IEA (2021) expects wind\'s rare-earth demand to more than triple by 2040; China does about 90% of the processing.'],
+         ['Ocean acidification',0,'Not crossed. Wind\'s effect is indirect and positive, through lower CO₂.'],
+         ['Atmospheric aerosol loading',0,'Not assessed as crossed at the global level. Marginal for wind.'],
+         ['Stratospheric ozone',0,'The one boundary moving the right way, thanks to the 1987 Montreal Protocol. Not affected by wind.']];
   var box=document.getElementById('pbs'),out=document.getElementById('pbOut'),seen={};
-  box.innerHTML=B.map(function(b,i){return '<button type="button" class="'+(b[1]?'x':'ok')+'" data-i="'+i+'"><span class="st">'+(b[1]?'transgressed':'within')+'</span><b>'+b[0]+'</b></button>';}).join('');
+  box.innerHTML=B.map(function(b,i){return '<button type="button" class="'+(b[1]?'x':'ok')+'" data-i="'+i+'"><span class="st">'+(b[1]?'crossed':'within')+'</span><b>'+b[0]+'</b></button>';}).join('');
   box.querySelectorAll('button').forEach(function(bt){bt.addEventListener('click',function(){var i=+bt.getAttribute('data-i');box.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});bt.classList.add('on');out.innerHTML='<b>'+B[i][0]+'</b> — '+B[i][2];seen[i]=1;if(Object.keys(seen).length>=5)CAP.step('pb');});});
 })();
 
-/* water */
+/* rare earths (step re) */
+(function(){
+  var o=document.getElementById('reOut'),WORLD=390000,CHINA=270000;function v(id){return +document.getElementById(id).value||0;}
+  function f(){ var t=v('reGW')*1000*(v('rePM')/100)*v('reKG')/1000;
+    o.innerHTML='<span class="big">'+CAP.fmt(t,0)+' tonnes a year</span> of rare-earth elements — '+CAP.fmt(t/WORLD*100,2)+'% of the 390,000 tonnes the world mined in 2024, '+CAP.fmt(t/CHINA*100,2)+'% of China\'s 270,000 tonnes.<br><span class="note">That is the tonnage. The limit is elsewhere: about 90% of the processing in one country, and dysprosium, the heavy rare earth that keeps the magnets working hot, coming mostly from Burma (31,000 tonnes of mixed rare earths in 2024, down from 43,000 in 2023) and China.</span>';
+    if(v('reGW')!==11||v('reKG')!==200||v('rePM')!==95)CAP.step('re'); }
+  ['reGW','rePM','reKG'].forEach(function(id){document.getElementById(id).addEventListener('input',f);});f();
+})();
+
+/* water, Li et al.'s formula (step wa) */
 (function(){
   var o=document.getElementById('wOut');function v(id){return +document.getElementById(id).value||0;}
-  function f(){var on=v('wT')*v('wOn')/1000,off=v('wT')*v('wWh')/1000*v('wOff');o.innerHTML='<span class="big">'+CAP.fmt(on+off,1)+' litres</span> — '+CAP.fmt(on,1)+' L on-site cooling + '+CAP.fmt(off,1)+' L off-site via generation. <span class="note">About '+CAP.fmt((on+off)/0.5,0)+' small bottles, or '+CAP.fmt((on+off)/9,1)+' toilet flushes. Set off-site to 0.1 L/kWh to see what a wind-powered data centre changes.</span>';}
-  ['wT','wOn','wWh','wOff'].forEach(function(id){document.getElementById(id).addEventListener('input',f);});f();
+  function f(){ var kwh=v('wT')*v('wWh')/1000,on=kwh*v('wWUE'),off=kwh*v('wPUE')*v('wEWIF'),tot=on+off;
+    o.innerHTML='<span class="big">'+CAP.fmt(tot,2)+' litres</span> — '+CAP.fmt(on,2)+' L on-site (cooling) + '+CAP.fmt(off,2)+' L off-site (electricity generation), from '+CAP.fmt(kwh*1000,0)+' Wh of server energy. <span class="note">About '+CAP.fmt(tot/0.5,1)+' small bottles of 500 ml; off-site is '+CAP.fmt(off/Math.max(on,1e-9),1)+' times on-site here. Set EWIF to 0.1 to see what a data centre on a wind-heavy grid changes.</span>';
+    document.querySelectorAll('[data-wh]').forEach(function(b){b.classList.toggle('on',Math.abs(+b.getAttribute('data-wh')-v('wWh'))<1e-9);});
+    if(v('wT')!==250||v('wWh')!==4)CAP.step('wa'); }
+  ['wT','wWh','wWUE','wPUE','wEWIF'].forEach(function(id){document.getElementById(id).addEventListener('input',f);});
+  document.querySelectorAll('[data-wh]').forEach(function(b){b.addEventListener('click',function(){document.getElementById('wWh').value=b.getAttribute('data-wh');f();});});
+  f();
 })();
 
 CAP.quiz('quiz',[
-  {q:'If your log-log plot curves rather than running straight, the right conclusion is:',opts:['Increase the learning rate','Wright\'s Law is not the right model for this series — something else is driving cost','Drop the outliers until it is straight','Use more decimal places'],a:1,why:'A curve in log-log space means the learning rate itself is changing — a missing variable, often finance costs or a supply-chain regime change.'},
-  {q:'A 2040 offshore wind LCOE of $25/MWh from your fit should prompt you to:',opts:['Celebrate','Check the data and the assumed 2040 capacity — it is below what any analyst defends','Use it as your central case','Add 10%'],a:1,why:'The sanity check in the notes: below $30 or above $120 should make you nervous. Usually the capacity path is too aggressive or the early data too high.'},
-  {q:'In the 2023 update, how many of the nine planetary boundaries are transgressed?',opts:['Three','Six','Nine','One'],a:1,why:'Climate, biosphere integrity, biogeochemical flows, land-system change, freshwater, novel entities (Richardson et al. 2023).'},
-  {q:'Which boundary does rare-earth processing for permanent-magnet turbines press on most directly?',opts:['Ozone','Ocean acidification','Novel entities','Aerosols'],a:2,why:'Thorium tailings and acid waste from processing — concentrated in a handful of sites, ~90% in China.'},
-  {q:'Li et al. find that off-site water (from electricity generation) is often:',opts:['Negligible','Larger than on-site cooling water','Exactly equal to cooling water','Zero for renewables and fossil alike'],a:1,why:'Thermal plants withdraw litres per kWh. The generation mix behind the data centre decides the footprint — which makes it a wind question too.'},
-  {q:'The three projections map onto your Phase 1 scenarios because:',opts:['They use the same chart','Each learning-rate assumption is the quantified version of one world — supply chains, policy, capital','The IEA says so','Three is the standard number'],a:1,why:'Conservative = fragmented Europe and bound supply chains; aggressive = coordinated Europe and cheap capital. The numbers are the scenarios, measured.'}
+  {q:'Your log-log plot of cost against cumulative capacity curves instead of running straight. The right conclusion is:',opts:['Increase the learning rate','Wright\'s Law is not the right model for this series — something besides capacity is moving the cost','Drop points until it is straight','Report more decimal places'],a:1,why:'A curve in log-log space means the learning rate itself is changing: a missing variable, usually the cost of capital or a supply-chain regime change.'},
+  {q:'From $79 per MWh at 83 GW, a 15% learning rate gives about $50 per MWh at 600 GW. A fit that gives $25 should make you:',opts:['Celebrate','Check the assumed 2040 capacity and the early rows — $25 is below what any analyst defends','Use it as the central case','Add 10%'],a:1,why:'Below $30 or above $120 per MWh, go back to the data. Usually the capacity path is too aggressive or the early years too expensive.'},
+  {q:'Installed cost $2,852 per kW, 25 years, O&M $90, capacity factor 45%. Raising the cost of capital from 4% to 7% changes the LCOE by about:',opts:['+3%','+23%','+50%','Nothing — interest is not part of LCOE'],a:1,why:'$69 → $85 per MWh. The capital recovery factor rises from 0.0640 to 0.0858, and capital is most of the cost of a wind farm.'},
+  {q:'In the 2023 update by Richardson et al., how many of the nine planetary boundaries are crossed?',opts:['Three','Six','Nine','One'],a:1,why:'Climate change, biosphere integrity, biogeochemical flows, land-system change, freshwater change and novel entities.'},
+  {q:'At 11 GW a year of EU offshore additions with permanent-magnet turbines at 200 kg of rare earths per MW, Europe needs about 2,100 tonnes a year. Against the 390,000 tonnes mined in 2024, the binding constraint is:',opts:['Tonnage — 2,100 is too much','Where the processing happens (about 90% in one country) and the supply of dysprosium','Price — neodymium oxide is at a record high','There is no constraint'],a:1,why:'2,100 tonnes is about 0.5% of world output, and neodymium oxide fell from $134 to $56 per kg between 2022 and 2024 (USGS). The limit is concentration, not quantity.'},
+  {q:'In Li et al.\'s Table 1, for the US average data centre, the off-site water per request is:',opts:['Smaller than the on-site water','Larger than the on-site water — 14.7 ml against 2.2 ml','Equal to it','Zero'],a:1,why:'Off-site = energy × PUE × EWIF = 0.004 kWh × 1.17 × 3.14 L/kWh = 14.7 ml; on-site = 0.004 × 0.55 = 2.2 ml. The generation mix behind the data centre decides most of the footprint — which makes it a wind question too.'}
 ]);
 </script>
 
