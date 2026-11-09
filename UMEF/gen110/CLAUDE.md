@@ -63,8 +63,9 @@ define their project and who participates."* Everything below follows from it.
   `projet.tpl.html` `WEEKS` — keep all five in step): 1–3 unchanged
   (*L'IA, on commence par s'en servir* · *Bien demander I — texte* · *Bien
   demander II — son, image, vidéo*) · 4 *Des agents qui travaillent
-  ensemble* · 5 *Le CV automatisé* · 6 *Le prompt engineering pour le
-  travail* · 7 *Automatiser — un agent qui travaille seul* · 8 *Programmer —
+  ensemble* · 5 *Des agents qui cherchent pour vous* · 6 *Postuler — CV,
+  message, envoi* (swapped 9 Nov 2026, see below; *Le prompt engineering
+  pour le travail* lost its own séance then) · 7 *Automatiser — un agent qui travaille seul* · 8 *Programmer —
   un site, une appli, un jeu* · 9 *Contrats et données* · 10 *Présentations
   et examen*. Data protection lost its séance: it is a 🔐 step at the start
   of every exercise ("before pasting, look") and stays an exam topic.
@@ -387,8 +388,82 @@ define their project and who participates."* Everything below follows from it.
   .q (8) + [data-work] (6) = 40`. Probed headlessly in both editions (all
   widgets, all 12 finds, the score after one wrong / one hint / one wrong MC,
   values revealed after find 12, every slide fits 1280×720, 390 px).
-- **Séance 5 — *Le CV automatisé* (`seance5.tpl.html`, 1 Nov 2026, for
-  Tue 10 Nov 13h30–16h45, break 15h00)**, the class's priority n° 2, on
+- ⚠ **9 Nov 2026 — séances 5 and 6 SWAPPED, both rebuilt** (Jan Erik, the
+  day before séance 5: "swap week 6 and 5. agent first, then apply (CV and
+  all that). build both weeks"; the idea was an agent that finds
+  internships, training and the names to send direct applications to).
+  The CV séance described in the next entry is now **séance 6** (Tue 24
+  Nov): `seance6.tpl.html`, module `w6`, ids and keys renamed `w5`→`w6`,
+  sections 6.0–6.7. ⚠ The old *Le prompt engineering pour le travail*
+  séance 6 is GONE from the plan (hub `SEANCES`, `CHAPTERS`, `NAV`,
+  `SESSIONS`, `WEEKS` all say *Postuler*); the hub's wish list now points
+  prompt engineering at séances 2–3 and the agent cards of 4–6. Remise 4
+  still falls due at séance 7. Séance 4's "what to bring" box, its closing
+  slide and the hub's AI-Act line were corrected to the new order.
+- **Séance 5 — *Des agents qui cherchent pour vous — stages, formations,
+  contacts* (`seance5.tpl.html`, 9 Nov 2026, for Tue 10 Nov 13h30–16h45,
+  break 15h00)**, module `w5`, progress key bumped to
+  `gen110_w5_progress_v2` (v1 held the CV séance's steps). Séance 4's
+  engine; `buildAgents`, `lintAgent`, `cardText`, the text helpers,
+  `coverage()` and the 🔐 `PRIV`/`cleanCV` reused from the CV séance;
+  `buildGrid` as séance 3's. 5.0 **a seven-box profile** (studies, what I
+  look for, fields, skills with evidence, languages, where, when; no name,
+  phone, e-mail or address asked; `PRIV` strips any typed in) assembled
+  into a read-only `w5_profil`; Awa's profile as the sample (Dakar). 5.1
+  the **searcher card** seeded with an empty Rules box (4/5); "copy the
+  card and my profile"; the answer pasted into `w5_offres`; the **link
+  checker** `buildVerify()` (`parseFound`: one item per line with a URL,
+  markdown table header and separator skipped, a bulleted line without a
+  link counted as not checkable) with four verdicts per offer (real and
+  open · closed · dead link · invented or different); ≥ 5 judged = step
+  `links`, ≥ 3 real = `found`; the class's % real goes to a hidden
+  `w5_reel` with `data-board` (board.html, no names). A "how an assistant
+  searches the web" card explains why links are invented. 5.2 the grid,
+  three offers × five criteria (`CRIT_PICK`) → Comparisons tab, then the
+  chosen offer's link + full text in `w5_choix` (≥ 60 words + a URL =
+  `chosen`). 5.3 **the gaps**: the offer's lines looked up in the profile
+  with `coverage()`; each missing line "I have it, not written" / "real
+  gap" (`gen110_w5_gaps`); the **course adviser card** seeded with format
+  "des formations" (4/5); copy = card + gaps + profile; `w5_formations`
+  + the link checker (real · real but paid · dead · invented). 5.4 the
+  **contact finder card is well-formed (5/5) but asks for a personal
+  e-mail and a mobile and says to guess the address**; `contactPriv()` is
+  a 🔐 check of 3 (asks nothing private · a rule forbids guessing · only
+  the company's pages, with the source link); step `cardC` needs 5/5 AND
+  3/3 (`buildAgents(...,null,5)` so the builder does not mark it).
+  ⚠ The "private" pattern is whole-word: "la personne" contains "perso",
+  which failed the first probe. `w5_contact` + a source checker; classify
+  yes / with care / never (`Y N P N Y N Y N`: published team page,
+  forty addresses in copy, summarising the public LinkedIn profile,
+  personal Instagram, the switchboard, a guessed address, a LinkedIn
+  message, an agent that sends on its own). Quiz on `_release/w5/quiz`,
+  positions `2 0 3 1 0 3 2 1`. 5.6 `w5_projet` + three ticks; bring the CV
+  to séance 6. Denominator `EXTRA_STEPS (16) + .cl-row (8) + .q (8) +
+  [data-work] (7) = 39`; `total:7`. Seven `w5_*` fields in
+  `courses.json → project` section "5" (the CV séance's six `w5_*` were
+  replaced). Free tiers with web search named (ChatGPT, Gemini,
+  Perplexity, Copilot) were NOT re-verified on 9 Nov 2026.
+- **Séance 6 — *Postuler — le CV adapté, le message, l'envoi*** (built 1 Nov
+  2026 as séance 5, moved to séance 6 on 9 Nov 2026 for Tue 24 Nov). On
+  top of the description below (read every `5.x` as `6.x`, `w5_*` as
+  `w6_*`): 6.0 has a button that takes the offer chosen in séance 5 (read
+  from `gen110_work_w5_choix`, progress.js's raw-string store); 6.3 shows
+  the séance-5 contact (`gen110_work_w5_contact`) above the message; a new
+  **6.5 *Envoyer, puis suivre*** (`id:'sa'`, 20 min; the interview shrank
+  to 20 and the close to 10): four checks before the real e-mail (subject
+  ≥ 4 words with "candidature/stage/application/internship" · file
+  `CV-Prenom-Nom-Entreprise.pdf` containing the company · a recipient that
+  is an address or "formulaire/form" · the 6.3 message at 4/5), then "Add
+  to the follow-up" writes a line (date · company · role · recipient ·
+  reminder +7 days) into `w6_suivi` (step `send`). The close asks for ten
+  real examples for séance 7 (8 Dec). Denominator `EXTRA_STEPS (14) +
+  .cl-row (6) + .q (8) + [data-work] (7) = 35`; `total:8`; quiz on
+  `_release/w6/quiz`. Seven `w6_*` fields in section "6".
+  Both séances probed headlessly in both editions (fetch stubbed): no
+  errors, every non-quiz section complete (31/39 and 27/35 with the quiz
+  locked), the seeded contact card at 5/5 form and 0/3 🔐, no horizontal
+  scroll at 390 px.
+- **The CV séance as first built (1 Nov 2026, then numbered 5)**, the class's priority n° 2, on
   séance 4's engine (blocks copied, `w4`→`w5`; séance 4's agent-card
   builder `AF`/`lintAgent`/`cardText`/`buildAgents` copied verbatim).
   5.0 the student's CV + a real offer in two boxes (kept in
@@ -437,7 +512,7 @@ define their project and who participates."* Everything below follows from it.
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the
   module and its carnet fields to `courses.json`, and set `live:true` on the
   hub's `SEANCES` entry (in the template). Run the headless probe on both
-  editions before pushing. Séances 1–5 exist; 6–10 are `live:false`.
+  editions before pushing. Séances 1–6 exist; 7–10 are `live:false`.
 - **Own namespace `gen110`, prefix `gen110_`**; the rules block in
   `firebase-database-rules.json` must be deployed before the link goes to
   students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`
