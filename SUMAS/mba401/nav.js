@@ -60,7 +60,11 @@
         secs: [['s1', '5.1', 'Fourteen pizzerias, one line'], ['s2', '5.2', 'How strong, and which way'], ['s3', '5.3', 'The line that misses least'],
                ['s4', '5.4', 'Is the slope real?'], ['s5', '5.5', 'How much of y does x explain?'], ['s6', '5.6', 'The average one — or the next one?'],
                ['s7', '5.7', 'A complete example'], ['ex', '5.8', 'Exercises — worked together'], ['s8', '5.9', 'Checkpoint'], ['s9', '5.10', 'Workshop']] } ] },
-    { n: 6, title: 'Chi-square tests and F-tests', parts: [{ mod: 'w6', k: '', t: 'Independence, goodness of fit, ANOVA', locked: true }] },
+    { n: 6, title: 'Chi-square tests and F-tests', parts: [
+      { mod: 'w6', k: '', t: 'Chi-square tests and F-tests', href: 'week6.html', hw: 'week6-homework.html',
+        secs: [['s1', '6.1', 'Three neighbourhoods, three toppings'], ['s2', '6.2', 'Are two ways of sorting related?'], ['s3', '6.3', 'Do the counts fit the claim?'],
+               ['s4', '6.4', 'Is one spread larger than the other?'], ['s5', '6.5', 'Three or more means at once'], ['ex', '6.6', 'Exercises — worked together'],
+               ['s6', '6.7', 'Checkpoint'], ['s7', '6.8', 'Workshop']] } ] },
     { n: 7, title: 'PCA and non-parametric tests', parts: [{ mod: 'w7', k: '', t: 'Beyond the textbook', locked: true }] },
     { n: 8, title: 'Exercises and repetition', parts: [{ mod: 'w8', k: '', t: 'Exercises and repetition', locked: true }] },
     { n: 9, title: 'Repetition II and the blank test', parts: [

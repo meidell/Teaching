@@ -156,6 +156,41 @@ releases, the progress-denominator trap) still applies. What differs:
   Stat labels that are symbols carry `.l.m` (no uppercase — it turned β̂
   into B and n into N). Probed headless: no errors, every step and
   s1–s9 complete, 10/10 quiz, 17/17 classify, homework 13/13.
+- **Week 6 · chi-square tests and F-tests (Saylor ch. 11), built 9 Nov 2026
+  for the 23 Nov session** (Jan Erik: "sumas/mba401, build week 6 for 23
+  november" — the hub's DATES map now has 6: 2026-11-23; weeks 7–9 keep
+  30 Nov / 7 Dec / 11 Jan / 18 Jan and were NOT confirmed). `week6.html`
+  (`w6`) + `week6-homework.html` (`w6-hw`), Week 5's engine. Eight
+  sections: s1 hook (the 3 × 3 toppings table, verdict + a guess at
+  Σ(O − E)²⁄E, closed in s2) · s2 §11.1 · s3 §11.2 · s4 §11.3 · s5 §11.4 +
+  the "which test?" classify across the semester (`testRows`, 8) · ex Part
+  2 (10 odd-numbered exercises) · s6 checkpoint (10) · s7 workshop
+  (`w6_table`, `w6_variance`, `w6_which` — project section "6"). The two
+  worked cases (babies, die) and all nine Examples walked verbatim; nine
+  your-turns on EVEN exercises; classify `dfRows` (6); 28 `EXTRA_STEPS`;
+  denominator 65; deck 57 slides; `courseprogress.js` totals 8 and 14.
+  **The page computes its own critical values** — `chi2crit(c,df)` (3
+  decimals) and `fcrit(c,d1,d2)` (2 decimals) from the regularized
+  incomplete gamma / beta + bisection, tested against the book's tables in
+  node; the appendix tables are images and cannot be parsed. Pizzeria
+  thread: 180 orders by neighbourhood × topping (χ² 9.926 on 4 df: reject
+  at 5%, not at 1%, p 0.042); 350 orders by weekday against the kitchen
+  plan (χ² 3.513 on 6 df, keep); Rive s 310 / 16 days vs Pâquis 220 / 21
+  (F 1.99 on (15, 20) vs 2.20, do not reject); the ticket at four branches,
+  8 orders each (MST 124.54, MSE 8.62, F 14.45 on (3, 28) vs 2.95, reject).
+  ⚠ **Book errors found, flagged on the page with `.corr` or in grey:**
+  Example 5(b) reads F.025(10,40) = 3.31 (that is F.025(30,10)); the table
+  gives 2.39, so F.975(40,10) = 0.419, not 0.302 · Example 5(a)'s 5.556 is
+  the table's rounding (exact 5.609) · Example 8 rounds its inputs (F 3.199
+  exact, 3.232 printed), Example 9's MST is 217.32 (printed 217.50) ·
+  Example 6 prints the left piece as [0, −0.43] · §11.3 Exercise 13's key
+  prints Exercise 12's F (0.1692; the data give 0.2265) · §11.4 Exercise
+  3's key prints F = 5.53 (Exercise 1's F is 7.78) · §11.1 Exercise 11's
+  key prints χ² 72.35 (the data give 41.04, two E < 5) — not used. §11.2
+  Exercise 1 says "five categories" and lists four. No conclusion changes.
+  Probed headless: no errors, 65/65 steps, s1–s7 + ex complete, 10/10
+  quiz, 14/14 classify, homework 13/13, no horizontal scroll at 390 px.
+  Numbers in `_private/check_w6.py` (gitignored).
 - **Own namespace `mba401` and localStorage prefix `mba401_`**; its rules
   block is in `firebase-database-rules.json` and must be deployed.
 - **Theme `/shared/themes/sumas-stats.css`** (heg.css colour-mapped to SUMAS
