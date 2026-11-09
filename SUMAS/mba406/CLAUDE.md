@@ -233,3 +233,57 @@ presence needing an account) applies. What differs:
   of five (the sixth is spare). Linked from the hub as a second `.primer`
   under the crash course. Played in the last 45 minutes of a session;
   students can open it alone to revise. `?set=` is ready for a later set.
+- **Week 6 — working capital and cash (`week6.html`, `week6-homework.html`,
+  built 9 Nov 2026 for the 26 Nov session)** on the Week 5 engine (blocks
+  byte-copied, `w5`→`w6`); textbook ch. 19–20. ⚠ **Dates as taught:** Week 5
+  was given on **5 Nov 2026** (an extra Thursday), so Weeks 6–9 are 26 Nov ·
+  10 Dec · 14 Jan · 21 Jan 2027 — the hub's `DATES` and `courses.json →
+  schedule.dates` were corrected (the file had `2026-11-02`), and Week 9 no
+  longer prints "to be confirmed". **The canonical cycle** from the FY2025
+  statements, year-end balances: inventory 350 ⁄ 1,440 × 365 = **88.72**
+  days, receivables 400 ⁄ 2,400 × 365 = **60.83**, payables 240 ⁄ 1,440 ×
+  365 = **60.83** (on purchases 1,510: 58.0 — the page says which base) →
+  operating cycle 149.55, **cash conversion cycle 88.72**, 1,440 ⁄ 365 =
+  **3.95** per day; a year earlier on the same flows ≈ 66 days (the +23 days
+  ≈ Week 5's 130). Receivables at 45 days free **104.1**, at 30 days 202.7;
+  **"2/10, net 60" = 15.89 % compounded** (14.9 % simple), costs 48 a year
+  and saves 20.1 of interest → not offered; "1/10, net 30" 20.13 %, "2/10,
+  net 45" 23.45 %; credit decision break-even p = margin ⁄ (margin + cost) =
+  40 %. Carrying cost 10 % (6 % + 4 %, a course assumption) × 350 = 35; 75
+  days of stock frees 54.1; EOQ tyres 224 (CHF 894), oak (Ex. 5) 28.3 m³.
+  **The cash budget Jan–Jun 2026** — `budget(o)` in the page is the one
+  definition: sales 260 · 250 · 230 · 190 · 170 · 180 (Week 5's 2,472 with
+  the winter peak), opening receivables 400 collected 190 Jan + 210 Feb,
+  opening payables 240 paid 120 + 120, then hotels at 2 months and suppliers
+  (40 % of next month's sales + 20) at 2 months, wages 60 + capex 12.5 a
+  month, interest 15 + tax 15 in Mar/Jun, dividend 70 in May, Lausanne 200
+  Feb + 200 Mar + 60 Apr, opening cash 90, minimum 50, **line limit 200 (a
+  course assumption; the 160 drawn at year end is treated as long-term)** →
+  line 0 · 145 · 307.5 · 302 · 310.5 · **311**; without Lausanne no draw and
+  cash 199; hotels at 1 month **141** (Feb collects 210 + 260); suppliers at
+  3 months 223; 1 month + no dividend 72. The lesson: operations fine, the
+  460 is a permanent need → the matching principle → Week 7. Factoring 1.5 %
+  per 61 days = 9.0 %; 460 at 6 % over 5 years ≈ 109 a year. Widgets: the
+  cycle estimate, the cycle walk + editable days table with the cycle bar,
+  the discount walk + editable terms table, the inventory walk, the budget
+  walk + the six-month table with four toggles and the line chart, the
+  financing walk; two classifies (lengthens/shortens, line/long-term); six
+  turns. Denominator `EXTRA_STEPS (14) + EXERCISES (9) + .cl-row (12) + .q
+  (10) + [data-work] (4) = 49`; deck **25 slides** (13 in Part 1; seven
+  shrink to zoom 0.72–0.92). Headless probe 9 Nov 2026: every section to
+  done, budget variants, quiz 10/10, deck fits, 390 px no overflow.
+  Homework: **Nyon Cycles** — cycle 146.62 ⁄ 42.58 ⁄ 59.27 → 129.93 days;
+  "2/10, net 45" 23.45 %, "1/15, net 45" 13.01 %; fleet customer break-even
+  35 %, +10.5; carrying 12 % × 470 = 56.4 (33.6 % of profit); EOQ helmets
+  189.7, CHF 379; **a Mar–Aug cash budget through the spring peak** (60 %
+  paid at the till, 40 % a month later; bikes 65 % of next month's sales paid
+  on delivery; opening line 170, limit 250, minimum 30): Mar −69.5 → line
+  219.5, Jun 138.5, Aug 49.5 — a seasonal need the line is right for;
+  factoring 12.85 %; importer's 1 % for 60 days ≈ 6 %. Fields `w6_cycle ·
+  w6_credit · w6_budget · w6_fix` in `courses.json → project.sections`
+  ("Week 6 · Why is cash running out?"); modules `w6`, `w6-hw`;
+  `courseprogress.js` w6 live + `w6-hw` (18). Every number is asserted in
+  `_private/check_w6.py`; run sheet `_private/week6-runsheet.md`. ⚠ A
+  regex insertion into `courses.json` first landed in another course's
+  `w5-hw` block (several courses share that module id) — scope registry
+  edits to the course's own object.
