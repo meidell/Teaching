@@ -409,7 +409,7 @@ define their project and who participates."* Everything below follows from it.
   `buildGrid` as séance 3's. 5.0 **a seven-box profile** (studies, what I
   look for, fields, skills with evidence, languages, where, when; no name,
   phone, e-mail or address asked; `PRIV` strips any typed in) assembled
-  into a read-only `w5_profil`; Awa's profile as the sample (Dakar). 5.1
+  into a read-only `w5_profil`; Awa's profile as the sample. 5.1
   the **searcher card** seeded with an empty Rules box (4/5); "copy the
   card and my profile"; the answer pasted into `w5_offres`; the **link
   checker** `buildVerify()` (`parseFound`: one item per line with a URL,
@@ -459,6 +459,15 @@ define their project and who participates."* Everything below follows from it.
   real examples for séance 7 (8 Dec). Denominator `EXTRA_STEPS (14) +
   .cl-row (6) + .q (8) + [data-work] (7) = 35`; `total:8`; quiz on
   `_release/w6/quiz`. Seven `w6_*` fields in section "6".
+  ⚠ **9 Nov 2026 — Senegal, Wolof and Dakar toned down in séances 5 and 6**
+  (Jan Erik). Awa's CV has no city, a neutral address (14 rue des Lilas),
+  a +41 phone, no nationality line, a "Baccalauréat général", French and
+  English; the Wax & Co offer has no place and asks for French and English
+  plus "a third language"; the search example, the profile placeholder and
+  the ATS example are neutral. The 🔐 detector now catches five kinds on
+  Awa's CV (no nationality); her coverage before tailoring is 50 % FR /
+  42 % EN (the 44 / 56 % below is the old CV). Keep new copy in these two
+  séances free of country-specific detail.
   Both séances probed headlessly in both editions (fetch stubbed): no
   errors, every non-quiz section complete (31/39 and 27/35 with the quiz
   locked), the seeded contact card at 5/5 form and 0/3 🔐, no horizontal
