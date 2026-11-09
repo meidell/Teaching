@@ -23,30 +23,7 @@ def S(u): return SAY+u
 SPEC=[
  # Week 7 was written by hand on 26 Oct 2026 (a port of SUMAS/mba401/week4a.html) — its SPEC entry is gone.
  # Week 8 likewise, on 1 Nov 2026 (a port of SUMAS/mba401/week4b.html, extended).
- dict(n=9,slug='Correlation and regression',emoji='📈',
-  title='Does a higher price buy a <em>better rating</em>?',
-  sub='Week 1 warned you that the price–rating scatter had a lurking variable in it. This week you fit the line anyway — properly: the correlation coefficient r, the least-squares line, inference on its slope, the coefficient of determination r², and prediction with an honest interval. Then, with the tools in hand, the lurking variable comes back.',
-  ch='Saylor ch. 10',
-  reads=[('Saylor §10.1–10.2 — Linear relationships and r',S('s14-01-linear-relationships-between-v.html')),('Saylor §10.3–10.4 — The model and the least-squares line',S('s14-03-modelling-linear-relationships.html')),('Saylor §10.5–10.6 — Inference about β₁ and r²',S('s14-05-statistical-inferences-about-1.html')),('Saylor §10.7–10.8 — Estimation, prediction, a complete example',S('s14-07-estimation-and-prediction.html')),('Saylor §10.9 — Formula list',S('s14-09-formula-list.html'))],
-  objectives=['Compute and interpret the linear correlation coefficient r.','Fit the least-squares regression line ŷ = b₁x + b₀ and interpret both coefficients in business terms.','Test whether the slope β₁ is zero and build a confidence interval for it.','Interpret r² as the share of variation explained.','Predict y for a given x with a prediction interval — and refuse to extrapolate.'],
-  sections=[
-   ('The hook','Price and rating','Guess r before you see the scatter',['Slider from −1 to +1: "how strongly does price go with rating?" Lock it.'],'Hook'),
-   ('The scatter and r','How strong, which way','r from the data (§10.1–10.2)',['Widget: the 12-pizzeria price–rating scatter; drag a point and watch r change; four canned scatters to classify by r. Exam card c20.','Classify (6 rows): strong positive / weak / none / strong negative — from pictures.'],'Correlation'),
-   ('The line','Least squares','ŷ = b₁x + b₀, residuals (§10.3–10.4)',['Widget: draw your own line by hand, then reveal least squares and compare the sum of squared residuals.','Interpret b₁: "each extra franc buys __ rating points" — and b₀\'s meaning, or lack of one. Exam card c21.'],'Regression'),
-   ('Inference','Is the slope real?','Test and CI for β₁; r² (§10.5–10.6)',['Widget: the t test on the slope with df = n − 2; r² as a shaded share of the variation. Exam cards c22–c23.'],'Inference'),
-   ('Prediction — and the trap','What would a CHF 24 pizzeria score?','Prediction intervals, extrapolation, the lurking variable (§10.7–10.8)',['Widget: predict at x with a prediction interval that widens away from x̄; the extrapolation warning at CHF 40.','The Week 1 reveal returns: colour the points by neighbourhood. The line was right; the causal story was not.'],'Prediction'),
-   ('Checkpoint','Prove it to yourself','Self-check quiz & where this goes next',['Ten questions: interpret r, interpret b₁, compute ŷ, the slope test, r², a prediction, extrapolation, and correlation ≠ causation.'],'Quiz'),
-   ('Workshop','The pizzeria file · instalment nine','Workbook fields',['w9_model — one thing that might predict your takings, as ŷ = b₁x + b₀ with plausible numbers.','w9_lurking — the lurking variable that could explain that relationship without causation.'],'Exercise')],
-  slides=['Applied Statistics · Week 9 — Correlation and regression','Recap → today: two variables at once','Poll: guess r','The scatter, and r','The least-squares line: ŷ = b₁x + b₀','Interpreting the slope in francs','Is the slope real? t on β₁','r²: the share explained','Prediction — and where it stops','The lurking variable, revisited','Your turn — checkpoint live','Takeaways · homework · Week 10'],
-  ex=[('Guess r, then compute it',15,'the price–rating scatter, by hand'),
-      ('Interpret r',10,'four values of r, four sentences'),
-      ('The least-squares line',18,'b₁ and b₀ from the sums'),
-      ('Interpret the slope in francs',10,'and say what b₀ means — or does not'),
-      ('Is the slope real?',15,'the t test on β₁, df = n − 2'),
-      ('r² — the share explained',12,'compute it, then say what it does not tell you'),
-      ('Predict, and refuse to',15,'ŷ at CHF 22, and why not at CHF 40'),
-      ('The lurking variable returns',10,'the Week 1 scatter, coloured by neighbourhood')],
-  tools=[('exam-cards.html','Exam cards c20–c23')]),
+ # Week 9 likewise, on 9 Nov 2026 (a port of SUMAS/mba401/week5.html, with Week 8's ribbons).
 
  dict(n=10,slug='Chi-square tests and F-tests',emoji='🧮',
   title='Does topping preference depend on the <em>neighbourhood</em>?',

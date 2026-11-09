@@ -332,3 +332,23 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   does not follow from the printed data (±0.1475). Workbook fields `w8_design`, `w8_test`,
   `w8_n` are in `courses.json → project.sections`; the w8 SPEC entry is gone from
   `_build/scaffold.py`.
+- **Week 9 (Saylor ch. 10, correlation and regression) was built on 9 Nov 2026 as a port of
+  `SUMAS/mba401/week5.html`**, the way Weeks 7 and 8 were ported from 4A and 4B. The running
+  case is the same in both courses: Week 1's fourteen pizzerias (distance from Rive, price
+  of a Margherita; ŷ = −2.29x + 23.89, r = −0.962, T = −12.29 on 12 df), so nothing in the
+  numbers changed. Week labels were relabelled in ONE pass (1A→1, 1B→2, 2A→4, 2B→5, 3→6,
+  4A→7, 4B→8, 5→9, 6→10), keys `mba401_*w5*` → `stats_*w9*`, workbook fields `w9_pair`,
+  `w9_line`, `w9_pred` (project section "9"). Added on top, Week 8's devices: a result
+  ribbon (`RES`) after every walked Example and on its deck solution slide, two "in plain
+  words" notes (the standard error of the slope and why df = n − 2; why the prediction
+  interval never becomes narrow), and two predict-first rows (r of a semicircle; the two
+  bands at x̄). Ten sections → `courseprogress.js` total 10; denominator 75 (35 steps + 10
+  exercises + 17 classify rows + 10 quiz + 3 fields); deck 68 slides. ⚠ The §10.8 misprint
+  (s_ε printed 12.12, correct 12.61) carries over, flagged on the page. `week9-homework.html`
+  (`w9-hw`, total 14) is SUMAS's Week 5 homework in HEG chrome. The w9 SPEC entry is gone
+  from `_build/scaffold.py`. Probed headless: no errors, 75/75 steps, 11/11 your-turns,
+  17/17 classify, 10/10 exercises, homework 13/13, no horizontal scroll at 390 px.
+  Two fixes made the same day: the ribbon's bold text was near-black on navy in Week 8 as
+  well (now white in both), and the x/y data tables of the exercises scroll inside their own
+  box at phone width (also fixed in SUMAS Week 5, which had the same overflow).
+
