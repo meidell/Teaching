@@ -695,3 +695,12 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   `GEMINI_MODEL`. Menu item "6 · Lister les modèles Gemini" (`listModels`)
   logs the list. Every key is the student's own project, so quotas are per
   student; a 503 is Google's capacity for that model, hence the fallback.
+- **"Si ça bloque" cards (10 Nov 2026).** Jan Erik: "update the site with my
+  problems - to make it easier for the students." One card before each
+  "Terminé quand…" of 5.1–5.4 (3 + 7 + 4 + 6 `<details class="fx">`): what you
+  see → why → what to do, every one met while preparing the séance (myFunction,
+  onOpen vs setup, standalone project, "Untitled project", empty tabs, second
+  sheet, empty Offres + the per-source log line, wrap text, no e-mail because
+  no new offer, WEBAPP_URL, new version vs new deployment, No Cloud Projects,
+  AQ. keys, 404/503, 400/401, profile < 30 words). A raw "Gemini 503 : {" with
+  no sentence = the web app still runs an old program. Add new failures here.
