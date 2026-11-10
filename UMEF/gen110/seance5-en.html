@@ -695,6 +695,11 @@ function gemini_(prompt) {
       if (res.getResponseCode() === 200) { PropertiesService.getScriptProperties().setProperty('GEMINI_MODEL', next); Logger.log('JOBAGENT · model replaced: ' + model + ' → ' + next); }
     }
   }
+  /* 503 = the model is overloaded, 429 = too many requests at once: it is temporary. Try twice more, after 4 then 10 seconds. */
+  [4000, 10000].forEach(function (wait) {
+    if (res.getResponseCode() === 503 || res.getResponseCode() === 429) { Utilities.sleep(wait); res = call(prop_('GEMINI_MODEL') || model); }
+  });
+  if (res.getResponseCode() === 503 || res.getResponseCode() === 429) throw new Error('Gemini is overloaded right now (error ' + res.getResponseCode() + '). It is not your program: wait a minute or two, then click “Prepare” again in the e-mail.');
   if (res.getResponseCode() !== 200) throw new Error('Gemini ' + res.getResponseCode() + ' : ' + res.getContentText().slice(0, 300));
   var j = JSON.parse(res.getContentText());
   return j.candidates[0].content.parts[0].text;
