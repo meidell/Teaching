@@ -388,6 +388,70 @@ define their project and who participates."* Everything below follows from it.
   .q (8) + [data-work] (6) = 40`. Probed headlessly in both editions (all
   widgets, all 12 finds, the score after one wrong / one hint / one wrong MC,
   values revealed after find 12, every slide fits 1280×720, 390 px).
+- ⚠⚠ **10 Nov 2026 — THE COURSE'S APPROACH CHANGED: technical, not
+  prompt-centred** (Jan Erik, the morning of séance 5: "we need to change
+  the philosophy of the gen110 course. now, it depends on how to do prompts
+  … I wanted this session to be much more technical. how to setup an agent
+  that crawls a given list of urls with specific key search words every day,
+  sends you that list … prepares an email and cv … and sends it when you go
+  click — much more technical and less 'how do I apply for a job' and
+  prompt-ical"). From séance 5 on, a séance BUILDS A WORKING SYSTEM with free
+  tools (Google Sheets + Apps Script + Gmail + the Gemini API; Make/Zapier
+  where they fit): a trigger, sources, a filter, an action, a human click.
+  The code is PROVIDED and commented; students read it, configure it, run
+  it, read its log and fix it. A prompt is one component (a template with
+  variables, JSON out), never the subject. The page checks what it can see
+  (configuration, logs, URLs, drafts) and the students declare what happens
+  in their Google account (ticks). Séance 6 (still the 9 Nov CV séance) and
+  séances 7–9 must be rethought on this line before they are taught.
+- **Séance 5 — *Un agent qui cherche chaque jour — et prépare la
+  candidature en un clic* (REBUILT 10 Nov 2026 morning, for 13h30 the same
+  day)**, replacing the 9 Nov prompt-based search séance described below.
+  Progress key `gen110_w5_progress_v3`. The students' program is a
+  ~240-line Google Apps Script kept in the page in
+  `<script type="text/plain" id="gasCode">` (both languages through the
+  markers; source in the template): `onOpen` menu · `setup()` four tabs
+  (Sources, Mots-clés/Keywords, Offres/Offers, Profil/Profile) ·
+  `crawl()` = `UrlFetchApp.fetch` per source (UA string, non-200 logged),
+  `extract_()` (RSS/Atom items, else every `<a href>`, relative links made
+  absolute, mailto/#/javascript skipped), `match_()` (accent-free, every
+  word of a keyword line, "-word" excludes), dedupe on links already in
+  Offers, max 25 new per source, log line `JOBAGENT · pages · errors ·
+  links · new` · `daily()` = crawl + HTML digest e-mail with a
+  `WEBAPP_URL?a=prepare&r=<row>` link per offer · `installDailyTrigger()`
+  (7h) · `doGet` web app (deployed Execute as me / Only myself):
+  `prepare_` fetches the offer page, fills the PROMPT template
+  (split/join, never `.replace` — a "$" in the profile would break it),
+  calls Gemini (`v1beta …:generateContent`, `x-goog-api-key`,
+  `responseMimeType: application/json`, model in `CONFIG.GEMINI_MODEL`,
+  default `gemini-2.5-flash`), replaces `{{NAME}}`/`{{CONTACT}}` locally
+  from Script properties (Gemini never sees them), makes a Google Doc CV →
+  PDF, `GmailApp.createDraft` (to yourself while `TEST_MODE: true`, else
+  the first non-noreply address in the offer), shows a preview with the
+  "missing" list and an "I have read it — send" link; `send_` sends the
+  draft once (status guard). Secrets in Script properties only
+  (`GEMINI_API_KEY`, `WEBAPP_URL`, `MY_NAME`, `MY_CONTACT`). The page
+  evaluates that script once (`GAS`) to reuse its own `extract_`/`match_`/
+  `norm_` in the **robot test** (paste a page's view-source → links read,
+  links kept; < 5 links = JavaScript page) and to show `PROMPT`, so page
+  and program cannot drift. Sections: 5.0 the blueprint (pipeline diagram,
+  classify who does what R V G R N R V R) · 5.1 sources + keywords
+  (flags LinkedIn/Indeed/Glassdoor, home pages, too-broad single words;
+  `w5_sources`) + robot test · 5.2 sheet, script, first run, the Google
+  "unverified app" screen explained, log line → `w5_log` parsed with
+  diagnoses, trigger tick · 5.3 deploy the web app, `w5_webapp` must end
+  in /exec (a /dev URL is refused), digest tick · 5.4 key in Script
+  properties, a 7-box profile (incl. experience) → `w5_profil` for
+  Profil!A2, the PROMPT shown, first draft `w5_brouillon` (no `{{…}}`
+  left, 80+ words), sent-to-myself tick, classify failures S K R V R S K R
+  · quiz positions `1 3 0 2 3 0 2 1` · 5.6 the project as trigger ·
+  sources · filter · action · human click (`w5_projet`). A capture-phase
+  listener wipes a Gemini key (`AIza…`) pasted into any notebook.
+  Denominator `EXTRA_STEPS (14) + .cl-row (16) + .q (8) + [data-work] (6)
+  = 44`. Probed headlessly both editions: 36/44 with the quiz locked, no
+  errors, 390 px clean. NOT verified: the script has never run inside a
+  real Google account (Node-tested functions only), and the Gemini model
+  name / free tier were not re-checked on 10 Nov 2026.
 - ⚠ **9 Nov 2026 — séances 5 and 6 SWAPPED, both rebuilt** (Jan Erik, the
   day before séance 5: "swap week 6 and 5. agent first, then apply (CV and
   all that). build both weeks"; the idea was an agent that finds
