@@ -704,3 +704,35 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   no new offer, WEBAPP_URL, new version vs new deployment, No Cloud Projects,
   AQ. keys, 404/503, 400/401, profile < 30 words). A raw "Gemini 503 : {" with
   no sentence = the web app still runs an old program. Add new failures here.
+- **Course prep after the test run (10 Nov 2026).** Jan Erik: "improve the
+  communication and steps given our discussion", "how to find sites in CH and
+  romandie … and in steps how to find the correct urls", "options to improve
+  the cv's … so that the fastest ones can try out even better stuff", "a
+  jeopardy for this class based on the 5 first weeks for the last hour".
+  - 5.0 first card: **the whole route**, 13 rows "où · ce que vous faites ·
+    ce que vous devez voir", plus the one rule (save → new web-app version).
+  - 5.1 second card: **sources tested 10 Nov 2026 with the program's own
+    code** — jobup (20/page), jobs.ch (20/page, same group, duplicates),
+    impactpool (40, check the place), État de Genève liste-offres (80 before
+    keywords), Ville de Genève offres-emploi (18 before keywords); "do not
+    work": LinkedIn, Indeed, universities, UN, big-company portals (JS),
+    VD/FR/NE/VS (moved / 404). Five steps to find the right address (search
+    on the site, look at the bar for term=/q=, copy all, robot test, page=2).
+    `BOARDS` gained impactpool.org. Re-test these before a new edition.
+  - Text that still said "keeps the links that contain your keywords" now
+    names both modes (intro, diagram, robot test, script header, quiz Q3
+    now "Sur une page Carrières (pas une recherche du site)…").
+  - 5.6: **"Pour les plus rapides"**, six optional `<details>` (not counted):
+    1 `scoreOffers()` (score 0–10, why, company, place → columns I–L, menu 7),
+    2 `followUps()` + `installFollowUps()` (8am e-mail of applications sent
+    > 7 days), both with copy buttons (`data-copypre`), bilingual, tested
+    against a stubbed Apps Script and syntax-checked as copied; 3 PROMPT
+    variations (tone, language, length, missing → how to learn it; keys
+    unchanged); 4 a Google Docs CV template (`CV_TEMPLATE_ID`, the
+    replaceText step left as the challenge); 5 more sources + title dedupe
+    (challenge); 6 the same agent for the project (File → Make a copy).
+  - `jeopardy.html?set=s5`: séances 1–5, 30 NEW questions (not s4's): Ce que
+    fait une IA · Bien demander · Son, image, vidéo · Agents · Le job agent ·
+    Votre agent (the team's own trigger/sources/filter/action/click); the
+    back link follows the set. Not linked from a student page.
+  - The séance timetable was NOT changed: 5.5 quiz 16h15, 5.6 16h25–16h45.
