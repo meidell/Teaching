@@ -659,5 +659,5 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   (`offerLinks_`, ≥5, here `/en/jobs/detail/…`), minus exclusions
   (`excluded_`); keywords are column "recherche du site". Otherwise the old
   title match. Same jobup page: 22 kept (was 1), 20 with -senior -zurich.
-  Students who installed the script before this change must re-copy it into
-  Code.gs.
+  The séance had not been taught yet (Jan Erik was preparing it), so no
+  student holds the old script.
