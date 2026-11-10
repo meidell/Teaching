@@ -228,3 +228,17 @@ companies or figures.** Probed headlessly: every séance's EEA section is
 reached from the previous section, completes on three ticks + the notebook,
 moves the bar, no errors.
 
+
+## 10 Nov 2026 — the slides as a PDF download
+
+Jan Erik: "add the function to download the slides". Each deck
+`seanceN-slides.html` is printed to **`files/seanceN-slides.pdf`** by
+`python3 _build/slides_pdf.py` (headless Chrome, the deck's own `@media print`:
+one slide per 1280×720 page, no speaker notes, no counters). **Re-run it after
+every deck edit**, or the PDF is stale. A new deck needs: the same `@page` /
+`@media print` block and `.dl` button (copy from seance1-slides.html, change
+the file names), and a `⬇ PDF` link beside `🖥️ Diapositives` in that séance's
+topbar. Links today: the deck (top-right "⬇ Télécharger en PDF"), seance1's
+topbar, the hub's "Avant chaque séance" note. Fixed the same day: `ol.steps li`
+was `display:flex`, which split a sentence with a `<b>` into columns (slide 10);
+`.define` was held at 28ch by `.slide p`.
