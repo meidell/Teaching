@@ -661,3 +661,12 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   title match. Same jobup page: 22 kept (was 1), 20 with -senior -zurich.
   The séance had not been taught yet (Jan Erik was preparing it), so no
   student holds the old script.
+- **setup() is the FIRST function of the Apps Script (10 Nov 2026).** Jan
+  Erik, testing: pasted inside `function myFunction(){…}` first, then pasted
+  correctly but still "nothing" — the Run button runs the function selected in
+  the list, which defaults to the FIRST function in the file; it was `onOpen`,
+  and `SpreadsheetApp.getUi()` throws when run from the editor. Now `setup`
+  comes first, stops with a clear error when `getActive()` is null (a
+  standalone project on script.google.com), shows a toast "Quatre onglets
+  prêts", and tries `menu_()`; `onOpen` wraps `menu_()` and logs what to do
+  when run from the editor. Steps 2–4 of 5.2 name each trap.
