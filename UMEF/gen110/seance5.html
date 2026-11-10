@@ -441,6 +441,7 @@ function menu_() {
     .addItem('3 · Chercher et m’envoyer la liste', 'daily')
     .addItem('4 · Activer la recherche chaque jour', 'installDailyTrigger')
     .addItem('5 · Arrêter la recherche quotidienne', 'removeDailyTrigger')
+    .addItem('6 · Lister les modèles Gemini', 'listModels')
     .addToUi();
 }
 function tab_(ss, name, header) {
@@ -699,10 +700,35 @@ function gemini_(prompt) {
   [4000, 10000].forEach(function (wait) {
     if (res.getResponseCode() === 503 || res.getResponseCode() === 429) { Utilities.sleep(wait); res = call(prop_('GEMINI_MODEL') || model); }
   });
+  /* toujours surchargé : on demande à Google la liste des modèles que votre clé peut utiliser, et on essaie les autres modèles Flash, un par un. Le premier qui répond est retenu pour la suite. */
+  if (res.getResponseCode() === 503 || res.getResponseCode() === 429 || res.getResponseCode() === 404) {
+    var tried = {}; tried[model] = true; tried[prop_('GEMINI_MODEL') || ''] = true;
+    var others = models_(key).filter(function (m) { return !tried[m]; });
+    for (var i = 0; i < others.length && i < 6; i++) {
+      res = call(others[i]);
+      if (res.getResponseCode() === 200) { PropertiesService.getScriptProperties().setProperty('GEMINI_MODEL', others[i]); Logger.log('JOBAGENT · modèle de secours : ' + others[i]); break; }
+    }
+  }
   if (res.getResponseCode() === 503 || res.getResponseCode() === 429) throw new Error('Gemini est surchargé en ce moment (erreur ' + res.getResponseCode() + '). Ce n’est pas votre programme : attendez une ou deux minutes, puis recliquez « Préparer » dans l’e-mail.');
   if (res.getResponseCode() !== 200) throw new Error('Gemini ' + res.getResponseCode() + ' : ' + res.getContentText().slice(0, 300));
   var j = JSON.parse(res.getContentText());
   return j.candidates[0].content.parts[0].text;
+}
+/* les modèles Flash que votre clé peut appeler, du plus récent au plus ancien (menu « 6 · Lister les modèles Gemini ») */
+function models_(key) {
+  var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { muteHttpExceptions: true, headers: { 'x-goog-api-key': key } });
+  if (res.getResponseCode() !== 200) return [];
+  return (JSON.parse(res.getContentText()).models || []).filter(function (m) {
+    return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /flash/i.test(m.name) && !/(image|tts|audio|live|embed|thinking-exp)/i.test(m.name);
+  }).map(function (m) { return m.name.replace(/^models\//, ''); }).sort(function (a, b) {
+    var v = function (s) { var x = s.match(/(\d+(\.\d+)?)/); return x ? parseFloat(x[1]) : 0; };
+    return (v(b) - v(a)) || ((/preview|exp/i.test(a) ? 1 : 0) - (/preview|exp/i.test(b) ? 1 : 0)) || ((/lite/i.test(a) ? 1 : 0) - (/lite/i.test(b) ? 1 : 0));
+  });
+}
+function listModels() {
+  var list = models_(prop_('GEMINI_API_KEY') || '');
+  Logger.log(list.length ? 'Modèles Flash utilisables avec votre clé :\n' + list.join('\n') : 'Aucun modèle trouvé : vérifiez GEMINI_API_KEY.');
+  return list;
 }
 function json_(s) { return JSON.parse(String(s).replace(/^```(json)?\s*/i, '').replace(/```\s*$/, '')); }
 function prop_(k) { return PropertiesService.getScriptProperties().getProperty(k); }

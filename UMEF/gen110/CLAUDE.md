@@ -684,3 +684,14 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   (`&#x27;` → '), and `title_()` trims the site's "Il y a 3 jours" / "Hier" /
   "4 days ago" prefix and everything from "Lieu de travail :" / "Place of
   work :" on, for offers kept by site search.
+- **Gemini models move under our feet (10 Nov 2026, Jan Erik's test).**
+  `gemini-2.5-flash` → 404 "no longer available to new users, use
+  gemini-3.8-flash"; then gemini-3.8-flash → 503 "high demand" on every click.
+  `gemini_()` now: model = script property `GEMINI_MODEL` or CONFIG
+  (gemini-3.8-flash); on 404 try the model Google names; on 503/429 retry after
+  4 s and 10 s; still failing → `models_(key)` (ListModels, Flash models with
+  generateContent, no image/tts/live/embed, newest first, preview and lite
+  last) and try up to six others; the first that answers is saved as
+  `GEMINI_MODEL`. Menu item "6 · Lister les modèles Gemini" (`listModels`)
+  logs the list. Every key is the student's own project, so quotas are per
+  student; a 503 is Google's capacity for that model, hence the fallback.
