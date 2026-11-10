@@ -410,7 +410,7 @@
 
 var CONFIG = {
   TEST_MODE: true,               // true: every draft is addressed to yourself. Switch to false only after reading a draft.
-  GEMINI_MODEL: 'gemini-2.5-flash',  // if Gemini answers “404 model not found”, copy the current Flash model name from aistudio.google.com
+  GEMINI_MODEL: 'gemini-3.8-flash',  // if Gemini answers “404 model not found”, copy the current Flash model name from aistudio.google.com
   MAX_NEW_PER_SOURCE: 25,        // at most 25 new offers per source per day
   HOUR: 7                        // the hour of the daily search
 };
@@ -681,9 +681,20 @@ var PROMPT = 'You are preparing an application to one specific offer.\n' +
 function gemini_(prompt) {
   var key = prop_('GEMINI_API_KEY');
   if (!key) throw new Error('GEMINI_API_KEY missing: Project settings → Script properties.');
-  var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + CONFIG.GEMINI_MODEL + ':generateContent', {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': key },
-    payload: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, responseMimeType: 'application/json' } }) });
+  var call = function (model) {
+    return UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': key },
+      payload: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, responseMimeType: 'application/json' } }) });
+  };
+  var model = prop_('GEMINI_MODEL') || CONFIG.GEMINI_MODEL, res = call(model);
+  /* 404 = this model no longer exists. Google’s answer often names the replacement (“use models/…”): try it once, and remember it. */
+  if (res.getResponseCode() === 404) {
+    var next = (res.getContentText().match(/use models\/([a-z0-9.\-]+)/i) || [])[1];
+    if (next && next !== model) {
+      res = call(next);
+      if (res.getResponseCode() === 200) { PropertiesService.getScriptProperties().setProperty('GEMINI_MODEL', next); Logger.log('JOBAGENT · model replaced: ' + model + ' → ' + next); }
+    }
+  }
   if (res.getResponseCode() !== 200) throw new Error('Gemini ' + res.getResponseCode() + ' : ' + res.getContentText().slice(0, 300));
   var j = JSON.parse(res.getContentText());
   return j.candidates[0].content.parts[0].text;
