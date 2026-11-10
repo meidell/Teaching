@@ -679,3 +679,8 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   0 non-offers. `crawl()` logs one line per source: links read · offers kept
   · mode · the page <title> — if Google's servers are served a different page
   than a browser (bot protection), that line shows it.
+- **It works (10 Nov 2026, Jan Erik's own sheet):** 14 jobup offers in
+  Offres, "recherche du site". Then: `clean_` decodes numeric entities
+  (`&#x27;` → '), and `title_()` trims the site's "Il y a 3 jours" / "Hier" /
+  "4 days ago" prefix and everything from "Lieu de travail :" / "Place of
+  work :" on, for offers kept by site search.

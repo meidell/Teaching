@@ -493,6 +493,11 @@ function crawl() {
       numerous links that share the same path (…/jobs/detail/…).
    2. Otherwise (a Careers page, a feed): keep the links whose title
       contains one of your keywords. */
+function title_(s) {
+  return String(s)
+    .replace(/^(il y a \S+ \S+|hier|avant-hier|aujourd’hui|aujourd'hui|la semaine derni[eè]re|le mois dernier|l’ann[ée]e derni[eè]re|\d+ \w+ ago|yesterday|today|last week|last month|last year)\s+/i, '')
+    .split(/\s+(lieu de travail|place of work|taux d’activit[ée]|workload)\s*:/i)[0].trim();
+}
 function same_(u) { return String(u).replace(/#.*$/, '').replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+(\?|$)/, '$1').toLowerCase(); }
 function isSearch_(url) { return /[?&](term|q|query|keywords?|search|what|k)=[^&]+/i.test(url); }
 function offerLinks_(items, url) {
@@ -518,7 +523,7 @@ function pick_(items, url, kw) {
     var offers = items.length && items[0].text ? items : offerLinks_(items, url);   /* a feed: every item is an offer */
     if (offers.length) {
       offers.forEach(function (it) {
-        if (!excluded_(it.title + ' ' + it.text, kw)) out.push({ it: it, hit: ['site search'], site: true });
+        if (!excluded_(it.title + ' ' + it.text, kw)) out.push({ it: { title: title_(it.title), link: it.link, text: it.text }, hit: ['site search'], site: true });
       });
       return out;
     }
@@ -555,6 +560,7 @@ function extract_(body, base) {
 }
 function clean_(s) {
   return String(s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, function (_, h) { return String.fromCharCode(parseInt(h, 16)); }).replace(/&#(\d+);/g, function (_, d) { return String.fromCharCode(+d); })
     .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     .replace(/\s+/g, ' ').trim();
 }
