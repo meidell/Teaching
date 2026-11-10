@@ -648,3 +648,16 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   If either site changes its address format, update `BOARDS`.
 - Exclusion keywords ("-directeur") now show as a valid row (they were ✓ in a
   red row).
+- ⚠ **A search address keeps every offer (10 Nov 2026, same evening).** Jan
+  Erik: the robot test on `jobup.ch/en/jobs/?term=internship%20marketing` "only
+  found 1 out of 59". Cause: the page sends 22 offers (the rest on `&page=2`,
+  `&page=3`), and `match_` then required BOTH words in each TITLE ("Marketing &
+  Communication Intern" has no "internship"). The script now has `pick_()`,
+  used by `crawl()` AND the in-page robot test: if the address is a site search
+  (`isSearch_`: `term= q= query= keyword(s)= search= what= k=`), keep every
+  offer of the page, i.e. the largest group of same-host links sharing a path
+  (`offerLinks_`, ≥5, here `/en/jobs/detail/…`), minus exclusions
+  (`excluded_`); keywords are column "recherche du site". Otherwise the old
+  title match. Same jobup page: 22 kept (was 1), 20 with -senior -zurich.
+  Students who installed the script before this change must re-copy it into
+  Code.gs.

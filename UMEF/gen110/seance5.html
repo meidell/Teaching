@@ -168,9 +168,9 @@
     <span class="label try">Essayez ici · 1 et 2 · vos sources et vos mots-clés</span>
     <div class="cardsteps"><ol>
       <li><b>Les sources</b> : dans la case 1, une adresse par ligne. Chaque adresse doit être celle d’une page qui <em>liste des offres</em>. Un <b>flux RSS</b> d’offres est le meilleur choix : il est fait pour être lu par un programme. La page signale les sites qui bloquent les robots.</li>
-      <li><b>Sur un site d’offres, collez l’adresse d’une recherche, pas celle de l’accueil.</b> La page d’accueil de jobup.ch (<code>https://www.jobup.ch/fr/</code>) ne contient aucune offre : le robot y trouve zéro lien d’offre. Faites la recherche vous-même sur le site : tapez « stage marketing » dans la case de recherche, choisissez la ville, lancez la recherche. L’adresse de la page de résultats contient alors vos mots, par exemple <code>https://www.jobup.ch/fr/emplois/?term=stage%20marketing&amp;location=Genève</code>. Copiez cette adresse depuis la barre d’adresse du navigateur et collez-la dans la case 1. Le robot y trouve une vingtaine d’offres, et il refait la même recherche chaque matin. Pour deux recherches sur le même site (« stage marketing » et « stage communication »), mettez deux lignes.</li>
+      <li><b>Sur un site d’offres, collez l’adresse d’une recherche, pas celle de l’accueil.</b> La page d’accueil de jobup.ch (<code>https://www.jobup.ch/fr/</code>) ne contient aucune offre : le robot y trouve zéro lien d’offre. Faites la recherche vous-même sur le site : tapez « stage marketing » dans la case de recherche, choisissez la ville, lancez la recherche. L’adresse de la page de résultats contient alors vos mots, par exemple <code>https://www.jobup.ch/fr/emplois/?term=stage%20marketing&amp;location=Genève</code>. Copiez cette adresse depuis la barre d’adresse du navigateur et collez-la dans la case 1. Le robot y trouve une vingtaine d’offres, et il refait la même recherche chaque matin. Sur une adresse de recherche, le robot <b>garde toutes les offres</b> que le site a trouvées : le site a déjà fait le tri, vos mots-clés ne servent pas une deuxième fois. Seules vos exclusions (« -directeur ») écartent encore des offres. Pour deux recherches sur le même site (« stage marketing » et « stage communication »), mettez deux lignes.</li>
       <li><b>Les mots-clés</b> : dans la case 2, un par ligne. Plusieurs mots sur une ligne = <em>tous</em> doivent être présents (« stage marketing »). Un mot précédé de « - » exclut l’offre (« -directeur »).</li>
-      <li><b>Écrivez les mots-clés dans les deux langues des offres.</b> En Suisse romande, beaucoup d’offres ont un titre en anglais : « Marketing Intern » ne contient pas le mot « stage ». Le robot ne garde que les offres dont le titre contient vos mots : mettez donc « stage marketing » <em>et</em> « marketing intern » sur deux lignes.</li>
+      <li><b>Les mots-clés servent pour les autres pages</b> : les pages Carrières et les flux RSS, où le robot ne garde que les offres dont le titre contient vos mots. <b>Écrivez-les dans les deux langues des offres.</b> En Suisse romande, beaucoup d’offres ont un titre en anglais : « Marketing Intern » ne contient pas le mot « stage ». Le robot ne garde que les offres dont le titre contient vos mots : mettez donc « stage marketing » <em>et</em> « marketing intern » sur deux lignes.</li>
     </ol></div>
     <div class="cvio">
       <label><b>1 · Sources — une URL par ligne</b><textarea id="srcIn" placeholder="https://…/carrieres&#10;https://…/offres?q=stage&#10;https://…/feed.xml"></textarea></label>
@@ -465,18 +465,58 @@ function crawl() {
     var items = extract_(res.getContentText(), url);
     links += items.length;
     var n = 0;
-    items.forEach(function (it) {
-      if (n >= CONFIG.MAX_NEW_PER_SOURCE || seen[it.link]) return;
-      var hit = match_(it.title + ' ' + it.text + ' ' + it.link, kw);
-      if (!hit.length) return;
-      seen[it.link] = true; n++;
-      fresh.push([new Date(), name, it.title, it.link, hit.join(', '), 'nouvelle', '', '']);
+    pick_(items, url, kw).forEach(function (p) {
+      if (n >= CONFIG.MAX_NEW_PER_SOURCE || seen[p.it.link]) return;
+      seen[p.it.link] = true; n++;
+      fresh.push([new Date(), name, p.it.title, p.it.link, p.hit.join(', '), 'nouvelle', '', '']);
     });
     if (items.length < 5) Logger.log('⚠ ' + name + ' : seulement ' + items.length + ' liens lus — page construite en JavaScript ? Essayez son flux RSS.');
   });
   if (fresh.length) offers.getRange(offers.getLastRow() + 1, 1, fresh.length, 8).setValues(fresh);
   Logger.log('JOBAGENT · ' + pages + ' pages lues · ' + errors + ' erreurs · ' + links + ' liens · ' + fresh.length + ' nouvelles offres');
   return fresh;
+}
+
+/* choisir les offres d’une page. Deux cas :
+   1. L’adresse est une RECHERCHE du site (elle contient term=, q=, query=…) :
+      le site a déjà filtré. On garde toutes les offres de la page, sauf
+      celles qu’un mot exclu (« -directeur ») écarte. Les offres sont les
+      liens les plus nombreux qui ont le même chemin (…/jobs/detail/…).
+   2. Sinon (une page Carrières, un flux) : on garde les liens dont le titre
+      contient un de vos mots-clés. */
+function isSearch_(url) { return /[?&](term|q|query|keywords?|search|what|k)=[^&]+/i.test(url); }
+function offerLinks_(items, url) {
+  var h = host_(url), groups = {}, best = [];
+  items.forEach(function (it) {
+    var m = it.link.match(/^https?:\/\/([^\/?#]+)(\/[^?#]*)/i);
+    if (!m || m[1].replace(/^www\./, '') !== h) return;
+    var path = m[2].replace(/\/+$/, ''), dir = path.slice(0, path.lastIndexOf('/'));
+    if (!dir) return;
+    (groups[dir] = groups[dir] || []).push(it);
+  });
+  for (var d in groups) if (groups[d].length > best.length) best = groups[d];
+  return best.length >= 5 ? best : [];
+}
+function excluded_(text, kw) {
+  var t = ' ' + norm_(text) + ' ';
+  return kw.exclude.some(function (k) { return k.split(' ').every(function (w) { return t.indexOf(' ' + w) >= 0; }); });
+}
+function pick_(items, url, kw) {
+  var out = [];
+  if (isSearch_(url)) {
+    var offers = items.length && items[0].text ? items : offerLinks_(items, url);   /* a feed: every item is an offer */
+    if (offers.length) {
+      offers.forEach(function (it) {
+        if (!excluded_(it.title + ' ' + it.text, kw)) out.push({ it: it, hit: ['recherche du site'], site: true });
+      });
+      return out;
+    }
+  }
+  items.forEach(function (it) {
+    var hit = match_(it.title + ' ' + it.text + ' ' + it.link, kw);
+    if (hit.length) out.push({ it: it, hit: hit });
+  });
+  return out;
 }
 
 /* lire une page : un flux RSS/Atom, ou une page web (tous ses liens <a>) */
@@ -990,7 +1030,7 @@ function cleanCV(cv){
    it in the browser calls no Google service. ---- */
 var GAS_CODE=(document.getElementById('gasCode')||{}).textContent||'';
 GAS_CODE=GAS_CODE.replace(/^\s+/,'');
-var GAS=(function(){try{return new Function(GAS_CODE+'\n;return {extract_:extract_,match_:match_,norm_:norm_,PROMPT:PROMPT,CONFIG:CONFIG};')();}catch(e){return null;}})();
+var GAS=(function(){try{return new Function(GAS_CODE+'\n;return {extract_:extract_,match_:match_,norm_:norm_,pick_:pick_,isSearch_:isSearch_,PROMPT:PROMPT,CONFIG:CONFIG};')();}catch(e){return null;}})();
 (function codeView(){
   var v=document.getElementById('codeView');if(v)v.textContent=GAS_CODE;
   var p=document.getElementById('promptView');if(p&&GAS)p.textContent=GAS.PROMPT;
@@ -1107,12 +1147,13 @@ function kwObj(){var inc=[],exc=[];kwLines().forEach(function(k){if(k.charAt(0)=
     if(!/^https?:\/\//i.test(base))base='https://example.com/';
     var kw=kwObj();
     if(!kw.include.length){cap.textContent='Écrivez d’abord vos mots-clés dans la case 2.';return;}
-    var items=GAS.extract_(body,base),hits=[];
-    items.forEach(function(it){var m=GAS.match_(it.title+' '+it.text+' '+it.link,kw);if(m.length)hits.push({it:it,m:m});});
+    var items=GAS.extract_(body,base),hits=GAS.pick_(items,base,kw).map(function(p){return {it:p.it,m:p.hit,site:p.site};});
+    var bySite=hits.length&&hits[0].site;
     cap.textContent='';
-    var h='<div class="cov"><span class="cov-n">'+hits.length+' / '+items.length+'</span><span class="cov-t">liens gardés par vos mots-clés, sur tous les liens que le robot lit dans cette page</span><span class="cov-b"><i style="width:'+(items.length?Math.round(hits.length/items.length*100):0)+'%"></i></span></div>';
+    var h='<div class="cov"><span class="cov-n">'+hits.length+' / '+items.length+'</span><span class="cov-t">'+(bySite?'offres gardées, sur tous les liens que le robot lit dans cette page. L’adresse est une recherche du site : le site a déjà choisi les offres, le robot les garde toutes, sauf celles que vos exclusions écartent.':'liens gardés par vos mots-clés, sur tous les liens que le robot lit dans cette page')+'</span><span class="cov-b"><i style="width:'+(items.length?Math.round(hits.length/items.length*100):0)+'%"></i></span></div>';
     if(items.length<5)h+='<p class="truth-n" style="color:var(--no)"><b>Moins de cinq liens :</b> cette page est probablement construite en JavaScript. Le robot ne verra pas ses offres. Cherchez le flux RSS du site, ou une autre page.</p>';
     else if(!hits.length)h+='<p class="truth-n">Le robot lit la page, mais aucun lien ne contient vos mots-clés. Regardez les titres des offres sur la page, et reprenez leurs mots.</p>';
+    else if(bySite)h+='<p class="truth-n">Le robot lit la première page de résultats, soit une vingtaine d’offres. Il lit cette page chaque matin, et les nouvelles offres y arrivent en premier. Pour lire aussi la page 2, ajoutez une deuxième ligne dans la case 1 avec <code>&amp;page=2</code> à la fin de l’adresse.</p>';
     else if(hits.length>40)h+='<p class="truth-n">Plus de quarante liens gardés : vos mots-clés sont trop larges. Ajoutez un deuxième mot par ligne, ou une exclusion.</p>';
     if(hits.length)h+='<table><thead><tr><th>Lien gardé</th><th>Mots-clés trouvés</th></tr></thead><tbody>'+hits.slice(0,25).map(function(x){return '<tr class="ok"><td><b>'+esc(x.it.title)+'</b><br><span class="caption" style="margin:0">'+esc(x.it.link)+'</span></td><td>'+esc(x.m.join(', '))+'</td></tr>';}).join('')+'</tbody></table>';
     out.innerHTML=h;
