@@ -131,3 +131,18 @@
     else setTimeout(place,400);
   }catch(e){}
 })();
+
+/* ---- progress feedback (10 Nov 2026) ----------------------------------
+   On a page with a session bar (#progPct), a course bar (#coursePct) or
+   a homework counter (#scoreChip),
+   /shared/progressfx.js makes the bar answer each click ("+4 % · cette
+   séance"), counts the "Avant la séance — cochez" ticks, and puts a small
+   mark on every field that counts. Loaded after the page's own scripts. */
+(function(){
+  function go(){
+    if(!document.getElementById('progPct')&&!document.getElementById('coursePct')&&!document.getElementById('scoreChip'))return;
+    var s=document.createElement('script');s.src='/shared/progressfx.js';s.defer=true;document.head.appendChild(s);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,300);});
+  else setTimeout(go,300);
+})();
