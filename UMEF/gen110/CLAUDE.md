@@ -604,3 +604,17 @@ define their project and who participates."* Everything below follows from it.
 - **Theme**: `/shared/themes/umef-full.css` + `ia.css` (new CSS at its end).
 - **Grading**: 10 % participation · 40 % project · 50 % final exam.
 - **Order of séances 5–9**: the class's ranked list above.
+
+## The red « À faire maintenant » cards are gone (10 Nov 2026)
+
+Jan Erik: "for the gens110 course - remove these 'a faire' cards for the whole
+course." The `card todo` boxes (red frame, "À faire maintenant · 13h30–13h50 ·
+20 min", red numbered circles) were deleted from séances 3, 5 and 6, with the
+how-to step and the legend entry that described them, and the "red box"
+sentences on the hub and the séance heads. Two S5 cards held the ONLY
+instructions for installing the program (sheets.new → Extensions → Apps Script
+→ setup) and for the Gemini key (aistudio → script properties): they stay as
+plain `card steps` (white, no label, no clock times). S3's `r2st` status line
+lived in a deleted card; its script now checks `if(st)`. Séance 4's in-card
+"▶ À faire" strips (`.doit`) were NOT touched. Do not bring the red card back
+in S7–S9.
