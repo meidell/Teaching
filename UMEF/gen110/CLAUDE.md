@@ -605,16 +605,22 @@ define their project and who participates."* Everything below follows from it.
 - **Grading**: 10 % participation · 40 % project · 50 % final exam.
 - **Order of séances 5–9**: the class's ranked list above.
 
-## The red « À faire maintenant » cards are gone (10 Nov 2026)
+## The red « À faire maintenant » cards are gone; their steps live in the cards (10 Nov 2026)
 
-Jan Erik: "for the gens110 course - remove these 'a faire' cards for the whole
-course." The `card todo` boxes (red frame, "À faire maintenant · 13h30–13h50 ·
-20 min", red numbered circles) were deleted from séances 3, 5 and 6, with the
-how-to step and the legend entry that described them, and the "red box"
-sentences on the hub and the séance heads. Two S5 cards held the ONLY
-instructions for installing the program (sheets.new → Extensions → Apps Script
-→ setup) and for the Gemini key (aistudio → script properties): they stay as
-plain `card steps` (white, no label, no clock times). S3's `r2st` status line
-lived in a deleted card; its script now checks `if(st)`. Séance 4's in-card
-"▶ À faire" strips (`.doit`) were NOT touched. Do not bring the red card back
-in S7–S9.
+Jan Erik: "remove these 'a faire' cards for the whole course", then "remove
+them, but add the explanations to each of the actual cards where they do that
+action". The `card todo` boxes (red frame, "À faire maintenant · 13h30–13h50 ·
+20 min", red numbered circles) at the top of each section of séances 3, 5 and
+6 were removed. Every one of their steps (29 / 21 / 27) now sits in a
+`<div class="cardsteps"><ol>` inside the card where the student does that
+action, right under the card's label (and its h3, if any): e.g. S5 5.2
+"sheets.new → Extensions → Apps Script → setup" is in the "le programme, à
+copier" card, and the search/log/trigger steps in the notebook card below it.
+`.cardsteps` (ia.css) is neutral: accent left rule, pale accent wash, no clock
+times. The card's old h3 summary was dropped (the section title says it). The
+how-to step and legend entry about the red box, and the "red box" sentences on
+the hub and the séance heads, are gone. S3's `r2st` status line moved with its
+steps into the "votre texte" card; its script also checks `if(st)`. The
+mapping script is in the 10 Nov session, not the repo. Séance 4's in-card
+"▶ À faire" strips (`.doit`, red) were NOT touched. For S7–S9: steps go in the
+card where the action happens, never a red card on top.
