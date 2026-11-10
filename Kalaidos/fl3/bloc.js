@@ -43,8 +43,8 @@ function fmt(n,d){
   return (neg?'−':'')+s[0]+(s[1]?','+s[1]:'');
 }
 
-var MODES={ex:['🎤',T('Exposé','Talk')],do:['🛠',T('Atelier','Workshop')],quiz:['✅','Quiz'],co:['🔁',T('Mise en commun','Debrief')]};
-function modeChip(s){var m=MODES[s.mode]||MODES.do;return '<span class="mode m-'+s.mode+'">'+m[0]+' '+m[1]+(s.min?' · '+s.min+' min':'')+'</span>';}
+var MODES={ex:['🎤',T('Exposé','Talk')],do:['🛠',T('Atelier','Workshop')],quiz:['✅','Quiz'],co:['🔁',T('Mise en commun','Debrief')],eea:['🎓',T('Projet EEA','EEA project')]};
+function modeChip(s){var m=MODES[s.mode]||MODES.do;return '<span class="mode m-'+s.mode+'">'+m[0]+' '+m[1]+(s.min?' · '+s.min+' min':(s.mode==='eea'?T(' · après la séance',' · after the session'):''))+'</span>';}
 
 function renderList(){
   var list=document.getElementById('sectionList');if(!list)return;list.innerHTML='';
@@ -496,4 +496,41 @@ function bootDay(){
       f.addEventListener('input',c);setTimeout(c,900);
     });
   });
+}
+
+/* ---- the EEA, séance by séance (10 Nov 2026, Jan Erik: "make that integrated
+   on the site as a part of the sessions — suggest exercises and project after
+   every session"). The EEA itself stays on OpenOLAT: no case, name or figure
+   of it is ever written here — only which section becomes doable when, and
+   how to work on it. ---- */
+var EEA_PLAN=[
+  {n:1,d:T('mar. 10.11','Tue 10.11'),w:T('publication de l’EEA · formez votre groupe','the EEA is published · form your group')},
+  {n:2,d:T('mar. 17.11','Tue 17.11'),w:T('§ 1 · transformation · 10 pts','§ 1 · transformation · 10 pts')},
+  {n:3,d:T('jeu. 19.11','Thu 19.11'),w:T('§ 2 · fusion · 10 pts','§ 2 · merger · 10 pts')},
+  {n:4,d:T('sam. 21.11','Sat 21.11'),w:T('point d’étape : §§ 1 et 2 terminés','checkpoint: §§ 1 and 2 finished')},
+  {n:5,d:T('sam. 21.11','Sat 21.11'),w:T('§ 3 · assainissement · 12 pts · § 4 · bilans déficitaires · 6 pts','§ 3 · restructuring · 12 pts · § 4 · deficit balance sheets · 6 pts')},
+  {n:6,d:T('mar. 24.11','Tue 24.11'),w:T('§ 5 · liquidation · 10 pts','§ 5 · liquidation · 10 pts')},
+  {n:7,d:T('mar. 01.12','Tue 01.12'),w:T('§ 6 · évaluation d’entreprise · 8 pts','§ 6 · business valuation · 8 pts')},
+  {n:8,d:T('mar. 08.12','Tue 08.12'),w:T('§ 7.1 · du BC 1 au BC 2 · 17 pts','§ 7.1 · from BC 1 to BC 2 · 17 pts')},
+  {n:9,d:T('jeu. 10.12','Thu 10.12'),w:T('§ 7.2 · feuille de consolidation · 22 pts · § 7.3 · bénéfices intermédiaires · 5 pts','§ 7.2 · consolidation worksheet · 22 pts · § 7.3 · intermediate profits · 5 pts')},
+  {n:10,d:T('lun. 14.12, 23h59','Mon 14.12, 23:59'),w:T('remise de l’EEA sur OpenOLAT (sous réserve de confirmation)','EEA hand-in on OpenOLAT (subject to confirmation)')}
+];
+function renderEeaCal(boxId,cur){
+  var el=document.getElementById(boxId);if(!el)return;
+  el.innerHTML='<table class="eeacal"><tbody>'+EEA_PLAN.map(function(r){
+    var c=r.n<cur?'past':(r.n===cur?'now':'');
+    return '<tr class="'+c+'"><td class="en">'+(r.n<10?T('Séance ','Session ')+r.n:'📮')+'</td><td class="ed">'+r.d+'</td><td>'+r.w+(r.n===cur?' <b>'+T('← maintenant','← now')+'</b>':'')+'</td></tr>';
+  }).join('')+'</tbody></table>';
+}
+/* counted tick boxes: each one is a step of the page's progress */
+function buildTicks(boxId,items){
+  var box=document.getElementById(boxId);if(!box)return;
+  items.forEach(function(it){
+    need(it[0]);
+    var on=!!(progress.steps&&progress.steps[it[0]]),d=document.createElement('label');d.className='ck'+(on?' on':'');
+    d.innerHTML='<input type="checkbox"'+(on?' checked':'')+'><span>'+it[1]+'</span>';
+    d.querySelector('input').addEventListener('change',function(e){d.classList.toggle('on',e.target.checked);markStep(it[0],e.target.checked);});
+    box.appendChild(d);
+  });
+  updateBar();
 }

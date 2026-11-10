@@ -200,3 +200,31 @@ block is NOT deployed.
   Kalaidos palette, the green-ai engine; `S` = notes, `#n`), linked 🖥️ in
   the topbar; the hub's séances note points to it. The "Avant la séance 2"
   line now says "faire les exercices du chapitre 4" too.
+
+## 10 Nov 2026 — the EEA integrated into the séances
+
+Jan Erik: "L'EXERCICE D'ÉTUDE AUTONOME (EEA) — make that integrated on the
+site, as a part of the sessions (suggest exercises and project after every
+session)". He first also asked for a 15-minute break every 60 minutes, then
+withdrew it the same message thread: **the timetable is unchanged** (two
+parties, one 15-minute pause). Séances 1–9 each end on a new section
+**N.x · Après la séance — Projet EEA** (mode `eea`, `min:0`, block 2, so no
+class time moves): why this section of the EEA is doable now; the EEA
+calendar (`renderEeaCal`, the current séance highlighted, remise
+14.12 23h59 *sous réserve*); "le projet de la semaine" — three steps, three
+counted ticks (`buildTicks`, ids `ea1–ea3`) and a group notebook `wN_eea`
+(in courses.json `project.sections`); "exercices suggérés" — the textbook
+chapter, the page's own ateliers to redo, an exam pointer; and the "Avant la
+séance N+1" lines that used to sit in the small "Jalon EEA" cards, which are
+gone (séance 7's still spoke of the "interruption de deux semaines" and
+séance 9's of a séance 10 "à 14h00" — both outdated, both removed). The
+previous last section's "Menu" button now reads "Suite : le projet EEA →".
+Séance 10 has no new section (the EEA is handed in the day before; its 10.5
+"Vos questions sur l'EEA" stays). Engine: `MODES.eea` (🎓, purple chip),
+`EEA_PLAN`, `renderEeaCal`, `buildTicks` at the end of `bloc.js`; styles at
+the end of `fl3.css`. courseprogress totals +1 for w1–w9. The rule holds:
+**the pages name each EEA section's topic and points, never its cases,
+companies or figures.** Probed headlessly: every séance's EEA section is
+reached from the previous section, completes on three ticks + the notebook,
+moves the bar, no errors.
+
