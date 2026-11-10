@@ -298,7 +298,7 @@
     <div class="cardsteps"><ol>
       <li><b>The key</b>: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey ↗</a> → <em>Create API key</em>. If the window says <em>No Cloud Projects Available</em>, your account has no Google Cloud project yet, and a key always lives in a project: close the window (<em>Cancel</em>), click <em>Projects</em> in the left menu, then <em>+ Create project</em>, name it “Job agent”, and go back to <em>API keys</em> → <em>Create API key</em> → choose “Job agent” in the list → <em>Create key</em>. Copy the key. It starts with <code>AQ.</code> (a key created before late May 2026 starts with <code>AIza</code>: both formats work). In the Apps Script editor, <em>Project settings → Script properties → Add</em>: name <code>GEMINI_API_KEY</code>, value = the key. 🔐 <b>Nowhere else</b>: not in the sheet, not in the code, not in a notebook on this site.</li>
       <li><b>Your name and contact</b>, two more properties: <code>MY_NAME</code> (“Awa Ndiaye”) and <code>MY_CONTACT</code> (“awa@… · +41 …”). The program writes them into the message and CV <em>after</em> Gemini’s answer: Gemini never sees them.</li>
-      <li><b>Your profile</b>: fill in the boxes below, <b>Copy my profile</b>, and paste it into the <em>Profile</em> tab, cell A2.</li>
+      <li><b>Your profile</b>: fill in the boxes below, <b>Copy my profile</b>, and paste it into the <em>Profile</em> tab: click cell A2, then paste. The text spreads over rows 2, 3, 4…: that is normal, the program reads all of column A from A2 down.</li>
     </ol></div>
     <div class="lab">
       <div class="pb" id="profForm"></div>
@@ -423,7 +423,7 @@ function setup() {
   tab_(ss, TAB.SOURCES, ['URL', 'Name (optional)']);
   tab_(ss, TAB.KEYWORDS, ['Keyword (one per line; “-word” to exclude)']);
   tab_(ss, TAB.OFFERS, ['Found on', 'Source', 'Title', 'Link', 'Keywords found', 'Status', 'Draft', 'Sent on']);
-  tab_(ss, TAB.PROFILE, ['My profile, no name, phone or e-mail (cell A2)']);
+  tab_(ss, TAB.PROFILE, ['My profile, no name, phone or e-mail (from A2 down, one or several rows)']);
   try { menu_(); } catch (e) {}   /* from the editor the menu cannot be added: it appears at the next reload of the sheet */
   ss.toast('Four tabs ready. Reload the sheet to see the 🤖 Job agent menu.', 'Job agent', 10);
   Logger.log('JOBAGENT · sheet ready: tabs ' + [TAB.SOURCES, TAB.KEYWORDS, TAB.OFFERS, TAB.PROFILE].join(', ') + ' · ' + ss.getName());
@@ -634,8 +634,8 @@ function prepare_(row) {
   var sh = SpreadsheetApp.getActive().getSheetByName(TAB.OFFERS), r = sh.getRange(row, 1, 1, 8).getValues()[0];
   var title = String(r[2]), link = String(r[3]), status = String(r[5]);
   if (/sent|envoy/i.test(status)) return '<p>Already sent on ' + esc_(String(r[7])) + '.</p>';
-  var profile = String(SpreadsheetApp.getActive().getSheetByName(TAB.PROFILE).getRange('A2').getValue() || '').trim();
-  if (profile.split(/\s+/).length < 30) throw new Error('The profile (Profile tab, cell A2) has fewer than 30 words.');
+  var profile = rows_(SpreadsheetApp.getActive(), TAB.PROFILE).map(function (r) { return String(r[0] || '').trim(); }).filter(String).join('\n');   /* the whole profile, from A2 down: a text pasted over several lines spreads over several cells */
+  if (profile.split(/\s+/).length < 30) throw new Error('The profile (Profile tab, from cell A2 down) has fewer than 30 words.');
   var offer = '';
   try { var res = UrlFetchApp.fetch(link, { muteHttpExceptions: true, followRedirects: true });
         if (res.getResponseCode() === 200) offer = clean_(res.getContentText().replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')).slice(0, 8000); } catch (e) {}
@@ -1251,7 +1251,7 @@ function profClean(){
   document.getElementById('profCopy').addEventListener('click',function(){
     var cap=document.getElementById('profCopyCap');
     if(profFilled()<6){cap.textContent='Fill in at least six boxes out of seven.';return;}
-    copyText(profClean().text,cap,'✓ Copied — paste it into the Profile tab, cell A2.');markStep('pclean');
+    copyText(profClean().text,cap,'✓ Copied — paste it into the Profile tab, after clicking cell A2.');markStep('pclean');
   });
   setTimeout(paint,950);
 })();

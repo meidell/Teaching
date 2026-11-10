@@ -298,7 +298,7 @@
     <div class="cardsteps"><ol>
       <li><b>La clé</b> : <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey ↗</a> → <em>Create API key</em>. Si la fenêtre dit <em>No Cloud Projects Available</em>, votre compte n’a pas encore de projet Google Cloud, et une clé se range toujours dans un projet : fermez la fenêtre (<em>Cancel</em>), cliquez <em>Projects</em> dans le menu de gauche, puis <em>+ Create project</em>, nommez-le « Job agent », et revenez sur <em>API keys</em> → <em>Create API key</em> → choisissez « Job agent » dans la liste → <em>Create key</em>. Copiez la clé. Elle commence par <code>AQ.</code> (une clé créée avant fin mai 2026 commence par <code>AIza</code> : les deux formats marchent). Dans l’éditeur Apps Script, <em>Paramètres du projet → Propriétés du script → Ajouter</em> : nom <code>GEMINI_API_KEY</code>, valeur = la clé. 🔐 <b>Nulle part ailleurs</b> : ni dans la feuille, ni dans le code, ni dans un carnet de ce site.</li>
       <li><b>Votre nom et votre contact</b>, deux autres propriétés : <code>MY_NAME</code> (« Awa Ndiaye ») et <code>MY_CONTACT</code> (« awa@… · +41 … »). Le programme les écrit dans le message et le CV <em>après</em> la réponse de Gemini : Gemini ne les voit jamais.</li>
-      <li><b>Votre profil</b> : remplissez les cases ci-dessous, <b>Copier mon profil</b>, et collez-le dans l’onglet <em>Profil</em>, cellule A2.</li>
+      <li><b>Votre profil</b> : remplissez les cases ci-dessous, <b>Copier mon profil</b>, et collez-le dans l’onglet <em>Profil</em> : cliquez la cellule A2, puis collez. Le texte se répartit sur les lignes 2, 3, 4… : c’est normal, le programme lit toute la colonne A à partir de A2.</li>
     </ol></div>
     <div class="lab">
       <div class="pb" id="profForm"></div>
@@ -423,7 +423,7 @@ function setup() {
   tab_(ss, TAB.SOURCES, ['URL', 'Nom (facultatif)']);
   tab_(ss, TAB.KEYWORDS, ['Mot-clé (un par ligne ; « -mot » pour exclure)']);
   tab_(ss, TAB.OFFERS, ['Trouvée le', 'Source', 'Titre', 'Lien', 'Mots-clés trouvés', 'Statut', 'Brouillon', 'Envoyée le']);
-  tab_(ss, TAB.PROFILE, ['Mon profil, sans nom, téléphone ni e-mail (cellule A2)']);
+  tab_(ss, TAB.PROFILE, ['Mon profil, sans nom, téléphone ni e-mail (à partir de A2, une ou plusieurs lignes)']);
   try { menu_(); } catch (e) {}   /* depuis l’éditeur, le menu ne peut pas s’ajouter : il apparaît au prochain rechargement de la feuille */
   ss.toast('Quatre onglets prêts. Rechargez la feuille pour voir le menu 🤖 Job agent.', 'Job agent', 10);
   Logger.log('JOBAGENT · feuille prête : onglets ' + [TAB.SOURCES, TAB.KEYWORDS, TAB.OFFERS, TAB.PROFILE].join(', ') + ' · ' + ss.getName());
@@ -634,8 +634,8 @@ function prepare_(row) {
   var sh = SpreadsheetApp.getActive().getSheetByName(TAB.OFFERS), r = sh.getRange(row, 1, 1, 8).getValues()[0];
   var title = String(r[2]), link = String(r[3]), status = String(r[5]);
   if (/envoy|sent/i.test(status)) return '<p>Déjà envoyée le ' + esc_(String(r[7])) + '.</p>';
-  var profile = String(SpreadsheetApp.getActive().getSheetByName(TAB.PROFILE).getRange('A2').getValue() || '').trim();
-  if (profile.split(/\s+/).length < 30) throw new Error('Le profil (onglet Profil, cellule A2) a moins de 30 mots.');
+  var profile = rows_(SpreadsheetApp.getActive(), TAB.PROFILE).map(function (r) { return String(r[0] || '').trim(); }).filter(String).join('\n');   /* tout le profil, de A2 vers le bas : un texte collé sur plusieurs lignes se répartit sur plusieurs cellules */
+  if (profile.split(/\s+/).length < 30) throw new Error('Le profil (onglet Profil, à partir de la cellule A2) a moins de 30 mots.');
   var offer = '';
   try { var res = UrlFetchApp.fetch(link, { muteHttpExceptions: true, followRedirects: true });
         if (res.getResponseCode() === 200) offer = clean_(res.getContentText().replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')).slice(0, 8000); } catch (e) {}
@@ -1251,7 +1251,7 @@ function profClean(){
   document.getElementById('profCopy').addEventListener('click',function(){
     var cap=document.getElementById('profCopyCap');
     if(profFilled()<6){cap.textContent='Remplissez au moins six cases sur sept.';return;}
-    copyText(profClean().text,cap,'✓ Copié — collez-le dans l’onglet Profil, cellule A2.');markStep('pclean');
+    copyText(profClean().text,cap,'✓ Copié — collez-le dans l’onglet Profil, en cliquant d’abord la cellule A2.');markStep('pclean');
   });
   setTimeout(paint,950);
 })();
