@@ -670,3 +670,12 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   standalone project on script.google.com), shows a toast "Quatre onglets
   prêts", and tries `menu_()`; `onOpen` wraps `menu_()` and logs what to do
   when run from the editor. Steps 2–4 of 5.2 name each trap.
+- **Self-links and offer ids (10 Nov 2026).** Jan Erik's first real run (old
+  script) wrote one row: title "stage marketing", link = the search address
+  itself. `pick_` now drops links to the source page (`same_`), and
+  `offerLinks_` only groups links whose LAST path segment contains a digit (an
+  offer id) — without that, the French jobup page grouped 33 menu links
+  ("Jobs", "Page 2"). Kept now: jobup fr 22/69, jobup en 22/52, jobs.ch 13/43,
+  0 non-offers. `crawl()` logs one line per source: links read · offers kept
+  · mode · the page <title> — if Google's servers are served a different page
+  than a browser (bot protection), that line shows it.

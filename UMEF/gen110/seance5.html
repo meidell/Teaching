@@ -469,10 +469,12 @@ function crawl() {
     } catch (e) { errors++; Logger.log('⚠ ' + name + ' : ' + e.message); return; }
     if (res.getResponseCode() !== 200) { errors++; Logger.log('⚠ ' + name + ' : HTTP ' + res.getResponseCode()); return; }
     pages++;
-    var items = extract_(res.getContentText(), url);
+    var body = res.getContentText(), items = extract_(body, url), picked = pick_(items, url, kw);
     links += items.length;
+    Logger.log(name + ' · ' + items.length + ' liens lus · ' + picked.length + ' offres gardées' + (isSearch_(url) ? ' (recherche du site)' : ' (vos mots-clés)') +
+      ' · titre de la page : ' + clean_((body.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '?').slice(0, 80));
     var n = 0;
-    pick_(items, url, kw).forEach(function (p) {
+    picked.forEach(function (p) {
       if (n >= CONFIG.MAX_NEW_PER_SOURCE || seen[p.it.link]) return;
       seen[p.it.link] = true; n++;
       fresh.push([new Date(), name, p.it.title, p.it.link, p.hit.join(', '), 'nouvelle', '', '']);
@@ -491,14 +493,15 @@ function crawl() {
       liens les plus nombreux qui ont le même chemin (…/jobs/detail/…).
    2. Sinon (une page Carrières, un flux) : on garde les liens dont le titre
       contient un de vos mots-clés. */
+function same_(u) { return String(u).replace(/#.*$/, '').replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+(\?|$)/, '$1').toLowerCase(); }
 function isSearch_(url) { return /[?&](term|q|query|keywords?|search|what|k)=[^&]+/i.test(url); }
 function offerLinks_(items, url) {
   var h = host_(url), groups = {}, best = [];
   items.forEach(function (it) {
     var m = it.link.match(/^https?:\/\/([^\/?#]+)(\/[^?#]*)/i);
     if (!m || m[1].replace(/^www\./, '') !== h) return;
-    var path = m[2].replace(/\/+$/, ''), dir = path.slice(0, path.lastIndexOf('/'));
-    if (!dir) return;
+    var path = m[2].replace(/\/+$/, ''), dir = path.slice(0, path.lastIndexOf('/')), last = path.slice(path.lastIndexOf('/') + 1);
+    if (!dir || !/\d/.test(last)) return;   /* une offre a un identifiant (des chiffres) à la fin de son adresse ; un lien de menu, non */
     (groups[dir] = groups[dir] || []).push(it);
   });
   for (var d in groups) if (groups[d].length > best.length) best = groups[d];
@@ -509,7 +512,8 @@ function excluded_(text, kw) {
   return kw.exclude.some(function (k) { return k.split(' ').every(function (w) { return t.indexOf(' ' + w) >= 0; }); });
 }
 function pick_(items, url, kw) {
-  var out = [];
+  var out = [], self = same_(url);
+  items = items.filter(function (it) { return same_(it.link) !== self; });   /* un lien vers la page elle-même (la recherche) n’est pas une offre */
   if (isSearch_(url)) {
     var offers = items.length && items[0].text ? items : offerLinks_(items, url);   /* a feed: every item is an offer */
     if (offers.length) {
