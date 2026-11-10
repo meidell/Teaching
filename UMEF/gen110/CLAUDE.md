@@ -624,3 +624,27 @@ steps into the "votre texte" card; its script also checks `if(st)`. The
 mapping script is in the 10 Nov session, not the repo. Séance 4's in-card
 "▶ À faire" strips (`.doit`, red) were NOT touched. For S7–S9: steps go in the
 card where the action happens, never a red card on top.
+
+## S5 · 5.1 — finding the sources with an AI, and search addresses (10 Nov 2026)
+
+Jan Erik: "they need guidance to find the urls of useful pages in the district
+(suisse romande). how do they find that using ai? … if i add
+https://www.jobup.ch/en/ — this is just a landing page and will not return jobs".
+- New first card "Essayez ici · 0 · trouver vos sources avec une IA": why, four
+  steps, two inputs (what · region, saved `gen110_w5_ai`), a prompt that asks
+  a web-search AI for job-site SEARCH-RESULT addresses, Careers pages and RSS
+  feeds, each marked "vérifiée" or "à vérifier"; students open every address.
+- Box 1 and 2 gained two steps: paste the address of a search, not the home
+  page (jobup example), and write keywords in both languages ("stage
+  marketing" + "marketing intern"), because the robot matches link titles.
+- The checker knows `BOARDS` (jobup.ch, jobs.ch): a line on those hosts with no
+  `term=`/`q=` is flagged as a home page, with the search address built from
+  the first keyword and a "Remplacer cette ligne" button. Any address whose
+  path is empty or only a language code (`/fr/`, `/en/`) is flagged too.
+- Tested 10 Nov 2026 with a plain fetch (what UrlFetchApp gets):
+  `jobup.ch/fr/emplois/?term=stage%20marketing` and `jobs.ch/fr/offres-emplois/?term=…`
+  return about 20 offer links whose anchor text holds the job title (so
+  `match_` works); `&location=Genève` works; `jobup.ch/en/` returns 0.
+  If either site changes its address format, update `BOARDS`.
+- Exclusion keywords ("-directeur") now show as a valid row (they were ✓ in a
+  red row).

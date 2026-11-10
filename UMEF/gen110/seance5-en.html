@@ -142,10 +142,35 @@
   <div class="sec-head"><div class="kicker">Section 5.1 · Pieces 1 and 2 · Sources and filter</div><h2>Which pages to read, which words to look for — tested on what the robot sees</h2></div>
 
   <div class="card">
+    <span class="label try">Try it here · 0 · finding your sources with an AI</span>
+    <p>The program only reads the pages you give it. So you first need a list of pages where offers in your field are published in French-speaking Switzerland: job sites, the Careers pages of companies in the region, RSS feeds. An AI with web search proposes this list in a minute. It can also invent an address that does not exist, so you check every page before keeping it.</p>
+    <div class="cardsteps"><ol>
+      <li><b>Describe what you are looking for</b> in the two boxes below: the type of position and the field (“marketing internship”), then the region. The prompt fills itself in.</li>
+      <li><b>Copy the prompt</b> and paste it into <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini ↗</a>, or into ChatGPT with web search turned on (the <em>Search</em> button under the message box). Without web search the AI answers from memory, and its addresses are often wrong.</li>
+      <li><b>Open every address</b> the AI proposes, in a new tab. Keep it only if the page opens <em>and</em> shows a list of offers. A home page, an error page or a page that asks you to log in is useless to the program.</li>
+      <li><b>Paste the addresses you kept into box 1</b> of the next box, one per line. The page checks every line and proposes the right address when you have pasted a job site’s home page.</li>
+    </ol></div>
+    <div class="cvio">
+      <label><b>What you are looking for</b><input type="text" id="aiWhat" class="coname" style="width:100%;margin:4px 0 0;" placeholder="marketing internship"></label>
+      <label><b>The region</b><select id="aiWhere" class="coname" style="width:100%;margin:4px 0 0;">
+        <option value="all of French-speaking Switzerland (Geneva, Vaud, Fribourg, Neuchâtel, Valais, Jura)">All of French-speaking Switzerland</option>
+        <option value="the canton of Geneva">Geneva</option>
+        <option value="the canton of Vaud (Lausanne, Nyon, Montreux, Yverdon)">Vaud (Lausanne)</option>
+        <option value="the cantons of Fribourg and Neuchâtel">Fribourg and Neuchâtel</option>
+        <option value="Valais (Sion, Martigny, Monthey)">Valais</option>
+      </select></label>
+    </div>
+    <pre class="code" id="aiPrompt" style="white-space:pre-wrap;"></pre>
+    <div class="btn-row"><button class="btn small" id="aiCopy" type="button">Copy the prompt</button><span class="caption" id="aiCopyCap" style="margin:0;"></span></div>
+  </div>
+
+  <div class="card">
     <span class="label try">Try it here · 1 and 2 · your sources and your keywords</span>
     <div class="cardsteps"><ol>
-      <li><b>The sources</b>: in box 1, one address per line — the page that lists the offers (not the site’s home page). An <b>RSS feed</b> of offers is the best choice: it is made to be read by a program. The page flags sites that block robots.</li>
+      <li><b>The sources</b>: in box 1, one address per line. Every address must be that of a page that <em>lists offers</em>. An <b>RSS feed</b> of offers is the best choice: it is made to be read by a program. The page flags sites that block robots.</li>
+      <li><b>On a job site, paste the address of a search, not of the home page.</b> The home page of jobup.ch (<code>https://www.jobup.ch/en/</code>) contains no offer: the robot finds zero job links there. Run the search yourself on the site: type “marketing internship” into the search box, choose the city, start the search. The address of the results page then contains your words, for example <code>https://www.jobup.ch/en/jobs/?term=marketing%20internship&amp;location=Geneva</code>. Copy this address from the browser’s address bar and paste it into box 1. The robot finds about twenty offers there, and it runs the same search again every morning. For two searches on the same site (“marketing internship” and “communication internship”), put two lines.</li>
       <li><b>The keywords</b>: in box 2, one per line. Several words on a line = <em>all</em> must be present (“marketing internship”). A word preceded by “-” excludes the offer (“-director”).</li>
+      <li><b>Write the keywords in both languages of the offers.</b> In French-speaking Switzerland many offers have a French title: “Stagiaire marketing” does not contain the word “internship”. The robot only keeps the offers whose title contains your words, so put “marketing intern” <em>and</em> “stagiaire marketing” on two lines.</li>
     </ol></div>
     <div class="cvio">
       <label><b>1 · Sources — one URL per line</b><textarea id="srcIn" placeholder="https://…/carrieres&#10;https://…/offres?q=stage&#10;https://…/feed.xml"></textarea></label>
@@ -1002,10 +1027,26 @@ mkTick('sentChk','sent','I clicked “I have read it — send” and received my
    the notebook, copied for the sheet ---- */
 var SRC=lsGet('gen110_w5_src',{u:'',k:''});
 var BLOCKS=/(^|\.)(linkedin\.com|indeed\.[a-z.]+|glassdoor\.[a-z.]+)$/i;
+/* job sites whose search address is known and was tested on 10 Nov 2026
+   (a plain fetch of the search page returns about twenty offer links; the
+   home page returns none) */
+var BOARDS={'jobup.ch':'https://www.jobup.ch/fr/emplois/?term=','jobs.ch':'https://www.jobs.ch/fr/offres-emplois/?term='};
+function boardUrl(host){var k=kwLines().filter(function(s){return s.charAt(0)!=='-';})[0]||'marketing intern';return BOARDS[host]+encodeURIComponent(k);}
 var BROAD=/^(stage|stages|emploi|job|jobs|offre|offres|internship|internships|travail|work)$/i;
 function srcLines(){return String(SRC.u).split('\n').map(function(s){return s.trim();}).filter(Boolean);}
 function kwLines(){return String(SRC.k).split('\n').map(function(s){return s.trim();}).filter(Boolean);}
 function kwObj(){var inc=[],exc=[];kwLines().forEach(function(k){if(k.charAt(0)==='-')exc.push(GAS.norm_(k.slice(1)));else inc.push(GAS.norm_(k));});return {include:inc.filter(String),exclude:exc.filter(String)};}
+(function aiPrompt(){
+  var w=document.getElementById('aiWhat'),r=document.getElementById('aiWhere'),o=document.getElementById('aiPrompt');if(!w||!o)return;
+  var S=lsGet('gen110_w5_ai',{w:'',r:0});w.value=S.w||'';r.selectedIndex=S.r||0;
+  function paint(){
+    var what=w.value.trim()||'[what you are looking for, for example: a marketing internship]',where=r.value;
+    o.textContent='I am looking for '+what+' in '+where+'. Using a web search, give me twelve pages where this kind of offer is published and regularly updated:\n\n1. The Swiss job sites useful for this search. For each one, give the address of a search RESULTS page for these words (an address that contains the words searched for), not the home page.\n2. The Careers pages of six companies or organisations in this region that recruit in this field.\n3. The RSS feeds of offers that exist for this field or region.\n\nFor each page: the full address, what it publishes in one sentence, and whether you checked that the address exists today. Do not invent any address: if you are not sure, write “to be checked”.';
+  }
+  function save(){S.w=w.value;S.r=r.selectedIndex;lsSet('gen110_w5_ai',S);paint();}
+  w.addEventListener('input',save);r.addEventListener('change',save);paint();
+  document.getElementById('aiCopy').addEventListener('click',function(){copyText(o.textContent,document.getElementById('aiCopyCap'),'✓ Copied — paste it into Gemini or ChatGPT (web search on).');});
+})();
 (function srcWidget(){
   var u=document.getElementById('srcIn'),k=document.getElementById('kwIn'),out=document.getElementById('srcOut');
   u.value=SRC.u;k.value=SRC.k;
@@ -1018,7 +1059,10 @@ function kwObj(){var inc=[],exc=[];kwLines().forEach(function(k){if(k.charAt(0)=
         if(!/^https?:\/\//i.test(x))v='✗ an address starts with https://';
         else if(BLOCKS.test(host))v='⚠ this site blocks robots or requires a login: the program will get an error or an empty page. Take the company’s Careers page instead.';
         else if(/rss|feed|\.xml(\?|$)|atom/i.test(x)){v='✓ RSS feed — ideal for a program';ok=true;}
-        else if(/^https?:\/\/[^\/]+\/?$/i.test(x)){v='⚠ home page: put the page that lists the offers instead';}
+        else if(BOARDS[host.replace(/^www\./,'')]&&!/[?&](term|q|query|keywords?)=/i.test(x)){
+          var fix=boardUrl(host.replace(/^www\./,''));
+          v='⚠ a job site’s home page: it lists no offer, the robot finds nothing there. Put the address of a search instead: <code>'+esc(fix)+'</code> <button class="btn small ghost" type="button" data-fixsrc="'+esc(x)+'" data-fixto="'+esc(fix)+'">Replace this line</button> Add <code>&amp;location=Geneva</code> (or Lausanne, Fribourg…) at the end for one city.';}
+        else if(/^https?:\/\/[^\/?#]+\/?([a-z]{2}(-[a-z]{2})?\/?)?$/i.test(x)){v='⚠ home page: it lists no offers. Open the site, run the search, then paste the address of the results page (or of the Careers page).';}
         else {v='✓ web page — test it in 3';ok=true;}
         if(ok)okU++;
         h+='<tr class="'+(ok?'ok':'ko')+'"><td>'+esc(x)+'</td><td>'+v+'</td></tr>';
@@ -1026,7 +1070,7 @@ function kwObj(){var inc=[],exc=[];kwLines().forEach(function(k){if(k.charAt(0)=
       K.forEach(function(x){
         var neg=x.charAt(0)==='-',w=GAS.norm_(neg?x.slice(1):x),v,ok=false;
         if(!w)v='✗ empty';
-        else if(neg)v='✓ exclusion: any offer containing this word is dropped';
+        else if(neg){ok=true;v='✓ exclusion: any offer containing this word is dropped';}
         else if(w.length<3)v='✗ too short: it is found everywhere';
         else if(BROAD.test(w))v='⚠ too broad on its own: add a second word on the same line (“marketing internship”)';
         else {v='✓ keyword'+(w.indexOf(' ')>0?' — all these words must be present':'');ok=true;}
@@ -1041,6 +1085,11 @@ function kwObj(){var inc=[],exc=[];kwLines().forEach(function(k){if(k.charAt(0)=
     if(okU>=3&&okK>=3)markStep('srcs');
   }
   u.addEventListener('input',function(){SRC.u=u.value;lsSet('gen110_w5_src',SRC);paint();});
+  out.addEventListener('click',function(e){
+    var b=e.target.closest('[data-fixsrc]');if(!b)return;
+    u.value=String(u.value).split('\n').map(function(s){return s.trim()===b.getAttribute('data-fixsrc')?b.getAttribute('data-fixto'):s;}).join('\n');
+    u.dispatchEvent(new Event('input'));
+  });
   k.addEventListener('input',function(){SRC.k=k.value;lsSet('gen110_w5_src',SRC);paint();});
   document.getElementById('srcCopyU').addEventListener('click',function(){copyText(srcLines().join('\n'),document.getElementById('srcCopyCap'),'✓ Copied — paste into cell A2 of the Sources tab.');});
   document.getElementById('srcCopyK').addEventListener('click',function(){copyText(kwLines().join('\n'),document.getElementById('srcCopyCap'),'✓ Copied — paste into cell A2 of the Keywords tab.');});
