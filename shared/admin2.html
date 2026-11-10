@@ -1619,7 +1619,22 @@ function presCsv(grp){
   var a=document.createElement('a');a.href=URL.createObjectURL(b);
   a.download=NS+'-presence'+(hasGroups()?'-'+grp:'')+'.csv';a.click();
 }
+/* The poll redraws the whole card every 5–15 s, and a rebuilt .wrapx (the
+   register's own scroll box, 70vh) starts at the top again — so a teacher
+   scrolling down the names was thrown back up on every refresh. Remember each
+   box's scroll position (one per room) and the page's, and put them back. */
 function renderPresence(){
+  var el=$('presenceCard');
+  var boxes=el?Array.prototype.map.call(el.querySelectorAll('.wrapx'),function(w){return [w.scrollTop,w.scrollLeft];}):[];
+  var wy=window.scrollY,wx=window.scrollX;
+  renderPresenceNow();
+  if(!el)return;
+  Array.prototype.forEach.call(el.querySelectorAll('.wrapx'),function(w,i){
+    if(boxes[i]){w.scrollTop=boxes[i][0];w.scrollLeft=boxes[i][1];}
+  });
+  if(window.scrollY!==wy||window.scrollX!==wx)window.scrollTo(wx,wy);
+}
+function renderPresenceNow(){
   var el=$('presenceCard');
   if(!hasPresence()){el.style.display='none';PRES_N=0;return;}
   var ALL=presSessions();PRES_N=ALL.length;
