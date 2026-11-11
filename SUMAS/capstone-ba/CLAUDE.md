@@ -369,3 +369,18 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   them after the deadline.** Plain language is the standard for this
   course's student pages from now on: short sentences, one question per
   section, no unexplained jargon.
+- **`week5-slides.html` restyled and made explicit, 11 Nov 2026 (the day of the
+  session).** Jan Erik: "make the slides for this week look nicer and a bit more
+  specific (explain where uncertain what you mean)". Look: a dark-green title
+  slide, a green edge strip, pill labels, card shadows, slide numbers top right
+  and a gold progress bar in the HUD, type sizes tightened (measured: no slide
+  overflows at 1280×720 or 1440×900 — four slides did before). Three inline
+  SVGs: the three grid layers (slide 4), 1–5 vs 5–15 years on one axis (5), the
+  balancing loop with its signs (29). Words (WRITING.md): "your four worlds"
+  defined on slide 1; slogan titles replaced (1, 4, 7, 8, 28); "a queue is not a
+  pipeline", "not a shortage of wind … a shortage of line", "a revenue forecast,
+  not a weather forecast", "a wish list", "a wish, not a scenario" and "the loop
+  bites" each replaced by the plain statement; Exercise 1 now defines "binds"
+  and each of the five limits and has an example row (illustrative); Exercise 2
+  defines "baseline" and has an example with four values (illustrative). PDF
+  `w5slides/week5-grid-bottleneck.pdf` reprinted (36 pages). No figure changed.
