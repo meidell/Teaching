@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/financial-modelling/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 4 · Forecast five years, close the balance sheet with cash and debt, and handle the interest circularity · GBS</title>
+<meta name="description" content="Session 4 of Finance Modelling at Geneva Business School. Boreal's bank asks whether Meridia Cold can carry its debt. Teams forecast five years from drivers (pallet positions and price, working capital in days, capex against depreciation), close the balance sheet with minimum cash and a revolving credit facility, resolve the interest circularity two ways, test the bank's covenants in the base and the lender case, find the dividend Meridia can afford, and reply to the bank.">
+<meta name="theme-color" content="#101F44">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="finmod.css">
+<style>
+/* Session 4 as a self-run mandate (11 Nov 2026), on Session 3's pattern. finmod.css does the rest. */
+.sub{font-size:12px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin:18px 0 6px;}
+.tbl{overflow-x:auto;margin:8px 0 12px;}
+.tbl table{border-collapse:collapse;font-size:13px;min-width:100%;background:#fff;font-variant-numeric:tabular-nums;}
+.tbl th,.tbl td{border:1px solid var(--line);padding:5px 9px;text-align:right;vertical-align:top;white-space:nowrap;}
+.tbl th:first-child,.tbl td:first-child{text-align:left;white-space:normal;min-width:190px;}
+.tbl th{background:var(--surface);color:var(--navy);font-size:11.5px;}
+.tbl tr.tot td{font-weight:800;background:#FAFBFC;}
+.tbl tr.sec td{background:var(--surface);color:var(--navy);font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;}
+.tbl td.bad{background:#FBE5E7;color:#9B2335;font-weight:800;}
+.tbl td.good{background:#E6F4EC;color:#2F855A;font-weight:800;}
+.tbl td.hl{background:#FFF0D6;font-weight:800;color:var(--navy);}
+.fact{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:11px 14px;margin:8px 0;font-size:13.5px;line-height:1.55;}
+.fact b{color:var(--navy);}
+.letter{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font:14px/1.6 Georgia,serif;color:var(--ink);}
+.letter .lh{font:800 11px inherit;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);margin-bottom:8px;font-family:inherit;}
+.chkrow{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:8px;align-items:center;padding:7px 0;border-top:1px dashed var(--line);font-size:13.5px;}
+.chkrow:first-child{border-top:none;}
+.chkrow input{font:inherit;font-size:13.5px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;width:100%;}
+.chkrow .r{font-size:12.5px;font-weight:700;min-width:60px;}
+.chkrow.ok input{border-color:#2F855A;} .chkrow.ok .r{color:#2F855A;} .chkrow.no .r{color:#9B2335;}
+@media(max-width:560px){.chkrow{grid-template-columns:1fr 90px;}.chkrow .r{grid-column:1/-1;}}
+.drv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 12px;margin:10px 0;}
+.drv label{display:block;font-size:11.5px;font-weight:800;color:var(--navy);margin-bottom:3px;line-height:1.3;}
+.drv input,.drv select{width:100%;font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;padding:7px 9px;background:#FFFBEA;color:#1F3FBF;}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.seg button{font:inherit;font-size:12.5px;font-weight:800;padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--navy);cursor:pointer;}
+.seg button.on{background:var(--navy-surface,#101F44);border-color:var(--navy-surface,#101F44);color:#fff;}
+.memo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13px;line-height:1.55;}
+.memo h4{font-size:13.5px;color:var(--navy);margin:12px 0 4px;} .memo h4:first-child{margin-top:0;}
+.memo .miss{color:#9B2335;font-weight:700;}
+.memo table{border-collapse:collapse;font-size:12px;} .memo td,.memo th{border:1px solid var(--line);padding:4px 8px;text-align:right;} .memo td:first-child,.memo th:first-child{text-align:left;}
+.memowrap{overflow-x:auto;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+details.xl{min-width:0;max-width:100%;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:12px;margin:10px 0;}
+details.xl>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+details.xl>div{padding:0 14px 12px;font-size:13px;line-height:1.55;}
+details.xl code{overflow-wrap:anywhere;word-break:break-word;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--navy);}
+.opts{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 4px;}
+.opt{font:700 12.5px inherit;color:var(--navy);background:#fff;border:1.5px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;}
+.opt.on{background:var(--navy-surface,#101F44);border-color:var(--navy-surface,#101F44);color:#fff;}
+</style>
+</head>
+<body data-course="finmod" data-module="w5">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Session 04 · Thu 12 Nov</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 04 · Week 05 · Thursday 12 November 2026 · 18:45–20:45</div>
+    <h1>Forecast Meridia for five years, close the balance sheet with cash and debt, and handle the interest circularity</h1>
+    <div class="when">Group work, self-run: teams of 2–3 work through this page on their own; the instructor walks around and helps. One laptop per team, signed in to this site. Excel is optional: every step runs on this page, and a drawer under each build says how to build the same thing in Excel.</div>
+    <p class="lead"><b>The mandate.</b> The advisers accepted last week's corrected statements. Boreal Logistics will buy Meridia partly with borrowed money, and its bank, <b>Banca del Litorale</b> (a fictional lender), must decide whether to give Meridia a <b>revolving credit facility</b> of €15 m: a line of credit that the company draws when its cash runs short and repays when cash comes back, like an overdraft with a limit. The bank's credit analyst writes: <i>"Send us a five-year forecast of all three statements that balances in every year. Tell us how much of the facility Meridia would use in your base case and in our lender case, whether Meridia stays inside our two covenants, and what dividend it can pay without borrowing to pay it."</i></p>
+    <div class="doit"><div class="dh">Your deliverable · a one-page reply to the bank, by 20:30</div><p><b>1.</b> The five-year forecast, FY2026–FY2030, with the balance check at zero in every year · <b>2.</b> how much of the €15 m facility Meridia uses, in the base case and the lender case · <b>3.</b> the two covenants year by year, with the headroom · <b>4.</b> the dividend your team recommends, and why. The page builds the reply from what your team does in Steps 2–5. You hand it in on this page in Step 6. Nothing has to be put on Netlify this week. <b>Then, the last 15 minutes: a team quiz.</b></p></div>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 7</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <div class="plan">
+    <h2>How to work</h2>
+    <div class="ps">Do the steps in order, as a team, on one laptop. Each step says what to do in numbered actions and ends with a button. All figures are in € million with one decimal unless the step says otherwise. Stuck? Read the step again, then raise a hand. The reply is due at 20:30, before the quiz.</div>
+    <ol>
+      <li><span class="t">1</span><span class="n"><b>Read the bank's request</b>, join your team, and guess Meridia's EBITDA in FY2030.</span></li>
+      <li><span class="t">2</span><span class="n"><b>Forecast the business from drivers:</b> pallet positions and price, working capital in days, capex against depreciation.</span></li>
+      <li><span class="t">3</span><span class="n"><b>Close the balance sheet</b> with a minimum cash balance and the revolving credit facility (the plug).</span></li>
+      <li><span class="t">—</span><span class="n">Take a break when your team is ready.</span></li>
+      <li><span class="t">4</span><span class="n"><b>Handle the circularity:</b> interest on the average debt depends on the debt, which depends on the interest.</span></li>
+      <li><span class="t">5</span><span class="n"><b>Answer the bank's questions:</b> the lender case, the two covenants, the dividend Meridia can afford.</span></li>
+      <li><span class="t">6</span><span class="n"><b>Write and hand in the reply</b> on this page.</span></li>
+      <li><span class="t">7</span><span class="n"><b>Team quiz.</b> Jeopardy, team against team, on the screen.</span></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="FY2030 EBITDA · our guess|w5_pred">
+    <span class="tick">✅</span>
+    <span class="clock">Step 1 · the request</span>
+    <h2>Read the bank's request, join your team, and guess FY2030 EBITDA</h2>
+    <ol><li>Read the three facts below, as a team.</li><li>Join your team on the board, or move to it. The page writes your team's name and members in the box under the board. Check it.</li><li>Each member guesses Meridia's EBITDA in FY2030 in the base case, before anything is built, and the team locks one answer. A wrong guess costs nothing; Step 2 shows the answer.</li></ol>
+    <div class="fact"><b>Where we start.</b> The corrected FY2025 balance sheet from Session 3, which balances at €170.4 m: cash 9.0 · receivables 29.6 · inventory 2.4 · fixed assets 129.4 = assets 170.4; payables 14.3 · term debt 69.0 · share capital 40.0 · retained earnings 47.1 = liabilities and equity 170.4. FY2025 revenue was 180.4 and EBITDA 29.0 (16.1 % of revenue).</div>
+    <div class="fact"><b>What a forecast "from drivers" means.</b> A <b>driver</b> is a business quantity that causes a line of the statements: the number of pallet positions Meridia rents out, the price per position, the days customers take to pay. A forecast from drivers computes each line from these quantities, so that anyone can ask "what if customers pay ten days later?" and see the answer. A forecast that writes "last year plus 3 %" cannot answer any question.</div>
+    <div class="fact"><b>The bank's two covenants.</b> A <b>covenant</b> is a promise in a loan contract that the bank checks every year; breaking one lets the bank demand its money back. Banca del Litorale asks for two: <b>net debt ÷ EBITDA at most 3.0</b> (net debt = term debt + facility − cash), and <b>EBITDA ÷ interest at least 4.0</b> (the interest cover).</div>
+    <div class="cap">
+      <label>The teams: join yours, or move to another one</label>
+      <div class="hint">Any member can rename the team, add a classmate with "+ Add a member", or take a name off with ×.</div>
+      <div id="teamsBox" class="teams"></div>
+    </div>
+    <div class="cap">
+      <label for="f_team">Your team's name and members</label>
+      <div class="hint">It goes on your reply. One laptop per team: the person signed in hands the reply in for the team.</div>
+      <input type="text" id="f_team" data-work="w5_team" data-worklabel="W5 · team and members" placeholder="e.g. Team Ebro — Ana Ruiz, Louis Martin, Mei Chen" autocomplete="off">
+    </div>
+    <div class="cap">
+      <label>Our guess: Meridia's EBITDA in FY2030, base case, in € million</label>
+      <div class="opts" id="pPred"></div>
+      <input type="hidden" id="f_pred" data-work="w5_pred" data-worklabel="W5 · guess: FY2030 EBITDA">
+    </div>
+    <button class="btn" id="b1">Lock our guess — go to Step 2</button>
+    <div class="savenote" id="n1"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2" data-board="The driver that matters most|w5_drivers">
+    <span class="tick">✅</span>
+    <span class="clock">Step 2 · the operating forecast</span>
+    <h2>Forecast the business from drivers</h2>
+    <div class="lect"><div class="lh">Read first · how each line is driven</div><ol>
+      <li><b>Revenue = pallet positions × price.</b> Meridia rented out on average 220,000 pallet positions in FY2025 (a pallet position is one space for one pallet in a cold warehouse) at an average €820 a year each: 220,000 × €820 = €180.4 m. The base case grows the positions by 3.5 % a year and the price by 3.1 %: revenue grows by 1.035 × 1.031 − 1 = 6.7 %, the growth rate of Sessions 1 and 2, now explained by two things a manager can check.</li>
+      <li><b>Working capital in days.</b> Receivables are the money customers owe: if they pay after 60 days on average, receivables are revenue × 60 ÷ 365. Inventory (spare parts and packaging) and payables (what Meridia owes its suppliers) are driven by the operating costs, revenue minus EBITDA: inventory 6 days, payables 34 days. FY2025's balance sheet gives about these numbers (receivables 29.6 = 59.9 days). When receivables rise, cash falls by the same amount.</li>
+      <li><b>Capex against depreciation.</b> Depreciation (D&amp;A) spreads the cost of the fixed assets over their useful life: the base case uses the opening fixed assets ÷ 12 years. Capex is 8 % of revenue. When capex is larger than depreciation, the fixed assets grow; the ratio capex ÷ D&amp;A says by how much the company is investing beyond replacing what wears out.</li>
+      <li><b>Blue cells are inputs.</b> In the table below, only the yellow boxes with blue figures can be changed; every other figure is computed from them, as in the model convention of Session 1.</li></ol></div>
+    <ol><li>Read the drivers below and the operating forecast they produce.</li><li>Answer the five checks under the table from the table. Each must show a green ✓.</li><li>Change one driver at a time, watch what moves, then put it back (press <b>Reset to the base case</b>). Then write which driver matters most for FY2030 EBITDA and why.</li></ol>
+    <div class="sub">The drivers · base case</div>
+    <div class="drv" id="drv"></div>
+    <div class="btn-row"><button class="btn small ghost" id="drvReset" type="button">Reset to the base case</button></div>
+    <div class="sub">The operating forecast · € million</div>
+    <div class="tbl" id="opTab"></div>
+    <div id="predOut"></div>
+    <div id="chk2"></div>
+    <details class="xl"><summary>In Excel: the formulas for FY2026 (column D, FY2025 in column C)</summary><div>
+      Inputs on the Inputs sheet, named: <code>VolGrowth</code>, <code>PriceGrowth</code>, <code>Margin</code>, <code>ARDays</code>, <code>InvDays</code>, <code>APDays</code>, <code>Life</code>, <code>CapexPct</code>.<br>
+      Positions <code>=C5*(1+VolGrowth)</code> · Price <code>=C6*(1+PriceGrowth)</code> · Revenue <code>=D5*D6/1000</code> (positions in thousands, price in €, revenue in € m) · EBITDA <code>=D7*Margin</code> · Operating costs <code>=D7-D8</code> · Receivables <code>=D7*ARDays/365</code> · Inventory <code>=D9*InvDays/365</code> · Payables <code>=D9*APDays/365</code> · D&amp;A <code>=C20/Life</code> (opening fixed assets) · Capex <code>=D7*CapexPct</code>. One formula per row, copied to the right, as in Session 1.</div></details>
+    <details class="xl"><summary>The same structure in another business: a gym chain</summary><div>A gym chain's revenue is members × monthly fee × 12, not "last year plus 5 %". Its working capital is the reverse of Meridia's: members pay in advance, so the chain holds <b>deferred revenue</b> (a liability) and grows its cash when it grows its members. Its capex is the fit-out of new gyms, far above depreciation in a year of openings. The model has the same rows; the drivers say what kind of business it is.</div></details>
+    <div class="cap">
+      <label for="f_drivers">Which driver changes FY2030 EBITDA most for one point of change, and why? Write one or two sentences.</label>
+      <textarea id="f_drivers" data-work="w5_drivers" data-worklabel="W5 · the driver that matters most" placeholder="e.g. The EBITDA margin: one point more adds about €2.5 m of FY2030 EBITDA, while one point more of volume growth adds only about …"></textarea>
+    </div>
+    <button class="btn" id="b2">The operating forecast is checked — go to Step 3</button>
+    <div class="savenote" id="n2"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3" data-board="Why a plug|w5_plug">
+    <span class="tick">✅</span>
+    <span class="clock">Step 3 · the plug</span>
+    <h2>Close the balance sheet with a minimum cash balance and the facility</h2>
+    <div class="lect"><div class="lh">Read first · why a forecast needs a plug</div><ol>
+      <li><b>The forecast decides every line except one.</b> Revenue, costs, working capital, capex, the scheduled debt repayment of €2.0 m a year and the dividend are all decided by drivers. What is left over is the cash. In a forecast the balance sheet balances only if one line takes whatever amount is needed: that line is called the <b>plug</b>.</li>
+      <li><b>Cash alone is a bad plug.</b> If cash is the plug, a bad year simply shows a negative cash balance, which no company can have. A real company keeps a <b>minimum cash balance</b> (Meridia: €8.0 m, to pay wages and suppliers on time) and borrows on its revolving credit facility when cash would fall below it.</li>
+      <li><b>The cash-and-debt plug.</b> Each year: cash available = opening cash + cash from operations − capex − scheduled repayment − dividend. If that is below the minimum, the facility is drawn by the difference. If it is above the minimum and the facility has a balance, the facility is repaid first. In Excel: <code>=MAX(MinCash − CashAvailable, −OpeningFacility)</code>.</li>
+      <li><b>For now, interest is charged on the opening debt,</b> the debt at the start of each year. Step 4 explains why that is a choice.</li></ol></div>
+    <ol><li>Switch between the two plugs below and look at FY2026 in the lender case: what does "cash only" show?</li><li>Switch back to <b>minimum cash + facility</b> and read the balance check: it must be 0.0 in every year.</li><li>Answer the four checks, then write in one sentence why the bank prefers the second plug.</li></ol>
+    <div class="seg" id="plugSeg"><button type="button" data-v="cash">Plug = cash only</button><button type="button" data-v="rcf" class="on">Plug = minimum cash + facility</button></div>
+    <div class="seg" id="caseSeg3"><button type="button" data-v="base" class="on">Base case</button><button type="button" data-v="lend">Lender case</button></div>
+    <div class="tbl" id="bsTab"></div>
+    <div id="chk3"></div>
+    <details class="xl"><summary>In Excel: the plug rows</summary><div>
+      Cash available <code>=C30+D25-D14-D27-D28</code> (opening cash + cash from operations − capex − repayment − dividend) · Facility draw <code>=MAX(MinCash-D31,-C33)</code> · Facility closing <code>=C33+D32</code> · Cash closing <code>=D31+D32</code> · Balance check <code>=ROUND(D40-D41,3)</code>, which must be 0 in every year, and feeds the master check on the cover.</div></details>
+    <div class="cap">
+      <label for="f_plug">Why does the bank prefer a forecast with a minimum cash balance and a facility to one where cash is the only plug? One sentence.</label>
+      <input type="text" id="f_plug" data-work="w5_plug" data-worklabel="W5 · why a cash-and-debt plug" autocomplete="off" placeholder="e.g. With cash as the only plug, the lender case shows cash below the €8 m Meridia needs, instead of showing how much it must borrow.">
+    </div>
+    <button class="btn" id="b3">The balance sheet balances — go to Step 4</button>
+    <div class="savenote" id="n3"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="Our method for the circularity|w5_circ">
+    <span class="tick">✅</span>
+    <span class="clock">Step 4 · the circularity</span>
+    <h2>Handle the circularity: interest on average debt</h2>
+    <div class="lect"><div class="lh">Read first · how the circle closes</div><ol>
+      <li><b>Interest is paid all year on a balance that changes during the year.</b> Charging it on the opening balance overstates it when debt falls and understates it when debt rises. The usual fix is interest on the <b>average</b> balance: (opening + closing) ÷ 2 × the rate, 4.6 % for Meridia.</li>
+      <li><b>That creates a circle.</b> The closing facility depends on the cash available, which depends on net income, which depends on interest, which now depends on the closing facility. Excel calls this a <b>circular reference</b> and warns about it.</li>
+      <li><b>A circle like this one has an answer,</b> and repeating the calculation finds it: start with a guess for the interest, compute the facility, recompute the interest, and so on. Each round moves less, because the interest on a change in the facility (4.6 % of it, after 24 % tax) is much smaller than the change. The table below shows the rounds for FY2026.</li>
+      <li><b>There are two legitimate ways to handle it.</b> (1) Switch on <b>iterative calculation</b> in Excel (File → Options → Formulas → Enable iterative calculation, maximum 100 iterations, maximum change 0.001) and add a <b>circuit breaker</b>: an input cell that, set to 1, replaces the average by the opening balance, so a broken model can be reset. (2) Avoid the circle: charge interest on the <b>opening</b> balance, and accept a small error. A model that hides the circle with a copy-paste macro, or leaves Excel's warning on, is not one of the two.</li></ol></div>
+    <ol><li>Read the rounds below: how many does it take until the interest stops moving at two decimals?</li><li>Switch between the two interest methods and compare FY2026 interest and the FY2030 facility.</li><li>Answer the four checks, then write which method your team uses for the reply and why.</li></ol>
+    <div class="tbl" id="itTab"></div>
+    <div class="seg" id="methSeg"><button type="button" data-v="avg" class="on">Interest on the average balance (circular)</button><button type="button" data-v="open">Interest on the opening balance</button></div>
+    <div class="tbl" id="cmpTab"></div>
+    <div id="chk4"></div>
+    <div class="cap">
+      <label for="f_circ">Which interest method does your team use in the reply, and why? One or two sentences.</label>
+      <textarea id="f_circ" data-work="w5_circ" data-worklabel="W5 · our method for the circularity" placeholder="e.g. The average balance, with iterative calculation and a circuit breaker, because the facility rises every year and the opening balance would understate the interest by …"></textarea>
+    </div>
+    <button class="btn" id="b4">We know how the circle closes — go to Step 5</button>
+    <div class="savenote" id="n4"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="What we tell the bank|w5_lender;Our dividend|w5_div">
+    <span class="tick">✅</span>
+    <span class="clock">Step 5 · the bank's questions</span>
+    <h2>Answer the bank: the lender case, the covenants and the dividend</h2>
+    <p><b>Why this step exists.</b> A bank does not lend on the company's own plan. It asks for a <b>lender case</b>, a forecast it considers cautious, and checks whether the company still pays its debt in it. Banca del Litorale's lender case: pallet positions +1.0 % a year, price +2.0 %, EBITDA margin 14.5 %, capex 7.5 % of revenue, and customers paying after 70 days instead of 60. The dividend is the one cash outflow the owners decide every year, so it is the first thing a bank wants to limit.</p>
+    <ol><li>Switch between the base case and the lender case and read the covenant rows: net debt ÷ EBITDA (at most 3.0) and EBITDA ÷ interest (at least 4.0). The page uses interest on the average balance.</li><li>Move the dividend payout (the share of net income paid as a dividend) and find the highest payout at which Meridia never draws the facility in the base case.</li><li>Answer the five checks, then write reply parts 3 and 4.</li></ol>
+    <div class="seg" id="caseSeg5"><button type="button" data-v="base" class="on">Base case</button><button type="button" data-v="lend">Lender case</button></div>
+    <div class="drv"><div><label for="payIn">Dividend payout, % of net income</label><input id="payIn" type="number" min="0" max="100" step="0.1" value="50"></div><div><label>Minimum cash, € m</label><input value="8.0" disabled></div><div><label>Facility limit, € m</label><input value="15.0" disabled></div></div>
+    <div class="tbl" id="covTab"></div>
+    <div id="chk5"></div>
+    <div class="cap">
+      <label for="f_lender">Reply part 3 · what you tell the bank about the facility and the covenants, in both cases, with the numbers</label>
+      <textarea id="f_lender" data-work="w5_lender" data-worklabel="W5 · the facility and the covenants" placeholder="e.g. In the base case Meridia uses up to €6.7 m of the €15 m facility … In the lender case it draws €5.0 m in FY2026: customers paying 10 days later tie up about €5.7 m of cash, and the dividend takes €4.9 m. With no dividend, cash would end FY2026 at exactly the €8.0 m minimum … Net debt ÷ EBITDA peaks at 2.37 in FY2026, below 3.0 …"></textarea>
+    </div>
+    <div class="cap">
+      <label for="f_div">Reply part 4 · the dividend your team recommends, and why</label>
+      <textarea id="f_div" data-work="w5_div" data-worklabel="W5 · the dividend we recommend" placeholder="e.g. A payout of at most 40 % of net income, because above 41.8 % Meridia borrows on the facility to pay its owners even in the base case, and in the lender case …"></textarea>
+    </div>
+    <button class="btn" id="b5">We have answered the bank — go to Step 6</button>
+    <div class="savenote" id="n5"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6">
+    <span class="tick">✅</span>
+    <span class="clock">Step 6 · write and hand in</span>
+    <h2>Write and hand in the reply</h2>
+    <ol><li>Read the reply preview below. Parts 1 and 2 are built from the model; parts 3 and 4 are what your team wrote in Step 5. Anything marked <b>missing</b> is still to do: go back to that step.</li>
+      <li>The team member who is signed in on this laptop presses <b>Hand in the reply</b>. The page saves the reply and the time, and shows "Handed in ✓".</li>
+      <li>If you change the reply afterwards, press <b>Hand in the reply</b> again. The last version counts.</li></ol>
+    <div class="memo" id="memo"></div>
+    <input type="hidden" id="f_memo" data-work="w5_memo" data-worklabel="W5 · reply to the bank (handed in)">
+    <div class="btn-row"><button class="btn" id="memoBtn">Hand in the reply</button><button class="btn ghost" id="memoShow" type="button">Show the reply full screen</button><button class="btn ghost" id="memoDl" type="button">Download a copy</button><button class="btn ghost" id="memoCopy" type="button">Copy the reply as text</button><span id="memoNote" class="savenote"></span></div>
+    <div class="sub">Terms from today</div>
+    <ul>
+      <li><b>Driver.</b> A business quantity that causes a line of the statements: pallet positions, price, days customers take to pay.</li>
+      <li><b>Days of working capital.</b> Receivables = revenue × days ÷ 365; inventory and payables on the operating costs.</li>
+      <li><b>Capex ÷ D&amp;A.</b> Above 1, the company invests beyond replacing what wears out.</li>
+      <li><b>Plug.</b> The line that takes whatever amount makes the balance sheet balance; in a good model, the revolving facility above a minimum cash balance.</li>
+      <li><b>Revolving credit facility.</b> A line of credit with a limit that the company draws and repays as its cash needs change.</li>
+      <li><b>Circular reference.</b> A formula that depends, through other cells, on itself: here interest → net income → cash → facility → interest.</li>
+      <li><b>Iterative calculation · circuit breaker.</b> Excel repeats the calculation until it stops moving; a switch cell replaces the circle by the opening balance.</li>
+      <li><b>Covenant · lender case.</b> A promise in a loan contract that the bank tests every year; the cautious forecast the bank tests it on.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s7">
+    <span class="tick">✅</span>
+    <span class="clock">Step 7 · team quiz</span>
+    <h2>Team quiz: Jeopardy</h2>
+    <p>Team against team, on the screen at the front. Six categories, 100 to 500 points. Five are on tonight's work; the sixth, <b>Your reply</b>, asks the team whose turn it is about its own reply.</p>
+    <ol><li>Close the laptops, except <b>one per team</b>: press <b>Show the reply full screen</b> in Step 6 and keep the reply open on it.</li>
+      <li>Teams take turns choosing a category and a value. The team that chose answers first; one answer per team, agreed in 10 seconds.</li>
+      <li>A right answer wins the points; a wrong one loses them, and the next team may try.</li>
+      <li>When the quiz is over, press the button below.</li></ol>
+    <button class="btn" id="b7">We played the quiz — done for today</button>
+    <div class="savenote" id="n7"></div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Week 05 · Session 4 of 11 · Geneva Business School
+    <div style="margin-top:8px;font-size:11.5px;line-height:1.6">Meridia Cold, Boreal Logistics and Banca del Litorale are fictional; the figures are invented for the exercise and continue Sessions 1–3.</div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 4 (module w5) — built 11 Nov 2026 for Thu 12 Nov as a self-run
+   group MANDATE on Session 3's pattern. Boreal's bank (fictional Banca del
+   Litorale) asks for a five-year forecast that balances, the use of a
+   €15 m revolving facility, two covenants (ND/EBITDA ≤ 3.0, EBITDA/interest
+   ≥ 4.0) and the affordable dividend.
+
+   THE MODEL starts from the corrected FY2025 balance sheet of Session 3
+   (cash 9.0 · AR 29.6 · inv 2.4 · FA 129.4 = 170.4 = AP 14.3 · term 69.0
+   · SC 40.0 · RE 47.1). Drivers (base): positions 220.0 k × €820 →
+   +3.5 % / +3.1 % (= 6.7 %), margin 16.1 %, AR 60 days of revenue, inv 6
+   and AP 34 days of operating costs, D&A = opening FA ÷ 12, capex 8 % of
+   revenue, tax 24 %, repayment 2.0 a year, rate 4.6 % (FY2023–25
+   interest ÷ average debt), payout 50 %, minimum cash 8.0. Lender case:
+   +1.0 % / +2.0 %, 14.5 %, capex 7.5 %, AR 70 days.
+   Recomputed in Python (scratch fm5.py), 11 Nov 2026:
+     base, average: revenue 192.50 … 249.59, EBITDA 30.99 … 40.18,
+       FY2026 AR 31.64, D&A 10.78, capex/D&A 1.43, interest 3.14
+       (rounds 3.128 → 3.1437 → 3.1438), facility 0.69 … 6.68,
+       ND/EBITDA 1.93 … 1.44, cover 9.86 … 13.26
+     base, opening: FY2026 avail 7.30, draw 0.70, interest 3.17, FY2030
+       facility 6.71
+     lender, average: FY2026 draw 5.00 (ΔNWC 5.75, dividend 4.91),
+       facility 8.33 by FY2030, ND/EBITDA 2.37 peak, cover 8.31 low; at
+       0 % payout FY2026 cash available is 8.00 = the minimum, no draw:
+       in the lender case every FY2026 dividend is borrowed (max payout 0 %)
+     max payout with no draw, base: 41.80 %.
+   One laptop per team: fields are w5_*, team board = FmTeams (no shared
+   fields). THE PROGRESS DENOMINATOR IS THE SEVEN STEPS (total:7).
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6','s7'];
+var K='finmod', MOD='w5';
+var YRS=['FY2026','FY2027','FY2028','FY2029','FY2030'];
+var BASE={vg:3.5,pg:3.1,m:16.1,ard:60,invd:6,apd:34,life:12,capex:8.0,r:4.6,tax:24,pay:50,minc:8.0};
+var LEND={vg:1.0,pg:2.0,m:14.5,ard:70,invd:6,apd:34,life:12,capex:7.5,r:4.6,tax:24,pay:50,minc:8.0};
+var DRV=[['vg','Pallet positions, growth a year (%)'],['pg','Price per position, growth a year (%)'],['m','EBITDA margin (% of revenue)'],['ard','Receivables (days of revenue)'],['invd','Inventory (days of operating costs)'],['apd','Payables (days of operating costs)'],['life','Useful life of fixed assets (years)'],['capex','Capex (% of revenue)']];
+var PREDS=[{k:'32',t:'Under 32'},{k:'36',t:'32 to 36'},{k:'40',t:'36 to 40'},{k:'44',t:'40 to 44'},{k:'99',t:'Over 44'}];
+
+/* the model: d in percent; method 'avg' (circular, iterated) or 'open'; plug 'rcf' or 'cash' */
+function model(d,method,plug){
+  var cash=9.0,ar=29.6,inv=2.4,fa=129.4,ap=14.3,term=69.0,rcf=0,sc=40.0,re=47.1,vol=220.0,price=820,out=[];
+  for(var t=0;t<5;t++){
+    vol*=1+d.vg/100;price*=1+d.pg/100;var rev=vol*price/1000,ebitda=rev*d.m/100,opx=rev-ebitda;
+    var da=fa/d.life,capex=rev*d.capex/100,ar1=rev*d.ard/365,inv1=opx*d.invd/365,ap1=opx*d.apd/365;
+    var dnwc=(ar1+inv1-ap1)-(ar+inv-ap),repay=Math.min(2.0,term),term1=term-repay,draw=0,interest=0,ebt,tax,ni,div,cfo,avail,k;
+    for(k=0;k<100;k++){
+      interest=method==='avg'?d.r/100*((term+term1)/2+(rcf+rcf+draw)/2):d.r/100*(term+rcf);
+      ebt=ebitda-da-interest;tax=ebt*d.tax/100;ni=ebt-tax;div=ni*d.pay/100;cfo=ni+da-dnwc;
+      avail=cash+cfo-capex-repay-div;
+      var nd=plug==='cash'?0:Math.max(d.minc-avail,-rcf);
+      if(Math.abs(nd-draw)<1e-12){draw=nd;break;}draw=nd;
+    }
+    var rcf1=rcf+draw,cash1=avail+draw,fa1=fa+capex-da,re1=re+ni-div;
+    var ta=cash1+ar1+inv1+fa1,tle=ap1+term1+rcf1+sc+re1;
+    out.push({vol:vol,price:price,rev:rev,ebitda:ebitda,opx:opx,da:da,capex:capex,ar:ar1,inv:inv1,ap:ap1,dnwc:dnwc,int:interest,ebt:ebt,tax:tax,ni:ni,div:div,cfo:cfo,repay:repay,avail:avail,draw:draw,rcf:rcf1,cash:cash1,term:term1,fa:fa1,re:re1,ta:ta,tle:tle,bal:ta-tle,nd:term1+rcf1-cash1,lev:(term1+rcf1-cash1)/ebitda,cov:interest?ebitda/interest:0,it:k+1});
+    cash=cash1;ar=ar1;inv=inv1;fa=fa1;ap=ap1;term=term1;rcf=rcf1;re=re1;
+  }
+  return out;
+}
+/* FY2026 rounds of the circle, base case */
+function rounds(d){
+  var fa=129.4,rev=220*(1+d.vg/100)*820*(1+d.pg/100)/1000,ebitda=rev*d.m/100,opx=rev-ebitda,da=fa/d.life,capex=rev*d.capex/100;
+  var dnwc=(rev*d.ard/365+opx*d.invd/365-opx*d.apd/365)-(29.6+2.4-14.3),draw=0,R=[];
+  for(var k=0;k<6;k++){var interest=d.r/100*((69+67)/2+draw/2),ni=(ebitda-da-interest)*(1-d.tax/100),div=ni*d.pay/100,avail=9+ni+da-dnwc-capex-2-div,nd=Math.max(d.minc-avail,0);R.push({i:interest,ni:ni,avail:avail,draw:nd});draw=nd;}
+  return R;
+}
+function maxPay(d){var lo=0,hi=100;for(var i=0;i<50;i++){var mid=(lo+hi)/2,o=model(Object.assign({},d,{pay:mid}),'avg','rcf');if(Math.max.apply(null,o.map(function(y){return y.rcf;}))<=1e-9)lo=mid;else hi=mid;}return lo;}
+
+/* ---- helpers ---- */
+function r1(x){return Math.round(x*10)/10;}
+function f1(x){var v=r1(x);if(Math.abs(v)<0.05)v=0;return (v<0?'−':'')+Math.abs(v).toFixed(1);}
+function f2(x){var v=Math.round(x*100)/100;if(Math.abs(v)<0.005)v=0;return (v<0?'−':'')+Math.abs(v).toFixed(2);}
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_'+MOD)||'{}')[id];}catch(e){return false;}}
+function markDone(id){var el=document.getElementById(id);if(el)el.classList.add('done');if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  try{var d=JSON.parse(localStorage.getItem(K+'_done_'+MOD)||'{}');d[id]=true;localStorage.setItem(K+'_done_'+MOD,JSON.stringify(d));}catch(e){}paintProgress();}
+function paintProgress(){var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=document.getElementById(s);if(el)el.classList.add('done');}});
+  var p=Math.round(n/SECTIONS.length*100);document.getElementById('spLbl').textContent=n+' / '+SECTIONS.length;document.getElementById('spPct').textContent=p+'%';document.getElementById('spFill').style.width=p+'%';}
+function go(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+function setWork(id,v){var h=document.getElementById(id);h.value=v;h.dispatchEvent(new Event('input',{bubbles:true}));try{localStorage.setItem(K+'_work_'+h.getAttribute('data-work'),v);}catch(e){}}
+function lsg(k){try{return localStorage.getItem(K+'_'+k);}catch(e){return null;}}
+function lss(k,v){try{localStorage.setItem(K+'_'+k,v);}catch(e){}}
+function num(s){s=String(s).replace(/[€%\s]/g,'').replace(/[−–]/g,'-').replace(',','.');return parseFloat(s);}
+
+/* ---- numeric checks: [id, question, answer, tolerance] ---- */
+var B=model(BASE,'avg','rcf'),BO=model(BASE,'open','rcf'),L=model(LEND,'avg','rcf'),L0=model(Object.assign({},LEND,{pay:0}),'avg','rcf'),RD=rounds(BASE),MP=maxPay(BASE);
+var CHK={
+ chk2:[['c2a','FY2026 revenue, € m',B[0].rev,0.06],['c2b','FY2026 receivables, € m',B[0].ar,0.06],['c2c','FY2026 D&A, € m',B[0].da,0.06],['c2d','FY2026 capex ÷ D&A (two decimals)',B[0].capex/B[0].da,0.011],['c2e','FY2030 EBITDA, € m',B[4].ebitda,0.06]],
+ chk3:[['c3a','Base case, interest on opening debt: FY2026 cash available before the facility, € m',BO[0].avail,0.06],['c3b','Base case: FY2026 facility draw, € m',BO[0].draw,0.06],['c3c','Base case: the facility at the end of FY2030, € m',BO[4].rcf,0.06],['c3d','Balance check in every year (assets − liabilities and equity)',0,0.001]],
+ chk4:[['c4a','FY2026 interest after round 1 of the circle, € m (two decimals)',RD[0].i,0.006],['c4b','FY2026 interest once it stops moving, € m (two decimals)',RD[5].i,0.006],['c4c','FY2026 interest on the opening balance, € m (two decimals)',BO[0].int,0.006],['c4d','FY2030 facility on the average method, € m',B[4].rcf,0.06]],
+ chk5:[['c5a','Lender case: FY2026 facility draw, € m',L[0].draw,0.06],['c5b','Lender case: the highest net debt ÷ EBITDA in the five years (two decimals)',Math.max.apply(null,L.map(function(y){return y.lev;})),0.011],['c5c','Lender case: the lowest EBITDA ÷ interest (two decimals)',Math.min.apply(null,L.map(function(y){return y.cov;})),0.011],['c5d','Base case: the highest payout (%) at which the facility is never drawn (one decimal)',MP,0.15],['c5e','Lender case at 0 % payout: FY2026 cash available before the facility, € m',L0[0].avail,0.06]]
+};
+function buildChecks(box){
+  var host=document.getElementById(box);
+  host.innerHTML='<div class="sub">Check your reading · type the number, press Check</div>'+CHK[box].map(function(c){return '<div class="chkrow" id="row_'+c[0]+'"><span>'+esc(c[1])+'</span><input type="text" inputmode="decimal" id="'+c[0]+'" autocomplete="off"><span><button class="btn small ghost" type="button" data-c="'+c[0]+'">Check</button> <span class="r" id="r_'+c[0]+'"></span></span></div>';}).join('');
+  host.querySelectorAll('button[data-c]').forEach(function(b){b.addEventListener('click',function(){check(box,b.dataset.c,false);});});
+  CHK[box].forEach(function(c){var s=lsg('w5_'+c[0]);if(s!=null){document.getElementById(c[0]).value=s;check(box,c[0],true);}});
+}
+function check(box,id,quiet){
+  var c=CHK[box].filter(function(x){return x[0]===id;})[0],raw=val(id),x=num(raw),row=document.getElementById('row_'+id),r=document.getElementById('r_'+id);
+  if(!raw){if(!quiet){row.className='chkrow no';r.textContent='Type a number.';}return false;}
+  lss('w5_'+id,raw);
+  var ok=isFinite(x)&&Math.abs(x-c[2])<=c[3];
+  row.className='chkrow '+(ok?'ok':'no');r.textContent=ok?'✓ '+f2(c[2]):(quiet?'':'Not yet — read the table again.');
+  return ok;
+}
+function allOk(box){return CHK[box].every(function(c){return check(box,c[0],true);});}
+
+/* ---- Step 2: drivers and the operating table ---- */
+function drivers(){var d=Object.assign({},BASE);try{var s=JSON.parse(lsg('w5_drv')||'{}');DRV.forEach(function(x){if(isFinite(s[x[0]]))d[x[0]]=+s[x[0]];});}catch(e){}return d;}
+function paintDrv(){
+  var d=drivers();document.getElementById('drv').innerHTML=DRV.map(function(x){return '<div><label for="dv_'+x[0]+'">'+esc(x[1])+'</label><input id="dv_'+x[0]+'" type="number" step="0.1" value="'+d[x[0]]+'"></div>';}).join('');
+  DRV.forEach(function(x){document.getElementById('dv_'+x[0]).addEventListener('input',function(){var s={};DRV.forEach(function(y){s[y[0]]=num(document.getElementById('dv_'+y[0]).value);});lss('w5_drv',JSON.stringify(s));paintOp();});});
+  paintOp();
+}
+function rowsHTML(o,rows,first){
+  return rows.map(function(r){if(r[0]==='§')return '<tr class="sec"><td colspan="'+(o.length+1+(first?1:0))+'">'+r[1]+'</td></tr>';
+    return '<tr'+(r[3]?' class="tot"':'')+'><td>'+r[0]+'</td>'+(first?'<td>'+(r[2]!=null?r[2]:'')+'</td>':'')+o.map(function(y){var v=r[1](y);return '<td'+(r[4]?' class="'+r[4](y)+'"':'')+'>'+v+'</td>';}).join('')+'</tr>';}).join('');
+}
+function paintOp(){
+  var d=drivers(),o=model(d,'avg','rcf');
+  document.getElementById('opTab').innerHTML='<table><tr><th>€ million</th><th>FY2025</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+rowsHTML(o,[
+    ['Pallet positions, thousands',function(y){return f1(y.vol);},'220.0'],['Price per position, €',function(y){return Math.round(y.price).toLocaleString('en-GB');},'820'],
+    ['Revenue',function(y){return f1(y.rev);},'180.4',1],['EBITDA',function(y){return f1(y.ebitda);},'29.0',1],['Operating costs (revenue − EBITDA)',function(y){return f1(y.opx);},'151.4'],
+    ['§','Working capital, end of year'],['Receivables',function(y){return f1(y.ar);},'29.6'],['Inventory',function(y){return f1(y.inv);},'2.4'],['Payables',function(y){return f1(y.ap);},'14.3'],['Increase in working capital (uses cash)',function(y){return f1(y.dnwc);},'1.1'],
+    ['§','Fixed assets'],['D&A (opening fixed assets ÷ useful life)',function(y){return f1(y.da);},'10.6'],['Capex',function(y){return f1(y.capex);},'14.2'],['Capex ÷ D&A',function(y){return f2(y.capex/y.da);},'1.34'],['Fixed assets, end of year',function(y){return f1(y.fa);},'129.4']
+  ],true)+'</table>';
+  paintPred(o);
+}
+function paintPred(o){var g=lsg('w5_pp');if(!g||lsg('w5_pp_locked')!=='1'){document.getElementById('predOut').innerHTML='';return;}
+  var e=B[4].ebitda;document.getElementById('predOut').innerHTML='<div class="fact"><b>Your guess and the answer.</b> Your team guessed FY2030 EBITDA '+esc(PREDS.filter(function(p){return p.k===g;})[0].t)+' € m. The base case gives <b>€'+f1(e)+' m</b>: revenue grows 6.7 % a year, from 180.4 to 249.6, at the same 16.1 % margin. '+(g==='44'?'Your guess was right.':'The answer is in the band "40 to 44".')+'</div>';}
+
+/* ---- Step 3: balance sheet and the plug ---- */
+var PLUG='rcf',CASE3='base',METH='avg',CASE5='base';
+function paintBS(){
+  var d=CASE3==='base'?BASE:LEND,o=model(d,'open',PLUG);
+  document.getElementById('bsTab').innerHTML='<table><tr><th>€ million · '+(CASE3==='base'?'base case':'lender case')+' · interest on opening debt</th><th>FY2025</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+rowsHTML(o,[
+    ['§','Income statement'],['EBITDA',function(y){return f1(y.ebitda);},'29.0'],['D&A',function(y){return f1(-y.da);},'−10.6'],['Interest',function(y){return f1(-y.int);},'−3.2'],['Tax (24 %)',function(y){return f1(-y.tax);},'−3.6'],['Net income',function(y){return f1(y.ni);},'11.6',1],
+    ['§','Cash flow'],['Cash from operations (net income + D&A − increase in working capital)',function(y){return f1(y.cfo);},''],['Capex',function(y){return f1(-y.capex);},''],['Scheduled term-debt repayment',function(y){return f1(-y.repay);},''],['Dividend ('+d.pay+' % of net income)',function(y){return f1(-y.div);},''],
+    ['Cash available before the facility',function(y){return f1(y.avail);},'',1,function(y){return y.avail<d.minc?'bad':'';}],['Facility drawn (+) or repaid (−): the plug',function(y){return PLUG==='cash'?'—':f1(y.draw);},'',0,function(){return 'hl';}],
+    ['§','Balance sheet, end of year'],['Cash',function(y){return f1(y.cash);},'9.0',0,function(y){return y.cash<d.minc-1e-9?'bad':'';}],['Receivables + inventory',function(y){return f1(y.ar+y.inv);},'32.0'],['Fixed assets',function(y){return f1(y.fa);},'129.4'],['Total assets',function(y){return f1(y.ta);},'170.4',1],
+    ['Payables',function(y){return f1(y.ap);},'14.3'],['Term debt',function(y){return f1(y.term);},'69.0'],['Revolving facility',function(y){return f1(y.rcf);},'0.0'],['Share capital + retained earnings',function(y){return f1(40+y.re);},'87.1'],['Total liabilities and equity',function(y){return f1(y.tle);},'170.4',1],
+    ['Balance check (must be 0.0)',function(y){return f1(y.bal);},'0.0',1,function(y){return Math.abs(y.bal)<1e-6?'good':'bad';}]
+  ],true)+'</table>'+(PLUG==='cash'&&CASE3==='lend'?'<div class="warn">With cash as the only plug the lender case still balances, but FY2026 ends with €'+f1(model(LEND,'open','cash')[0].cash)+' m of cash, below the €8.0 m Meridia needs to pay wages and suppliers. The model hides the borrowing instead of showing it.</div>':'');
+}
+/* ---- Step 4: the circle ---- */
+function paintIt(){
+  document.getElementById('itTab').innerHTML='<table><tr><th>FY2026, base case · round</th><th>Interest guess</th><th>Net income</th><th>Cash available</th><th>Facility drawn</th></tr>'+RD.map(function(r,i){return '<tr><td>Round '+(i+1)+(i===0?' (start: no facility drawn)':'')+'</td><td>'+r.i.toFixed(4)+'</td><td>'+r.ni.toFixed(4)+'</td><td>'+r.avail.toFixed(4)+'</td><td>'+r.draw.toFixed(4)+'</td></tr>';}).join('')+'</table>';
+  var o=model(BASE,METH,'rcf'),p=model(BASE,METH==='avg'?'open':'avg','rcf');
+  document.getElementById('cmpTab').innerHTML='<table><tr><th>Base case · '+(METH==='avg'?'interest on the average balance':'interest on the opening balance')+'</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+rowsHTML(o,[
+    ['Interest, € m (two decimals)',function(y){return f2(y.int);}],['Net income',function(y){return f2(y.ni);}],['Facility, end of year',function(y){return f2(y.rcf);}],['Rounds until it stops moving',function(y){return y.it;}]],false)+
+    '<tr><td>The other method: interest</td>'+p.map(function(y){return '<td>'+f2(y.int)+'</td>';}).join('')+'</tr><tr><td>The other method: facility</td>'+p.map(function(y){return '<td>'+f2(y.rcf)+'</td>';}).join('')+'</tr></table>';
+}
+/* ---- Step 5: covenants ---- */
+function payNow(){var p=num(val('payIn'));return isFinite(p)?Math.max(0,Math.min(100,p)):50;}
+function paintCov(){
+  var d=Object.assign({},CASE5==='base'?BASE:LEND,{pay:payNow()}),o=model(d,'avg','rcf'),mx=Math.max.apply(null,o.map(function(y){return y.rcf;}));
+  document.getElementById('covTab').innerHTML='<table><tr><th>'+(CASE5==='base'?'Base case':'Lender case')+' · payout '+d.pay+' %</th><th>FY2025</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+rowsHTML(o,[
+    ['Revenue',function(y){return f1(y.rev);},'180.4'],['EBITDA',function(y){return f1(y.ebitda);},'29.0'],['Increase in working capital',function(y){return f1(y.dnwc);},'1.1'],['Dividend',function(y){return f1(y.div);},'6.4'],
+    ['Facility drawn (+) or repaid (−)',function(y){return f1(y.draw);},''],['Facility, end of year (limit 15.0)',function(y){return f1(y.rcf);},'0.0',1,function(y){return y.rcf>15?'bad':y.rcf>0.05?'hl':'good';}],
+    ['Net debt (term + facility − cash)',function(y){return f1(y.nd);},'60.0'],['Net debt ÷ EBITDA (at most 3.0)',function(y){return f2(y.lev);},'2.07',1,function(y){return y.lev>3?'bad':'good';}],['EBITDA ÷ interest (at least 4.0)',function(y){return f2(y.cov);},'9.06',1,function(y){return y.cov<4?'bad':'good';}]
+  ],true)+'</table><div class="fact">'+(mx>0.005?'At this payout Meridia draws the facility, up to <b>€'+f1(mx)+' m</b>: part of the dividend is paid with borrowed money.':'At this payout Meridia never draws the facility.')+'</div>';
+}
+
+/* ---- the reply ---- */
+function memoData(){return {team:val('f_team'),lender:val('f_lender'),div:val('f_div'),circ:val('f_circ'),meth:lsg('w5_meth')||'avg'};}
+function memoMissing(m){var x=[];if(!m.team)x.push('the team (Step 1)');if(!m.lender)x.push('reply part 3 (Step 5)');if(!m.div)x.push('reply part 4 (Step 5)');if(!isDone('s2')||!isDone('s3')||!isDone('s4'))x.push('Steps 2–4');return x;}
+function sumTable(o,label){return '<div class="memowrap"><table><tr><th>'+label+'</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+[['Revenue','rev'],['EBITDA','ebitda'],['Net income','ni'],['Dividend','div'],['Facility, end of year','rcf'],['Net debt','nd']].map(function(r){return '<tr><td>'+r[0]+'</td>'+o.map(function(y){return '<td>'+f1(y[r[1]])+'</td>';}).join('')+'</tr>';}).join('')+'<tr><td>Net debt ÷ EBITDA</td>'+o.map(function(y){return '<td>'+f2(y.lev)+'</td>';}).join('')+'</tr><tr><td>EBITDA ÷ interest</td>'+o.map(function(y){return '<td>'+f2(y.cov)+'</td>';}).join('')+'</tr><tr><td>Balance check</td>'+o.map(function(y){return '<td>'+f1(y.bal)+'</td>';}).join('')+'</tr></table></div>';}
+function memoHTML(m,doc){
+  var miss='<span class="miss">missing</span>',H=doc?'h2':'h4',nl=function(s){return s?esc(s).replace(/\n/g,'<br>'):miss;};
+  var h=(doc?'<h1>':'<h4>')+'Meridia Cold · five-year forecast FY2026–FY2030 · reply to Banca del Litorale'+(doc?'</h1>':'</h4>')+'<div>'+(m.team?esc(m.team):miss)+(doc?' · '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'')+'</div>';
+  h+='<'+H+'>1 · The forecast, base case (€ m, dividend payout 50 %, interest on the average balance)</'+H+'>'+sumTable(B,'Base case');
+  h+='<'+H+'>2 · The lender case</'+H+'>'+sumTable(L,'Lender case')+'<div>The balance sheet balances in every year in both cases: the balance check is 0.0. Interest is charged on the average balance at 4.6 %; the circular reference is resolved by iteration (it converges in three rounds), with interest on the opening balance as the fallback.'+(m.circ?' Our method: '+esc(m.circ):'')+'</div>';
+  h+='<'+H+'>3 · The facility and the covenants</'+H+'><div>'+nl(m.lender)+'</div>';
+  h+='<'+H+'>4 · The dividend we recommend</'+H+'><div>'+nl(m.div)+'</div>';
+  if(doc)h+='<p style="margin-top:26px;font-size:12px;color:#666">A course exercise, Finance Modelling, Geneva Business School. Meridia Cold, Boreal Logistics and Banca del Litorale are fictional; the figures are invented for the exercise.</p>';
+  return h;
+}
+function memoPlain(m){return 'MERIDIA COLD · FIVE-YEAR FORECAST · REPLY TO THE BANK · '+m.team+
+  '\n\n1 · Base case FY2026–30: EBITDA '+B.map(function(y){return f1(y.ebitda);}).join(' / ')+' · facility '+B.map(function(y){return f1(y.rcf);}).join(' / ')+' · ND/EBITDA '+B.map(function(y){return f2(y.lev);}).join(' / ')+
+  '\n2 · Lender case: EBITDA '+L.map(function(y){return f1(y.ebitda);}).join(' / ')+' · facility '+L.map(function(y){return f1(y.rcf);}).join(' / ')+' · ND/EBITDA '+L.map(function(y){return f2(y.lev);}).join(' / ')+' · balance check 0.0 every year'+(m.circ?'\nMethod: '+m.circ:'')+
+  '\n\n3 · The facility and the covenants\n'+m.lender+'\n\n4 · The dividend\n'+m.div;}
+function paintMemo(){document.getElementById('memo').innerHTML=memoHTML(memoData(),false);}
+function memoPage(m){return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Meridia Cold · reply to the bank · '+esc(m.team)+'</title><style>body{font:15px/1.6 Georgia,serif;max-width:860px;margin:30px auto;padding:0 18px;color:#111}h1{font-size:21px}h2{font-size:16px;margin-top:22px}table{border-collapse:collapse;font:12.5px/1.4 system-ui,sans-serif;margin:6px 0}td,th{border:1px solid #ccc;padding:4px 8px;text-align:right}td:first-child,th:first-child{text-align:left}th{background:#f3f4f7}.miss{color:#9B2335;font-weight:700}</style></head><body>'+memoHTML(m,true)+'</body></html>';}
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:MOD,title:'Session 4 · Forecast, plug, circularity',total:SECTIONS.length});
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('cbar'),compact:true});
+  paintProgress();
+  /* step 1: the guess */
+  var pp=document.getElementById('pPred'),cur=lsg('w5_pp');
+  pp.innerHTML=PREDS.map(function(p){return '<button type="button" class="opt'+(cur===p.k?' on':'')+'" data-k="'+p.k+'">'+p.t+'</button>';}).join('');
+  function lockPred(){pp.querySelectorAll('button').forEach(function(b){b.disabled=true;});}
+  if(lsg('w5_pp_locked')==='1')lockPred();
+  pp.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;lss('w5_pp',b.dataset.k);pp.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});setWork('f_pred',b.textContent+' € m');});
+  /* steps 2–5 */
+  paintDrv();['chk2','chk3','chk4','chk5'].forEach(buildChecks);
+  document.getElementById('drvReset').addEventListener('click',function(){lss('w5_drv','{}');paintDrv();});
+  function seg(id,cb){var s=document.getElementById(id);s.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});cb(b.dataset.v);});}
+  seg('plugSeg',function(v){PLUG=v;paintBS();});seg('caseSeg3',function(v){CASE3=v;paintBS();});
+  seg('methSeg',function(v){METH=v;lss('w5_meth',v);paintIt();});seg('caseSeg5',function(v){CASE5=v;paintCov();});
+  document.getElementById('payIn').addEventListener('input',paintCov);
+  paintBS();paintIt();paintCov();
+  setTimeout(paintMemo,500);
+  ['f_team','f_lender','f_div','f_circ'].forEach(function(id){document.getElementById(id).addEventListener('input',paintMemo);});
+
+  if(window.FmTeams){
+    var autoTeam='';
+    FmTeams.mount(document.getElementById('teamsBox'),{onChange:function(t){
+      if(!t)return;var line=FmTeams.label(t)+' — '+FmTeams.members(t).join(', '),e=document.getElementById('f_team');
+      if(e.value===''||e.value===autoTeam){e.value=line;autoTeam=line;e.dispatchEvent(new Event('input',{bubbles:true}));}}});
+    FmTeams.onLoad(function(){var t=FmTeams.myTeam();if(t){var line=FmTeams.label(t)+' — '+FmTeams.members(t).join(', '),e=document.getElementById('f_team');if(e.value===''||e.value===autoTeam){e.value=line;autoTeam=line;e.dispatchEvent(new Event('input',{bubbles:true}));}}});
+  }
+  document.getElementById('b1').addEventListener('click',function(){
+    if(!val('f_team')){alert('Type your team\'s name and members first.');return;}
+    if(!lsg('w5_pp')){alert('Choose your team\'s guess for FY2030 EBITDA first. A wrong guess costs nothing.');return;}
+    lss('w5_pp_locked','1');lockPred();paintOp();document.getElementById('n1').textContent='Locked ✓';markDone('s1');go('s2');});
+  document.getElementById('b2').addEventListener('click',function(){
+    if(!allOk('chk2')){alert('Check every number first: each row must show a green ✓. The checks are on the base case: press "Reset to the base case" if you changed a driver.');return;}
+    if(!val('f_drivers')){alert('Write which driver matters most, and why.');return;}
+    document.getElementById('n2').textContent='Saved ✓';markDone('s2');go('s3');});
+  document.getElementById('b3').addEventListener('click',function(){
+    if(!allOk('chk3')){alert('Check every number first: each row must show a green ✓.');return;}
+    if(!val('f_plug')){alert('Write why the bank prefers the cash-and-debt plug.');return;}
+    document.getElementById('n3').textContent='Saved ✓';markDone('s3');go('s4');});
+  document.getElementById('b4').addEventListener('click',function(){
+    if(!allOk('chk4')){alert('Check every number first: each row must show a green ✓.');return;}
+    if(!val('f_circ')){alert('Write which interest method your team uses, and why.');return;}
+    document.getElementById('n4').textContent='Saved ✓';markDone('s4');paintMemo();go('s5');});
+  document.getElementById('b5').addEventListener('click',function(){
+    if(!allOk('chk5')){alert('Check every number first: each row must show a green ✓.');return;}
+    if(!val('f_lender')||!val('f_div')){alert('Write reply parts 3 and 4.');return;}
+    document.getElementById('n5').textContent='Saved ✓';markDone('s5');paintMemo();go('s6');});
+  document.getElementById('memoShow').addEventListener('click',function(){var w=window.open(URL.createObjectURL(new Blob([memoPage(memoData())],{type:'text/html'})),'_blank');if(!w)document.getElementById('memoNote').textContent='Your browser blocked the new tab: allow pop-ups for this site, or scroll up to the reply preview.';});
+  document.getElementById('memoDl').addEventListener('click',function(){var m=memoData(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([memoPage(m)],{type:'text/html'}));a.download='Meridia-forecast-'+((m.team.split(/\s[—–-]\s/)[0]||'team').toLowerCase().replace(/[^a-z0-9]+/g,'-'))+'.html';document.body.appendChild(a);a.click();a.remove();document.getElementById('memoNote').textContent='Downloaded: the copy is in your Downloads folder.';});
+  document.getElementById('memoCopy').addEventListener('click',function(){var t=memoPlain(memoData()),n=document.getElementById('memoNote');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){n.textContent='✓ Copied.';},function(){n.textContent='Select the reply and copy it.';});});
+  document.getElementById('memoBtn').addEventListener('click',function(){
+    var m=memoData(),miss=memoMissing(m);
+    if(miss.length){alert('Still missing: '+miss.join(', ')+'. Go back to those steps first.');return;}
+    var when=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    setWork('f_memo',memoPlain(m)+'\n\nHanded in '+when);
+    document.getElementById('memoNote').textContent='Handed in ✓ · '+when;markDone('s6');go('s7');});
+  document.getElementById('b7').addEventListener('click',function(){document.getElementById('n7').textContent='Done ✓ — see you next Thursday.';markDone('s7');});
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}document.getElementById('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+  chip();window.addEventListener('statstrack:named',function(){chip();setTimeout(paintMemo,300);});
+});
+</script>
+
+<script src="courseprogress.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

@@ -182,7 +182,7 @@ window.StatsPresence = (function () {
     {mod:'w2', n:2, name:'Week 02 · The decision, not the dashboard', pages:['w2']},
     {mod:'w3', n:3, name:'Week 03 · KPIs that survive contact', pages:['w3']},
     {mod:'w4', n:4, name:'Week 04 · Designing the data warehouse', pages:['w4']},
-    {mod:'w5', n:5, name:'Week 05 · ETL — the part that breaks', pages:['w5']},
+    {mod:'w5', n:5, name:'Week 05 · Loading the data into the warehouse (ETL)', pages:['w5']},
     {mod:'w6', n:6, name:'Week 06 · Describe it honestly', pages:['w6']},
     {mod:'w7', n:7, name:'Week 07 · Is the difference real?', pages:['w7']},
     {mod:'w8', n:8, name:'Week 08 · The chart that misleads', pages:['w8']},

@@ -210,3 +210,34 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   `w4_team_chg`, new label). Title now "… for ÒRBITA's monthly churn KPI: …"
   on the page, the deck and the hub `TERM`. Step 1's sentence asks why
   billing cannot calculate churn by city.
+- **Session 4 (`week5.html`, `w5`, Thu 12 Nov 2026) built 11 Nov 2026 — a
+  self-run mandate like Sessions 2–3: load the data (ETL).** Title (hub, page,
+  courseprogress, presence): "Load ÒRBITA's data into the warehouse: find what
+  breaks, choose a rule for each problem, and log every change". Seven counted
+  steps (`total:7`). s1 reading (ETL, staging, idempotent, ELT; dbt's four
+  generic tests not_null/unique/accepted_values/relationships + range; "what no
+  check catches" = the UTC date) + E/T/L sort (6) + team field `w5_etl`; the
+  team board (`teamsBox`) is in Step 1. s2 the five extracts as raw rows
+  (`BILL` 34 rows / 24 accounts, `CUST` 25 emails with history, `RIDE` 22,
+  `TICK` 9, `SPEND` 10 — Session 1's rows included verbatim) and **the raw
+  load**: 18 of 65 rows fail (27.7 %), opens `w4_nx` (right answer "more than
+  20 %"); `w5_raw`. s3 **the rule machine**: eleven problems (tz · failed
+  unlock · city spelling · orphan ride 10999 → quarantine · email history ·
+  empty resolved_h · duplicate spend rows · currencies at FIXED rates 1 CHF =
+  1.07, 1 GBP = 1.15 EUR · paused = paying · reversed within 30 d removed ·
+  city per account most/first), team state `w5_r_<k>`, a sticky panel (rows
+  failing, churn, rides, rides on 4/5 Oct, spend, Anna's tickets, cities),
+  each rule's line shows rows touched and the KPI under the other rule; churn
+  by city table. Good rules → 0 of 62 fail, churn 4/21 = 19.0 %, 19 rides,
+  0/3 on 4/5 Oct, 19,353 EUR, Anna 3, median 8 h; the tz rule changes no
+  check (the silent error). Engine tested in node (scratch `etl_engine.js`).
+  Six cities named for the first time: Barcelona, Madrid, Lisbon, Milan,
+  Zürich, London. s4 **the bridge** 47,700 − 1,908 trial − 1,193 unpaid =
+  44,600 (KPI's paying) − 4,532 paused = 40,068 vs finance 40,100 (gap 32,
+  the 1,000-sample) + `w5_bridge`. s5 the transformation log (auto columns +
+  team "why" per rule `w5_why_<k>`) → `w5_log`. s6 the load report built
+  live, download `etl.html` into `orbita-memo`, hand-in requires
+  `…netlify.app/etl(.html)`, wall `w5s`, prediction `w5_nx` (spread of city
+  churn in Session 5, points). s7 quiz = `jeopardy.html?set=s4`. No minute
+  timings on the page (WRITING.md rule 7); the 18:10 hand-in stays. Probed
+  11 Nov 2026: 7/7, no errors, 500 px fits.

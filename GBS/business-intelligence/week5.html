@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 4 · Load the data into the warehouse: find what breaks, choose a rule for it, and log every change · GBS</title>
+<meta name="description" content="Session 4 of Business Intelligence (MIM). Extract, transform, load (ETL) and the checks that refuse a wrong row. Each team loads ÒRBITA's five extracts into last week's tables, sees which rows fail, chooses a rule for each of eleven problems and watches the churn KPI move, reconciles billing's 47,700 subscribers with finance's 40,100, writes the transformation log and publishes it as etl.html on its Netlify site.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="bi.css">
+<style>
+/* Session 4 — the extracts, the rule machine, the bridge, the log */
+.rt{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+.rt th,.rt td{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top;}
+.rt th{background:var(--surface);color:var(--navy);font-size:11.5px;}
+.rt td.r,.rt th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rt tr.f td{background:#FDECEC;} .rt tr.q td{background:#F1F1F1;color:var(--grey);text-decoration:line-through;}
+.rt td.why{color:#B00020;font-size:11.5px;}
+.tw{overflow-x:auto;margin:8px 0 14px;border-radius:10px;}
+.xt{border:1px solid var(--line);border-radius:12px;background:#fff;margin:10px 0;}
+.xt>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+.xt>div{padding:0 14px 12px;}
+.rule{border:1px solid var(--line);border-radius:12px;background:#fff;padding:11px 13px;margin:10px 0;}
+.rule .rh{font-weight:800;color:var(--navy);font-size:13.5px;}
+.rule .rs{font-size:11.5px;color:var(--grey);font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px;}
+.rule p{font-size:13px;margin:4px 0 8px;}
+.rule label{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.45;margin:4px 0;cursor:pointer;}
+.rule label input{margin-top:3px;}
+.rule .eff{font-size:12px;color:var(--ink-soft);background:var(--surface);border-radius:8px;padding:6px 9px;margin-top:6px;}
+.rule.ok{border-color:#9CCBA4;} .rule.bad{border-color:#E8A0AA;}
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0;position:sticky;top:58px;z-index:3;background:var(--bg,#F6F7F9);padding:6px 0;}
+.dash div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
+.dash small{display:block;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);}
+.dash b{font-size:18px;color:var(--navy);font-variant-numeric:tabular-nums;}
+.dash .bad b{color:#B00020;} .dash .ok b{color:#1B7A3E;}
+@media(max-width:640px){.dash{position:static;}}
+.br{display:grid;grid-template-columns:1fr 150px 30px;gap:8px;align-items:center;margin:6px 0;font-size:13px;}
+.br input{font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;padding:6px 9px;width:100%;}
+.br .m{font-weight:800;text-align:center;}
+.br.ok input{border-color:#1B7A3E;background:#EAF5EC;} .br.no input{border-color:#B00020;background:#FDECEC;}
+@media(max-width:560px){.br{grid-template-columns:1fr 110px 24px;}}
+.logt textarea{width:100%;min-height:52px;font:inherit;font-size:12.5px;border:1.5px solid var(--line);border-radius:8px;padding:5px 7px;}
+.memo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13px;line-height:1.55;}
+.memo h4{font-size:13.5px;color:var(--navy);margin:12px 0 4px;} .memo h4:first-child{margin-top:0;}
+.memo .miss{color:#B00020;font-weight:700;}
+.memo table{border-collapse:collapse;width:100%;font-size:12px;} .memo td,.memo th{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left;}
+.memowrap{overflow-x:auto;}
+</style>
+</head>
+<body data-course="bi" data-module="w5">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Week 05 · Session 4 · Thu 12 Nov</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Week 05 · Session 4 · Thursday 12 November 2026 · 16:30–18:30</div>
+    <h1>Load ÒRBITA's data into the warehouse: find what breaks, choose a rule for each problem, and log every change</h1>
+    <div class="when">Your team works through this page on its own, and the instructor walks around and helps. Bring one laptop per team, signed in to this site. Same teams as Session 3.</div>
+    <p class="lead"><b>What the client asks for.</b> ÒRBITA's chief financial officer (CFO) writes: <i>"Thank you for the design notes. IT has now copied one extract from each of our five systems for October, a sample of 24 accounts that contains every kind of problem IT found. Load it into your tables, and tell me two things before we load the whole company: which rows your checks refuse, and every rule you applied on the way, with the reason. When the churn number changes next year, I want to be able to read why."</i></p>
+    <div class="doit"><div class="dh">What your team hands in on this page by 18:10 (Step 6)</div><p>Your team hands in a <b>load report</b> to the CFO with three parts. <b>Part 1</b> is the <b>transformation log</b>: one line for each of the eleven problems, with the rule your team chose, how many rows it changed, what it did to the churn KPI, and why your team chose it. <b>Part 2</b> is what the load produced: how many rows the checks refuse before and after your rules, the October churn of the sample by city, and the ad spend in euros. <b>Part 3</b> is the <b>bridge</b> from billing's 47,700 subscribers to finance's 40,100. The page builds the report from Steps 3 to 5. Your team adds it to its <b>Netlify</b> site as a third page, <b>etl.html</b>, next to index.html and schema.html, and one member presses <b>Hand in</b>.</p><p style="margin-top:8px"><b>In the last 20 minutes the teams play a quiz</b> on today's work and on their own log.</p></div>
+    <p class="lead" style="font-size:13.5px"><b>Why today matters.</b> Last week your team decided which tables the warehouse has and where each column comes from. Today the data arrives, and it does not fit: the times are in the wrong clock, the city is spelled four ways, one customer has two email addresses, and the ad spend is in three currencies. Every one of these needs a rule, and each rule changes a number the board will see. A rule that nobody wrote down is the reason a KPI "moves for no reason" a year later. That is why the log is the deliverable, not the loaded tables.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 7</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <div class="plan">
+    <h2>How to work</h2>
+    <div class="ps">Do the steps in order, as a team, on one laptop or several. Each step says what to do in numbered actions and ends with a button. When one member chooses a rule or types in a team field, it appears on every member's page. If you are stuck, read the step again, then raise a hand. The hand-in closes at <b>18:10</b>, before the quiz.</div>
+    <ol>
+      <li><span class="t">1</span><span class="n"><b>Learn what ETL is</b> and which checks refuse a wrong row. Sort six operations.</span></li>
+      <li><span class="t">2</span><span class="n"><b>Load the five extracts as they are</b> and count the rows the checks refuse. Compare with your guess from last week.</span></li>
+      <li><span class="t">3</span><span class="n"><b>Choose a rule for each of the eleven problems</b> and watch the churn KPI, the rides and the ad spend move.</span></li>
+      <li><span class="t">—</span><span class="n">Take a break when your team is ready.</span></li>
+      <li><span class="t">4</span><span class="n"><b>Build the bridge</b> from billing's 47,700 subscribers to finance's 40,100.</span></li>
+      <li><span class="t">5</span><span class="n"><b>Write the transformation log:</b> why your team chose each rule (part 1 of the report).</span></li>
+      <li><span class="t">6</span><span class="n"><b>Publish the report and hand it in:</b> etl.html on your Netlify site.</span></li>
+      <li><span class="t">7</span><span class="n"><b>Play the team quiz</b> on the screen.</span></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="What ETL does|w5_etl">
+    <span class="tick">✅</span>
+    <span class="clock">Step 1 · reading</span>
+    <h2>Learn what ETL is, and which checks refuse a wrong row</h2>
+    <div id="teamsBox" class="teams"></div>
+    <ol><li>Check that your team is the right one on the board above. Join it if you are not in it.</li><li>Each member reads the three parts below and sorts the six operations at the end.</li><li>The team writes one sentence in the box: what goes wrong if the "transform" part is skipped. Then press <b>Done</b>.</li></ol>
+    <h3>Extract, transform, load</h3>
+    <p><b>ETL</b> stands for <b>extract, transform, load</b>, the three things that happen to data between the systems that run a business and the warehouse that measures it.</p>
+    <ul>
+      <li><b>Extract</b>: copy the rows out of each source system, without changing them. ÒRBITA's IT has done this today: five files, one from billing (with its customer table), telematics, the support desk, marketing and the finance spreadsheet. The copies first go into a <b>staging area</b>, a set of tables that hold the data exactly as it arrived, so that a load can be repeated and checked.</li>
+      <li><b>Transform</b>: change the rows so that they fit the warehouse: convert the times to one clock, the money to one currency, the names to one spelling, and remove what should not be counted. Every change follows a written <b>rule</b>, and the rule is the source-to-target map's third column from last week.</li>
+      <li><b>Load</b>: write the changed rows into the warehouse tables (fact_ride, fact_subscription, fact_ticket, fact_spend and the dimension tables). A good load can be run twice without creating duplicates: data engineers call this <b>idempotent</b>.</li>
+    </ul>
+    <p>Many companies today load first and transform inside the warehouse, with SQL. This order is called <b>ELT</b>. The rules are the same; only the place where they run changes.</p>
+    <h3>The checks that refuse a wrong row</h3>
+    <p>A <b>check</b> (data engineers say a <b>data test</b>) is a rule that every loaded row must pass. A row that fails is refused, or flagged, and written in the log. The four most common checks are the four that the open-source tool dbt ships as its "generic data tests":</p>
+    <ul>
+      <li><b>Not null</b>: the column is never empty. Example: every ride has a date.</li>
+      <li><b>Unique</b>: no value appears twice. Example: one row per city, channel and week in fact_spend.</li>
+      <li><b>Accepted values</b>: the value is one of a fixed list. Example: the city is one of ÒRBITA's six cities: Barcelona, Madrid, Lisbon, Milan, Zürich, London.</li>
+      <li><b>Relationships</b>: a key points to a row that exists. Example: every ride's subscriber exists in billing.</li>
+    </ul>
+    <p>A fifth kind checks a <b>range</b>: a counted ride is longer than 0.2 km and 2 minutes. These are the checks from the last column of your map.</p>
+    <div class="callout"><span class="ct">What no check catches</span>A check can only refuse a value that looks wrong. A ride dated 4 October in UTC, the world clock, looks perfectly right, even when it happened at 00:40 on 5 October in Barcelona. Such errors pass every check and change the numbers anyway. Only a rule written before the load prevents them, which is why Step 3 has rules that no check would have asked for.</div>
+    <h3>Sort: is it extract, transform or load?</h3>
+    <div id="etlRows"></div><div class="savenote" id="etlCap"></div>
+    <div class="cap">
+      <label for="f_etl">Write, as a team, one sentence: what goes wrong if the "transform" part is skipped?</label>
+      <input type="text" id="f_etl" data-work="w5_etl" data-worklabel="W5 · what goes wrong without transform" autocomplete="off" placeholder="Example: The ad spend would add euros, francs and pounds together, so the cost per new subscriber would be in no currency at all.">
+    </div>
+    <div class="btn-row"><button class="btn" id="s1Btn">Done</button><span class="savenote" id="s1Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2">
+    <span class="tick">✅</span>
+    <span class="clock">Step 2 · the raw load</span>
+    <h2>Load the five extracts as they are, and count the rows the checks refuse</h2>
+    <div id="guess"></div>
+    <ol><li>Open each of the five extracts below and look at the rows. They are the October sample: 34 billing rows for 24 accounts, 25 customer emails, 22 rides, 9 tickets and 10 rows of ad spend.</li><li>Press <b>Load the extracts as they are</b>. The page loads every row without any rule, then runs the checks from Step 1 on the warehouse tables.</li><li>Read the refused rows and their reasons. Then write, in the box, the one refused row that would have done the most damage to a number the board sees.</li></ol>
+    <div id="extracts"></div>
+    <div class="btn-row"><button class="btn" id="rawBtn" type="button">Load the extracts as they are</button></div>
+    <div id="rawOut"></div>
+    <div class="cap">
+      <label for="f_raw">Which refused row would have done the most damage to a number the board sees, and to which number? Write one sentence.</label>
+      <input type="text" id="f_raw" data-work="w5_raw" data-worklabel="W5 · the refused row that would do most damage" autocomplete="off" placeholder="Example: The duplicate Barcelona Meta row, because it adds 3,200 euros to the ad spend and makes Barcelona's cost per new subscriber look worse.">
+    </div>
+    <div class="btn-row"><button class="btn" id="s2Btn">Done</button><span class="savenote" id="s2Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3" data-board="The rule that moved the KPI most|w5_move">
+    <span class="tick">✅</span>
+    <span class="clock">Step 3 · team · the rules</span>
+    <h2>Choose a rule for each of the eleven problems, and watch the numbers move</h2>
+    <p><b>Why this step exists.</b> Each problem below has two possible rules. For every problem, the first rule is what happens when nobody decides: the data is loaded as it is. The second is a rule someone has to write down. Some rules make the checks pass; some change the churn KPI; one changes nothing a check can see. The panel at the top keeps the numbers in view while you choose.</p>
+    <ol><li>Read each problem, choose a rule, and look at what moved in the panel and in the line under the rule. One member clicks; the choice appears on every member's page.</li><li>The last two problems are decided by the KPI card from Session 3 (paused accounts count as paying; cancellations undone within 30 days are removed). Check that your rules follow it.</li><li>The step is done when every problem has a rule and no row fails a check. Then write which rule moved the churn KPI most, and press <b>Save our rules</b>.</li></ol>
+    <div class="dash" id="dash"></div>
+    <div id="rules"></div>
+    <div id="cityTab"></div>
+    <div class="cap">
+      <label for="f_move">Which rule moved the churn KPI most, from what to what? Write one sentence.</label>
+      <input type="text" id="f_move" data-work="w5_move" data-worklabel="W5 · the rule that moved the KPI most" autocomplete="off" placeholder="Example: Counting a pause as a cancellation, which takes churn from 4 of 21 to 4 of 19 accounts.">
+    </div>
+    <div class="btn-row"><button class="btn" id="s3Btn">Save our rules</button><span class="savenote" id="s3Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="Which subscriber number goes to the board|w5_bridge">
+    <span class="tick">✅</span>
+    <span class="clock">Step 4 · each member · part 3 of the report</span>
+    <h2>Build the bridge from billing's 47,700 subscribers to finance's 40,100</h2>
+    <p><b>Why this step exists.</b> Since Session 1 the board has seen two numbers of subscribers for September: finance says 40,100, billing has 47,700 on its books. Both are right about their own definition. A <b>bridge</b> (accountants also say a <b>reconciliation</b>) is a table that starts from one number and subtracts, line by line, each group of accounts that the other number leaves out, until it arrives at the other number. When the bridge closes, nobody needs to ask which system is "wrong". Session 1 found the shares of a random sample of 1,000 accounts: <b>840 active</b> (paying), <b>95 paused</b>, <b>40 in trial</b> and <b>25 unpaid</b>.</p>
+    <ol><li>Fill each line of the bridge with a number of accounts. Use the shares of the sample: for example, trial accounts are 40 of 1,000, so 4.0 % of 47,700.</li><li>The page marks each line ✓ when the number is right (rounded to whole accounts).</li><li>Answer the question under the bridge, then press <b>Done</b>.</li></ol>
+    <div id="bridge"></div>
+    <div class="cap">
+      <label for="f_bridge">Which of the three numbers (47,700, about 44,600 or 40,100) should the board see as "paying subscribers", and why? Write one or two sentences.</label>
+      <textarea id="f_bridge" data-work="w5_bridge" data-worklabel="W5 · which subscriber number goes to the board" placeholder="Example: 44,600, because the KPI card counts paused accounts as paying, so the churn rate and the subscriber count use the same accounts."></textarea>
+    </div>
+    <div class="btn-row"><button class="btn" id="s4Btn">Done</button><span class="savenote" id="s4Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="Transformation log|w5_log">
+    <span class="tick">✅</span>
+    <span class="clock">Step 5 · team · part 1 of the report</span>
+    <h2>Write the transformation log: why your team chose each rule</h2>
+    <p><b>Why this step exists.</b> A <b>transformation log</b> is the written record of every rule a load applies: what the problem was, which rule was chosen, how many rows it changed, what it did to the numbers, and why. A year from now an analyst will ask why October's churn differs from billing's. The log is the answer. Without it, the only person who knows is whoever wrote the load, if they are still there.</p>
+    <ol><li>The page fills five columns of the log from Step 3: the source column, the problem, the rule your team chose, the rows it changed, and what it did to the churn KPI.</li><li>Your team writes the last column, <b>why</b>, for all eleven lines, in one sentence each. Share the lines among the members; each cell is a team field.</li><li>Press <b>Save the log</b>.</li></ol>
+    <div class="tw logt" id="logTab"></div>
+    <input type="hidden" id="f_log" data-work="w5_log" data-worklabel="W5 · team · the transformation log">
+    <div class="btn-row"><button class="btn" id="s5Btn">Save the log</button><span class="savenote" id="s5Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6" data-board="Next week: how far apart are the cities|w5_next">
+    <span class="tick">✅</span>
+    <span class="clock">Step 6 · publish and hand in</span>
+    <h2>Publish the load report on your Netlify site and hand it in</h2>
+    <h3>6a · Read the report</h3>
+    <p>The page has built the report from Steps 3 to 5. Read it below. Anything marked <b>missing</b> still has to be done.</p>
+    <div class="memo" id="memo"></div>
+    <input type="hidden" id="f_doc" data-work="w5_doc" data-worklabel="W5 · load report (handed in)">
+    <h3>6b · Add the report to your Netlify site · one team member</h3>
+    <ol><li>Find the <b>orbita-memo</b> folder, the folder that contains <b>index.html</b> and <b>schema.html</b>. If the member who has it is absent, download it from Netlify: open the project, then <b>Deploys</b>, then the latest deploy, then <b>Download</b>.</li>
+      <li>Press <b>Download the load report</b> below. A file called <b>etl.html</b> appears in your Downloads folder. Move it into the <b>orbita-memo</b> folder. Do not rename it.</li>
+      <li>Double-click <b>etl.html</b> and check that the log, the results and the bridge are there.</li>
+      <li>Sign in at <a href="https://app.netlify.com" target="_blank" rel="noopener">app.netlify.com</a>, open your team's project, then <b>Deploys</b>, and drag the <b>whole orbita-memo folder</b> onto the upload box at the bottom. The new page is at your site's address followed by <b>/etl.html</b>.</li>
+      <li>Open the new page in a private browser window to check it, then paste its full address in the box below.</li></ol>
+    <div class="btn-row"><button class="btn ghost" id="docDl" type="button">Download the load report</button><button class="btn ghost" id="docCopy" type="button">Copy the report as text</button></div>
+    <div class="cap">
+      <label for="f_site">Paste the full address of your team's load report</label>
+      <div class="hint" id="siteHint">The address starts with https:// and ends with .netlify.app/etl.html.</div>
+      <input type="text" id="f_site" maxlength="200" data-work="w5_site" data-worklabel="W5 · team · load report on Netlify" placeholder="https://orbita-kpi-team-a-rates.netlify.app/etl.html" autocomplete="off">
+    </div>
+    <h3>6c · Hand in the report</h3>
+    <ol><li>One member presses <b>Hand in the load report</b>. The page saves the report, its address and the time in every team member's record, and adds the address to the class list.</li><li>Then each member answers the question at the bottom of this step and locks the answer.</li></ol>
+    <div class="btn-row"><button class="btn" id="docBtn">Hand in the load report</button><span id="docNote" class="savenote"></span></div>
+    <div class="wall" id="siteWall" style="margin-top:12px"><div class="wh">The class's load reports <span class="st" id="siteStat">not loaded yet</span></div><div class="empty">Press Refresh to see every team's report.</div></div>
+    <button class="btn ghost" id="siteWallBtn" type="button">Refresh</button>
+    <h3>Six terms from today</h3>
+    <ul>
+      <li><b>ETL and ELT.</b> Extract, transform, load: the data is copied out of each system, changed by written rules, and written into the warehouse. In ELT the changes run inside the warehouse, after the load.</li>
+      <li><b>Staging area.</b> Tables that hold the extracts exactly as they arrived, so a load can be repeated and checked.</li>
+      <li><b>Data test (check).</b> A rule every loaded row must pass: not null, unique, accepted values, relationships, or a range.</li>
+      <li><b>Quarantine.</b> A table for refused rows, kept out of the warehouse and listed in the log, so nothing disappears without a trace.</li>
+      <li><b>Transformation log.</b> The written record of each rule: the problem, the rule, the rows it changed, its effect on the numbers, and why.</li>
+      <li><b>Bridge (reconciliation).</b> A table that goes from one system's number to another's, one group of accounts at a time.</li>
+    </ul>
+    <div class="cap">
+      <label>Each member guesses next week's result today, and locks the guess</label>
+      <div class="hint">In Session 5 the class splits ÒRBITA's churn by city for the whole company, not the sample. How far apart will the city with the highest churn and the city with the lowest churn be, in percentage points?</div>
+      <div class="opts" id="pNext"></div>
+      <input type="hidden" id="f_next" data-work="w5_next" data-worklabel="W5 · prediction for session 5">
+    </div>
+    <button class="btn" id="nextBtn">Lock my guess</button>
+    <div class="savenote" id="nextNote"></div>
+    <div class="quiet"><b>After today you can explain</b> what extract, transform and load each do; what the four common data tests check; why some errors pass every check; why a refused row goes to quarantine and into the log; how a bridge reconciles two systems' numbers; and why the transformation log, not the loaded table, is what makes a KPI trustworthy a year later.</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s7">
+    <span class="tick">✅</span>
+    <span class="clock">Step 7 · team quiz</span>
+    <h2>Play the team quiz on the screen</h2>
+    <p>In the last 20 minutes the teams play against each other on the screen at the front. The quiz has six categories with questions worth 100 to 500 points. Five categories are about today's material. The sixth, <b>Your log</b>, asks the team whose turn it is about its own load report.</p>
+    <ol><li>Close the laptops, except <b>one per team</b>. On that laptop, keep your load report open: your Netlify address followed by /etl.html.</li>
+      <li>The teams take turns choosing a category and a value. The team that chose answers first. Each team gives one answer, agreed within 10 seconds.</li>
+      <li>A right answer wins the points. A wrong answer loses them, and the next team may try.</li>
+      <li>When the quiz is over, press the button below.</li></ol>
+    <button class="btn" id="quizBtn">We played the quiz: we are done for today</button>
+    <div class="savenote" id="quizNote"></div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Week 05 · Session 4 of 11 · Geneva Business School
+    <div style="margin-top:8px;font-size:11.5px;line-height:1.6;">ÒRBITA, its systems and the October sample are fictional; the sample's 24 accounts were chosen to contain every problem, so its churn is not the company's. The exchange rates (1 CHF = 1.07 EUR, 1 GBP = 1.15 EUR) are rounded and fixed for the exercise; a real load uses the European Central Bank's reference rate of each week's Monday. The four generic tests: dbt documentation, "Add data tests to your DAG" <a href="https://docs.getdbt.com/docs/build/data-tests" target="_blank" rel="noopener">docs.getdbt.com</a>.</div>
+    <div style="margin-top:8px;"><a href="#" id="resetLink" style="color:var(--grey);font-weight:400;">Reset my answers and progress for Session 4 on this device</a></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 4 (module w5) — a self-run mandate, like Sessions 2 and 3
+   (built 11 Nov 2026 for Thu 12 Nov): ETL, the raw load, eleven rules,
+   the bridge, the transformation log, etl.html on the team's Netlify
+   site, the team quiz (jeopardy.html?set=s4).
+
+   ⚠ THE PROGRESS DENOMINATOR IS THE SEVEN STEPS (courseprogress.js total:7).
+
+   THE ENGINE (run(O)) loads the October sample under the options O and
+   runs the checks. Tested in node (scratch etl_engine.js, 11 Nov 2026):
+     raw options  → 65 rows, 18 fail (27.7 %), churn 5/19, 22 rides,
+                    2 on 4 Oct / 1 on 5 Oct, spend 23,600 "eur", Anna 1 ticket
+     good options → 62 rows (1 quarantined, 2 duplicates dropped), 0 fail,
+                    churn 4/21 = 19.0 %, 19 rides, 0 / 3, spend 19,353 EUR,
+                    Anna 3 tickets, median resolution 8 h
+     the tz rule changes no check (the silent error); pause alone → 4/19;
+     reversed alone → 5/21; acity most vs first moves 10489 Madrid ↔ Barcelona.
+   The bridge uses Session 1's 1,000-account sample (840/95/40/25):
+     47,700 − 1,908 trial − 1,193 unpaid = 44,600 (KPI's paying, ±1)
+     − 4,532 paused = 40,068; finance's 40,100 is 32 away (sampling).
+   Team keys (teams.js): w5_r_<rule> (the chosen option), w5_why_<rule>,
+   w5_rules_done, w5_log_done, w5_site, w5_handin; team fields f_etl, f_move.
+   Wall nodes: w5s (the class's load reports).
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6','s7'];
+var K='bi';
+var NEXTS4=[{k:'0',t:'None: our checks are right'},{k:'1',t:'Under 1 %'},{k:'5',t:'1 to 5 %'},{k:'20',t:'5 to 20 %'},{k:'99',t:'More than 20 %'}];
+var NEXTS=[{k:'1',t:'Under 1 point'},{k:'3',t:'1 to 3 points'},{k:'6',t:'3 to 6 points'},{k:'9',t:'More than 6 points'}];
+
+/* ---- the extracts ---- */
+var CITIES=[
+ {k:1,n:'Barcelona',c:'Spain',tz:'Europe/Madrid',cur:'EUR'},{k:2,n:'Madrid',c:'Spain',tz:'Europe/Madrid',cur:'EUR'},
+ {k:3,n:'Lisbon',c:'Portugal',tz:'Europe/Lisbon',cur:'EUR'},{k:4,n:'Milan',c:'Italy',tz:'Europe/Rome',cur:'EUR'},
+ {k:5,n:'Zürich',c:'Switzerland',tz:'Europe/Zurich',cur:'CHF'},{k:6,n:'London',c:'United Kingdom',tz:'Europe/London',cur:'GBP'}
+];
+var CITYMAP={'barcelona':'Barcelona','madrid':'Madrid','lisbon':'Lisbon','lisboa':'Lisbon','milan':'Milan','milano':'Milan','zürich':'Zürich','zurich':'Zürich','london':'London'};
+var RATE={EUR:1,CHF:1.07,GBP:1.15};
+var BILL=[
+ ['10480','ebike-pro','active','2026-03-12','79'],['10481','city-flex','active','2026-05-02','49'],['10482','city-flex','active','2026-09-03','49'],
+ ['10483','city-flex','active','2026-06-01','49'],['10483','city-flex','paused','2026-10-11','0'],['10483','city-flex','active','2026-10-20','49'],
+ ['10484','ebike-pro','active','2026-04-18','79'],['10484','ebike-pro','cancelled','2026-10-08','0'],
+ ['10485','city-flex','paused','2026-09-15','0'],['10485','city-flex','cancelled','2026-10-21','0'],
+ ['10486','city-flex','trial','2026-09-25','0'],['10486','city-flex','cancelled','2026-10-03','0'],
+ ['10487','ebike-pro','active','2026-01-09','79'],['10488','city-flex','unpaid','2026-09-20','49'],['10488','city-flex','cancelled','2026-10-15','0'],
+ ['10489','city-flex','active','2026-07-07','49'],['10489','city-flex','cancelled','2026-10-05','0'],['10489','city-flex','active','2026-10-19','49'],
+ ['10490','ebike-pro','active','2026-02-14','79'],['10491','ebike-pro','active','2026-05-20','79'],['10491','ebike-pro','cancelled','2026-10-02','0'],
+ ['10492','city-flex','active','2026-08-30','49'],['10493','city-flex','active','2026-09-12','49'],['10494','ebike-pro','active','2026-06-25','79'],
+ ['10495','city-flex','active','2026-03-30','49'],['10496','city-flex','active','2026-04-04','49'],['10496','city-flex','cancelled','2026-10-27','0'],
+ ['10497','ebike-pro','active','2026-09-28','79'],['10498','city-flex','active','2026-07-19','49'],['10499','city-flex','paused','2026-08-01','0'],
+ ['10500','ebike-pro','active','2026-05-11','79'],['10501','city-flex','active','2026-02-27','49'],['10502','city-flex','active','2026-10-12','49'],
+ ['10505','city-flex','active','2026-08-22','49']
+];
+var CUST=[
+ ['10480','p.serra@example.com','2025-03-12'],['10481','m.ruiz@example.com','2025-05-02'],['10482','anna.k@example.com','2025-09-03'],['10482','a.kowalski@example.com','2026-10-06'],
+ ['10483','j.costa@example.com','2026-06-01'],['10484','lucia.f@example.com','2026-04-18'],['10485','h.weber@example.com','2026-02-10'],['10486','l.moreau@example.com','2026-09-25'],
+ ['10487','j.romero@example.com','2026-01-09'],['10488','d.silva@example.com','2026-03-03'],['10489','e.bianchi@example.com','2026-07-07'],['10490','tom.b@example.co.uk','2026-02-14'],
+ ['10491','marco@example.org','2026-05-20'],['10492','n.ferrer@example.com','2026-08-30'],['10493','sara.m@example.com','2026-09-12'],['10494','k.meier@example.ch','2026-06-25'],
+ ['10495','r.santos@example.com','2026-03-30'],['10496','o.grant@example.co.uk','2026-04-04'],['10497','f.conti@example.com','2026-09-28'],['10498','i.lopez@example.com','2026-07-19'],
+ ['10499','b.keller@example.ch','2026-08-01'],['10500','g.rossi@example.com','2026-05-11'],['10501','c.vidal@example.com','2026-02-27'],['10502','y.haddad@example.com','2026-10-12'],
+ ['10505','v.marino@example.com','2026-08-22']
+];
+var RIDE=[
+ ['88120','10482','2026-10-04 22:40','2026-10-04 23:05','Barcelona','4.2'],['88121','10491','2026-10-04 23:50','2026-10-05 00:12','Lisbon','3.1'],
+ ['88122','10483','2026-10-11 07:15','2026-10-11 07:15','Barcelona','0.0'],['88123','10505','2026-10-11 09:02','2026-10-11 09:31','Milano','5.6'],
+ ['88124','10480','2026-10-02 06:10','2026-10-02 06:32','Barcelona','6.0'],['88125','10481','2026-10-02 15:45','2026-10-02 16:02','Madrid','3.4'],
+ ['88126','10484','2026-10-03 10:00','2026-10-03 10:01','Madrid','0.1'],['88127','10484','2026-10-05 05:30','2026-10-05 05:52','Madrid','5.2'],
+ ['88128','10487','2026-10-06 16:20','2026-10-06 16:41','Milan','4.8'],['88129','10490','2026-10-07 21:15','2026-10-07 21:38','London','3.9'],
+ ['88130','10492','2026-10-08 05:55','2026-10-08 06:20','Zurich','5.5'],['88131','10494','2026-10-09 16:05','2026-10-09 16:30','Zürich','4.4'],
+ ['88132','10489','2026-10-03 07:40','2026-10-03 08:02','Barcelona','4.0'],['88133','10489','2026-10-20 17:10','2026-10-20 17:35','Madrid','4.6'],
+ ['88134','10489','2026-10-22 07:05','2026-10-22 07:29','Madrid','5.1'],['88135','10496','2026-10-12 11:30','2026-10-12 11:58','London','6.3'],
+ ['88136','10497','2026-10-14 06:45','2026-10-14 07:10','barcelona ','3.7'],['88137','10999','2026-10-15 09:00','2026-10-15 09:20','Barcelona','2.9'],
+ ['88138','10500','2026-10-18 22:30','2026-10-18 22:55','Milano','4.1'],['88139','10501','2026-10-26 23:30','2026-10-26 23:52','Lisbon','3.3'],
+ ['88140','10493','2026-10-29 07:20','2026-10-29 07:46','Madrid','4.9'],['88141','10498','2026-10-30 23:40','2026-10-31 00:05','Barcelona','3.8']
+];
+var TICK=[
+ ['5531','anna.k@example.com','battery','2026-10-03','26'],['5532','a.kowalski@example.com','billing','2026-10-09','71'],['5535','j.romero@example.com','battery','2026-10-10','5'],
+ ['5538','lucia.f@example.com','cancellation','2026-10-07','2'],['5540','marco@example.org','refund','2026-10-12',''],['5541','tom.b@example.co.uk','app','2026-10-13','12'],
+ ['5543',' Sara.M@Example.com','app','2026-10-13','8'],['5544','anna.k@example.com','app','2026-10-14','3'],['5546','h.weber@example.com','billing','2026-10-20','']
+];
+var SPEND=[
+ ['2026-W40','Barcelona','Meta','3,200','EUR'],['2026-W40','Zürich','Google','4,150','CHF'],['2026-W40','London','Meta','2,900','GBP'],['2026-W40','Barcelona','Meta','3,200','EUR'],
+ ['2026-W40','Madrid','Google','2,100','EUR'],['2026-W40','Lisbon','Meta','1,300','EUR'],['2026-W40','Milan','TikTok','1,800','EUR'],['2026-W40','London','Google','1,600','GBP'],
+ ['2026-W40','Zürich','Meta','1,250','CHF'],['2026-W40','Madrid','Google','2,100','EUR']
+];
+var EXTRACTS=[
+ {t:'Billing · subscription status changes',n:'one row each time an account changes status',cols:['subscriber_id','plan','status','status_since','mrr_eur'],rows:BILL},
+ {t:'Billing · customer table',n:'every email an account has had, and since when',cols:['subscriber_id','email','valid_from'],rows:CUST},
+ {t:'Telematics · rides',n:'times in UTC, the world clock',cols:['ride_id','subscriber_id','start_utc','end_utc','city','km'],rows:RIDE},
+ {t:'Support desk · tickets',n:'the desk knows customers only by email',cols:['ticket_id','email','category','opened','resolved_h'],rows:TICK},
+ {t:'Marketing · ad spend, week 40',n:'two exports of the ad platforms, pasted one after the other',cols:['week','city','channel','spend','currency'],rows:SPEND}
+];
+
+/* ---- the rules: o[0] = what happens when nobody decides ---- */
+var RULES=[
+ {k:'tz',src:'Telematics · start_utc',p:'The ride times are in UTC, the world clock. A ride at 22:40 UTC on 4 October happened at 00:40 on 5 October in Barcelona.',o:[['utc','Take the date from the UTC time as it is.'],['local','Convert each time to the city\'s local time, with summer time, then take the date.']],good:'local'},
+ {k:'unl',src:'Telematics · km, start_utc, end_utc',p:'Some rides last under 2 minutes and cover under 0.2 km: the bike did not unlock, and the customer tried again.',o:[['keep','Load every ride and count it.'],['flag','Load every ride, set failed_unlock = 1 when km is under 0.2 or the ride lasted under 2 minutes, and leave those rides out of the ride counts.']],good:'flag'},
+ {k:'city',src:'Telematics · city',p:'The city is typed in several ways: "Milano" and "Milan", "Zurich" and "Zürich", "barcelona " with a space at the end.',o:[['raw','Load the city name as it is typed.'],['map','Remove spaces, ignore capitals, and map each spelling to one of the six cities: "Milano" becomes "Milan".']],good:'map'},
+ {k:'orph',src:'Telematics · subscriber_id',p:'One ride belongs to subscriber 10999, which billing does not know: a test account of the fleet team.',o:[['load','Load the ride anyway.'],['quar','Put the ride in a quarantine table, keep it out of the warehouse, and list it in the log.']],good:'quar'},
+ {k:'mail',src:'Support desk · email',p:'The desk knows customers only by email. Anna Kowalski changed hers on 6 October, and one email is typed with capitals and a space.',o:[['exact','Match each ticket to the account whose current email is exactly the same.'],['hist','Remove spaces and capitals, then match to any email the account has had: billing\'s customer table keeps the history.']],good:'hist'},
+ {k:'open',src:'Support desk · resolved_h',p:'An open ticket has an empty resolution time.',o:[['zero','Write 0 hours when the cell is empty.'],['empty','Keep the cell empty, mark the ticket as open, and leave it out of the median.']],good:'empty'},
+ {k:'dup',src:'Marketing · every column',p:'Two exports of the ad platforms overlap, so some rows appear twice, identical.',o:[['keep','Load every row.'],['drop','Drop a row that is identical to one already loaded: same week, city, channel and amount.']],good:'drop'},
+ {k:'cur',src:'Marketing · spend, currency',p:'The ad spend is in euros, Swiss francs and pounds.',o:[['add','Load the amount as it is, into spend_eur.'],['eur','Convert to euros before loading: 1 CHF = 1.07 EUR and 1 GBP = 1.15 EUR (rates fixed for the exercise).']],good:'eur'},
+ {k:'pause',src:'Billing · status',p:'A paused account pays nothing this month, but keeps its subscription.',o:[['churn','Count a pause as a cancellation.'],['paying','Count a paused account as paying, as the KPI card says.']],good:'paying'},
+ {k:'rev',src:'Billing · status, status_since',p:'Some customers cancel and come back within 30 days.',o:[['count','Count every cancellation.'],['remove','Remove a cancellation that is followed by "active" within 30 days, as the KPI card says.']],good:'remove'},
+ {k:'acity',src:'Telematics · city, for each account',p:'Billing has no city. Each account needs one city for October, the rule your team wrote in part 3 of last week\'s note. An account with no counted ride gets the city "unknown".',o:[['most','The city where the account made the most counted rides in October; at a tie, the first of them.'],['first','The city of the account\'s first counted ride in October.']],good:null}
+];
+function rawOpts(){var o={};RULES.forEach(function(r){o[r.k]=r.o[0][0];});return o;}
+
+/* ---- the engine ---- */
+function numv(s){return parseFloat(String(s).replace(/,/g,''));}
+function minutes(a,b){return (Date.parse(b.replace(' ','T')+'Z')-Date.parse(a.replace(' ','T')+'Z'))/60000;}
+function localDate(utc,tz){var d=new Date(utc.replace(' ','T')+'Z');return new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);}
+function cityOf(name,opt){var t=opt==='map'?CITYMAP[String(name).trim().toLowerCase()]:name;for(var i=0;i<CITIES.length;i++)if(CITIES[i].n===t)return CITIES[i];return null;}
+function addDays(d,n){var x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);}
+function run(O){
+  var subs={};BILL.forEach(function(r){(subs[r[0]]=subs[r[0]]||[]).push({plan:r[1],st:r[2],d:r[3],mrr:+r[4]});});
+  var rides=[],quar=[];
+  RIDE.forEach(function(r){
+    var known=!!subs[r[1]],c=cityOf(r[4],O.city);
+    var date=O.tz==='local'?localDate(r[2],c?c.tz:'Europe/Madrid'):r[2].slice(0,10);
+    var dur=minutes(r[2],r[3]),km=numv(r[5]),failed=(km<0.2||dur<2)?1:0;
+    var row={t:'fact_ride',id:r[0],sub:r[1],date:date,city:c?c.n:String(r[4]),cityOk:!!c,km:km,dur:dur,failed:O.unl==='flag'?failed:0,known:known};
+    if(!known&&O.orph==='quar'){quar.push(row);return;}
+    rides.push(row);
+  });
+  rides.forEach(function(x){x.fails=[];
+    if(!x.cityOk)x.fails.push('accepted values: "'+x.city+'" is not one of the six cities');
+    if(!x.known)x.fails.push('relationships: subscriber '+x.sub+' is not in billing');
+    if(!x.failed&&x.km<0.2)x.fails.push('range: a counted ride under 0.2 km');
+    else if(!x.failed&&x.dur<2)x.fails.push('range: a counted ride under 2 minutes');
+  });
+  var hist={};CUST.forEach(function(c){(hist[c[0]]=hist[c[0]]||[]).push({e:c[1],d:c[2]});});
+  var current={};Object.keys(hist).forEach(function(s){var h=hist[s].slice().sort(function(a,b){return a.d<b.d?-1:1;});current[s]=h[h.length-1].e;});
+  var tickets=TICK.map(function(t){
+    var e=t[1],sub=null;
+    Object.keys(hist).forEach(function(s){if(O.mail==='hist'){if(hist[s].some(function(h){return h.e===e.trim().toLowerCase();}))sub=s;}else if(current[s]===e)sub=s;});
+    var open=t[4]==='',rh=open?(O.open==='zero'?0:null):+t[4];
+    var x={t:'fact_ticket',id:t[0],email:e,sub:sub,cat:t[2],opened:t[3],rh:rh,open:open,fails:[]};
+    if(!sub)x.fails.push('relationships: no account has the email "'+e.trim()+'"');
+    if(rh===0)x.fails.push('range: a resolution time of 0 hours');
+    return x;
+  });
+  var seen={},spend=[];
+  SPEND.forEach(function(s){var key=s.join('|'),dup=!!seen[key];seen[key]=1;
+    if(dup&&O.dup==='drop')return;
+    var amt=numv(s[3]),eur=O.cur==='eur'?amt*RATE[s[4]]:amt;
+    var x={t:'fact_spend',id:s[0]+' '+s[1]+' '+s[2],week:s[0],city:s[1],ch:s[2],amt:amt,cur:s[4],eur:eur,fails:[]};
+    if(dup)x.fails.push('unique: '+s[1]+' · '+s[2]+' · '+s[0]+' twice');
+    if(O.cur!=='eur'&&s[4]!=='EUR')x.fails.push('accepted values: spend_eur holds '+s[4]);
+    spend.push(x);});
+  var acc=[];
+  Object.keys(subs).sort().forEach(function(s){
+    var ev=subs[s].slice().sort(function(a,b){return a.d<b.d?-1:1;});
+    var on1=null;ev.forEach(function(e){if(e.d<='2026-10-01')on1=e;});
+    var oct=ev.filter(function(e){return e.d>='2026-10-01'&&e.d<='2026-10-31';});
+    var paying1=!!on1&&(on1.st==='active'||(on1.st==='paused'&&O.pause==='paying'));
+    var canc=null,rev=false;
+    oct.forEach(function(e){if(e.st==='cancelled'&&!canc){canc=e;rev=ev.some(function(f){return f.d>e.d&&f.st==='active'&&f.d<=addDays(e.d,30);});}});
+    var pausedInOct=oct.some(function(e){return e.st==='paused';}),churn=false;
+    if(paying1){if(canc&&!(rev&&O.rev==='remove'))churn=true;if(O.pause==='churn'&&pausedInOct&&!canc)churn=true;}
+    acc.push({t:'fact_subscription',id:s,sub:s,plan:ev[ev.length-1].plan,on1:on1?on1.st:'—',paying1:paying1,canc:!!canc,rev:rev,churn:churn,fails:[]});
+  });
+  var byAcc={};rides.forEach(function(r){if(r.failed)return;(byAcc[r.sub]=byAcc[r.sub]||[]).push(r);});
+  acc.forEach(function(a){var rs=(byAcc[a.sub]||[]).slice().sort(function(x,y){return x.id<y.id?-1:1;});
+    if(!rs.length){a.city='unknown';return;}
+    if(O.acity==='first'){a.city=rs[0].city;return;}
+    var n={},order=[];rs.forEach(function(r){if(!n[r.city]){n[r.city]=0;order.push(r.city);}n[r.city]++;});
+    var best=order[0];order.forEach(function(c){if(n[c]>n[best])best=c;});a.city=best;});
+  var den=acc.filter(function(a){return a.paying1;}),nm=den.filter(function(a){return a.churn;});
+  var byCity={};den.forEach(function(a){var c=byCity[a.city]=byCity[a.city]||{d:0,n:0};c.d++;if(a.churn)c.n++;});
+  var counted=rides.filter(function(r){return !r.failed;}),perDay={};counted.forEach(function(r){perDay[r.date]=(perDay[r.date]||0)+1;});
+  var rhs=tickets.filter(function(t){return t.rh!=null;}).map(function(t){return t.rh;}).sort(function(a,b){return a-b;});
+  var med=rhs.length?(rhs.length%2?rhs[(rhs.length-1)/2]:(rhs[rhs.length/2-1]+rhs[rhs.length/2])/2):null;
+  var all=rides.concat(tickets,spend,acc),fail=all.filter(function(x){return x.fails.length;});
+  var cities={};rides.forEach(function(r){cities[r.city]=1;});
+  return {rides:rides,quar:quar,tickets:tickets,spend:spend,acc:acc,kpi:{num:nm.length,den:den.length,pct:den.length?nm.length/den.length*100:0,byCity:byCity},
+    nRides:counted.length,perDay:perDay,spendEur:spend.reduce(function(s,x){return s+x.eur;},0),anna:tickets.filter(function(t){return t.sub==='10482';}).length,
+    median:med,rows:all.length,failing:fail.length,fail:fail,cityCount:Object.keys(cities).length};
+}
+/* rows each rule touches, from the data itself */
+function affected(k,O){
+  var c=function(n,t){return {n:n,t:t};};
+  if(k==='tz')return c(RIDE.filter(function(r){var ci=cityOf(r[4],'map');return localDate(r[2],ci?ci.tz:'Europe/Madrid')!==r[2].slice(0,10);}).length,'rides whose local date is not the UTC date');
+  if(k==='unl')return c(RIDE.filter(function(r){return numv(r[5])<0.2||minutes(r[2],r[3])<2;}).length,'failed unlocks');
+  if(k==='city')return c(RIDE.filter(function(r){var ci=cityOf(r[4],'map');return ci&&ci.n!==r[4];}).length,'rides with a city typed differently');
+  if(k==='orph')return c(RIDE.filter(function(r){return !BILL.some(function(b){return b[0]===r[1];});}).length,'ride of an unknown subscriber');
+  if(k==='mail'){var cur={};CUST.forEach(function(x){cur[x[0]]=x[1];});var curs=Object.keys(cur).map(function(s){return cur[s];});return c(TICK.filter(function(t){return curs.indexOf(t[1])<0;}).length,'tickets whose email is not a current email');}
+  if(k==='open')return c(TICK.filter(function(t){return t[4]==='';}).length,'open tickets');
+  if(k==='dup'){var s={},n=0;SPEND.forEach(function(r){var key=r.join('|');if(s[key])n++;s[key]=1;});return c(n,'duplicate rows');}
+  if(k==='cur')return c(SPEND.filter(function(r){return r[4]!=='EUR';}).length,'rows in CHF or GBP');
+  if(k==='pause'){var p={};BILL.forEach(function(r){if(r[2]==='paused'&&r[3]<='2026-10-31')p[r[0]]=1;});return c(Object.keys(p).length,'accounts paused on 1 October or during October');}
+  if(k==='rev'){var a=run(Object.assign({},O,{rev:'count'})).acc.filter(function(x){return x.canc&&x.rev;}).length;return c(a,'cancellation undone within 30 days');}
+  if(k==='acity'){var m=run(Object.assign({},O,{acity:'most'})).acc,f=run(Object.assign({},O,{acity:'first'})).acc,n2=0;m.forEach(function(x,i){if(x.city!==f[i].city)n2++;});return c(n2,'accounts whose city depends on this rule');}
+  return c(0,'');
+}
+
+/* ---- helpers ---- */
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(K+'_'+k);if(v===null)localStorage.removeItem(K+'_'+k);else localStorage.setItem(K+'_'+k,v);}catch(e){return null;}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function setWork(id,v){var el=document.getElementById(id);if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}
+function val(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
+function labelOf(list,k){for(var i=0;i<list.length;i++)if(list[i].k===k)return list[i].t;return '';}
+function lsGet(k,d){try{var v=JSON.parse(localStorage.getItem(K+'_'+k));return v==null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(K+'_'+k,JSON.stringify(v));}catch(e){}}
+function fmt(n){return Math.round(n).toLocaleString('en-GB');}
+function pct1(n,d){return d?(n/d*100).toFixed(1)+' %':'—';}
+function chips(hostId,list,key,onPick){
+  var host=document.getElementById(hostId),cur=ls(key);host.innerHTML='';
+  list.forEach(function(o){var b=document.createElement('button');b.type='button';b.className='opt'+(cur===o.k?' on':'');b.textContent=o.t;b.dataset.k=o.k;
+    b.addEventListener('click',function(){if(b.disabled)return;ls(key,o.k);Array.prototype.forEach.call(host.children,function(x){x.classList.toggle('on',x===b);});if(onPick)onPick(o);});host.appendChild(b);});
+}
+function lockChips(hostId){Array.prototype.forEach.call(document.getElementById(hostId).children,function(b){b.disabled=true;});}
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_w5')||'{}')[id];}catch(e){return false;}}
+function markDone(id){
+  var el=document.getElementById(id);if(el)el.classList.add('done');
+  if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  else{try{var o=JSON.parse(localStorage.getItem(K+'_done_w5')||'{}');o[id]=true;localStorage.setItem(K+'_done_w5',JSON.stringify(o));}catch(e){}}
+  paintProgress();
+}
+function paintProgress(){
+  var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=document.getElementById(s);if(el)el.classList.add('done');}});
+  var p=Math.round(n/SECTIONS.length*100);
+  document.getElementById('spLbl').textContent=n+' / '+SECTIONS.length;document.getElementById('spPct').textContent=p+'%';document.getElementById('spFill').style.width=p+'%';
+}
+function wallFail(res){if(res.reason==='instructor')return 'Instructor device: a demo answer, not posted to the wall.';return 'The wall could not be read'+(res.reason==='rules'?' (its database rules are not published yet)':'')+'. Your own answers are saved.';}
+var CLS={};
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,onAll){
+  var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0,st=lsGet(rowsId,{});
+  function capText(n,full){cap.textContent=n+' of '+VARS.length+' placed'+(full?' — '+doneMsg:'');}
+  VARS.forEach(function(v,i){
+    var row=document.createElement('div');row.className='cl-row';
+    row.innerHTML='<div class="st">'+v.s+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button type="button" data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
+    function attempt(valx,btn,quiet){
+      if(row.dataset.done)return;
+      if(valx===v.a){row.dataset.done='1';row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Yes.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);if(!quiet){st[i]=(st[i]||[]).concat([valx]);lsSet(rowsId,st);}if(done===VARS.length){CLS[rowsId]=true;if(onAll)onAll();}}
+      else{btn.classList.add('no');btn.disabled=true;if(!quiet){st[i]=(st[i]||[]).concat([valx]);lsSet(rowsId,st);}}
+    }
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){attempt(b.dataset.v,b,false);});});
+    box.appendChild(row);
+    (st[i]||[]).forEach(function(valx){var btn=null;row.querySelectorAll('button').forEach(function(x){if(x.getAttribute('data-v')===valx)btn=x;});if(btn)attempt(valx,btn,true);});
+  });
+  capText(done,done===VARS.length);
+}
+function myTeamId(){return (window.BiTeams&&BiTeams.myTeam())||'';}
+function teamLabel(){var me=myTeamId();return me?(window.BiTeams?BiTeams.label(me):'Team '+me):'';}
+
+/* ---- step 1 sort ---- */
+var ETL=[['E','Extract'],['T','Transform'],['L','Load']];
+var ETLR=[
+ {s:'Copy yesterday\'s rides out of the telematics system into a staging table, unchanged.',a:'E',w:'The rows are copied out of the source as they are. Nothing is changed yet.'},
+ {s:'Convert 4,150 Swiss francs of ad spend into euros.',a:'T',w:'The value is changed by a written rule before it enters the warehouse.'},
+ {s:'Write October\'s 21 account rows into fact_subscription.',a:'L',w:'The changed rows are written into the warehouse table.'},
+ {s:'Change "Milano" to "Milan" so that it matches dim_city.',a:'T',w:'A rule maps a spelling to the warehouse\'s list of cities.'},
+ {s:'Download the week 40 export from the ad platforms.',a:'E',w:'Taking data out of a source system, as it is, is the extract.'},
+ {s:'Run the same load a second time and check that no row appears twice.',a:'L',w:'A load that can be repeated without creating duplicates is called idempotent: it is a property of the load.'}
+];
+
+/* ---- step 2: extracts and the raw load ---- */
+function extractsHTML(){
+  return EXTRACTS.map(function(x){return '<details class="xt"><summary>'+esc(x.t)+' · '+x.rows.length+' rows · '+esc(x.n)+'</summary><div><div class="tw"><table class="rt"><tr>'+x.cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr>'+x.rows.map(function(r){return '<tr>'+r.map(function(v){return '<td>'+(v===''?'<i style="color:var(--grey)">empty</i>':esc(v).replace(/ $/,'␣'))+'</td>';}).join('')+'</tr>';}).join('')+'</table></div></div></details>';}).join('');
+}
+function failHTML(R){
+  if(!R.fail.length)return '<div class="good" style="background:#EAF5EC;border:1px solid #9CCBA4;border-radius:10px;padding:9px 12px;font-size:13px">No row fails a check.</div>';
+  return '<div class="tw"><table class="rt"><tr><th>Table</th><th>Row</th><th>Why the check refuses it</th></tr>'+R.fail.map(function(x){return '<tr class="f"><td>'+x.t+'</td><td>'+esc(x.id)+'</td><td class="why">'+esc(x.fails.join('; '))+'</td></tr>';}).join('')+'</table></div>';
+}
+function paintRaw(){
+  var R=run(rawOpts()),share=R.failing/R.rows*100;
+  var g=ls('w4_nx'),gl=labelOf(NEXTS4,g);
+  document.getElementById('rawOut').innerHTML='<div class="dash" style="position:static"><div class="bad"><small>Rows that fail a check</small><b>'+R.failing+' of '+R.rows+'</b></div><div class="bad"><small>Share</small><b>'+share.toFixed(1)+' %</b></div><div><small>Your guess last week</small><b style="font-size:14px">'+(gl?esc(gl):'none saved on this device')+'</b></div><div><small>The right answer</small><b style="font-size:14px">More than 20 %</b></div></div>'+failHTML(R)+
+   '<div class="callout"><span class="ct">And what passed every check</span>Ride 88120 started at 22:40 UTC on 4 October and is dated 4 October: it passes every check. In Barcelona it was 00:40 on 5 October. Loaded as it is, the warehouse counts 2 rides on 4 October and 1 on 5 October; in local time it is 0 and 3. Step 3 has a rule for this, even though no check asks for it.</div>';
+  ls('w5_rawrun','1');
+}
+
+/* ---- step 3: the rules ---- */
+function opts(){var o={};RULES.forEach(function(r){var v=ls('w5_r_'+r.k);o[r.k]=v||'';});return o;}
+function filled(O){var o={};RULES.forEach(function(r){o[r.k]=O[r.k]||r.o[0][0];});return o;}
+function kpiTxt(R){return R.kpi.num+' of '+R.kpi.den+' = '+R.kpi.pct.toFixed(1)+' %';}
+function paintRules(){
+  var O=opts(),F=filled(O),R=run(F),host=document.getElementById('rules');
+  var chosen=RULES.filter(function(r){return O[r.k];}).length;
+  document.getElementById('dash').innerHTML=
+   '<div class="'+(R.failing?'bad':'ok')+'"><small>Rows failing a check</small><b>'+R.failing+' of '+R.rows+'</b></div>'+
+   '<div><small>Churn in October (sample)</small><b>'+kpiTxt(R)+'</b></div>'+
+   '<div><small>Counted rides</small><b>'+R.nRides+'</b></div>'+
+   '<div><small>Rides on 4 Oct · 5 Oct</small><b>'+(R.perDay['2026-10-04']||0)+' · '+(R.perDay['2026-10-05']||0)+'</b></div>'+
+   '<div><small>Ad spend, week 40</small><b>'+fmt(R.spendEur)+(F.cur==='eur'?' EUR':' (mixed)')+'</b></div>'+
+   '<div><small>Anna Kowalski\'s tickets</small><b>'+R.anna+'</b></div>'+
+   '<div><small>Cities in fact_ride</small><b>'+R.cityCount+'</b></div>'+
+   '<div class="'+(chosen===RULES.length?'ok':'')+'"><small>Rules chosen</small><b>'+chosen+' of '+RULES.length+'</b></div>';
+  if(!host.dataset.built){
+    host.innerHTML=RULES.map(function(r,i){return '<div class="rule" id="rule_'+r.k+'"><div class="rs">'+(i+1)+' · '+esc(r.src)+'</div><div class="rh">'+esc(r.p)+'</div>'+r.o.map(function(o,j){return '<label><input type="radio" name="r_'+r.k+'" value="'+o[0]+'"> <span><b>'+(r.good===null?('Rule '+(j?'B':'A')):(j?'Rule':'Load as it is'))+':</b> '+esc(o[1])+'</span></label>';}).join('')+'<div class="eff" id="eff_'+r.k+'"></div></div>';}).join('');
+    host.dataset.built='1';
+    host.addEventListener('change',function(e){var t=e.target;if(t.type!=='radio')return;var k=t.name.slice(2);ls('w5_r_'+k,t.value);if(window.BiTeams)BiTeams.share('w5_r_'+k,t.value);paintRules();});
+  }
+  RULES.forEach(function(r){
+    [].forEach.call(document.getElementsByName('r_'+r.k),function(x){x.checked=(x.value===O[r.k]);});
+    var A=affected(r.k,F),other={};other[r.k]=r.o[F[r.k]===r.o[0][0]?1:0][0];
+    var R2=run(Object.assign({},F,other)),box=document.getElementById('rule_'+r.k);
+    box.className='rule'+(O[r.k]?(r.good&&O[r.k]!==r.good?' bad':' ok'):'');
+    var e='This problem touches '+A.n+' '+esc(A.t)+'. ';
+    if(!O[r.k])e+='<b>Choose a rule.</b> ';
+    e+='With the rule chosen here, churn is '+kpiTxt(R)+' and '+R.failing+' rows fail; with the other rule, '+kpiTxt(R2)+' and '+R2.failing+' rows fail.';
+    if(r.k==='tz')e+=' Rides on 4 / 5 October: '+(R.perDay['2026-10-04']||0)+' / '+(R.perDay['2026-10-05']||0)+' here, '+(R2.perDay['2026-10-04']||0)+' / '+(R2.perDay['2026-10-05']||0)+' with the other rule. No check sees the difference.';
+    if(r.k==='cur'||r.k==='dup')e+=' Ad spend: '+fmt(R.spendEur)+' here, '+fmt(R2.spendEur)+' with the other rule.';
+    if(r.k==='mail')e+=' Anna Kowalski has '+R.anna+' ticket'+(R.anna===1?'':'s')+' here, '+R2.anna+' with the other rule.';
+    if(r.k==='open')e+=' Median resolution time: '+R.median+' h here, '+R2.median+' h with the other rule.';
+    if(r.k==='pause'||r.k==='rev')e+=' The KPI card from Session 3 decides this one.';
+    document.getElementById('eff_'+r.k).innerHTML=e;
+  });
+  var bc=R.kpi.byCity,cs=Object.keys(bc).sort(function(a,b){return a==='unknown'?1:b==='unknown'?-1:a<b?-1:1;});
+  document.getElementById('cityTab').innerHTML='<div class="sub" style="font-size:12px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin:16px 0 6px">Churn in October by city, with your rules (the sample)</div><div class="tw"><table class="rt"><tr><th>City</th><th class="r">Paying on 1 Oct</th><th class="r">Churned</th><th class="r">Churn</th></tr>'+cs.map(function(c){return '<tr><td>'+esc(c)+'</td><td class="r">'+bc[c].d+'</td><td class="r">'+bc[c].n+'</td><td class="r">'+pct1(bc[c].n,bc[c].d)+'</td></tr>';}).join('')+'<tr><td><b>All cities</b></td><td class="r"><b>'+R.kpi.den+'</b></td><td class="r"><b>'+R.kpi.num+'</b></td><td class="r"><b>'+R.kpi.pct.toFixed(1)+' %</b></td></tr></table></div><div class="quiet">The sample has 24 accounts chosen to contain every problem, so its churn (around 19 %) is far above the company\'s 2.62 %. What matters here is how each rule moves the number, not the number itself. "unknown" holds the paying accounts that made no counted ride in October: they still count in the total.</div>';
+  return {O:O,R:R,chosen:chosen};
+}
+
+/* ---- step 4: the bridge ---- */
+var BR=[
+ {k:'b1',t:'Billing: every account with a status, September',fix:47700},
+ {k:'b2',t:'minus the trial accounts (40 of 1,000)',a:1908,tol:1},
+ {k:'b3',t:'minus the unpaid accounts (25 of 1,000)',a:1193,tol:1},
+ {k:'b4',t:'= paying as the KPI card counts them: active and paused',a:44600,tol:1},
+ {k:'b5',t:'minus the paused accounts (95 of 1,000)',a:4532,tol:1},
+ {k:'b6',t:'= active accounts only, as the bridge computes them',a:40068,tol:2},
+ {k:'b7',t:'Finance\'s spreadsheet says',fix:40100},
+ {k:'b8',t:'The gap left, finance minus the bridge',a:32,tol:2}
+];
+function bridgeVals(){return lsGet('w5_br',{});}
+function paintBridge(){
+  var v=bridgeVals(),ok=0,need=0;
+  document.getElementById('bridge').innerHTML=BR.map(function(b){
+    if(b.fix)return '<div class="br"><span><b>'+esc(b.t)+'</b></span><input value="'+fmt(b.fix)+'" disabled><span class="m"></span></div>';
+    need++;var x=v[b.k],n=parseFloat(String(x||'').replace(/[’', ]/g,'')),good=isFinite(n)&&Math.abs(n-b.a)<=b.tol;if(good)ok++;
+    return '<div class="br'+(x?(good?' ok':' no'):'')+'"><span>'+esc(b.t)+'</span><input data-k="'+b.k+'" inputmode="numeric" value="'+esc(x||'')+'" placeholder="accounts"><span class="m">'+(x?(good?'✓':'✗'):'')+'</span></div>';
+  }).join('')+'<div class="quiet">'+(ok===need?'<b>The bridge closes.</b> The 32 accounts left come from using the shares of a sample of 1,000 accounts: 32 is 0.08 % of 40,100, within what a sample of that size can explain. Billing\'s 47,700 counts every account with a status, the KPI card\'s 44,600 counts active and paused accounts, and finance\'s 40,100 counts active accounts only. Three definitions, three right numbers.':ok+' of '+need+' lines are right.')+'</div>';
+  return ok===need;
+}
+
+/* ---- step 5: the log ---- */
+function whyOf(k){var el=document.getElementById('why_'+k);return el?el.value.trim():(ls('w5_why_'+k)||'');}
+function logRows(){
+  var O=filled(opts()),R=run(O);
+  return RULES.map(function(r){var ch=O[r.k],oi=r.o[0][0]===ch?0:1,other={};other[r.k]=r.o[oi?0:1][0];var R2=run(Object.assign({},O,other)),A=affected(r.k,O);
+    return {k:r.k,src:r.src,p:r.p,rule:(oi||r.good===null?'':'Load as it is: ')+r.o[oi][1],chosen:!!ls('w5_r_'+r.k),rows:A.n+' '+A.t,kpi:R.kpi.num+'/'+R.kpi.den+(R2.kpi.num!==R.kpi.num||R2.kpi.den!==R.kpi.den?' (the other rule: '+R2.kpi.num+'/'+R2.kpi.den+')':' (the same with the other rule)'),why:whyOf(r.k)};});
+}
+function paintLog(){
+  var host=document.getElementById('logTab');
+  if(!host.dataset.built){
+    host.innerHTML='<table class="rt"><tr><th>#</th><th>Source · column</th><th>Problem</th><th>Rule chosen</th><th>Rows changed</th><th>Churn (sample)</th><th style="min-width:200px">Why we chose it</th></tr>'+RULES.map(function(r,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(r.src)+'</td><td>'+esc(r.p)+'</td><td id="lr_'+r.k+'"></td><td id="ln_'+r.k+'"></td><td id="lk_'+r.k+'"></td><td><textarea id="why_'+r.k+'" maxlength="300" placeholder="One sentence"></textarea></td></tr>';}).join('')+'</table>';
+    host.dataset.built='1';
+    RULES.forEach(function(r){var t=document.getElementById('why_'+r.k);t.value=ls('w5_why_'+r.k)||'';t.addEventListener('input',function(){ls('w5_why_'+r.k,t.value);});});
+  }
+  logRows().forEach(function(x){document.getElementById('lr_'+x.k).innerHTML=x.chosen?esc(x.rule):'<span style="color:#B00020;font-weight:700">no rule chosen in Step 3</span>';document.getElementById('ln_'+x.k).textContent=x.rows;document.getElementById('lk_'+x.k).textContent=x.kpi;});
+}
+function logText(){return logRows().map(function(x,i){return (i+1)+'. '+x.src+' | '+x.p+' | '+x.rule+' | '+x.rows+' | churn '+x.kpi+' | why: '+(x.why||'—');}).join('\n');}
+
+/* ---- step 6: the report ---- */
+function docData(){
+  var O=filled(opts()),R=run(O),Raw=run(rawOpts());
+  return {team:teamLabel(),log:logRows(),R:R,raw:Raw,bridge:paintBridge(),bridgeTxt:val('f_bridge'),move:val('f_move')};
+}
+function docMissing(d){var x=[];if(!myTeamId())x.push('a team (join one in Step 1)');if(d.log.some(function(l){return !l.chosen;}))x.push('a rule for every problem (Step 3)');if(d.R.failing)x.push('rules under which no row fails (Step 3)');if(d.log.filter(function(l){return l.why;}).length<RULES.length)x.push('a reason for every rule (Step 5)');if(!d.bridge)x.push('the bridge (Step 4)');return x;}
+function docHTML(d,full){
+  var miss='<span class="miss">missing</span>',H=full?'h2':'h4';
+  var h=(full?'<h1>':'<h4>')+'Load report to ÒRBITA\'s CFO · October sample · '+(d.team?esc(d.team):miss)+(full?'</h1><p>Geneva Business School · Business Intelligence · Session 4, 12 November 2026 · <a href="index.html">our KPI memo</a> · <a href="schema.html">our warehouse design</a></p>':'</h4>');
+  h+='<'+H+'>1. The transformation log</'+H+'><div class="memowrap"><table><tr><th>#</th><th>Source · column</th><th>Problem</th><th>Rule</th><th>Rows changed</th><th>Churn</th><th>Why</th></tr>'+d.log.map(function(x,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(x.src)+'</td><td>'+esc(x.p)+'</td><td>'+(x.chosen?esc(x.rule):miss)+'</td><td>'+esc(x.rows)+'</td><td>'+esc(x.kpi)+'</td><td>'+(x.why?esc(x.why):miss)+'</td></tr>';}).join('')+'</table></div>';
+  var bc=d.R.kpi.byCity;
+  h+='<'+H+'>2. What the load produced</'+H+'><div>Loaded as it is, '+d.raw.failing+' of '+d.raw.rows+' rows ('+(d.raw.failing/d.raw.rows*100).toFixed(1)+' %) failed a check. With our rules, '+d.R.failing+' of '+d.R.rows+' rows fail; '+d.R.quar.length+' ride is in quarantine. October churn in the sample: '+kpiTxt(d.R)+'. Counted rides: '+d.R.nRides+'. Ad spend in week 40: '+fmt(d.R.spendEur)+' EUR. Median ticket resolution: '+d.R.median+' hours.'+(d.move?' The rule that moved the churn KPI most: '+esc(d.move):'')+'</div>';
+  h+='<div class="memowrap"><table><tr><th>City</th><th>Paying on 1 Oct</th><th>Churned</th><th>Churn</th></tr>'+Object.keys(bc).sort().map(function(c){return '<tr><td>'+esc(c)+'</td><td>'+bc[c].d+'</td><td>'+bc[c].n+'</td><td>'+pct1(bc[c].n,bc[c].d)+'</td></tr>';}).join('')+'</table></div><div style="font-size:12px;color:#666">The sample\'s 24 accounts were chosen to contain every problem, so its churn is not the company\'s.</div>';
+  h+='<'+H+'>3. The bridge from billing to finance, September</'+H+'>'+(d.bridge?'<div>Billing 47,700 − trial 1,908 − unpaid 1,193 = 44,600 paying as the KPI card counts them (active and paused) − paused 4,532 = 40,068 active; finance says 40,100, a gap of 32 accounts (0.08 %) from using the shares of a 1,000-account sample.</div>':'<div>'+miss+'</div>')+'<div>'+(d.bridgeTxt?'Which number goes to the board: '+esc(d.bridgeTxt):'Which number goes to the board: '+miss)+'</div>';
+  return h;
+}
+function docPlain(d){return 'LOAD REPORT TO ÒRBITA\'S CFO · '+d.team+(val('f_site')?'\nOnline: '+val('f_site'):'')+'\n\n1. The transformation log\n'+logText()+'\n\n2. What the load produced\nRaw: '+d.raw.failing+'/'+d.raw.rows+' rows failed. With our rules: '+d.R.failing+'/'+d.R.rows+'. Churn (sample): '+kpiTxt(d.R)+'. Ad spend: '+fmt(d.R.spendEur)+' EUR.\n\n3. The bridge\n47,700 − 1,908 − 1,193 = 44,600 − 4,532 = 40,068 vs finance 40,100.\n'+d.bridgeTxt;}
+function paintMemo(){var b=document.getElementById('memo');if(b)b.innerHTML=docHTML(docData(),false);}
+var SITE_RE=/^https:\/\/[a-z0-9-]+\.netlify\.app\/etl(\.html)?$/i;
+function loadSites(){
+  var box=document.getElementById('siteWall');document.getElementById('siteStat').textContent='loading…';
+  BiWall.read('w5s').then(function(res){
+    if(!res.ok){box.innerHTML='<div class="wh">The class\'s load reports <span class="st">unavailable</span></div><div class="empty">'+wallFail(res)+'</div>';return;}
+    var by={};res.rows.forEach(function(r){if(SITE_RE.test(r.src||''))by[r.n]=r.src;});
+    var k=Object.keys(by).sort();
+    box.innerHTML='<div class="wh">The class\'s load reports <span class="st">'+k.length+'</span></div>'+(k.length?'<table><tbody>'+k.map(function(n){return '<tr><td class="dom">'+esc(n)+'</td><td><a href="'+esc(by[n])+'" target="_blank" rel="noopener">'+esc(by[n])+'</a></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">No load report handed in yet.</div>');
+  });
+}
+
+/* ---- wiring ---- */
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:'w5',title:'Session 4 · Loading the data (ETL)',total:SECTIONS.length});
+  if(window.StatsTrack&&StatsTrack.complete)SECTIONS.forEach(function(s){if(isDone(s))StatsTrack.complete(s);});
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('cbar'),compact:true});
+  paintProgress();
+  /* step 1 */
+  buildClassify('etlRows','etlCap',ETL,ETLR,'two of each.',function(){if(ls('w5_s1ok')==='1'){document.getElementById('s1Note').textContent='Done ✓';markDone('s1');}});
+  document.getElementById('s1Btn').addEventListener('click',function(){
+    if(!val('f_etl')){alert('Write one sentence: what goes wrong if the transform part is skipped?');return;}
+    ls('w5_s1ok','1');
+    if(!CLS.etlRows){document.getElementById('s1Note').textContent='Saved. Sort all six operations correctly to finish the step.';return;}
+    document.getElementById('s1Note').textContent='Done ✓';markDone('s1');
+  });
+  /* step 2 */
+  var g=ls('w4_nx');document.getElementById('guess').innerHTML=g?'<div class="sealed"><div class="sh">Your guess from 5 November</div><div class="sv">You guessed that the share of rows failing at least one check would be: '+esc(labelOf(NEXTS4,g))+'.</div></div>':'';
+  document.getElementById('extracts').innerHTML=extractsHTML();
+  if(ls('w5_rawrun')==='1')paintRaw();
+  document.getElementById('rawBtn').addEventListener('click',paintRaw);
+  document.getElementById('s2Btn').addEventListener('click',function(){
+    if(ls('w5_rawrun')!=='1'){alert('Press "Load the extracts as they are" first.');return;}
+    if(!val('f_raw')){alert('Write which refused row would have done the most damage, and to which number.');return;}
+    document.getElementById('s2Note').textContent='Done ✓';markDone('s2');
+  });
+  /* step 3 */
+  paintRules();
+  document.getElementById('s3Btn').addEventListener('click',function(){
+    var s=paintRules();
+    if(!myTeamId()){alert('Join a team first, on the board in Step 1.');return;}
+    if(s.chosen<RULES.length){alert('Choose a rule for every problem: '+s.chosen+' of '+RULES.length+' are chosen.');return;}
+    if(s.R.failing){alert(s.R.failing+' rows still fail a check. Look at the red rules.');return;}
+    if(!val('f_move')){alert('Write which rule moved the churn KPI most, from what to what.');return;}
+    var wrong=RULES.filter(function(r){return r.good&&s.O[r.k]!==r.good;});
+    if(wrong.length&&!confirm('These rules do not follow the KPI card or leave an error in the data: '+wrong.map(function(r){return r.src;}).join('; ')+'. Save anyway?'))return;
+    document.getElementById('s3Note').textContent='Saved ✓';markDone('s3');if(window.BiTeams)BiTeams.share('w5_rules_done','1');paintLog();
+  });
+  /* step 4 */
+  paintBridge();
+  document.getElementById('bridge').addEventListener('change',function(e){var k=e.target.getAttribute('data-k');if(!k)return;var v=bridgeVals();v[k]=e.target.value;lsSet('w5_br',v);paintBridge();});
+  document.getElementById('s4Btn').addEventListener('click',function(){
+    if(!paintBridge()){alert('Some lines of the bridge are not right yet. Use the shares of the 1,000-account sample.');return;}
+    if(!val('f_bridge')){alert('Write which number the board should see, and why.');return;}
+    document.getElementById('s4Note').textContent='Done ✓';markDone('s4');
+  });
+  /* step 5 */
+  paintLog();
+  document.getElementById('s5Btn').addEventListener('click',function(){
+    var rows=logRows();
+    if(rows.some(function(x){return !x.chosen;})){alert('Choose a rule for every problem in Step 3 first.');return;}
+    var miss=rows.filter(function(x){return !x.why;}).length;
+    if(miss){alert(miss+' line'+(miss>1?'s have':' has')+' no reason yet. Write one sentence for each.');return;}
+    setWork('f_log',logText());document.getElementById('s5Note').textContent='Saved ✓';markDone('s5');if(window.BiTeams)BiTeams.share('w5_log_done','1');paintMemo();
+  });
+  /* step 6 */
+  chips('pNext',NEXTS,'w5_nx',function(o){setWork('f_next',o.t);});
+  if(ls('w5_nx_sealed')==='1'){lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Locked ✓';}
+  setTimeout(paintMemo,700);setInterval(paintMemo,9000);
+
+  /* TEAM answers (teams.js) */
+  if(window.BiTeams){
+    BiTeams.mount(document.getElementById('teamsBox'),{});
+    BiTeams.onLoad(function(){paintMemo();var s=BiTeams.shared('w4_site');if(s&&s.v&&!val('f_site'))document.getElementById('siteHint').innerHTML='Last week\'s design note is at <b>'+esc(s.v)+'</b>, so this report is <b>'+esc(s.v.replace(/schema(\.html)?$/,'etl.html'))+'</b>.';});
+    BiTeams.field('f_etl','w5_etl');BiTeams.field('f_move','w5_move');BiTeams.field('f_site','w5_site');
+    RULES.forEach(function(r){
+      BiTeams.state('w5_r_'+r.k,function(v){if(v==null)return;ls('w5_r_'+r.k,v);paintRules();paintLog();});
+      BiTeams.state('w5_why_'+r.k,function(v){if(v==null)return;ls('w5_why_'+r.k,v);var t=document.getElementById('why_'+r.k);if(t&&document.activeElement!==t)t.value=v;},function(){var t=document.getElementById('why_'+r.k);return !!t&&document.activeElement===t;});
+    });
+    BiTeams.state('w5_rules_done',function(v){if(v!=='1')return;document.getElementById('s3Note').textContent='Saved ✓ by your team';markDone('s3');});
+    BiTeams.state('w5_log_done',function(v){if(v!=='1')return;setWork('f_log',logText());document.getElementById('s5Note').textContent='Saved ✓ by your team';markDone('s5');});
+    BiTeams.state('w5_handin',function(v){if(!v)return;document.getElementById('docNote').textContent='Handed in ✓ by your team · '+v;markDone('s6');});
+    var whyTimers={};
+    RULES.forEach(function(r){var t=document.getElementById('why_'+r.k);if(!t)return;t.addEventListener('input',function(){clearTimeout(whyTimers[r.k]);whyTimers[r.k]=setTimeout(function(){BiTeams.share('w5_why_'+r.k,t.value);},900);});t.addEventListener('blur',function(){clearTimeout(whyTimers[r.k]);BiTeams.share('w5_why_'+r.k,t.value);});});
+  }
+  document.getElementById('docDl').addEventListener('click',function(){
+    var d=docData(),h='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>ÒRBITA load report · '+esc(d.team)+'</title><style>body{font:14px/1.55 Georgia,serif;max-width:960px;margin:30px auto;padding:0 18px;color:#111}h1{font-size:20px}h2{font-size:15px;margin-top:22px}table{border-collapse:collapse;width:100%;font:12px/1.4 system-ui,sans-serif;margin:6px 0}td,th{border:1px solid #ccc;padding:5px 7px;vertical-align:top;text-align:left}th{background:#f3f4f7}.miss{color:#b00020;font-weight:700}a{color:#A8620A}footer{margin-top:30px;font-size:11.5px;color:#666;border-top:1px solid #ddd;padding-top:8px}</style></head><body>'+docHTML(d,true)+'<footer>ÒRBITA is a fictional company, invented for the course. A student load report, not advice. Exchange rates fixed for the exercise: 1 CHF = 1.07 EUR, 1 GBP = 1.15 EUR.</footer></body></html>';
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h],{type:'text/html'}));a.download='etl.html';document.body.appendChild(a);a.click();a.remove();
+    document.getElementById('docNote').textContent='etl.html is downloaded. Move it into the orbita-memo folder, as 6b says.';
+  });
+  document.getElementById('docCopy').addEventListener('click',function(){var t=docPlain(docData()),n=document.getElementById('docNote');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){n.textContent='✓ Copied.';},function(){n.textContent='Select the report and copy it.';});});
+  document.getElementById('docBtn').addEventListener('click',function(){
+    var d=docData(),miss=docMissing(d);
+    if(miss.length){alert('The report still needs '+miss.join(', ')+'.');return;}
+    if(!SITE_RE.test(val('f_site'))){alert('Paste the full address of your load report first, as 6b says. It looks like https://orbita-kpi-team-a-rates.netlify.app/etl.html');return;}
+    var when=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    setWork('f_doc',docPlain(d)+'\n\nHanded in '+when);
+    document.getElementById('docNote').textContent='Handed in ✓ · '+when;markDone('s6');
+    if(window.BiTeams){BiTeams.share('w5_site',val('f_site'));BiTeams.share('w5_handin',when);}
+    if(window.BiWall)BiWall.post('w5s',{n:(d.team||'Team').slice(0,40),src:val('f_site').slice(0,200)}).then(function(){loadSites();});
+  });
+  document.getElementById('siteWallBtn').addEventListener('click',loadSites);
+  document.getElementById('nextBtn').addEventListener('click',function(){
+    if(!ls('w5_nx')){alert('Choose one answer. A wrong guess costs nothing.');return;}
+    ls('w5_nx_sealed','1');lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Locked ✓';
+    document.getElementById('nextNote').textContent='Locked ✓. Your guess is shown next Thursday.';
+  });
+  document.getElementById('quizBtn').addEventListener('click',function(){document.getElementById('quizNote').textContent='Done ✓. The next session is on Thursday 19 November.';markDone('s7');});
+  document.getElementById('resetLink').addEventListener('click',function(e){
+    e.preventDefault();
+    if(!confirm('Reset your Session 4 answers and progress on this device?'))return;
+    try{Object.keys(localStorage).forEach(function(k){if(k.indexOf(K+'_')!==0||k===K+'_auth')return;if(/_w5(_|$)/.test(k)||k==='bi_etlRows')localStorage.removeItem(k);});}catch(err){}
+    location.reload();
+  });
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}document.getElementById('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+  chip();window.addEventListener('statstrack:named',chip);
+});
+</script>
+<script src="courseprogress.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

@@ -40,7 +40,7 @@ window.CourseProgress=(function(){
     {mod:'w2',  short:'W2', name:'Week 02 · The model nobody can audit',      total:7, live:true, href:'week2.html'},
     {mod:'w3',  short:'W3', name:'Week 03 · Can the board sign off the plan?',  total:7, live:true, href:'week3.html'},
     {mod:'w4',  short:'W4', name:'Week 04 · The three statements, linked',    total:7, live:true, href:'week4.html'},
-    {mod:'w5',  short:'W5', name:'Week 05 · Forecast, plug, circularity',     total:6, live:false},
+    {mod:'w5',  short:'W5', name:'Week 05 · Forecast, plug, circularity',     total:7, live:true, href:'week5.html'},
     {mod:'w6',  short:'W6', name:'Week 06 · Free cash flow, honestly',        total:6, live:false},
     {mod:'w7',  short:'W7', name:'Week 07 · The number you would defend',     total:6, live:false},
     {mod:'w8',  short:'W8', name:'Week 08 · Sources, uses, and who pays',     total:6, live:false},

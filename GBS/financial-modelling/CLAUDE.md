@@ -199,3 +199,34 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   and takes effect when the file is next published.
 
 - **Week 4 without Netlify (5 Nov 2026, during class).** Jan Erik: "replace netlify with an upload possibility or something else". Step 6 now hands the reply in on the page only: "Hand in the reply" saves it to `w4_memo` (read in admin2). The address field `f_site` and the folder/drop steps 6b–6c are gone; "Show the reply full screen" opens it in a new tab for the quiz. Deck slides 14–15, the Jeopardy "Your reply" question and the hub blurb follow. Session 2 still used Netlify.
+- **Session 4 — *Forecast, plug, circularity* (`week5.html`, `w5`, built 11 Nov
+  2026 for Thu 12 Nov), `total:7`, a self-run MANDATE on Session 3's pattern,
+  handed in on the page (no Netlify).** Boreal's bank (fictional **Banca del
+  Litorale**) asks for a five-year forecast that balances, the use of a €15 m
+  revolving facility, two covenants (net debt ÷ EBITDA ≤ 3.0, EBITDA ÷
+  interest ≥ 4.0) and the affordable dividend. The model starts from Session
+  3's corrected FY2025 balance sheet (170.4). **Drivers, defined here first:**
+  220.0 k pallet positions × €820 = 180.4; base +3.5 % / +3.1 % (= 6.7 %),
+  margin 16.1 %, receivables 60 days of revenue, inventory 6 and payables 34
+  days of operating costs, D&A = opening fixed assets ÷ 12 years, capex 8 %,
+  tax 24 %, repayment 2.0 a year, rate 4.6 % (FY2023–25 interest ÷ average
+  debt), payout 50 %, minimum cash 8.0. Lender case +1.0 % / +2.0 %, 14.5 %,
+  capex 7.5 %, receivables 70 days. Results (Python `fm5.py` = the page's JS
+  under node): base revenue 192.5 … 249.6, EBITDA 31.0 … **40.2** (the Step 1
+  guess), FY2026 AR 31.6, D&A 10.8, capex/D&A 1.43; opening-balance interest
+  FY2026 avail 7.30, draw 0.70, facility 6.71 by FY2030; average-balance
+  rounds 3.128 → 3.1437 → 3.1438 (three rounds), facility 6.68; lender FY2026
+  draw 5.00 (ΔNWC 5.75 + dividend 4.91), ND/EBITDA peak 2.37, cover low 8.31,
+  facility 8.33 by FY2030; **at 0 % payout the lender case's FY2026 cash
+  available is exactly 8.00, so every FY2026 dividend in the lender case is
+  borrowed**; base max payout without a draw 41.8 %. Steps: request + guess
+  (`w5_team`, `w5_pred`) · drivers + operating table + 5 checks (`w5_drivers`)
+  · plug (cash only vs minimum cash + facility, base/lender) + 4 checks
+  (`w5_plug`) · circularity (rounds table, two methods, Excel iterative
+  calculation + circuit breaker) + 4 checks (`w5_circ`) · bank (covenants,
+  payout input) + 5 checks (`w5_lender`, `w5_div`) · reply (4 parts) →
+  `w5_memo`, full screen / download / copy · **`jeopardy.html?set=s4`**.
+  "In Excel" drawers give the formulas; no workbook file this week and the
+  numbers were NOT recalculated in Excel (Python and node only). Probed
+  headlessly 11 Nov 2026: 7/7, no errors, 500 px fits (long `<code>` in the
+  drawers had overflowed: they wrap now).
