@@ -352,3 +352,24 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   well (now white in both), and the x/y data tables of the exercises scroll inside their own
   box at phone width (also fixed in SUMAS Week 5, which had the same overflow).
 
+- **Week 9, 11 Nov 2026 — easier reading of a line, the tea shop, less SSE.** Jan Erik:
+  "a few much easier examples of how to (in the big picture) interpret a regression line
+  (end of 9.3 and beginning of 9.4) before going deeper · develop 1 example in 9.3 (not
+  pizza for once) that we can use in 9.3 and 9.4 · focus much less on SSE". End of 9.3,
+  before the Key Takeaways (our text, labelled "not the book's"): `#p-read`, four made-up
+  lines (ice creams ŷ = −20 + 6x · rents 450 + 26x · exam points 48 + 3.5x · car price
+  32 − 2x), each "Show the reading" (slope · intercept inside or outside the data ·
+  prediction or extrapolation or cause); `#x-tea`, **the tea shop** (Lina's online shop,
+  8 weeks, x = ads in CHF 100s 2–9, y = 41 50 51 62 64 75 74 86): SSxx 42, SSxy 254.5,
+  ŷ = 29.55 + 6.06x, r 0.984, CHF 550 → 62.9, x = 30 → 211 extrapolation, a local
+  your-turn (slope, x = 7 → 72.0). Start of 9.4: `#p-real`, the same four steps in plain
+  words (SE of the slope 0.449 as printed by software · T = 13.5 · df 6, 2.447 · CI 4.96 to
+  7.16) + a made-up five-week shop (T = 0.8 < 3.182: not enough evidence); and a note under
+  the CI formula that sε and the slope's SE are read from the regression output. All
+  recomputed in Python. **SSE**: the SSE box and Examples 4–5 sit in a closed
+  `details.optdraw` ("Optional … does not count"), `ex4`/`ex5` left EXTRA_STEPS and the s3
+  completion rule, `doneSteps()` skips them; Exercise 6 checks part a only (β̂₁, β̂₀).
+  Denominator 81 → 79 (a fall raises nobody's % wrongly: only removals). Deck 68 → 67: the
+  two SSE example pairs out, three slides in (plain-words reading, the tea shop, 9.4 in
+  plain words). The new widgets are deliberately NOT counted (no `.cl-row`, `.q`,
+  `data-work`). Probed: no errors, 390 px fits.
