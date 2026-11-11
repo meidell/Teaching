@@ -302,3 +302,37 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   page showed · write down. Mechanisms in detail (Session 1 Step 4 depth).
 - Teams A–E from `w1_team`; roles Operator → Skeptic → Scribe rotate
   each session.
+
+- **Session 5 — *How to negotiate a content creator contract* (`week5.html`,
+  built 11 Nov 2026 for Thu 12 Nov), six steps, `total:6`.** Step 1 = the
+  experiment's Week 2 check (`w5_gsc`, `w5_quoted`; "someone else in my team
+  does the check" allowed, since today is one laptop per PERSON). Step 2, six
+  parts: **A** fee, deliverables, payment timing, performance bonus (toy: fixed
+  fee vs lower fee + bonus, cost per sale in three outcomes, the break-even sales
+  count); **B** usage rights (where · how long · countries · editing; partnership
+  ads / Spark Ads); **C** exclusivity (toy: deals per year ÷ 12 × months × fee;
+  headphones-only 3 m = CHF 400 vs all audio 12 m = CHF 4,000 with the defaults);
+  **D** disclosure (the law, from the research pass of 11 Nov 2026 — sources at
+  the foot); **E** the termination-for-conduct clause (Session 7 uses it);
+  **F** trading vs meeting in the middle, walk-away/BATNA (toy). Step 3: role
+  (brand · content creator · observer, `w5_role`), the content creator from
+  `w4_picks` (listed first; else the whole pool, `w5_cc`), the private brief,
+  `w5_first`, `w5_walk`, `w5_guess`. **The briefs:** `TERMS[k].o[i] = [label,
+  brand %, creator %]`, every value = % × that creator's CARD fee, shown in CHF;
+  the fee is free (brand gains card − fee). Checked in Python (scratch `neg.py`):
+  best joint = **89 %** of the card fee (ads 3 m · headphones 3 m · 50/50 ·
+  bonus · script + 1 round · lawful label · end and keep the fee); the brand
+  winning every term = −50 % jointly. **The trap:** the brand's brief quotes a
+  marketing director asking for a discreet label or none, and both briefs value
+  options 2–3 of disclosure; the reveal calls them unlawful and subtracts
+  `PEN` = 40 % from each side. The bonus is a compatible issue (both +10 %).
+  Step 4: the term sheet (fee + seven selects, live value for one's own side,
+  observer log `w5_log`, "No deal"), locked into `w5_terms` (JSON) +
+  `w5_locked`; the BRAND's laptop posts `_wall/w5deals` (n = team · handle ≤ 40,
+  src `F|B|C|J|D|X`, meta = short terms ≤ 120). Step 5 the reveal: both values,
+  together vs the best, money left on the table, a per-term table with the
+  best option and the loss, the guess vs the briefs, the class's deals sorted
+  by joint value; `w5_cost`. Step 6 the generated term sheet + `w5_sign`.
+  The briefs are in the page source (a classroom exercise, not a secret).
+  No minute timings on the page (WRITING.md rule 7). Probed headlessly
+  (brand, @zug.commute, unlawful label): all steps, no errors, 500 px fits.

@@ -41,7 +41,7 @@ window.CourseProgress=(function(){
     {mod:'w2',  short:'W2', name:'Week 02 · Reverse-engineer a winner',           total:7, live:true, href:'week2.html'},
     {mod:'w3',  short:'W3', name:'Week 03 · Get your page quoted by AI',          total:7, live:true, href:'week3.html'},
     {mod:'w4',  short:'W4', name:'Week 04 · Choosing content creators on a budget',                 total:7, live:true, href:'week4.html'},
-    {mod:'w5',  short:'W5', name:'Week 05 · The negotiation',                     total:5, live:false},
+    {mod:'w5',  short:'W5', name:'Week 05 · Negotiating a content creator contract', total:6, live:true, href:'week5.html'},
     {mod:'w6',  short:'W6', name:'Week 06 · Find the lie',                        total:5, live:false},
     {mod:'w7',  short:'W7', name:'Week 07 · Crisis, on the clock',                total:5, live:false},
     {mod:'w8',  short:'W8', name:'Week 08 · Live commerce — watch it, then do it',total:5, live:false},

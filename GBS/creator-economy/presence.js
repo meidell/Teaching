@@ -196,7 +196,7 @@ window.StatsPresence = (function () {
     {mod:'w2', n:2, name:'Week 02 · Reverse-engineer a winner', pages:['w2']},
     {mod:'w3', n:3, name:'Week 03 · Get your page quoted by AI', pages:['w3']},
     {mod:'w4', n:4, name:'Week 04 · Choosing content creators on a budget', pages:['w4']},
-    {mod:'w5', n:5, name:'Week 05 · The negotiation', pages:['w5']},
+    {mod:'w5', n:5, name:'Week 05 · Negotiating a content creator contract', pages:['w5']},
     {mod:'w6', n:6, name:'Week 06 · Find the lie', pages:['w6']},
     {mod:'w7', n:7, name:'Week 07 · Crisis, on the clock', pages:['w7']},
     {mod:'w8', n:8, name:'Week 08 · Live commerce — watch it, then do it', pages:['w8']},
