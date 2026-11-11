@@ -220,3 +220,31 @@ global `EscWall`; `courseprogress.js` a port).
   earlier two refusals held; this is the teachable version (shape + detection).
   Call-home is tied back to demo 3 ("just a socket"). IIG skeleton, reference
   page. Linked from the hub, Session 4 footer and demos.html.
+
+- **Session 5 = "Cables, satellites and the sky" (`week5.html`, built 11 Nov
+  2026 for Fri 13 Nov, `total:6`).** Steps: s1 the S4 claim counterexample
+  (`w5_counter`) + Reflection 4 draw · s2 the cable (TeleGeography 2026: 607
+  systems, 1.5 m km; EP study p. 16 "approximately 99 %"; anatomy; a route
+  delay calculator at 5 µs/km — route lengths 13,000 / 23,000 / 27,000 /
+  14,500 km are ROUNDED for the exercise, `w5_route`) · s3 faults (ICPC/ITU
+  2026: ~200 a year, >80 % fishing and anchors; EP study's older ~100 and
+  40 % + 15 % shown beside it; repair "more than two weeks", three EU repair
+  ships), an OTDR locator (204,218 km/s at n = 1.468; 1 ms → 102 km) and a
+  repair-days calculator (`w5_repair`) · s4 four cases (Balticconnector /
+  Newnew Polar Bear; Yi Peng 3; Eagle S — District Court dismissed 3 Oct 2025
+  under UNCLOS art. 97, Court of Appeal revived 27 Aug 2026, **case open: check
+  before telling students it is settled**; Red Sea 2024 and Sep 2025), an
+  evidence sort (answers A I A I N I N A) and a cut-the-routes simulator
+  (the overland route adds a jurisdiction note) (`w5_evidence`) · s5 orbit
+  delay (4 × altitude ÷ c: GEO 477 ms, 65× LEO 550 km) and the Viasat chain,
+  five clickable lines quoted from Viasat's 30 Mar 2022 report, Enercon,
+  EEAS/UK 10 May 2022 (`w5_sat`) · s6 opens `w3_nx`, AP I arts. 52(2) (quoted),
+  51(5)(b), 57, the team's weakest link + first measure → `_wall/w5` as
+  `W:<k>|F:<k>`, claim for S6 (trusted vendor), prediction `w5_nx` (NotPetya
+  / SolarWinds / MOVEit / CrowdStrike: most damage), **Reflection 5 =
+  `refl6_*` on ENISA 2021**. Not verified and therefore NOT on the page: the
+  Swedish SHK report itself (press only), HGC's 25 % (press), Enercon's
+  5,800 turbines, a world count of repair ships, Spark/US attribution text.
+  ⚠ The EP study's threats are in **chapter 5, not 3**: Session 4's
+  reflection box and the hub card said chapter 3 and were corrected the
+  same day. Probed headlessly: 6/6, no errors, 500 px fits.
