@@ -255,3 +255,13 @@ global `EscWall`; `courseprogress.js` a port).
   `_wall/teams` for Jenna Mehdi, Elfat Hamami and "Telia" — Telia had no account in escwa that day,
   so her row carries the first name only; when she signs in with her full name she presses "Join
   Team F" and the "Telia" row is removed with ×. Name left empty for the team to choose.
+
+- ⚠ **Midterm moved to Fri 11 Dec 2026 (12 Nov 2026).** Jan Erik: "the exam is pushed to the 11th
+  of December". Sessions renumbered by date: **S7 = Hybrid threats (27 Nov, `w7`)**, **S8 = the
+  tabletop (4 Dec, `w8`)**, **S9 = the midterm (11 Dec, `w9`, no page)**, S10–S14 unchanged. So the
+  rule above now reads: **`w9` and `w14` must never be reused**; `w7` is a teaching page. Changed:
+  hub `TERM` (part two now "Sessions 7–8 and 10–14", the midterm card after the tabletop), the hub's
+  exam/plan/arc texts, `courseprogress.js`, `presence.js` names, roles.html (the tabletop and its
+  scorecard are Session 8, 4 Dec), week1's arc, week2's "Sessions 8 and 10" / "Session 8's crisis
+  exercise", week4's "Session 7" (the story payload). The midterm still covers Sessions 1–6; the
+  final covers 7–8 and 10–13. Dates in courses.json did not change (same Fridays).

@@ -7,7 +7,7 @@
    others — none of them is /shared/. The button lives on the course HUB
    only: it turns red for whichever window `escwa/_presence_now` points at.
 
-   Module ids are the SESSION numbers w1…w14; w7 is the midterm and w14 the final (no
+   Module ids are the SESSION numbers w1…w14; w9 is the midterm (11 Dec; w7 until 12 Nov 2026) and w14 the final (no
    page, no chapter, so they never appear in a student’s own summary, though a window
    can still be opened for them). `presenceSessions` is 14. The syllabus states no
    attendance rule, so the copy states none.
@@ -186,9 +186,9 @@ window.StatsPresence = (function () {
     {mod:'w4', n:4, name:'Session 04 · The arsenal', pages:['w4']},
     {mod:'w5', n:5, name:'Session 05 · Cables, satellites and the sky', pages:['w5']},
     {mod:'w6', n:6, name:'Session 06 · The update you trusted, and a number', pages:['w6']},
-    {mod:'w7', n:7, name:'Session 07 · Midterm', pages:['w7']},
-    {mod:'w8', n:8, name:'Session 08 · Hybrid threats, resilient firms', pages:['w8']},
-    {mod:'w9', n:9, name:'Session 09 · The tabletop: 72 hours', pages:['w9']},
+    {mod:'w7', n:7, name:'Session 07 · Hybrid threats, resilient firms', pages:['w7']},
+    {mod:'w8', n:8, name:'Session 08 · The tabletop: 72 hours', pages:['w8']},
+    {mod:'w9', n:9, name:'Session 09 · Midterm', pages:['w9']},
     {mod:'w10', n:10, name:'Session 10 · Who answers for it?', pages:['w10']},
     {mod:'w11', n:11, name:'Session 11 · Gates, guards and governments', pages:['w11']},
     {mod:'w12', n:12, name:'Session 12 · Four companies, four bad days', pages:['w12']},

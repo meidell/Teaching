@@ -7,9 +7,9 @@
    Overall % = mean of chapter fractions over the LIVE chapters that count.
 
    ⚠ MODULE IDS ARE SESSION NUMBERS, and two are missing on purpose:
-   Session 07 is the midterm and Session 14 the final exam. Neither has a
+   Session 09 is the midterm (11 Dec; it was Session 07 until 12 Nov 2026) and Session 14 the final exam. Neither has a
    page, so neither is a chapter — an exam in the bar would be a segment
-   nobody can fill. w7 and w14 must never be reused for teaching pages.
+   nobody can fill. w9 and w14 must never be reused for teaching pages.
 
    ⚠ Adding a REQUIRED chapter mid-term lowers every enrolled student's
    displayed percentage. All twelve teaching sessions are therefore listed
@@ -26,9 +26,9 @@ window.CourseProgress=(function(){
     {mod:'w4',  short:'S4', name:'Session 04 · The arsenal',                            total:6, live:true, href:'week4.html'},
     {mod:'w5',  short:'S5', name:'Session 05 · Cables, satellites and the sky',         total:6, live:true, href:'week5.html'},
     {mod:'w6',  short:'S6', name:'Session 06 · The update you trusted, and a number',   total:6, live:false},
-    /* Session 07 is the midterm — no page, no chapter. */
-    {mod:'w8',  short:'S8', name:'Session 08 · Hybrid threats, resilient firms',        total:6, live:false},
-    {mod:'w9',  short:'S9', name:'Session 09 · The tabletop: 72 hours',                 total:6, live:false},
+    {mod:'w7',  short:'S7', name:'Session 07 · Hybrid threats, resilient firms',        total:6, live:false},
+    {mod:'w8',  short:'S8', name:'Session 08 · The tabletop: 72 hours',                 total:6, live:false},
+    /* Session 09 is the midterm (11 Dec) — no page, no chapter. */
     {mod:'w10', short:'S10',name:'Session 10 · Who answers for it?',                    total:6, live:false},
     {mod:'w11', short:'S11',name:'Session 11 · Gates, guards and governments',          total:6, live:false},
     {mod:'w12', short:'S12',name:'Session 12 · Four companies, four bad days',          total:6, live:false},
