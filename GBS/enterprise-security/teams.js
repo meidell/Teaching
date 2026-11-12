@@ -1,7 +1,7 @@
 /* =====================================================================
    GBS · Enterprise Security — THE TEAMS (30 Oct 2026), a port of
    GBS/business-intelligence/teams.js with the namespace changed and five
-   teams A–E (the letters every session page already uses). Students join
+   teams A–F (F added 12 Nov 2026; the letters every session page already uses). Students join
    a team themselves, any member renames it, anybody may add or remove
    anybody (the newest row per name wins). Built on the wall (wall.js,
    EscWall), so it needs NO rules change — `_wall/$mod` already allows it:
@@ -14,7 +14,7 @@
    ===================================================================== */
 window.EscTeams=(function(){
   var DB="https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app",NS="escwa";
-  var IDS=['A','B','C','D','E'],K='escwa',MAXNAME=30,MAXV=500,POLL=8000;
+  var IDS=['A','B','C','D','E','F'],K='escwa',MAXNAME=30,MAXV=500,POLL=8000;
   var pending=0,st={members:{},names:{},ok:true,loaded:false},hooks=[],el=null,opts={},started=false;
   var wallRaw=null,shared={},binds=[],applying=false;
   /* the board's styles travel with it, so the hub (which does not load bi.css) draws it too */
@@ -42,7 +42,7 @@ window.EscTeams=(function(){
       st.ok=res.ok;
       if(res.ok){
         var o=res.o,latest={},mem={},nm={};
-        rowsOf(o.teams).forEach(function(r){var m=/^J:([A-E]?)$/.exec(r.src||'');if(m&&r.n&&(!latest[r.n]||(r.ts||0)>latest[r.n].ts))latest[r.n]={t:m[1],ts:r.ts||0};});
+        rowsOf(o.teams).forEach(function(r){var m=/^J:([A-F]?)$/.exec(r.src||'');if(m&&r.n&&(!latest[r.n]||(r.ts||0)>latest[r.n].ts))latest[r.n]={t:m[1],ts:r.ts||0};});
         IDS.forEach(function(id){mem[id]=[];var b=null;rowsOf(o['tn_'+id]).forEach(function(r){var m=/^N:(.*)$/.exec(r.src||'');if(m&&m[1].trim()&&(!b||(r.ts||0)>=b.ts))b={v:m[1].trim(),ts:r.ts||0};});if(b)nm[id]=b.v;});
         Object.keys(latest).sort().forEach(function(n){if(latest[n].t)mem[latest[n].t].push(n);});
         wallRaw=o;
