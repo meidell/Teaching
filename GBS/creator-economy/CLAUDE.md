@@ -355,3 +355,20 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   team's number of picks. Tested headlessly with the live wall copied into a stub (instructor
   open + enter, a student in a separate profile sees no controls and picks, class view).
   The generic page panel is `/shared/pagewatch.js` (root CLAUDE.md §3).
+
+- **The student's own progress view (12 Nov 2026).** Jan Erik: "make more obvious their progress …
+  without making them block or angry (the ones who do not care)". In `courseprogress.js`
+  (`STEPS` = each live page's step ids + h2 headings in page order — **add the new page's list when
+  a session ships**, or it gets no dots and no strip). Hub `.mama` is now **"Your sessions so far"**
+  (`render({you:true, pick, pct, cap, list, reveal})`): "N steps done" (no course percentage — it
+  read like a grade), ONE "Pick up here" link (the newest session if unfinished, else the newest
+  started-but-unfinished one; else "You are up to date"), one line saying the participation and
+  session-work marks (25 % each) are read from the pages and that every step stays open, then one
+  row per published session, newest first, with a dot per step (full = done, outline = open; each
+  dot links to `weekN.html#sK`) and "Complete ✓" / "3 of 7 steps · the rest is still open" / "Not
+  opened yet · still open". Session pages (the `compact` render) get a strip above `.banner`: the
+  page's dots + "You have done 3 of 7 steps on this page. Continue with Step 4: … ↓", or "every step
+  ✓"; nothing when no step is done; × hides it for the visit (sessionStorage); it re-reads local
+  progress every 3 s. Rules kept on purpose: count what is done, never "missed", no red, no
+  comparison with classmates, no pop-up, nothing for a student with nothing logged. Tested headless
+  (13 steps across W1/W3/W4, an empty student, 400 px).

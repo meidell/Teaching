@@ -50,6 +50,82 @@ window.CourseProgress=(function(){
     {mod:'w11', short:'W11',name:'Week 11 · The verdict, and the rehearsal',      total:5, live:false},
     {mod:'wp',  short:'PW', name:'Presentation week · The pitch',                 total:3, live:false}
   ];
+  /* ---- the student's own view (12 Nov 2026) ----------------------------
+     Jan Erik: "make more obvious their progress … without making them block
+     or angry (the ones who do not care)". Rules, so a later edit keeps them:
+     what is DONE is counted, never what is missing; no percentage of the
+     whole course (it reads like a grade); no comparison with anyone; no red;
+     every open step is "still open", never "missed"; ONE suggestion of what
+     to do next; nothing blocks, nothing pops up, and the strip on a session
+     page closes with × for the visit. A student with nothing logged sees
+     nothing (the 17 Oct rule below). STEPS = each live page's step ids and
+     headings, in page order — add the new page's list when it ships. */
+  var STEPS={"w1": [["s1", "Prediction"], ["s2", "The query round"], ["s3", "The wall"], ["s4", "The pipeline: how a page becomes a citation"], ["s5", "Teams and roles"], ["s6", "Three candidate mechanisms"], ["s7", "Gallery walk"], ["s8", "Close"]], "w2": [["s1", "Open the seal"], ["s2", "Six checks: what makes a page quotable"], ["s3", "Your team's audit"], ["s4", "Compare, then three reasons"], ["s5", "Try to break the reasons"], ["s6", "What survived: \"what makes a source quotable\", version 1"], ["s7", "Close"]], "w3": [["s1", "How a new page gets quoted"], ["s2", "Pick one question"], ["s3", "First measurement, before the page exists"], ["s4", "Build the page with an AI assistant"], ["s5", "Put the page online with Netlify"], ["s6", "Tell Google and Bing the page exists"], ["s7", "Write the experiment plan"]], "w4": [["s1", "The weekly check"], ["s2", "How a sponsored post turns into a sale"], ["s3", "The brief and the pool"], ["s4", "The teams take turns choosing content creators from the shared pool"], ["s5", "Predict your CPA, in writing"], ["s6", "The benchmarks arrive"], ["s7", "Sign the pick list"]], "w5": [["s1", "The weekly check: Week 2"], ["s2", "What a content creator contract settles"], ["s3", "Choose your role and read your private brief"], ["s4", "Negotiate the term sheet"], ["s5", "Both briefs side by side"], ["s6", "The term sheet, signed"]]};
+  function localIds(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}'),r={};for(var k in o){if(o[k])r[k]=1;}return r;}catch(e){return {};}}
+  function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function sessNo(c){return c.mod==='wp'?'Presentation':'Session '+parseInt(c.mod.slice(1),10);}
+  function topic(c){return c.name.replace(/^[^·]*·\s*/,'');}
+  function css(){
+    if(document.getElementById('cp-you'))return;
+    var st=document.createElement('style');st.id='cp-you';
+    st.textContent='.cp-pick{display:block;text-decoration:none;color:var(--navy,#14213D);background:var(--accent-pale,#FFF4E3);border:1.5px solid var(--accent,#D58517);border-radius:12px;padding:12px 14px;margin:6px 0 12px;font-size:14px;line-height:1.45}'+
+      '.cp-pick b{color:var(--accent-deep,#9A5A00)} .cp-pick .go{font-weight:800;white-space:nowrap}'+
+      '.cp-rows{margin-top:6px}.cp-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line,#DDE2EC);font-size:13px}'+
+      '.cp-row a.n{color:inherit;text-decoration:none;font-weight:700}.cp-row .s{font-size:12px;color:var(--grey,#6B7689);white-space:nowrap;text-align:right}.cp-row .s.ok{color:var(--ok,#1F8A4C);font-weight:800}'+
+      '.cp-dots{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px}.cp-dots a{width:15px;height:15px;border-radius:50%;border:2px solid var(--accent,#D58517);background:#fff;display:inline-block}.cp-dots a.d{background:var(--accent,#D58517)}'+
+      '@media(max-width:560px){.cp-row{grid-template-columns:1fr}.cp-row .s{text-align:left;white-space:normal}.mama .mh{flex-wrap:wrap}}'+
+      '.cp-up{font-size:12px;color:var(--grey,#6B7689);margin-top:10px}'+
+      '.cp-strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1.5px solid var(--accent,#D58517);border-radius:12px;padding:10px 14px;margin:0 0 16px;font-size:14px;color:var(--navy,#14213D)}'+
+      '.cp-strip .cp-dots{grid-column:auto;flex:0 0 auto}.cp-strip .t{flex:1;min-width:200px}.cp-strip button{border:none;background:none;font-size:18px;color:var(--grey,#6B7689);cursor:pointer;padding:0 4px}'+
+      '.cp-strip a.go{font-weight:800;color:var(--accent-deep,#9A5A00)}';
+    document.head.appendChild(st);
+  }
+  function dots(c,ids){return '<span class="cp-dots">'+(STEPS[c.mod]||[]).map(function(x,i){return '<a href="'+c.href+'#'+x[0]+'" class="'+(ids[x[0]]?'d':'')+'" title="Step '+(i+1)+' · '+esc(x[1])+(ids[x[0]]?' · done':' · still open')+'"></a>';}).join('')+'</span>';}
+  function firstOpen(c,ids){var L=STEPS[c.mod]||[];for(var i=0;i<L.length;i++)if(!ids[L[i][0]])return {i:i,id:L[i][0],t:L[i][1]};return null;}
+  /* the one suggestion: the newest published session if it is not finished, else the newest unfinished one already started */
+  function suggestion(data){
+    var live=counted().filter(function(c){return c.live&&STEPS[c.mod];});if(!live.length)return null;
+    var last=live[live.length-1];
+    var f=firstOpen(last,data[last.mod].ids);if(f)return {c:last,f:f};
+    for(var i=live.length-2;i>=0;i--){var c=live[i];if(data[c.mod].done>0){var g=firstOpen(c,data[c.mod].ids);if(g)return {c:c,f:g};}}
+    return null;
+  }
+  function paintYou(data,opts){
+    css();
+    var live=counted().filter(function(c){return c.live&&STEPS[c.mod];});
+    var steps=0,full=0;live.forEach(function(c){var n=Object.keys(data[c.mod].ids).length;steps+=Math.min(n,c.total);if(n>=c.total)full++;});
+    if(opts.pct)opts.pct.textContent=steps+(steps===1?' step':' steps')+' done';
+    if(opts.cap)opts.cap.textContent=(full?full+(full===1?' session':' sessions')+' complete. ':'')+'Your instructor reads your participation (25 %) and your session work (25 %) from what you save on the session pages. Every step stays open until the end of the course.';
+    if(opts.pick){
+      var sg=suggestion(data);
+      opts.pick.innerHTML=sg?'<a class="cp-pick" href="'+sg.c.href+'#'+sg.f.id+'"><b>Pick up here:</b> '+sessNo(sg.c)+', Step '+(sg.f.i+1)+' · '+esc(sg.f.t)+' <span class="go">→ open it</span></a>'
+        :'<div class="cp-pick"><b>You are up to date.</b> Every step of every published session is done.</div>';
+    }
+    if(opts.list){
+      var h='<div class="cp-rows">';
+      live.slice().reverse().forEach(function(c){
+        var ids=data[c.mod].ids,n=Math.min(c.total,Object.keys(ids).length);
+        h+='<div class="cp-row"><a class="n" href="'+c.href+'">'+sessNo(c)+' · '+esc(topic(c))+'</a><span class="s'+(n>=c.total?' ok':'')+'">'+(n>=c.total?'Complete ✓':n?n+' of '+c.total+' steps · the rest is still open':'Not opened yet · still open')+'</span>'+dots(c,ids)+'</div>';
+      });
+      var up=counted().filter(function(c){return !c.live;});
+      h+='</div>'+(up.length?'<div class="cp-up">Coming next: '+up.map(function(c){return sessNo(c);}).join(' · ')+'. Each page is published before its session.</div>':'');
+      opts.list.innerHTML=h;opts.list.className='';
+    }
+  }
+  /* on a session page: one strip above the banner — where you are on THIS page */
+  function paintStrip(data){
+    var mod=document.body&&document.body.getAttribute('data-module');var c=CHAPTERS.filter(function(x){return x.mod===mod&&STEPS[x.mod];})[0];if(!c)return;
+    try{if(sessionStorage.getItem(K+'_strip_x_'+mod))return;}catch(e){}
+    var host=document.querySelector('.banner');if(!host)return;
+    css();
+    var ids=data[mod].ids,n=Math.min(c.total,Object.keys(ids).length);
+    var el=document.getElementById('cp-strip');
+    if(!n){if(el)el.remove();return;}
+    if(!el){el=document.createElement('div');el.id='cp-strip';el.className='cp-strip';host.parentNode.insertBefore(el,host);
+      el.addEventListener('click',function(e){if(e.target.closest('button')){try{sessionStorage.setItem(K+'_strip_x_'+mod,'1');}catch(x){}el.remove();}});}
+    var f=firstOpen(c,ids);
+    el.innerHTML=dots(c,ids).replace(new RegExp(c.href.replace('.','\\.')+'#','g'),'#')+'<span class="t">'+(f?'You have done '+n+' of '+c.total+' steps on this page. <a class="go" href="#'+f.id+'">Continue with Step '+(f.i+1)+': '+esc(f.t)+' ↓</a>':'<b>You have done every step on this page ✓</b>')+'</span><button type="button" title="Hide for this visit">×</button>';
+  }
   function localDone(mod){try{var o=JSON.parse(localStorage.getItem(K+'_done_'+mod)||'{}');var n=0;for(var k in o){if(o[k])n++;}return n;}catch(e){return 0;}}
   function auth(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}return (a&&a.sid)?a:null;}
   /* build the chapter data straight from a student's Firebase mod object —
@@ -106,9 +182,13 @@ window.CourseProgress=(function(){
         }
       });
     }
-    if(opts.pct)opts.pct.textContent=pctOf(data)+'%';
-    if(opts.cap)opts.cap.textContent=caption(data);
-    if(opts.list)buildList(data,opts.list);
+    if(opts.you)paintYou(data,opts);
+    else{
+      if(opts.pct)opts.pct.textContent=pctOf(data)+'%';
+      if(opts.cap)opts.cap.textContent=caption(data);
+      if(opts.list)buildList(data,opts.list);
+    }
+    if(opts.compact){paintStrip(data);LAST=data;}
     /* the bar is shown only once SOMETHING has been logged: an empty bar
        on a first visit says "you have done nothing" to a student who has
        not been asked to yet. Until then the hub's next-session card is
@@ -116,16 +196,19 @@ window.CourseProgress=(function(){
     if(opts.reveal){var any=counted().some(function(c){return data[c.mod]&&data[c.mod].done>0;});opts.reveal.style.display=any?'block':'none';}
   }
   function render(opts){
-    var data={};CHAPTERS.forEach(function(c){data[c.mod]={done:Math.min(c.total,localDone(c.mod))};});
+    var data={};CHAPTERS.forEach(function(c){data[c.mod]={done:Math.min(c.total,localDone(c.mod)),ids:localIds(c.mod)};});
     paint(data,opts);
     var a=auth();
     if(a){
       fetch(DB+'/'+NS+'/'+a.sid+'/mod.json').then(function(r){return r.json();}).then(function(m){
         if(!m)return;
-        CHAPTERS.forEach(function(c){var node=m[c.mod];if(node&&node.done){var n=0;for(var k in node.done){if(node.done[k])n++;}n=Math.min(c.total,n);if(n>data[c.mod].done)data[c.mod].done=n;}});
+        CHAPTERS.forEach(function(c){var node=m[c.mod];if(node&&node.done){for(var k in node.done){if(node.done[k])data[c.mod].ids[k]=1;}var n=Math.min(c.total,Object.keys(data[c.mod].ids).length);if(n>data[c.mod].done)data[c.mod].done=n;}});
         paint(data,opts);
       }).catch(function(){});
     }
   }
+  var LAST=null;
+  /* a step pressed on this page updates the strip within a few seconds (local progress only) */
+  setInterval(function(){if(!LAST||document.hidden)return;var mod=document.body&&document.body.getAttribute('data-module');if(!LAST[mod])return;var ids=localIds(mod),ch=false;for(var k in ids)if(!LAST[mod].ids[k]){LAST[mod].ids[k]=1;ch=true;}if(ch)paintStrip(LAST);},3000);
   return {CHAPTERS:CHAPTERS,render:render,pct:pctOf,paint:paint,dataFromMods:dataFromMods,auth:auth};
 })();
