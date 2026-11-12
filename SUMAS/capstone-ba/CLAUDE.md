@@ -211,6 +211,15 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   4–10 are still the online-course copies; continue the same pattern. Week 1's group hour is *form the team*; its
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.
+- ⚠ **Two more breaks (11 Nov 2026).** Jan Erik: "push class on 18 to the week after",
+  "no class on 16.12 but start again on 6 january", "2nd class after x-mas 13. january".
+  `schedule.js` now has `GAPS = [{after:3,weeks:1},{after:5,weeks:1},{after:8,weeks:3}]`
+  (replacing `GAP_AFTER_WEEK`/`GAP_WEEKS`). Sessions: W6 **Wed 25 Nov** · W7 2 Dec · W8 9 Dec ·
+  W9 **Wed 6 Jan 2027** · W10 **Wed 13 Jan 2027**. Derived deadlines: Phase 2 proposal Fri 27 Nov,
+  Phase 2 Sun 13 Dec, Forum 15 Wed 6 Jan, Phase 3 Sun 10 Jan, exam Mon 11 Jan 09:30 → Mon 18 Jan
+  09:30 2027 (supersedes the dates in the note below). `courses.json → schedule.dates` follows;
+  the Week 6 deck's slide 1 and its PDF say 25 November; week6.html says "In Week 5 you submitted
+  Phase 1". Not yet agreed with SUMAS's campus calendar.
 - ⚠ **One week lost: Week 4 = Wed 4 Nov 2026 (Jan Erik, 4 Nov 2026: "week 4 is today").**
   `schedule.js → GAP_AFTER_WEEK = 3, GAP_WEEKS = 1` inside `weekMonday()`, so
   Weeks 4–10, every forum/phase deadline and the exam window sit one week

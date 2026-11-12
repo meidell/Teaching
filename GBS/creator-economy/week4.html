@@ -66,7 +66,10 @@
 .order span{font-size:11.5px;font-weight:700;border:1px solid var(--line);border-radius:14px;padding:2px 9px;background:#fff;color:var(--ink-soft);}
 .order span.now{background:var(--navy);color:#fff;border-color:var(--navy);}
 body.boardmode{background:#0E1B3D;}
-body.boardmode>*:not(#classView){display:none !important;}
+body.boardmode>*:not(#classView):not(#instrDraft):not(#pw-btn):not(#pw){display:none !important;}
+#instrDraft{border:2px dashed #1F3264;border-radius:12px;padding:12px 14px;margin:12px 0;background:#F4F6FB;color:#14213D;font-size:15px;}
+#instrDraft h4{margin:0 0 6px;font-size:15px;} #instrDraft .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0;} #instrDraft select{font:inherit;padding:5px;max-width:100%;}
+#instrDraft .note{font-size:13px;color:#5B6680;} body.boardmode #instrDraft{margin:0 36px 30px;}
 #classView{display:none;}
 body.boardmode #classView{display:block;padding:28px 36px;color:#fff;font-family:inherit;}
 #classView h1{font-size:30px;margin:0 0 6px;color:#fff;} #classView .cvturn{font-size:26px;font-weight:800;background:#F2B544;color:#0E1B3D;border-radius:14px;padding:14px 20px;margin:14px 0 18px;}
@@ -565,10 +568,14 @@ function paintPool3(){
 }
 
 /* ---- the draft ---- */
-var D={teams:[],picks:[[],[],[]],ok:true,reason:''};
+var D={teams:[],picks:[[],[],[]],ok:true,reason:'',mode:{open:false,ts:0},rows0:[]};
 function readDraft(){
   if(!window.CreatorWall)return Promise.resolve();
-  return Promise.all([CreatorWall.read('w4teams'),CreatorWall.read('w4pick1'),CreatorWall.read('w4pick2'),CreatorWall.read('w4pick3')]).then(function(r){
+  return Promise.all([CreatorWall.read('w4teams'),CreatorWall.read('w4pick1'),CreatorWall.read('w4pick2'),CreatorWall.read('w4pick3'),CreatorWall.read('w4mode')]).then(function(r){
+    /* the instructor's switch (12 Nov 2026): newest row of _wall/w4mode, M:open = every team picks in its own time from that moment */
+    var mr=(r[4].rows||[]).filter(function(x){return /^M:(open|turns)$/.test(x.src||'');});D.mode=mr.length?{open:mr[mr.length-1].src==='M:open',ts:mr[mr.length-1].ts||0}:{open:false,ts:0};
+    r=r.slice(0,4);
+    D.rows0=r[0].rows;
     D.ok=r.every(function(x){return x.ok;});D.reason=(r.filter(function(x){return !x.ok;})[0]||{}).reason||'';
     var seen={};D.teams=[];
     r[0].rows.forEach(function(x){var n=(x.n||'').trim();if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;D.teams.push({n:n,ts:x.ts||0});}});
@@ -591,6 +598,29 @@ function draftOrder(){
   return early.concat(late).map(function(t){return t.n;});
 }
 function replay(){
+  var OPENTS=D.mode&&D.mode.open?D.mode.ts:Infinity, ALL=D.picks;
+  D.picks=ALL.map(function(rs){return rs.filter(function(x){return (x.ts||0)<OPENTS;});});
+  try{ var st=replaySnake(); }finally{ D.picks=ALL; }
+  if(OPENTS===Infinity)return st;
+  /* the draft is OPEN: every pick row the turns did not use — those posted after the switch, and those a team
+     posted before it that the stalled turns never reached (Team A's rounds 2–3 on 5 Nov) — counts, in time order,
+     if the content creator is still free and the team has budget and fewer than 3 */
+  var late=[];ALL.forEach(function(rs){rs.forEach(function(x){late.push(x);});});
+  late.sort(function(a,b){return a.ts-b.ts;});
+  late.forEach(function(x){
+    var T=st.order.filter(function(t){return t.toLowerCase()===(x.n||'').trim().toLowerCase();})[0];if(!T)return;
+    var m=/^C:(\w+)$/.exec(x.src||'');if(!m)return;var c=BYID[m[1]];
+    if(c&&st.got[T].indexOf(c.id)>=0)return;
+    if(!c||st.taken[c.id]||st.spent[T]+c.fee>BUDGET||st.got[T].length>=MAXP)return;
+    var used={};st.slots.forEach(function(sl){if(sl.t===T&&sl.id!=='pass'&&sl.id!=='skip')used[sl.r]=1;});
+    var r=0;while(used[r]&&r<ROUNDS)r++;if(r>=ROUNDS)return;
+    st.slots=st.slots.filter(function(sl){return !(sl.t===T&&sl.r===r);});
+    st.taken[c.id]=T;st.spent[T]+=c.fee;st.got[T].push(c.id);st.slots.push({r:r,t:T,id:c.id});
+  });
+  st.cur=null;st.open=true;
+  return st;
+}
+function replaySnake(){
   var order=draftOrder(), taken={}, spent={}, got={}, slots=[], cur=null;
   order.forEach(function(t){spent[t]=0;got[t]=[];});
   var regMax=0;D.teams.forEach(function(t){if(t.ts>regMax)regMax=t.ts;});
@@ -625,6 +655,10 @@ function replay(){
 }
 /* the round (0-based) in which `me` may pick now, or -1 */
 function pickRound(st,me){
+  if(st.open&&me){
+    var T=st.order.filter(function(t){return t.toLowerCase()===me.toLowerCase();})[0];if(!T||st.got[T].length>=MAXP)return -1;
+    return Math.min(ROUNDS-1,st.got[T].length);
+  }
   if(!st.cur||!me)return -1;
   var m=me.toLowerCase();
   if(st.cur.t.toLowerCase()===m)return st.cur.r;
@@ -646,7 +680,8 @@ function paintDraft(){
   if(!st.order.length){h+='<div class="turn">No team has registered yet. Register in Step 3.</div>';}
   else{
     var mine=me&&st.order.some(function(t){return t.toLowerCase()===me.toLowerCase();});
-    if(!st.cur)h+='<div class="turn">The draft is complete.</div>';
+    if(st.open)h+=(canPick(st,me)?'<div class="turn me">The board is open: your team may choose now, in its own time. Click a content creator below. Your team may have up to 3, within CHF '+fmt(BUDGET)+'.</div>':'<div class="turn">The board is open: every registered team chooses in its own time, up to 3 content creators.'+(mine?' Your team has its 3.':' Your team is not registered yet: register in Step 3.')+'</div>');
+    else if(!st.cur)h+='<div class="turn">The draft is complete.</div>';
     else if(canPick(st,me))h+='<div class="turn me">Your turn'+(st.cur.t.toLowerCase()===me.toLowerCase()?'':' ('+esc(st.cur.t)+' took more than 2 minutes)')+': round '+(pickRound(st,me)+1)+'. Pick a content creator below, or <button class="chip" type="button" id="passBtn">pass</button></div>';
     else h+='<div class="turn">Round '+(st.cur.r+1)+' · waiting for <b>'+esc(st.cur.t)+'</b>'+(mine?'':' · your team is not registered — Step 3')+'</div>';
     for(var r=0;r<ROUNDS;r++){
@@ -671,7 +706,7 @@ function paintDraft(){
   var pb=$('passBtn');if(pb)pb.onclick=function(){postPick('pass');};
   if(myT){var ids=st.got[myT].join(',');if(ids&&ids!==work('w4_picks'))setHidden('f_picks',ids);}
   paintMyList();
-  if(BOARD)paintClass(st);
+  if(BOARD)paintClass(st);else paintInstr(st);
 }
 var BOARD=/[?&]board=1/.test(location.search);
 function paintClass(st){
@@ -679,6 +714,7 @@ function paintClass(st){
   var h='<h1>Session 4 · The teams take turns choosing content creators</h1><div class="cvsmall">Each team chooses one content creator per round, three rounds, budget CHF '+fmt(BUDGET)+'. The order turns around in round 2. This screen refreshes every 4 seconds.</div>';
   if(!D.ok)h+='<div class="cvturn">The class board is unavailable'+(D.reason==='rules'?' (rules not published)':'')+'.</div>';
   else if(!st.order.length)h+='<div class="cvturn">No team has registered yet. Teams register at the end of Step 3.</div>';
+  else if(st.open)h+='<div class="cvturn">The board is open: every team chooses in its own time, up to 3 content creators within CHF '+fmt(BUDGET)+'. A content creator already taken cannot be chosen again.</div>';
   else if(!st.cur)h+='<div class="cvturn">The draft is complete. Every team presses "All three rounds are over" and goes to Step 5.</div>';
   else{var left=Math.max(0,Math.ceil((st.cur.since+WAIT-Date.now())/1000));
     h+='<div class="cvturn">Round '+(st.cur.r+1)+': it is the turn of '+esc(st.cur.t)+'. '+(left>0?left+' seconds left before the next team may choose instead.':'The 2 minutes are over: the next team may choose now.')+'</div>';}
@@ -695,9 +731,62 @@ function paintClass(st){
   var free=POOL.filter(function(c){return !st.taken[c.id];});
   h+='<div class="free"><b>Still free ('+free.length+' of '+POOL.length+'):</b> '+free.map(function(c){return esc(c.h)+' (CHF '+fmt(c.fee)+')';}).join(' · ')+'</div>';
   box.innerHTML=h;
+  paintInstr(st);
+}
+/* ---- the instructor's controls (12 Nov 2026) ------------------------
+   Drawn only on a device holding the instructor session in instructor
+   view; a student never sees them. Every action is a NEW row on the wall
+   (plain POST, never CreatorWall.post, which would overwrite this
+   device's own row), so nothing a team posted is ever changed. */
+function isInstr(){try{if(localStorage.getItem('jem_view')==='student')return false;var s=JSON.parse(localStorage.getItem('jem_fb_session')||'null');return !!(s&&s.rt);}catch(e){return false;}}
+function wallAdd(mod,row){
+  row.ts=Date.now();
+  var t=(window.FBAuth&&FBAuth.token)?FBAuth.token().catch(function(){return '';}):Promise.resolve('');
+  return t.then(function(tok){return fetch('https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/creator/_wall/'+mod+'.json'+(tok?'?auth='+encodeURIComponent(tok):''),{method:'POST',body:JSON.stringify(row)});})
+    .then(function(r){return r.ok;}).catch(function(){return false;});
+}
+function paintInstr(st){
+  if(!isInstr())return;
+  var box=$('instrDraft');
+  if(!box){
+    box=document.createElement('div');box.id='instrDraft';
+    box.innerHTML='<h4>Instructor only · control the board</h4>'+
+      '<div class="row" id="iMode"></div>'+
+      '<div class="row"><button class="btn ghost small" type="button" id="iSkip">Let the next team choose now</button><span class="note" id="iSkipN"></span></div>'+
+      '<div class="row"><b>Choose for a team:</b> <select id="iTeam"></select> <select id="iCc"></select> <button class="btn ghost small" type="button" id="iPick">Enter this pick</button></div>'+
+      '<div class="note" id="iNote">Students do not see this box.</div><div id="iWho" class="note" style="margin-top:6px"></div>';
+    if(BOARD)document.body.appendChild(box);else{var dh=$('draftHead');dh.parentNode.insertBefore(box,dh);}
+    $('iSkip').onclick=function(){
+      if(!ST||!ST.cur)return;
+      if(!confirm('Skip '+ST.cur.t+' in round '+(ST.cur.r+1)+'? The next team may then choose.'))return;
+      wallAdd('w4pick'+(ST.cur.r+1),{n:ST.cur.t,src:'C:pass',meta:'skipped by the instructor'}).then(function(ok){$('iNote').textContent=ok?'Skipped ✓':'Not saved: check the connection.';readDraft().then(paintDraft);});
+    };
+    $('iPick').onclick=function(){
+      var T=val('iTeam'),id=val('iCc');if(!T||!id){alert('Choose a team and a content creator.');return;}
+      var r=ST.open?Math.min(ROUNDS-1,ST.got[T].length):(ST.cur&&ST.cur.t===T?ST.cur.r:-1);
+      if(r<0){alert(T+' is not on turn. Open the board first, or wait for its turn.');return;}
+      if(!confirm('Enter '+BYID[id].h+' (CHF '+fmt(BYID[id].fee)+') for '+T+'?'))return;
+      wallAdd('w4pick'+(r+1),{n:T,src:'C:'+id,meta:(BYID[id].h+' · CHF '+BYID[id].fee+' · entered by the instructor').slice(0,120)}).then(function(ok){$('iNote').textContent=ok?'Entered ✓':'Not saved: check the connection.';readDraft().then(paintDraft);});
+    };
+    box.addEventListener('click',function(e){
+      var b=e.target.closest('[data-mode]');if(!b)return;var m=b.getAttribute('data-mode');
+      if(!confirm(m==='open'?'Open the board? From now on every registered team chooses in its own time, up to 3 content creators. The turns stop.':'Go back to turns? Picks made while the board was open are kept only if you open it again.'))return;
+      wallAdd('w4mode',{n:'instructor',src:'M:'+m,meta:m}).then(function(ok){$('iNote').textContent=ok?(m==='open'?'The board is open ✓':'Back to turns ✓'):'Not saved: check the connection.';readDraft().then(paintDraft);});
+    });
+  }
+  $('iMode').innerHTML=st.open?'<b>The board is OPEN</b> (since '+new Date(D.mode.ts).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'): every team chooses in its own time. <button class="btn ghost small" type="button" data-mode="turns">Go back to turns</button>'
+    :'<b>The board runs in turns.</b> '+(st.cur?'On turn: '+esc(st.cur.t)+', round '+(st.cur.r+1)+'.':'')+' <button class="btn ghost small" type="button" data-mode="open">Open the board: every team chooses in its own time</button>';
+  $('iSkip').style.display=(!st.open&&st.cur)?'':'none';
+  var tSel=$('iTeam'),cSel=$('iCc'),tv=tSel.value,cv=cSel.value;
+  if(document.activeElement!==tSel)tSel.innerHTML='<option value="">— team —</option>'+st.order.map(function(t){return '<option'+(t===tv?' selected':'')+'>'+esc(t)+'</option>';}).join('');
+  if(document.activeElement!==cSel)cSel.innerHTML='<option value="">— content creator —</option>'+POOL.filter(function(c){return !st.taken[c.id];}).map(function(c){return '<option value="'+c.id+'"'+(c.id===cv?' selected':'')+'>'+esc(c.h)+' · CHF '+fmt(c.fee)+'</option>';}).join('');
+  /* who registered each team, as they typed it */
+  var seen={};$('iWho').innerHTML='<b>The teams, as registered:</b><br>'+(D.rows0||[]).slice().reverse().filter(function(x){var k=(x.n||'').trim().toLowerCase();if(seen[k])return false;seen[k]=1;return true;}).reverse().map(function(x){
+    var t=st.order.filter(function(o){return o.toLowerCase()===(x.n||'').trim().toLowerCase();})[0]||x.n;
+    return esc(x.meta||x.n)+' · '+(st.got[t]||[]).length+' chosen, CHF '+fmt(BUDGET-(st.spent[t]||0))+' left';}).join('<br>');
 }
 function postPick(id){
-  if(!ST||!ST.cur)return;
+  if(!ST||(!ST.cur&&!ST.open))return;
   var me=teamName();
   if(id!=='pass'&&!confirm('Pick '+BYID[id].h+' for CHF '+fmt(BYID[id].fee)+'? This cannot be undone.'))return;
   $('dNote').textContent='Sending…';

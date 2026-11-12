@@ -146,3 +146,25 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,300);});
   else setTimeout(go,300);
 })();
+
+/* ---- "Who did this page", instructor only (12 Nov 2026) ---------------
+   Jan Erik: "better tools for the instructor … to see what is happening on
+   that actual page (clicking to get a view of who participated — and the
+   buttons only being available for the instructor/admin)". On a course
+   page (<body data-course data-module>) of a device holding the instructor
+   session, in instructor view, /shared/pagewatch.js draws a button and a
+   count on each step. Students' devices never load it. */
+(function(){
+  function go(){
+    try{
+      var b=document.body; if(!b||!b.getAttribute('data-course')||!b.getAttribute('data-module'))return;
+      var p=location.pathname||''; if(p.indexOf('/admin/')===0||p.indexOf('/shared/')===0)return;
+      if(localStorage.getItem('jem_view')==='student')return;
+      var s=JSON.parse(localStorage.getItem('jem_fb_session')||'null'); if(!s||!s.rt)return;
+      if(window.CourseLogin&&CourseLogin.inApp&&CourseLogin.inApp())return;
+      var x=document.createElement('script');x.src='/shared/pagewatch.js';x.defer=true;document.head.appendChild(x);
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,600);});
+  else setTimeout(go,600);
+})();

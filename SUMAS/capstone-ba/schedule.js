@@ -167,8 +167,11 @@
   }
   /* 4 Nov 2026, Jan Erik: "week 4 is today" — the cohort lost a week, so Weeks 4–10 (and every
      deadline and the exam derived from them) sit one week later than START + 7·(wk−1). */
-  var GAP_AFTER_WEEK = 3, GAP_WEEKS = 1;
-  function weekMonday(wk){ var d=new Date(START+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+7*(wk-1)+(wk>GAP_AFTER_WEEK?7*GAP_WEEKS:0)); return d; }
+  /* 11 Nov 2026, Jan Erik: "push class on 18 to the week after", "no class on 16.12 but start again on
+     6 january", "2nd class after x-mas 13. january". So Week 6 = Wed 25 Nov, W7 = 2 Dec, W8 = 9 Dec,
+     W9 = Wed 6 Jan 2027, W10 = Wed 13 Jan 2027. GAPS = {after week n: weeks without a class}. */
+  var GAPS = [ {after:3, weeks:1}, {after:5, weeks:1}, {after:8, weeks:3} ];
+  function weekMonday(wk){ var g=0; GAPS.forEach(function(x){ if(wk>x.after) g+=x.weeks; }); var d=new Date(START+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+7*(wk-1+g)); return d; }
   function at(wk,day,time){
     var m=weekMonday(wk); m.setUTCDate(m.getUTCDate()+day);
     var iso=m.toISOString().slice(0,10)+'T'+(time||'23:59')+':00';

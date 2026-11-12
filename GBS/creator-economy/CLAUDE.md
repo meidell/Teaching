@@ -336,3 +336,22 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   The briefs are in the page source (a classroom exercise, not a secret).
   No minute timings on the page (WRITING.md rule 7). Probed headlessly
   (brand, @zug.commute, unlawful label): all steps, no errors, 500 px fits.
+
+- **Instructor controls on the Session 4 board + the open board (12 Nov 2026).** Jan Erik, after
+  the draft stalled at Kussh koding's round-2 turn on 5 Nov ("create better tools for the
+  instructor … buttons only being available for the instructor/admin", "a plan for how to revive
+  this from where they stopped"). On an instructor device (`jem_fb_session`, not 🎓 view) week4.html
+  draws `#instrDraft` above the board and under the `?board=1` class view: **Open the board** /
+  **Go back to turns** (a row on `_wall/w4mode`, `M:open|M:turns`, newest wins), **Let the next team
+  choose now** (posts a pass for the team on turn), **Choose for a team** (team + free content
+  creator → a pick row "entered by the instructor"), and the teams as registered with picks and
+  budget left. Every action is a NEW row by plain POST (never `CreatorWall.post`, which PUTs over
+  the device's own row), so no team's row is changed. **Open mode** (`replay()` → `replaySnake()`
+  for the turns, then every pick row the turns did not use, in time order, if still free, within
+  budget and < 3): a pass/skip slot is filled by the team's next pick; Team A's rounds 2–3, posted
+  at 15:14–15:15 on 5 Nov while it was the only registered team and never reached by the stalled
+  turns, count again (@liftlausanne, @zug.commute, matching Lara's `w4_picks`). Students in open
+  mode see "The board is open: your team may choose now" and Pick buttons; `pickRound()` = the
+  team's number of picks. Tested headlessly with the live wall copied into a stub (instructor
+  open + enter, a student in a separate profile sees no controls and picks, class view).
+  The generic page panel is `/shared/pagewatch.js` (root CLAUDE.md §3).
