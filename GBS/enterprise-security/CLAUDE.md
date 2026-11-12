@@ -248,3 +248,10 @@ global `EscWall`; `courseprogress.js` a port).
   ⚠ The EP study's threats are in **chapter 5, not 3**: Session 4's
   reflection box and the hub card said chapter 3 and were corrected the
   same day. Probed headlessly: 6/6, no errors, 500 px fits.
+
+- **Team F (12 Nov 2026).** Jan Erik: "create a new team F — let them choose their name, the members
+  are Telia, Jenna and Elfat. just add them." `teams.js` IDS A–F, the `[A-F]` team regexes in
+  week2–5 and jeopardy.html (a saved score sheet gains Team F). Rows `J:F` posted to
+  `_wall/teams` for Jenna Mehdi, Elfat Hamami and "Telia" — Telia had no account in escwa that day,
+  so her row carries the first name only; when she signs in with her full name she presses "Join
+  Team F" and the "Telia" row is removed with ×. Name left empty for the team to choose.
