@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/financial-modelling/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex">
+<title>Week 5 · Session 4 · Forecast, plug, circularity · slides · Finance Modelling · GBS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<style>
+/* ---- The GBS deck engine (session2-slides.html), navy and gold.
+   ← → / space / click to move · N speaker notes · P print view (⌘P → PDF, one slide per page).
+   Session 4 of Finance Modelling, Thu 12 Nov 2026, 18:45–20:45: a LECTURE evening. Jan Erik:
+   "slides to explain the theory (with examples to learn by examples) — I want them to do the
+   exercises on the page as homework … if time allows also other topics we did until now".
+   Part 1 teaches week5.html's theory on a SECOND business, Forno Lumen (a fictional bakery
+   chain, € thousand), worked line by line: drivers, working capital in days, capex vs D&A,
+   net income to cash, the plug, the balance check, the circularity, covenants, the dividend.
+   Meridia appears only with FY2025 figures and the method, so the page's checks (FY2026+)
+   stay the homework. Part 2 revisits Sessions 1–3. Every figure recomputed in Python
+   (scratch bakery.py, fm5s.py), 12 Nov 2026. ---- */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#101F44;--gold:#D58517;--gold-d:#A8620A;--ink:#1B2333;--soft:#4A5468;--line:#DCE1EA;--paper:#F6F7FA;--ok:#2F855A;--bad:#9B2335;}
+html,body{height:100%;background:var(--navy);font-family:'Avenir Next',Avenir,'Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;background:var(--paper);padding:5vh 6vw 7vh;}
+.slide.on{display:flex;}
+.slide.dark{background:var(--navy);color:#fff;}
+.kick{font-size:1.6vh;letter-spacing:.3em;text-transform:uppercase;font-weight:800;color:var(--gold-d);margin-bottom:1.6vh;}
+.dark .kick{color:var(--gold);}
+.slide h2{font-family:Georgia,'Times New Roman',serif;font-size:4.8vh;line-height:1.12;color:var(--navy);margin-bottom:2.6vh;letter-spacing:-.01em;}
+.dark h2{color:#fff;} .slide h2 em{font-style:italic;color:var(--gold-d);} .dark h2 em{color:var(--gold);}
+.slide h3{font-family:Georgia,serif;font-size:2.9vh;color:var(--navy);margin-bottom:1vh;}
+.body{flex:1;font-size:2.75vh;line-height:1.45;color:var(--soft);display:flex;flex-direction:column;min-height:0;}
+.dark .body{color:rgba(255,255,255,.88);}
+.body p{margin-bottom:1.6vh;} .body ul,.body ol{margin-left:4vh;} .body li{margin-bottom:1vh;}
+.body b{color:var(--ink);} .dark .body b{color:#fff;}
+.big{font-family:Georgia,serif;font-size:4vh;line-height:1.3;color:var(--ink);max-width:34ch;}
+.dark .big{color:#fff;}
+.dim{font-size:2vh;color:#7A8396;margin-top:auto;padding-top:1vh;}
+.dark .dim{color:rgba(255,255,255,.55);}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:3vw;margin-bottom:2vh;}
+.cols.three{grid-template-columns:1fr 1fr 1fr;gap:2vw;}
+.card{background:#fff;border-radius:1.8vh;padding:2.2vh 2vw;border:1px solid var(--line);}
+.card h3{margin-bottom:.8vh;} .card p{font-size:2.4vh;margin-bottom:.8vh;}
+.card.hl{border-left:.7vh solid var(--gold);}
+.dark .card{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);} .dark .card h3{color:#fff;} .dark .card p{color:rgba(255,255,255,.88);}
+table{border-collapse:collapse;width:100%;font-size:2.35vh;background:#fff;border-radius:1.4vh;overflow:hidden;}
+th,td{text-align:right;padding:.9vh 1.2vw;border-bottom:1px solid var(--line);vertical-align:top;}
+th:first-child,td:first-child{text-align:left;} td.l{text-align:left;}
+th{background:var(--navy);color:#fff;font-size:1.8vh;letter-spacing:.08em;text-transform:uppercase;}
+tr.hl td{background:#FFF4E3;font-weight:800;color:var(--ink);}
+td.bad{color:var(--bad);font-weight:800;} td.ok{color:var(--ok);font-weight:800;}
+.flow{display:flex;gap:.8vw;align-items:stretch;margin:1.6vh 0;}
+.flow>div{flex:1;background:#fff;border:1px solid var(--line);border-radius:1.4vh;padding:1.5vh 1vw;font-size:2.1vh;line-height:1.35;}
+.flow>div b{display:block;font-family:Georgia,serif;font-size:2.5vh;color:var(--navy);margin-bottom:.5vh;}
+.flow>div.now{background:#FFF4E3;border:2px solid var(--gold);}
+.formula{font-family:Georgia,serif;font-size:3.3vh;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:1.6vh;padding:2vh 2vw;margin:1vh 0 1.8vh;text-align:center;}
+.dark .formula{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2);}
+.reveal{visibility:hidden;} .reveal.show{visibility:visible;}
+.q{background:#fff;border-left:.7vh solid var(--gold);border-radius:1.2vh;padding:1.8vh 2vw;font-family:Georgia,serif;font-size:3.1vh;color:var(--navy);margin:1vh 0 1.8vh;}
+.dark .q{background:rgba(255,255,255,.08);color:#fff;}
+.do{background:#FFF4E3;border:1px solid #F0C98A;border-radius:1.4vh;padding:1.6vh 1.6vw;font-size:2.5vh;color:var(--ink);margin:1vh 0 1.6vh;}
+.do b{color:var(--gold-d);}
+.hud{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;gap:2vw;padding:1vh 2vw;font-size:1.9vh;color:rgba(255,255,255,.75);background:rgba(16,31,68,.94);z-index:5;}
+.hud b{color:#fff;} .hud .sp{flex:1;} .hud .late{color:#F4B183;} .hud .early{color:#A8D5A2;}
+.notes{display:none;position:fixed;left:0;right:0;bottom:4.2vh;max-height:34vh;overflow:auto;background:#0B1633;color:#EEF1F7;padding:2.2vh 4vw;font-size:2.2vh;line-height:1.5;border-top:.4vh solid var(--gold);z-index:4;}
+body.notes .slide.on .notes{display:block;}
+body.notes .slide.on .body{padding-bottom:34vh;}
+.help{position:fixed;top:1vh;right:1vw;font-size:1.7vh;color:rgba(128,140,160,.8);z-index:5;}
+@media print{
+  @page{size:A4 landscape;margin:10mm;}
+  html,body{background:#fff;height:auto;} .deck{width:auto;height:auto;overflow:visible;}
+  .slide{position:static;display:flex !important;min-height:180mm;page-break-after:always;padding:30px 40px;background:#fff !important;color:var(--ink) !important;border:1px solid #ccc;margin-bottom:10px;}
+  .dark h2,.dark .big,.dark .body,.dark .body b,.dark .formula,.dark .q,.dark .card h3,.dark .card p{color:var(--ink) !important;}
+  .slide h2{font-size:30px;} .kick{font-size:11px;} .body{font-size:17px;} .big{font-size:22px;} .dim{font-size:12px;}
+  .card p,.flow>div{font-size:14px;} table{font-size:14px;} th{font-size:10px;} th,td{padding:5px 9px;} .formula{font-size:20px;} .q{font-size:19px;} .do{font-size:15px;}
+  .reveal{visibility:visible;}
+  .notes{display:block !important;position:static;max-height:none;background:#F4F6FA;color:var(--ink);font-size:12.5px;padding:10px 14px;margin-top:12px;border-top:2px solid var(--gold);}
+  .notes:before{content:"Notes · ";font-weight:800;color:var(--gold-d);}
+  .hud,.help{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="help">← → move · N notes · P print</div>
+<div class="deck" id="deck">
+
+<!-- 1 -->
+<section class="slide dark" data-clock="18:45">
+  <div class="kick">Geneva Business School · Finance Modelling · Week 5 · Session 4 · Thursday 12 November 2026</div>
+  <h2>Forecasting five years of all three statements: drivers, the plug that closes the balance sheet, and interest that depends on itself</h2>
+  <div class="body">
+    <p class="big">Tonight is explanation and worked examples. The exercises on the Session 4 page are your team's homework, due before Session 5.</p>
+    <div class="dim">The examples tonight use a small bakery chain, Forno Lumen, so that the Meridia answers on the page are still yours to find. All bakery figures are in € thousand; all Meridia figures in € million.</div>
+  </div>
+  <div class="notes">No laptops needed for the first part; pens are useful. Say at once that the page is homework, so nobody tries to keep up with it during the slides.</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-clock="18:47">
+  <div class="kick">The plan · 120 minutes</div>
+  <h2>Four parts of theory with one worked example, a break, then four topics from Sessions 1–3 that the class found hard</h2>
+  <div class="body">
+    <table>
+      <tr><th>Part</th><th class="l" style="text-align:left">What you learn</th><th>Page step it prepares</th></tr>
+      <tr><td>1</td><td class="l">How to forecast revenue, working capital and fixed assets from drivers</td><td>Step 2</td></tr>
+      <tr><td>2</td><td class="l">Why a forecast needs one line that closes the balance sheet, and why that line should be a credit facility</td><td>Step 3</td></tr>
+      <tr><td>3</td><td class="l">Why interest on the average debt makes the model circular, and the two correct ways to handle it</td><td>Step 4</td></tr>
+      <tr><td>4</td><td class="l">What a bank tests: two covenants, a cautious forecast and the dividend</td><td>Step 5</td></tr>
+      <tr><td>—</td><td class="l">Break</td><td></td></tr>
+      <tr><td>5</td><td class="l">Review: how one event moves the three statements, the working-capital sign, retained earnings, from value to price per share</td><td>Sessions 1–3</td></tr>
+    </table>
+    <div class="dim">The last slide says exactly what the homework is and when it is due.</div>
+  </div>
+  <div class="notes">Clock: Part 1 18:49–19:13 · Part 2 19:13–19:28 · Part 3 19:28–19:40 · Part 4 19:40–19:50 · break 19:50–19:55 · Part 5 19:55–20:25 · homework 20:25 · teams start the page 20:28–20:45 with the instructor walking around.</div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-clock="18:49">
+  <div class="kick">Where Meridia stands · from Session 3</div>
+  <h2>The bank asks four questions about Meridia's next five years, and the corrected FY2025 balance sheet is the starting point</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card hl"><h3>The starting point: FY2025, € m</h3><p>Cash 9.0 · receivables 29.6 · inventory 2.4 · fixed assets 129.4 = <b>assets 170.4</b>.</p><p>Payables 14.3 · term debt 69.0 · share capital 40.0 · retained earnings 47.1 = <b>liabilities and equity 170.4</b>.</p></div>
+      <div class="card hl"><h3>What Banca del Litorale asks</h3><p>1. A five-year forecast of the three statements that balances in every year.</p><p>2. How much of a €15 m credit facility Meridia uses.</p><p>3. Two covenants, year by year.</p><p>4. The dividend Meridia can afford.</p></div>
+    </div>
+    <p>A bank lends against future cash, not against past profit. That is why it wants the forecast of all three statements, not only the income statement.</p>
+  </div>
+  <div class="notes">Session 3 corrected four cells; these are the corrected numbers. Banca del Litorale and Boreal are fictional.</div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-clock="18:52">
+  <div class="kick">Tonight's worked example</div>
+  <h2>Forno Lumen, a fictional chain of four bakeries in Lausanne, opens a fifth shop in FY2026</h2>
+  <div class="body">
+    <table>
+      <tr><th>The business, FY2025, € thousand</th><th></th><th style="text-align:left">The balance sheet, end of FY2025</th><th></th></tr>
+      <tr><td class="l">Shops × revenue per shop</td><td>4 × 500 = 2,000</td><td class="l">Cash</td><td>150.0</td></tr>
+      <tr><td class="l">EBITDA margin</td><td>12 %</td><td class="l">Receivables (hotels pay after 30 days)</td><td>164.4</td></tr>
+      <tr><td class="l">Fixed assets, useful life</td><td>1,200.0 · 10 years</td><td class="l">Inventory (flour, butter: 5 days of costs)</td><td>24.1</td></tr>
+      <tr><td class="l">Term loan, rate, repayment</td><td>600.0 · 5 % · 100 a year</td><td class="l">Payables (suppliers paid after 20 days)</td><td>96.4</td></tr>
+      <tr><td class="l">Tax · dividend payout</td><td>20 % · 30 % of net income</td><td class="l">Share capital · retained earnings</td><td>300.0 · 542.1</td></tr>
+    </table>
+    <p style="margin-top:2vh">FY2026 plan: 5 shops at €520 thousand each, a new shop costing 400 plus 100 of replacement equipment, and at least 100 of cash kept at all times.</p>
+  </div>
+  <div class="notes">The balance sheet balances: 150.0 + 164.4 + 24.1 + 1,200.0 = 1,538.5 = 96.4 + 600.0 + 300.0 + 542.1. Every slide of Parts 1–4 forecasts FY2026 for this bakery. The students then do the same for Meridia, for five years, on the page.</div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-clock="18:54">
+  <div class="kick">Part 1 · drivers</div>
+  <h2>A driver is a business quantity that causes a line of the statements, so the forecast can answer "what if"</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card"><h3>"Last year plus 6.7 %"</h3><p>Revenue FY2026 = 180.4 × 1.067. Correct arithmetic, but nobody can ask what happens if Meridia loses a customer, or raises prices less.</p></div>
+      <div class="card hl"><h3>From drivers</h3><p>Revenue = pallet positions × price per position. FY2025: 220,000 × €820 = €180.4 m. Growth: positions +3.5 %, price +3.1 %, so revenue grows by 1.035 × 1.031 − 1 = <b>6.7 %</b>.</p></div>
+    </div>
+    <p>The two forecasts give the same number. Only the second one tells a manager which quantity to check, and tells the bank which assumption to doubt.</p>
+  </div>
+  <div class="notes">Ask: who in the company can confirm 3.5 % more pallet positions? The sales director, from signed contracts. Who can confirm 3.1 % on price? The contracts' indexation clauses. Nobody can confirm "+6.7 %".</div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-clock="18:57">
+  <div class="kick">Part 1 · drivers · worked example</div>
+  <h2>Forno Lumen's revenue grows by 30 % because it opens a shop, not because the market grows</h2>
+  <div class="body">
+    <div class="formula">Revenue = shops × revenue per shop</div>
+    <div class="q">FY2026: 5 shops × €520 thousand. What is revenue, and by how much did it grow?</div>
+    <div class="reveal"><table>
+      <tr><th></th><th>FY2025</th><th>FY2026</th></tr>
+      <tr><td class="l">Shops</td><td>4</td><td>5</td></tr>
+      <tr><td class="l">Revenue per shop</td><td>500</td><td>520</td></tr>
+      <tr class="hl"><td class="l">Revenue</td><td>2,000</td><td>2,600 (+30 %)</td></tr>
+      <tr><td class="l">EBITDA at 12 %</td><td>240</td><td>312</td></tr>
+      <tr><td class="l">Operating costs = revenue − EBITDA</td><td>1,760</td><td>2,288</td></tr>
+    </table></div>
+  </div>
+  <div class="notes">Press → to show the answer. Point out the growth split: 1.25 (shops) × 1.04 (per shop) − 1 = 30 %. The operating costs row is needed on the next slides, because inventory and payables are driven by costs, not by revenue.</div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-clock="19:00">
+  <div class="kick">Part 1 · working capital in days</div>
+  <h2>Working capital is money tied up in the business: what customers still owe, plus stock, minus what you still owe suppliers</h2>
+  <div class="body">
+    <div class="formula">Receivables = revenue × days ÷ 365 &nbsp;·&nbsp; Inventory, payables = operating costs × days ÷ 365</div>
+    <ul>
+      <li><b>Receivables</b>: sales already counted as revenue, but not yet paid in cash. 30 days means customers pay one month after the sale.</li>
+      <li><b>Inventory</b>: goods bought but not yet used. <b>Payables</b>: goods received but not yet paid for.</li>
+      <li>Net working capital = receivables + inventory − payables.</li>
+    </ul>
+    <div class="q">Meridia FY2025: receivables 29.6, revenue 180.4. How many days do its customers take to pay?</div>
+    <div class="reveal do"><b>Answer:</b> 29.6 ÷ 180.4 × 365 = <b>59.9 days</b>. The page rounds this to 60 days as the base-case driver.</div>
+  </div>
+  <div class="notes">The reason for days: days are a policy a manager controls (payment terms), and they stay roughly stable while revenue grows, so the balance grows with the business automatically.</div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-clock="19:04">
+  <div class="kick">Part 1 · working capital · worked example</div>
+  <h2>When working capital grows, cash falls by the same amount, even though profit is unchanged</h2>
+  <div class="body">
+    <table>
+      <tr><th>Forno Lumen, € thousand</th><th>FY2025</th><th>FY2026</th><th>Change</th></tr>
+      <tr><td class="l">Receivables: 2,600 × 30 ÷ 365</td><td>164.4</td><td>213.7</td><td>+49.3</td></tr>
+      <tr><td class="l">Inventory: 2,288 × 5 ÷ 365</td><td>24.1</td><td>31.3</td><td>+7.2</td></tr>
+      <tr><td class="l">Payables: 2,288 × 20 ÷ 365</td><td>96.4</td><td>125.4</td><td>+29.0</td></tr>
+      <tr class="hl"><td class="l">Net working capital</td><td>92.1</td><td>119.7</td><td>+27.6</td></tr>
+    </table>
+    <p>The increase of <b>27.6</b> is cash the bakery spends on growing: hotels owe it more, and it holds more flour. Payables work the other way: owing suppliers more <b>keeps</b> cash in the business.</p>
+    <div class="dim">The other direction exists too: a gym chain is paid in advance by its members, so its working capital is negative and growth brings cash in.</div>
+  </div>
+  <div class="notes">The rule to repeat: an increase in an asset (receivables, inventory) uses cash; an increase in a liability (payables) provides cash. This is exactly the sign error planted in Session 3 (+1.4 instead of −1.4), revisited in Part 5.</div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-clock="19:07">
+  <div class="kick">Part 1 · capex and depreciation</div>
+  <h2>Capex is cash spent on fixed assets now; depreciation spreads that cost over the years the assets are used</h2>
+  <div class="body">
+    <div class="formula">D&amp;A = opening fixed assets ÷ useful life &nbsp;·&nbsp; closing fixed assets = opening + capex − D&amp;A</div>
+    <table>
+      <tr><th>Forno Lumen FY2026, € thousand</th><th></th></tr>
+      <tr><td class="l">D&amp;A = 1,200 ÷ 10 years</td><td>120.0</td></tr>
+      <tr><td class="l">Capex = new shop 400 + replacement 100</td><td>500.0</td></tr>
+      <tr class="hl"><td class="l">Capex ÷ D&amp;A</td><td>4.2</td></tr>
+      <tr><td class="l">Closing fixed assets = 1,200 + 500 − 120</td><td>1,580.0</td></tr>
+    </table>
+    <p>A ratio above 1 means the company invests more than what wears out: it is growing its assets. Meridia FY2025: capex 14.2 ÷ D&amp;A 10.6 = <b>1.34</b>. The bakery's 4.2 is a year of expansion, and it will need financing.</p>
+  </div>
+  <div class="notes">Two things to stress: (1) capex is cash and never goes through the income statement; D&A goes through the income statement and is not cash. (2) Meridia's base case sets capex at 8 % of revenue; the page asks for the FY2026 ratio.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-clock="19:10">
+  <div class="kick">Part 1 · from EBITDA to net income</div>
+  <h2>Net income is EBITDA minus depreciation, interest and tax</h2>
+  <div class="body">
+    <table>
+      <tr><th>Forno Lumen FY2026, € thousand</th><th></th></tr>
+      <tr><td class="l">EBITDA (12 % of 2,600)</td><td>312.0</td></tr>
+      <tr><td class="l">− D&amp;A</td><td>−120.0</td></tr>
+      <tr><td class="l">− Interest: 5 % × the opening loan of 600</td><td>−30.0</td></tr>
+      <tr><td class="l">= Profit before tax</td><td>162.0</td></tr>
+      <tr><td class="l">− Tax at 20 %</td><td>−32.4</td></tr>
+      <tr class="hl"><td class="l">= Net income</td><td>129.6</td></tr>
+      <tr><td class="l">Dividend: 30 % of net income</td><td>38.9</td></tr>
+    </table>
+    <p>Interest is computed here on the <b>opening</b> loan, the balance on 1 January. Part 3 shows why that is a simplification.</p>
+  </div>
+  <div class="notes">Quick and mechanical; the class has seen this structure since Session 3. EBITDA = earnings before interest, tax, depreciation and amortisation.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-clock="19:13">
+  <div class="kick">Part 1 · from net income to cash</div>
+  <h2>Cash from operations adds back depreciation, which costs no cash, and subtracts the increase in working capital</h2>
+  <div class="body">
+    <div class="formula">Cash from operations = net income + D&amp;A − increase in working capital</div>
+    <div class="q">Forno Lumen FY2026: net income 129.6, D&amp;A 120.0, working capital +27.6. What is cash from operations?</div>
+    <div class="reveal do"><b>Answer:</b> 129.6 + 120.0 − 27.6 = <b>222.0</b>. The bakery earns 129.6 of profit but generates 222.0 of cash from running its shops, mainly because 120.0 of the cost was spent years ago.</div>
+  </div>
+  <div class="notes">Ask before revealing. If someone subtracts D&A, ask: did the bakery pay anyone 120 this year? No: the money left when the ovens were bought.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-clock="19:16">
+  <div class="kick">Part 2 · the plug</div>
+  <h2>In a forecast, every line is decided by a driver except one, and that line must take whatever amount makes the balance sheet balance</h2>
+  <div class="body">
+    <div class="flow">
+      <div><b>Decided by drivers</b>Revenue, costs, working capital, capex, the scheduled loan repayment, the dividend</div>
+      <div class="now"><b>Left over</b>Cash. It is whatever remains after all the decisions.</div>
+      <div><b>The plug</b>The one line that takes the leftover, so assets = liabilities + equity</div>
+    </div>
+    <div class="formula">Cash available = opening cash + cash from operations − capex − repayment − dividend</div>
+    <p>A model without a plug does not balance, or balances only because somebody typed a number. In Session 1 the broken file had exactly that: a hidden plug row.</p>
+  </div>
+  <div class="notes">The word "plug" is the modellers' word. Insist that a plug is a formula, never a typed number.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-clock="19:19">
+  <div class="kick">Part 2 · the plug · worked example</div>
+  <h2>If cash is the plug, Forno Lumen ends FY2026 with negative cash, which no company can have</h2>
+  <div class="body">
+    <div class="q">Opening cash 150.0, cash from operations 222.0, capex 500.0, loan repayment 100.0, dividend 38.9. What is cash at the end of FY2026?</div>
+    <div class="reveal"><table>
+      <tr><th>€ thousand</th><th></th></tr>
+      <tr><td class="l">Opening cash</td><td>150.0</td></tr>
+      <tr><td class="l">+ Cash from operations</td><td>+222.0</td></tr>
+      <tr><td class="l">− Capex</td><td>−500.0</td></tr>
+      <tr><td class="l">− Loan repayment</td><td>−100.0</td></tr>
+      <tr><td class="l">− Dividend</td><td>−38.9</td></tr>
+      <tr class="hl"><td class="l">= Cash available</td><td class="bad">−266.9</td></tr>
+    </table>
+    <p>The balance sheet still balances with −266.9 of cash. That is the problem: the check is green, and the plan is impossible.</p></div>
+  </div>
+  <div class="notes">Reveal, then ask what would really happen: the bakery could not pay its builder, or it would borrow. The model must say which.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-clock="19:22">
+  <div class="kick">Part 2 · minimum cash and a credit facility</div>
+  <h2>A real company keeps a minimum cash balance and borrows on a revolving credit facility when cash would fall below it</h2>
+  <div class="body">
+    <p>A <b>revolving credit facility</b> is a line of credit with a limit, like an overdraft: the company draws on it when cash runs short and repays it when cash comes back.</p>
+    <div class="formula">Draw (+) or repay (−) = MAX( minimum cash − cash available , − opening facility )</div>
+    <table>
+      <tr><th>Minimum cash 100</th><th>Cash available</th><th>Opening facility</th><th>Draw / repay</th><th>Closing cash</th></tr>
+      <tr><td class="l">Short of cash</td><td>60</td><td>0</td><td>+40</td><td>100</td></tr>
+      <tr><td class="l">Cash comes back</td><td>130</td><td>50</td><td>−30</td><td>100</td></tr>
+      <tr><td class="l">More cash than the debt</td><td>180</td><td>50</td><td>−50</td><td>130</td></tr>
+    </table>
+    <p>The MAX stops the facility going below zero: you cannot repay more than you owe.</p>
+  </div>
+  <div class="notes">Walk the three rows with the formula: MAX(100−60, −0) = 40; MAX(100−130, −50) = −30; MAX(100−180, −50) = −50, so the extra 30 stays as cash (closing 180 − 50 = 130). In Excel on the page: =MAX(MinCash − CashAvailable, −OpeningFacility).</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-clock="19:25">
+  <div class="kick">Part 2 · the plug · worked example</div>
+  <h2>With the facility as the plug, Forno Lumen draws 366.9 and ends the year with exactly its minimum cash</h2>
+  <div class="body">
+    <div class="cols">
+      <div><table>
+        <tr><th>Assets, end FY2026</th><th></th></tr>
+        <tr><td class="l">Cash (the minimum)</td><td>100.0</td></tr>
+        <tr><td class="l">Receivables</td><td>213.7</td></tr>
+        <tr><td class="l">Inventory</td><td>31.3</td></tr>
+        <tr><td class="l">Fixed assets</td><td>1,580.0</td></tr>
+        <tr class="hl"><td class="l">Total</td><td>1,925.0</td></tr>
+      </table></div>
+      <div><table>
+        <tr><th>Liabilities and equity</th><th></th></tr>
+        <tr><td class="l">Payables</td><td>125.4</td></tr>
+        <tr><td class="l">Term loan: 600 − 100</td><td>500.0</td></tr>
+        <tr><td class="l">Facility: 100 − (−266.9)</td><td>366.9</td></tr>
+        <tr><td class="l">Share capital · retained earnings</td><td>300.0 · 632.8</td></tr>
+        <tr class="hl"><td class="l">Total</td><td>1,925.0</td></tr>
+      </table></div>
+    </div>
+    <p>Retained earnings = 542.1 + net income 129.6 − dividend 38.9 = 632.8. Both sides agree, and the cash is real.</p>
+  </div>
+  <div class="notes">The liabilities column adds to 1,925.1 if you add the rounded figures; the unrounded model gives 1,925.04 on both sides. Say this if a student adds it up. Point: the facility, not cash, absorbed the shortfall.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-clock="19:28">
+  <div class="kick">Part 2 · the balance check</div>
+  <h2>The balance check is one formula per year that must read zero, and when it does not, it says where to look</h2>
+  <div class="body">
+    <div class="formula">Balance check = ROUND( total assets − total liabilities and equity , 3 )</div>
+    <ul>
+      <li>Put it under the balance sheet, one cell per year, and feed it to the master check on the cover (Session 1).</li>
+      <li>If it is not zero, the cause is almost always one of the four you corrected in Session 3: a working-capital sign, a dividend missing from the cash flow, retained earnings built from profit before tax, or a figure carried forward instead of rolled forward.</li>
+      <li>A plug hides none of these: the facility takes only what the cash flow says is missing.</li>
+    </ul>
+    <div class="do"><b>On the page, Step 3:</b> switch between "cash only" and "minimum cash + facility", and look at the lender case.</div>
+  </div>
+  <div class="notes">Do not say what "cash only" shows for Meridia: that is a homework check.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-clock="19:31">
+  <div class="kick">Part 3 · interest on the average balance</div>
+  <h2>Interest is paid all year on a balance that changes during the year, so the average balance is closer to the truth than the opening one</h2>
+  <div class="body">
+    <div class="formula">Interest = rate × ( opening debt + closing debt ) ÷ 2</div>
+    <div class="cols">
+      <div class="card"><h3>Opening balance</h3><p>Forno Lumen: 5 % × 600 = <b>30.0</b>. But the loan falls to 500 during the year, and the facility rises from 0 to 366.9. The bakery owes far more than 600 for most of the year.</p></div>
+      <div class="card hl"><h3>Average balance</h3><p>Term loan (600 + 500) ÷ 2 = 550. Facility (0 + 366.9) ÷ 2 = 183.4. Interest = 5 % × 733.4 = <b>36.7</b>.</p></div>
+    </div>
+    <p>But 366.9 was computed with interest of 30.0. With interest of 36.7, net income is lower, cash is lower, and the facility draw is larger. The number depends on itself.</p>
+  </div>
+  <div class="notes">This is the hinge of the evening: let the room feel the problem before showing the circle.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-clock="19:33">
+  <div class="kick">Part 3 · the circular reference</div>
+  <h2>The circle: interest depends on the facility, and the facility depends on the interest</h2>
+  <div class="body">
+    <div class="flow">
+      <div class="now"><b>Interest</b>on the average facility</div>
+      <div><b>Net income</b>falls when interest rises</div>
+      <div><b>Cash available</b>falls with net income</div>
+      <div><b>Facility draw</b>rises to keep minimum cash</div>
+      <div class="now"><b>Interest</b>rises again, a little</div>
+    </div>
+    <p>Excel calls a formula that depends on itself, through other cells, a <b>circular reference</b>, and shows a warning. This circle has an answer, because each turn is much smaller than the last: one more euro of facility adds 5 % × ½ = 2.5 cents of interest, of which 80 % remains after tax.</p>
+  </div>
+  <div class="notes">The convergence argument in one line: the feedback factor is about 0.025 × 0.8 × 0.7 (the share of net income kept after the 30 % dividend), about 1.4 %. Each round moves about one seventieth of the round before.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-clock="19:35">
+  <div class="kick">Part 3 · the circular reference · worked example</div>
+  <h2>Repeating the calculation finds the answer: Forno Lumen's interest settles at 36.77 after four rounds</h2>
+  <div class="body">
+    <div class="q">Start with no facility, compute interest, compute the draw, recompute interest with that draw. When does it stop moving?</div>
+    <div class="reveal"><table>
+      <tr><th>Round</th><th>Facility used for interest</th><th>Interest</th><th>Resulting draw</th></tr>
+      <tr><td>1</td><td>0 (a first guess)</td><td>27.50</td><td>365.50</td></tr>
+      <tr><td>2</td><td>365.50</td><td>36.64</td><td>370.61</td></tr>
+      <tr><td>3</td><td>370.61</td><td>36.77</td><td>370.69</td></tr>
+      <tr class="hl"><td>4</td><td>370.69</td><td>36.77</td><td>370.69</td></tr>
+    </table>
+    <p>Round 1 uses only the term loan's average, 5 % × 550. From round 3 the answer no longer moves at two decimals.</p></div>
+  </div>
+  <div class="notes">Compare with the opening-balance method: interest 30.0, draw 366.9. The difference is 6.8 of interest and 3.8 of facility: small, but it can decide whether a covenant holds.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-clock="19:38">
+  <div class="kick">Part 3 · two correct ways</div>
+  <h2>There are two correct ways to handle the circle, and one way that is never acceptable</h2>
+  <div class="body">
+    <div class="cols three">
+      <div class="card hl"><h3>1 · Let Excel iterate</h3><p>File → Options → Formulas → <b>Enable iterative calculation</b>, 100 iterations, maximum change 0.001. Add a <b>circuit breaker</b>: one input cell that, set to 1, replaces the average by the opening balance, so a model that blows up can be reset.</p></div>
+      <div class="card hl"><h3>2 · Avoid the circle</h3><p>Charge interest on the opening balance and accept the small error. Simple and stable; say in the model that you did it.</p></div>
+      <div class="card"><h3>Never</h3><p>Leaving Excel's circular-reference warning on and ignoring it, or a macro that copies and pastes values until it stops, hidden from the reader.</p></div>
+    </div>
+    <div class="do"><b>On the page, Step 4:</b> read Meridia's rounds, switch between the two methods, and write which one your team uses and why.</div>
+  </div>
+  <div class="notes">On a Mac: Excel → Preferences → Calculation → Use iterative calculation. The circuit breaker formula: =IF(Breaker=1, rate × opening, rate × average).</div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-clock="19:40">
+  <div class="kick">Part 4 · covenants</div>
+  <h2>A covenant is a promise in a loan contract that the bank tests every year; breaking it lets the bank demand its money back</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card hl"><h3>Leverage: net debt ÷ EBITDA, at most 3.0</h3><p>Net debt = term debt + facility − cash. It says how many years of EBITDA it would take to repay the debt.</p><p>Forno Lumen: (500.0 + 370.7 − 100.0) ÷ 312.0 = <b>2.47</b>.</p></div>
+      <div class="card hl"><h3>Interest cover: EBITDA ÷ interest, at least 4.0</h3><p>It says how many times the year's profit before depreciation covers the interest.</p><p>Forno Lumen: 312.0 ÷ 36.8 = <b>8.5</b>.</p></div>
+    </div>
+    <p><b>Headroom</b> is how far the business can fall before the covenant breaks. Forno Lumen breaks the 3.0 limit if EBITDA falls to 770.7 ÷ 3.0 = 256.9, which is 18 % below plan.</p>
+  </div>
+  <div class="notes">The bakery uses the average-interest figures (facility 370.7, interest 36.8). Headroom in words is what a bank reads: "EBITDA can fall by 18 % before we may call the loan."</div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-clock="19:44">
+  <div class="kick">Part 4 · the lender case</div>
+  <h2>A bank never lends on the company's own plan: it tests the covenants on a cautious forecast of its own, the lender case</h2>
+  <div class="body">
+    <table>
+      <tr><th>Meridia driver</th><th>Base case</th><th>Banca del Litorale's lender case</th></tr>
+      <tr><td class="l">Pallet positions, growth a year</td><td>+3.5 %</td><td>+1.0 %</td></tr>
+      <tr><td class="l">Price per position, growth a year</td><td>+3.1 %</td><td>+2.0 %</td></tr>
+      <tr><td class="l">EBITDA margin</td><td>16.1 %</td><td>14.5 %</td></tr>
+      <tr><td class="l">Capex, % of revenue</td><td>8.0 %</td><td>7.5 %</td></tr>
+      <tr><td class="l">Days customers take to pay</td><td>60</td><td>70</td></tr>
+    </table>
+    <p>Think about the last line for the bakery: 10 more days of receivables on 2,600 of revenue is 2,600 × 10 ÷ 365 = <b>71.2</b> more cash tied up, in one year, with no change in profit.</p>
+  </div>
+  <div class="notes">Do not give Meridia's lender-case results; Step 5 asks for them. Hint only: the change from 60 to 70 days happens in FY2026, so look at FY2026's working capital.</div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-clock="19:47">
+  <div class="kick">Part 4 · the dividend</div>
+  <h2>The dividend is the one cash outflow the owners decide every year, so it is the first thing a bank wants to limit</h2>
+  <div class="body">
+    <div class="q">Forno Lumen draws 370.7 on its facility in FY2026 and pays a dividend of 37.3. Where does the dividend's cash come from?</div>
+    <div class="reveal do"><b>Answer:</b> from the bank. Even with no dividend, cash available is −233.4, so every euro of the dividend is borrowed. A bank will either forbid the dividend in a year with a draw, or cap the payout at a level that the cash flow pays for.</div>
+    <p>On the page, Step 5 asks the same question for Meridia: the highest payout at which the base case never draws the facility, and what the lender case says about FY2026.</p>
+  </div>
+  <div class="notes">The bakery dividend with average interest is 30 % × 124.2 = 37.3. Ask: would you, as the bank, accept a dividend paid with our money? The room usually says no; then ask what the owners will say.</div>
+</section>
+
+<!-- 24 -->
+<section class="slide dark" data-clock="19:50">
+  <div class="kick">Break · 5 minutes</div>
+  <h2>Break: back at 19:55</h2>
+  <div class="body">
+    <p class="big">Back at 19:55. Part 5 revisits four topics from Sessions 1 to 3.</p>
+  </div>
+  <div class="notes">If time is short, cut the two Session 1 slides (value, and price per share) rather than the events and working capital.</div>
+</section>
+
+<!-- 25 -->
+<section class="slide" data-clock="19:55">
+  <div class="kick">Part 5 · review · Session 3</div>
+  <h2>One event, three statements: predict how much net income and cash change</h2>
+  <div class="body">
+    <table>
+      <tr><th>Event, €1.0 m, tax 24 %</th><th>Net income</th><th>Cash</th></tr>
+      <tr><td class="l">1 · Meridia buys refrigeration equipment and pays cash</td><td class="reveal">0</td><td class="reveal">−1.0</td></tr>
+      <tr><td class="l">2 · A warehouse is written down: €1.0 m of extra depreciation</td><td class="reveal">−0.76</td><td class="reveal">+0.24</td></tr>
+      <tr><td class="l">3 · A customer pays a €1.0 m invoice early: receivables fall</td><td class="reveal">0</td><td class="reveal">+1.0</td></tr>
+      <tr><td class="l">4 · Meridia pays an extra €1.0 m dividend</td><td class="reveal">0</td><td class="reveal">−1.0</td></tr>
+    </table>
+    <p class="reveal">Equipment is capex: cash, no expense this year. The write-down is an expense but no cash, and it cuts tax by 0.24, which is cash kept. An early payment is cash, not profit. A dividend is paid out of profit already earned.</p>
+  </div>
+  <div class="notes">Each press of → reveals one cell, row by row, then the explanation (nine presses). Let the room answer each before revealing. Event 2 is the one most people get wrong: the write-down increases cash, through tax.</div>
+</section>
+
+<!-- 26 -->
+<section class="slide" data-clock="20:00">
+  <div class="kick">Part 5 · review · Session 3</div>
+  <h2>In the cash flow statement, an increase in receivables is a minus, because the sale was counted as profit but no cash came in</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card"><h3>The rule</h3><p>Asset up (receivables, inventory) → cash down. Liability up (payables) → cash up.</p><p>Change in working capital in the cash flow = −(this year's NWC − last year's NWC).</p></div>
+      <div class="card hl"><h3>The planted error in Session 3</h3><p>The FY2024 cash flow showed working capital at <b>+1.4</b>. Working capital had grown by 1.4, so the correct line was <b>−1.4</b>. One sign, and the cash in the cash flow no longer matched the balance sheet by 2.8.</p></div>
+    </div>
+    <p>Tonight's Forno Lumen example: working capital grew by 27.6, so cash from operations was 129.6 + 120.0 <b>− 27.6</b>.</p>
+  </div>
+  <div class="notes">2.8 = twice 1.4: the wrong sign moves the number by double its size. That doubling is a fingerprint worth teaching: a difference that is exactly twice a line item is almost always a sign error.</div>
+</section>
+
+<!-- 27 -->
+<section class="slide" data-clock="20:04">
+  <div class="kick">Part 5 · review · Session 3</div>
+  <h2>Retained earnings roll forward each year: last year's balance, plus net income, minus the dividend</h2>
+  <div class="body">
+    <div class="formula">Closing retained earnings = opening + net income − dividends</div>
+    <table>
+      <tr><th>Meridia, € m</th><th>Opening</th><th>+ Net income</th><th>− Dividends</th><th>= Closing</th></tr>
+      <tr><td class="l">FY2024</td><td>35.6</td><td>9.7</td><td>3.4</td><td>41.9</td></tr>
+      <tr><td class="l">FY2025</td><td>41.9</td><td>11.6</td><td>6.4</td><td>47.1</td></tr>
+    </table>
+    <p>Two errors in Session 3's draft broke this line: FY2024 used profit <b>before</b> tax (35.6 + 12.8 − 3.4 = 45.0), and FY2025 started from that wrong 45.0. A wrong number that is rolled forward stays wrong in every later year.</p>
+  </div>
+  <div class="notes">Link to tonight: the same roll-forward closes Forno Lumen's equity (542.1 + 129.6 − 38.9) and Meridia's five forecast years.</div>
+</section>
+
+<!-- 28 -->
+<section class="slide" data-clock="20:08">
+  <div class="kick">Part 5 · review · Session 1</div>
+  <h2>A value is today's worth of the future cash flows: the forecast years plus a terminal value for all the years after</h2>
+  <div class="body">
+    <div class="formula">EV = Σ cash flow ÷ (1 + WACC)<sup>t</sup> + terminal value ÷ (1 + WACC)<sup>N</sup></div>
+    <ul>
+      <li><b>WACC</b>, the weighted average cost of capital: the return lenders and owners together require, 8.5 % for Meridia.</li>
+      <li><b>Terminal value</b> (Gordon growth): next year's cash flow ÷ (WACC − g), with g = 2 % growth for ever.</li>
+      <li>Meridia: present value of the forecast years 26.04 + present value of the terminal value 133.32 = <b>EV 159.36</b>. The terminal value is <b>84 %</b> of the value.</li>
+    </ul>
+    <p>WACC 9 % instead of 8.5 % gives EV 147.9: half a point of WACC moves the value by 11.5. Most of the value is in the years nobody forecasts.</p>
+  </div>
+  <div class="notes">EV = enterprise value, the value of the whole business before debt. Session 5 (19 Nov) takes free cash flow and the WACC apart; this slide is only the shape.</div>
+</section>
+
+<!-- 29 -->
+<section class="slide" data-clock="20:13">
+  <div class="kick">Part 5 · review · Sessions 1 and 2</div>
+  <h2>From the value of the business to the price of one share: subtract net debt, divide by the shares</h2>
+  <div class="body">
+    <div class="flow">
+      <div><b>Enterprise value</b>159.36</div>
+      <div><b>− Net debt</b>60.0 (debt − cash)</div>
+      <div><b>= Equity value</b>99.36</div>
+      <div><b>÷ Shares</b>40.0 million</div>
+      <div class="now"><b>= Price per share</b>€2.48</div>
+    </div>
+    <p>Net debt here is the same quantity the bank's leverage covenant uses. Every euro of debt the forecast adds, for example a facility draw that pays a dividend, is a euro less for the shareholders.</p>
+  </div>
+  <div class="notes">Session 3's €0.16 a share of "leakage" came from exactly this bridge: the missing dividend changed net debt.</div>
+</section>
+
+<!-- 30 -->
+<section class="slide" data-clock="20:17">
+  <div class="kick">Part 5 · review · Session 2</div>
+  <h2>Growth is worth little in Meridia's model, because growth costs cash in capex and working capital before it brings cash back</h2>
+  <div class="body">
+    <table>
+      <tr><th>One point more of …</th><th>Change in EV, € m</th></tr>
+      <tr><td class="l">EBITDA margin</td><td class="ok">+24.4</td></tr>
+      <tr><td class="l">Capex, % of revenue</td><td class="bad">−32.2</td></tr>
+      <tr><td class="l">Working capital, % of new revenue</td><td class="bad">−2.0</td></tr>
+      <tr class="hl"><td class="l">Revenue growth</td><td>+0.2</td></tr>
+    </table>
+    <p>Tonight shows the mechanism in the balance sheet: Forno Lumen's 30 % growth needed 500 of capex and 27.6 of working capital, and the bank paid for it. A forecast that grows faster usually draws more on the facility, not less.</p>
+  </div>
+  <div class="notes">Ask: what would make growth valuable? Growth that needs less capex per euro of revenue, or customers who pay in advance (the gym).</div>
+</section>
+
+<!-- 31 -->
+<section class="slide" data-clock="20:22">
+  <div class="kick">Homework · Session 4 page</div>
+  <h2>Your team's homework: Steps 1 to 6 of the Session 4 page, handed in before Session 5 on Thursday 19 November at 18:45</h2>
+  <div class="body">
+    <ol>
+      <li>Open the course page → Week 05 · Session 4. Join your team in Step 1 and lock your guess of Meridia's FY2030 EBITDA.</li>
+      <li><b>Step 2</b>: read the drivers, answer the five checks, write which driver matters most and why.</li>
+      <li><b>Step 3</b>: switch the plugs, answer the four checks, write why the bank prefers minimum cash and a facility.</li>
+      <li><b>Step 4</b>: read the rounds, compare the two interest methods, answer the four checks, write your team's method.</li>
+      <li><b>Step 5</b>: the lender case, the covenants with their headroom, the highest payout without a draw. Write reply parts 3 and 4.</li>
+      <li><b>Step 6</b>: the signed-in member presses <b>Hand in the reply</b>. The last version handed in counts.</li>
+    </ol>
+    <div class="do"><b>Use tonight's slides as the worked example:</b> every check on the page is the same calculation as a Forno Lumen slide, with Meridia's numbers and five years instead of one.</div>
+  </div>
+  <div class="notes">Step 7 (the quiz) is played at the start of Session 5. The slides can be printed with P and shared as a PDF if the class asks.</div>
+</section>
+
+<!-- 32 -->
+<section class="slide dark" data-clock="20:25">
+  <div class="kick">Start now</div>
+  <h2>Start Steps 1 and 2 with your team now, while the instructor walks around</h2>
+  <div class="body">
+    <p class="big">Each check on the page shows a green ✓ when it is right. Ask now about anything that is not clear: at home there is nobody to ask.</p>
+    <div class="dim">Next session, Thursday 19 November: free cash flow and the WACC, from the model you finish this week.</div>
+  </div>
+  <div class="notes">Until 20:45. Walk to each team once. Typical questions: which costs drive inventory (operating costs, not revenue), which year's fixed assets drive D&A (the opening balance).</div>
+</section>
+
+</div>
+<div class="hud"><span><b id="num">1</b></span><span>plan <b id="plan">18:45</b></span><span>now <b id="now">—</b></span><span id="delta"></span><span class="sp"></span><span>Finance Modelling · Week 5 · Session 4 · 12 Nov 2026 · Jan Erik Meidell · Geneva Business School</span></div>
+<script>
+(function(){
+  var S=[].slice.call(document.querySelectorAll('.slide')), i=0, hud={num:document.getElementById('num'),plan:document.getElementById('plan'),now:document.getElementById('now'),delta:document.getElementById('delta')};
+  try{ i=Math.min(S.length-1,parseInt(location.hash.slice(1),10)||0); }catch(e){}
+  function pad(n){return (n<10?'0':'')+n;}
+  function show(){ S.forEach(function(s,j){s.classList.toggle('on',j===i);}); location.hash=i; hud.num.textContent=(i+1)+' / '+S.length; hud.plan.textContent=S[i].getAttribute('data-clock'); tick(); }
+  function tick(){ var d=new Date(); hud.now.textContent=pad(d.getHours())+':'+pad(d.getMinutes()); var p=S[i].getAttribute('data-clock').split(':'), pm=+p[0]*60+ +p[1], nm=d.getHours()*60+d.getMinutes(), df=nm-pm; hud.delta.textContent=df>3?'· '+df+' min behind plan':(df<-3?'· '+(-df)+' min ahead':''); hud.delta.className=df>3?'late':(df<-3?'early':''); }
+  setInterval(tick,15000);
+  function next(){ var hid=S[i].querySelector('.reveal:not(.show)'); if(hid){hid.classList.add('show');return;} if(i<S.length-1){i++;show();} }
+  function prev(){ if(i>0){i--;show();} }
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='n'||e.key==='N'){document.body.classList.toggle('notes');}
+    else if(e.key==='p'||e.key==='P'){window.print();}
+    else if(e.key==='Home'){i=0;show();} else if(e.key==='End'){i=S.length-1;show();}
+  });
+  document.getElementById('deck').addEventListener('click',function(e){ if(e.target.closest('a'))return; if(e.clientX<window.innerWidth*0.2)prev(); else next(); });
+  show();
+})();
+</script>
+</body>
+</html>
