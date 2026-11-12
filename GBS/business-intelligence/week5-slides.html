@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex">
+<title>Week 5 · Session 4 · Loading the data (ETL) · slides · Business Intelligence · GBS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗄️</text></svg>">
+<style>
+/* ---- The GBS deck engine (financial-modelling/session2-slides.html), navy and gold.
+   ← → / space / click to move · N speaker notes · P print view (⌘P → PDF, one slide per page).
+   Session 4 of Business Intelligence, Thu 12 Nov 2026, 16:30–18:30 (week5.html). Jan Erik:
+   "start with [what] must be done in session 3 to finalize — and what they have not yet
+   done — and give some slides to show what we do in session 4 (so that I can explain them)".
+   Slides 3–6: finishing Session 3's design note (the class state as COUNTS, no team named:
+   read from the public team board at 15:44 on 12 Nov 2026). Slides 7–17: Session 4's
+   steps, explained with the page's own examples; answers only in the reveal or the notes. ---- */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#101F44;--gold:#D58517;--gold-d:#A8620A;--ink:#1B2333;--soft:#4A5468;--line:#DCE1EA;--paper:#F6F7FA;--ok:#2F855A;--bad:#9B2335;}
+html,body{height:100%;background:var(--navy);font-family:'Avenir Next',Avenir,'Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;background:var(--paper);padding:5vh 6vw 7vh;}
+.slide.on{display:flex;}
+.slide.dark{background:var(--navy);color:#fff;}
+.kick{font-size:1.6vh;letter-spacing:.3em;text-transform:uppercase;font-weight:800;color:var(--gold-d);margin-bottom:1.6vh;}
+.dark .kick{color:var(--gold);}
+.slide h2{font-family:Georgia,'Times New Roman',serif;font-size:4.8vh;line-height:1.12;color:var(--navy);margin-bottom:2.6vh;letter-spacing:-.01em;}
+.dark h2{color:#fff;} .slide h2 em{font-style:italic;color:var(--gold-d);} .dark h2 em{color:var(--gold);}
+.slide h3{font-family:Georgia,serif;font-size:2.9vh;color:var(--navy);margin-bottom:1vh;}
+.body{flex:1;font-size:2.75vh;line-height:1.45;color:var(--soft);display:flex;flex-direction:column;min-height:0;}
+.dark .body{color:rgba(255,255,255,.88);}
+.body p{margin-bottom:1.6vh;} .body ul,.body ol{margin-left:4vh;} .body li{margin-bottom:1vh;}
+.body b{color:var(--ink);} .dark .body b{color:#fff;}
+.big{font-family:Georgia,serif;font-size:4vh;line-height:1.3;color:var(--ink);max-width:34ch;}
+.dark .big{color:#fff;}
+.dim{font-size:2vh;color:#7A8396;margin-top:auto;padding-top:1vh;}
+.dark .dim{color:rgba(255,255,255,.55);}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:3vw;margin-bottom:2vh;}
+.cols.three{grid-template-columns:1fr 1fr 1fr;gap:2vw;}
+.card{background:#fff;border-radius:1.8vh;padding:2.2vh 2vw;border:1px solid var(--line);}
+.card h3{margin-bottom:.8vh;} .card p{font-size:2.4vh;margin-bottom:.8vh;}
+.card.hl{border-left:.7vh solid var(--gold);}
+.dark .card{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);} .dark .card h3{color:#fff;} .dark .card p{color:rgba(255,255,255,.88);}
+table{border-collapse:collapse;width:100%;font-size:2.35vh;background:#fff;border-radius:1.4vh;overflow:hidden;}
+th,td{text-align:right;padding:.9vh 1.2vw;border-bottom:1px solid var(--line);vertical-align:top;}
+th:first-child,td:first-child{text-align:left;} td.l{text-align:left;}
+th{background:var(--navy);color:#fff;font-size:1.8vh;letter-spacing:.08em;text-transform:uppercase;}
+tr.hl td{background:#FFF4E3;font-weight:800;color:var(--ink);}
+td.bad{color:var(--bad);font-weight:800;} td.ok{color:var(--ok);font-weight:800;}
+.flow{display:flex;gap:.8vw;align-items:stretch;margin:1.6vh 0;}
+.flow>div{flex:1;background:#fff;border:1px solid var(--line);border-radius:1.4vh;padding:1.5vh 1vw;font-size:2.1vh;line-height:1.35;}
+.flow>div b{display:block;font-family:Georgia,serif;font-size:2.5vh;color:var(--navy);margin-bottom:.5vh;}
+.flow>div.now{background:#FFF4E3;border:2px solid var(--gold);}
+.formula{font-family:Georgia,serif;font-size:3.3vh;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:1.6vh;padding:2vh 2vw;margin:1vh 0 1.8vh;text-align:center;}
+.dark .formula{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2);}
+.reveal{visibility:hidden;} .reveal.show{visibility:visible;}
+.q{background:#fff;border-left:.7vh solid var(--gold);border-radius:1.2vh;padding:1.8vh 2vw;font-family:Georgia,serif;font-size:3.1vh;color:var(--navy);margin:1vh 0 1.8vh;}
+.dark .q{background:rgba(255,255,255,.08);color:#fff;}
+.do{background:#FFF4E3;border:1px solid #F0C98A;border-radius:1.4vh;padding:1.6vh 1.6vw;font-size:2.5vh;color:var(--ink);margin:1vh 0 1.6vh;}
+.do b{color:var(--gold-d);}
+.hud{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;gap:2vw;padding:1vh 2vw;font-size:1.9vh;color:rgba(255,255,255,.75);background:rgba(16,31,68,.94);z-index:5;}
+.hud b{color:#fff;} .hud .sp{flex:1;} .hud .late{color:#F4B183;} .hud .early{color:#A8D5A2;}
+.notes{display:none;position:fixed;left:0;right:0;bottom:4.2vh;max-height:34vh;overflow:auto;background:#0B1633;color:#EEF1F7;padding:2.2vh 4vw;font-size:2.2vh;line-height:1.5;border-top:.4vh solid var(--gold);z-index:4;}
+body.notes .slide.on .notes{display:block;}
+body.notes .slide.on .body{padding-bottom:34vh;}
+table.rows td,table.rows th{font-family:Menlo,Consolas,monospace;text-align:left;}
+table.rows td{font-size:2.05vh;color:var(--ink);white-space:nowrap;} table.rows th{font-size:1.6vh;text-transform:none;letter-spacing:0;}
+table.rows td.y{background:#FFF4E3;font-weight:800;}
+.sm{font-size:2.2vh;} table.sm{font-size:2.05vh;} table.sm th{font-size:1.55vh;}
+.star{display:grid;grid-template-columns:1fr 1.25fr 1fr;grid-template-rows:auto auto auto;gap:1.4vh 1.6vw;margin:1vh 0 1.4vh;}
+.star>div{background:#fff;border:1.5px solid var(--navy);border-radius:1.2vh;padding:1vh 1vw;font-size:1.95vh;line-height:1.35;color:var(--soft);}
+.star>div b{display:block;font-family:Menlo,Consolas,monospace;font-size:2.05vh;color:var(--navy);}
+.star>div.f{grid-column:2;grid-row:1/4;background:#FFF4E3;border:2px solid var(--gold);align-self:center;}
+.star>div.f i{color:var(--gold-d);display:block;margin-bottom:.6vh;}
+code{font-family:Menlo,Consolas,monospace;font-size:.9em;color:var(--navy);background:#EEF1F7;padding:0 .4vw;border-radius:.5vh;}
+.dark code{background:rgba(255,255,255,.14);color:#fff;}
+.help{position:fixed;top:1vh;right:1vw;font-size:1.7vh;color:rgba(128,140,160,.8);z-index:5;}
+@media print{
+  @page{size:A4 landscape;margin:10mm;}
+  html,body{background:#fff;height:auto;} .deck{width:auto;height:auto;overflow:visible;}
+  .slide{position:static;display:flex !important;min-height:180mm;page-break-after:always;padding:30px 40px;background:#fff !important;color:var(--ink) !important;border:1px solid #ccc;margin-bottom:10px;}
+  .dark h2,.dark .big,.dark .body,.dark .body b,.dark .formula,.dark .q,.dark .card h3,.dark .card p{color:var(--ink) !important;}
+  .slide h2{font-size:30px;} .kick{font-size:11px;} .body{font-size:17px;} .big{font-size:22px;} .dim{font-size:12px;}
+  .card p,.flow>div{font-size:14px;} table{font-size:14px;} th{font-size:10px;} th,td{padding:5px 9px;} .formula{font-size:20px;} .q{font-size:19px;} .do{font-size:15px;}
+  .reveal{visibility:visible;}
+  .notes{display:block !important;position:static;max-height:none;background:#F4F6FA;color:var(--ink);font-size:12.5px;padding:10px 14px;margin-top:12px;border-top:2px solid var(--gold);}
+  .notes:before{content:"Notes · ";font-weight:800;color:var(--gold-d);}
+  .hud,.help{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="help">← → move · N notes · P print</div>
+<div class="deck" id="deck">
+
+<!-- 1 -->
+<section class="slide dark" data-clock="16:30">
+  <div class="kick">Geneva Business School · Business Intelligence · Week 5 · Session 4 · Thursday 12 November 2026</div>
+  <h2>Load ÒRBITA's data into the warehouse: find what breaks, choose a rule for each problem, and log every change</h2>
+  <div class="body">
+    <p class="big">First, every team finishes and hands in last week's design note. Then the data arrives, and your team loads it.</p>
+    <div class="dim">Open the course page. Teams that have handed in Session 3 go straight to Session 4, Step 1. One laptop per team is enough; signed in.</div>
+  </div>
+  <div class="notes">Same teams as Session 3. The design note (schema.html) is needed tonight: tonight's report goes into the same Netlify folder.</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-clock="16:31">
+  <div class="kick">The plan · 120 minutes</div>
+  <h2>Two parts tonight: finish the design note from Session 3, then load the data and write the load report</h2>
+  <div class="body">
+    <table>
+      <tr><th>When</th><th class="l" style="text-align:left">What happens</th><th>Who</th></tr>
+      <tr><td>Now</td><td class="l">Teams that have not handed in Session 3's design note finish it and hand it in</td><td>those teams</td></tr>
+      <tr><td>Now</td><td class="l">Teams that have handed it in start Session 4, Step 1</td><td>those teams</td></tr>
+      <tr><td>Then</td><td class="l">The slides explain Session 4: ETL, the checks, the rules, the bridge, the log</td><td>everyone</td></tr>
+      <tr><td>Then</td><td class="l">Your team works through Session 4, Steps 1 to 6, and hands in the load report by 18:10</td><td>each team</td></tr>
+      <tr><td>18:10</td><td class="l">The team quiz on the screen (Step 7)</td><td>everyone</td></tr>
+    </table>
+  </div>
+  <div class="notes">Clock: finishing Session 3 16:31–16:50 (slides 3–6 take 6 minutes, then teams work) · Session 4 briefing 16:50–17:05 · work 17:05–18:10 · quiz 18:10–18:30.</div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-clock="16:32">
+  <div class="kick">Session 3 · what the design note needs</div>
+  <h2>The design note from Session 3 is complete when all eight items on the bar at the top of the Session 3 page are green</h2>
+  <div class="body">
+    <ol>
+      <li>Every member has joined the team on the board.</li>
+      <li>Each member has pressed the button at the end of Steps 1, 2 and 3.</li>
+      <li><b>Part 1:</b> your team's tables are drawn in Step 4, with at least four checks passing.</li>
+      <li><b>Part 2:</b> the map in Step 5 says where every column comes from, at least six lines complete.</li>
+      <li><b>Part 3:</b> the rule that gives each account one city each month is written in Step 6a.</li>
+      <li><b>schema.html</b> is on your team's Netlify site, and its address is pasted in Step 6b.</li>
+      <li>One member has pressed <b>Hand in the design note</b> in Step 6c.</li>
+      <li>The quiz (Step 7): skip it tonight.</li>
+    </ol>
+    <div class="do"><b>Do this now:</b> open Session 3 on the course page. The bar at the top shows your team's state and says what to do next.</div>
+  </div>
+  <div class="notes">The bar is the hand-in tracker: it reads the team's shared answers, so every member sees the same state on any laptop. Item 8 can be ignored: the quiz is not replayed.</div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-clock="16:34">
+  <div class="kick">Session 3 · where the class stands at 15:44 today</div>
+  <h2>Three of the seven teams have handed in the design note; four teams still have something left to do</h2>
+  <div class="body">
+    <table>
+      <tr><th class="l" style="text-align:left">What is left</th><th>Teams</th></tr>
+      <tr><td class="l">Nothing: the design note is handed in, and its address is on the class list</td><td class="ok">3</td></tr>
+      <tr><td class="l">Parts 1, 2 and 3 are written; schema.html is not on Netlify, and the note is not handed in</td><td>1</td></tr>
+      <tr><td class="l">Part 3 is written; Steps 4 and 5 are not marked done, the address box does not hold a Netlify address, and the note is not handed in</td><td>1</td></tr>
+      <tr><td class="l">Parts 1 and 2 are done; Part 3 (the city rule) is missing, and the note is not handed in</td><td>1</td></tr>
+      <tr><td class="l">No team answer for Session 3 is on the board yet (the team has no name either)</td><td class="bad">1</td></tr>
+    </table>
+    <p>Your team's own line is the bar at the top of the Session 3 page. The instructor comes to each of these four teams in the next 15 minutes.</p>
+  </div>
+  <div class="notes">Read from the public team board at 15:44. Per team (say it at the table, not on the screen): see the chat summary from Claude. The team without a name has three members on the board and no shared answer; check whether one member is also listed in another team (the same surname appears in two teams).</div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-clock="16:36">
+  <div class="kick">Session 3 · Step 6b and 6c</div>
+  <h2>To publish the design note, add schema.html to the same Netlify folder as your Session 2 memo, then hand it in</h2>
+  <div class="body">
+    <ol>
+      <li>Find the <b>orbita-memo</b> folder from Session 2, the one with index.html. If the member who has it is absent: Netlify → your project → <b>Deploys</b> → the latest deploy → <b>Download</b>.</li>
+      <li>On the Session 3 page press <b>Download the design note</b>. Move schema.html into orbita-memo, next to index.html. Do not rename it.</li>
+      <li>At app.netlify.com open your project → <b>Deploys</b>, and drag the whole orbita-memo folder onto the upload box at the bottom.</li>
+      <li>Open <i>your address</i>/schema.html in a private window. Paste that full address in Step 6b: it starts with https:// and ends with <b>.netlify.app/schema.html</b>.</li>
+      <li>One member presses <b>Hand in the design note</b>.</li>
+    </ol>
+    <div class="dim">The address box takes the web address of the page, never a postal address or a file on your laptop.</div>
+  </div>
+  <div class="notes">One team typed something that is not a web address into the box; this is the line for them. The tracker shows "Next" in plain words for each team.</div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-clock="16:38">
+  <div class="kick">Session 3 · Part 3 of the note</div>
+  <h2>Part 3 says how your design gives each account one city, because billing, where the cancellations are, has no city</h2>
+  <div class="body">
+    <div class="cols">
+      <div class="card hl"><h3>Why a rule is needed</h3><p>The KPI is churn <b>by city</b>. The city is only in telematics, next to each ride. An account can ride in two cities in a month, or not ride at all.</p></div>
+      <div class="card hl"><h3>What your team writes, in one box</h3><p>1. The rule: for example, the city of the account's first ride ever, or the city where it rode most in the month.</p><p>2. The system and the column the rule reads.</p><p>3. One account for which the rule gives an unclear answer, and what your design does with it.</p></div>
+    </div>
+    <p>Tonight's Step 3 uses this rule: it is the eleventh problem of the load. A team without Part 3 has to choose it there anyway.</p>
+  </div>
+  <div class="notes">Example of an unclear account: an account that rode three times in Barcelona and three times in Madrid in October, or one that did not ride at all (Session 4 gives it the city "unknown").</div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-clock="16:50">
+  <div class="kick">Session 4 · what the client asks for</div>
+  <h2>IT has copied one October extract from each of the five systems, and the CFO wants to know what breaks before the whole company is loaded</h2>
+  <div class="body">
+    <p class="big">"Load it into your tables, and tell me two things: which rows your checks refuse, and every rule you applied on the way, with the reason."</p>
+    <p>The extract is a sample of 24 accounts that contains every kind of problem IT found: 34 billing rows, 25 customer emails, 22 rides, 9 support tickets and 10 rows of ad spend.</p>
+    <div class="do"><b>What your team hands in by 18:10:</b> a load report, <b>etl.html</b>, on your Netlify site next to index.html and schema.html. The page builds it from Steps 3 to 5.</div>
+  </div>
+  <div class="notes">The CFO's last sentence on the page: "When the churn number changes next year, I want to be able to read why." That sentence is why the log is the deliverable, not the loaded tables.</div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-clock="16:52">
+  <div class="kick">Session 4 · Step 1</div>
+  <h2>ETL means three things happen to the data between the systems that run the business and the warehouse that measures it</h2>
+  <div class="body">
+    <div class="flow">
+      <div><b>Extract</b>Copy the rows out of each system, unchanged, into a <b>staging area</b>: tables that keep the data exactly as it arrived.</div>
+      <div class="now"><b>Transform</b>Change the rows to fit the warehouse: one clock, one currency, one spelling, and remove what should not be counted. Every change follows a written rule.</div>
+      <div><b>Load</b>Write the rows into the warehouse tables. A good load can run twice without creating duplicates: it is <b>idempotent</b>.</div>
+    </div>
+    <p>Many companies now load first and transform inside the warehouse with SQL. That order is called <b>ELT</b>. The rules are the same; only the place where they run changes.</p>
+  </div>
+  <div class="notes">Ask: in the bank where you have an account, what would "transform" be? Converting every transaction to one currency, removing test transactions. Step 1 ends with a sort of six operations into E, T and L.</div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-clock="16:55">
+  <div class="kick">Session 4 · Step 1</div>
+  <h2>A check is a rule that every loaded row must pass; a row that fails is refused and written in the log</h2>
+  <div class="body">
+    <table>
+      <tr><th class="l" style="text-align:left">Check</th><th class="l" style="text-align:left">What it refuses</th><th class="l" style="text-align:left">ÒRBITA example</th></tr>
+      <tr><td class="l"><b>Not null</b></td><td class="l">an empty value</td><td class="l">every ride has a date</td></tr>
+      <tr><td class="l"><b>Unique</b></td><td class="l">a value that appears twice</td><td class="l">one row per city, channel and week in fact_spend</td></tr>
+      <tr><td class="l"><b>Accepted values</b></td><td class="l">a value not on a fixed list</td><td class="l">the city is one of Barcelona, Madrid, Lisbon, Milan, Zürich, London</td></tr>
+      <tr><td class="l"><b>Relationships</b></td><td class="l">a key that points nowhere</td><td class="l">every ride's subscriber exists in billing</td></tr>
+      <tr><td class="l"><b>Range</b></td><td class="l">a value outside limits</td><td class="l">a counted ride is longer than 0.2 km and 2 minutes</td></tr>
+    </table>
+    <p>The first four are the "generic data tests" of dbt, an open-source tool data engineers use. They are the checks in the last column of your map from Session 3.</p>
+  </div>
+  <div class="notes">Link back: the check column in each team's source-to-target map. Tonight the page runs these five on the loaded tables.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-clock="16:58">
+  <div class="kick">Session 4 · Step 1</div>
+  <h2>Some errors pass every check and change the numbers anyway, so they need a rule written before the load</h2>
+  <div class="body">
+    <table class="rows">
+      <tr><th>subscriber_id</th><th>city</th><th>start_utc</th><th>km</th></tr>
+      <tr><td>10412</td><td>Barcelona</td><td class="y">2026-10-04 22:40</td><td>3.1</td></tr>
+    </table>
+    <div class="q">Is this ride on 4 October or on 5 October?</div>
+    <div class="reveal do"><b>5 October.</b> The time is in UTC, the world clock. Barcelona is two hours ahead in October (summer time), so the ride started at 00:40 on 5 October. The row passes all five checks: its date is not empty, the city is on the list, the subscriber exists, the ride is long enough. Only a rule ("convert to the city's local time, then take the date") gets it right.</div>
+  </div>
+  <div class="notes">Illustrative row in the format of the telematics extract (the subscriber id is made up for the slide; the 22:40 UTC example is the page's own). Summer time ends on 25 October 2026, so after that Barcelona is one hour ahead.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-clock="17:00">
+  <div class="kick">Session 4 · Step 2</div>
+  <h2>First load the five extracts with no rule at all, and count how many rows the checks refuse</h2>
+  <div class="body">
+    <p>Press <b>Load the extracts as they are</b>. The page loads every row and runs the five checks. Then read the refused rows and their reasons, and write which refused row would have done the most damage to a number the board sees.</p>
+    <div class="q">Last week each of you locked a guess: what share of the rows will fail at least one check?</div>
+    <div class="reveal do"><b>18 of 65 rows fail: 27.7 %.</b> The right band was "more than 20 %". This is a sample chosen to contain every problem; a whole month would have a smaller share, but the same kinds.</div>
+  </div>
+  <div class="notes">Reveal only after the teams have done Step 2, or in the debrief at 18:10. Fourteen guesses were locked on 5 November and one on 9 November.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-clock="17:02">
+  <div class="kick">Session 4 · Step 3</div>
+  <h2>Each of the eleven problems has two possible rules, and your team chooses one for each</h2>
+  <div class="body">
+    <table class="sm">
+      <tr><th class="l" style="text-align:left">Where</th><th class="l" style="text-align:left">The problem</th></tr>
+      <tr><td class="l">Telematics</td><td class="l">Times are in UTC · rides under 2 minutes and 0.2 km (the bike did not unlock) · the city typed four ways · a ride by subscriber 10999, a test account billing does not know · each account needs one city</td></tr>
+      <tr><td class="l">Support desk</td><td class="l">Customers known only by email; Anna Kowalski changed hers on 6 October · an open ticket with an empty resolution time</td></tr>
+      <tr><td class="l">Marketing</td><td class="l">Two overlapping exports, so some rows appear twice · spend in euros, Swiss francs and pounds</td></tr>
+      <tr><td class="l">Billing</td><td class="l">A paused account pays nothing this month · customers who cancel and come back within 30 days</td></tr>
+    </table>
+    <p>The first rule of each pair is what happens when nobody decides. The panel at the top shows what moves: rows failing, churn by city, rides, ad spend. The step is done when no row fails a check.</p>
+  </div>
+  <div class="notes">Two rules are not the team's choice: the KPI card from Session 3 decides "paused counts as paying" and "cancellations undone within 30 days are removed". The currency rule uses fixed rates given on the page (1 CHF = 1.07 EUR, 1 GBP = 1.15 EUR). Answers in the notes only: with good rules 0 of 62 rows fail and the sample's October churn is 4 of 21 = 19.0 %. The UTC rule changes no check at all: it is the silent one.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-clock="17:05">
+  <div class="kick">Session 4 · Step 4</div>
+  <h2>A bridge starts from one number and subtracts, line by line, each group the other number leaves out, until it reaches the other number</h2>
+  <div class="body">
+    <p>Since Session 1 the board has seen two subscriber numbers for September: billing has <b>47,700</b> on its books, finance reports <b>40,100</b>. Both are right about their own definition.</p>
+    <div class="flow">
+      <div><b>Billing</b>47,700 accounts</div>
+      <div><b>− trial</b>40 of every 1,000</div>
+      <div><b>− unpaid</b>25 of every 1,000</div>
+      <div class="now"><b>= paying (the KPI)</b>?</div>
+      <div><b>− paused</b>95 of every 1,000</div>
+      <div><b>≈ finance</b>40,100</div>
+    </div>
+    <p>Each member fills the lines with numbers of accounts, using the shares from Session 1's sample of 1,000 accounts. The page marks each line ✓ when it is right, rounded to whole accounts.</p>
+  </div>
+  <div class="notes">Answers: trial 4.0 % × 47,700 = 1,908; unpaid 2.5 % = 1,193; paying 44,599, about 44,600; paused 9.5 % = 4,532; result 40,068, which is 32 from finance's 40,100: the sample of 1,000 is not exact. The question under the bridge: which number the board should see as "paying subscribers". The KPI card says active + paused, so about 44,600.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-clock="17:07">
+  <div class="kick">Session 4 · Step 5</div>
+  <h2>The transformation log is the written record of every rule the load applied, so that a changed KPI can be explained a year later</h2>
+  <div class="body">
+    <table class="sm">
+      <tr><th class="l" style="text-align:left">Source column</th><th class="l" style="text-align:left">Problem</th><th class="l" style="text-align:left">Rule chosen</th><th>Rows</th><th class="l" style="text-align:left">Effect on churn</th><th class="l" style="text-align:left">Why (your team writes)</th></tr>
+      <tr><td class="l">Marketing · every column</td><td class="l">two exports overlap</td><td class="l">remove identical rows</td><td>filled by the page</td><td class="l">filled by the page</td><td class="l" style="background:#FFF4E3">One sentence: why this rule and not the other</td></tr>
+    </table>
+    <p>The page fills five columns from your choices in Step 3. Your team writes the sixth, <b>why</b>, for all eleven lines. Share the lines: each cell is a team field and appears on every member's page.</p>
+    <div class="do"><b>A good "why"</b> names the consequence of the other rule: "Keeping the duplicates would count the same week's spend twice and make the cost per new subscriber look higher than it is."</div>
+  </div>
+  <div class="notes">The example why is ours, not the page's. Push for consequences, not restatements ("we removed duplicates because they are duplicates" is not a reason).</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-clock="17:09">
+  <div class="kick">Session 4 · Step 6</div>
+  <h2>Publish the load report as etl.html in the same Netlify folder, then hand it in by 18:10</h2>
+  <div class="body">
+    <ol>
+      <li>Read the report on the page (Step 6a): Part 1 the log, Part 2 the results of the load, Part 3 the bridge. Anything marked missing is still to do.</li>
+      <li>Press <b>Download the load report</b>. Move etl.html into the orbita-memo folder, next to index.html and schema.html.</li>
+      <li>Netlify → your project → <b>Deploys</b> → drag the whole folder onto the upload box.</li>
+      <li>Paste the full address in Step 6b: it ends with <b>.netlify.app/etl.html</b>.</li>
+      <li>One member presses <b>Hand in the load report</b>.</li>
+    </ol>
+    <div class="dim">The bar at the top of the Session 4 page shows what your team has done and what is left, item by item.</div>
+  </div>
+  <div class="notes">Same three moves as Session 3. A team whose folder lacks schema.html adds both files at once.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide dark" data-clock="17:10">
+  <div class="kick">Start</div>
+  <h2>Start Session 4 now: Step 1 alone, then Steps 2 to 6 as a team, hand-in at 18:10</h2>
+  <div class="body">
+    <p class="big">The instructor walks around. Raise a hand when a check stays red after you have read the step twice.</p>
+    <div class="dim">At 18:10: the team quiz on the screen. Next week, Session 5, Thursday 19 November: describing churn honestly, by city, by start month and by plan.</div>
+  </div>
+  <div class="notes">Teams still on Session 3 continue it first; they can do Session 4 Steps 1–2 at home before next week if needed. At 18:10 open jeopardy.html?set=s4.</div>
+</section>
+
+</div>
+<div class="hud"><span><b id="num">1</b></span><span>plan <b id="plan">16:30</b></span><span>now <b id="now">—</b></span><span id="delta"></span><span class="sp"></span><span>Business Intelligence · Week 5 · Session 4 · 12 Nov 2026 · Jan Erik Meidell · Geneva Business School</span></div>
+<script>
+(function(){
+  var S=[].slice.call(document.querySelectorAll('.slide')), i=0, hud={num:document.getElementById('num'),plan:document.getElementById('plan'),now:document.getElementById('now'),delta:document.getElementById('delta')};
+  try{ i=Math.min(S.length-1,parseInt(location.hash.slice(1),10)||0); }catch(e){}
+  function pad(n){return (n<10?'0':'')+n;}
+  function show(){ S.forEach(function(s,j){s.classList.toggle('on',j===i);}); location.hash=i; hud.num.textContent=(i+1)+' / '+S.length; hud.plan.textContent=S[i].getAttribute('data-clock'); tick(); }
+  function tick(){ var d=new Date(); hud.now.textContent=pad(d.getHours())+':'+pad(d.getMinutes()); var p=S[i].getAttribute('data-clock').split(':'), pm=+p[0]*60+ +p[1], nm=d.getHours()*60+d.getMinutes(), df=nm-pm; hud.delta.textContent=df>3?'· '+df+' min behind plan':(df<-3?'· '+(-df)+' min ahead':''); hud.delta.className=df>3?'late':(df<-3?'early':''); }
+  setInterval(tick,15000);
+  function next(){ var hid=S[i].querySelector('.reveal:not(.show)'); if(hid){hid.classList.add('show');return;} if(i<S.length-1){i++;show();} }
+  function prev(){ if(i>0){i--;show();} }
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='n'||e.key==='N'){document.body.classList.toggle('notes');}
+    else if(e.key==='p'||e.key==='P'){window.print();}
+    else if(e.key==='Home'){i=0;show();} else if(e.key==='End'){i=S.length-1;show();}
+  });
+  document.getElementById('deck').addEventListener('click',function(e){ if(e.target.closest('a'))return; if(e.clientX<window.innerWidth*0.2)prev(); else next(); });
+  show();
+})();
+</script>
+</body>
+</html>
