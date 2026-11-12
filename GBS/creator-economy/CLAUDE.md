@@ -372,3 +372,37 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   progress every 3 s. Rules kept on purpose: count what is done, never "missed", no red, no
   comparison with classmates, no pop-up, nothing for a student with nothing logged. Tested headless
   (13 steps across W1/W3/W4, an empty student, 400 px).
+
+- ⚠ **Session 5 Steps 3–6 REBUILT on a two-agent negotiation method, with a deal room (12 Nov 2026,
+  the morning of the session).** Jan Erik sent a published negotiation teaching package (a
+  confidential review copy, NOT to be reproduced — nothing of its text or fact pattern is on the
+  site) and asked: "adapt the structure and the method … build the tool that allows me to
+  distribute roles … give each role the secret instructions … type in their outcomes on a tv/wall.
+  method and approach = [the case], content = what you have and based on week 4". Method kept:
+  agents on both sides with limited authority, confidential instructions per side, a preparation
+  memo (BATNA, their BATNA, walk-away, interests, standards, options beyond the fee, first offer),
+  every pair's outcome on the wall, then the numbers each side held and four debrief questions
+  (BATNA · where the number came from · interests and options · agency and information), an
+  optional round 2 with both instructions open. Content is ours: Sonnaz Audio (Q1, CHF 199, margin
+  CHF 90) and @leman.sound (Léa Morel, fictional; Session 4's 12 sales for CHF 450). Numbers in the
+  instructions (all fictional): brand ceiling CHF 2,400 fixed + up to CHF 25/pair; brand BATNA
+  @beatsbasel package CHF 1,500 (~14 pairs); Sonnaz paid her CHF 380 for a Story in March; Pendler
+  CHF 900; 1,400 Q1 pairs in stock, −CHF 60 each in January; ~20 pairs organic, ~30 more with 3
+  months of ads. Her side: 2026 deals CHF 250–600; BATNA Kleintal Audio CHF 600 (headphones
+  exclusive in December); Voltaplex series CHF 9,000 decided in January on "proof of results";
+  card package CHF 1,100; usage +30–50 % per 3 months (impact.com); authority 3 months. Bargaining
+  zone CHF 600–2,400. The best hidden option: a results letter from Sonnaz for Voltaplex.
+  **`deal.html`** (instructor controls only with `jem_fb_session`; the TV part works anywhere):
+  ready names (`_wall/w5here`), editable list, **Deal the roles** (shuffle, pairs b/c, an odd
+  person = observer of the last pair; rows `_wall/w5roles` `R:<pair>|<b|c|o>|<deal id>`, meta =
+  partners; the newest deal id wins), **Round 2** (`_wall/w5ctl` `K:open|1`), tabs: pairs ·
+  outcomes (both records per pair, "records differ" flagged, a fee strip, counts) · what each
+  side knew (the strip with MARKS) · four questions · round 2 outcomes. Students: Step 3 "I am
+  ready for my role" → role, pair, partner and ONLY their own instructions appear (poll 5 s;
+  manual fallback), Step 4 memo (`w5_batna`, `w5_theirs`, `w5_walk`, `w5_interests`,
+  `w5_standards`, `w5_options`, `w5_first`), Step 5 outcome form → `w5_outcome` (JSON) and
+  `_wall/w5out|w5out2` `O:<json>` (own row, re-sendable), Step 6 strip + class table + the other
+  side's instructions + `w5_where`, `w5_bstrong`, `w5_option`, `w5_info` + term sheet. The old
+  %-of-card-fee briefs, TERMS scoring and `_wall/w5deals` are gone (git history). Tested
+  headless with a stubbed wall: three students, deal, roles, two outcomes that differ, TV views,
+  420 px.

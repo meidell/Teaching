@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Deal room · Session 5</title>
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<style>
+/* =====================================================================
+   deal.html — the instructor's deal room for Session 5 (12 Nov 2026).
+   Jan Erik: "build the tool that allows me to distribute roles (amongst
+   students) and then to give each role the secret instructions and then
+   to type in their outcomes on a tv/wall".
+   1. Students press "I am ready for my role" in week5.html Step 3
+      → _wall/w5here {n:name}.
+   2. Here, on the instructor's device, "Deal the roles" shuffles the
+      names into pairs (Sonnaz's manager · her talent manager; an odd
+      person joins the last pair as observer) and posts one row per
+      student to _wall/w5roles {n:name, src:'R:<pair>|<b|c|o>|<deal id>',
+      meta: partner names}. Each student's page shows its own role and
+      only its own confidential instructions.
+   3. The screen shows the pairs, then the outcomes (_wall/w5out, w5out2),
+      then the numbers each side's instructions held, then the debrief
+      questions. "Round 2" posts _wall/w5ctl K:open|1: every page then
+      shows the other side's instructions too.
+   Controls appear only on a device holding the instructor session; the
+   screen part works anywhere (a TV can open the page as it is). Every
+   write is a NEW row (plain POST), never an edit of a student's row.
+   ===================================================================== */
+:root{--n:#0E1B3D;--n2:#1F3264;--g:#F2B544;--ink:#14213D;--line:#DDE2EC;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--n);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;}
+.wrap{max-width:1500px;margin:0 auto;padding:22px 30px 60px;}
+h1{font-size:30px;margin:0 0 4px} .sub{color:#AFC0E0;font-size:15px;margin:0 0 16px}
+.ctl{background:#fff;color:var(--ink);border-radius:14px;padding:14px 16px;margin:0 0 18px;font-size:14px}
+.ctl h2{font-size:15px;margin:0 0 8px} .ctl .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.ctl textarea{width:100%;min-height:90px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px}
+.b{border:none;border-radius:9px;padding:9px 13px;font:700 14px inherit;cursor:pointer;background:var(--n2);color:#fff;font-family:inherit}
+.b.g{background:var(--g);color:var(--n)} .b.o{background:#fff;color:var(--n2);border:1.5px solid var(--n2)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.tabs .b{background:rgba(255,255,255,.12)} .tabs .b.on{background:var(--g);color:var(--n)}
+.note{font-size:13px;color:#5B6680}
+.big{font-size:22px;font-weight:800;background:var(--g);color:var(--n);border-radius:14px;padding:12px 18px;margin:0 0 16px}
+table{width:100%;border-collapse:collapse;background:#fff;color:var(--ink);border-radius:12px;overflow:hidden;font-size:18px}
+th{background:var(--n2);color:#fff;text-align:left;padding:10px 12px;font-size:14px}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+td.p{font-weight:800;font-size:22px;width:70px;text-align:center}
+.diff{color:#B3261E;font-size:13px;font-weight:700}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.stats div{background:rgba(255,255,255,.1);border-radius:12px;padding:10px 16px;font-size:14px;color:#DDE3F2}
+.stats b{display:block;font-size:26px;color:#fff}
+.strip{background:#fff;border-radius:12px;padding:12px;margin:0 0 16px}
+.q{background:#fff;color:var(--ink);border-radius:14px;padding:18px 22px;margin:0 0 12px;font-size:20px;line-height:1.45}
+.q h3{margin:0 0 6px;font-size:22px}
+.hidden{display:none}
+.chip{display:inline-block;background:#EEF1F6;color:var(--ink);border-radius:14px;padding:3px 10px;margin:3px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Session 5 · The deal room</h1>
+  <p class="sub">Sonnaz Audio's influencer marketing manager negotiates with @leman.sound's talent manager. Each side has confidential instructions. This screen refreshes every 5 seconds.</p>
+
+  <div class="ctl hidden" id="ctl">
+    <h2>Instructor only · students do not see this box</h2>
+    <div class="row"><b id="readyN">0</b>&nbsp;students pressed "I am ready for my role":</div>
+    <div id="readyList" class="row"></div>
+    <div class="note">The names below are dealt. Edit the list to add someone who is in the room without a laptop, or to remove someone who left: one name per line.</div>
+    <textarea id="names"></textarea>
+    <div class="row">
+      <button class="b g" id="fill" type="button">Copy the ready names into the list</button>
+      <button class="b" id="deal" type="button">Deal the roles</button>
+      <span class="note" id="dealNote"></span>
+    </div>
+    <div class="row">
+      <button class="b o" id="r2" type="button">Round 2: open both sets of instructions to everyone</button>
+      <span class="note" id="r2Note"></span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="b on" data-v="pairs" type="button">1 · The pairs</button>
+    <button class="b" data-v="out" type="button">2 · The outcomes</button>
+    <button class="b" data-v="marks" type="button">3 · What each side knew</button>
+    <button class="b" data-v="qs" type="button">4 · Four questions</button>
+    <button class="b" data-v="out2" type="button">Round 2 outcomes</button>
+  </div>
+
+  <div id="v_pairs"></div>
+  <div id="v_out" class="hidden"></div>
+  <div id="v_marks" class="hidden"></div>
+  <div id="v_qs" class="hidden">
+    <div class="q"><h3>1 · Your BATNA</h3>What would your side have done if there was no deal, and what was that worth in Swiss francs? Did you think your BATNA was stronger or weaker than the other side's? Does a weak BATNA mean you must ask for less?</div>
+    <div class="q"><h3>2 · Where did the number come from?</h3>Each pair: you settled on CHF X. Which fact or rule produced that number? Which standards were most persuasive: the ones closest to this deal (her own fees, this brand, this year), or the general ones?</div>
+    <div class="q"><h3>3 · Interests and options beyond the fee</h3>What did each side want besides money? Which terms did you invent that cost one side little and helped the other a lot: a bonus per pair, a results letter for her next client, usage rights that also bring her followers, a giveaway?</div>
+    <div class="q"><h3>4 · Agents and authority</h3>What could you promise without asking your boss or your client? Did you say so, or did the other side assume it? Would knowing the other side's instructions have made the deal easier or harder to reach?</div>
+  </div>
+</div>
+
+<script src="wall.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+var DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/creator/_wall/';
+var MARKS=[[380,'what Sonnaz paid her for one Story in March (only Sonnaz\'s instructions)'],[600,'her other offer, Kleintal Audio (only her manager knew)'],[1100,'her rate card for the package (both knew)'],[1500,'Sonnaz\'s other option, @beatsbasel (only Sonnaz knew)'],[2400,'the most Sonnaz\'s manager could sign (only Sonnaz knew)']];
+var EXCL={none:'no exclusivity',hp1:'headphones, December',hp3:'headphones, 3 months',au3:'all audio, 3 months',au12:'all audio, 12 months'};
+var APPR={none:'no check',facts:'facts checked',script:'script approved'};
+var RN={b:'Sonnaz\'s manager',c:'her talent manager',o:'observer'};
+var VIEW='pairs', D={here:[],roles:[],out:[],out2:[]};
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function fmt(n){return Math.round(n).toLocaleString('en-GB').replace(/,/g,'’');}
+function isInstr(){try{if(localStorage.getItem('jem_view')==='student')return false;var s=JSON.parse(localStorage.getItem('jem_fb_session')||'null');return !!(s&&s.rt);}catch(e){return false;}}
+function add(mod,row){row.ts=Date.now();var t=(window.FBAuth&&FBAuth.token)?FBAuth.token().catch(function(){return '';}):Promise.resolve('');
+  return t.then(function(tok){return fetch(DB+mod+'.json'+(tok?'?auth='+encodeURIComponent(tok):''),{method:'POST',body:JSON.stringify(row)});}).then(function(r){return r.ok;}).catch(function(){return false;});}
+function newest(rows){var m={};rows.forEach(function(r){var k=(r.n||'').trim().toLowerCase();if(k)m[k]=r;});return Object.keys(m).map(function(k){return m[k];});}
+function read(){
+  return Promise.all(['w5here','w5roles','w5out','w5out2'].map(function(m){return CreatorWall.read(m);})).then(function(r){
+    D.here=newest(r[0].rows||[]);D.roles=r[1].rows||[];D.out=r[2].rows||[];D.out2=r[3].rows||[];D.ok=r.every(function(x){return x.ok;});
+  });
+}
+function currentRoles(){
+  if(!D.roles.length)return [];
+  var deal=(D.roles[D.roles.length-1].src||'').split('|')[2];
+  return newest(D.roles.filter(function(r){return (r.src||'').split('|')[2]===deal;})).map(function(r){var m=/^R:(\d+)\|([bco])\|/.exec(r.src||'');return m?{n:r.n,p:+m[1],r:m[2]}:null;}).filter(Boolean);
+}
+function paintCtl(){
+  if(!isInstr())return;$('ctl').classList.remove('hidden');
+  $('readyN').textContent=D.here.length;
+  $('readyList').innerHTML=D.here.map(function(r){return '<span class="chip">'+esc(r.n)+'</span>';}).join('')||'<span class="note">nobody yet</span>';
+}
+function paintPairs(){
+  var R=currentRoles(),by={};R.forEach(function(x){(by[x.p]=by[x.p]||[]).push(x);});
+  var ps=Object.keys(by).sort(function(a,b){return a-b;});
+  if(!ps.length){$('v_pairs').innerHTML='<div class="big">No roles dealt yet. Students: open Session 5, Step 3, and press "I am ready for my role".</div>';return;}
+  var h='<div class="big">Find your partner: sit together with the person in your row. Then read your own instructions in Step 3, alone.</div><table><tr><th>Pair</th><th>Sonnaz Audio\'s influencer marketing manager</th><th>@leman.sound\'s talent manager</th><th>Observer</th></tr>';
+  ps.forEach(function(p){function w(r){return by[p].filter(function(x){return x.r===r;}).map(function(x){return esc(x.n);}).join(', ')||'—';}
+    h+='<tr><td class="p">'+p+'</td><td>'+w('b')+'</td><td>'+w('c')+'</td><td>'+w('o')+'</td></tr>';});
+  $('v_pairs').innerHTML=h+'</table>';
+}
+function parse(rows){var by={};rows.forEach(function(r){var m=/^O:(.*)$/.exec(r.src||'');if(!m)return;try{var o=JSON.parse(m[1]);}catch(e){return;}if(!o.p||(o.r!=='b'&&o.r!=='c'))return;o.n=r.n;(by[o.p]=by[o.p]||{})[o.r]=o;});return by;}
+function line(o){if(!o)return '<span class="note">not sent</span>';if(!o.d)return '<b>No deal</b>';
+  return '<b>CHF '+fmt(o.f)+'</b>'+(o.bo?' + '+o.bo+'/pair':'')+'<br><span style="font-size:14px">ads '+(o.u||0)+' m · '+(EXCL[o.x]||'')+' · '+(APPR[o.a]||'')+(o.ex?' · '+esc(o.ex):'')+(o.sub?' · <i>subject to approval</i>':'')+'</span>'+(o.st?'<br><span class="note">number from: '+esc(o.st)+'</span>':'')+'<br><span class="note">'+esc(o.n)+' · works together: '+(o.rel||'–')+'/5</span>';}
+function strip(fees,marks){
+  var W=1200,H=marks?175:80,X0=40,X1=W-60,MAX=3000;function x(v){return X0+(Math.min(MAX,Math.max(0,v))/MAX)*(X1-X0);}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
+  s+='<line x1="'+X0+'" x2="'+X1+'" y1="40" y2="40" stroke="#9AA6BA" stroke-width="3"/>';
+  for(var v=0;v<=MAX;v+=500)s+='<line x1="'+x(v)+'" x2="'+x(v)+'" y1="33" y2="47" stroke="#9AA6BA" stroke-width="2"/><text x="'+x(v)+'" y="66" font-size="17" text-anchor="middle" fill="#5B6680">'+(v?'CHF '+fmt(v):'CHF 0')+'</text>';
+  var seen={};fees.forEach(function(f){var k=Math.round(f/60);seen[k]=(seen[k]||0)+1;s+='<circle cx="'+x(f)+'" cy="'+(40-(seen[k]-1)*17)+'" r="9" fill="#1F3264" stroke="#fff" stroke-width="2"/>';});
+  if(marks)MARKS.forEach(function(m,i){var y=92+i*19;s+='<line x1="'+x(m[0])+'" x2="'+x(m[0])+'" y1="48" y2="'+(y-6)+'" stroke="#B3261E" stroke-dasharray="4 4"/><text x="'+(x(m[0])+(m[0]>2000?-6:6))+'" y="'+y+'" font-size="16" fill="#B3261E" text-anchor="'+(m[0]>2000?'end':'start')+'">CHF '+fmt(m[0])+' · '+esc(m[1])+'</text>';});
+  return '<div class="strip">'+s+'</svg></div>';
+}
+function paintOut(el,rows,marks){
+  var by=parse(rows),ps=Object.keys(by).sort(function(a,b){return a-b;});
+  var fees=[],nod=0,bonus=0,extra=0;
+  ps.forEach(function(p){var o=by[p].b||by[p].c;if(!o)return;if(o.d){fees.push(o.f);if(o.bo)bonus++;if(o.ex)extra++;}else nod++;});
+  var sorted=fees.slice().sort(function(a,b){return a-b;}),med=sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2):0;
+  var h=strip(fees,marks)+'<div class="stats"><div><b>'+ps.length+'</b>pairs reported</div><div><b>'+fees.length+'</b>deals</div><div><b>'+nod+'</b>no deal</div>'+
+    (fees.length?'<div><b>CHF '+fmt(sorted[0])+' – '+fmt(sorted[sorted.length-1])+'</b>lowest and highest fee</div><div><b>CHF '+fmt(med)+'</b>median fee</div>':'')+'<div><b>'+bonus+'</b>with a bonus per pair</div><div><b>'+extra+'</b>with something beyond the listed terms</div></div>';
+  if(marks){el.innerHTML=h+'<div class="big">The bargaining zone ran from CHF 600, her other offer, to CHF 2,400, the most Sonnaz could sign. Every deal on the line was possible. Where it landed depended on the standards and the options each pair found.</div>';return;}
+  h+='<table><tr><th>Pair</th><th>Recorded by Sonnaz\'s manager</th><th>Recorded by her talent manager</th></tr>';
+  ps.forEach(function(p){var b=by[p].b,c=by[p].c,diff=b&&c&&(b.d!==c.d||b.f!==c.f||b.u!==c.u||b.bo!==c.bo);
+    h+='<tr><td class="p">'+p+(diff?'<div class="diff">records differ</div>':'')+'</td><td>'+line(b)+'</td><td>'+line(c)+'</td></tr>';});
+  el.innerHTML=h+(ps.length?'':'<tr><td colspan="3">No outcome sent yet.</td></tr>')+'</table>';
+}
+function paint(){paintCtl();if(VIEW==='pairs')paintPairs();if(VIEW==='out')paintOut($('v_out'),D.out,false);if(VIEW==='out2')paintOut($('v_out'),D.out2,false);if(VIEW==='marks')paintOut($('v_marks'),D.out,true);}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+$('fill').onclick=function(){$('names').value=D.here.map(function(r){return r.n;}).join('\n');};
+$('deal').onclick=function(){
+  var names=$('names').value.split('\n').map(function(s){return s.trim().slice(0,40);}).filter(Boolean);
+  var seen={};names=names.filter(function(n){var k=n.toLowerCase();if(seen[k])return false;seen[k]=1;return true;});
+  if(names.length<2){alert('At least two names are needed. Press "Copy the ready names into the list" first.');return;}
+  if(currentRoles().length&&!confirm('Roles were dealt already. Deal again? Every student gets a new role and partner.'))return;
+  shuffle(names);var deal=Date.now().toString(36),rows=[],np=Math.floor(names.length/2);
+  for(var i=0;i<np;i++){rows.push({n:names[2*i],p:i+1,r:'b',o:names[2*i+1]});rows.push({n:names[2*i+1],p:i+1,r:'c',o:names[2*i]});}
+  if(names.length%2){var last=names[names.length-1];rows.push({n:last,p:np,r:'o',o:names[2*np-2]+', '+names[2*np-1]});rows.forEach(function(x){if(x.p===np&&x.r!=='o')x.o+=' (observer: '+last+')';});}
+  $('dealNote').textContent='Dealing '+rows.length+' roles…';
+  var chain=Promise.resolve(),ok=0;rows.forEach(function(x){chain=chain.then(function(){return add('w5roles',{n:x.n,src:'R:'+x.p+'|'+x.r+'|'+deal,meta:x.o.slice(0,120)}).then(function(r){if(r)ok++;});});});
+  chain.then(function(){$('dealNote').textContent=ok+' of '+rows.length+' roles sent. Each student sees theirs within a few seconds.';read().then(paint);});
+};
+$('r2').onclick=function(){if(!confirm('Open both sets of instructions to every student for round 2?'))return;add('w5ctl',{n:'instructor',src:'K:open|1'}).then(function(ok){$('r2Note').textContent=ok?'Open ✓ Students record round 2 in Step 5 with "Round 2".':'Not sent.';});};
+document.querySelector('.tabs').addEventListener('click',function(e){var b=e.target.closest('[data-v]');if(!b)return;VIEW=b.getAttribute('data-v');
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs .b'),function(x){x.classList.toggle('on',x===b);});
+  ['pairs','out','marks','qs'].forEach(function(v){$('v_'+v).classList.toggle('hidden',!(v===VIEW||(v==='out'&&VIEW==='out2')));});paint();});
+read().then(paint);setInterval(function(){if(!document.hidden)read().then(paint);},5000);
+</script>
+</body>
+</html>
