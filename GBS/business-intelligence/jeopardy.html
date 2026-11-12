@@ -48,13 +48,51 @@ body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#0B1633;
 </style>
 </head>
 <body data-course="bi">
-<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="week3.html">← Session 2</a></div>
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="week3.html" id="backLink">← Session 2</a></div>
 <div class="board" id="board"></div>
 <div class="teams" id="teams"></div>
 <div class="foot">Click a square · "Answer" · then the team that answered right (+) or wrong (−). Team names can be edited. <button id="reset">New game</button></div>
 <div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
 <script>
 var SETS={
+  rev:{name:'Review · Sessions 1 to 4 · ÒRBITA from five systems to a loaded warehouse',back:'index.html',backT:'← Course',cats:[
+    ['S1 · Five systems',[
+      ['Name ÒRBITA\'s five source systems.','Billing (with subscriptions), fleet telematics, the support desk, marketing spend, and the finance spreadsheet.'],
+      ['Which system knows the customers only by their email address?','The support desk.'],
+      ['In which clock does telematics record the time of a ride?','UTC, the world clock, not the local time of the city.'],
+      ['Billing has 47,700 subscribers on its books for September. How many does finance report?','40,100.'],
+      ['Why can billing not calculate churn by city on its own?','Billing has no city column: the city is only in telematics, next to each ride.']]],
+    ['S2 · Two churn numbers',[
+      ['Which monthly churn did finance show the board, and which did billing print?','Finance 2.6 %, billing 4.1 %.'],
+      ['How does finance get 2.6 %?','22 cancellations by paying customers ÷ 840 paying, unpaused, paid-up customers.'],
+      ['How does billing get 4.1 %?','41 cancellations ÷ all 1,000 accounts on the books.'],
+      ['Both figures are "right". Why?','Same month, same data, two definitions, and neither definition was written down where the other team could read it.'],
+      ['Which three groups of accounts does finance leave out of its base that billing keeps in?','Paused accounts (95), trial accounts (40) and accounts unpaid for 30 days or more (25), out of 1,000.']]],
+    ['S2 · KPIs',[
+      ['Leading, lagging or vanity: total app downloads since launch.','Vanity: it only goes up and no decision depends on it.'],
+      ['Leading, lagging or vanity: rides per new subscriber in their first 14 days.','Leading: it moves before retention does, and a city manager can act on it this week.'],
+      ['What does a counter-metric do? Give the one for "tickets closed per day".','It shows when the KPI is being gamed: tickets reopened within 7 days.'],
+      ['State Goodhart\'s law.','When a measure becomes a target, it ceases to be a good measure.'],
+      ['Name the eight fields of a KPI contract.','Name, formula, source, grain, owner, cadence, target, counter-metric.']]],
+    ['S3 · The warehouse',[
+      ['OLTP or OLAP: charge one subscriber\'s card for November.','OLTP: one row read and written, the job billing was built for.'],
+      ['Warehouse or lake: a row with no currency is refused when it is loaded.','The warehouse (schema on write).'],
+      ['Finish the sentence that every grain is: "One row …".','… per something: "one row per ride", "one row per account per month".'],
+      ['How many tables, at the least, answer all six of ÒRBITA\'s questions? Name them.','Four: one row per ride, per account per month, per ticket, per city, channel and week.'],
+      ['Fact, dimension or key: km of a ride. And the city?','km is a fact (a number that adds up); the city is a dimension (you filter and group by it).']]],
+    ['S4 · Loading the data',[
+      ['What do the three letters of ETL stand for?','Extract, transform, load.'],
+      ['Extract, transform or load: change "Milano" to "Milan".','Transform: a written rule changes the value before it enters the warehouse.'],
+      ['Name the four common checks (dbt\'s generic data tests).','Not null, unique, accepted values, relationships.'],
+      ['Which check refuses a ride by subscriber 10999?','Relationships: billing has no subscriber 10999 (a test account of the fleet team).'],
+      ['A ride is dated 4 October in UTC but happened at 00:40 on 5 October in Barcelona. Which check catches it?','None: it passes every check. Only a rule written before the load (convert to local time) prevents it.']]],
+    ['S4 · Rules and the bridge',[
+      ['Does a paused account count as paying in ÒRBITA\'s churn KPI?','Yes: the KPI card counts a paused account as paying, because it keeps its subscription.'],
+      ['How many of the 65 sample rows failed a check when they were loaded as they were?','18, which is 27.7 %.'],
+      ['Why is the ad spend of week 40 not 23,600 euros?','That figure adds euros, Swiss francs and pounds, and counts two duplicate rows twice. After both rules it is 19,353 euros.'],
+      ['Billing\'s 47,700 minus the trial and the unpaid accounts gives about how many?','About 44,600: the paying subscribers as the KPI counts them (active and paused).'],
+      ['What is a transformation log, and why does the CFO want it?','The written list of every rule the load applied, with the rows it changed and why. So that when a KPI moves a year later, anyone can read the reason.']]]
+  ]},
   s4:{name:'Session 4 · Loading ÒRBITA\'s data into the warehouse (ETL)',cats:[
     ['Extract, transform, load',[
       ['What do the three letters of ETL stand for?','Extract, transform, load.'],
@@ -172,14 +210,33 @@ var SETS={
 };
 var setId=(new URLSearchParams(location.search).get('set'))||'s2';
 var S=SETS[setId]||SETS.s2, SK='bi_jeo_'+setId;
-var st={used:{},teams:[['Team A',0],['Team B',0],['Team C',0],['Team D',0],['Team E',0],['Team F',0]]};
-try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams){st=o;if(st.teams.length<6)st.teams.push(['Team F',0]);}}catch(e){}
+var IDS=['A','B','C','D','E','F','G'];
+var st={used:{},teams:IDS.slice(0,6).map(function(x){return ['Team '+x,0,x];})};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams){st=o;if(st.teams.length<6)st.teams.push(['Team F',0]);st.teams.forEach(function(t,i){if(!t[2])t[2]=IDS[i];});}}catch(e){}
+if(S.back){var bl=document.getElementById('backLink');bl.href=S.back;bl.textContent=S.backT||'← Course';}
+/* The participants are the class's real teams (12 Nov 2026, Jan Erik: "just add the teams as participants"):
+   every team with at least one member on the team board (_wall/teams), named as on the board (_wall/tn_X).
+   Scores already on this device are kept by team letter. Offline, the A–F placeholders stay. */
+(function(){
+  var W='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/bi/_wall/';
+  function j(u){return fetch(u).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+  function vals(o){return o?Object.keys(o).map(function(k){return o[k];}).filter(function(r){return r&&r.ts;}).sort(function(a,b){return a.ts-b.ts;}):[];}
+  Promise.all([j(W+'teams.json')].concat(IDS.map(function(x){return j(W+'tn_'+x+'.json');}))).then(function(res){
+    var mem={},count={},names={},old={};
+    vals(res[0]).forEach(function(r){mem[r.n]=String(r.src||'').replace(/^J:/,'');});
+    for(var n in mem)if(mem[n])count[mem[n]]=(count[mem[n]]||0)+1;
+    IDS.forEach(function(x,i){var l=vals(res[i+1]).pop();if(l&&l.src)names[x]=String(l.src).replace(/^N:/,'').trim();});
+    st.teams.forEach(function(t){old[t[2]]=t;});
+    var nt=IDS.filter(function(x){return count[x];}).map(function(x){return [names[x]?names[x]:'Team '+x,old[x]?old[x][1]:0,x];});
+    if(nt.length){st.teams=nt;persist();draw();}
+  });
+})();
 function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
 document.getElementById('setName').textContent=S.name;
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function draw(){
   var b=document.getElementById('board'),h='',n=S.cats.length;
-  S.cats.forEach(function(c,ci){h+='<div class="cat'+(ci===n-1?' own':'')+'">'+esc(c[0])+'</div>';});
+  S.cats.forEach(function(c,ci){h+='<div class="cat'+(ci===n-1&&!S.back?' own':'')+'">'+esc(c[0])+'</div>';});
   for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
   b.innerHTML=h;
   document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
@@ -203,7 +260,7 @@ document.getElementById('board').addEventListener('click',function(e){
   modal.classList.add('on');
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
-document.getElementById('reset').addEventListener('click',function(){if(confirm('Clear the scores and start again?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0];})};persist();draw();}});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Clear the scores and start again?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0,t[2]];})};persist();draw();}});
 draw();
 </script>
 <script src="/track.js" defer></script>

@@ -273,3 +273,10 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   checks, the UTC row that passes every check (reveal), the raw load (18 of 65 = 27.7 %, reveal), the eleven
   problems, the bridge as a flow with "?" (answers in the notes), the log with an example "why", hand-in, start.
   "▶ Slides" in week5.html's top bar. No overflow at 1280×720 or 1440×900.
+- **Review Jeopardy, Sessions 1–4 (12 Nov 2026, replaces `?set=s4` as tonight's quiz).** Jan Erik: "replace those with a
+  jeopardy for the first 4 sessions — and added to the landing page"; "just add the teams as participants".
+  `jeopardy.html?set=rev`: six categories (S1 five systems · S2 two churn numbers · S2 KPIs · S3 the warehouse ·
+  S4 loading the data · S4 rules and the bridge), no team-specific category, back link to the hub (`back`/`backT`
+  on a set). **Every set's participants are now the real teams**: each team with a member on `_wall/teams`, named
+  from `_wall/tn_X` (scores kept per team letter, `[name, score, id]`); offline the A–F placeholders stay. Linked
+  on the hub under the systems button; week5 Step 7 and the deck point to it. The s2/s3/s4 sets stay in the file.
