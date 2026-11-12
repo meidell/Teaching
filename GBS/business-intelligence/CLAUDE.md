@@ -241,3 +241,24 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   churn in Session 5, points). s7 quiz = `jeopardy.html?set=s4`. No minute
   timings on the page (WRITING.md rule 7); the 18:10 hand-in stays. Probed
   11 Nov 2026: 7/7, no errors, 500 px fits.
+
+- **Hand-in tracker + bullet hand-in box + `systems.html` (12 Nov 2026, before Session 4).** Jan Erik:
+  "make it more bullet points … make also a progress bar for that session and what they have filled
+  in and what is left to do"; then "an interactive tool of the 5 existing databases … with their
+  columns and some sample lines … available in the weeks where we require that information".
+  (1) The "What your team hands in" box on week4.html and week5.html is now a numbered list
+  (`.doit .doli` in bi.css), each item with its step. (2) **`tracker.js`** (`BiTracker.mount`) draws a
+  sticky strip above `.sprog`: one segment per hand-in item (full = done, part-filled = started),
+  "n of 8 done", ONE "Next: …" line with a link to the place, and a list that opens. The checks read
+  the page's own functions and the team's shared fields (week4: team, steps 1–3, `starLint(1)` ≥ 4 +
+  s4, `docData().mapOk` ≥ 6 + s5, `f_chg` ≥ 40 characters, `SITE_RE` on `f_site`, s6, s7; week5:
+  team, steps 1–2, rules chosen of 11 with no failing row + s3, the bridge lines (`BR`,
+  `bridgeVals()`; NOT `paintBridge()`, which re-renders inputs) + s4, reasons written of 11 + s5,
+  `SITE_RE`, s6, s7). The config is a script before `/track.js` on each page; a new session page adds
+  its own list. (3) **`systems.html`**: the five systems (billing with its status table and customer
+  table, telematics, support desk, marketing, finance spreadsheet), each column with its meaning,
+  kind of value, "about a person" and the column that links systems, the sample rows = week5's
+  BILL/CUST/RIDE/TICK/SPEND verbatim and week2's finance rows (change one, change both), a search
+  that highlights matching columns, a click copies "System · column". Linked from week4 Steps 4, 5
+  and 6a, week5 Steps 2 and 3, and the hub under the team board. At 12 Nov 13:00 only teams C and D
+  had handed in Session 3's schema.html; A, B, E, F had team answers but no hand-in.
