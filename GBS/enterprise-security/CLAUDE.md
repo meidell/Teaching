@@ -364,3 +364,20 @@ global `EscWall`; `courseprogress.js` a port).
   attack, Pentest, Router, Wiretap, DevSecOps, Cyber insurance, The others, Average · median, Log scale
   (several survive as type-card definitions). The CVE, Equifax-timeline and KEV wording was clarified the
   same day. The listening PDF on the Desktop still has the 54-card version.
+  **The pair quiz, `vquiz.js` (13 Nov 2026).** From Jan Erik's memo "turn the vocabulary section into a pair
+  quiz", plus "allow logged-on users to connect and ask each other". Two tabs over the word cards: "Read the
+  cards" (the existing view) and "Quiz mode · pairs". Two students share one phone and play another pair on
+  another phone. The phones connect through the wall, no rules change: the lobby `_wall/vqlobby`
+  (`O:<match>|<s|x>|<seed>` open, `T:<match>` taken) and one append-only log per match `_wall/vq_<match>`
+  (`H:<order>|<seed>` host, `J` guest, `V:<step>` reveal, `S:<step>|1|0` right/wrong). Both phones REPLAY the
+  log in push-id order and derive everything else from the seed: card order (by section or shuffled), the
+  prompt per card (definition → name the term · real case → name the term · term → give the case or year;
+  a card without a case always gets the definition), who asks (host first, then alternating). The asking
+  phone sees the full card and presses Reveal, then right/wrong; the other sees only the prompt until
+  Reveal. A point goes to the answering pair; a wrong card goes once to the "missed" pile at the end. The
+  term's own words are blanked in a prompt (`termWords`/`redact`, with a STOP list so "attackers" survives).
+  Sign-in is required (the pair is named from `escwa_auth` + a typed partner name); the instructor's device
+  can play. The repaint happens only when the log changed — repainting every poll swallowed taps. Not
+  stored anywhere else; tamperable like every wall. The memo's minute plan (0–20, 20–60, hour two) is on the
+  page as three numbered steps, per WRITING.md rule 7. Tested headless with two phones at 390 px
+  (start, list, join, ask, reveal on both, wrong → missed pile, right → point, alternate).

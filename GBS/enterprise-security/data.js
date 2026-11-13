@@ -95,7 +95,7 @@ var DATA = {
     },
     typeCards: [
       { name: "Vulnerability exploitation", def: "Attacking a **known or unknown flaw** in software facing the internet.", example: "MOVEit, 2023", number: "31% of breaches start this way", src: "DBIR 2026" },
-      { name: "Credential abuse", def: "Logging in with a **stolen or guessed password**.", example: "Change Healthcare, 2024", number: "First step in 13%, present in 39%", src: "DBIR 2026" },
+      { name: "Credential abuse", def: "Logging in with a **stolen or guessed password**.", example: "Change Healthcare, 2024: the attackers logged in to a remote access portal with a stolen password, and nothing else was asked", number: "In 13% of breaches, a stolen password was how the attackers first got in. In 39%, a stolen password was used at some point during the attack, often later, to move further inside", src: "DBIR 2026" },
       { name: "Phishing and social engineering", def: "**Persuading a person** to hand over access.", example: "Clorox, 2023", number: "Email and phishing caused 50% of ransomware attacks", src: "Sophos 2026" },
       { name: "Ransomware and extortion", def: "**Encrypting or stealing data** and **demanding payment**.", example: "Change Healthcare, 2024", number: "In 48% of breaches", src: "DBIR 2026" },
       { name: "Third party and supply chain", def: "Reaching the victim **through a supplier** or its software.", example: "ConnectWise Cloud Backup, October 2026", number: "In 48% of breaches", src: "DBIR 2026" },
