@@ -329,3 +329,17 @@ global `EscWall`; `courseprogress.js` a port).
   JOIN(2016) 18, due 27 Nov**. Hub `href`, courseprogress `w6 live, total:5`, courses.json module w6.
   week5.html ends with a button "Session 6 follows this evening". Tested headless (1280/500 px):
   5/5, no errors.
+  **Guesses, live reveals, the instructor bar (13 Nov 2026).** Jan Erik: "where do the students enter their
+  guess? add student view and reset (also including the reveal) for me … on the bar down in the middle".
+  `login.js` is loaded, so an instructor device gets the bottom-centre bar (👁 / 🎓 Student / ↺ Reset).
+  Instructor view (`body.inst`): scoreboard buttons, Reveal, Show all, the wager table, and under every
+  chart and incident card **the teams' guesses** (read from the whole `_wall` every 6 s). Student view
+  (`body.stud`, also the instructor's 🎓): no Reveal/score/wager controls; a box under each question,
+  "Send our guess" → `EscWall.post('numg_<key>', {n: team name, src:'T:<A–G>|<guess ≤200>'})` (needs
+  the student's team, `escwa_team`; the team board is mounted under the rules). **The instructor's laptop is
+  the master**: every save PUTs `_wall/numrev/master` (`R:<keys>[|ALL]`) and `_wall/numscore/master`
+  (`S:name=pts;…`), and student screens follow every 4 s (newly revealed charts animate in). ↺ Reset clears
+  `escwa_numbers_v1` (course prefix) and, through a sessionStorage flag set when the bar's Reset is clicked,
+  publishes empty reveals and zero scores on the reload; a second instructor device with nothing saved adopts
+  what the room sees. Tested headless with an in-memory database: guess → instructor list, reveal + score →
+  student screen, reset → student hidden again, 🎓 view = student page.

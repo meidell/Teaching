@@ -176,6 +176,19 @@ body{background:var(--pg);}
 .vc p.eg{background:var(--wash);border-radius:6px;padding:6px 8px;}
 .vc p.eg b,.vc p.wh b{color:var(--tx);}
 .vc p.wh{font-size:12px;color:var(--mute);}
+.gform{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 4px;}
+.gform input{flex:1;min-width:180px;font:inherit;font-size:14px;padding:7px 10px;border:1.5px solid var(--ln);border-radius:8px;background:var(--card);color:var(--tx);}
+.gform button{font:800 13px inherit;font-family:inherit;border:none;border-radius:8px;padding:8px 14px;background:var(--acc);color:#fff;cursor:pointer;}
+.gform small{font-size:12px;color:var(--mute);width:100%;}
+.glist{margin:6px 0;font-size:13px;}
+.glist .gh{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:800;color:var(--mute);margin-bottom:4px;}
+.glist .gg{display:flex;flex-wrap:wrap;gap:6px;}
+.glist .gg span{background:var(--wash);border:1px solid var(--ln);border-radius:8px;padding:4px 9px;color:var(--tx);}
+.glist .gg span b{color:var(--acc);margin-right:4px;}
+.stud .rbtn,.stud #showAll,.stud #scReset,.stud #score .tm button,.stud .wagerbox,.stud .glist,.inst .gform{display:none !important;}
+.inst .stonly{display:none;}
+.stud #score .tm input{pointer-events:none;border-bottom-color:transparent;}
+.stud .ch:not(.shown) .rv small:after{content:"The instructor reveals this chart on every screen.";}
 .foot{font-size:12.5px;color:var(--mute);margin-top:30px;line-height:1.6;}
 </style>
 </head>
@@ -221,6 +234,7 @@ body{background:var(--pg);}
   <div id="score"></div>
 
   <div class="game" id="rules"></div>
+  <div class="game"><h3>Your team</h3><p style="font-size:13.5px;color:var(--tx2);margin-bottom:8px">The same team board as on the course page. Join your team here, or check that you are in the right one: your guesses are sent in your team's name.</p><div id="teamsBox" class="teams"></div></div>
 
   <div id="cats"></div>
 
@@ -236,7 +250,8 @@ body{background:var(--pg);}
         <li>Each team writes its wager in the table below: any number of points, up to the points it has.</li>
         <li>Each team reads its two numbers and its reasons aloud. A team <b>wins its wager</b> when both reasons say what the number counts and who reported it. Otherwise it loses its wager.</li>
       </ol>
-      <table class="wager" id="wager"></table>
+      <div class="wagerbox"><table class="wager" id="wager"></table></div>
+      <p class="stonly" style="font-size:13.5px;color:var(--tx2);margin-top:6px">Your team says its wager aloud; the instructor enters it and shows the result on the scoreboard.</p>
     </div>
   </section>
 
@@ -244,6 +259,8 @@ body{background:var(--pg);}
 </div>
 
 <script src="data.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
 <script>
 (function(){
 'use strict';
@@ -259,7 +276,29 @@ var ST={teams:[],rev:{},wager:{}};
 try{var o=JSON.parse(localStorage.getItem(SK)||'null');if(o&&o.teams)ST=o;}catch(e){}
 if(!ST.rev)ST.rev={};if(!ST.wager)ST.wager={};
 while(ST.teams.length<G.teams)ST.teams.push({n:'Team '+String.fromCharCode(65+ST.teams.length),p:0,auto:1});
-function save(){try{localStorage.setItem(SK,JSON.stringify(ST));}catch(e){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify(ST));}catch(e){}if(INST)publish();}
+
+/* ---------------- who is looking: the instructor (scores, reveals) or a student (guesses) ----------------
+   12 Nov 2026 → 13 Nov 2026, Jan Erik: "where do the students enter their guess? add student view and reset
+   (also including the reveal) for me". The instructor's laptop is the master: its reveals and scores go out
+   on the course wall (_wall/numrev/master, _wall/numscore/master, plain PUT like jeopardy.html) and every
+   student screen follows them every few seconds. Students send their TEAM's guess per chart or card to
+   _wall/numg_<key> as 'T:<team>|<guess>' (EscWall, one row per device); the instructor sees them under
+   each card. The bottom bar (login.js) gives the instructor 👁/🎓 and ↺ Reset; Reset empties the reveals
+   and the scores everywhere (the flag below). */
+function instDev(){try{if(localStorage.getItem('jem_instructor'))return true;var v=JSON.parse(localStorage.getItem('jem_fb_session')||'null');if(v&&v.rt)return true;}catch(e){}return /(?:^|; )jem_instructor=1/.test(document.cookie||'');}
+var INST=instDev()&&(function(){try{return localStorage.getItem('jem_view')!=='student';}catch(e){return true;}})();
+document.body.classList.add(INST?'inst':'stud');
+var WALL='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/escwa/_wall/';
+function put(mod,src){return fetch(WALL+mod+'/master.json',{method:'PUT',body:JSON.stringify({n:'master',src:String(src).slice(0,500),ts:Date.now()})}).catch(function(){});}
+function getj(mod){return fetch(WALL+mod+'.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+var pubT;
+function publish(){clearTimeout(pubT);pubT=setTimeout(function(){
+  put('numrev','R:'+Object.keys(ST.rev).filter(function(k){return ST.rev[k];}).join(',')+(ALL?'|ALL':''));
+  put('numscore','S:'+ST.teams.map(function(t){return String(t.n).replace(/[=;|]/g,' ').slice(0,30)+'='+t.p;}).join(';'));},250);}
+function parseRev(o){var src=(o&&o.master&&o.master.src)||'',m=/^R:([^|]*)(\|ALL)?$/.exec(src),rev={};if(m)m[1].split(',').filter(Boolean).forEach(function(k){rev[k]=1;});return {rev:rev,all:!!(m&&m[2])};}
+function parseScore(o){var src=(o&&o.master&&o.master.src)||'';if(src.indexOf('S:')!==0)return null;return src.slice(2).split(';').filter(Boolean).map(function(x){var i=x.lastIndexOf('=');return {n:x.slice(0,i),p:+x.slice(i+1)||0};});}
+(function(){var h=document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('#jem-hat button');if(b&&/Reset/.test(b.textContent)){try{sessionStorage.setItem('num_reset','1');}catch(x){}}},true);})();
 
 function paintScore(){
   var h='<div class="sh">Scoreboard · '+G.points+' points a guess<button type="button" id="scReset">New game</button></div><div class="tms">';
@@ -283,8 +322,9 @@ function paintScore(){
 $('vocab').innerHTML=(D.vocab||[]).map(function(g){return '<div class="vg">'+esc(g.group)+'</div><div class="voc">'+g.items.map(function(v){
   return '<div class="vc"><h5>'+esc(v.t)+(v.also?'<small>also: '+esc(v.also)+'</small>':'')+'</h5><p>'+esc(v.what)+'</p>'+(v.eg?'<p class="eg"><b>Real case:</b> '+esc(v.eg)+'</p>':'')+(v.where?'<p class="wh"><b>In the game:</b> '+esc(v.where)+'</p>':'')+'</div>';}).join('')+'</div>';}).join('');
 $('rules').innerHTML='<h3>How the game works</h3><ol>'+
-  '<li>Before a chart is revealed, every team reads its question and <b>writes one guess</b> on paper, in a few words or one number.</li>'+
-  '<li>The instructor presses <b>Reveal</b>. The team closest to the answer gets <b>'+G.points+' points</b> with the + button on the scoreboard; two equally close teams both get them.</li>'+
+  '<li>Join your team in the box under these rules, on your own laptop or phone.</li>'+
+  '<li>Before a chart is revealed, your team agrees one guess and <b>one of you types it in the box under the question</b>, in a few words or one number, and presses <b>Send our guess</b>. The instructor sees every team\'s guess.</li>'+
+  '<li>The instructor reveals the chart on every screen at once. The team closest to the answer gets <b>'+G.points+' points</b> on the scoreboard; two equally close teams both get them.</li>'+
   '<li>For each incident card, the teams guess <b>how the attackers got in</b> and <b>what the largest loss was</b> before the card opens.</li>'+
   '<li>At the end, each team stakes points on the number it trusts most: <a href="#trust">the final wager</a>.</li></ol>';
 
@@ -344,7 +384,7 @@ function drawV(c,box){
   var byX={};labels.forEach(function(l){(byX[Math.round(l.x)]=byX[Math.round(l.x)]||[]).push(l);});
   Object.keys(byX).forEach(function(k){var a=byX[k].sort(function(p,q){return p.y-q.y;});for(var i=1;i<a.length;i++)if(a[i].y-a[i-1].y<14)a[i].y=a[i-1].y+14;});
   labels.forEach(function(l){svg.appendChild(S('text',{x:l.x,y:Math.max(12,l.y),'text-anchor':'middle','class':'vl mk',style:l.col?'fill:'+l.col:''},l.t));});
-  var hm=S('text',{x:ml+pw/2,y:mt+ph/2,'text-anchor':'middle','class':'hiddenmsg'},'Hidden: guess first, then press Reveal');svg.appendChild(hm);
+  var hm=S('text',{x:ml+pw/2,y:mt+ph/2,'text-anchor':'middle','class':'hiddenmsg'},'Hidden: guess first, then the reveal');svg.appendChild(hm);
   box.innerHTML='';box.appendChild(svg);
 }
 
@@ -381,12 +421,23 @@ function drawH(c,box,shown){
       by+=bh+3;}
     y+=rh+gapR;
   });
-  var hm=S('text',{x:ml+pw/2,y:Math.min(axisY-6,top+40),'text-anchor':'middle','class':'hiddenmsg'},'Hidden: guess first, then press Reveal');svg.appendChild(hm);
+  var hm=S('text',{x:ml+pw/2,y:Math.min(axisY-6,top+40),'text-anchor':'middle','class':'hiddenmsg'},'Hidden: guess first, then the reveal');svg.appendChild(hm);
   box.innerHTML='';box.appendChild(svg);
 }
 
 /* ---------------- chart cards ---------------- */
 var CHARTS=[];
+function guessHTML(k){return '<div class="gform" data-k="'+k+'"><input maxlength="200" placeholder="Your team\'s guess, in a few words or one number" aria-label="Your team\'s guess"><button type="button">Send our guess</button><small></small></div><div class="glist" data-k="'+k+'"></div>';}
+function myTeam(){try{return localStorage.getItem('escwa_team')||'';}catch(e){return '';}}
+function teamName(L){var i='ABCDEFG'.indexOf(L);return (ST.teams[i]&&ST.teams[i].n)||('Team '+L);}
+function wireGuess(el){var f=el.querySelector('.gform');if(!f)return;var k=f.dataset.k,inp=f.querySelector('input'),note=f.querySelector('small');
+  try{inp.value=localStorage.getItem('escwa_numg_'+k)||'';if(inp.value)note.textContent='Sent ✓ You can change it and send again until the reveal.';}catch(e){}
+  f.querySelector('button').addEventListener('click',function(){var g=inp.value.trim(),t=myTeam();
+    if(!g){note.textContent='Type your team\'s guess first.';return;}
+    if(!t){note.textContent='Join your team in "Your team", above the scoreboard, first: the guess is sent in its name.';return;}
+    if(el.classList.contains('shown')){note.textContent='This one is already revealed.';return;}
+    note.textContent='Sending…';try{localStorage.setItem('escwa_numg_'+k,g);}catch(e){}
+    EscWall.post('numg_'+k,{n:(String(teamName(t))).slice(0,40),src:'T:'+t+'|'+g.slice(0,200)}).then(function(r){note.textContent=r.ok?'Sent ✓ for '+teamName(t)+'. You can change it and send again until the reveal.':(r.reason==='instructor'?'Not sent: guesses from the instructor\'s laptop never go to the wall, in either view.':'Not sent: the course wall did not answer. Say your guess aloud.');});});}
 function chartCard(c){
   var el=document.createElement('div');el.className='ch';el.id='ch-'+c.id;
   var lg='';
@@ -400,11 +451,11 @@ function chartCard(c){
   if(c.note)fn+='<p>'+esc(c.note)+'</p>';
   if(c.annotation)fn+='<p><b>Not on the chart:</b> '+esc(c.annotation)+'</p>';
   el.innerHTML='<div class="ct"><span class="cid">CHART '+esc(c.id)+'</span><h4>'+esc(c.title)+'</h4></div>'+
-    (c.prompt?'<div class="pr"><b>Guess first:</b> '+esc(c.prompt)+'</div>':'')+
+    (c.prompt?'<div class="pr"><b>Guess first:</b> '+esc(c.prompt)+'</div>':'')+guessHTML('c'+c.id)+
     (lg?'<div class="lg">'+lg+'</div>':'')+'<div class="plot"></div><div class="fn">'+fn+'</div>'+
     '<div class="src">Source: '+link(c.source,c.sourceUrl)+'</div>'+
     '<div class="rv"><button class="rbtn" type="button">Reveal</button><small></small></div>';
-  var rec={c:c,el:el,key:'c'+c.id};CHARTS.push(rec);
+  var rec={c:c,el:el,key:'c'+c.id};CHARTS.push(rec);wireGuess(el);
   el.querySelector('.rbtn').addEventListener('click',function(){ST.rev[rec.key]=1;save();setChart(rec,true,true);});
   return el;
 }
@@ -437,7 +488,7 @@ function incCard(x,avoid,key){
     '<div class="ih"><h4>'+esc(x.name)+'</h4><span class="meta">'+esc(x.where)+' · '+esc(x.date)+'</span><span class="tag">'+esc(x.tag)+'</span></div>'+
     '<div class="hap">'+x.happened.map(esc).join(' ')+'</div>'+
     (x.label?'<div class="lbl"><b>Read this first:</b> '+esc(x.label)+'</div>':'')+
-    '<div class="guess"><b>Guess first:</b> how did the attackers get in, and what was the largest loss?</div>'+
+    '<div class="guess"><b>Guess first:</b> how did the attackers get in, and what was the largest loss?</div>'+guessHTML('i'+key)+
     '<div class="body"><h6>How they got in</h6><div class="stp">'+x.steps.map(function(s,i){return '<div><em>Step '+(i+1)+'</em>'+esc(s)+'</div>';}).join('')+'</div>'+
     '<h6>Impact</h6><div class="imp">'+x.impact.map(function(p){return '<div><b>'+esc(p[0])+'</b><span>'+esc(p[1])+'</span></div>';}).join('')+'</div>'+
     '<h6>What it means</h6><p class="kv2"><b>'+esc(x.rootLabel||'Root cause')+':</b> '+esc(x.root)+'</p><p class="kv2"><b>The control that would have stopped or limited it:</b> '+esc(x.control)+'</p>'+
@@ -445,7 +496,7 @@ function incCard(x,avoid,key){
     '<div class="q"><b>Discuss:</b> '+esc(x.question)+'</div>'+
     '<div class="so">Sources: '+x.sources.map(function(s){return link(s[0],s[1]);}).join(' · ')+'</div></div>'+
     '<div class="rv" style="margin-top:8px"><button class="rbtn" type="button">Reveal</button></div>';
-  var rec={el:el,key:'i'+key};INCS.push(rec);
+  var rec={el:el,key:'i'+key};INCS.push(rec);wireGuess(el);
   el.querySelector('.rbtn').addEventListener('click',function(){ST.rev[rec.key]=1;save();setInc(rec,true);});
   return el;
 }
@@ -496,13 +547,43 @@ setChart=function(rec,on){
     else{rec.el.classList.remove('shown');void rec.el.offsetWidth;requestAnimationFrame(function(){rec.el.classList.add('shown');});}}
   var b=rec.el.querySelector('.rbtn');b.disabled=!!on;b.textContent=on?'Revealed':'Reveal';
 };
-$('showAll').addEventListener('click',function(){ALL=!ALL;this.classList.toggle('on',ALL);this.textContent=ALL?'Hide the unrevealed':'Show all';applyReveals();});
+$('showAll').addEventListener('click',function(){ALL=!ALL;this.classList.toggle('on',ALL);this.textContent=ALL?'Hide the unrevealed':'Show all';applyReveals();if(INST)publish();});
 var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){CHARTS.forEach(drawChart);},150);});
 
+if(window.EscTeams)EscTeams.mount($('teamsBox'),{});
 paintScore();paintWager();applyReveals();
+
+/* the instructor's laptop: after ↺ Reset, empty the reveals and scores everywhere; a second instructor
+   device with nothing saved adopts what the room already sees */
+if(INST){
+  var hadLocal=false;try{hadLocal=!!localStorage.getItem(SK);}catch(e){}
+  var wasReset=false;try{wasReset=sessionStorage.getItem('num_reset')==='1';sessionStorage.removeItem('num_reset');}catch(e){}
+  if(wasReset)publish();
+  else if(!hadLocal)Promise.all([getj('numrev'),getj('numscore')]).then(function(r){var rv=parseRev(r[0]),sc=parseScore(r[1]);
+    ST.rev=rv.rev;if(sc)sc.forEach(function(t,i){if(ST.teams[i]){ST.teams[i].p=t.p;}});try{localStorage.setItem(SK,JSON.stringify(ST));}catch(e){}paintScore();paintWager();applyReveals();});
+  /* the teams' guesses under each card, every 6 s */
+  var pollG=function(){if(document.hidden)return;fetch(WALL.replace(/\/$/,'')+'.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(w){if(!w)return;
+    Array.prototype.forEach.call(document.querySelectorAll('.glist'),function(box){var rows=w['numg_'+box.dataset.k],best={};
+      if(rows)Object.keys(rows).forEach(function(id){var r=rows[id],m=/^T:([A-G])\|([\s\S]*)$/.exec((r&&r.src)||'');if(m&&(!best[m[1]]||r.ts>best[m[1]].ts))best[m[1]]={g:m[2],ts:r.ts};});
+      var ks=Object.keys(best).sort();
+      box.innerHTML=ks.length?'<div class="gh">The teams\' guesses · '+ks.length+'</div><div class="gg">'+ks.map(function(t){return '<span><b>'+esc(teamName(t))+'</b>'+esc(best[t].g)+'</span>';}).join('')+'</div>':'<div class="gh">No team has sent a guess yet</div>';});}).catch(function(){});};
+  pollG();setInterval(pollG,6000);
+}else{
+  /* a student's screen follows the instructor's reveals and scores */
+  var last='';
+  var follow=function(){if(document.hidden)return;Promise.all([getj('numrev'),getj('numscore')]).then(function(r){
+    var rv=parseRev(r[0]),sc=parseScore(r[1]),sig=JSON.stringify([rv,sc]);if(sig===last)return;last=sig;
+    var before=ST.rev;ST.rev=rv.rev;ALL=rv.all;
+    if(sc)ST.teams=sc.map(function(t){return {n:t.n,p:t.p,auto:0};});while(ST.teams.length<G.teams)ST.teams.push({n:'Team '+String.fromCharCode(65+ST.teams.length),p:0,auto:1});
+    paintScore();
+    CHARTS.forEach(function(c){var on=ALL||!!ST.rev[c.key];if(on&&!c.el.classList.contains('shown'))setChart(c,true);else if(!on&&c.el.classList.contains('shown')){c.el.classList.remove('shown');drawChart(c);}});
+    INCS.forEach(function(c){setInc(c,ALL||!!ST.rev[c.key]);});});};
+  follow();setInterval(follow,4000);
+}
 })();
 </script>
 <script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
 <script src="/shared/chat.js" defer></script>
 <script src="/track.js" defer></script>
 </body>
