@@ -307,3 +307,25 @@ global `EscWall`; `courseprogress.js` a port).
   due Fri 27 Nov and opens Session 7; the S6 prediction is "sealed before Session 6 starts". Reflection 4's
   "due before 17:00" line was left as it is, so it now reads as due on 20 Nov. **Session 6's page is still to
   build, and it runs the same evening as Session 5.**
+
+- **Session 6 — "The update you trusted, and putting a number on it" (`week6.html`, built 13 Nov 2026
+  for Fri 20 Nov, the SAME evening as Session 5, so `total:5`).** s1 opens Session 5's sealed `w5_nx`
+  and a five-case table (what was trusted · attacker? · how far it reached): NotPetya (M.E.Doc update;
+  Maersk USD 250–300 m; ~USD 10 bn per the White House adviser, Wired 2018), SolarWinds (Orion
+  updates Mar–Jun 2020, ~18,000 installs, 9 agencies + ~100 firms; SVR, Apr 2021), MOVEit (2,773 /
+  95.8 m, Emsisoft), XZ Utils (CVE-2024-3094, "Jia Tan", found 29 Mar 2024 by Andres Freund from a
+  half-second login delay, no attribution), CrowdStrike (19 Jul 2024, no attacker, 8.5 m machines per
+  Microsoft, Delta ~7,000 flights, Parametrix USD 5.4 bn for the largest US firms) → "most damage
+  depends on the measure", `w6_measure`. s2 the three doors (code runs / logs in / holds data), a
+  nine-supplier classify for fictional Arvane (answers L D C C C L L D D), Kaseya → Visma EssCom →
+  Coop (~800 stores) as the fourth-party case, staged rollout + SBOM (roles.html duty 5), `w6_vendor`.
+  s3 four fictional Arvane risks ranked by a 5×5 matrix and by expected annual loss (editable; default
+  disagreement: D last by matrix, 2nd by expected loss; A first by matrix, 3rd by loss), Cox (2008),
+  scenarios when there is no base rate, `w6_matrix`. s4 NIST CSF 2.0 (six functions, Govern added,
+  GV.SC) and ISO/IEC 27001:2022 (93 controls, 5.19–5.23 suppliers), an eight-row CSF classify
+  (GV DE ID RC PR PR RS GV). s5 team board, riskiest supplier + first control → `_wall/w6` as
+  `S:<k>|C:<k>`, the midterm brief (11 Dec, S1–6, dictionary, 45 %), prediction `w6_nx` for S7 (which
+  pressure is hardest: cyber/economic/legal/information), **Reflection 6 = `refl7_*` on EC (2016)
+  JOIN(2016) 18, due 27 Nov**. Hub `href`, courseprogress `w6 live, total:5`, courses.json module w6.
+  week5.html ends with a button "Session 6 follows this evening". Tested headless (1280/500 px):
+  5/5, no errors.

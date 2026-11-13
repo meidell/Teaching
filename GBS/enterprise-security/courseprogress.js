@@ -25,7 +25,7 @@ window.CourseProgress=(function(){
     {mod:'w3',  short:'S3', name:'Session 03 · Will cyber war take place?',             total:6, live:true, href:'week3.html'},
     {mod:'w4',  short:'S4', name:'Session 04 · The arsenal',                            total:6, live:true, href:'week4.html'},
     {mod:'w5',  short:'S5', name:'Session 05 · Cables, satellites and the sky',         total:6, live:true, href:'week5.html'},
-    {mod:'w6',  short:'S6', name:'Session 06 · The update you trusted, and a number',   total:6, live:false},
+    {mod:'w6',  short:'S6', name:'Session 06 · The update you trusted, and a number',   total:5, live:true, href:'week6.html'},
     {mod:'w7',  short:'S7', name:'Session 07 · Hybrid threats, resilient firms',        total:6, live:false},
     {mod:'w8',  short:'S8', name:'Session 08 · The tabletop: 72 hours',                 total:6, live:false},
     /* Session 09 is the midterm (11 Dec) — no page, no chapter. */
