@@ -72,7 +72,7 @@ in schools in India, Dubai, Bangkok and Switzerland; everything is online and re
   numbers (1–24) — change a slide's content in BOTH, as with the calendar table.
 - **Session 2 kit (13 Nov 2026)** — Jan Erik: "session 2 … make slides and a transcript",
   then "give me the transcript as bullet points to match the slides". Same pattern as Session 1
-  (unlinked, `noindex`, not counted): `session2-slides.html` (28 slides; CSS = Session 1's deck +
+  (`noindex`, not counted; reached from `session2.html`'s top bar: 🖥️ Slides for everyone, 📄 Transcript only on a `jem_instructor` device, like Session 1): `session2-slides.html` (28 slides; CSS = Session 1's deck +
   `.toks`, `.bars`, `table.tb`, and `.slide p.src/.define` sizes) and `session2-script.html` = talking
   POINTS, not prose, one bullet list per slide, with pause and cue boxes. Follows `session2.html`'s
   eight blocks; four activities (problem sentence, Block 4 matching, Block 5 lab, Block 6 prompt).
