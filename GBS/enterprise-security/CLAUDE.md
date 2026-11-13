@@ -343,3 +343,24 @@ global `EscWall`; `courseprogress.js` a port).
   publishes empty reveals and zero scores on the reload; a second instructor device with nothing saved adopts
   what the room sees. Tested headless with an in-memory database: guess → instructor list, reveal + score →
   student screen, reset → student hidden again, 🎓 view = student page.
+  **Game-only reset (13 Nov 2026).** Jan Erik: "I do not want to reset the whole course — just the graphics
+  that have been revealed in that session and the team points". `gameReset()` = the "↺ Reset reveals and
+  points" button beside Show all and in the scoreboard header (it replaced "New game"): reveals, Show all,
+  points and wagers to zero, team names kept, published to every student screen; nothing else in
+  localStorage is touched. Instructor view only. The bar's ↺ Reset still resets the whole course.
+  **Bold and sources on the word cards (13 Nov 2026).** Jan Erik: "make bold the most important words";
+  "find references to the real cases, just hide the url behind source or link". In data.js `**x**` marks
+  bold in a vocab card's `what`/`eg` and a type card's `def` (`rich()` in numbers.html escapes, then turns
+  it into `<b>`; never use `**` in any other field, it would print). Each vocab item may carry `src` (a URL),
+  shown as "Source ↗" after the real case, or "Link ↗" after the definition when there is no case (DBIR,
+  IBM, IC3). 48 of 54 have one; every URL answered 200 on 13 Nov 2026 except SentinelOne (429, rate
+  limit) — Wikipedia, CISA, NAO, DOJ, Europol, gov.uk, IC3, EUR-Lex, TechCrunch (Samsung), CNN (Arup),
+  Wired (NotPetya). No source yet: Scanning (Taiwan's NSB figure: no URL found). The "Network" card's
+  example was invented (a generic hospital) and was replaced by WannaCry in England (NAO: 81 of 236 trusts).
+  **Cut to 32 cards (13 Nov 2026).** Jan Erik: "for the 6 sections — cut the cards by 40%. Keep the most
+  important". Kept per group 3 · 9 · 5 · 5 · 6 · 4: the terms the charts and incident cards lean on most.
+  Removed (22): Network, Server, Internet-facing, Credential abuse, VPN, Social engineering, Scanning,
+  Default password, Moving through the network, Pre-positioning, Sabotage, Insider, Shadow AI, AI-enabled
+  attack, Pentest, Router, Wiretap, DevSecOps, Cyber insurance, The others, Average · median, Log scale
+  (several survive as type-card definitions). The CVE, Equifax-timeline and KEV wording was clarified the
+  same day. The listening PDF on the Desktop still has the 54-card version.

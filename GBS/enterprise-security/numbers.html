@@ -167,6 +167,7 @@ body{background:var(--pg);}
 .wager button{font:800 12px inherit;font-family:inherit;border:1.5px solid var(--ln);border-radius:6px;background:var(--card);color:var(--tx);padding:4px 8px;cursor:pointer;margin-right:4px;}
 @media(max-width:600px){.wager th:nth-child(2),.wager td:nth-child(2){display:none;}.wager input{width:70px;}}
 /* vocabulary */
+.vsrc{font-size:.85em;font-weight:700;white-space:nowrap;color:inherit;}
 .vg{margin:18px 0 6px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--acc);}
 .voc{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;}
 .vc{background:var(--card);border:1px solid var(--ln);border-left:4px solid var(--acc);border-radius:10px;padding:10px 13px;}
@@ -185,7 +186,7 @@ body{background:var(--pg);}
 .glist .gg{display:flex;flex-wrap:wrap;gap:6px;}
 .glist .gg span{background:var(--wash);border:1px solid var(--ln);border-radius:8px;padding:4px 9px;color:var(--tx);}
 .glist .gg span b{color:var(--acc);margin-right:4px;}
-.stud .rbtn,.stud #showAll,.stud #scReset,.stud #score .tm button,.stud .wagerbox,.stud .glist,.inst .gform{display:none !important;}
+.stud .rbtn,.stud #showAll,.stud #scReset,.stud #gameReset,.stud #score .tm button,.stud .wagerbox,.stud .glist,.inst .gform{display:none !important;}
 .inst .stonly{display:none;}
 .stud #score .tm input{pointer-events:none;border-bottom-color:transparent;}
 .stud .ch:not(.shown) .rv small:after{content:"The instructor reveals this chart on every screen.";}
@@ -216,6 +217,7 @@ body{background:var(--pg);}
       <a href="#cat-assets">3 · Asset protection</a>
       <a href="#trust">Which number do you trust?</a>
       <button type="button" id="showAll">Show all</button>
+      <button type="button" id="gameReset">↺ Reset reveals and points</button>
     </div>
   </div>
 
@@ -266,6 +268,9 @@ body{background:var(--pg);}
 'use strict';
 var D=window.DATA, G=D.game, SK='escwa_numbers_v1';
 function $(id){return document.getElementById(id);}
+/* rich(): escape, then **x** in data.js -> <b>x</b> (13 Nov 2026, Jan Erik: bold the most important words); srcA(): a Source link with the URL hidden */
+function rich(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');}
+function srcA(u,label){return u?' <a class="vsrc" href="'+esc(u)+'" target="_blank" rel="noopener">'+(label||'Source')+' ↗</a>':'';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function fmt(v){if(v==null)return '';return (Math.abs(v)>=1000&&Math.round(v)===v)?v.toLocaleString('en-GB'):String(v);}
 function link(name,url){return url?'<a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(name)+'</a>':esc(name);}
@@ -301,12 +306,12 @@ function parseScore(o){var src=(o&&o.master&&o.master.src)||'';if(src.indexOf('S
 (function(){var h=document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('#jem-hat button');if(b&&/Reset/.test(b.textContent)){try{sessionStorage.setItem('num_reset','1');}catch(x){}}},true);})();
 
 function paintScore(){
-  var h='<div class="sh">Scoreboard · '+G.points+' points a guess<button type="button" id="scReset">New game</button></div><div class="tms">';
+  var h='<div class="sh">Scoreboard · '+G.points+' points a guess<button type="button" id="scReset">↺ Reset reveals and points</button></div><div class="tms">';
   ST.teams.forEach(function(t,i){h+='<div class="tm"><input value="'+esc(t.n)+'" data-i="'+i+'" aria-label="Team name"><div class="row"><b>'+t.p+'</b><button type="button" data-i="'+i+'" data-d="-1" aria-label="Minus">−</button><button type="button" data-i="'+i+'" data-d="1" aria-label="Plus">+</button></div></div>';});
   $('score').innerHTML=h+'</div>';
   $('score').querySelectorAll('input').forEach(function(inp){inp.addEventListener('change',function(){var t=ST.teams[+inp.dataset.i];t.n=inp.value.slice(0,40);t.auto=0;save();paintWager();});});
   $('score').querySelectorAll('button[data-d]').forEach(function(b){b.addEventListener('click',function(){ST.teams[+b.dataset.i].p+=G.points*(+b.dataset.d);save();paintScore();paintWager();});});
-  $('scReset').addEventListener('click',function(){if(!confirm('Set every score back to zero and hide every chart again?'))return;ST.teams.forEach(function(t){t.p=0;});ST.rev={};ST.wager={};save();paintScore();paintWager();applyReveals();});
+  $('scReset').addEventListener('click',gameReset);
 }
 /* The course's team board names the teams; a name typed here wins. */
 (function(){
@@ -320,7 +325,7 @@ function paintScore(){
 })();
 
 $('vocab').innerHTML=(D.vocab||[]).map(function(g){return '<div class="vg">'+esc(g.group)+'</div><div class="voc">'+g.items.map(function(v){
-  return '<div class="vc"><h5>'+esc(v.t)+(v.also?'<small>also: '+esc(v.also)+'</small>':'')+'</h5><p>'+esc(v.what)+'</p>'+(v.eg?'<p class="eg"><b>Real case:</b> '+esc(v.eg)+'</p>':'')+(v.where?'<p class="wh"><b>In the game:</b> '+esc(v.where)+'</p>':'')+'</div>';}).join('')+'</div>';}).join('');
+  return '<div class="vc"><h5>'+esc(v.t)+(v.also?'<small>also: '+esc(v.also)+'</small>':'')+'</h5><p>'+rich(v.what)+(v.eg?'':srcA(v.src,'Link'))+'</p>'+(v.eg?'<p class="eg"><b>Real case:</b> '+rich(v.eg)+srcA(v.src)+'</p>':'')+(v.where?'<p class="wh"><b>In the game:</b> '+esc(v.where)+'</p>':'')+'</div>';}).join('')+'</div>';}).join('');
 $('rules').innerHTML='<h3>How the game works</h3><ol>'+
   '<li>Join your team in the box under these rules, on your own laptop or phone.</li>'+
   '<li>Before a chart is revealed, your team agrees one guess and <b>one of you types it in the box under the question</b>, in a few words or one number, and presses <b>Send our guess</b>. The instructor sees every team\'s guess.</li>'+
@@ -479,7 +484,7 @@ function tilesHTML(tiles,src,url){
     if(t.values)v='<div style="display:flex;gap:18px">'+t.values.map(function(p){return '<div>'+esc(p[1])+'<span>'+esc(p[0])+'</span></div>';}).join('')+'</div>';
     return '<div class="tile"><div class="tl">'+esc(t.label)+'</div><div class="tv">'+v+'</div><div class="ts">Source: '+link(t.source||src,url)+'</div></div>';}).join('')+'</div>';
 }
-function typeCards(list){return '<div class="types">'+list.map(function(t){return '<div class="ty"><h5>'+esc(t.name)+'</h5><p>'+esc(t.def)+'</p><p class="eg"><b>Example:</b> '+esc(t.example)+'</p><p class="nm"><b>'+esc(t.number)+'</b>'+(t.src?' · '+esc(t.src):'')+'</p></div>';}).join('')+'</div>';}
+function typeCards(list){return '<div class="types">'+list.map(function(t){return '<div class="ty"><h5>'+esc(t.name)+'</h5><p>'+rich(t.def)+'</p><p class="eg"><b>Example:</b> '+esc(t.example)+'</p><p class="nm"><b>'+esc(t.number)+'</b>'+(t.src?' · '+esc(t.src):'')+'</p></div>';}).join('')+'</div>';}
 
 var INCS=[];
 function incCard(x,avoid,key){
@@ -548,6 +553,14 @@ setChart=function(rec,on){
   var b=rec.el.querySelector('.rbtn');b.disabled=!!on;b.textContent=on?'Revealed':'Reveal';
 };
 $('showAll').addEventListener('click',function(){ALL=!ALL;this.classList.toggle('on',ALL);this.textContent=ALL?'Hide the unrevealed':'Show all';applyReveals();if(INST)publish();});
+/* 13 Nov 2026, Jan Erik: "I do not want to reset the whole course - just the graphics that have been revealed
+   in that session and the team points". This touches ONLY this game: reveals, Show all, points and wagers go
+   back to zero (team names are kept) and the empty state is published to every student screen. The bar's
+   ↺ Reset (login.js) still resets the whole course on this device; this button does not. */
+function gameReset(){if(!confirm('Hide every chart and incident card again and set every team\'s points to zero? Team names stay. Nothing else in the course is touched.'))return;
+  ST.teams.forEach(function(t){t.p=0;});ST.rev={};ST.wager={};ALL=false;var sa=$('showAll');sa.classList.remove('on');sa.textContent='Show all';
+  save();paintScore();paintWager();applyReveals();}
+$('gameReset').addEventListener('click',gameReset);
 var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){CHARTS.forEach(drawChart);},150);});
 
 if(window.EscTeams)EscTeams.mount($('teamsBox'),{});
