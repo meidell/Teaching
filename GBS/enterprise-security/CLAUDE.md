@@ -288,3 +288,11 @@ global `EscWall`; `courseprogress.js` a port).
   2022/2023, vuln 2024, Dragos 2023, Chainalysis NK 2022, IBM 2019–21, IC3 2019–23) match the
   published reports as Claude knows them. Not a counted session (no data-module). Tested headless at
   1280/390 px, light and dark: no errors, no sideways scroll. Linked from the hub's Course reference.
+  **The words first (13 Nov 2026, same day).** Jan Erik: "cards before the game explaining the vocabulary
+  … back up every word with real examples and explain to layman". `DATA.vocab` in data.js: six groups,
+  54 cards (basic words · how attackers get in · what they do inside · who attacks · machines, money and
+  losses · who counts and how to read the charts), each = plain definition + one real, dated, public case
+  + "In the game" pointer. Rendered as section `#words` BEFORE the game (`#play`, scoreboard, rules).
+  Cases chosen for being well documented (Colonial Pipeline, Equifax, WannaCry/NHS, Ukraine grid 2015,
+  MGM, SolarWinds, Mirai, NotPetya/Maersk, Stuxnet, LockBit/Cronos, Estonia 2007, Samsung/ChatGPT,
+  Arup deepfake, DORA testing, Bybit, the Google/Facebook invoice fraud).
