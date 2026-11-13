@@ -64,11 +64,15 @@
     </ol>
     <p>Below, the same mechanism on one sentence, with <b>illustrative probabilities</b> (invented for the demonstration, not taken from a real model). The <b>temperature</b> setting controls how the next token is chosen: low temperature almost always takes the most likely one; high temperature spreads the choice.</p>
     <div class="lab" style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px">
-      <div class="lab-title">the prompt so far</div>
+      <div class="lab-title">the text so far · press "Pick the next token and add it" to let the model write, one token at a time</div>
       <div class="gen" id="nwPrompt">In November the air in Delhi is often</div>
       <div class="ctrl"><label>temperature <span class="val" id="nwTv">1.0</span></label><input type="range" id="nwT" min="0.1" max="2" step="0.1" value="1"></div>
       <div class="probs" id="nwProbs"></div>
-      <button class="btn small" id="nwGo">Pick the next token 20 times</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn small" id="nwPick">Pick the next token and add it</button>
+        <button class="btn small ghost" id="nwGo">Try the pick 20 times (adds nothing)</button>
+        <button class="btn small ghost" id="nwRe">Start the sentence again</button>
+      </div>
       <div class="savenote" id="nwOut"></div>
     </div>
     <div class="callout"><span class="ct">What follows from this</span>
@@ -233,20 +237,55 @@
 (function(){
   var S=GreenSession,ls=S.ls,esc=S.esc;
 
-  /* block 1 · the next-token demo — ILLUSTRATIVE probabilities, invented for the demonstration */
-  var CAND=[['polluted',0.34],['hazy',0.22],['smoggy',0.17],['unhealthy',0.12],['cold',0.08],['beautiful',0.04],['purple',0.03]];
-  var T=document.getElementById('nwT'),r=Math.random;
-  function probs(t){var w=CAND.map(function(c){return Math.exp(Math.log(c[1])/t);}),s=w.reduce(function(a,b){return a+b;},0);return w.map(function(x){return x/s;});}
-  function drawP(cnt){var p=probs(parseFloat(T.value));document.getElementById('nwTv').textContent=parseFloat(T.value).toFixed(1);
-    document.getElementById('nwProbs').innerHTML=CAND.map(function(c,i){return '<div class="pr'+(cnt&&cnt[i]===Math.max.apply(null,cnt)?' pick':'')+'"><span>'+c[0]+'</span><span class="b"><i style="width:'+(p[i]*100).toFixed(1)+'%"></i></span><span>'+(p[i]*100).toFixed(1)+'%'+(cnt?' · '+cnt[i]:'')+'</span></div>';}).join('');}
-  T.addEventListener('input',function(){drawP();});drawP();
+  /* block 1 · the next-token demo — ILLUSTRATIVE probabilities, invented for the demonstration.
+     Each pick is appended to the sentence and the candidates for the NEXT position are looked up
+     from the last token (NEXT), else the adjective list (ADJ), else the generic list (GEN).
+     "." ends the sentence; after 14 added tokens the end is forced. */
+  var START='In November the air in Delhi is often';
+  var FIRST=[['polluted',0.34],['hazy',0.22],['smoggy',0.17],['unhealthy',0.12],['cold',0.08],['beautiful',0.04],['purple',0.03]];
+  var ADJW=['polluted','hazy','smoggy','unhealthy','cold','beautiful','purple','grey','dry','dangerous','quiet','sweet','thick'];
+  var ADJ=[['.',0.30],['because',0.24],['and',0.18],['with',0.12],['in',0.08],['during',0.05],['like',0.03]];
+  var GEN=[['.',0.45],['and',0.18],['in',0.12],['because',0.10],['with',0.08],['today',0.05],['again',0.02]];
+  var NEXT={
+    'because':[['of',0.42],['farmers',0.18],['the',0.16],['cars',0.11],['winter',0.07],['fireworks',0.04],['dragons',0.02]],
+    'of':[['crop',0.30],['traffic',0.26],['smoke',0.18],['dust',0.12],['fireworks',0.08],['factories',0.04],['music',0.02]],
+    'crop':[['burning',0.70],['fires',0.20],['waste',0.07],['prices',0.03]],
+    'farmers':[['burn',0.55],['are',0.20],['clear',0.15],['sing',0.10]],
+    'burn':[['straw',0.50],['crops',0.25],['fields',0.20],['bridges',0.05]],
+    'are':[['burning',0.60],['busy',0.25],['tired',0.15]],
+    'clear':[['fields',0.70],['skies',0.20],['soup',0.10]],
+    'cars':[['and',0.40],['burn',0.25],['.',0.25],['dance',0.10]],
+    'and':[['cold',0.24],['hazy',0.20],['dangerous',0.18],['grey',0.14],['dry',0.12],['thick',0.08],['sweet',0.04]],
+    'with':[['smoke',0.30],['dust',0.25],['fog',0.20],['smog',0.12],['haze',0.08],['birds',0.03],['music',0.02]],
+    'in':[['the',0.50],['winter',0.25],['Delhi',0.15],['November',0.07],['space',0.03]],
+    'the':[['morning',0.35],['evening',0.25],['city',0.18],['streets',0.12],['winter',0.07],['sky',0.03]],
+    'during':[['winter',0.40],['Diwali',0.25],['the',0.20],['harvest',0.12],['lunch',0.03]],
+    'like':[['fog',0.40],['smoke',0.30],['soup',0.15],['milk',0.10],['candy',0.05]]
+  };
+  var T=document.getElementById('nwT'),r=Math.random,words=[],done=false;
+  function cand(){if(!words.length)return FIRST;var w=words[words.length-1];if(words.length>=14)return [['.',1]];return NEXT[w]||(ADJW.indexOf(w)>=0?ADJ:GEN);}
+  function probs(t){var C=cand(),w=C.map(function(c){return Math.exp(Math.log(c[1])/t);}),s=w.reduce(function(a,b){return a+b;},0);return w.map(function(x){return x/s;});}
+  function sample(p){var u=r(),a=0;for(var i=0;i<p.length;i++){a+=p[i];if(u<=a)return i;}return p.length-1;}
+  function drawText(last){var h=esc(START);words.forEach(function(w,i){h+=(w==='.'?'':' ')+(i===words.length-1&&last?'<b style="color:var(--accent-deep);background:#E8F2E2;border-radius:4px;padding:0 3px">'+esc(w)+'</b>':esc(w));});
+    document.getElementById('nwPrompt').innerHTML=h+(done?'':' <span style="color:var(--grey,#888)">…</span>');}
+  function drawP(cnt,picked){var C=cand(),p=probs(parseFloat(T.value));document.getElementById('nwTv').textContent=parseFloat(T.value).toFixed(1);
+    document.getElementById('nwProbs').innerHTML=done?'':C.map(function(c,i){var hi=cnt?cnt[i]===Math.max.apply(null,cnt):i===picked;return '<div class="pr'+(hi?' pick':'')+'"><span>'+esc(c[0]==='.'?'. (end)':c[0])+'</span><span class="b"><i style="width:'+(p[i]*100).toFixed(1)+'%"></i></span><span>'+(p[i]*100).toFixed(1)+'%'+(cnt?' · '+cnt[i]+'×':'')+'</span></div>';}).join('');
+    document.getElementById('nwPick').disabled=done;document.getElementById('nwGo').disabled=done;}
+  T.addEventListener('input',function(){drawP();});
+  document.getElementById('nwPick').addEventListener('click',function(){
+    if(done)return;var C=cand(),i=sample(probs(parseFloat(T.value))),w=C[i][0],pct=(probs(parseFloat(T.value))[i]*100).toFixed(1);
+    words.push(w);if(w==='.')done=true;drawText(true);drawP();
+    document.getElementById('nwOut').innerHTML=done?'The model picked the end of the sentence ("." with '+pct+'%), so it stops. Press "Start the sentence again" and try a high temperature: the sentence comes out different, and stranger.':'Added "<b>'+esc(w)+'</b>" (it had '+pct+'%). The bars now show the candidates for the next position, given the new text. Pick again.';
+  });
   document.getElementById('nwGo').addEventListener('click',function(){
-    var p=probs(parseFloat(T.value)),cnt=CAND.map(function(){return 0;});
-    for(var k=0;k<20;k++){var u=r(),a=0;for(var i=0;i<p.length;i++){a+=p[i];if(u<=a){cnt[i]++;break;}}}
+    var p=probs(parseFloat(T.value)),C=cand(),cnt=C.map(function(){return 0;});
+    for(var k=0;k<20;k++)cnt[sample(p)]++;
     drawP(cnt);
     var t=parseFloat(T.value);
-    document.getElementById('nwOut').innerHTML='20 picks at temperature '+t.toFixed(1)+': '+CAND.map(function(c,i){return cnt[i]?c[0]+' ×'+cnt[i]:null;}).filter(Boolean).join(', ')+'. '+(t<0.5?'Low temperature: almost always the most probable word.':t>1.4?'High temperature: unlikely words — even "purple" — start to appear.':'Mostly the likely words, with some variety.');
+    document.getElementById('nwOut').innerHTML='20 trial picks for the next position at temperature '+t.toFixed(1)+': '+C.map(function(c,i){return cnt[i]?(c[0]==='.'?'end':c[0])+' ×'+cnt[i]:null;}).filter(Boolean).join(', ')+'. Nothing was added to the text. '+(t<0.5?'Low temperature: almost always the most probable token.':t>1.4?'High temperature: unlikely tokens start to appear.':'Mostly the likely tokens, with some variety.');
   });
+  document.getElementById('nwRe').addEventListener('click',function(){words=[];done=false;drawText(false);drawP();document.getElementById('nwOut').textContent='';});
+  drawText(false);drawP();
 
   /* block 4 · matching */
   var TOOLS=['Claude','ChatGPT','Gemini','Perplexity','Perplexity + Claude'];
