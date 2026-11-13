@@ -70,6 +70,16 @@ in schools in India, Dubai, Bangkok and Switzerland; everything is online and re
     The words are at the students' level; the framing/cues are for Jan Erik.
   Facts are sourced on-slide per WRITING.md. ⚠ The slide deck and the script share slide
   numbers (1–24) — change a slide's content in BOTH, as with the calendar table.
+- **Session 2 kit (13 Nov 2026)** — Jan Erik: "session 2 … make slides and a transcript",
+  then "give me the transcript as bullet points to match the slides". Same pattern as Session 1
+  (unlinked, `noindex`, not counted): `session2-slides.html` (28 slides; CSS = Session 1's deck +
+  `.toks`, `.bars`, `table.tb`, and `.slide p.src/.define` sizes) and `session2-script.html` = talking
+  POINTS, not prose, one bullet list per slide, with pause and cue boxes. Follows `session2.html`'s
+  eight blocks; four activities (problem sentence, Block 4 matching, Block 5 lab, Block 6 prompt).
+  Slides 9–10 use the page's invented next-token probabilities (T = 0.3 / 1.0 / 1.8 recomputed:
+  73/17/…/0 %, 34/22/…/3 %, 25/19/…/6 %) and say they are invented. The lab DOIs were re-checked on
+  Crossref 13 Nov 2026 (Jeon et al. still 200, the fake 10.1038 still 404). Worked data card = the
+  Delhi 178 µg/m³ (CSE, winter 2024) from Session 1. ⚠ Slide numbers 1–28 are shared by both files.
 - Own `ns`/`keyPrefix` `green-ai`, joinCode `GRAI`, unlisted, in robots.txt; the SUMAS
   landing page picks it up from courses.json. ⚠ **The `green-ai` rules block (a copy of
   capstone-ba's without `_teams`, `_forum`, `_wall`) must be DEPLOYED** before the link
