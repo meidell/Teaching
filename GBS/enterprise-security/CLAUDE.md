@@ -296,3 +296,14 @@ global `EscWall`; `courseprogress.js` a port).
   Cases chosen for being well documented (Colonial Pipeline, Equifax, WannaCry/NHS, Ukraine grid 2015,
   MGM, SolarWinds, Mirai, NotPetya/Maersk, Stuxnet, LockBit/Cronos, Estonia 2007, Samsung/ChatGPT,
   Arup deepfake, DORA testing, Bybit, the Google/Facebook invoice fraud).
+
+- ⚠ **13 Nov 2026 became an EXTRA session; Sessions 5 and 6 share Fri 20 Nov.** Jan Erik: "do this as an
+  extra session (today) and continue with session 5 next time"; asked how to fit four sessions before the
+  11 Dec midterm, he chose "merge S5 and S6". Hub `TERM`: a new entry `{n:'+', extra:true, date:'2026-11-13',
+  href:'numbers.html'}` (the card and the next-session box print "Extra session" and do not count it);
+  S5's date is 20 Nov and S5/S6 each open with "Together with Session 6/5, on the same evening". S7–S8 and
+  the midterm (11 Dec) unchanged. `courses.json` escwa `schedule.dates[4]` = 2026-11-20 (the extra session
+  is not in the list). week5.html: date 20 Nov "together with Session 6"; the trusted-vendor claim is now
+  due Fri 27 Nov and opens Session 7; the S6 prediction is "sealed before Session 6 starts". Reflection 4's
+  "due before 17:00" line was left as it is, so it now reads as due on 20 Nov. **Session 6's page is still to
+  build, and it runs the same evening as Session 5.**
