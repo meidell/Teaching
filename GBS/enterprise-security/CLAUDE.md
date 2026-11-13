@@ -265,3 +265,26 @@ global `EscWall`; `courseprogress.js` a port).
   scorecard are Session 8, 4 Dec), week1's arc, week2's "Sessions 8 and 10" / "Session 8's crisis
   exercise", week4's "Session 7" (the story payload). The midterm still covers Sessions 1–6; the
   final covers 7–8 and 10–13. Dates in courses.json did not change (same Fridays).
+
+- **`numbers.html` + `data.js` — "Cyber risk in numbers" (13 Nov 2026), from Jan Erik's build brief
+  ("Build brief: Cyber statistics session").** Every figure is in `data.js` (`DATA`), copied from the
+  brief unchanged; `null` = gap. Charts are **inline SVG drawn by the page's own script, not Chart.js**:
+  the brief allowed a CDN only if the repo had no chart library, and the repo forbids CDN scripts.
+  Kinds: `line` (breaks = dashed segment + numbered † footnote; `gapAfter` = an axis gap, A3),
+  `bar`, `barline` (two axes), `inside` (W3: North Korea drawn inside the total, no subtraction),
+  `hbar` (`log` for A4, `diverging` for A6), `hbarGroup` (W4). Guess-first: values, tick numbers and
+  footnotes hidden until Reveal (hbar items alphabetical while hidden, so the order gives nothing
+  away); "Show all" in the header. Three categories × blocks A–D (evolution · type cards + charts ·
+  two most serious · most avoidable, marked), each block opening with a one-sentence business case
+  and closing with one sentence of theory (written by Claude, no numbers). Sticky scoreboard of seven
+  teams, names from the escwa team board (`_wall/tn_A..F`) unless typed, ±`DATA.game.points`;
+  localStorage `escwa_numbers_v1`. Closing "Which number do you trust?" lists every chart note + the
+  final wager (won when both reasons say what the number counts and who reported it). Light and dark
+  (page-local tokens, Okabe-Ito accents). The brief's "game section" was not in the PDF; the rules on
+  the page are Claude's. **Source links the brief named without an address are plain text** (HIPAA
+  Journal, CodeAnt, Reuters/NBC, CPO Magazine, EuRepoC, Nextgov, Defense One, The Register, Claroty,
+  SOCRadar, ITPro, Reinsurance News, Dark Reading, CBS News, freezer-case Wikipedia); linked: Emsisoft,
+  Wikipedia MOVEit, SentinelOne AcidRain, CISA AA23-335A. The brief's `check` values (DBIR ransomware
+  2022/2023, vuln 2024, Dragos 2023, Chainalysis NK 2022, IBM 2019–21, IC3 2019–23) match the
+  published reports as Claude knows them. Not a counted session (no data-module). Tested headless at
+  1280/390 px, light and dark: no errors, no sideways scroll. Linked from the hub's Course reference.
