@@ -307,11 +307,12 @@ async function termView(id) {
     <div class="acard">${entered.length ? weekTable(t, hmCell) : '<div class="empty">Nobody has entered a week yet.</div>'}
       <p class="small muted" style="margin:10px 0 0">${t.deadline ? `Teachers were asked to enter by ${fDay(t.deadline)}. ` : ''}Hours are Geneva time. The timetable tab of every edition checks a session against these marks before adding it.</p></div>
     <div class="asec">Teachers <small class="muted">hours per week they want, at most per day, and what they marked</small></div>
-    <div class="acard tw"><table class="t"><tr><th>Teacher</th><th>Role</th><th class="n">Hours / week</th><th class="n">Max / day</th><th class="n"><span class="sw y">✓</span>Available</th><th class="n"><span class="sw m">–</span>If needed</th><th class="n"><span class="sw n">✕</span>Unavailable</th><th>Last saved</th><th>Note</th></tr>
+    <div class="acard tw"><table class="t"><tr><th>Teacher</th><th>Role</th><th>Status</th><th class="n">Hours / week</th><th class="n">Session</th><th class="n">Max / day</th><th class="n"><span class="sw y">✓</span>Available</th><th class="n"><span class="sw m">–</span>If needed</th><th class="n"><span class="sw n">✕</span>Unavailable</th><th>Last saved</th><th>Note</th></tr>
       ${T.map(x => x.entry ? `<tr class="click" data-who="${x.id}"><td>${esc(x.name || x.email)}<div class="small muted">${esc(x.email)}</div></td><td class="small">${x.roles.join(', ') || (x.former ? 'no role any more' : '')}</td>
-          <td class="n">${x.entry.hours_week || '—'}</td><td class="n">${x.entry.max_day || '—'}</td><td class="n">${x.entry.counts.y}</td><td class="n">${x.entry.counts.m}</td><td class="n">${x.entry.counts.n}</td>
+          <td>${x.entry.submitted_at ? `<span class="apill ok">sent</span>` : `<span class="apill">${x.entry.blank ? x.entry.blank + ' h blank' : 'draft'}</span>`}</td>
+          <td class="n">${x.entry.hours_week ? x.entry.hours_week + (x.entry.hours_max && x.entry.hours_max !== x.entry.hours_week ? '–' + x.entry.hours_max : '') : '—'}</td><td class="n">${x.entry.block_len ? x.entry.block_len + ' h' : '—'}</td><td class="n">${x.entry.max_day || '—'}</td><td class="n">${x.entry.counts.y}</td><td class="n">${x.entry.counts.m}</td><td class="n">${x.entry.counts.n}</td>
           <td class="small">${fWhen(x.entry.updated_at)}</td><td class="small">${esc(x.entry.note)}</td></tr>`
-        : `<tr><td>${esc(x.name || x.email)}<div class="small muted">${esc(x.email)}</div></td><td class="small">${x.roles.join(', ')}</td><td colspan="7"><span class="apill warn">nothing entered</span></td></tr>`).join('')}</table>
+        : `<tr><td>${esc(x.name || x.email)}<div class="small muted">${esc(x.email)}</div></td><td class="small">${x.roles.join(', ')}</td><td colspan="9"><span class="apill warn">nothing entered</span></td></tr>`).join('')}</table>
       ${missing.length ? `<div class="row" style="margin-top:10px"><button class="ab sm" id="bMail">${ic('mail')}Copy the ${missing.length} email address${missing.length > 1 ? 'es' : ''} of those who have not entered</button><span class="msg" id="mlX" style="margin:0"></span></div>` : ''}</div>
     <div class="asec">Term settings</div>
     <div class="acard">
@@ -327,7 +328,12 @@ async function termView(id) {
   main.querySelectorAll('[data-who]').forEach(tr => tr.onclick = () => {
     const x = T.find(y => y.id === tr.dataset.who), e = x.entry, d = $('drawer');
     d.innerHTML = `<div class="row" style="justify-content:space-between;margin:0 0 8px"><h2>${esc(x.name || x.email)}</h2><button class="ab ghost icon" id="dX">${ic('x')}</button></div>
-      <div class="kv"><span class="muted">Hours / week</span><b>${e.hours_week || '—'}</b><span class="muted">At most per day</span><b>${e.max_day || '—'}</b><span class="muted">Last saved</span><span>${fWhen(e.updated_at)}</span></div>
+      <div class="kv"><span class="muted">Status</span><b>${e.submitted_at ? 'Sent ' + fWhen(e.submitted_at) : 'Draft' + (e.blank ? ' · ' + e.blank + ' h not marked' : '')}</b>
+        <span class="muted">Hours / week</span><b>${e.hours_week || '—'}${e.hours_max && e.hours_max !== e.hours_week ? ' – ' + e.hours_max : ''}</b>
+        <span class="muted">One session</span><b>${e.block_len ? e.block_len + ' h' : '—'}</b>
+        <span class="muted">At most per day</span><b>${e.max_day || '—'}</b><span class="muted">Last saved</span><span>${fWhen(e.updated_at)}</span>
+        <span class="muted">Away</span><span>${(e.away || []).length ? e.away.map(a => fDay(a.from) + (a.to !== a.from ? ' – ' + fDay(a.to) : '') + (a.why ? ' (' + esc(a.why) + ')' : '')).join('<br>') : '—'}</span>
+        <span class="muted">Course needs</span><span>${Object.keys(e.tags || {}).length ? Object.entries(e.tags).map(([k, v]) => `<b>${esc(k === 'all' ? 'All teaching' : (r.editions && r.editions[k]) || 'a course')}</b>: ${v.map(g => ({ online: 'online', hybrid: 'hybrid', lab: 'computer lab', exec: 'executive' })[g]).join(', ')}`).join('<br>') : '—'}</span></div>
       ${e.note ? `<div class="work">${esc(e.note)}</div>` : ''}
       <div style="margin-top:12px">${weekTable(t, k => [e.slots[k] || '', MARK[e.slots[k]] || '', ''])}</div>`;
     AdminUI.icons(d); d.classList.add('on'); $('dX').onclick = () => d.classList.remove('on');

@@ -168,3 +168,24 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,600);});
   else setTimeout(go,600);
 })();
+
+/* ---- "← Previous section" on long scrolling session pages (14 Nov 2026) --
+   Jan Erik: "a 'back' button on sections for all courses to go to previous
+   section". Screen-based pages already have one; /shared/prevsection.js is
+   loaded only where a page is a scroll of .step[id] / section.sec[data-step]
+   blocks or of <h2><span class="step"> headings, and never on a page with
+   .screen elements. */
+(function(){
+  function go(){
+    try{
+      var p=location.pathname||''; if(p.indexOf('/admin/')===0||p.indexOf('/shared/')===0)return;
+      if(document.querySelector('.screen'))return;
+      var n=document.querySelectorAll('.step[id], section.sec[data-step]').length;
+      var h=Array.prototype.filter.call(document.querySelectorAll('h2'),function(x){return x.querySelector('span.step');}).length;
+      if(n<2&&h<2)return;
+      var s=document.createElement('script');s.src='/shared/prevsection.js';s.defer=true;document.head.appendChild(s);
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,400);});
+  else setTimeout(go,400);
+})();

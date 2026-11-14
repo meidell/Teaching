@@ -18,6 +18,14 @@
   the last click; the department's planner reads every teacher's week side by
   side in /lms/ (department view → Terms). Same session as the other platform
   pages (localStorage `jem_lms`), same email-code sign-in. FR/EN.
+  14 Nov 2026 — second round, from Jan Erik's review: as little text as possible;
+  the grid shows only the teacher's own marks (department congestion is ONE tint,
+  behind a switch, counted only on courses that share students with the teacher's);
+  session length (1–4 h) and USABLE blocks of that length instead of raw hours;
+  a load range (least–most per week); days away as dates; what each course needs
+  (online · hybrid · computer lab · executive cohort); and "Send to the planner",
+  possible only when no hour is left blank ("Mark the rest unavailable / if needed").
+  Fields: block_len, hours_max, away, tags, submitted_at (API migration 004).
 -->
 <style>
 *{box-sizing:border-box;}
@@ -46,30 +54,35 @@ label.l{display:block;font-size:11px;font-weight:800;color:var(--a-grey);letter-
 .sw.y{background:#CFEBD9;color:#1B6B3A;} .sw.m{background:#FFE9B8;color:#8A5A00;} .sw.n{background:#F6C9C9;color:#A12626;} .sw.c{background:var(--a-wash);color:var(--a-grey);border:1px dashed var(--a-faint);}
 /* the week grid */
 .gw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-table.g{border-collapse:separate;border-spacing:3px;user-select:none;-webkit-user-select:none;touch-action:none;}
+table.g{border-collapse:separate;border-spacing:3px;user-select:none;-webkit-user-select:none;touch-action:none;width:100%;min-width:420px;}
 table.g th{font-size:11.5px;font-weight:800;color:var(--a-grey);letter-spacing:.04em;text-transform:uppercase;padding:4px 2px;white-space:nowrap;}
 table.g th.d{cursor:pointer;border-radius:6px;} table.g th.d:hover{background:var(--a-wash);color:var(--a-ink);}
 table.g th.h{text-align:right;font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0;cursor:pointer;padding-right:6px;} table.g th.h:hover{color:var(--a-ink);}
-table.g td{width:52px;min-width:46px;height:36px;border-radius:6px;background:var(--a-wash);border:1px solid var(--a-line);text-align:center;font:900 13px var(--a-font);color:transparent;cursor:pointer;}
+table.g td{min-width:46px;height:36px;border-radius:6px;background:var(--a-wash);border:1px solid var(--a-line);text-align:center;font:900 13px var(--a-font);color:transparent;cursor:pointer;}
 table.g td:hover{outline:2px solid var(--a-ink);outline-offset:-1px;}
 table.g td.y{background:#CFEBD9;border-color:#A9DCBB;color:#1B6B3A;} table.g td.m{background:#FFE9B8;border-color:#F5D88A;color:#8A5A00;} table.g td.n{background:#F6C9C9;border-color:#EFA9A9;color:#A12626;}
 table.g td{position:relative;}
 table.g td b{position:absolute;top:1px;left:0;right:0;text-align:center;font-size:12px;line-height:15px;pointer-events:none;}
-/* the two numbers, lined up under the mark, each in the colour its legend uses */
-.pills{position:absolute;left:0;right:0;bottom:3px;display:flex;justify-content:center;gap:3px;pointer-events:none;}
-.pl{display:inline-block;width:18px;height:13px;border-radius:4px;font:800 9.5px/13px var(--a-font);font-style:normal;text-align:center;}
-.pl.o0{background:#F1ECF8;color:#B9ADCC;} .pl.o1{background:#E9DDF6;color:#3B1F63;} .pl.o2{background:#CDB4EA;color:#3B1F63;} .pl.o3{background:#A882D8;color:#fff;} .pl.o4{background:#6E3FB3;color:#fff;}
-.pl.b0{background:#F8F2EA;color:#C9B79C;} .pl.b1{background:#FFE4BF;color:#6B3A00;} .pl.b2{background:#FFC67A;color:#6B3A00;} .pl.b3{background:#F59E0B;color:#fff;} .pl.b4{background:#B45309;color:#fff;}
 table.g td.ro{cursor:default;} table.g td.ro:hover{outline:none;}
-/* the legend above the grid: my marks, then the two pill scales (purple = other teachers available, orange = courses already there) */
-.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;margin:0 0 12px;font-size:12.5px;color:var(--a-ink2);}
-.keys .kh{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--a-grey);white-space:nowrap;}
-.scale{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
-.scale .swl{display:inline-block;width:26px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.08);text-align:center;font:800 10px/18px var(--a-font);}
-.scale .swl.o0{background:#F7F4FB;color:#B9ADCC;} .scale .swl.o1{background:#E9DDF6;color:#3B1F63;} .scale .swl.o2{background:#CDB4EA;color:#3B1F63;} .scale .swl.o3{background:#A882D8;color:#fff;} .scale .swl.o4{background:#6E3FB3;color:#fff;}
-.scale .swl.b0{background:#FBF7F1;color:#C9B79C;} .scale .swl.b1{background:#FFE4BF;color:#6B3A00;} .scale .swl.b2{background:#FFC67A;color:#6B3A00;} .scale .swl.b3{background:#F59E0B;color:#fff;} .scale .swl.b4{background:#B45309;color:#fff;}
-.scale .swl.y{background:#CFEBD9;color:#1B6B3A;} .scale .swl.m{background:#FFE9B8;color:#8A5A00;} .scale .swl.n{background:#F6C9C9;color:#A12626;} .scale .swl.c{background:var(--a-wash);border:1px dashed var(--a-faint);}
-.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--a-ink2);margin:10px 0 0;}
+/* a short run: offered hours that cannot hold one session of the chosen length */
+table.g td.short{background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(0,0,0,.09) 5px 7px);}
+/* congestion, only when switched on: one corner tint, darker = more crowded */
+table.g td i.hz{position:absolute;right:2px;bottom:2px;width:9px;height:9px;border-radius:50%;pointer-events:none;}
+i.hz.z1{background:#FCD9A8;} i.hz.z2{background:#F59E0B;} i.hz.z3{background:#B45309;}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px;}
+.lead{font-size:13.5px;color:var(--a-ink2);margin:0 0 12px;}
+.tog{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--a-ink2);cursor:pointer;margin-left:auto;}
+.seg{display:inline-flex;border:1px solid var(--a-line);border-radius:999px;overflow:hidden;}
+.seg button{border:none;background:#fff;padding:6px 12px;font:700 13px var(--a-font);color:var(--a-ink2);cursor:pointer;}
+.seg button.on{background:var(--a-ink);color:#fff;}
+.row2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px;}
+.chip{border:1px solid var(--a-line);background:#fff;border-radius:999px;padding:3px 10px;font:700 12px var(--a-font);color:var(--a-ink2);cursor:pointer;}
+.chip.on{background:var(--a-accent);border-color:var(--a-accent);color:#fff;}
+.away{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--a-line);}
+.away button{border:none;background:none;color:var(--a-grey);cursor:pointer;font-size:15px;}
+.sendbar{margin-top:14px;padding-top:12px;border-top:1px solid var(--a-line);}
+.sent{color:var(--a-good);font-weight:700;font-size:13px;} .draft{color:var(--a-grey);font-size:13px;}
 /* the load panel */
 .step{display:flex;align-items:center;gap:8px;margin:4px 0 2px;}
 .step button{width:34px;height:34px;border-radius:50%;border:1px solid var(--a-line);background:#fff;font:900 18px var(--a-font);color:var(--a-ink);cursor:pointer;line-height:1;}
@@ -109,55 +122,55 @@ const main = $('main');
 
 /* ---- language ---- */
 const STR = {
-  en: { title: 'My availability', out: 'Sign out', adm: 'Platform', signin: 'Sign in', lead: 'With your email: a 6-digit code arrives within a minute. No password.',
+  en: { title: 'My availability', out: 'Sign out', adm: 'Platform', signin: 'Sign in', lead: 'A 6-digit code arrives by email. No password.',
     email: 'Email', code: 'Code', send: 'Email me a code', go: 'Sign in', hello: 'Signed in as',
-    none: 'No department has opened a term for you yet. The department administrator opens one in the platform admin; then your week appears here.',
-    term: 'Term', filled: 'entered', notfilled: 'nothing entered yet', deadline: 'Enter it by',
-    what: 'How this works', explain: 'The department builds the timetable from what every teacher marks here. Mark every hour of one typical week: the same marks apply to every week of the term. First say how many hours a week you want to teach, then click the hours you can teach. The page saves by itself a moment after each click.',
-    brushLead: 'Choose a mark, then click an hour. Drag across several hours to mark them all. Click a day name to mark the whole day; click an hour to mark that hour on every day. “Whole week” marks every hour of the grid, so you can start all available and then mark the exceptions.',
-    all: 'Whole week',
-    keyMe: 'My marks', keyT: 'Teachers', keyC: 'Courses', scaleT: 'other teachers of the department who can teach at this hour (the left pill in each cell)', scaleC: 'courses that already have a session at this hour this term (the right pill)', scaleMe: 'available · if needed · unavailable · not marked', more: 'or more',
-    crowd: 'Hours with high numbers are the crowded ones: several teachers want them and courses are already there, so students end up booked twice. If you can, offer hours with low numbers too; that gives the planner room and keeps the students\' timetables apart.',
-    tipO: (y, m) => `${y} other teacher${y === 1 ? '' : 's'} available${m ? `, ${m} if needed` : ''}`, tipB: 'Already scheduled: ', tipNone: 'No other teacher has offered this hour.',
-    y: 'Available', m: 'If needed', n: 'Unavailable', c: 'Clear', ylong: 'I can teach then.', mlong: 'I would rather not, but I can if no other slot works.', nlong: 'I cannot teach then.',
-    load: 'Your load', hoursWeek: 'Hours of teaching per week', hoursWeekSub: 'How many hours of class you want in a typical week of this term. Whole hours.',
-    maxDay: 'At most per day', maxDaySub: 'The most hours of class you accept on one day.',
-    slots: 'Hours to fill per week', avail: 'Hours marked available', maybe: 'Hours marked if needed', unav: 'Hours marked unavailable', blank: 'Hours not marked',
-    ruleNoHours: 'Start by entering your hours per week, so the page can tell you how many hours to mark.',
-    ruleShort: n => `Mark at least ${n} hours as available or if needed (twice your weekly hours), so the planner has a choice.`,
-    ruleOk: n => `You offer ${n} hours for your weekly load. That gives the planner a choice.`,
-    note: 'A note for the planner (optional)', notePh: 'For example: not before 10:00 on Mondays; away 3–7 March.',
-    copy: 'Copy my marks from', copied: 'Copied. Check the week and adjust it.',
-    saving: 'Saving…', saved: 'Saved', unsaved: 'Not saved yet', failed: 'Could not save. Check the connection; the page will try again at the next change.',
+    none: 'No term is open for you yet.', filled: 'entered', notfilled: 'not entered', sentS: 'sent', deadline: 'by',
+    how: 'Mark one typical week: it applies to every week of the term. Drag to mark several hours; click a day or an hour to mark the whole row. Saved automatically.',
+    all: 'Whole week', y: 'Available', m: 'If needed', n: 'Unavailable', c: 'Clear', ylong: 'I can teach then.', mlong: 'Only if nothing else works.', nlong: 'I cannot teach then.',
+    crowd: 'Show where others teach', crowdTip: (o, b, sc) => `${o} other teacher${o === 1 ? '' : 's'} available · ${b.length ? b.length + ' course' + (b.length === 1 ? '' : 's') + (sc === 'cohort' ? ' of your students' : '') + ' already here: ' + b.join(', ') : 'no course of ' + (sc === 'cohort' ? 'your students' : 'the department') + ' here'}`,
+    crowdKey: sc => `Darker dot = more crowded: other teachers who want the hour, and courses ${sc === 'cohort' ? 'that share students with yours' : 'of the department (you have no students yet)'} already there.`,
+    short: L => `Hatched: too short for a ${L}-hour session.`,
+    load: 'Load', len: 'One session lasts', perWeek: 'Hours per week', from: 'at least', to: 'at most', maxDay: 'At most per day',
+    blocks: L => `Usable ${L}-hour blocks`, offered: 'Hours offered', blank: 'Not marked',
+    need: (n, s, L) => `You need at least ${n} usable ${L}-hour blocks: two for each of your ${s} session${s === 1 ? '' : 's'}.`,
+    needH: n => `Offer at least ${n} hours (twice your weekly hours).`, okB: 'Enough choice for the planner.',
+    noLoad: 'Enter your hours per week first.',
+    rest: n => `${n} h not marked. Blank tells the planner nothing:`, restN: 'Mark the rest unavailable', restM: 'Mark the rest if needed',
+    away: 'Days away', awayAdd: 'Add', awayWhy: 'Reason (optional)', awayNone: 'None.',
+    needs: 'What your courses need', allTeaching: 'All my teaching',
+    tag: { online: 'Online', hybrid: 'Hybrid', lab: 'Computer lab', exec: 'Executive (evenings / weekends)' },
+    note: 'Note (optional)', copy: 'Copy marks from',
+    sendB: 'Send to the planner', sentAt: 'Sent', draft: 'Draft — saved, not sent.', sendNo: 'Mark every hour and enter your hours per week to send.',
+    copied: 'Copied. Check the week.',
+    saving: 'Saving…', saved: 'Saved', unsaved: 'Not saved yet', failed: 'Could not save. The page will try again at the next change.',
     leave: 'Your last changes are not saved yet.', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], dshort: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    sumTitle: 'Your week in one line', readback: (y, m, n, b) => `${y} h available · ${m} h if needed · ${n} h unavailable · ${b} h not marked`,
-    updated: 'Last saved', geneva: 'Hours are Geneva time.' },
-  fr: { title: 'Mes disponibilités', out: 'Se déconnecter', adm: 'Plateforme', signin: 'Se connecter', lead: 'Avec votre e-mail : un code à 6 chiffres arrive en moins d’une minute. Pas de mot de passe.',
-    email: 'E-mail', code: 'Code', send: 'Recevoir un code par e-mail', go: 'Se connecter', hello: 'Connecté·e en tant que',
-    none: 'Aucun département n’a encore ouvert de semestre pour vous. L’administrateur du département l’ouvre dans l’administration de la plateforme ; votre semaine apparaît ensuite ici.',
-    term: 'Semestre', filled: 'saisi', notfilled: 'rien de saisi pour l’instant', deadline: 'À saisir avant le',
-    what: 'Comment cela fonctionne', explain: 'Le département construit l’horaire à partir de ce que chaque enseignant·e marque ici. Marquez chaque heure d’une semaine type : les mêmes marques valent pour toutes les semaines du semestre. Indiquez d’abord combien d’heures par semaine vous voulez enseigner, puis cliquez sur les heures où vous pouvez enseigner. La page enregistre d’elle-même un instant après chaque clic.',
-    brushLead: 'Choisissez une marque, puis cliquez sur une heure. Glissez sur plusieurs heures pour les marquer toutes. Cliquez sur le nom d’un jour pour marquer toute la journée ; cliquez sur une heure pour marquer cette heure tous les jours. « Toute la semaine » marque chaque heure de la grille : commencez tout disponible, puis marquez les exceptions.',
-    all: 'Toute la semaine',
-    keyMe: 'Mes marques', keyT: 'Enseignant·es', keyC: 'Cours', scaleT: 'autres enseignant·es du département qui peuvent enseigner à cette heure (la pastille de gauche dans chaque case)', scaleC: 'cours qui ont déjà une séance à cette heure ce semestre (la pastille de droite)', scaleMe: 'disponible · si nécessaire · indisponible · non marqué', more: 'ou plus',
-    crowd: 'Les heures aux chiffres élevés sont les heures encombrées : plusieurs enseignant·es les veulent et des cours y sont déjà, donc des étudiant·es se retrouvent inscrit·es à deux endroits. Si vous le pouvez, offrez aussi des heures aux chiffres bas : la planification a de la marge et les horaires des étudiant·es restent séparés.',
-    tipO: (y, m) => `${y} autre${y === 1 ? '' : 's'} enseignant·e${y === 1 ? '' : 's'} disponible${y === 1 ? '' : 's'}${m ? `, ${m} si nécessaire` : ''}`, tipB: 'Déjà programmé : ', tipNone: 'Aucun·e autre enseignant·e n’a offert cette heure.',
-    y: 'Disponible', m: 'Si nécessaire', n: 'Indisponible', c: 'Effacer', ylong: 'Je peux enseigner à ce moment.', mlong: 'Je préfère éviter, mais je peux si aucun autre créneau ne convient.', nlong: 'Je ne peux pas enseigner à ce moment.',
-    load: 'Votre charge', hoursWeek: 'Heures d’enseignement par semaine', hoursWeekSub: 'Combien d’heures de cours vous voulez dans une semaine type de ce semestre. En heures entières.',
-    maxDay: 'Au plus par jour', maxDaySub: 'Le nombre maximal d’heures de cours que vous acceptez le même jour.',
-    slots: 'Heures à placer par semaine', avail: 'Heures marquées disponibles', maybe: 'Heures marquées si nécessaire', unav: 'Heures marquées indisponibles', blank: 'Heures non marquées',
-    ruleNoHours: 'Commencez par indiquer vos heures par semaine ; la page vous dira ensuite combien d’heures marquer.',
-    ruleShort: n => `Marquez au moins ${n} heures comme disponibles ou si nécessaire (le double de vos heures hebdomadaires), pour laisser un choix à la planification.`,
-    ruleOk: n => `Vous offrez ${n} heures pour votre charge hebdomadaire. La planification a un choix.`,
-    note: 'Une remarque pour la planification (facultatif)', notePh: 'Par exemple : pas avant 10h00 le lundi ; absent·e du 3 au 7 mars.',
-    copy: 'Reprendre mes marques de', copied: 'Repris. Vérifiez la semaine et ajustez-la.',
-    saving: 'Enregistrement…', saved: 'Enregistré', unsaved: 'Pas encore enregistré', failed: 'Impossible d’enregistrer. Vérifiez la connexion ; la page réessaiera au prochain changement.',
+    geneva: 'Geneva time.' },
+  fr: { title: 'Mes disponibilités', out: 'Se déconnecter', adm: 'Plateforme', signin: 'Se connecter', lead: 'Un code à 6 chiffres arrive par e-mail. Pas de mot de passe.',
+    email: 'E-mail', code: 'Code', send: 'Recevoir un code', go: 'Se connecter', hello: 'Connecté·e :',
+    none: 'Aucun semestre n’est ouvert pour vous.', filled: 'saisi', notfilled: 'non saisi', sentS: 'envoyé', deadline: 'avant le',
+    how: 'Marquez une semaine type : elle vaut pour toutes les semaines du semestre. Glissez pour marquer plusieurs heures ; cliquez un jour ou une heure pour toute la ligne. Enregistré automatiquement.',
+    all: 'Toute la semaine', y: 'Disponible', m: 'Si nécessaire', n: 'Indisponible', c: 'Effacer', ylong: 'Je peux enseigner.', mlong: 'Seulement si rien d’autre ne convient.', nlong: 'Je ne peux pas.',
+    crowd: 'Voir où enseignent les autres', crowdTip: (o, b, sc) => `${o} autre${o === 1 ? '' : 's'} enseignant·e${o === 1 ? '' : 's'} disponible${o === 1 ? '' : 's'} · ${b.length ? b.length + ' cours' + (sc === 'cohort' ? ' de vos étudiant·es' : '') + ' déjà là : ' + b.join(', ') : 'aucun cours ' + (sc === 'cohort' ? 'de vos étudiant·es' : 'du département') + ' ici'}`,
+    crowdKey: sc => `Point plus foncé = heure plus encombrée : autres enseignant·es qui la veulent et cours ${sc === 'cohort' ? 'qui partagent des étudiant·es avec les vôtres' : 'du département (vous n’avez pas encore d’étudiant·es)'} déjà là.`,
+    short: L => `Hachuré : trop court pour une séance de ${L} h.`,
+    load: 'Charge', len: 'Une séance dure', perWeek: 'Heures par semaine', from: 'au moins', to: 'au plus', maxDay: 'Au plus par jour',
+    blocks: L => `Blocs de ${L} h utilisables`, offered: 'Heures offertes', blank: 'Non marquées',
+    need: (n, s, L) => `Il faut au moins ${n} blocs de ${L} h utilisables : deux pour chacune de vos ${s} séance${s === 1 ? '' : 's'}.`,
+    needH: n => `Offrez au moins ${n} heures (le double de vos heures hebdomadaires).`, okB: 'La planification a assez de choix.',
+    noLoad: 'Indiquez d’abord vos heures par semaine.',
+    rest: n => `${n} h non marquées. Une case vide ne dit rien à la planification :`, restN: 'Le reste indisponible', restM: 'Le reste si nécessaire',
+    away: 'Absences', awayAdd: 'Ajouter', awayWhy: 'Motif (facultatif)', awayNone: 'Aucune.',
+    needs: 'Besoins de vos cours', allTeaching: 'Tout mon enseignement',
+    tag: { online: 'En ligne', hybrid: 'Hybride', lab: 'Salle informatique', exec: 'Executive (soirs / week-ends)' },
+    note: 'Remarque (facultatif)', copy: 'Reprendre les marques de',
+    sendB: 'Envoyer à la planification', sentAt: 'Envoyé', draft: 'Brouillon — enregistré, pas envoyé.', sendNo: 'Marquez chaque heure et indiquez vos heures par semaine pour envoyer.',
+    copied: 'Repris. Vérifiez la semaine.',
+    saving: 'Enregistrement…', saved: 'Enregistré', unsaved: 'Pas encore enregistré', failed: 'Impossible d’enregistrer. Nouvel essai au prochain changement.',
     leave: 'Vos derniers changements ne sont pas encore enregistrés.', days: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'], dshort: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-    sumTitle: 'Votre semaine en une ligne', readback: (y, m, n, b) => `${y} h disponibles · ${m} h si nécessaire · ${n} h indisponibles · ${b} h non marquées`,
-    updated: 'Dernier enregistrement', geneva: 'Les heures sont en heure de Genève.' }
+    geneva: 'Heure de Genève.' }
 };
 /* ---- state ---- */
-const st = { me: null, terms: [], term: null, entry: null, previous: null, brush: 'y', dirty: false, saving: false, timer: null, lastSaved: null, failed: false };
+const st = { me: null, terms: [], term: null, entry: null, previous: null, courses: [], scope: 'department', brush: 'y', crowd: false, dirty: false, saving: false, timer: null, lastSaved: null, failed: false };
 let LANG = (new URLSearchParams(location.search).get('lang') || localStorage.getItem('siteLang') || (navigator.language || '').slice(0, 2)) === 'fr' ? 'fr' : 'en';
 const T = () => STR[LANG];
 function setLang(l) { LANG = l; try { localStorage.setItem('siteLang', l); } catch (e) {} document.documentElement.lang = l; document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.l === l));
@@ -220,8 +233,8 @@ async function loadTerm(id) {
   if (st.dirty) await save();
   let r;
   try { r = await call('GET', `/me/availability/${id}`); } catch (e) { main.innerHTML = `<div class="card empty">${esc(e.message)}</div>`; return; }
-  st.term = r.term; st.previous = r.previous; st.others = r.others || {}; st.booked = r.booked || {};
-  st.entry = r.entry || { slots: {}, hours_week: 0, max_day: 0, note: '', updated_at: null };
+  st.term = r.term; st.previous = r.previous; st.others = r.others || {}; st.booked = r.booked || {}; st.courses = r.courses || []; st.scope = r.booked_scope || 'department';
+  st.entry = Object.assign({ slots: {}, hours_week: 0, hours_max: 0, max_day: 0, block_len: 0, away: [], tags: {}, note: '', updated_at: null, submitted_at: null }, r.entry || {});
   st.lastSaved = st.entry.updated_at; st.dirty = false; st.failed = false;
   ls.set('jem_plan_term', id);
   const u = new URL(location.href); u.searchParams.set('term', id); history.replaceState(null, '', u);
@@ -229,105 +242,169 @@ async function loadTerm(id) {
 }
 
 /* ---- the page ---- */
+const K = (d, h) => `${d}-${String(h).padStart(2, '0')}`;
+const GLYPH = { y: '✓', m: '–', n: '✕' };
 function render() {
   const t = T(), term = st.term, e = st.entry;
   if (!term) return;
   const hours = []; for (let h = term.day_from; h < term.day_to; h++) hours.push(h);
   const days = []; for (let d = 1; d <= term.days; d++) days.push(d);
+  const stepper = (id, f, max, v) => `<div class="step"><button type="button" data-step="${f}" data-d="-1" aria-label="−">−</button><input class="f" id="${id}" type="number" min="0" max="${max}" step="1" value="${v || 0}"><button type="button" data-step="${f}" data-d="1" aria-label="+">+</button><span class="u">h</span></div>`;
+  const courseRows = (st.courses.length ? st.courses.map(c => ({ id: c.id, name: (c.code || c.title) + (c.label ? ' · ' + c.label : '') })) : [{ id: 'all', name: t.allTeaching }]);
   main.innerHTML = `
-    <div class="termrow"><label class="l" style="margin:0">${esc(t.term)}</label><select class="f" id="pTerm">${st.terms.map(x => `<option value="${x.id}" ${x.id === term.id ? 'selected' : ''}>${esc(x.department)} · ${esc(x.label)} · ${x.filled_at ? t.filled : t.notfilled}</option>`).join('')}</select>
-      <span class="small muted">${fDay(term.starts_on)} – ${fDay(term.ends_on)}${term.deadline ? ` · <span class="${new Date(term.deadline) < new Date() && !e.updated_at ? 'todo' : ''}">${esc(t.deadline)} ${fDay(term.deadline)}</span>` : ''}</span></div>
-    <div class="card"><h3>${esc(t.what)}</h3><p style="margin:0">${esc(t.explain)} ${esc(t.geneva)}</p>${term.note ? `<div class="tnote">${esc(term.note)}</div>` : ''}</div>
+    <div class="top"><select class="f" id="pTerm" style="width:auto;min-width:220px">${st.terms.map(x => `<option value="${x.id}" ${x.id === term.id ? 'selected' : ''}>${esc(x.department)} · ${esc(x.label)} · ${x.submitted_at ? t.sentS : x.filled_at ? t.filled : t.notfilled}</option>`).join('')}</select>
+      <span class="small muted">${fDay(term.starts_on)} – ${fDay(term.ends_on)}${term.deadline ? ` · ${esc(t.sendB)} ${esc(t.deadline)} <b>${fDay(term.deadline)}</b>` : ''}</span></div>
+    <p class="lead">${esc(t.how)} ${esc(t.geneva)}</p>
+    ${term.note ? `<div class="tnote">${esc(term.note)}</div>` : ''}
     <div class="lay">
       <div class="card">
-        <p class="small muted" style="margin:0 0 8px">${esc(t.brushLead)}</p>
         <div class="brush" role="radiogroup">
           ${[['y', '✓'], ['m', '–'], ['n', '✕'], ['c', '']].map(([k, g]) => `<button type="button" data-brush="${k}" class="${st.brush === k ? 'on' : ''}" title="${esc(t[k + 'long'] || '')}"><span class="sw ${k}">${g}</span>${esc(t[k])}</button>`).join('')}
-          <button type="button" class="ab sm" id="bAll" style="margin-left:auto">${AdminUI.icon('grid')}${esc(t.all)}</button>
-        </div>
-        <div class="keys">
-          <span class="kh">${esc(t.keyMe)}</span><span class="scale"><span class="swl y">✓</span><span class="swl m">–</span><span class="swl n">✕</span><span class="swl c"></span> ${esc(t.scaleMe)}</span>
-          <span class="kh">${esc(t.keyT)}</span><span class="scale">${[0, 1, 2, 3, 4].map(n => `<span class="swl o${n}">${n}${n === 4 ? '+' : ''}</span>`).join('')} ${esc(t.scaleT)}</span>
-          <span class="kh">${esc(t.keyC)}</span><span class="scale">${[0, 1, 2, 3, 4].map(n => `<span class="swl b${n}">${n}${n === 4 ? '+' : ''}</span>`).join('')} ${esc(t.scaleC)}</span>
+          <button type="button" class="ab sm" id="bAll">${AdminUI.icon('grid')}${esc(t.all)}</button>
+          <label class="tog"><input type="checkbox" id="cCrowd" ${st.crowd ? 'checked' : ''}>${esc(t.crowd)}</label>
         </div>
         <div class="gw"><table class="g" id="grid"><thead><tr><th></th>${days.map(d => `<th class="d" data-day="${d}" title="${esc(t.days[d - 1])}">${esc(t.dshort[d - 1])}</th>`).join('')}</tr></thead><tbody>
-          ${hours.map(h => `<tr><th class="h" data-hour="${h}">${hh(h)}–${hh(h + 1)}</th>${days.map(d => { const k = `${d}-${String(h).padStart(2, '0')}`, v = e.slots[k] || '', o = st.others[k] || { y: 0, m: 0 }, bk = st.booked[k] || [];
-            const tip = [o.y || o.m ? t.tipO(o.y, o.m) : t.tipNone, bk.length ? t.tipB + bk.join(', ') : ''].filter(Boolean).join(' · ');
-            return `<td data-k="${k}" class="${v}" title="${esc(tip)}"><b>${{ y: '✓', m: '–', n: '✕' }[v] || ''}</b><span class="pills"><i class="pl o o${Math.min(4, o.y)}">${o.y}</i><i class="pl b b${Math.min(4, bk.length)}">${bk.length}</i></span></td>`; }).join('')}</tr>`).join('')}
+          ${hours.map(h => `<tr><th class="h" data-hour="${h}">${hh(h)}</th>${days.map(d => { const k = K(d, h), v = e.slots[k] || ''; return `<td data-k="${k}" class="${v}"><b>${GLYPH[v] || ''}</b></td>`; }).join('')}</tr>`).join('')}
         </tbody></table></div>
-        <p class="small" style="margin:8px 0 0;color:var(--a-ink2)">${esc(t.crowd)}</p>
-        <p class="small muted" style="margin:10px 0 0"><b>${esc(t.sumTitle)}:</b> <span id="readback"></span></p>
+        <p class="small muted" id="gridKey" style="margin:8px 0 0"></p>
       </div>
       <div>
-        <div class="card"><h3>${esc(t.load)} · ${esc(term.label)}</h3>
-          <label class="l" style="margin-top:0">${esc(t.hoursWeek)}</label>
-          <div class="step"><button type="button" data-step="hours_week" data-d="-1" aria-label="−">−</button><input class="f" id="iHW" type="number" min="0" max="60" step="1" value="${e.hours_week || 0}"><button type="button" data-step="hours_week" data-d="1" aria-label="+">+</button><span class="u">h</span></div>
-          <div class="small muted">${esc(t.hoursWeekSub)}</div>
+        <div class="card">
+          <h3>${esc(t.load)}</h3>
+          <label class="l" style="margin-top:0">${esc(t.len)}</label>
+          <div class="seg" id="segLen">${[1, 2, 3, 4].map(n => `<button type="button" data-len="${n}" class="${e.block_len === n ? 'on' : ''}">${n} h</button>`).join('')}</div>
+          <label class="l">${esc(t.perWeek)}</label>
+          <div class="row2"><span class="small muted">${esc(t.from)}</span>${stepper('iHW', 'hours_week', 60, e.hours_week)}</div>
+          <div class="row2"><span class="small muted">${esc(t.to)}</span>${stepper('iHX', 'hours_max', 60, e.hours_max)}</div>
           <label class="l">${esc(t.maxDay)}</label>
-          <div class="step"><button type="button" data-step="max_day" data-d="-1" aria-label="−">−</button><input class="f" id="iMD" type="number" min="0" max="16" step="1" value="${e.max_day || 0}"><button type="button" data-step="max_day" data-d="1" aria-label="+">+</button><span class="u">h</span></div>
-          <div class="small muted">${esc(t.maxDaySub)}</div>
+          ${stepper('iMD', 'max_day', 16, e.max_day)}
           <div class="tally" id="tally"></div>
           <div class="hint" id="hint"></div>
+          <div id="rest"></div>
+          <div class="sendbar"><button type="button" class="ab primary" id="bSend">${AdminUI.icon('send')}${esc(t.sendB)}</button><div id="sendState" style="margin-top:6px"></div><div class="state" id="state"></div></div>
+        </div>
+        <div class="card">
+          <h3>${esc(t.away)}</h3>
+          <div id="awayList"></div>
+          <div class="row2" style="margin-top:8px;flex-wrap:nowrap"><input class="f" type="date" id="aF" style="flex:1;min-width:0"><span>–</span><input class="f" type="date" id="aT" style="flex:1;min-width:0"></div>
+          <div class="row2" style="margin-top:6px"><input class="f" id="aW" placeholder="${esc(t.awayWhy)}" maxlength="120" style="flex:1"><button type="button" class="ab sm" id="aAdd">${AdminUI.icon('plus')}${esc(t.awayAdd)}</button></div>
+          <div class="msg" id="aX"></div>
+        </div>
+        <div class="card">
+          <h3>${esc(t.needs)}</h3>
+          ${courseRows.map(c => `<div class="small" style="font-weight:700;margin-top:6px">${esc(c.name)}</div><div class="chips">${['online', 'hybrid', 'lab', 'exec'].map(g => `<button type="button" class="chip ${(e.tags[c.id] || []).includes(g) ? 'on' : ''}" data-ed="${c.id}" data-tag="${g}">${esc(t.tag[g])}</button>`).join('')}</div>`).join('')}
           <label class="l">${esc(t.note)}</label>
-          <textarea class="f" id="iNote" rows="3" placeholder="${esc(t.notePh)}">${esc(e.note)}</textarea>
-          ${st.previous ? `<div style="margin-top:10px"><button type="button" class="ab sm" id="bCopy"><i data-ic="copy"></i>${esc(t.copy)} ${esc(st.previous.label)}</button></div>` : ''}
-          <div class="state" id="state"></div>
+          <textarea class="f" id="iNote" rows="2">${esc(e.note)}</textarea>
+          ${st.previous ? `<div style="margin-top:10px"><button type="button" class="ab sm ghost" id="bCopy">${AdminUI.icon('copy')}${esc(t.copy)} ${esc(st.previous.label)}</button></div>` : ''}
         </div>
       </div>
     </div>`;
   AdminUI.icons(main);
   $('pTerm').onchange = () => loadTerm($('pTerm').value);
   main.querySelectorAll('[data-brush]').forEach(b => b.onclick = () => { st.brush = b.dataset.brush; main.querySelectorAll('[data-brush]').forEach(x => x.classList.toggle('on', x === b)); });
-  /* paint: click, or press and drag across cells (mouse, pen or finger) */
   const grid = $('grid'); let painting = false, touched = new Set();
   const paint = td => { if (!td || !td.dataset.k || touched.has(td)) return; touched.add(td); setSlot(td.dataset.k, st.brush === 'c' ? '' : st.brush); };
   grid.addEventListener('pointerdown', ev => { const td = ev.target.closest('td'); if (!td) return; painting = true; touched = new Set(); paint(td); ev.preventDefault(); });
   grid.addEventListener('pointermove', ev => { if (!painting) return; const el = document.elementFromPoint(ev.clientX, ev.clientY); paint(el && el.closest('td')); });
-  const stop = () => { if (painting) { painting = false; touched = new Set(); queueSave(); } };
+  const stop = () => { if (painting) { painting = false; touched = new Set(); refreshGrid(); queueSave(); } };
   window.addEventListener('pointerup', stop); window.addEventListener('pointercancel', stop);
-  $('bAll').onclick = () => { const v = st.brush === 'c' ? '' : st.brush; days.forEach(d => hours.forEach(h => setSlot(`${d}-${String(h).padStart(2, '0')}`, v))); queueSave(); };
-  grid.querySelectorAll('th.d').forEach(th => th.onclick = () => { const v = st.brush === 'c' ? '' : st.brush; hours.forEach(h => setSlot(`${th.dataset.day}-${String(h).padStart(2, '0')}`, v)); queueSave(); });
-  grid.querySelectorAll('th.h').forEach(th => th.onclick = () => { const v = st.brush === 'c' ? '' : st.brush; days.forEach(d => setSlot(`${d}-${String(th.dataset.hour).padStart(2, '0')}`, v)); queueSave(); });
-  main.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { const f = b.dataset.step, inp = f === 'hours_week' ? $('iHW') : $('iMD'); const max = f === 'hours_week' ? 60 : 16;
+  const fill = (keys, v) => { keys.forEach(k => setSlot(k, v)); refreshGrid(); queueSave(); };
+  $('bAll').onclick = () => fill(days.flatMap(d => hours.map(h => K(d, h))), st.brush === 'c' ? '' : st.brush);
+  grid.querySelectorAll('th.d').forEach(th => th.onclick = () => fill(hours.map(h => K(th.dataset.day, h)), st.brush === 'c' ? '' : st.brush));
+  grid.querySelectorAll('th.h').forEach(th => th.onclick = () => fill(days.map(d => K(d, th.dataset.hour)), st.brush === 'c' ? '' : st.brush));
+  $('cCrowd').onchange = () => { st.crowd = $('cCrowd').checked; refreshGrid(); };
+  $('segLen').querySelectorAll('button').forEach(b => b.onclick = () => { const n = Number(b.dataset.len); st.entry.block_len = st.entry.block_len === n ? 0 : n;
+    $('segLen').querySelectorAll('button').forEach(x => x.classList.toggle('on', Number(x.dataset.len) === st.entry.block_len)); refreshGrid(); refreshPanel(); queueSave(); });
+  const INP = { hours_week: ['iHW', 60], hours_max: ['iHX', 60], max_day: ['iMD', 16] };
+  main.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { const f = b.dataset.step, [id, max] = INP[f], inp = $(id);
     const v = Math.min(max, Math.max(0, (Number(inp.value) || 0) + Number(b.dataset.d))); inp.value = v; st.entry[f] = v; refreshPanel(); queueSave(); });
-  $('iHW').oninput = $('iMD').oninput = () => { st.entry.hours_week = clamp($('iHW').value, 60); st.entry.max_day = clamp($('iMD').value, 16); refreshPanel(); queueSave(); };
+  Object.entries(INP).forEach(([f, [id, max]]) => $(id).oninput = () => { st.entry[f] = clamp($(id).value, max); refreshPanel(); queueSave(); });
   $('iNote').oninput = () => { st.entry.note = $('iNote').value.slice(0, 2000); queueSave(); };
+  main.querySelectorAll('.chip[data-tag]').forEach(b => b.onclick = () => { const ed = b.dataset.ed, g = b.dataset.tag, l = new Set(st.entry.tags[ed] || []);
+    l.has(g) ? l.delete(g) : l.add(g); if (l.size) st.entry.tags[ed] = [...l]; else delete st.entry.tags[ed]; b.classList.toggle('on', l.has(g)); queueSave(); });
+  $('aAdd').onclick = () => { const f = $('aF').value, to = $('aT').value || f; $('aX').textContent = '';
+    if (!f) { $('aX').textContent = LANG === 'fr' ? 'Choisissez au moins le premier jour.' : 'Pick at least the first day.'; return; }
+    if (to < f) { $('aX').textContent = LANG === 'fr' ? 'Le dernier jour vient après le premier.' : 'The last day comes after the first.'; return; }
+    st.entry.away = (st.entry.away || []).concat([{ from: f, to, why: $('aW').value.trim() }]).sort((a, b) => a.from.localeCompare(b.from));
+    $('aF').value = $('aT').value = $('aW').value = ''; drawAway(); queueSave(); };
+  $('bSend').onclick = () => save(true);
   if ($('bCopy')) $('bCopy').onclick = () => { const p = st.previous; st.entry.slots = {}; for (const [k, v] of Object.entries(p.slots || {})) { const [d, h] = k.split('-').map(Number); if (d <= term.days && h >= term.day_from && h < term.day_to) st.entry.slots[k] = v; }
     if (!st.entry.hours_week) st.entry.hours_week = p.hours_week; if (!st.entry.max_day) st.entry.max_day = p.max_day; st.dirty = true; render(); setState('ok', t.copied); queueSave(); };
-  refreshPanel(); showState();
+  drawAway(); refreshGrid(); refreshPanel(); showState();
 }
 const clamp = (v, max) => { const x = Math.round(Number(v) || 0); return Math.min(max, Math.max(0, x)); };   /* whole hours only */
 function setSlot(k, v) {
   const td = main.querySelector(`td[data-k="${k}"]`); if (!td) return;
   if ((st.entry.slots[k] || '') === v) return;
   if (v) st.entry.slots[k] = v; else delete st.entry.slots[k];
-  td.className = v; td.querySelector('b').textContent = { y: '✓', m: '–', n: '✕' }[v] || '';
+  td.querySelector('b').textContent = GLYPH[v] || '';
+  td.className = v;
   st.dirty = true; refreshPanel();
+}
+/* contiguous runs of offered hours (available or if needed), day by day */
+function runs() {
+  const term = st.term, out = [];
+  for (let d = 1; d <= term.days; d++) { let run = [];
+    for (let h = term.day_from; h <= term.day_to; h++) { const v = h < term.day_to ? st.entry.slots[K(d, h)] : null;
+      if (v === 'y' || v === 'm') run.push(K(d, h)); else { if (run.length) out.push(run); run = []; } } }
+  return out;
+}
+function usable(L) { return runs().reduce((s, r) => s + Math.floor(r.length / L), 0); }
+/* the grid's decorations: hatched short runs, and the congestion dot when switched on */
+function refreshGrid() {
+  const t = T(), L = Number(st.entry.block_len) || 0, short = new Set();
+  if (L > 1) runs().forEach(r => { if (r.length < L) r.forEach(k => short.add(k)); });
+  main.querySelectorAll('#grid td').forEach(td => {
+    const k = td.dataset.k, v = st.entry.slots[k] || '';
+    td.className = v + (short.has(k) ? ' short' : '');
+    let dot = td.querySelector('i.hz'); if (dot) dot.remove(); td.removeAttribute('title');
+    if (st.crowd) { const o = (st.others[k] || { y: 0 }).y, b = st.booked[k] || [], score = o + 2 * b.length;
+      const z = score >= 6 ? 3 : score >= 3 ? 2 : score >= 1 ? 1 : 0;
+      if (z) { dot = document.createElement('i'); dot.className = 'hz z' + z; td.appendChild(dot); }
+      td.title = t.crowdTip(o, b, st.scope); }
+  });
+  $('gridKey').textContent = [st.crowd ? t.crowdKey(st.scope) : '', L > 1 && short.size ? t.short(L) : ''].filter(Boolean).join(' ');
 }
 function tallyOf() { const c = { y: 0, m: 0, n: 0 }; for (const v of Object.values(st.entry.slots)) if (c[v] !== undefined) c[v]++; const all = st.term.days * (st.term.day_to - st.term.day_from); return { ...c, blank: all - c.y - c.m - c.n }; }
 function refreshPanel() {
-  const t = T(), c = tallyOf(), hw = Number(st.entry.hours_week) || 0, offered = c.y + c.m;
-  $('tally').innerHTML = [[t.slots, hw ? hw + ' h' : '—'], [t.avail, c.y + ' h'], [t.maybe, c.m + ' h'], [t.unav, c.n + ' h'], [t.blank, c.blank + ' h']].map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('');
-  const need = hw * 2, hint = $('hint');
-  if (!hw) { hint.className = 'hint'; hint.textContent = t.ruleNoHours; }
-  else if (offered < need) { hint.className = 'hint bad'; hint.textContent = t.ruleShort(need); }
-  else { hint.className = 'hint good'; hint.textContent = t.ruleOk(offered); }
-  $('readback').textContent = t.readback(c.y, c.m, c.n, c.blank);
+  const t = T(), c = tallyOf(), hw = Number(st.entry.hours_week) || 0, L = Number(st.entry.block_len) || 0, offered = c.y + c.m;
+  const rows = [[t.offered, offered + ' h'], [t.blank, c.blank + ' h']];
+  if (L) rows.unshift([t.blocks(L), String(usable(L))]);
+  $('tally').innerHTML = rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('');
+  const hint = $('hint');
+  if (!hw) { hint.className = 'hint'; hint.textContent = t.noLoad; }
+  else if (L) { const sessions = Math.ceil(hw / L), need = 2 * sessions, have = usable(L);
+    hint.className = 'hint ' + (have >= need ? 'good' : 'bad'); hint.textContent = have >= need ? t.okB : t.need(need, sessions, L); }
+  else { const need = 2 * hw; hint.className = 'hint ' + (offered >= need ? 'good' : 'bad'); hint.textContent = offered >= need ? t.okB : t.needH(need); }
+  $('rest').innerHTML = c.blank ? `<p class="small" style="margin:10px 0 6px">${esc(t.rest(c.blank))}</p><div class="row2"><button type="button" class="ab sm" id="rN"><span class="sw n">✕</span>${esc(t.restN)}</button><button type="button" class="ab sm" id="rM"><span class="sw m">–</span>${esc(t.restM)}</button></div>` : '';
+  const fillRest = v => { const term = st.term; for (let d = 1; d <= term.days; d++) for (let h = term.day_from; h < term.day_to; h++) if (!st.entry.slots[K(d, h)]) setSlot(K(d, h), v); refreshGrid(); queueSave(); };
+  if ($('rN')) { $('rN').onclick = () => fillRest('n'); $('rM').onclick = () => fillRest('m'); }
+  const canSend = !c.blank && hw > 0;
+  $('bSend').disabled = !canSend;
+  $('sendState').innerHTML = st.entry.submitted_at ? `<span class="sent">✓ ${esc(t.sentAt)} · ${fWhen(st.entry.submitted_at)}</span>` : `<span class="draft">${esc(canSend ? t.draft : t.sendNo)}</span>`;
+}
+function drawAway() {
+  const t = T(), l = st.entry.away || [];
+  $('awayList').innerHTML = l.length ? l.map((a, i) => `<div class="away"><span>${fDay(a.from)}${a.to !== a.from ? ' – ' + fDay(a.to) : ''}${a.why ? ' · ' + esc(a.why) : ''}</span><button type="button" data-rm="${i}" title="×">✕</button></div>`).join('') : `<span class="small muted">${esc(t.awayNone)}</span>`;
+  $('awayList').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { st.entry.away.splice(Number(b.dataset.rm), 1); drawAway(); queueSave(); });
 }
 function setState(cls, text) { const s = $('state'); if (s) { s.className = 'state ' + cls; s.textContent = text; } }
-function showState() { const t = T(); if (st.saving) setState('busy', t.saving); else if (st.failed) setState('err', t.failed); else if (st.dirty) setState('busy', t.unsaved); else setState('ok', st.lastSaved ? `${t.saved} · ${t.updated} ${fWhen(st.lastSaved)}` : ''); }
+function showState() { const t = T(); if (st.saving) setState('busy', t.saving); else if (st.failed) setState('err', st.failMsg || t.failed); else if (st.dirty) setState('busy', t.unsaved); else setState('ok', st.lastSaved ? `${t.saved} · ${fWhen(st.lastSaved)}` : ''); }
 
-/* ---- saving: a moment after the last change, never twice at once ---- */
+/* ---- saving: a moment after the last change, never twice at once; "send" is a save that asks to be final ---- */
 function queueSave() { st.dirty = true; showState(); clearTimeout(st.timer); st.timer = setTimeout(save, 900); }
-async function save() {
+async function save(submit) {
   clearTimeout(st.timer);
-  if (!st.dirty || st.saving) return;
-  st.saving = true; showState();
-  const body = { slots: st.entry.slots, hours_week: st.entry.hours_week, max_day: st.entry.max_day, note: st.entry.note };
-  try { const r = await call('PUT', `/me/availability/${st.term.id}`, body); st.lastSaved = r.updated_at; st.dirty = false; st.failed = false;
-    const tm = st.terms.find(x => x.id === st.term.id); if (tm) { tm.filled_at = r.updated_at; tm.counts = r.counts; } }
-  catch (e) { st.failed = true; }
-  st.saving = false; showState();
+  if (st.saving) { if (submit) setTimeout(() => save(true), 400); return; }
+  if (!st.dirty && !submit) return;
+  st.saving = true; st.failMsg = null; showState();
+  const e = st.entry;
+  const body = { slots: e.slots, hours_week: e.hours_week, hours_max: e.hours_max, max_day: e.max_day, block_len: e.block_len, away: e.away, tags: e.tags, note: e.note, submit: !!submit };
+  try { const r = await call('PUT', `/me/availability/${st.term.id}`, body); st.lastSaved = r.updated_at; st.entry.submitted_at = r.submitted_at; st.dirty = false; st.failed = false;
+    const tm = st.terms.find(x => x.id === st.term.id); if (tm) { tm.filled_at = r.updated_at; tm.counts = r.counts; tm.submitted_at = r.submitted_at; } }
+  catch (err) { st.failed = true; if (err.status === 400) st.failMsg = err.message; }
+  st.saving = false; showState(); refreshPanel();
+  const o = $('pTerm') && $('pTerm').selectedOptions[0]; if (o) { const x = st.terms.find(y => y.id === st.term.id); o.textContent = `${x.department} · ${x.label} · ${x.submitted_at ? T().sentS : x.filled_at ? T().filled : T().notfilled}`; }
   if (st.dirty) queueSave();
 }
 window.addEventListener('beforeunload', ev => { if (st.dirty || st.saving) { ev.preventDefault(); ev.returnValue = T().leave; } });
