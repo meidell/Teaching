@@ -6,8 +6,13 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Professor</title>
 <link rel="stylesheet" href="dash.css">
-<!-- The professor's dashboard (14 Nov 2026). The question it answers: what do I teach this week, what must
-     I grade, and who is slipping? ?id=<faculty id> picks the professor (default: the one named Meidell).
+<!-- The professor's dashboard (14 Nov 2026; v2 the same day after Jan Erik's review). The question it answers:
+     what do I teach, what must I grade, and who is slipping in MY courses? ?id=<faculty id> picks the
+     professor (default: the one named Meidell); #courses / #grading open a tab.
+     PRIVACY: a professor sees academic signs only (attendance, grades, submissions, activity) and only for
+     their own courses. Fees and residence permits are never shown: at most "the student office is following
+     this student". Other courses appear only as "also flagged in other courses", without figures. Student
+     names open a teacher's view of the student, never the student's own page.
      Everything is read from data.js (fictitious, one seeded school). -->
 <style>
   .wk{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;}
@@ -18,43 +23,84 @@
   .slot{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--s1);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:12.5px;line-height:1.35;}
   .slot b{display:block;font-size:13px;}
   .slot .m{color:var(--ink2);}
+  .slot .st{white-space:normal;}
   .offwk{margin:12px 0 0;padding:0;list-style:none;font-size:13px;color:var(--ink2);}
   .offwk li{padding:4px 0;}
   .sk{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:6px;}
   .mini{font-size:12px;color:var(--ink2);}
+  .nw{white-space:nowrap;}
   .lines div+div{margin-top:2px;}
   #watchT td.n,#watchT td.nw{white-space:nowrap;}
   #watchT td:first-child{min-width:130px;}
   .morebtn{margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;}
+  .demo{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--axis);border-radius:6px;padding:1px 6px;}
+  .linkbtn{border:none;background:none;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;font:inherit;text-align:left;}
+  /* tabs */
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;margin:0 0 16px;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:3px;width:max-content;max-width:100%;}
+  .tabs button{border:none;background:none;padding:7px 16px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--ink2);}
+  .tabs button.on{background:var(--pill);color:#fff;}
+  .tabs button .n{font-size:11.5px;background:var(--serious);color:#111;border-radius:999px;padding:0 6px;margin-left:5px;}
+  [data-tab][hidden]{display:none;}
+  /* the course timeline */
+  .cpick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .cpick button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink2);}
+  .cpick button.on{background:var(--pill);color:#fff;border-color:var(--pill);}
+  #tlT{min-width:860px;} #tlT td{vertical-align:top;}
+  #tlT tr.next td{background:color-mix(in srgb,var(--s1) 10%,transparent);}
+  #tlT tr.later td{color:var(--ink2);}
+  .mat{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin:0 3px 3px 0;white-space:nowrap;}
+  .mat.off{border-style:dashed;color:var(--muted);}
+  .res div+div{margin-top:4px;}
+  /* the grading queue */
+  #gqT{min-width:820px;} #gqT td{vertical-align:middle;}
+  #gqT tr.sub td{background:var(--raised);}
+  .who-l{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .who-l button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:12.5px;}
+  .who-l .miss{font-size:12.5px;color:var(--ink2);}
+  .tgl{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12.5px;font-weight:600;white-space:nowrap;}
+  /* dialogs: the teacher's view of a student, a submission */
+  dialog.cc{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--r);padding:20px;max-width:680px;width:calc(100% - 32px);max-height:88vh;}
+  dialog.cc::backdrop{background:rgba(0,0,0,.45);}
+  dialog.cc h3{margin:0 0 2px;font-size:19px;} dialog.cc h4{margin:16px 0 6px;font-size:14px;}
+  dialog.cc .x{float:right;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;}
+  dialog.cc .note2{font-size:12.5px;color:var(--ink2);background:var(--raised);border-radius:10px;padding:8px 10px;margin-top:10px;}
+  dialog.cc input[type=number]{width:70px;border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:4px 6px;}
+  dialog.cc textarea{width:100%;min-height:70px;border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:6px 8px;font:inherit;color:inherit;}
+  dialog.cc .save{border:none;background:var(--pill);color:#fff;border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:650;margin-top:8px;}
+  .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;font-size:13px;}
+  .kv dt{color:var(--ink2);} .kv dd{margin:0;text-align:right;font-weight:650;}
   @media(max-width:1250px) and (min-width:1101px){.wk{grid-template-columns:repeat(3,minmax(0,1fr));}}
   @media(max-width:900px){.wk{grid-template-columns:repeat(3,minmax(0,1fr));}}
-  #watchT{min-width:900px;} #healthT{min-width:680px;} #healthT td:first-child{min-width:220px;} #dueT{min-width:460px;}
-  @media(max-width:640px){.wk{grid-template-columns:minmax(0,1fr);}.wk .day{min-height:0;}}
+  #watchT{min-width:860px;} #healthT{min-width:680px;} #healthT td:first-child{min-width:220px;} #dueT{min-width:460px;}
+  @media(max-width:640px){.wk{grid-template-columns:minmax(0,1fr);}.wk .day{min-height:0;} .tabs{width:auto;} .tabs button{padding:7px 11px;}}
 </style>
 </head>
 <body>
 <main>
   <div class="head">
     <div><h1 id="name">Professor</h1><div class="sub" id="sub"></div></div>
-    <div class="filters"><label for="pick">Show the dashboard of</label><select id="pick"></select></div>
+    <div class="filters"><span class="demo" title="In the real system a professor sees only their own dashboard">Demo control</span><label for="pick">Open the dashboard of another professor</label><select id="pick"></select></div>
   </div>
 
+  <nav class="tabs" id="tabs" aria-label="Sections of the dashboard"><button data-t="now">Now</button><button data-t="courses">My courses</button><button data-t="grading">Grading<span class="n" id="gradeTabN" hidden></span></button></nav>
+
+  <section data-tab="now">
   <div class="g c4" id="tiles"></div>
 
   <div class="g c21">
     <div class="card"><div class="ch"><h2>What I teach next week</h2><span class="note" id="wkNote"></span></div>
     <div class="wk" id="week"></div><ul class="offwk" id="offwk"></ul></div>
 
-    <div class="card"><div class="ch"><h2>Grading queue</h2><span class="note" id="gradeNote"></span></div>
+    <div class="card"><div class="ch"><h2>Grading, by course</h2><span class="note" id="gradeNote"></span></div>
       <p class="lead" id="gradeLead"></p><ul class="acts" id="grading"></ul></div>
   </div>
-  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students to watch in my courses</h2><span class="note">most at risk first · click a name to open the student</span></div>
-      <p class="lead">A student is listed when the school records at least one warning sign: attendance under 80 %, an average under 4.0, four or more assignments missing, no login for 14 days, fees overdue over 30 days, or a residence permit renewal pending. Attendance, grade and submissions below are for my course only.</p>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students to watch in my courses</h2><span class="note">most warning signs first · click a name to see the student in my courses</span></div>
+      <p class="lead">A student is listed when they show at least one academic warning sign: attendance under 80 % in my course, a grade under 4.0, two or more assignments missing, no hand-in for 14 days, or no visit to the course pages for 14 days. The figures are for my courses only. Other courses are mentioned without figures, and personal matters handled by the student office are never shown here.</p>
       <div class="tw"><table class="t" id="watchT"></table></div><div id="watchMore"></div></div>
   <div class="section-t">How my courses are going</div>
   <div class="g c2">
     <div class="card"><div class="ch"><h2>Attendance by session, per course</h2><span class="note">% of enrolled students present</span></div>
-      <p class="lead">The school rule requires 80 % attendance. Weekly courses have held 10 sessions; EMBA courses meet every other week and DBA courses in residencies, so their lines are shorter.</p>
+      <p class="lead" id="attLead"></p>
       <div id="attC"></div></div>
     <div class="card"><div class="ch"><h2>Grade distribution, per course</h2><span class="note">number of students in each grade band</span></div>
       <p class="lead">Grades run from 1 to 6 on the Swiss scale. A grade of 4.0 or higher passes, so the first band (under 3.5) and the second band (3.5–3.9) are failing grades.</p>
@@ -67,40 +113,72 @@
     <div class="card"><div class="ch"><h2>Assignment deadlines in the next 21 days</h2><span class="note" id="dueNote"></span></div><div class="tw"><table class="t" id="dueT"></table></div></div>
     <div class="card"><div class="ch"><h2>Spring 2027 teaching availability</h2></div><div id="avail"></div></div>
   </div>
-  <p class="foot">All names and figures are invented, generated for the design of these dashboards. As of Saturday 14 November 2026, week 11 of the 14-week autumn term.</p>
+  </section>
+
+  <section data-tab="courses" hidden>
+    <div class="cpick" id="cpick"></div>
+    <div class="g c4" id="tlTiles"></div>
+    <div class="card"><div class="ch"><h2 id="tlH">Course timeline</h2><span class="note">one row per session · the highlighted row is the next session</span></div>
+      <p class="lead" id="tlLead"></p><div class="tw"><table class="t" id="tlT"></table></div></div>
+  </section>
+
+  <section data-tab="grading" hidden>
+    <div class="g c4" id="gqTiles"></div>
+    <div class="card"><div class="ch"><h2>Grading queue, by assignment</h2><span class="note">oldest waiting first · open a row to see who handed in</span></div>
+      <p class="lead" id="gqLead"></p><div class="tw"><table class="t" id="gqT"></table></div></div>
+  </section>
+
+  <dialog class="cc" id="dlg"></dialog>
+  <p class="foot" id="foot"></p>
 </main>
 <script src="data.js"></script>
 <script src="charts.js"></script>
 <script src="shell.js"></script>
 <script>
 (function () {
-  const { S, PC, num, tile, st, esc } = Dash;
+  const { S, num, tile, st, esc } = Dash;
   Dash.shell('professor');
-  const U = S.util, DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], DAYNAME = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
-  const WEEK_START = '2026-11-16', NEXT_WEEK = S.school.termWeek + 1;
+  const U = S.util, R = S.rules, DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], DAYNAME = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
+  const NEXT_WEEK = S.school.termWeek + 1, TODAY = S.school.today;
   const isoAdd = (iso, d) => { const t = new Date(iso + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + d); return t.toISOString().slice(0, 10); };
-  const dayIso = (day, weekOffset) => isoAdd(WEEK_START, DAYS.indexOf(day) + 7 * (weekOffset || 0));
-  const RISK_ORDER = { high: 0, medium: 1, watch: 2 };
+  const since = iso => -Dash.daysUntil(iso), g1 = v => v == null ? '—' : v.toFixed(1);
+  const dayMonth = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  document.getElementById('foot').textContent = `All names and figures are invented, generated for the design of these dashboards. As of ${Dash.dateLong(TODAY)}, week ${S.school.termWeek} of the ${S.school.termWeeks}-week ${S.school.term.toLowerCase()} term.`;
 
-  /* ---- the picker: every faculty member, driven by ?id= ---- */
+  /* ---- the picker: a demo control (a real professor sees only their own page) ---- */
   const params = new URLSearchParams(location.search);
   const dflt = S.faculty.find(f => /Meidell/.test(f.name));
   const pick = document.getElementById('pick');
   pick.innerHTML = S.faculty.map(f => `<option value="${esc(f.id)}">${esc(f.name)} · ${esc(f.area)}</option>`).join('');
   pick.onchange = () => { const u = new URL(location.href); u.searchParams.set('id', pick.value); history.replaceState(null, '', u); render(pick.value); };
 
-  /* When does a section meet in a given week of the term?
-     Weekly courses (BBA, MSc) meet every week. The EMBA meets every other week; it has held 6 sessions by week 11,
-     so it met in weeks 1, 3 … 11 and meets next in week 13. The DBA meets in residencies: 3 sessions so far,
-     and the data holds no date for the next one, so the page says so rather than inventing one. */
-  function meets(x, week) { if (x.prog === 'emba') return week % 2 === 1; if (x.prog === 'dba') return false; return true; }
-  function rhythm(x) { return x.prog === 'emba' ? 'every other week' : x.prog === 'dba' ? 'residency' : 'every week'; }
+  /* ---- what a professor may see about a student: academic signs only ---- */
+  const PERSONAL = /overdue|permit/;
+  function academic(s, mySecs) {
+    const mine = mySecs.filter(x => x.students.includes(s.id)).map(x => ({ x, r: U.rec(s.id, x.id) }));
+    const signs = [];
+    mine.forEach(m => {
+      if (m.r.att < R.attendance) signs.push({ k: 'att', t: `attendance ${m.r.att} % in ${m.x.code}` });
+      if (m.r.grade < R.pass) signs.push({ k: 'grade', t: `grade ${m.r.grade.toFixed(1)} in ${m.x.code}` });
+      const miss = m.r.subsTotal - m.r.subsDone; if (miss >= 2) signs.push({ k: 'miss', t: `${miss} assignments missing in ${m.x.code}` });
+      if (m.r.lastSubmitDays >= 14) signs.push({ k: 'quiet', t: `no hand-in for ${m.r.lastSubmitDays} days in ${m.x.code}` });
+    });
+    if (s.lastLoginDays >= 14) signs.push({ k: 'login', t: `no visit to the course pages for ${s.lastLoginDays} days` });
+    /* other courses: a yes or no, never a figure */
+    const others = s.sections.filter(id => !mySecs.some(x => x.id === id)).some(id => { const r = U.rec(s.id, id); return r.att < R.attendance || r.grade < R.pass || r.subsTotal - r.subsDone >= 2; });
+    const office = s.riskReasons.some(r => PERSONAL.test(r));
+    const n = signs.length + (others ? 1 : 0), level = n >= 3 ? 'high' : n === 2 ? 'medium' : n === 1 ? 'watch' : 'none';
+    return { mine, signs, others, office, level, n };
+  }
+
+  let F, SECS, COL, curCourse = null, openRows = new Set();
 
   function render(id) {
-    const f = S.faculty.find(x => x.id === id) || dflt; pick.value = f.id;
-    const secs = f.sections.map(U.sec);
-    const col = {}; secs.forEach((x, i) => col[x.id] = `var(--s${(i % 8) + 1})`);
+    const f = S.faculty.find(x => x.id === id) || dflt; pick.value = f.id; F = f;
+    const secs = f.sections.map(U.sec); SECS = secs;
+    const col = {}; secs.forEach((x, i) => col[x.id] = `var(--s${(i % 8) + 1})`); COL = col;
     const progs = [...new Set(secs.map(x => x.prog))];
+    if (!curCourse || !secs.some(x => x.id === curCourse)) curCourse = secs[0] && secs[0].id;
 
     /* ---- header ---- */
     document.getElementById('name').textContent = f.name;
@@ -109,81 +187,80 @@
     /* ---- tiles ---- */
     const stuIds = [...new Set(secs.flatMap(x => x.students))];
     const studs = stuIds.map(U.byId);
-    const atRisk = studs.filter(s => s.risk === 'high' || s.risk === 'medium').length;
+    const watch = studs.map(s => ({ s, a: academic(s, secs) })).filter(o => o.a.level !== 'none');
+    const atRisk = watch.filter(o => o.a.level === 'high' || o.a.level === 'medium').length;
     const ungraded = secs.reduce((a, x) => a + x.ungraded, 0), oldest = Math.max(0, ...secs.map(x => x.oldestUngradedDays));
     const wMean = l => { const n = l.reduce((a, x) => a + x.feedbackN, 0); return n ? l.reduce((a, x) => a + x.feedback * x.feedbackN, 0) / n : null; };
     const myFb = wMean(secs), schoolFb = wMean(S.sections);
     const gradeKind = oldest > 14 ? 'crit' : oldest > 7 ? 'serious' : ungraded ? 'warn' : 'good';
-    /* the next session from Monday 16 November onwards */
-    let next = null;
-    for (let w = 0; w < 4 && !next; w++) {
-      const cand = secs.filter(x => meets(x, NEXT_WEEK + w)).sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.start - b.start)[0];
-      if (cand) next = { x: cand, iso: dayIso(cand.day, w) };
-    }
+    const nextSes = secs.flatMap(x => x.sessionList.filter(z => !z.held).slice(0, 1).map(z => ({ x, z }))).sort((a, b) => a.z.date.localeCompare(b.z.date) || a.x.start - b.x.start)[0];
     const hoursKind = f.hoursTerm > f.contractHours ? 'serious' : 'good';
     document.getElementById('tiles').innerHTML = [
       tile({ lab: 'Courses this term', val: String(secs.length), note: secs.map(x => x.code).join(', ') }),
       tile({ lab: 'Students in my courses', val: num(stuIds.length), unit: 'different students', note: `${secs.reduce((a, x) => a + x.enrolled, 0)} enrolments across ${secs.length} course${secs.length > 1 ? 's' : ''}` }),
       `<div class="tile"><div class="lab">Submissions waiting to be graded</div><div class="val">${ungraded}</div><div class="delta">${ungraded ? st(gradeKind, `oldest waits ${oldest} days`) + ' (late after 7 days)' : st('good', 'nothing waiting')}</div></div>`,
-      `<div class="tile"><div class="lab">Teaching hours this term</div><div class="val">${Math.round(f.hoursTerm)}<small>of ${f.contractHours} contract hours</small></div><div class="delta">${st(hoursKind, f.hoursTerm > f.contractHours ? `${Math.round(f.hoursTerm - f.contractHours)} hours over contract` : `${Math.round(100 * f.hoursTerm / f.contractHours)} % of the contract used`)}</div></div>`,
+      `<div class="tile"><div class="lab">Teaching hours this term</div><div class="val">${Math.round(f.hoursTerm)}<small>of ${f.contractHours} in the contract</small></div><div class="delta">${st(hoursKind, f.hoursTerm > f.contractHours ? `${Math.round(f.hoursTerm - f.contractHours)} hours over contract` : `${Math.round(100 * f.hoursTerm / f.contractHours)} % of the contract used`)}</div><div class="delta">The contract counts ${esc(f.contractBasis)}.</div></div>`,
       tile({ lab: 'Mean student feedback', val: myFb == null ? '—' : myFb.toFixed(2), unit: 'of 5', delta: Dash.delta(Math.round(myFb * 100) / 100, Math.round(schoolFb * 100) / 100, { vs: `against the school mean of ${schoolFb.toFixed(2)}`, fmt: v => v.toFixed(2), flat: 0.005 }) }),
-      `<div class="tile"><div class="lab">Students at risk in my courses</div><div class="val">${atRisk}<small>of ${stuIds.length}</small></div><div class="delta">${st(atRisk ? 'serious' : 'good', atRisk ? `${Math.round(100 * atRisk / stuIds.length)} % show two or more warning signs` : 'nobody shows two warning signs')}</div></div>`,
-      next ? tile({ lab: 'My next session', val: `${next.x.day} ${new Date(next.iso + 'T12:00:00').getDate()} Nov`, unit: `${U.time(next.x.start)}`, note: `${next.x.code} ${next.x.title} · room ${next.x.room}` })
-           : tile({ lab: 'My next session', val: '—', note: 'No session is scheduled in the next four weeks.' }),
+      `<div class="tile"><div class="lab">Students to watch in my courses</div><div class="val">${atRisk}<small>of ${stuIds.length}</small></div><div class="delta">${st(atRisk ? 'serious' : 'good', atRisk ? `${Math.round(100 * atRisk / stuIds.length)} % show two or more academic warning signs` : 'nobody shows two academic warning signs')}</div></div>`,
+      nextSes ? tile({ lab: 'My next session', val: `${nextSes.x.day} ${dayMonth(nextSes.z.date)}`, unit: `${U.time(nextSes.x.start)}`, note: `${nextSes.x.code} ${nextSes.x.title} · session ${nextSes.z.n} of ${nextSes.x.sessions} · room ${nextSes.x.room}` })
+              : tile({ lab: 'My next session', val: '—', note: 'All sessions of this term are held.' }),
       `<div class="tile"><div class="lab">Midterm grades due</div><div class="val">${Dash.daysUntil(S.registrar.gradeEntryDeadline)}<small>days left</small></div><div class="delta">Deadline ${esc(Dash.dateLong(S.registrar.gradeEntryDeadline))}, set by the registrar.</div></div>`,
     ].join('');
 
-    /* ---- next week, day by day ---- */
-    document.getElementById('wkNote').textContent = `Monday 16 to Saturday 21 November 2026 · week ${NEXT_WEEK} of ${S.school.termWeeks}`;
-    document.getElementById('week').innerHTML = DAYS.map((d, i) => {
-      const today = secs.filter(x => x.day === d && meets(x, NEXT_WEEK)).sort((a, b) => a.start - b.start);
-      return `<div class="day"><div class="dh">${DAYNAME[d]} <span>${new Date(dayIso(d) + 'T12:00:00').getDate()} Nov</span></div>` +
-        (today.length ? today.map(x => `<div class="slot" style="border-left-color:${col[x.id]}"><b>${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))}</b>${esc(x.code)} ${esc(x.title)}<div class="m">Room ${esc(x.room)} · ${esc(S.P[x.prog].short)} year ${x.year} · ${x.enrolled} students</div></div>`).join('') : '<div class="none">No teaching</div>') + '</div>';
+    /* ---- next week, day by day, from each course's sessions ---- */
+    const wkMon = U.weekStart(NEXT_WEEK), wkSat = U.dayOf(NEXT_WEEK, 'Sat');
+    document.getElementById('wkNote').textContent = `${Dash.dateLong(wkMon)} to ${Dash.dateLong(wkSat)} · week ${NEXT_WEEK} of ${S.school.termWeeks}`;
+    const sesIn = (x, w) => x.sessionList.find(z => z.week === w);
+    document.getElementById('week').innerHTML = DAYS.map(d => {
+      const today = secs.filter(x => x.day === d && sesIn(x, NEXT_WEEK)).sort((a, b) => a.start - b.start);
+      return `<div class="day"><div class="dh">${DAYNAME[d]} <span>${dayMonth(U.dayOf(NEXT_WEEK, d))}</span></div>` +
+        (today.length ? today.map(x => { const z = sesIn(x, NEXT_WEEK), unposted = z.materials.filter(m => !m.posted).length;
+          return `<div class="slot" style="border-left-color:${col[x.id]}"><b>${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))}</b>${esc(x.code)} ${esc(x.title)}<div class="m">Session ${z.n}: ${esc(z.topic)}</div><div class="m">Room ${esc(x.room)} · ${x.enrolled} students</div>${unposted ? `<div class="m">${st('warn', `${unposted} material${unposted > 1 ? 's' : ''} not posted`)}</div>` : ''}</div>`; }).join('') : '<div class="none">No teaching</div>') + '</div>';
     }).join('');
-    const off = secs.filter(x => !meets(x, NEXT_WEEK));
-    document.getElementById('offwk').innerHTML = off.map(x => {
-      if (x.prog === 'emba') return `<li><i class="sk" style="background:${col[x.id]}"></i><b>${esc(x.code)} ${esc(x.title)}</b> meets every other week, ${DAYNAME[x.day]} ${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))} in room ${esc(x.room)}. It does not meet next week; the next meeting is ${esc(Dash.dateLong(dayIso(x.day, 1)))}.</li>`;
-      return `<li><i class="sk" style="background:${col[x.id]}"></i><b>${esc(x.code)} ${esc(x.title)}</b> meets in DBA residencies (${DAYNAME[x.day]}s ${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))}, room ${esc(x.room)}). ${x.held} of ${x.sessions} sessions are held; the date of the next residency is not in the timetable yet, so ask the DBA office.</li>`;
+    document.getElementById('offwk').innerHTML = secs.filter(x => !sesIn(x, NEXT_WEEK)).map(x => {
+      const nz = x.sessionList.find(z => !z.held);
+      const how = x.prog === 'emba' ? 'meets on teaching weekends (every other week)' : x.prog === 'dba' ? 'meets in four residencies a term' : 'meets every week';
+      return `<li><i class="sk" style="background:${col[x.id]}"></i><b>${esc(x.code)} ${esc(x.title)}</b> ${how}. ${nz ? `It does not meet next week; the next session is ${esc(Dash.dateLong(nz.date))}, ${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))} in room ${esc(x.room)}.` : 'All its sessions are held.'}</li>`;
     }).join('');
 
-    /* ---- grading queue, worst first ---- */
+    /* ---- grading summary per course; the queue itself is on the Grading tab ---- */
     const dl = S.registrar.gradeEntryDeadline, dd = Dash.daysUntil(dl);
     document.getElementById('gradeNote').textContent = `${ungraded} submission${ungraded === 1 ? '' : 's'} waiting`;
-    document.getElementById('gradeLead').textContent = `Midterm grades must be entered by ${Dash.dateLong(dl)}, in ${dd} days. A submission is late once it has waited more than 7 days, and overdue after 14 days.`;
+    document.getElementById('gradeLead').innerHTML = `Midterm grades must be entered by ${esc(Dash.dateLong(dl))}, in ${dd} days. A submission is late once it has waited more than 7 days after its due date, and overdue after 14 days. <a href="#grading">Open the grading queue →</a>`;
     document.getElementById('grading').innerHTML = secs.slice().sort((a, b) => b.oldestUngradedDays - a.oldestUngradedDays || b.ungraded - a.ungraded).map(x => {
       const k = x.oldestUngradedDays > 14 ? 'crit' : x.oldestUngradedDays > 7 ? 'serious' : x.ungraded ? 'warn' : 'good';
       const word = k === 'crit' ? 'Overdue' : k === 'serious' ? 'Late' : k === 'warn' ? 'To do' : 'Done';
-      return `<li>${st(k, word)}<div><div class="w">${esc(x.code)} ${esc(x.title)}</div><div class="d">${x.ungraded ? `${x.ungraded} submission${x.ungraded > 1 ? 's' : ''} to grade; the oldest has waited ${x.oldestUngradedDays} days.` : 'Every submission is graded.'}</div></div><span class="go mini">${x.ungraded ? `${dd} days left` : ''}</span></li>`;
+      return `<li>${st(k, word)}<div><div class="w">${esc(x.code)} ${esc(x.title)}</div><div class="d">${x.ungraded ? `${x.ungraded} submission${x.ungraded > 1 ? 's' : ''} to grade; the oldest has waited ${x.oldestUngradedDays} days since its due date.` : 'Every submission is graded.'}</div></div><span class="go mini">${x.ungraded ? `${dd} days left` : ''}</span></li>`;
     }).join('');
+    const tn = document.getElementById('gradeTabN'); tn.hidden = !ungraded; tn.textContent = ungraded;
 
-    /* ---- students to watch ---- */
-    const rows = studs.filter(s => RISK_ORDER[s.risk] != null).map(s => {
-      const mine = secs.filter(x => x.students.includes(s.id)).map(x => ({ x, r: U.rec(s.id, x.id) }));
-      /* one suggestion: the first thing a teacher can act on, in my course first */
-      let tip = null;
-      const lowAtt = mine.find(m => m.r.att < 80), miss = mine.reduce((a, m) => a + m.r.subsTotal - m.r.subsDone, 0), lowG = mine.find(m => m.r.grade < 4), quiet = mine.find(m => m.r.lastSubmitDays >= 14);
-      if (lowAtt) tip = `Ask about absences: ${lowAtt.r.att} % in ${lowAtt.x.code}.`;
-      else if (lowG) tip = `Offer office hours: grade ${lowG.r.grade.toFixed(1)} in ${lowG.x.code}.`;
-      else if (miss) tip = `Remind about ${miss} missing assignment${miss > 1 ? 's' : ''}.`;
-      else if (quiet) tip = `Write to check in: no submission for ${quiet.r.lastSubmitDays} days.`;
-      else if (s.riskReasons.some(r => /overdue|permit/.test(r))) tip = 'No teaching action needed; the student office handles fees and permits.';
-      else if (s.riskReasons.some(r => /login/.test(r))) tip = 'Write to check in; the student has not logged in for two weeks.';
-      else tip = 'Ask how the other courses are going; the warning sign comes from them.';
-      return { s, mine, tip };
-    }).sort((a, b) => RISK_ORDER[a.s.risk] - RISK_ORDER[b.s.risk] || b.s.riskReasons.length - a.s.riskReasons.length || a.s.attendance - b.s.attendance);
+    /* ---- students to watch: academic signs in my courses only ---- */
+    const LV = { high: 0, medium: 1, watch: 2 }, LW = { high: ['crit', 'Three or more signs'], medium: ['serious', 'Two signs'], watch: ['warn', 'One sign'] };
+    const rows = watch.map(({ s, a }) => {
+      const m0 = a.mine;
+      const lowAtt = m0.find(m => m.r.att < R.attendance), lowG = m0.find(m => m.r.grade < R.pass), miss = m0.reduce((t, m) => t + m.r.subsTotal - m.r.subsDone, 0), quiet = m0.find(m => m.r.lastSubmitDays >= 14);
+      let tip;
+      if (lowAtt) tip = `Ask about the absences: ${lowAtt.r.att} % in ${lowAtt.x.code}.`;
+      else if (lowG) tip = `Offer an office hour: grade ${lowG.r.grade.toFixed(1)} in ${lowG.x.code}.`;
+      else if (miss >= 2) tip = `Remind the student of the ${miss} missing assignments.`;
+      else if (quiet) tip = `Write to check in: no hand-in for ${quiet.r.lastSubmitDays} days.`;
+      else if (s.lastLoginDays >= 14) tip = 'Write to check in: the student has not opened the course pages for two weeks.';
+      else tip = 'Nothing to do in my course. Tell the advisor if you notice a change in class.';
+      return { s, a, tip };
+    }).sort((x, y) => LV[x.a.level] - LV[y.a.level] || y.a.n - x.a.n || x.s.name.localeCompare(y.s.name));
     const LIM = 15; let showAll = false;
     const drawWatch = () => {
       const list = showAll ? rows : rows.slice(0, LIM);
       const lines = (m, fn) => `<div class="lines">${m.map(fn).join('')}</div>`;
-      document.getElementById('watchT').innerHTML = rows.length ? `<tr><th>Student</th><th>Risk</th><th>My course</th><th class="n">Attendance</th><th class="n">Grade</th><th class="n">Handed in</th><th class="n">Last hand-in</th><th>Warning signs, and what to do</th></tr>` +
-        list.map(({ s, mine, tip }) => `<tr><td><a href="student.html?id=${esc(s.id)}">${esc(s.name)}</a><div class="why">${esc(S.P[s.prog].short)} year ${s.year}</div></td><td>${Dash.riskSt(s.risk)}</td>
-          <td class="nw">${lines(mine, m => `<div><i class="sk" style="background:${col[m.x.id]}"></i>${esc(m.x.code)}</div>`)}</td>
-          <td class="n">${lines(mine, m => `<div>${m.r.att < 80 ? st('crit', m.r.att + ' %') : m.r.att + ' %'}</div>`)}</td>
-          <td class="n">${lines(mine, m => `<div>${m.r.grade < 4 ? st('crit', m.r.grade.toFixed(1)) : m.r.grade.toFixed(1)}</div>`)}</td>
-          <td class="n">${lines(mine, m => `<div>${m.r.subsDone} of ${m.r.subsTotal}</div>`)}</td>
-          <td class="n">${lines(mine, m => `<div>${m.r.lastSubmitDays === 0 ? 'today' : m.r.lastSubmitDays + ' days ago'}</div>`)}</td>
-          <td><div>${esc(s.riskReasons.join('; '))}</div><div class="why"><b>${esc(tip)}</b></div></td></tr>`).join('')
-        : `<tr><td class="empty">No student in these courses shows a warning sign.</td></tr>`;
+      document.getElementById('watchT').innerHTML = rows.length ? `<tr><th>Student</th><th>Warning signs</th><th>My course</th><th class="n">Attendance</th><th class="n">Grade so far</th><th class="n">Handed in</th><th class="n">Last hand-in</th><th>What I see, and what to do</th></tr>` +
+        list.map(({ s, a, tip }) => `<tr><td><button class="linkbtn" data-stu="${esc(s.id)}">${esc(s.name)}</button><div class="why">${esc(S.P[s.prog].short)} year ${s.year}</div></td><td>${st(...LW[a.level])}</td>
+          <td class="nw">${lines(a.mine, m => `<div><i class="sk" style="background:${col[m.x.id]}"></i>${esc(m.x.code)}</div>`)}</td>
+          <td class="n">${lines(a.mine, m => `<div>${m.r.att < R.attendance ? st('crit', m.r.att + ' %') : m.r.att + ' %'}</div>`)}</td>
+          <td class="n">${lines(a.mine, m => `<div>${m.r.grade < R.pass ? st('crit', m.r.grade.toFixed(1)) : m.r.grade.toFixed(1)}</div>`)}</td>
+          <td class="n">${lines(a.mine, m => `<div>${m.r.subsDone} of ${m.r.subsTotal}</div>`)}</td>
+          <td class="n">${lines(a.mine, m => `<div>${m.r.lastSubmitDays === 0 ? 'today' : m.r.lastSubmitDays + ' days ago'}</div>`)}</td>
+          <td><div>${esc(a.signs.map(x => x.t).join('; ') || 'No sign in my course')}${a.others ? `${a.signs.length ? '; ' : ''}also flagged in other courses` : ''}</div>${a.office ? '<div class="why">The student office is following this student.</div>' : ''}<div class="why"><b>${esc(tip)}</b></div></td></tr>`).join('')
+        : `<tr><td class="empty">No student in these courses shows an academic warning sign.</td></tr>`;
       document.getElementById('watchMore').innerHTML = rows.length > LIM ? `<button class="morebtn" type="button" id="moreB">${showAll ? `Show the first ${LIM} only` : `Show all ${rows.length} students`}</button>` : '';
       const b = document.getElementById('moreB'); if (b) b.onclick = () => { showAll = !showAll; drawWatch(); };
     };
@@ -192,9 +269,12 @@
     const fresh = id => { const o = document.getElementById(id), n = o.cloneNode(false); o.replaceWith(n); return n; };
     /* ---- attendance by session ---- */
     const nSess = Math.max(...secs.map(x => x.weekAtt.length));
+    const kinds = [...new Set(secs.map(x => x.prog))];
+    document.getElementById('attLead').textContent = `The school rule requires ${R.attendance} % attendance. ` + kinds.map(p => { const x = secs.find(y => y.prog === p);
+      return p === 'emba' ? `EMBA courses meet on teaching weekends and have held ${x.held} of ${x.sessions} sessions` : p === 'dba' ? `DBA courses meet in residencies and have held ${x.held} of ${x.sessions}` : `${S.P[p].short} courses meet every week and have held ${x.held} of ${x.sessions} sessions`; }).join('; ') + '. A gap in a line is a session where attendance was not taken.';
     Charts.line(fresh('attC'), { labels: Array.from({ length: nSess }, (_, i) => 'S' + (i + 1)),
       series: secs.map(x => ({ name: `${x.code} ${x.title}`, values: Array.from({ length: nSess }, (_, i) => x.weekAtt[i] != null ? x.weekAtt[i] : null), color: col[x.id] })),
-      target: { value: 80, label: 'Rule 80 %' }, fmt: v => v.toFixed(1) + ' %', yFmt: v => v + ' %', yMin: 50, height: 230 });
+      target: { value: R.attendance, label: `Rule ${R.attendance} %` }, fmt: v => v.toFixed(1) + ' %', yFmt: v => v + ' %', yMin: 50, height: 230 });
 
     /* ---- grade distribution ---- */
     const BINS = [['< 3.5', g => g < 3.5], ['3.5–3.9', g => g >= 3.5 && g < 4], ['4.0–4.4', g => g >= 4 && g < 4.5], ['4.5–4.9', g => g >= 4.5 && g < 5], ['5.0–5.4', g => g >= 5 && g < 5.5], ['5.5–6.0', g => g >= 5.5]];
@@ -219,7 +299,7 @@
 
     /* ---- deadlines, next 21 days ---- */
     const due = S.assignments.filter(a => f.sections.includes(a.sec) && !a.past && Dash.daysUntil(a.due) >= 0 && Dash.daysUntil(a.due) <= 21).sort((a, b) => a.due < b.due ? -1 : 1);
-    document.getElementById('dueNote').textContent = `from today to ${Dash.date(isoAdd(S.school.today, 21))}`;
+    document.getElementById('dueNote').textContent = `from today to ${Dash.date(isoAdd(TODAY, 21))}`;
     document.getElementById('dueT').innerHTML = due.length ? `<tr><th>Due</th><th>Course</th><th>Assignment</th><th class="n">Weight in the course grade</th></tr>` +
       due.map(a => { const x = U.sec(a.sec), d = Dash.daysUntil(a.due);
         return `<tr><td>${esc(Dash.dateLong(a.due))}<div class="why">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</div></td><td><i class="sk" style="background:${col[x.id]}"></i>${esc(x.code)}</td><td>${esc(a.title)}</td><td class="n">${a.weight} %</td></tr>`; }).join('')
@@ -230,9 +310,136 @@
     document.getElementById('avail').innerHTML = `<p style="margin:0 0 8px">${f.availabilitySent ? st('good', 'Sent') : st('serious', 'Not sent')}</p>
       <p class="lead" style="margin:0 0 10px">${f.availabilitySent ? 'Your typical week for spring 2027 is in the planner. You can still change it until the planner closes the term.' : 'Your typical week for spring 2027 is not in the planner yet. The spring timetable is built from these entries, so please mark the hours you can teach.'} ${teachersMissing} of ${S.faculty.length} faculty have not sent theirs.</p>
       <a href="/lms/planner.html">Teaching availability →</a>`;
+
+    drawTimeline(); drawQueue();
   }
 
+  /* =====================================================================
+     MY COURSES — the course timeline: one row per session
+     ===================================================================== */
+  function results(x, aid) {
+    const a = U.asgOf(x.id).find(y => y.id === aid), zs = x.students.map(id => U.rec(id, x.id).asg.find(z => z.a === aid));
+    const handed = zs.filter(z => z.st === 'graded' || z.st === 'submitted').length, graded = zs.filter(z => z.st === 'graded'), missing = zs.filter(z => z.st === 'missing').length;
+    const mean = graded.length ? graded.reduce((t, z) => t + z.g, 0) / graded.length : null, fails = graded.filter(z => z.g < R.pass).length;
+    return { a, handed, graded: graded.length, waiting: zs.filter(z => z.st === 'submitted').length, missing, mean, fails, n: zs.length };
+  }
+  function drawTimeline() {
+    const secs = SECS, x = U.sec(curCourse); if (!x) return;
+    document.getElementById('cpick').innerHTML = secs.map(y => `<button data-c="${y.id}" class="${y.id === x.id ? 'on' : ''}"><i class="sk" style="background:${COL[y.id]}"></i>${esc(y.code)} ${esc(y.title)}</button>`).join('');
+    const L = x.sessionList, held = L.filter(z => z.held), taken = held.filter(z => z.attTaken), partly = held.filter(z => z.covered === 'partly'), nxt = L.find(z => z.next);
+    const unposted = nxt ? nxt.materials.filter(m => !m.posted).length : 0;
+    document.getElementById('tlH').textContent = `${x.code} ${x.title} · timeline`;
+    document.getElementById('tlTiles').innerHTML = [
+      tile({ lab: 'Sessions held', val: `${held.length}`, unit: `of ${x.sessions}`, note: `${x.prog === 'emba' ? 'Teaching weekends' : x.prog === 'dba' ? 'Residencies' : 'Every week'}, ${DAYNAME[x.day]}s ${U.time(x.start)}–${U.time(x.start + x.hours)}, room ${x.room}` }),
+      `<div class="tile"><div class="lab">Attendance taken</div><div class="val">${taken.length}<small>of ${held.length} sessions</small></div><div class="delta">${taken.length === held.length ? st('good', 'taken every time') : st('warn', `${held.length - taken.length} not taken`) + ' Those sessions count as unknown, not as present.'}</div></div>`,
+      `<div class="tile"><div class="lab">Covered as planned</div><div class="val">${held.length - partly.length}<small>of ${held.length} sessions</small></div><div class="delta">${partly.length ? st('warn', `${partly.length} only partly`) + ' The notes below say what moved.' : st('good', 'all as planned')}</div></div>`,
+      nxt ? `<div class="tile"><div class="lab">Next session · ${esc(Dash.dateLong(nxt.date))}</div><div class="val" style="font-size:18px;line-height:1.3">${esc(nxt.topic)}</div><div class="delta">${unposted ? st('warn', `${unposted} of ${nxt.materials.length} materials not posted yet`) + ' Post them so students can prepare.' : st('good', 'all materials posted')}</div></div>`
+          : tile({ lab: 'Next session', val: '—', note: 'All sessions are held.' }),
+    ].join('');
+    document.getElementById('tlLead').textContent = `Each row is one session: what it covers, the materials students can download, the attendance you took, whether the plan was covered, and the results of the work due that week. Work due in a session is counted from the assignments' due dates. The grade so far uses only graded work; a mean under ${R.pass.toFixed(1)} is a failing mean.`;
+    document.getElementById('tlT').innerHTML = `<tr><th>#</th><th>Date</th><th>Session plan</th><th>Materials</th><th class="n">Attendance</th><th>Covered</th><th>Work due that week, and its results</th></tr>` + L.map(z => {
+      const cls = z.next ? 'next' : z.held ? '' : 'later';
+      const mats = z.materials.map(m => `<span class="mat ${m.posted ? '' : 'off'}" title="${m.posted ? 'Posted' : 'Not posted yet'}">${esc(m.name)}${m.posted ? '' : ' · not posted'}</span>`).join('');
+      const att = !z.held ? '—' : z.attTaken ? (z.att < R.attendance ? st('crit', z.att.toFixed(0) + ' %') : z.att.toFixed(0) + ' %') : st('warn', 'not taken');
+      const cov = !z.held ? (z.next ? st('none', 'next') : '<span class="why">planned</span>') : z.covered === 'as planned' ? st('good', 'as planned') : `${st('warn', 'partly')}<div class="why">${esc(z.note)}</div>`;
+      const work = z.due.map(aid => { const r = results(x, aid);
+        if (!r.a.past) return `<div><b>${esc(r.a.title)}</b> · ${r.a.weight} %<div class="why">due ${esc(Dash.date(r.a.due))}</div></div>`;
+        return `<div><b>${esc(r.a.title)}</b> · ${r.a.weight} %<div class="why">${r.handed} of ${r.n} handed in · ${r.graded} graded${r.waiting ? ` · ${st('warn', r.waiting + ' waiting')}` : ''}${r.mean != null ? ` · mean ${r.mean.toFixed(1)}${r.fails ? `, ${r.fails} under ${R.pass.toFixed(1)}` : ''}` : ''}</div></div>`; }).join('') || '<span class="why">—</span>';
+      return `<tr class="${cls}"><td class="n">${z.n}</td><td class="nw">${esc(dayMonth(z.date))}<div class="why">week ${z.week}</div></td><td><b>${esc(z.topic)}</b><div class="why">${esc(z.kind)} · ${esc(U.time(z.start))}–${esc(U.time(z.start + z.hours))}</div></td><td>${mats}</td><td class="n">${att}</td><td>${cov}</td><td class="res">${work}</td></tr>`;
+    }).join('');
+  }
+  document.getElementById('cpick').onclick = e => { const b = e.target.closest('button'); if (b) { curCourse = b.dataset.c; drawTimeline(); } };
+
+  /* =====================================================================
+     GRADING — the queue per assignment, with each submission one click away
+     ===================================================================== */
+  const handedOn = (a, z) => z.late ? isoAdd(a.due, 2) : a.due;
+  function drawQueue() {
+    const secs = SECS, dl = S.registrar.gradeEntryDeadline;
+    const items = secs.flatMap(x => U.asgOf(x.id).filter(a => a.past).map(a => ({ x, a, r: results(x, a.id) })));
+    const open = items.filter(i => i.r.waiting), waitAll = open.reduce((t, i) => t + i.r.waiting, 0);
+    const oldest = open.length ? Math.max(...open.map(i => since(i.a.due))) : 0;
+    /* grading time: 20 minutes a submission, a working assumption of this demo */
+    const MIN_PER = 20, hrs = Math.round(waitAll * MIN_PER / 60 * 10) / 10;
+    const upcoming = secs.flatMap(x => U.asgOf(x.id).filter(a => !a.past && Dash.daysUntil(a.due) <= 21).map(a => x.enrolled)).reduce((t, n) => t + n, 0);
+    document.getElementById('gqTiles').innerHTML = [
+      `<div class="tile"><div class="lab">Submissions waiting</div><div class="val">${waitAll}</div><div class="delta">${waitAll ? st(oldest > 14 ? 'crit' : oldest > 7 ? 'serious' : 'warn', `oldest: ${oldest} days since its due date`) : st('good', 'nothing waiting')}</div></div>`,
+      tile({ lab: 'Grading time for the queue', val: String(hrs), unit: 'hours', note: `At ${MIN_PER} minutes a submission.` }),
+      tile({ lab: 'Grade entry deadline', val: String(Dash.daysUntil(dl)), unit: 'days left', note: `${Dash.dateLong(dl)}, set by the registrar.` }),
+      tile({ lab: 'Coming in the next 21 days', val: num(upcoming), unit: 'submissions', note: `About ${Math.round(upcoming * MIN_PER / 60)} hours of grading, if every student hands in.` }),
+    ].join('');
+    document.getElementById('gqLead').textContent = `Every assignment that was due before today, with the work still to grade first. A submission is late once it has waited 7 days after the due date, and overdue after 14. Open a row to see who handed in and who did not; open a submission to grade it.`;
+    items.sort((p, q) => (q.r.waiting ? 1 : 0) - (p.r.waiting ? 1 : 0) || p.a.due.localeCompare(q.a.due));
+    document.getElementById('gqT').innerHTML = `<tr><th>Course</th><th>Assignment</th><th>Due</th><th class="n">Handed in</th><th class="n">Graded</th><th class="n">Waiting</th><th class="n">Mean so far</th><th></th></tr>` + items.map(i => {
+      const d = since(i.a.due), k = !i.r.waiting ? 'good' : d > 14 ? 'crit' : d > 7 ? 'serious' : 'warn', w = !i.r.waiting ? 'Done' : d > 14 ? 'Overdue' : d > 7 ? 'Late' : 'To do';
+      const key = i.a.id, isOpen = openRows.has(key);
+      let sub = '';
+      if (isOpen) {
+        const zs = i.x.students.map(id => ({ s: U.byId(id), z: U.rec(id, i.x.id).asg.find(z => z.a === key) }));
+        const wait = zs.filter(o => o.z.st === 'submitted'), miss = zs.filter(o => o.z.st === 'missing'), done = zs.filter(o => o.z.st === 'graded');
+        sub = `<tr class="sub"><td colspan="8">
+          ${wait.length ? `<div><b>Waiting for a grade (${wait.length})</b></div><div class="who-l">${wait.map(o => `<button data-sub="${esc(o.s.id)}|${esc(i.x.id)}|${esc(key)}">${esc(o.s.name)} · handed in ${esc(dayMonth(handedOn(i.a, o.z)))}${o.z.late ? ' (late)' : ''}</button>`).join('')}</div>` : ''}
+          ${miss.length ? `<div style="margin-top:8px"><b>Not handed in (${miss.length})</b></div><div class="who-l">${miss.map(o => `<button data-stu="${esc(o.s.id)}">${esc(o.s.name)}</button>`).join('')}</div>` : ''}
+          ${done.length ? `<div style="margin-top:8px"><b>Graded (${done.length})</b></div><div class="who-l">${done.map(o => `<button data-sub="${esc(o.s.id)}|${esc(i.x.id)}|${esc(key)}">${esc(o.s.name)} · ${o.z.g.toFixed(1)}</button>`).join('')}</div>` : ''}</td></tr>`;
+      }
+      return `<tr><td class="nw"><i class="sk" style="background:${COL[i.x.id]}"></i>${esc(i.x.code)}</td><td><b>${esc(i.a.title)}</b><div class="why">${i.a.weight} % of the course grade</div></td><td class="nw">${esc(dayMonth(i.a.due))}<div class="why">${d} days ago</div></td>
+        <td class="n">${i.r.handed} of ${i.r.n}</td><td class="n">${i.r.graded}</td><td class="n">${i.r.waiting ? st(k, `${i.r.waiting} · ${w}`) : st('good', 'Done')}</td><td class="n">${i.r.mean != null ? i.r.mean.toFixed(1) : '—'}</td>
+        <td><button class="tgl" data-row="${esc(key)}">${isOpen ? 'Close' : 'Open'}</button></td></tr>` + sub;
+    }).join('');
+  }
+  document.getElementById('gqT').onclick = e => { const b = e.target.closest('[data-row]'); if (!b) return; const k = b.dataset.row; openRows.has(k) ? openRows.delete(k) : openRows.add(k); drawQueue(); };
+
+  /* =====================================================================
+     DIALOGS — a submission, and the teacher's view of a student (my courses only)
+     ===================================================================== */
+  const dlg = document.getElementById('dlg');
+  function openSubmission(sid, secId, aid) {
+    const s = U.byId(sid), x = U.sec(secId), a = U.asgOf(secId).find(y => y.id === aid), z = U.rec(sid, secId).asg.find(q => q.a === aid);
+    const file = `${x.code}_${a.title.replace(/\W+/g, '-')}_${s.name.split(' ').pop().normalize('NFD').replace(/[̀-ͯ]/g, '')}.pdf`;
+    dlg.innerHTML = `<button class="x" data-close>Close</button><h3>${esc(a.title)} · ${esc(s.name)}</h3><div class="mini">${esc(x.code)} ${esc(x.title)} · ${a.weight} % of the course grade</div>
+      <dl class="kv" style="margin-top:12px"><dt>File</dt><dd>${esc(file)}</dd><dt>Handed in</dt><dd>${esc(Dash.dateLong(handedOn(a, z)))}${z.late ? ' · 2 days late' : ' · on time'}</dd><dt>Due</dt><dd>${esc(Dash.dateLong(a.due))}</dd></dl>
+      <h4>${z.st === 'graded' ? 'Your grade' : 'Grade this submission'}</h4>
+      <label class="mini" for="gIn">Grade from 1 to 6</label><br><input type="number" id="gIn" min="1" max="6" step="0.1" value="${z.st === 'graded' ? z.g.toFixed(1) : ''}">
+      <div style="margin-top:8px"><label class="mini" for="fIn">Feedback the student will read</label><textarea id="fIn">${z.fb ? esc(z.fb) : ''}</textarea></div>
+      <button class="save" id="gSave">Save the grade</button><span class="mini" id="gMsg" style="margin-left:10px"></span>
+      <div class="note2">Demo: the file is not stored here, and a saved grade lasts until the page is reloaded.</div>`;
+    dlg.querySelector('#gSave').onclick = () => { const g = parseFloat(dlg.querySelector('#gIn').value);
+      if (isNaN(g) || g < 1 || g > 6) { dlg.querySelector('#gMsg').textContent = 'Type a grade from 1 to 6.'; return; }
+      z.st = 'graded'; z.g = Math.round(g * 10) / 10; z.fb = dlg.querySelector('#fIn').value.trim();
+      const r = U.rec(sid, secId); r.ungraded = r.asg.filter(q => q.st === 'submitted').length; x.ungraded = x.students.reduce((t, id) => t + U.rec(id, secId).ungraded, 0);
+      dlg.querySelector('#gMsg').textContent = 'Saved.'; render(F.id); };
+    dlg.showModal();
+  }
+  function openStudent(sid) {
+    const s = U.byId(sid), a = academic(s, SECS), adv = U.prof(s.advisor);
+    const SW = { graded: ['good', 'Graded'], submitted: ['warn', 'Waiting for a grade'], missing: ['serious', 'Missing'], due: ['none', 'Not due yet'] };
+    dlg.innerHTML = `<button class="x" data-close>Close</button><h3>${esc(s.name)}</h3><div class="mini">${esc(S.P[s.prog].name)} · year ${s.year} · advisor ${esc(adv.name)}</div>
+      <div class="note2">You see this student in your own courses only: attendance, grades and hand-ins. ${a.others ? 'The student is <b>also flagged in other courses</b>. ' : ''}${a.office ? 'The student office is following this student. ' : ''}${a.others || a.office ? `If you are worried, write to the advisor, ${esc(adv.name)}.` : ''}</div>` +
+      a.mine.map(m => { const A2 = U.asgOf(m.x.id), attended = m.x.held ? Math.round(m.r.att * m.x.held / 100) : 0;
+        return `<h4><i class="sk" style="background:${COL[m.x.id]}"></i>${esc(m.x.code)} ${esc(m.x.title)}</h4>
+        <dl class="kv"><dt>Attendance</dt><dd>${m.r.att < R.attendance ? st('crit', m.r.att + ' %') : m.r.att + ' %'} · about ${attended} of ${m.x.held} sessions</dd><dt>Grade so far (graded work)</dt><dd>${g1(m.r.grade)}</dd><dt>Participation, your interim mark</dt><dd>${g1(m.r.part)}</dd><dt>Last hand-in</dt><dd>${m.r.lastSubmitDays === 0 ? 'today' : m.r.lastSubmitDays + ' days ago'}</dd></dl>
+        <div class="tw" style="margin-top:6px"><table class="t"><tr><th>Assignment</th><th>Due</th><th>Status</th><th class="n">Grade</th></tr>${m.r.asg.map(z => { const as = A2.find(y => y.id === z.a);
+          return `<tr><td>${esc(as.title)}${z.fb ? `<div class="why">“${esc(z.fb)}”</div>` : ''}</td><td class="nw">${esc(dayMonth(as.due))}</td><td>${st(...SW[z.st])}</td><td class="n">${z.st === 'graded' ? z.g.toFixed(1) : z.st === 'missing' ? R.missingCounts.toFixed(1) + '*' : '—'}</td></tr>`; }).join('')}</table></div>`; }).join('') +
+      `<p class="mini" style="margin-top:10px">* A missing assignment counts as ${R.missingCounts.toFixed(1)} in the final course grade.</p>`;
+    dlg.showModal();
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-close]')) { dlg.close(); return; }
+    const sb = e.target.closest('[data-sub]'); if (sb) { const [a, b, c] = sb.dataset.sub.split('|'); openSubmission(a, b, c); return; }
+    const st2 = e.target.closest('[data-stu]'); if (st2) { if (dlg.open) dlg.close(); openStudent(st2.dataset.stu); }
+  });
+
+  /* ---- tabs: Now · My courses · Grading, kept in the address (#grading) ---- */
+  const TABS = ['now', 'courses', 'grading'];
+  function show() { const h = location.hash.slice(1), t = TABS.includes(h) ? h : 'now';
+    document.querySelectorAll('[data-tab]').forEach(sec => sec.hidden = sec.dataset.tab !== t);
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    Charts.redrawAll(); }
+  document.getElementById('tabs').onclick = e => { const b = e.target.closest('button'); if (b) { history.replaceState(null, '', location.search + '#' + b.dataset.t); show(); } };
+  window.addEventListener('hashchange', show);
+
   render(params.get('id') || dflt.id);
+  show();
 })();
 </script>
 </body>

@@ -115,7 +115,7 @@
   const faculty = [];
   const facNames = ['Dr. Hélène Favre', 'Prof. Jan Erik Meidell', 'Dr. Paolo Ricci', 'Dr. Nadia Haddad', 'Prof. Thomas Keller', 'Dr. Aiko Tanaka', 'Dr. Samuel Okafor', 'Dr. Isabelle Moreau', 'Prof. Anil Mehta', 'Dr. Lars Andersen', 'Dr. Camille Perrin', 'Dr. Youssef Mansour', 'Dr. Elena Ivanova', 'Dr. Marc Gerber', 'Dr. Priya Sharma', 'Dr. Luca Fontana', 'Dr. Sarah Weber', 'Dr. Daniel Costa'];
   facNames.forEach((n, i) => { used.add(n.replace(/^(Dr\.|Prof\.) /, ''));
-    faculty.push({ id: 'f' + (i + 1), name: n, area: AREAS[i % AREAS.length], type: i < 7 ? 'Core faculty' : 'Adjunct', contractHours: i < 7 ? 180 : int(40, 90), eval: r1(clamp(gauss(4.25, 0.35), 3.2, 4.9)), availabilitySent: rnd() > 0.28 }); });
+    faculty.push({ id: 'f' + (i + 1), name: n, area: AREAS[i % AREAS.length], type: i < 7 ? 'Core faculty' : 'Adjunct', contractBasis: 'teaching hours for the autumn 2026 term', contractHours: i < 7 ? 180 : int(40, 90), eval: r1(clamp(gauss(4.25, 0.35), 3.2, 4.9)), availabilitySent: rnd() > 0.28 }); });
 
   /* ---- the autumn 2026 course sections ---- */
   const COURSE_TITLES = {
@@ -236,7 +236,9 @@
         return { a: a.id, st: 'graded', g, fb: comment(g), late: rnd2() < 0.06 };
       });
       /* "not graded yet" is always the most recent assignment, handed in after the last grading round */
-      if (waiting) { const lastPast = asg.filter(z => z.st !== 'due').pop(); if (lastPast && lastPast.st === 'graded') { lastPast.st = 'submitted'; delete lastPast.g; delete lastPast.fb; delete lastPast.late; } }
+      if (waiting) { const lastPast = asg.filter(z => z.st !== 'due').pop(), dueA = lastPast && ASG[sid].find(a => a.id === lastPast.a), waited = dueA ? (Date.parse(TODAY) - Date.parse(dueA.due)) / 864e5 : 0;
+        /* a course that is going well grades within two weeks; only a struggling one lets work wait longer */
+        if (lastPast && lastPast.st === 'graded' && (waited <= 14 || x.quality < -1)) { lastPast.st = 'submitted'; delete lastPast.g; delete lastPast.fb; delete lastPast.late; } }
       const graded = asg.filter(z => z.st === 'graded'), wOf = z => ASG[sid].find(a => a.id === z.a).weight;
       const grade = graded.length ? r1(graded.reduce((t, z) => t + z.g * wOf(z), 0) / graded.reduce((t, z) => t + wOf(z), 0)) : level;
       const past = asg.filter(z => z.st !== 'due');
@@ -300,6 +302,67 @@
       avg, retakes, grad: { term: seasonName(gradT), date: endOf(gradT), onSchedule, scheduled: endOf(terms[terms.length - 1].t) } };
   }
 
+  /* =====================================================================
+     SESSIONS — one row per meeting of every section (professor v2, 14 Nov 2026):
+     date, topic, kind, materials posted, attendance taken, what was covered.
+     Weekly courses (BBA, MSc) meet in each of the 14 weeks; the EMBA meets on
+     the teaching weekends of the odd weeks (7 times); the DBA meets in four
+     residencies (weeks 1, 5, 9, 13). A session is held when its date is
+     before today. Built after the records, so the first version's draws are
+     untouched; x.held and x.sessions now come from this list.
+     ===================================================================== */
+  const TOPICS = {
+    Finance: ['Time value of money', 'Risk and return', 'Cost of capital', 'Capital budgeting', 'Valuation with DCF', 'Capital structure', 'Working capital'],
+    Accounting: ['The accounting equation', 'The income statement', 'The balance sheet', 'The cash-flow statement', 'Accruals and adjustments', 'Ratio analysis', 'Cost behaviour'],
+    Marketing: ['Customer needs and segments', 'Targeting and positioning', 'The product and the brand', 'Pricing', 'Channels', 'Communication and digital media', 'The marketing plan'],
+    Strategy: ['What strategy is', 'Industry analysis', 'Resources and capabilities', 'Competitive advantage', 'Corporate strategy', 'International strategy', 'Executing a strategy'],
+    Economics: ['Supply and demand', 'Elasticity', 'Costs and production', 'Market structures', 'Market failure', 'Macroeconomic indicators', 'Monetary and fiscal policy'],
+    'Data & AI': ['Data in business decisions', 'Cleaning and preparing data', 'Descriptive analytics', 'Dashboards that answer a question', 'Predictive models', 'Machine learning in practice', 'AI governance and limits'],
+    Operations: ['Processes and capacity', 'Inventory', 'Quality management', 'Supply-chain design', 'Sourcing and suppliers', 'Sustainability in the chain', 'Risk and resilience'],
+    'Leadership & HR': ['What leaders do', 'Motivation', 'Teams and groups', 'Communication', 'Power and influence', 'Culture', 'Leading change'],
+    'Law & Ethics': ['Legal systems and sources', 'Contracts', 'Company law', 'Employment law', 'Intellectual property', 'Competition law', 'Ethics and compliance'],
+    Entrepreneurship: ['Finding an opportunity', 'Customer discovery', 'The business model', 'Prototyping and testing', 'Financing a venture', 'Negotiating with partners', 'The pitch'],
+    Statistics: ['Describing data', 'Probability', 'Distributions', 'Sampling and estimation', 'Hypothesis tests', 'Regression', 'Forecasting'],
+    'Digital Business': ['Digital business models', 'Platforms', 'E-commerce', 'Digital marketing', 'Data and privacy', 'Technology strategy', 'Digital transformation'],
+  };
+  const MATS = ['Slides', 'Reading', 'Exercise sheet', 'Case', 'Dataset', 'Video'];
+  sections.forEach(x => {
+    const weeks = x.prog === 'emba' ? [1, 3, 5, 7, 9, 11, 13] : x.prog === 'dba' ? [1, 5, 9, 13] : Array.from({ length: TERM_WEEKS }, (_, i) => i + 1);
+    const tl = TOPICS[AREA_OF(x.title)] || TOPICS['Digital Business'], n = weeks.length;
+    /* attendance by session: the first version generated it for the sessions held before week 11;
+       a held session after that gets a value from the second stream, on the same drift */
+    const att = weekAtt[x.id];
+    let carry = 0;
+    x.sessionList = weeks.map((w, i) => {
+      const date = dayOf(w, x.day), held = date < TODAY;
+      const topic = n >= 14 ? (i === 0 ? 'Introduction and course plan' : i === n - 1 ? 'Review and exam preparation' : tl[Math.floor((i - 1) / 2) % tl.length] + (i % 2 ? ' · lecture' : ' · case workshop'))
+        : n === 7 ? tl[i] : ['Residency 1 · ' + tl[0] + ' and ' + tl[1], 'Residency 2 · ' + tl[2] + ' and ' + tl[3], 'Residency 3 · ' + tl[4] + ' and ' + tl[5], 'Residency 4 · ' + tl[6] + ' and thesis colloquium'][i];
+      const kind = n >= 14 ? (i === 0 || i === n - 1 ? 'Lecture' : i % 2 ? 'Lecture' : 'Case workshop') : n === 7 ? 'Teaching weekend' : 'Residency';
+      const ses = { n: i + 1, week: w, date, start: x.start, hours: x.hours, topic, kind, held, room: x.room, due: [] };
+      if (held) {
+        if (att[i] == null) att[i] = r1(clamp(93 + x.quality * 2.5 - 0.9 * i * (x.quality < -0.8 ? 1.6 : 0.7) + gauss2(0, 2.2), 55, 100));
+        ses.attTaken = rnd2() < (x.quality < -1 ? 0.8 : 0.95);
+        ses.att = ses.attTaken ? att[i] : null;
+        ses.materials = MATS.slice(0, 2 + Math.floor(rnd2() * 2)).map(m => ({ name: m, posted: true }));
+        if (carry) { ses.covered = 'partly'; ses.note = 'Also finished the end of the previous session.'; carry = 0; }
+        if (rnd2() < (x.quality < -0.8 ? 0.25 : 0.1)) { ses.covered = 'partly'; ses.note = 'Ran out of time: the last part moves to the next session.'; carry = 1; }
+        else if (!ses.covered) ses.covered = 'as planned';
+      } else {
+        const next = !x.sessionNextSet; x.sessionNextSet = true; ses.next = next;
+        ses.materials = MATS.slice(0, 2).map(m => ({ name: m, posted: next ? rnd2() < 0.6 : false }));
+      }
+      return ses;
+    });
+    delete x.sessionNextSet;
+    /* not taken = no figure: the chart shows a gap */
+    att.length = x.sessionList.filter(z => z.held).length;
+    x.sessionList.forEach((z, i) => { if (z.held && !z.attTaken) att[i] = null; });
+    ASG[x.id].forEach(a => { const z = x.sessionList.slice().reverse().find(q => q.date <= a.due) || x.sessionList[0]; z.due.push(a.id); a.session = z.n; });
+    x.held = x.sessionList.filter(z => z.held).length;
+    x.sessions = n;
+    if (x.prog === 'dba') x.residencies = x.sessionList.map(z => z.date);
+  });
+
   /* ---- student roll-ups ---- */
   students.forEach(s => {
     const recs = s.sections.map(sid => records[s.id + '|' + sid]);
@@ -350,7 +413,10 @@
     x.avgGrade = recs.length ? r1(recs.reduce((a, r) => a + r.grade, 0) / recs.length) : null;
     x.failRate = recs.length ? Math.round(100 * recs.filter(r => r.grade < 4).length / recs.length) : null;
     x.ungraded = recs.reduce((a, r) => a + r.ungraded, 0);
-    x.oldestUngradedDays = x.ungraded ? int(3, x.quality < -1 ? 24 : 12) : 0;
+    int(3, x.quality < -1 ? 24 : 12);   /* the first version's draw, kept for the numbers after it */
+    /* how long the oldest submission has waited: from its due date to today */
+    const waitDays = recs.flatMap(r => r.asg.filter(z => z.st === 'submitted').map(z => Math.round((Date.parse(TODAY) - Date.parse(ASG[x.id].find(a => a.id === z.a).due)) / 864e5)));
+    x.oldestUngradedDays = waitDays.length ? Math.max(...waitDays) : 0;
     x.submissionRate = recs.length ? Math.round(100 * recs.reduce((a, r) => a + r.subsDone, 0) / recs.reduce((a, r) => a + r.subsTotal, 0)) : null;
     x.feedback = r1(clamp(4.05 + x.quality * 0.35 + gauss(0, 0.15), 2.6, 4.9));
     x.feedbackN = Math.round(recs.length * between(0.45, 0.8));
