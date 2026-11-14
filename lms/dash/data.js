@@ -610,12 +610,15 @@
   const ADJ_RATE = 190;   /* CHF per teaching hour */
   costs.facultyAdjunct = Math.round(faculty.filter(f => f.type === 'Adjunct').reduce((a, f) => a + Math.min(f.hoursTerm || 0, 120), 0) * 2 * ADJ_RATE);
   costs.agentCommissions = Math.round(62 * 0.14 * AGENT_COMMISSION + 38 * 0.2 * AGENT_COMMISSION);
+  /* insurance, depreciation, administration and other: sized so the year's operating result is 2.6 % of the
+     revenue forecast, in line with the margin history (director v2, 14 Nov 2026) */
+  costs.other = Math.round(budgetRevenue * 0.972 * 0.974 - Object.values(costs).reduce((a, b) => a + b, 0));
   /* margin per programme: faculty cost shared by teaching hours, marketing by the programme's share of
      leads, overheads (staff, campus, IT, accreditation) by headcount */
   const marginByProgram = {};
   const hoursOf = pid => sections.filter(x => x.prog === pid).reduce((a, x) => a + x.hours * x.sessions, 0);
   const allHours = programs.reduce((a, p) => a + hoursOf(p.id), 0);
-  const overhead = costs.staff + costs.campus + costs.it + costs.accreditation;
+  const overhead = costs.staff + costs.campus + costs.it + costs.accreditation + costs.other;
   const activeN = students.filter(s => s.status === 'active').length;
   programs.forEach(p => {
     const st = students.filter(s => s.prog === p.id);
@@ -695,7 +698,7 @@
     '7.2': ['Hiring follows a published procedure with a committee; qualifications are recorded for every faculty member.', 'first draft', 'hr'],
     '7.3': ['Every member of staff has a yearly review; faculty reviews include the course evaluations.', 'reviewed', 'hr'],
     '7.4': ['A development budget per person and a mentoring scheme for early-career faculty support careers.', 'first draft', 'hr'],
-    '8': ['The three-year financial plan shows tuition, costs and reserves; the DBA’s loss is the open question.', 'first draft', 'finance'],
+    '8': ['The three-year financial plan shows tuition, costs and reserves; whether the DBA should cover its share of the overheads is the open question.', 'first draft', 'finance'],
     '9': ['The Geneva campus, the library contracts and the IT systems are listed with their renewal dates.', 'reviewed', 'facilities'],
   };
   /* EVIDENCE: one object per piece of evidence, keyed to a standard */
@@ -728,7 +731,7 @@
     EV('E24', '7.2', 'Hiring procedure and faculty qualifications', 'The published hiring procedure and the qualification of every faculty member.', OWN.hr, '2026-10-30', 'in place', [D('Hiring procedure', 'v2', '2025-04-01'), D('Faculty qualification list', 'autumn 2026', '2026-09-15')], '2026-10-02', 'Mock panel', null),
     EV('E25', '7.3', 'Yearly staff reviews', 'The review process and the share of staff reviewed.', OWN.hr, '2026-10-30', 'in place', [D('Staff review process', 'v1', '2024-09-01')], '2026-10-02', 'Mock panel', null),
     EV('E26', '7.4', 'Career development and mentoring', 'The development budget and the mentoring of early-career faculty.', OWN.hr, '2026-11-06', 'incomplete', [D('Development budget', '2026', '2026-01-15')], '2026-10-20', 'Head of quality', 'No mentoring scheme is written down.'),
-    EV('E27', '8', 'Three-year financial plan', 'Tuition, costs and reserves for three years.', OWN.finance, '2026-11-20', 'incomplete', [D('Financial plan 2026–2029', 'v2', '2026-06-30')], '2026-10-20', 'Head of quality', 'Must show the decision on the loss-making DBA.'),
+    EV('E27', '8', 'Three-year financial plan', 'Tuition, costs and reserves for three years.', OWN.finance, '2026-11-20', 'incomplete', [D('Financial plan 2026–2029', 'v2', '2026-06-30')], '2026-10-20', 'Head of quality', 'Must show the decision on the DBA, which does not cover its share of the overheads.'),
     EV('E28', '9', 'Campus, library and IT', 'Premises in Geneva, library access and IT, with renewal dates.', OWN.facilities, '2026-10-16', 'in place', [D('Infrastructure plan', 'v1', '2026-04-20'), D('Library licences', '2026', '2026-01-10')], '2026-10-02', 'Mock panel', null),
   ];
   const STATUS_ORDER = { missing: 0, incomplete: 1, 'in place': 2 };
@@ -790,14 +793,14 @@
   /* ---- the decision calendar: the dates by which someone must decide something (the school's own
      calendar, fictitious like everything here). A dashboard counts down to each one. ---- */
   const calendar = [
-    { date: '2026-11-16', event: 'Exam registration opens', decide: 'Decide which students with fees overdue for more than 60 days may not register for exams', owner: 'finance', role: 'Finance' },
-    { date: '2026-11-20', event: 'Midterm grades are due', decide: 'Chase or reassign the grading of any professor with more than 20 submissions waiting', owner: 'professor', role: 'Programme managers' },
-    { date: '2026-11-27', event: 'The spring marketing plan is locked', decide: 'Move budget to the channels that bring EMBA applications, or lower the EMBA target', owner: 'marketing', role: 'Director with Sales & marketing' },
-    { date: '2026-11-27', event: 'Last day to approve spring adjunct contracts (week 13)', decide: 'Approve or cancel the adjunct hires for the spring term', owner: 'director', role: 'Director' },
-    { date: '2026-12-04', event: 'The spring timetable is published', decide: 'Accept that faculty who sent no availability get a timetable without their input', owner: 'programme', role: 'Programme managers' },
-    { date: '2026-12-15', event: 'Board meeting: budget 2027–28', decide: 'Set fees and intake targets, and decide the future of the loss-making DBA', owner: 'director', role: 'Director' },
-    { date: '2026-12-18', event: 'Accreditation: evidence owners named', decide: 'Name one owner for every missing or incomplete piece of evidence', owner: 'quality', role: 'Quality & accreditation' },
-    { date: '2027-01-15', event: 'Application deadline, February 2027 intake', decide: 'Extend the deadline or close the intake below target', owner: 'marketing', role: 'Sales & marketing' },
+    { id: 'exam-reg', date: '2026-11-16', event: 'Exam registration opens', decide: 'Decide which students with fees overdue for more than 60 days may not register for exams', owner: 'finance', role: 'Finance' },
+    { id: 'grades', date: '2026-11-20', event: 'Midterm grades are due', decide: 'Chase or reassign the grading of any professor with more than 20 submissions waiting', owner: 'professor', role: 'Programme managers' },
+    { id: 'mkt-plan', date: '2026-11-27', event: 'The spring marketing plan is locked', decide: 'Move budget to the channels that bring EMBA applications, or lower the EMBA target', owner: 'marketing', role: 'Director with Sales & marketing' },
+    { id: 'adjuncts', date: '2026-11-27', event: 'Last day to approve spring adjunct contracts (week 13)', decide: 'Approve or cancel the adjunct hires for the spring term', owner: 'director', role: 'Director' },
+    { id: 'timetable', date: '2026-12-04', event: 'The spring timetable is published', decide: 'Accept that faculty who sent no availability get a timetable without their input', owner: 'programme', role: 'Programme managers' },
+    { id: 'budget', date: '2026-12-15', event: 'Board meeting: budget 2027–28', decide: 'Set fees and intake targets, and decide the future of the DBA, which covers its own costs but not its share of the overheads', owner: 'director', role: 'Director' },
+    { id: 'accr-owners', date: '2026-12-18', event: 'Accreditation: evidence owners named', decide: 'Name one owner for every missing or incomplete piece of evidence', owner: 'quality', role: 'Quality & accreditation' },
+    { id: 'feb-deadline', date: '2027-01-15', event: 'Application deadline, February 2027 intake', decide: 'Extend the deadline or close the intake below target', owner: 'marketing', role: 'Sales & marketing' },
   ];
 
   /* =====================================================================
@@ -1032,10 +1035,107 @@
       crm.leads.push(lead);
     } });
 
+  /* =====================================================================
+     DIRECTOR v2 (14 Nov 2026 — Jan Erik's seventh scope memo). History for every headline figure,
+     the cash projection, one worked decision with options and modelled effects, the decision log,
+     the strategy goals, the people figures, the risk register. Fictitious, like everything here.
+     ===================================================================== */
+  /* CASH: from today to the end of the academic year, by the plan's inflows and the monthly costs */
+  {
+    const F = finance, mi = 3 /* November */, out = [];
+    let cash = F.cashOnHandCHF + Math.max(0, F.cashPlan[mi] - (F.cashActual[mi] || 0)) - F.monthlyBurnCHF / 2;
+    out.push({ month: 'Nov', cash: Math.round(cash) });
+    for (let m = mi + 1; m < 12; m++) { cash += F.cashPlan[m] - F.monthlyBurnCHF; out.push({ month: F.months[m], cash: Math.round(cash) }); }
+    F.cashProjection = out; F.cashLow = out.reduce((a, b) => b.cash < a.cash ? b : a); F.monthsOfCover = Math.round(10 * F.cashOnHandCHF / F.monthlyBurnCHF) / 10;
+    F.cashNote = 'End-of-month cash if tuition arrives as planned and costs run at CHF ' + Math.round(F.monthlyBurnCHF / 1000) + 'K a month.';
+    /* the operating result this year: the revenue forecast less all costs */
+    const costTot = Object.values(F.costs).reduce((a, b) => a + b, 0);
+    F.costsBudget = { facultyCore: 1950000, facultyAdjunct: 210000, staff: 2350000, campus: 1860000, marketing: 420000, agentCommissions: 45000, it: 360000, accreditation: 80000, other: Math.round(F.costs.other * 0.97 / 1000) * 1000 };
+    F.result = F.yearForecast - costTot; F.costTotal = costTot;
+  }
+  /* HISTORY for the headline tiles (the last value is this year or this term) */
+  const lastHC = YEARS.map((_, i) => programs.reduce((a, p) => a + headcount[p.id][i], 0));
+  const retSchool = [0, 1, 2, 3, 4].map(i => Math.round(programs.reduce((a, p) => a + retention[p.id][i] * headcount[p.id][i], 0) / lastHC[i]));
+  const riskNow = Math.round(1000 * active.filter(s => s.risk === 'high' || s.risk === 'medium').length / active.length) / 10;
+  const trends = {
+    collectionRate: { labels: ['2022–23', '2023–24', '2024–25', '2025–26', '2026–27'], value: [91, 93, 92, 94, Math.round(100 * collectedYTD / invoicedYTD)], note: 'share of the year’s invoices collected by mid-November' },
+    atRiskShare: { labels: ['Spr 24', 'Aut 24', 'Spr 25', 'Aut 25', 'Spr 26', 'Aut 26'], value: [9.4, 8.8, 10.1, 9.0, 8.3, riskNow] },
+    retention: { labels: YEARS.slice(0, 5), value: retSchool },
+    employed6m: { labels: ['June 2021', 'June 2022', 'June 2023', 'June 2024', 'June 2025'], value: [82, 84, 85, 86, graduateOutcomes.employed6m], response: [64, 66, 70, 68, graduateOutcomes.response] },
+    sepIntake: { labels: ['Sep 2022', 'Sep 2023', 'Sep 2024', 'Sep 2025', 'Sep 2026'], value: [132, 141, 150, 158, Object.values(crm.lastCycleFinal).reduce((a, b) => a + b, 0)] },
+    cashMid: { labels: ['Nov 22', 'Nov 23', 'Nov 24', 'Nov 25', 'Nov 26'], value: [1620000, 1810000, 1950000, 2260000, finance.cashOnHandCHF] },
+    complaints: quality.complaints.map(c => c.n),
+  };
+  /* ONE WORKED DECISION: the future of the DBA, at the board meeting on the budget. The model is simple and
+     says so: students follow intake minus graduations and drop-outs; revenue per student-year is this year's;
+     overheads are fixed for the school, so only the CONTRIBUTION changes the school's result. */
+  const dbaM = finance.marginByProgram.dba, perSY = dbaM.revenue / dbaM.students, ohPer = dbaM.overhead / dbaM.students;
+  const GRADS = [4, 5, 6], DBA_DROP = 1;
+  const pathOf = intake => { let n = dbaM.students; return [0, 1, 2].map(y => (n = Math.max(0, n + intake[y] - GRADS[y] - (n > 6 ? DBA_DROP : 0)))); };
+  const OPT = (id, name, what, intake, feeUp, teachF, mktF, risks) => {
+    const st = pathOf(intake);
+    /* a fee rise applies to new candidates only: their share of the students grows each year */
+    const rev = st.map((n, y) => Math.round(n * perSY * (1 + feeUp * Math.min(1, intake.slice(0, y + 1).reduce((a, b) => a + b, 0) / Math.max(1, n)))));
+    const teach = st.map((n, y) => Math.round(dbaM.teaching * Math.pow(1.03, y + 1) * teachF[y]));
+    const mkt = [0, 1, 2].map(y => Math.round(dbaM.marketing * mktF[y]));
+    const contr = rev.map((r, y) => r - teach[y] - mkt[y]), alloc = st.map(n => Math.round(n * ohPer));
+    return { id, name, what, intake, students: st, revenue: rev, teaching: teach, marketing: mkt, contribution: contr, overheadAllocated: alloc, net: contr.map((c, y) => c - alloc[y]), risks };
+  };
+  const decisionSupport = [{
+    id: 'dba-future', window: 'budget', owner: 'Director, with the board',
+    title: 'The future of the DBA',
+    years: ['2027–28', '2028–29', '2029–30'],
+    question: 'The DBA brings in more than it costs to teach and market, but not enough to carry its share of the school’s overheads. Keep it as it is, raise its fee, stop new intakes, or teach part of it with the EMBA?',
+    facts: [`${dbaM.students} candidates this year bring CHF ${Math.round(dbaM.revenue / 1000)}K in tuition.`, `Teaching (CHF ${Math.round(dbaM.teaching / 1000)}K) and marketing (CHF ${Math.round(dbaM.marketing / 1000)}K) leave a contribution of CHF ${Math.round(dbaM.contribution / 1000)}K: what the DBA adds to the school's result.`, `Its share of the overheads, allocated by headcount, is CHF ${Math.round(dbaM.overhead / 1000)}K, so it shows CHF ${Math.round(dbaM.net / 1000)}K after the allocation.`, 'The overheads (staff, campus, IT, accreditation, insurance, depreciation and administration) do not fall if the DBA closes: the school would lose the contribution and keep the costs.'],
+    model: 'Students = last year’s students + intake − graduations (4, 5, 6) − one drop-out a year. Revenue per student-year = this year’s (CHF ' + Math.round(perSY).toLocaleString('en-CH') + '); a fee rise applies to new candidates only. Teaching grows 3 % a year. Overheads are allocated by headcount, as in the margin table.',
+    options: [
+      OPT('A', 'Keep it as it is', 'Admit 8 candidates a year, as planned.', [8, 8, 8], 0, [1, 1, 1], [1, 1, 1], 'The allocated shortfall stays. It is an accounting view, not cash.'),
+      OPT('B', 'Raise the fee by 10 % and admit 6 a year', 'The fee for new candidates rises from CHF 62,000 to CHF 68,200 for the programme.', [6, 6, 6], 0.1, [1, 0.95, 0.95], [1, 1, 1], 'Fewer applicants may come. Check what the competing DBAs charge first.'),
+      OPT('C', 'Stop new intakes from September 2027', 'No new candidates; the current ones finish their theses.', [0, 0, 0], 0, [0.95, 0.75, 0.5], [0.3, 0, 0], 'The school loses the contribution and keeps the overheads. Doctoral supervision is part of the core faculty’s research profile for accreditation.'),
+      OPT('D', 'Teach two residencies with EMBA modules', 'Admit 8 a year; candidates take two of their four residencies in EMBA module weekends.', [8, 8, 8], 0, [0.6, 0.6, 0.6], [1, 1, 1], 'The shared modules must still meet the doctoral level; supervision stays separate.'),
+    ],
+  }];
+  /* THE DECISION LOG: what was decided, what was expected, and what happened */
+  const decisionLog = [
+    { date: '2025-12-12', decision: 'EMBA fee', chose: 'Hold the EMBA fee at CHF 54,000 for 2026–27', owner: 'Director', expected: 'Keep the EMBA September intake at 26 or more', review: '2026-10-01', actual: 'September 2026 intake: 26', result: 'worked' },
+    { date: '2026-02-20', decision: 'Marketing mix', chose: 'Move CHF 30K from fairs to paid search', owner: 'Sales & marketing', expected: 'More MSc applications by June', review: '2026-06-30', actual: 'MSc applications 17 % above the cycle before', result: 'worked' },
+    { date: '2026-03-15', decision: 'Grading delays', chose: 'Set a grade-entry deadline per assignment', owner: 'Programme managers', expected: 'Fewer complaints about late grades', review: '2026-12-18', actual: 'Measured again in December', result: 'open' },
+    { date: '2026-05-08', decision: 'Agents', chose: 'Add a third agent for Asia (Campus Asia Partners)', owner: 'Director', expected: '6 deposits from Asia for September 2026', review: '2026-09-30', actual: '2 deposits from the new agent', result: 'did not work' },
+  ];
+  /* STRATEGY 2025–2030: the multi-year goals, each with its measure, target and the series so far */
+  const strategy = [
+    { goal: 'Grow to 330 students by 2028–29', measure: 'students enrolled', target: 330, unit: '', labels: YEARS, series: lastHC },
+    { goal: 'Raise the share of master and executive students to 45 %', measure: '% of students in the MSc, EMBA and DBA', target: 45, unit: ' %', labels: YEARS, series: YEARS.map((_, i) => Math.round(100 * (headcount.msc[i] + headcount.emba[i] + headcount.dba[i]) / lastHC[i])) },
+    { goal: 'Keep first-year retention at 90 % or more', measure: '% of a September intake still enrolled a year later', target: 90, unit: ' %', labels: YEARS.slice(0, 5), series: retSchool },
+    { goal: 'Graduates employed six months after graduation: 90 %', measure: '% employed (survey)', target: 90, unit: ' %', labels: ['2021', '2022', '2023', '2024', '2025'], series: [82, 84, 85, 86, graduateOutcomes.employed6m] },
+    { goal: 'Pass the institutional accreditation in May 2027', measure: '% of evidence in place', target: 100, unit: ' %', labels: ['Mar 26', 'Jun 26', 'Sep 26', 'Nov 26'], series: [32, 38, 43, Math.round(100 * evidence.filter(e => e.status === 'in place').length / evidence.length)] },
+    { goal: 'An operating margin of 5 % of revenue', measure: 'result ÷ revenue, %', target: 5, unit: ' %', labels: YEARS, series: [-1.5, 0.8, 2.1, 3.4, 2.6, Math.round(1000 * finance.result / finance.yearForecast) / 10] },
+  ];
+  /* PEOPLE: faculty and staff, the figures a director needs (staff are counted, not named) */
+  const people = { staff: 24, staffVacancies: 2, facultyVacancies: 1, turnover12m: { faculty: 2, staff: 3 }, staffNote: 'administrative staff in full-time equivalents' };
+  /* RISK REGISTER: likelihood and impact 1–5, owner, mitigation */
+  const risks = [
+    { risk: 'Accreditation granted with conditions, or refused', area: 'Regulatory', owner: 'Head of quality', likelihood: 3, impact: 5, mitigation: 'Evidence owners named by 18 December; mock visit in March 2027.' },
+    { risk: 'EMBA intake falls under 20', area: 'Financial', owner: 'Sales & marketing', likelihood: 3, impact: 4, mitigation: 'Corporate accounts plan; decision at the marketing lock on 27 November.' },
+    { risk: 'Student permits refused for students from outside Europe', area: 'Operational', owner: 'Head of the student office', likelihood: 2, impact: 3, mitigation: 'Visa letters 14 weeks before the start; agent briefing on documents.' },
+    { risk: 'Cash falls under three months of costs in summer', area: 'Financial', owner: 'Finance director', likelihood: 2, impact: 4, mitigation: 'Collections plan for the overdue fees; a credit line agreed with the bank.' },
+    { risk: 'A loss of two core faculty', area: 'Operational', owner: 'HR manager', likelihood: 2, impact: 4, mitigation: 'Succession for each core course; adjunct pool by area.' },
+    { risk: 'A grading or data-protection incident made public', area: 'Reputational', owner: 'Director', likelihood: 1, impact: 4, mitigation: 'Grade-entry deadlines; data-protection training for all staff in January.' },
+  ];
+
+  /* LAST WEEK: the same headline figures as they stood on Saturday 7 November 2026, for the weekly briefing */
+  const appsNowAll = programs.reduce((a, p) => a + crm.funnel[p.id].applications, 0) + Object.values(crm.feb.programs).reduce((a, x) => a + x.applications, 0);
+  const depNowAll = programs.reduce((a, p) => a + crm.funnel[p.id].deposits, 0) + Object.values(crm.feb.programs).reduce((a, x) => a + x.deposits, 0);
+  const lastWeek = { date: '2026-11-07',
+    atRisk: active.filter(s => s.risk === 'high' || s.risk === 'medium').length + 3, applications: appsNowAll - 11, deposits: depNowAll - 4,
+    cashOnHand: finance.cashOnHandCHF + 95000, evidenceInPlace: evidence.filter(e => e.status === 'in place').length - 2,
+    overdue60: students.filter(s => s.overdueDays > 60).length - 2, ungraded: sections.reduce((a, x) => a + x.ungraded, 0) - 18,
+    decisionsPending: null };
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),
