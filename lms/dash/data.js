@@ -39,6 +39,63 @@
   ];
   const P = {}; programs.forEach(p => P[p.id] = p);
 
+  /* ---- a SECOND random stream for the student's own record (v2, 14 Nov 2026): curriculum history,
+     assignment-by-assignment status, participation, contact details. Kept apart from rnd() so that
+     adding detail here does not reshuffle the numbers the other seven dashboards were built on. ---- */
+  let seed2 = 77011426;
+  function rnd2() { seed2 |= 0; seed2 = seed2 + 0x6D2B79F5 | 0; let t = Math.imul(seed2 ^ seed2 >>> 15, 1 | seed2); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+  function gauss2(m, s) { let u = 0, v = 0; while (!u) u = rnd2(); while (!v) v = rnd2(); return m + s * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  const pick2 = a => a[Math.floor(rnd2() * a.length)];
+
+  /* ---- the academic rules a student is measured against ---- */
+  const rules = {
+    pass: 4.0, minGrade: 1.0, maxGrade: 6.0, attendance: 80,
+    missingCounts: 1.0,   /* an assignment never handed in counts as the lowest grade */
+    honours: [{ min: 5.0, name: 'with distinction' }, { min: 5.5, name: 'with high distinction' }],
+    retake: 'A failed course is retaken once, in the same season one year later. The better of the two grades counts.',
+  };
+
+  /* ---- the CURRICULUM: every semester of every programme, adding up to the programme's ECTS.
+     Semester n is taught in autumn when n is odd and in spring when n is even; a semester marked
+     `any` (the thesis or project semester) runs in both. A February intake therefore starts with
+     semester 2 and takes semester 1 in its first autumn. `sec` names the autumn 2026 course section
+     that teaches the item; items without a section (thesis, internship, project) are supervised. ---- */
+  const C = (title, ects, type, extra) => Object.assign({ title, ects, type: type || 'course' }, extra || {});
+  const curriculum = {
+    bba: [
+      { n: 1, items: [C('Principles of Management', 7.5), C('Financial Accounting', 7.5), C('Microeconomics', 7.5), C('Business Mathematics', 7.5)] },
+      { n: 2, items: [C('Macroeconomics', 7.5), C('Management Accounting', 7.5), C('Business Communication', 7.5), C('Introduction to Law', 7.5)] },
+      { n: 3, items: [C('Marketing Fundamentals', 7.5), C('Corporate Finance', 7.5), C('Statistics for Business', 7.5), C('Organisational Behaviour', 7.5)] },
+      { n: 4, note: 'You may spend this semester on exchange at a partner university instead; its 30 ECTS replace the four courses.', items: [C('Operations Management', 7.5), C('Business Ethics', 7.5), C('Elective 1', 7.5, 'elective'), C('Elective 2', 7.5, 'elective')] },
+      { n: 5, items: [C('Strategic Management', 7.5), C('Digital Business & AI', 7.5), C('International Business Law', 7.5), C('Entrepreneurship Lab', 7.5)] },
+      { n: 6, items: [C('Internship (at least 12 weeks)', 15, 'internship'), C('Bachelor thesis', 15, 'thesis')] },
+    ],
+    msc: [
+      { n: 1, items: [C('Global Strategy', 7.5), C('Managerial Finance', 7.5), C('Data Analytics for Managers', 7.5), C('Cross-cultural Leadership', 7.5)] },
+      { n: 2, items: [C('International Marketing', 7.5), C('Corporate Governance', 7.5), C('Specialisation course 1', 7.5, 'elective'), C('Specialisation course 2', 7.5, 'elective')] },
+      { n: 3, any: true, items: [C('Sustainable Supply Chains', 6), C('Research Methods', 6), C('Master thesis', 18, 'thesis')] },
+    ],
+    emba: [
+      { n: 1, items: [C('Leading Change', 10), C('Finance for Executives', 10), C('Strategy Execution', 10)] },
+      { n: 2, items: [C('Marketing for Executives', 10), C('Operations & Innovation', 10), C('International residency (one week abroad)', 10)] },
+      { n: 3, any: true, items: [C('Digital Transformation', 6), C('Negotiation', 6), C('Applied workplace project', 18, 'project')] },
+    ],
+    dba: [
+      { n: 1, items: [C('Advanced Research Design', 10), C('Quantitative Methods', 10), C('Research proposal', 10, 'milestone')] },
+      { n: 2, items: [C('Qualitative Methods', 10), C('Literature review', 10, 'milestone'), C('Proposal defence and ethics approval', 10, 'milestone')] },
+      { n: 3, items: [C('Doctoral Seminar I', 10, 'course', { sec: 'Doctoral Seminar' }), C('Thesis research: data collection', 20, 'thesis')] },
+      { n: 4, items: [C('Thesis research: analysis', 30, 'thesis')] },
+      { n: 5, items: [C('Doctoral Seminar II', 10, 'course', { sec: 'Doctoral Seminar' }), C('Thesis research: first full draft', 10, 'thesis')] },
+      { n: 6, items: [C('Thesis writing', 20, 'thesis')] },
+      { n: 7, items: [C('Doctoral Seminar III', 10, 'course', { sec: 'Doctoral Seminar' }), C('Thesis submission and defence', 10, 'thesis')] },
+    ],
+  };
+  /* codes: an item taught by a current section takes the section's code (set below); every other
+     item gets <PROG><semester>5<n>, which no section code uses */
+  Object.entries(curriculum).forEach(([pid, sems]) => sems.forEach(m => m.items.forEach((it, i) => { it.sem = m.n; it.code = pid.toUpperCase().slice(0, 3) + (m.n * 100 + 50 + i + 1); if (!it.sec && it.type === 'course') it.sec = it.title; })));
+  const ELECTIVES = { bba: ['Luxury Brand Management', 'Sports Business', 'Fintech Fundamentals', 'Hospitality Management', 'Family Business', 'Sustainability Reporting'], msc: ['Specialisation: Finance · Valuation', 'Specialisation: Finance · Risk', 'Specialisation: Marketing · Brand Strategy', 'Specialisation: Marketing · Digital Analytics'] };
+  const ectsOf = (pid, title) => { for (const m of curriculum[pid]) for (const it of m.items) if (it.sec === title) return it.ects; return 6; };
+
   /* ---- names ---- */
   const FIRST = ['Léa', 'Lucas', 'Chloé', 'Noah', 'Emma', 'Luca', 'Sofia', 'Matteo', 'Aisha', 'Omar', 'Yasmine', 'Karim', 'Priya', 'Arjun', 'Mei', 'Wei', 'Hana', 'Kenji', 'Amara', 'Chinedu', 'Fatou', 'Mamadou', 'Ana', 'João', 'Camila', 'Diego', 'Olga', 'Dmitri', 'Elif', 'Mehmet', 'Nour', 'Rami', 'Sara', 'David', 'Laura', 'Nicolas', 'Julia', 'Thomas', 'Anna', 'Max', 'Inès', 'Hugo', 'Zoé', 'Elias', 'Mila', 'Leon', 'Alice', 'Samuel', 'Nina', 'Jonas', 'Lina', 'Adam', 'Maya', 'Yann', 'Clara', 'Gabriel', 'Rania', 'Tarek', 'Ayşe', 'Ivan'];
   const LAST = ['Müller', 'Meier', 'Rossi', 'Bianchi', 'Dubois', 'Martin', 'Bernard', 'Favre', 'Rochat', 'Keller', 'Schmid', 'Gerber', 'Haddad', 'Khoury', 'Sharma', 'Patel', 'Chen', 'Wang', 'Tanaka', 'Sato', 'Okafor', 'Adeyemi', 'Diallo', 'Ndiaye', 'Silva', 'Santos', 'García', 'López', 'Ivanova', 'Petrov', 'Yılmaz', 'Demir', 'Mansour', 'Farah', 'Novak', 'Kovač', 'Andersen', 'Lindqvist', "O'Brien", 'Moreau', 'Laurent', 'Girard', 'Perrin', 'Fontana', 'Ricci', 'Weber', 'Wagner', 'Hoffmann', 'Kim', 'Park', 'Nguyen', 'Tran', 'Rahman', 'Hossain', 'Mendes', 'Costa', 'Abdi', 'Hassan', 'Zhou', 'Lin'];
@@ -78,7 +135,7 @@
     secN++;
     const day = pid === 'emba' ? pick(['Fri', 'Sat']) : pid === 'dba' ? 'Sat' : pick(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
     const start = pid === 'emba' || pid === 'dba' ? pick([9, 13.5]) : pick([8.5, 10.25, 13.5, 15.25]);
-    sections.push({ id: 's' + secN, code: pid.toUpperCase().slice(0, 3) + (yr * 100 + secN % 50), title, prog: pid, year: yr, prof: prof.id, ects: pid === 'dba' ? 10 : pid === 'bba' ? 5 : 6,
+    sections.push({ id: 's' + secN, code: pid.toUpperCase().slice(0, 3) + (yr * 100 + secN % 50), title, prog: pid, year: yr, prof: prof.id, ects: ectsOf(pid, title),
       day, start, hours: pid === 'emba' || pid === 'dba' ? 3.5 : 1.5 * 2, room: pick(['A101', 'A204', 'B12', 'B15', 'C3 (lab)', 'Aula', 'Online']), sessions: TERM_WEEKS, held: pid === 'emba' ? 6 : pid === 'dba' ? 3 : TERM_WEEK - 1,
       quality: clamp(gauss(0, 1), -2.2, 2.2) /* hidden: how well this course is going */, students: [] });
   }));
@@ -133,18 +190,115 @@
       weekAtt[x.id].push(r1(clamp(93 + x.quality * 2.5 + drift + gauss(0, 2.2), 55, 100)));
     }
   });
+  /* ---- the term calendar: week 1 starts Monday 31 August 2026 ---- */
+  const WEEK1 = Date.UTC(2026, 7, 31);
+  const dayOf = (w, d) => new Date(WEEK1 + ((w - 1) * 7 + Math.max(0, DAYS.indexOf(d))) * 864e5).toISOString().slice(0, 10);
+  const weekStart = w => dayOf(w, 'Mon');
+  /* the grading scheme of every section: assignments 40 %, participation 10 %, the final 50 % */
+  const SPLITS = [[5, 10, 5, 10, 10], [10, 5, 10, 5, 10], [8, 8, 8, 8, 8], [5, 5, 10, 10, 10]];
+  const ANAMES = ['Case analysis', 'Problem set', 'Group project milestone', 'Reflection paper', 'Quiz', 'Data exercise'];
+  sections.forEach(x => {
+    curriculum[x.prog].forEach(m => m.items.forEach(it => { if (it.sec === x.title) { it.code = x.code; } }));
+    x.components = { assignments: 40, participation: 10, final: 50, finalName: x.prog === 'dba' ? 'Final paper' : x.prog === 'emba' ? 'Final case exam' : 'Final exam' };
+  });
+  /* five assignments per section, due on the day the class meets: three before today, two after */
+  const ASG = {}, assignments = [];
+  sections.forEach(x => {
+    const split = pick2(SPLITS), weeks = [2 + Math.floor(rnd2() * 3), 5 + Math.floor(rnd2() * 3), 8 + Math.floor(rnd2() * 3), 12 + Math.floor(rnd2() * 2), 14];
+    ASG[x.id] = weeks.map((w, k) => { const due = dayOf(w, x.day);
+      const a = { id: x.id + 'a' + k, sec: x.id, n: k + 1, title: pick2(ANAMES) + ' ' + (k + 1), week: w, due, weight: split[k], past: due < TODAY };
+      assignments.push(a); return a; });
+  });
+  const FB = {
+    hi: ['Clear structure, and every number is traced to the data. Keep this level for the exam.', 'Your recommendation follows from the analysis and says what to do first. Well done.', 'Strong work. The comparison table made the argument easy to check.'],
+    mid: ['The analysis is correct, but the recommendation does not say what the company should do first.', 'Show your calculation steps: two figures could not be traced to the data.', 'Good start. Answer the question asked in part 2 directly before you discuss alternatives.'],
+    lo: ['The main question is not answered. Come to an office hour and we will go through the method together.', 'Several calculations are wrong. Redo part 2 with the formula from the session slides and hand it in again.', 'The text describes the case but does not analyse it. Use the framework from the course to structure your answer.'],
+  };
+  const comment = g => pick2(g >= 5 ? FB.hi : g >= 4 ? FB.mid : FB.lo);
+
   students.forEach(s => {
     if (s.status !== 'active') return;
     s.sections.forEach(sid => {
       const x = sections.find(y => y.id === sid);
       const att = clamp(Math.round(88 + s.engagement * 7 + x.quality * 2.5 + gauss(0, 4)), 35, 100);
-      const subsTotal = Math.max(2, Math.round(x.held * 0.4));
-      const subsDone = clamp(Math.round(subsTotal * clamp(0.9 + s.engagement * 0.12 + gauss(0, 0.06), 0.2, 1)), 0, subsTotal);
-      const grade = r1(clamp(4.85 + s.ability * 0.45 + s.engagement * 0.22 + x.quality * 0.15 + gauss(0, 0.28), 1.5, 6));
-      const ungraded = subsDone && rnd() < (x.quality < -1 ? 0.32 : 0.07) ? 1 : 0;
-      records[s.id + '|' + sid] = { att, subsTotal, subsDone, grade, ungraded, lastSubmitDays: int(0, s.engagement < -1 ? 21 : 9) };
+      /* the draws of the first version are kept in the same order, so the other dashboards keep their numbers */
+      const subsTotalV1 = Math.max(2, Math.round(x.held * 0.4));
+      const handIn = clamp(0.9 + s.engagement * 0.12 + gauss(0, 0.06), 0.2, 1);
+      const subsDoneV1 = clamp(Math.round(subsTotalV1 * handIn), 0, subsTotalV1);
+      const level = r1(clamp(4.85 + s.ability * 0.45 + s.engagement * 0.22 + x.quality * 0.15 + gauss(0, 0.28), 1.5, 6));
+      const waiting = subsDoneV1 && rnd() < (x.quality < -1 ? 0.32 : 0.07) ? 1 : 0;
+      const lastSubmitDays = int(0, s.engagement < -1 ? 21 : 9);
+      /* each assignment: due (not yet), missing, submitted (not graded yet) or graded, with a grade and feedback */
+      const asg = ASG[sid].map(a => {
+        if (!a.past) return { a: a.id, st: 'due' };
+        if (rnd2() > handIn) return { a: a.id, st: 'missing' };
+        const g = r1(clamp(level + gauss2(0, 0.35), 1, 6));
+        return { a: a.id, st: 'graded', g, fb: comment(g), late: rnd2() < 0.06 };
+      });
+      /* "not graded yet" is always the most recent assignment, handed in after the last grading round */
+      if (waiting) { const lastPast = asg.filter(z => z.st !== 'due').pop(); if (lastPast && lastPast.st === 'graded') { lastPast.st = 'submitted'; delete lastPast.g; delete lastPast.fb; delete lastPast.late; } }
+      const graded = asg.filter(z => z.st === 'graded'), wOf = z => ASG[sid].find(a => a.id === z.a).weight;
+      const grade = graded.length ? r1(graded.reduce((t, z) => t + z.g * wOf(z), 0) / graded.reduce((t, z) => t + wOf(z), 0)) : level;
+      const past = asg.filter(z => z.st !== 'due');
+      /* participation so far: the professor's interim mark, mostly from attendance */
+      const part = r1(clamp(3.4 + (att - 75) / 12 + s.engagement * 0.3 + gauss2(0, 0.3), 1, 6));
+      records[s.id + '|' + sid] = { att, subsTotal: past.length, subsDone: past.filter(z => z.st !== 'missing').length, grade, ungraded: asg.filter(z => z.st === 'submitted').length, lastSubmitDays, asg, part };
     });
   });
+
+  /* ---- each student's path through the curriculum: terms from intake to graduation ---- */
+  const seasonName = t => (t.s === 'A' ? 'Autumn ' : 'Spring ') + t.y;
+  const nextT = t => t.s === 'A' ? { s: 'S', y: t.y + 1 } : { s: 'A', y: t.y };
+  const intakeT = c => c.slice(5) === '09' ? { s: 'A', y: +c.slice(0, 4) } : { s: 'S', y: +c.slice(0, 4) };
+  const NOW_T = { s: 'A', y: 2026 }, same = (a, b) => a.s === b.s && a.y === b.y;
+  const endOf = t => t.s === 'A' ? `January ${t.y + 1}` : `June ${t.y}`;
+  function buildPlan(s) {
+    const sems = curriculum[s.prog], done = new Set(), terms = [];
+    const fits = (m, t) => !done.has(m.n) && (m.any || (t.s === 'A' ? m.n % 2 === 1 : m.n % 2 === 0));
+    let t = intakeT(s.cohort), guard = 0;
+    while (done.size < sems.length && guard++ < 20) {
+      const when = same(t, NOW_T) ? 'now' : (t.y < NOW_T.y || (t.y === NOW_T.y && t.s === 'S')) ? 'past' : 'future';
+      const m = sems.find(x => fits(x, t));
+      if (m) { done.add(m.n); terms.push({ label: seasonName(t), t, sem: m.n, when, note: m.note || null, items: [] }); }
+      t = nextT(t);
+    }
+    const prof = area => { const c = faculty.filter(f => f.area === area); return (c.length ? pick2(c) : pick2(faculty)).id; };
+    const usedEl = new Set(), retakes = [];
+    terms.forEach(term => {
+      sems.find(m => m.n === term.sem).items.forEach(it0 => {
+        const it = { code: it0.code, title: it0.title, ects: it0.ects, type: it0.type, sem: it0.sem };
+        if (it0.type === 'elective' && term.when === 'past' && ELECTIVES[s.prog]) { let e; do { e = pick2(ELECTIVES[s.prog]); } while (usedEl.has(e) && usedEl.size < ELECTIVES[s.prog].length); usedEl.add(e); it.title = e; it.elective = true; }
+        if (term.when === 'now') { const x = sections.find(y => y.title === it0.sec && s.sections.includes(y.id)); it.status = 'now'; if (x) { it.secId = x.id; it.prof = x.prof; it.code = x.code; } }
+        else if (term.when === 'future') it.status = 'planned';
+        else {
+          it.prof = prof(AREA_OF(it.title));
+          const g = r1(clamp(4.85 + s.ability * 0.45 + s.engagement * 0.2 + gauss2(0, 0.35), 2.5, 6));
+          it.grade = g; it.att = clamp(Math.round(88 + s.engagement * 7 + gauss2(0, 5)), 45, 100);
+          /* a failed course is retaken in the same season one year later: already done, running now, or still ahead */
+          const rt = nextT(nextT(term.t)), nowTerm = terms.find(x => x.when === 'now');
+          if (g >= rules.pass) it.status = 'passed';
+          else if (same(rt, NOW_T)) { it.status = 'failedNow'; it.retakeTerm = seasonName(rt);
+            nowTerm.items.push({ code: it.code, title: it.title, ects: it.ects, type: it.type, sem: it.sem, status: 'now', retakeOf: g }); }
+          else if (rt.y > NOW_T.y || (rt.y === NOW_T.y && rt.s === 'A')) { it.status = 'retake'; it.retakeTerm = seasonName(rt); it.retakeT = rt; retakes.push(it); }
+          else { it.status = 'passed'; it.firstGrade = g; it.grade = r1(4 + rnd2() * 0.9); it.retakeTerm = seasonName(rt); }
+        }
+        term.items.push(it);
+      });
+      const gi = term.items.filter(i => i.grade != null);
+      term.avg = gi.length ? r2(gi.reduce((a, i) => a + i.grade * i.ects, 0) / gi.reduce((a, i) => a + i.ects, 0)) : null;
+      term.att = gi.length ? Math.round(gi.reduce((a, i) => a + i.att, 0) / gi.length) : null;
+      term.ects = term.items.reduce((a, i) => a + i.ects, 0);
+    });
+    const all = terms.flatMap(x => x.items), passed = all.filter(i => i.status === 'passed');
+    const earned = passed.reduce((a, i) => a + i.ects, 0);
+    const avg = passed.length ? r2(passed.reduce((a, i) => a + i.grade * i.ects, 0) / earned) : null;
+    /* graduation: the end of the last semester, or of a retake term if one comes later */
+    let gradT = terms[terms.length - 1].t;
+    retakes.forEach(r => { if (r.retakeT.y > gradT.y || (r.retakeT.y === gradT.y && r.retakeT.s === 'A' && gradT.s === 'S')) gradT = r.retakeT; });
+    const onSchedule = same(gradT, terms[terms.length - 1].t);
+    return { terms, earned, now: terms.find(x => x.when === 'now').ects, left: P[s.prog].ects - earned - terms.find(x => x.when === 'now').ects,
+      avg, retakes, grad: { term: seasonName(gradT), date: endOf(gradT), onSchedule, scheduled: endOf(terms[terms.length - 1].t) } };
+  }
 
   /* ---- student roll-ups ---- */
   students.forEach(s => {
@@ -156,8 +310,14 @@
     const p = P[s.prog];
     const perYearCredits = p.ects / p.years;
     s.ectsReq = p.ects;
-    s.ectsEarned = Math.round(clamp((s.year - 1) * perYearCredits * clamp(0.95 + s.ability * 0.04, 0.8, 1), 0, p.ects));
-    s.ectsThisTerm = s.sections.reduce((a, sid) => a + sections.find(y => y.id === sid).ects, 0);
+    if (s.status === 'active') {
+      /* credits come from the course history: what was passed before this term, what is taken now */
+      s.plan = buildPlan(s);
+      s.ectsEarned = s.plan.earned; s.ectsThisTerm = s.plan.now;
+    } else {
+      s.ectsEarned = Math.round(clamp((s.year - 1) * perYearCredits * clamp(0.95 + s.ability * 0.04, 0.8, 1), 0, p.ects));
+      s.ectsThisTerm = 0;
+    }
     /* fees: invoiced this academic year, paid, overdue */
     const annual = p.feeUnit === 'per year' ? p.fee : Math.round(p.fee / p.years);
     s.scholarship = rnd() < (s.prog === 'bba' ? 0.18 : s.prog === 'msc' ? 0.25 : 0.06) ? pick([10, 15, 20, 25, 30]) : 0;
@@ -206,14 +366,15 @@
   });
 
   /* ---- assignments with due dates (for the student and professor views) ---- */
-  const assignments = [];
-  sections.forEach((x, i) => {
-    const names = ['Case analysis', 'Problem set', 'Group project milestone', 'Reflection paper', 'Quiz', 'Data exercise'];
-    for (let k = 0; k < 3; k++) {
-      const due = new Date(Date.UTC(2026, 10, 14 + (k === 0 ? -int(2, 9) : k === 1 ? int(2, 8) : int(10, 26))));
-      assignments.push({ id: x.id + 'a' + k, sec: x.id, title: pick(names) + ' ' + (k + 2), due: due.toISOString().slice(0, 10), weight: pick([10, 15, 20, 25]), past: k === 0 });
-    }
-  });
+  /* the assignments are built above, before the records. The first version drew three per section
+     here (9 draws each); the same draws are spent so the numbers after this point do not move. */
+  for (let i = 0; i < sections.length * 9; i++) rnd();
+  /* contact details for the student's contact card (fictitious; .example is a reserved domain) */
+  const OFF_H = [[9, 10.5], [12.25, 13.25], [14, 15.5], [16, 17]];
+  faculty.forEach(f => { const n = f.name.replace(/^(Dr\.|Prof\.) /, '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(' ');
+    f.email = n[0] + '.' + n[n.length - 1] + '@lakeside.example';
+    f.office = f.type === 'Core faculty' ? pick2(['A3.12', 'A3.14', 'B2.05', 'B2.07', 'C1.02']) : 'Shared adjunct office B1.01';
+    const h = pick2(OFF_H); f.officeHours = { day: pick2(['Mon', 'Tue', 'Wed', 'Thu']), from: h[0], to: h[1], online: rnd2() < 0.4 }; });
 
   /* ---- history: headcount, retention, revenue (academic years) ---- */
   const YEARS = ['2021–22', '2022–23', '2023–24', '2024–25', '2025–26', '2026–27'];
@@ -437,13 +598,13 @@
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar,
+    crm, registrar, finance, quality, calendar, rules, curriculum,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),
       sec: id => sections.find(x => x.id === id), prof: id => faculty.find(f => f.id === id), rec: (st, sec) => records[st + '|' + sec],
       chf: n => 'CHF ' + Math.round(n).toLocaleString('de-CH').replace(/’/g, "'"), pct: n => Math.round(n) + ' %',
-      grade: g => g == null ? '—' : g.toFixed(1),
+      grade: g => g == null ? '—' : g.toFixed(1), dayOf, weekStart, asgOf: sec => ASG[sec],
       time: h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`,
     },
   };
