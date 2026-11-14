@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, follow">
+<title>Construire une appli qui affiche des cours, et l’installer sur votre téléphone · MFB 545</title>
+<meta name="description" content="MFB 545 Fintech, journée 6 — pas à pas : une petite appli qui lit des cours en direct (taux de la BCE, franc CFA, cryptomonnaies), modifiée dans VS Code, mise en ligne et installée sur un iPhone ou un Android.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="fintech.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<!--
+  MFB 545 · journée 6 · atelier « votre première appli » (14 Nov 2026).
+  Jan Erik : « build a very simple ios/android app — step by step guide using vs code and whatever works on
+  very simple pc's … to load an app to your iphone/android … an api to yahoo finance to get a few prices ».
+  Two paths. A (everyone): a web app (HTML + manifest) in files/app/, kit = files/mes-cours.zip, edited in
+  VS Code (or vscode.dev / Notepad), put online with Netlify Drop, installed from the browser to the home
+  screen. B (a PC that can install Node.js): the same app in React Native with Expo, run in Expo Go.
+  ⚠ Yahoo Finance is NOT used: no official API, it answered HTTP 429 to every test call on 14 Nov 2026 and
+  sends no CORS header, so a browser app cannot call it. Used instead, both free, no key, CORS *, checked
+  14 Nov 2026: Frankfurter (ECB reference rates, api.frankfurter.dev/v1/latest) and CoinGecko
+  (api.coingecko.com/api/v3/simple/price). XOF = EUR × 655.957 (fixed parity). Store fees (Apple Developer
+  Program USD 99 a year, Google Play USD 25 once) are as published by Apple and Google.
+-->
+<style>
+.st{counter-reset:st;list-style:none;margin:10px 0 0;padding:0;}
+.st>li{counter-increment:st;position:relative;padding:12px 14px 12px 54px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;line-height:1.6;}
+.st>li::before{content:counter(st);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.st>li b{color:var(--ink);}
+pre.code{position:relative;background:#0f2530;color:#e6f1f5;border-radius:12px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.5;margin:10px 0;white-space:pre;}
+pre.code button{position:absolute;top:8px;right:8px;font:700 12px inherit;font-family:inherit;border:none;border-radius:8px;padding:5px 10px;background:#ffcb47;color:#0f2530;cursor:pointer;}
+code{font-family:"Courier New",monospace;background:rgba(23,107,135,.1);padding:1px 5px;border-radius:4px;}
+.two2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:10px;}
+.two2 .card{margin:0;padding:16px 18px;}
+.two2 h4{margin:0 0 6px;font-size:16px;}
+.two2 p,.two2 li{font-size:14px;line-height:1.55;}
+.qr{display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
+.qr img{width:160px;height:160px;background:#fff;border-radius:12px;padding:6px;border:1px solid var(--line);}
+.note{background:#fff8e6;border:1px solid #e6c97a;border-radius:14px;padding:14px 18px;margin:14px 0;line-height:1.6;}
+.ph{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:640px){.ph{grid-template-columns:1fr;}}
+.ph div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;font-size:14.5px;line-height:1.6;}
+details{margin:8px 0;} summary{cursor:pointer;font-weight:800;}
+</style>
+</head>
+<body data-course="mfb545">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">FINTECH · ATELIER</span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">← Page du cours</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="hero">
+  <div class="eyebrow">MFB 545 · journée 6 · atelier · à faire soi-même</div>
+  <h1>Votre première appli : <em>des cours en direct</em>, sur votre téléphone</h1>
+  <p class="sub">Votre projet est une application d’épargne. Derrière chaque appli financière il y a la même chose : le téléphone demande des données à un serveur (une <b>API</b>), puis les affiche. Dans cet atelier vous prenez une petite appli qui affiche le franc suisse en euros, en dollars et en francs CFA, et le prix du bitcoin. Vous la modifiez, vous la mettez en ligne, et vous l’installez sur votre téléphone, avec son icône.</p>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Avant de commencer</div>
+  <h2 style="margin-top:4px">Trois mots, et deux voies</h2>
+  <p><b>API</b> : une adresse Internet qu’un programme interroge pour recevoir des données, au lieu d’une page à lire. Exemple : <code>api.frankfurter.dev/v1/latest?base=CHF</code> répond avec les taux du jour de la Banque centrale européenne (BCE). Ouvrez <a href="https://api.frankfurter.dev/v1/latest?base=CHF&amp;symbols=EUR,USD" target="_blank" rel="noopener">ce lien ↗</a> : vous voyez la réponse brute.</p>
+  <p><b>JSON</b> : le format de cette réponse, des noms et des valeurs entre accolades, que le programme lit facilement.</p>
+  <p><b>Application web installable</b> : une page web avec un nom, une icône et un mode plein écran. Le téléphone l’installe sur l’écran d’accueil comme une appli, sans passer par l’App Store ou Google Play.</p>
+  <div class="two2">
+    <div class="card"><h4>Voie A · tout le monde · environ 45 minutes</h4><p>Une application web installable. Il suffit d’un ordinateur, même ancien, avec un navigateur, et d’un éditeur de texte : VS Code, ou à défaut le Bloc-notes. Rien d’autre à installer.</p></div>
+    <div class="card"><h4>Voie B · si votre ordinateur le permet</h4><p>La même appli en application <b>native</b> (React Native), lancée sur le téléphone avec l’appli Expo Go. Il faut installer Node.js (environ 100 Mo) et une bonne connexion. À faire après la voie A, ou à la maison.</p></div>
+  </div>
+  <div class="note"><b>Pourquoi pas Yahoo Finance ?</b> Yahoo n’a pas d’API officielle. Le 14 novembre 2026, ses adresses ont répondu « trop de demandes » (code 429) à chacun de nos essais, et elles refusent les appels venant d’une page web. L’appli utilise donc deux sources gratuites, sans inscription et autorisées dans un navigateur : <b>Frankfurter</b>, qui publie les taux de référence de la BCE chaque jour ouvrable, et <b>CoinGecko</b>, qui publie les prix des cryptomonnaies. Pour des cours d’actions, il faut un fournisseur qui donne une clé gratuite (par exemple Alpha Vantage ou Twelve Data) ; une clé ne se met jamais dans le code d’une page publique.</div>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Étape 0 · voir le résultat</div>
+  <h2 style="margin-top:4px">Ouvrez l’appli finie sur votre téléphone</h2>
+  <div class="qr">
+    <img src="files/app-qr.svg" alt="Code QR de l’appli de démonstration">
+    <div>
+      <p>Scannez le code avec l’appareil photo du téléphone, ou ouvrez <a href="files/app/index.html" target="_blank" rel="noopener">janerikmeidell.com/UMEF/mfb545/files/app/</a>. Puis installez-la sur l’écran d’accueil :</p>
+    </div>
+  </div>
+  <div class="ph">
+    <div><b>iPhone</b> : ouvrez le lien dans <b>Safari</b>. Appuyez sur le bouton Partager (le carré avec une flèche vers le haut), puis sur <b>« Sur l’écran d’accueil »</b>, puis <b>Ajouter</b>.</div>
+    <div><b>Android</b> : ouvrez le lien dans <b>Chrome</b>. Appuyez sur le menu <b>⋮</b> en haut à droite, puis sur <b>« Installer l’application »</b> ou <b>« Ajouter à l’écran d’accueil »</b>.</div>
+  </div>
+  <p>L’icône apparaît sur l’écran d’accueil. Ouverte depuis l’icône, l’appli occupe tout l’écran, sans barre d’adresse. C’est exactement ce que vous allez fabriquer.</p>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Voie A · l’application web installable</div>
+  <h2 style="margin-top:4px">Modifiez l’appli, mettez-la en ligne, installez-la</h2>
+  <ol class="st">
+    <li><b>Installez VS Code</b>, l’éditeur de code gratuit de Microsoft, depuis <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com ↗</a>. Si l’installation est refusée ou trop lente, ouvrez <a href="https://vscode.dev/" target="_blank" rel="noopener">vscode.dev ↗</a> dans Chrome ou Edge : c’est le même éditeur, dans le navigateur, sans installation. En dernier recours, le Bloc-notes de Windows suffit.</li>
+    <li><b>Téléchargez le kit</b> <a class="btn small" href="files/mes-cours.zip" download>mes-cours.zip ↓</a> (11 Ko). Clic droit sur le fichier → <b>Extraire tout</b>. Vous obtenez un dossier <code>mes-cours</code> avec quatre fichiers : <code>index.html</code> (l’appli), <code>manifest.webmanifest</code> (son nom et son icône) et deux images d’icône.</li>
+    <li><b>Ouvrez le dossier dans VS Code</b> : menu Fichier → <b>Ouvrir le dossier</b> → choisissez <code>mes-cours</code>. Cliquez sur <code>index.html</code> à gauche. Le fichier a trois parties, marquées par des commentaires : 1. vos réglages, 2. les sources de données, 3. le programme.</li>
+    <li><b>Lancez l’appli sur l’ordinateur</b> : dans l’explorateur de fichiers, double-cliquez sur <code>index.html</code>. Elle s’ouvre dans le navigateur et affiche les cours. Gardez cette fenêtre ouverte à côté de VS Code.</li>
+    <li><b>Changez les réglages.</b> Dans la partie 1, ajoutez le yen et le dollar canadien, et la cryptomonnaie solana. Les lignes deviennent :
+      <pre class="code"><button>Copier</button>const DEVISES = ["EUR", "USD", "GBP", "JPY", "CAD"];
+const CRYPTOS = ["bitcoin", "ethereum", "solana"];</pre>
+      Enregistrez (<b>Ctrl + S</b>, ou Cmd + S sur Mac), puis rechargez la page du navigateur (<b>F5</b>). Les nouvelles lignes apparaissent. Si une ligne affiche « nom inconnu chez CoinGecko », le nom est mal écrit : cherchez le bon nom sur coingecko.com, il est dans l’adresse de la page de la monnaie.</li>
+    <li><b>Changez l’apparence</b> : dans la partie <code>&lt;style&gt;</code>, remplacez la couleur <code>#176B87</code> par une autre (par exemple <code>#1b7f4b</code>, un vert), et le titre « Mes cours » dans <code>&lt;h1&gt;</code> par le nom de votre appli. Enregistrez, rechargez.</li>
+    <li><b>Mettez l’appli en ligne</b> avec Netlify Drop, comme pour votre plan de la journée 5 : ouvrez <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop ↗</a> et glissez le <b>dossier</b> <code>mes-cours</code> entier dans la zone. Netlify vous donne une adresse du type <code>quelque-chose.netlify.app</code>. Créez un compte gratuit (avec Google, c’est le plus rapide) pour que le site reste en ligne.</li>
+    <li><b>Installez-la sur votre téléphone</b> : ouvrez votre adresse <code>.netlify.app</code> sur le téléphone, puis suivez les instructions iPhone ou Android de l’étape 0. Votre icône est sur l’écran d’accueil, avec vos devises et votre couleur.</li>
+  </ol>
+  <details>
+    <summary>Ça ne marche pas ? Les trois problèmes les plus fréquents</summary>
+    <ul>
+      <li><b>« Chargement… » ne disparaît pas</b> : appuyez sur F12 dans le navigateur, onglet <b>Console</b>. L’erreur en rouge indique la ligne. Le plus souvent : une virgule ou un guillemet oublié dans une liste.</li>
+      <li><b>Pas de « Installer l’application » sur Android</b> : l’adresse doit commencer par <code>https://</code> (c’est le cas sur Netlify) et le fichier <code>manifest.webmanifest</code> doit être dans le même dossier que <code>index.html</code>.</li>
+      <li><b>Sur iPhone, l’icône est une capture d’écran</b> : vérifiez que <code>icon-192.png</code> est bien dans le dossier envoyé à Netlify.</li>
+    </ul>
+  </details>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Défis · pour celles et ceux qui ont fini</div>
+  <h2 style="margin-top:4px">Rapprochez l’appli de votre projet</h2>
+  <p>Vous pouvez demander l’aide d’une IA (Claude, ChatGPT) : collez <code>index.html</code> et décrivez ce que vous voulez. Lisez ensuite ce qui a changé, et sachez l’expliquer : c’est votre appli.</p>
+  <ol class="st">
+    <li><b>Un convertisseur</b> : ajoutez une case où l’on tape un montant en francs suisses, et affichez sa valeur en francs CFA. Indice : un <code>&lt;input type="number"&gt;</code> et le taux EUR multiplié par 655,957.</li>
+    <li><b>Les couleurs de la variation</b> : affichez la variation sur 24 heures en vert quand elle est positive et en rouge quand elle est négative.</li>
+    <li><b>Le lien avec votre projet</b> : votre client verse 10 000 FCFA par mois dans des fonds suisses en francs. Affichez combien de francs suisses cela fait aujourd’hui, et dites dans une phrase pourquoi ce montant change d’un mois à l’autre alors que le franc CFA est fixé à l’euro.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Voie B · une application native avec Expo</div>
+  <h2 style="margin-top:4px">La même appli en React Native, lancée dans Expo Go</h2>
+  <p>React Native est la technique utilisée par beaucoup d’applis bancaires : on écrit en JavaScript, et l’appli utilise les vrais composants de l’iPhone ou de l’Android. <b>Expo Go</b> est une appli gratuite qui fait tourner votre code sur le téléphone pendant que vous le développez, sans compte développeur.</p>
+  <ol class="st">
+    <li><b>Installez Node.js</b>, version « LTS », depuis <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org ↗</a>. Acceptez les options par défaut.</li>
+    <li><b>Installez Expo Go</b> sur le téléphone, depuis l’App Store ou Google Play.</li>
+    <li>Dans VS Code, ouvrez un terminal (menu Terminal → <b>Nouveau terminal</b>) et tapez, ligne par ligne :
+      <pre class="code"><button>Copier</button>npx create-expo-app@latest mes-cours-natif --template blank
+cd mes-cours-natif</pre>
+      La première commande télécharge environ 200 Mo : il faut une bonne connexion et quelques minutes.</li>
+    <li>Ouvrez le dossier <code>mes-cours-natif</code> dans VS Code, ouvrez <code>App.js</code>, effacez tout, et collez ce code :
+<pre class="code" id="appjs"><button>Copier</button>import { useEffect, useState } from "react";
+import { SafeAreaView, ScrollView, Text, View, Pressable, StyleSheet } from "react-native";
+
+// 1. Vos réglages
+const DEVISES = ["EUR", "USD", "GBP"];
+const CRYPTOS = ["bitcoin", "ethereum"];
+const FCFA_PAR_EURO = 655.957; // parité fixe : 1 euro = 655,957 francs CFA
+
+export default function App() {
+  const [taux, setTaux] = useState(null);
+  const [cryptos, setCryptos] = useState(null);
+  const [message, setMessage] = useState("Chargement…");
+
+  // 2. Demander les données aux deux API
+  async function charger() {
+    setMessage("Chargement…");
+    try {
+      const a = await fetch("https://api.frankfurter.dev/v1/latest?base=CHF&amp;symbols=" + DEVISES.join(","));
+      const b = await fetch("https://api.coingecko.com/api/v3/simple/price?vs_currencies=chf&amp;ids=" + CRYPTOS.join(","));
+      setTaux(await a.json());
+      setCryptos(await b.json());
+      setMessage("Mis à jour à " + new Date().toLocaleTimeString());
+    } catch (e) {
+      setMessage("Pas de réponse du serveur : " + e.message);
+    }
+  }
+  useEffect(() => { charger(); }, []);
+
+  // 3. Afficher
+  return (
+    &lt;SafeAreaView style={s.page}&gt;
+      &lt;ScrollView contentContainerStyle={{ padding: 16 }}&gt;
+        &lt;Text style={s.titre}&gt;Mes cours&lt;/Text&gt;
+        &lt;Text style={s.section}&gt;1 franc suisse vaut&lt;/Text&gt;
+        {taux &amp;&amp; DEVISES.map((c) =&gt; (
+          &lt;View key={c} style={s.ligne}&gt;&lt;Text style={s.nom}&gt;{c}&lt;/Text&gt;&lt;Text style={s.prix}&gt;{taux.rates[c].toFixed(4)}&lt;/Text&gt;&lt;/View&gt;
+        ))}
+        {taux &amp;&amp; taux.rates.EUR &amp;&amp; (
+          &lt;View style={s.ligne}&gt;&lt;Text style={s.nom}&gt;FCFA&lt;/Text&gt;&lt;Text style={s.prix}&gt;{(taux.rates.EUR * FCFA_PAR_EURO).toFixed(2)}&lt;/Text&gt;&lt;/View&gt;
+        )}
+        &lt;Text style={s.section}&gt;Cryptomonnaies, en francs suisses&lt;/Text&gt;
+        {cryptos &amp;&amp; CRYPTOS.map((id) =&gt; (
+          &lt;View key={id} style={s.ligne}&gt;&lt;Text style={s.nom}&gt;{id}&lt;/Text&gt;&lt;Text style={s.prix}&gt;{cryptos[id] ? cryptos[id].chf.toFixed(2) : "—"}&lt;/Text&gt;&lt;/View&gt;
+        ))}
+        &lt;Pressable style={s.bouton} onPress={charger}&gt;&lt;Text style={s.boutonTexte}&gt;Actualiser les cours&lt;/Text&gt;&lt;/Pressable&gt;
+        &lt;Text style={s.info}&gt;{message}&lt;/Text&gt;
+      &lt;/ScrollView&gt;
+    &lt;/SafeAreaView&gt;
+  );
+}
+
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: "#f2f6f8" },
+  titre: { fontSize: 28, fontWeight: "bold", color: "#176B87", marginTop: 20 },
+  section: { fontSize: 13, color: "#176B87", marginTop: 20, marginBottom: 6, textTransform: "uppercase" },
+  ligne: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "white", padding: 14, borderRadius: 12, marginBottom: 8 },
+  nom: { fontSize: 16, fontWeight: "bold" },
+  prix: { fontSize: 18, fontWeight: "bold" },
+  bouton: { backgroundColor: "#176B87", padding: 15, borderRadius: 12, marginTop: 14 },
+  boutonTexte: { color: "white", fontSize: 17, fontWeight: "bold", textAlign: "center" },
+  info: { textAlign: "center", color: "#6b8590", marginTop: 10 },
+});</pre></li>
+    <li>Enregistrez, puis dans le terminal tapez <code>npx expo start</code>. Un code QR s’affiche dans le terminal.</li>
+    <li><b>Scannez-le</b> : sur Android, avec le bouton « Scan QR code » de l’appli Expo Go ; sur iPhone, avec l’appareil photo. L’appli s’ouvre sur le téléphone. Chaque fois que vous enregistrez <code>App.js</code>, elle se met à jour toute seule.</li>
+    <li>Si le téléphone ne trouve pas l’ordinateur (le Wi-Fi de l’école bloque souvent les appareils entre eux), arrêtez avec <b>Ctrl + C</b> et relancez avec <code>npx expo start --tunnel</code>. Acceptez l’installation qu’il propose.</li>
+  </ol>
+  <div class="note"><b>Et pour publier dans l’App Store ou Google Play ?</b> Il faut un compte développeur : chez Apple, l’Apple Developer Program coûte 99 dollars par an ; chez Google, l’inscription à la Play Console coûte 25 dollars, une fois. Puis chaque version passe une vérification par Apple ou Google, qui peut prendre plusieurs jours. Pour une appli financière, les deux magasins demandent aussi de montrer que l’entreprise a les autorisations nécessaires dans chaque pays où l’appli est proposée. C’est une raison de plus pour laquelle beaucoup de fintechs commencent par une application web.</div>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Mise en commun</div>
+  <h2 style="margin-top:4px">Trois questions pour la classe</h2>
+  <ol>
+    <li>Votre appli affiche un taux. Qui l’a mesuré, à quelle date, et que se passe-t-il pour vos clients si l’API ne répond plus un matin ?</li>
+    <li>Application web installable ou application native dans les magasins : laquelle choisiriez-vous pour votre application d’épargne-retraite au Sénégal ou au Congo, et pourquoi ? Pensez aux téléphones de vos clients, aux mises à jour et à la confiance.</li>
+    <li>L’appli de la voie A n’a pas de serveur à vous : elle appelle directement des API publiques. Que faudrait-il ajouter pour afficher le solde d’épargne d’un client ?</li>
+  </ol>
+</div>
+
+</div>
+
+<script>
+(function(){
+  Array.prototype.forEach.call(document.querySelectorAll('pre.code button'),function(b){
+    b.addEventListener('click',function(){
+      var t=b.parentNode.textContent.replace(/^Copier(✓)?/,'').replace(/^Copié ✓/,'');
+      (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier';},1800);},function(){alert('Sélectionnez le code et copiez-le avec Ctrl + C.');});
+    });
+  });
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script>if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

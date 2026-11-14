@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<!-- La ligne suivante adapte l'écran au téléphone. Sans elle, l'appli s'affiche en tout petit. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mes cours</title>
+
+<!-- Ces lignes font de la page une « appli » : un nom, une icône, une couleur, un plein écran. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mes cours">
+<meta name="theme-color" content="#176B87">
+
+<style>
+  /* L'apparence. Changez les couleurs ici. */
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f2f6f8; color: #10303c; }
+  header { background: #176B87; color: white; padding: 22px 18px 18px; padding-top: max(22px, env(safe-area-inset-top)); }
+  header h1 { margin: 0; font-size: 24px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+  main { padding: 14px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #176B87; margin: 18px 4px 8px; }
+  .ligne { display: flex; justify-content: space-between; align-items: baseline; background: white; border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .nom { font-weight: bold; font-size: 16px; }
+  .detail { font-size: 12px; color: #6b8590; }
+  .prix { font-size: 20px; font-weight: bold; }
+  button { width: 100%; font-size: 17px; font-weight: bold; padding: 15px; border: none; border-radius: 14px; background: #176B87; color: white; margin-top: 12px; }
+  .info { font-size: 12px; color: #6b8590; text-align: center; margin-top: 12px; }
+  .erreur { background: #fdecea; color: #8a1c12; padding: 12px; border-radius: 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Mes cours</h1>
+  <p>Le franc suisse et les cryptomonnaies, en direct</p>
+</header>
+
+<main>
+  <h2>1 franc suisse vaut</h2>
+  <div id="devises">Chargement…</div>
+
+  <h2>Cryptomonnaies, en francs suisses</h2>
+  <div id="cryptos">Chargement…</div>
+
+  <button id="actualiser">Actualiser les cours</button>
+  <p class="info" id="heure"></p>
+</main>
+
+<script>
+// ==========================================================================
+// 1. VOS RÉGLAGES. Modifiez ces listes, enregistrez, rechargez la page.
+// ==========================================================================
+
+// Les devises à afficher (codes à trois lettres de la Banque centrale européenne).
+const DEVISES = ["EUR", "USD", "GBP"];
+
+// Les cryptomonnaies à afficher (leurs noms chez CoinGecko, en minuscules).
+const CRYPTOS = ["bitcoin", "ethereum"];
+
+// Le franc CFA (XOF) n'est pas publié par la BCE, mais il est fixé par traité :
+// 1 euro = 655,957 francs CFA, toujours. On le calcule donc à partir de l'euro.
+const FCFA_PAR_EURO = 655.957;
+
+
+// ==========================================================================
+// 2. LES SOURCES DE DONNÉES (gratuites, sans clé, autorisées dans un navigateur)
+// ==========================================================================
+// Frankfurter : les taux de change officiels de la BCE, publiés chaque jour ouvrable.
+// CoinGecko : les prix des cryptomonnaies, mis à jour toutes les quelques minutes.
+
+function urlDevises() {
+  return "https://api.frankfurter.dev/v1/latest?base=CHF&symbols=" + DEVISES.join(",");
+}
+function urlCryptos() {
+  return "https://api.coingecko.com/api/v3/simple/price?vs_currencies=chf&include_24hr_change=true&ids=" + CRYPTOS.join(",");
+}
+
+
+// ==========================================================================
+// 3. LE PROGRAMME : demander les données, puis les afficher.
+// ==========================================================================
+
+// Écrit un nombre à la manière suisse : 1'234.56 devient « 1 234,56 ».
+function nombre(x, decimales) {
+  return x.toLocaleString("fr-CH", { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+}
+
+// Fabrique une ligne de l'écran : un nom à gauche, un prix à droite.
+function ligne(nom, detail, prix) {
+  return '<div class="ligne"><div><div class="nom">' + nom + '</div><div class="detail">' + detail +
+         '</div></div><div class="prix">' + prix + '</div></div>';
+}
+
+async function chargerDevises() {
+  const reponse = await fetch(urlDevises());          // 1. on envoie la question au serveur
+  const donnees = await reponse.json();              // 2. on lit la réponse (format JSON)
+  let html = "";
+  for (const code of DEVISES) {                      // 3. une ligne par devise
+    html += ligne(code, "taux BCE du " + donnees.date, nombre(donnees.rates[code], 4));
+  }
+  if (donnees.rates.EUR) {                           // 4. le franc CFA, calculé à partir de l'euro
+    html += ligne("FCFA (XOF)", "calculé : euro × 655,957", nombre(donnees.rates.EUR * FCFA_PAR_EURO, 2));
+  }
+  document.getElementById("devises").innerHTML = html;
+}
+
+async function chargerCryptos() {
+  const reponse = await fetch(urlCryptos());
+  const donnees = await reponse.json();
+  let html = "";
+  for (const id of CRYPTOS) {
+    const c = donnees[id];
+    if (!c) { html += ligne(id, "nom inconnu chez CoinGecko", "—"); continue; }
+    const variation = c.chf_24h_change;
+    const signe = variation >= 0 ? "+" : "";
+    html += ligne(id.charAt(0).toUpperCase() + id.slice(1),
+                  "sur 24 heures : " + signe + nombre(variation, 1) + " %",
+                  nombre(c.chf, 2) + " CHF");
+  }
+  document.getElementById("cryptos").innerHTML = html;
+}
+
+async function toutCharger() {
+  document.getElementById("heure").textContent = "Chargement…";
+  try {
+    await Promise.all([chargerDevises(), chargerCryptos()]);
+    document.getElementById("heure").textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-CH");
+  } catch (erreur) {
+    document.getElementById("heure").innerHTML =
+      '<div class="erreur">Pas de réponse du serveur. Vérifiez la connexion Internet, puis appuyez sur « Actualiser ». (' + erreur.message + ')</div>';
+  }
+}
+
+// Le bouton relance tout. Au démarrage, on charge une première fois.
+document.getElementById("actualiser").addEventListener("click", toutCharger);
+toutCharger();
+</script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, follow">
+<title>Un vrai portefeuille, des jetons de test, une vraie transaction · MFB 545</title>
+<meta name="description" content="MFB 545 Fintech, journée 6 — ouvrir un portefeuille MetaMask, passer sur le réseau de test Sepolia, recevoir des jetons d’un robinet, payer un camarade et lire la transaction sur la blockchain.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👛</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="fintech.css">
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<!--
+  MFB 545 · journée 6 · atelier « un vrai portefeuille » (14 Nov 2026).
+  Jan Erik : « to actually "do" … opening a wallet and getting coins from a faucet … for this afternoon ».
+  Rebuilt from the Sepolia wallet atelier that journée 4 §4.2 carried until 30 Oct 2026 (replaced there by
+  DefiLlama; its text and transaction reader came back from git 466039b^).
+
+  Live reads, all from the browser, no key:
+    · a public Sepolia node, https://ethereum-sepolia-rpc.publicnode.com — JSON-RPC, CORS *, checked 14 Nov 2026
+      (eth_getBalance, eth_getTransactionByHash, eth_getTransactionReceipt, eth_getBlockByNumber).
+  The class list of addresses: the course has no `_wall`, so it reuses the deployed `_chain` rules in a room
+  of its own, `mfb545/_chain/g90000/nodes/<sid>` = {n: first name, addr:'sepolia', pk: the 0x address, ts}.
+  chaine.html only ever reads `g<meta.g>` (a small game number), so g90000 never meets a class blockchain.
+  Faucets checked 14 Nov 2026 (HTTP 200): Google Cloud Web3 faucet (Google account), pk910 PoW faucet
+  (no account), Alchemy and Chainlink (both usually ask for a mainnet balance or an account).
+-->
+<style>
+.st{counter-reset:st;list-style:none;margin:10px 0 0;padding:0;}
+.st>li{counter-increment:st;position:relative;padding:12px 14px 12px 54px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;line-height:1.6;}
+.st>li::before{content:counter(st);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.st>li b{color:var(--ink);}
+.warnbox{background:#fdecea;border:1px solid #e0a0a0;border-radius:14px;padding:14px 18px;margin:16px 0;line-height:1.6;color:#5b1a14;}
+.okbox{background:#e8f5ec;border:1px solid #9bc9a8;border-radius:14px;padding:14px 18px;margin:16px 0;line-height:1.6;}
+.in{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+.in input{flex:1;min-width:240px;font:inherit;font-size:15px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-family:"Courier New",monospace;}
+.out{margin-top:10px;font-size:14.5px;line-height:1.6;}
+.out table{border-collapse:collapse;width:100%;margin-top:6px;}
+.out td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top;word-break:break-all;}
+.out td:first-child{font-weight:800;white-space:nowrap;word-break:normal;width:9em;}
+.no{color:#b42318;font-weight:700;}
+.big{font-size:30px;font-weight:800;color:var(--ink);}
+.cls{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;}
+.cls td,.cls th{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;}
+.cls code{font-size:12.5px;word-break:break-all;}
+.cls button{font:700 12px inherit;font-family:inherit;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:5px 9px;cursor:pointer;}
+.fct{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:10px;}
+.fct .card{margin:0;padding:16px 18px;}
+.fct h4{margin:0 0 6px;font-size:16px;}
+.fct p{margin:4px 0;font-size:14px;line-height:1.55;}
+.q3 li{margin:6px 0;}
+</style>
+</head>
+<body data-course="mfb545">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">FINTECH · ATELIER</span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">← Page du cours</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="hero">
+  <div class="eyebrow">MFB 545 · journée 6 · atelier · à faire soi-même</div>
+  <h1>Un vrai portefeuille, des jetons de test, <em>une vraie transaction</em></h1>
+  <p class="sub">Le 30 octobre, la blockchain de la classe tournait dans vos navigateurs. Aujourd’hui vous ouvrez un portefeuille sur un réseau public utilisé dans le monde entier, vous recevez des jetons d’un « robinet », vous payez un camarade, et vous retrouvez votre paiement dans le registre public. Vous verrez de vos yeux ce que la journée 4 expliquait : la clé privée, l’adresse, les frais (le « gas ») et la transparence du registre.</p>
+</div>
+
+<div class="warnbox">
+  <b>La règle de l’atelier.</b> On travaille sur <b>Sepolia</b>, le réseau de test d’Ethereum : mêmes logiciels, mêmes règles, mais ses ETH n’ont <b>aucune valeur</b> et ne s’achètent pas. Ce portefeuille est un portefeuille d’exercice : n’y mettez jamais d’argent réel. Toute personne qui vous demande votre phrase secrète de 12 mots — un « support », un site, un camarade — veut vider le portefeuille. Personne n’en a besoin pour vous aider.
+</div>
+
+<div class="card">
+  <div class="eyebrow">Étape A · le portefeuille</div>
+  <h2 style="margin-top:4px">Créez le portefeuille et passez sur Sepolia</h2>
+  <p>Un <b>portefeuille</b> (wallet) est un programme qui garde votre clé privée et signe vos paiements. MetaMask est le plus répandu. Vous pouvez l’installer sur l’ordinateur ou sur le téléphone : si l’ordinateur est lent, prenez le téléphone.</p>
+  <ol class="st">
+    <li><b>Installez MetaMask</b> depuis <a href="https://metamask.io/download/" target="_blank" rel="noopener">metamask.io/download ↗</a> uniquement. Sur ordinateur, c’est une extension du navigateur Chrome, Edge, Brave ou Firefox. Sur téléphone, c’est l’application MetaMask de l’App Store ou de Google Play. De faux MetaMask circulent dans les boutiques : vérifiez que l’éditeur est bien MetaMask (Consensys).</li>
+    <li><b>Créez un nouveau portefeuille.</b> Choisissez un mot de passe : il protège seulement cet appareil. Puis MetaMask affiche la <b>phrase secrète de 12 mots</b>. Écrivez les 12 mots à la main, sur papier, dans l’ordre. Ces 12 mots <em>sont</em> votre clé privée : avec eux, n’importe qui peut recréer votre portefeuille sur n’importe quel appareil. MetaMask vous demande ensuite de retrouver quelques mots pour vérifier que vous les avez notés.</li>
+    <li><b>Affichez les réseaux de test et choisissez Sepolia.</b> Ouvrez le sélecteur de réseau (en haut de MetaMask), activez « Afficher les réseaux de test » (Show test networks), puis choisissez <b>Sepolia</b>. Si votre version n’a pas ce bouton à cet endroit : Paramètres → Avancé → « Afficher les réseaux de test ».</li>
+    <li><b>Copiez votre adresse</b> avec le bouton « copier » sous le nom du compte. Elle commence par <code>0x</code> et compte 42 caractères. Une adresse se partage sans risque, comme un numéro de compte bancaire : c’est la clé privée qui ne se partage jamais.</li>
+  </ol>
+  <div class="lab">
+    <div class="lab-title">Mon adresse Sepolia · la page lit le solde directement sur la blockchain</div>
+    <div class="in"><input id="addr" placeholder="0x… (collez votre adresse)" autocomplete="off" spellcheck="false"><button class="btn small" id="addrGo">Lire mon solde</button></div>
+    <div class="out" id="addrOut"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Étape B · le robinet</div>
+  <h2 style="margin-top:4px">Recevez des ETH de test d’un robinet</h2>
+  <p>Un <b>robinet</b> (faucet) est un site qui donne gratuitement une petite quantité de jetons de test, pour que les développeurs puissent essayer. Il en limite la quantité, sinon une seule personne viderait le robinet. Collez votre adresse dans l’un des robinets ci-dessous, puis revenez ici et appuyez sur « Lire mon solde » : les jetons arrivent en général en moins d’une minute.</p>
+  <div class="fct">
+    <div class="card"><h4>1 · Google Cloud, robinet Web3</h4><p>Le plus simple si vous avez un compte Google (Gmail). Une petite quantité par jour et par compte.</p><p><a class="btn small" href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener">Ouvrir le robinet Google ↗</a></p></div>
+    <div class="card"><h4>2 · Robinet « par calcul » (pk910)</h4><p>Sans compte. Votre navigateur fait du calcul pendant quelques minutes (une forme de preuve de travail, comme le minage du 30 octobre), puis le site vous paie selon le travail fait. Laissez l’onglet ouvert.</p><p><a class="btn small" href="https://sepolia-faucet.pk910.de/" target="_blank" rel="noopener">Ouvrir le robinet pk910 ↗</a></p></div>
+    <div class="card"><h4>3 · Si aucun robinet ne marche</h4><p>D’autres robinets (Alchemy, Chainlink) demandent un compte ou un solde sur le vrai réseau Ethereum. Ne payez rien pour des jetons de test. Inscrivez-vous plutôt dans la liste de la classe (étape C) : l’enseignant ou un camarade qui a reçu des jetons vous en envoie.</p></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Étape C · la classe</div>
+  <h2 style="margin-top:4px">Inscrivez votre adresse dans la liste de la classe, et payez un camarade</h2>
+  <p>La liste montre le prénom et l’adresse de chacun, et le solde lu en direct sur la blockchain. Elle sert à savoir à qui envoyer des jetons. Vous devez être connecté·e au site du cours (bouton en bas à droite) pour y apparaître.</p>
+  <div class="in"><button class="btn small" id="joinBtn">Mettre mon adresse dans la liste</button><button class="btn small ghost" id="clsRefresh">Actualiser la liste</button></div>
+  <div class="out" id="joinOut"></div>
+  <div id="cls"><p>Chargement de la liste…</p></div>
+  <ol class="st" style="margin-top:14px">
+    <li><b>Choisissez un·e camarade</b> dans la liste et appuyez sur « Copier » à côté de son adresse.</li>
+    <li>Dans MetaMask, appuyez sur <b>Envoyer</b> (Send), collez l’adresse, tapez le montant <b>0,001</b>, puis <b>Suivant</b>.</li>
+    <li>Avant de confirmer, lisez l’écran : le montant, et les <b>frais de réseau estimés</b> (le gas). Les frais ne vont pas au destinataire : ils paient le validateur qui met votre transaction dans un bloc. Puis <b>Confirmer</b>.</li>
+    <li>Appuyez sur « Actualiser la liste » : quelques secondes plus tard, le solde de votre camarade a augmenté de 0,001 et le vôtre a baissé de 0,001 plus les frais.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Étape D · le registre public</div>
+  <h2 style="margin-top:4px">Retrouvez votre transaction dans le registre</h2>
+  <p>Dans MetaMask, onglet <b>Activité</b>, appuyez sur votre transaction, puis sur « Voir sur l’explorateur de blocs ». Copiez son <b>hash</b> : c’est l’identifiant de la transaction, <code>0x</code> suivi de 64 caractères. Collez-le ici : la page lit la transaction directement auprès d’un nœud public, sans passer par MetaMask.</p>
+  <div class="lab">
+    <div class="lab-title">Lire une transaction sur Sepolia</div>
+    <div class="in"><input id="txIn" placeholder="0x… (le hash, 66 caractères)" autocomplete="off" spellcheck="false"><button class="btn small" id="txGo">Lire sur la blockchain</button><button class="btn small ghost" id="txAny">Prendre une transaction récente</button></div>
+    <div class="out" id="txOut"></div>
+    <p style="font-size:13px;margin-top:8px">Pas encore d’ETH de test ? « Prendre une transaction récente » lit la transaction de n’importe qui dans le dernier bloc. Tout le registre est public : c’est justement ce qu’il faut voir.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Mise en commun</div>
+  <h2 style="margin-top:4px">Trois questions pour la classe</h2>
+  <ol class="q3">
+    <li>Combien de secondes entre « Confirmer » et le moment où la transaction est dans un bloc ? Comparez avec un virement bancaire international.</li>
+    <li>Qui a fixé les frais, et qui les a reçus ? Pourquoi un simple transfert consomme-t-il toujours <b>21 000 unités de gas</b> ?</li>
+    <li>Si vous perdez la feuille avec les 12 mots et votre téléphone, qui peut vous rendre l’argent ? Qu’est-ce que cela veut dire pour votre application d’épargne-retraite : qui garde les clés de vos clients ?</li>
+  </ol>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var RPC='https://ethereum-sepolia-rpc.publicnode.com';
+  var DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/mfb545/_chain/g90000/nodes';
+  var KEY='mfb545_w6_addr';
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function rpc(m,p){return fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:m,params:p})}).then(function(r){return r.json();}).then(function(j){if(j.error)throw new Error(j.error.message);return j.result;});}
+  function big(h){return h?parseInt(h,16):0;}
+  /* wei (hex) → "0,0123" ETH, exact (BigInt), French decimal comma */
+  function eth(h,dp){var w=BigInt(h||'0x0'),s=w.toString().padStart(19,'0'),i=s.slice(0,-18).replace(/^0+(?=\d)/,''),f=s.slice(-18);if(dp!=null)f=f.slice(0,dp);f=f.replace(/0+$/,'');return i+(f?','+f:'');}
+  function fmt(n){return Number(n).toLocaleString('fr-CH');}
+  function okAddr(a){return /^0x[0-9a-fA-F]{40}$/.test(a);}
+  function me(){try{var a=JSON.parse(localStorage.getItem('mfb545_auth')||'null');return (a&&a.sid&&a.sid.charAt(0)!=='_')?a:null;}catch(e){return null;}}
+
+  /* ---- A · my balance ---- */
+  var inp=$('addr');try{inp.value=localStorage.getItem(KEY)||'';}catch(e){}
+  function bal(){
+    var a=inp.value.trim(),o=$('addrOut');
+    if(!okAddr(a)){o.innerHTML='<p class="no">Une adresse commence par 0x et compte 40 caractères après (42 en tout). Utilisez le bouton « copier » de MetaMask.</p>';return;}
+    try{localStorage.setItem(KEY,a);}catch(e){}
+    o.innerHTML='Lecture sur la blockchain…';
+    Promise.all([rpc('eth_getBalance',[a,'latest']),rpc('eth_getTransactionCount',[a,'latest'])]).then(function(r){
+      var zero=BigInt(r[0])===0n;
+      o.innerHTML='<div class="big">'+eth(r[0],6)+' ETH de test</div>'+
+        '<p>'+(zero?'Le solde est zéro : passez à l’étape B, le robinet.':'Les jetons sont arrivés. Ils sont inscrits dans le registre, pas dans MetaMask : MetaMask ne fait que lire le registre, comme cette page.')+
+        ' Transactions envoyées depuis cette adresse : <b>'+big(r[1])+'</b>. · <a href="https://sepolia.etherscan.io/address/'+esc(a)+'" target="_blank" rel="noopener">Voir l’adresse sur Etherscan ↗</a></p>';
+    }).catch(function(e){o.innerHTML='<p class="no">Le nœud public n’a pas répondu ('+esc(e.message||'réseau')+'). Ouvrez <a href="https://sepolia.etherscan.io/address/'+esc(a)+'" target="_blank" rel="noopener">votre adresse sur Etherscan ↗</a>.</p>';});
+  }
+  $('addrGo').onclick=bal;inp.addEventListener('keydown',function(e){if(e.key==='Enter')bal();});
+  if(okAddr(inp.value.trim()))bal();
+
+  /* ---- C · the class list ---- */
+  function loadCls(){
+    fetch(DB+'.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
+      var rows=Object.keys(o||{}).map(function(k){var x=o[k];return {sid:k,n:x.n,a:x.pk,ts:x.ts};}).filter(function(x){return okAddr(x.a||'');}).sort(function(a,b){return a.ts-b.ts;});
+      if(!rows.length){$('cls').innerHTML='<p>Personne n’est encore inscrit. Soyez le premier ou la première.</p>';return;}
+      $('cls').innerHTML='<table class="cls"><tr><th>Prénom</th><th>Adresse</th><th>Solde</th><th></th></tr>'+rows.map(function(x,i){return '<tr><td><b>'+esc(x.n)+'</b></td><td><code>'+esc(x.a)+'</code></td><td id="cb'+i+'">…</td><td><button data-a="'+esc(x.a)+'">Copier</button></td></tr>';}).join('')+'</table>';
+      Array.prototype.forEach.call($('cls').querySelectorAll('button[data-a]'),function(b){b.onclick=function(){var a=b.dataset.a;(navigator.clipboard?navigator.clipboard.writeText(a):Promise.reject()).then(function(){b.textContent='Copiée ✓';},function(){prompt('Copiez l’adresse :',a);});};});
+      rows.forEach(function(x,i){rpc('eth_getBalance',[x.a,'latest']).then(function(w){var c=$('cb'+i);if(c)c.textContent=eth(w,4)+' ETH';}).catch(function(){var c=$('cb'+i);if(c)c.textContent='—';});});
+    }).catch(function(){$('cls').innerHTML='<p class="no">La liste n’a pas pu être lue. Vérifiez la connexion.</p>';});
+  }
+  $('clsRefresh').onclick=loadCls;loadCls();
+  $('joinBtn').onclick=function(){
+    var a=inp.value.trim(),u=me(),o=$('joinOut');
+    if(!okAddr(a)){o.innerHTML='<p class="no">Collez d’abord votre adresse à l’étape A.</p>';inp.focus();return;}
+    if(!u){o.innerHTML='<p class="no">Connectez-vous d’abord au site du cours (bouton en bas à droite), puis appuyez de nouveau.</p>';return;}
+    var first=String(u.name||u.sid).split(/\s+/)[0].slice(0,60);
+    fetch(DB+'/'+encodeURIComponent(u.sid.slice(0,40))+'.json',{method:'PUT',body:JSON.stringify({n:first,addr:'sepolia',pk:a,ts:Date.now()})}).then(function(r){
+      o.innerHTML=r.ok?'<p>Votre adresse est dans la liste, sous le prénom <b>'+esc(first)+'</b>.</p>':'<p class="no">La liste a refusé l’inscription (code '+r.status+'). Donnez votre adresse à l’enseignant par la messagerie.</p>';
+      if(r.ok)loadCls();
+    }).catch(function(){o.innerHTML='<p class="no">Pas de connexion. Réessayez.</p>';});
+  };
+
+  /* ---- D · read a transaction (the J4 reader, 27 Oct 2026) ---- */
+  var out=$('txOut'),ti=$('txIn');
+  function read(hash){
+    hash=String(hash||'').trim();
+    if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){out.innerHTML='<p class="no">Un hash commence par 0x et compte 64 caractères après.</p>';return;}
+    out.innerHTML='Lecture sur la blockchain…';
+    Promise.all([rpc('eth_getTransactionByHash',[hash]),rpc('eth_getTransactionReceipt',[hash])]).then(function(r){
+      var tx=r[0],rc=r[1];
+      if(!tx){out.innerHTML='<p class="no">Aucune transaction avec ce hash sur Sepolia. Vérifiez qu’il est complet, et que MetaMask était bien sur Sepolia.</p>';return;}
+      if(!rc){out.innerHTML='<p>Transaction trouvée, <b>pas encore dans un bloc</b> : elle attend dans la file publique. Réessayez dans 15 secondes.</p>';return;}
+      return rpc('eth_getBlockByNumber',[rc.blockNumber,false]).then(function(b){
+        var gas=big(rc.gasUsed),gp=BigInt(rc.effectiveGasPrice||tx.gasPrice||'0x0'),fee='0x'+(BigInt(rc.gasUsed)*gp).toString(16);
+        var when=new Date(big(b.timestamp)*1000).toLocaleString('fr-CH'),gwei=Number(gp)/1e9;
+        out.innerHTML='<table>'+
+          '<tr><td>Statut</td><td>'+(rc.status==='0x1'?'<b>réussie</b>':'<b>échouée</b> (les frais sont payés quand même)')+'</td></tr>'+
+          '<tr><td>Bloc</td><td>n° '+fmt(big(rc.blockNumber))+' · '+esc(when)+'</td></tr>'+
+          '<tr><td>De</td><td><code>'+esc(tx.from)+'</code></td></tr>'+
+          '<tr><td>À</td><td><code>'+esc(tx.to||'(création de contrat)')+'</code></td></tr>'+
+          '<tr><td>Montant</td><td>'+eth(tx.value)+' ETH</td></tr>'+
+          '<tr><td>Gas consommé</td><td>'+fmt(gas)+(tx.input==='0x'&&gas===21000?' unités : un simple transfert, toujours 21 000':' unités : un appel de contrat, qui demande plus de calcul')+'</td></tr>'+
+          '<tr><td>Prix du gas</td><td>'+(gwei<0.001?fmt(Number(gp))+' wei':gwei.toLocaleString('fr-CH',{maximumFractionDigits:3})+' gwei')+' par unité (1 gwei = 0,000000001 ETH)</td></tr>'+
+          '<tr><td>Frais payés</td><td>'+eth(fee)+' ETH de test</td></tr>'+
+          '<tr><td>Hash</td><td><code>'+esc(hash)+'</code> · <a href="https://sepolia.etherscan.io/tx/'+esc(hash)+'" target="_blank" rel="noopener">Etherscan ↗</a></td></tr></table>'+
+          '<p>Tout ce tableau est public : n’importe qui dans le monde peut le lire. Ce que personne ne voit, c’est votre nom : seulement les adresses.</p>';
+      });
+    }).catch(function(e){out.innerHTML='<p class="no">Le nœud public n’a pas répondu ('+esc(e.message||'réseau')+'). Ouvrez <a href="https://sepolia.etherscan.io/tx/'+esc(hash)+'" target="_blank" rel="noopener">la transaction sur Etherscan ↗</a>.</p>';});
+  }
+  $('txGo').onclick=function(){read(ti.value);};
+  ti.addEventListener('keydown',function(e){if(e.key==='Enter')read(ti.value);});
+  $('txAny').onclick=function(){
+    out.innerHTML='Lecture du dernier bloc…';
+    rpc('eth_getBlockByNumber',['latest',true]).then(function(b){
+      var t=(b.transactions||[]).filter(function(x){return x.input==='0x'&&x.value!=='0x0';})[0]||(b.transactions||[])[0];
+      if(!t){out.innerHTML='<p>Bloc vide. Réessayez dans 12 secondes.</p>';return;}
+      ti.value=t.hash;read(t.hash);
+    }).catch(function(){out.innerHTML='<p class="no">Le nœud public n’a pas répondu. Ouvrez <a href="https://sepolia.etherscan.io/txs" target="_blank" rel="noopener">sepolia.etherscan.io ↗</a>.</p>';});
+  };
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script>if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
