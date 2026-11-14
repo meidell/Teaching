@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Student</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The student's own dashboard (14 Nov 2026). The question it answers: am I on track, what is due,
+     and what do I owe? Read by the student, so every line speaks to them ("you") and ends on a next step.
+     Everything is read from data.js (fictitious, one seeded school); ?id=<student id> picks the student. -->
+<style>
+  .pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .pick select{max-width:100%;}
+  .quick{display:flex;gap:6px;flex-wrap:wrap;}
+  .quick a{font-size:12.5px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;color:var(--ink2);}
+  .quick a:hover{background:var(--raised);color:var(--ink);}
+  .quick a.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+  .who{color:var(--ink2);font-size:14px;margin-top:4px;}
+  /* a meter with the rule drawn as a tick */
+  .rm{position:relative;height:8px;border-radius:4px;background:var(--grid);min-width:80px;margin-top:6px;}
+  .rm i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;}
+  .rm b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);}
+  .attc{min-width:130px;}
+  .attc .row{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+  .calm{display:flex;gap:12px;align-items:flex-start;padding:4px 0;}
+  .calm .big{font-size:18px;font-weight:650;}
+  .days{list-style:none;margin:0;padding:0;}
+  .nw{white-space:nowrap;}
+  .days li{display:grid;grid-template-columns:118px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--grid);}
+  .days li:last-child{border-bottom:none;}
+  .days .dn{font-weight:650;font-size:13px;}
+  .days .dn small{display:block;color:var(--muted);font-weight:500;}
+  .days .ses{font-size:13px;}
+  .days .ses + .ses{margin-top:4px;}
+  .days .free{color:var(--muted);font-size:13px;}
+  .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;font-size:13px;margin-top:12px;}
+  .kv dt{color:var(--ink2);} .kv dd{margin:0;text-align:right;font-weight:650;font-variant-numeric:tabular-nums;}
+  .ex li{grid-template-columns:auto 1fr;}
+  @media(max-width:640px){.acts li{grid-template-columns:1fr;gap:4px;} .acts .go{justify-self:start;} .days li{grid-template-columns:84px 1fr;} #crsT{min-width:720px;} #dueT{min-width:440px;}}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1 id="hello">Hello</h1><div class="who" id="who"></div></div>
+    <div class="filters">
+      <label for="stSel">Show the page of</label>
+      <div class="pick"><select id="stSel"></select></div>
+      <div class="quick" id="quick"></div>
+    </div>
+  </div>
+
+  <div class="g c4" id="tiles"></div>
+
+  <div class="g c21">
+    <div class="card"><div class="ch"><h2>What to do now</h2><span class="note">most important first</span></div><ul class="acts" id="todo"></ul></div>
+    <div class="card"><div class="ch"><h2>Due in the next 14 days</h2><span class="note">up to Sat 28 Nov</span></div><div class="tw"><table class="t" id="dueT"></table></div></div>
+  </div>
+
+  <div class="section-t">Your courses this term</div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Your courses</h2><span class="note">the tick on each meter is the 80 % attendance rule</span></div><div class="tw"><table class="t" id="crsT"></table></div></div>
+
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Your grade in each course</h2><span class="note">grades 1–6 · bar = you · tick = class mean</span></div>
+      <p class="lead" id="gradeLead"></p><div id="grades"></div></div>
+    <div class="card"><div class="ch"><h2>Your attendance in each course</h2><span class="note">% of sessions held · tick = the 80 % rule</span></div>
+      <p class="lead">The tick marks 80 %. A bar that ends left of the tick means you have attended fewer than 80 % of the sessions held so far, and you may not sit that exam until the student office has seen your case.</p><div id="atts"></div></div>
+  </div>
+
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>This week · Mon 16 – Sat 21 Nov</h2><span class="note">week 12 of 14</span></div><ul class="days" id="week"></ul></div>
+    <div class="card"><div class="ch"><h2>Exams</h2><span class="note">autumn 2026 exam session</span></div><ul class="acts ex" id="exams"></ul></div>
+  </div>
+
+  <div class="section-t">Money</div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Your tuition this academic year</h2><span class="note">CHF · demo figures, not a real invoice</span></div>
+    <p class="lead" id="feeLead"></p><div id="fees"></div><dl class="kv" id="feeKv"></dl></div>
+
+  <p class="foot">All names and figures are invented, generated for the design of these dashboards. Dates of payments and instalments on this page are assumptions for the demo. As of Saturday 14 November 2026, week 11 of the 14-week autumn term.</p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, chf, num, tile, st, esc } = Dash;
+  Dash.shell('student');
+  const A = S.util.active, U = S.util, g1 = v => v == null ? '—' : v.toFixed(1);
+
+  /* ---- who: ?id=, else a well-performing BBA student ---- */
+  const onTrack = A.find(s => s.prog === 'bba' && s.risk === 'none' && !s.overdue && s.missing === 0 && s.avgGrade >= 5 && s.attendance >= 88) || A.find(s => s.risk === 'none');
+  const atRisk = A.find(s => s.risk === 'high');
+  const emba = A.find(s => s.prog === 'emba' && s.risk === 'none') || A.find(s => s.prog === 'emba');
+  const qid = new URLSearchParams(location.search).get('id');
+  const me = A.find(s => s.id === qid) || onTrack;
+
+  /* ---- picker: active students grouped by programme ---- */
+  const sel = document.getElementById('stSel');
+  sel.innerHTML = S.programs.map(p => `<optgroup label="${esc(p.name)}">` + A.filter(s => s.prog === p.id).slice().sort((a, b) => a.name.localeCompare(b.name))
+    .map(s => `<option value="${s.id}"${s.id === me.id ? ' selected' : ''}>${esc(s.name)} · ${esc(p.short)} · year ${s.year}</option>`).join('') + '</optgroup>').join('');
+  sel.onchange = () => { location.search = '?id=' + sel.value; };
+  document.getElementById('quick').innerHTML = [[onTrack, 'A student on track'], [atRisk, 'A student at risk'], [emba, 'An EMBA participant']]
+    .filter(x => x[0]).map(([s, l]) => `<a href="?id=${s.id}" class="${s.id === me.id ? 'on' : ''}">${esc(l)}</a>`).join('');
+
+  /* ---- my data ---- */
+  const P = S.P[me.prog], first = me.name.split(' ')[0], adv = U.prof(me.advisor);
+  const cohortName = c => new Date(c + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  document.getElementById('hello').textContent = 'Hello ' + first;
+  document.getElementById('who').innerHTML = `${esc(P.name)} · ${esc(cohortName(me.cohort))} intake · year ${me.year} · your advisor is <a href="professor.html?id=${adv.id}">${esc(adv.name)}</a>`;
+  document.title = `${me.name} · Student · ${S.school.name}`;
+
+  /* a course's sessions over the whole term: EMBA meets every other week, the DBA every fourth week */
+  const termSessions = x => x.prog === 'emba' ? 7 : x.prog === 'dba' ? 4 : x.sessions;
+  const meetsWeek = (x, w) => x.prog === 'emba' ? w % 2 === 1 : x.prog === 'dba' ? w % 4 === 1 : true;
+  const myAsg = S.assignments.filter(a => me.sections.includes(a.sec));
+  const courses = me.sections.map((sid, i) => { const x = U.sec(sid), r = U.rec(me.id, sid);
+    const next = myAsg.filter(a => a.sec === sid && !a.past).sort((a, b) => a.due.localeCompare(b.due))[0];
+    const last = myAsg.find(a => a.sec === sid && a.past);
+    const left = termSessions(x) - x.held, best = Math.round((r.att * x.held + 100 * Math.max(0, left)) / Math.max(1, termSessions(x)));
+    return { x, r, color: `var(--s${(i % 8) + 1})`, prof: U.prof(x.prof), next, last, left, best, miss: r.subsTotal - r.subsDone }; });
+  const subsDone = courses.reduce((a, c) => a + c.r.subsDone, 0), subsTotal = courses.reduce((a, c) => a + c.r.subsTotal, 0);
+  const low = courses.filter(c => c.r.att < 80), weak = courses.filter(c => c.r.grade < 4), missing = courses.filter(c => c.miss > 0);
+  const outstanding = Math.max(0, me.invoiced - me.paid), notYetDue = Math.max(0, outstanding - me.overdue);
+  const blockedFees = me.overdueDays > 60, blocked = low.length > 0 || blockedFees;
+  const next14 = myAsg.filter(a => !a.past && Dash.daysUntil(a.due) >= 0 && Dash.daysUntil(a.due) <= 14).sort((a, b) => a.due.localeCompare(b.due));
+  const nextDue = myAsg.filter(a => !a.past).sort((a, b) => a.due.localeCompare(b.due))[0];
+  const daysWord = n => n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
+
+  /* ---- tiles ---- */
+  document.getElementById('tiles').innerHTML = [
+    tile({ lab: 'Credits earned before this term', val: num(me.ectsEarned), unit: `of ${me.ectsReq} ECTS`, spark: 'bCred', note: `You are taking ${me.ectsThisTerm} ECTS this term. You need ${me.ectsReq} ECTS to graduate.` }),
+    tile({ lab: 'Your average grade', val: g1(me.avgGrade), unit: 'of 6', spark: 'bGrade', delta: me.avgGrade >= 4 ? `${st('good', 'Above the pass mark')} The pass mark is 4.0.` : `${st('serious', 'Under the pass mark')} The pass mark is 4.0.` }),
+    tile({ lab: 'Your attendance', val: num(me.attendance), unit: '%', spark: 'bAtt', delta: low.length ? `${st('serious', low.length + (low.length > 1 ? ' courses' : ' course') + ' under 80 %')} The rule is 80 % in each course.` : `${st('good', 'Every course at 80 % or more')}` }),
+    tile({ lab: 'Assignments handed in', val: `${subsDone}`, unit: `of ${subsTotal}`, spark: 'bSub', delta: subsDone === subsTotal ? st('good', 'Nothing missing') : st(subsTotal - subsDone >= 4 ? 'serious' : 'warn', `${subsTotal - subsDone} missing`) }),
+  ].join('');
+  Charts.bullet(document.getElementById('bCred'), { value: me.ectsEarned, max: me.ectsReq, target: Math.min(me.ectsReq, me.ectsEarned + me.ectsThisTerm), color: 'var(--s1)', label: 'Credits', valueName: 'Earned', targetName: 'After this term, if you pass every course', fmt: v => v + ' ECTS' });
+  Charts.bullet(document.getElementById('bGrade'), { value: me.avgGrade, max: 6, target: 4, color: me.avgGrade >= 4 ? 'var(--s1)' : 'var(--serious)', label: 'Average grade', valueName: 'You', targetName: 'Pass mark', fmt: g1 });
+  Charts.bullet(document.getElementById('bAtt'), { value: me.attendance, max: 100, target: 80, color: me.attendance >= 80 ? 'var(--s1)' : 'var(--serious)', label: 'Attendance', valueName: 'You', targetName: 'The rule', fmt: v => v + ' %' });
+  Charts.bullet(document.getElementById('bSub'), { value: subsDone, max: subsTotal, color: 'var(--s1)', label: 'Assignments', valueName: 'Handed in', fmt: v => String(v) });
+
+  /* ---- what to do now ---- */
+  const todo = [];
+  low.forEach(c => todo.push({ k: 'serious', w: 'Attend', t: `You attended ${c.r.att} % of ${c.x.title}. The rule is 80 %: below it you may not sit the exam.`,
+    d: c.left > 0 ? `${c.left} ${c.left > 1 ? 'sessions remain' : 'session remains'} this term. If you attend ${c.left > 1 ? 'all of them' : 'it'}, you finish at ${c.best} %. ${c.best < 80 ? 'That is still under 80 %, so write to the student office this week to explain your absences.' : 'Write to ' + c.prof.name + ' if an absence had a reason you can document.'}` : 'Write to the student office this week to explain your absences.',
+    go: `professor.html?id=${c.prof.id}`, gl: c.prof.name }));
+  if (missing.length) { const n = missing.reduce((a, c) => a + c.miss, 0);
+    todo.push({ k: n >= 4 ? 'serious' : 'warn', w: 'Hand in', t: `You have ${n} ${n > 1 ? 'assignments' : 'assignment'} missing: ${missing.map(c => `${c.miss} in ${c.x.title}`).join(', ')}.`,
+      d: missing.filter(c => c.last).map(c => `“${c.last.title}” in ${c.x.title} was due on ${Dash.date(c.last.due)}.`).join(' ') + ' Upload what you have on each course page, and ask the professor whether a late submission is still accepted.',
+      go: '#dueT', gl: 'The list' }); }
+  if (weak.length) todo.push({ k: 'warn', w: 'Ask for help', t: `Your grade so far is under the pass mark of 4.0 in ${weak.map(c => `${c.x.title} (${g1(c.r.grade)})`).join(', ')}.`,
+    d: `Book an office hour with ${weak.map(c => c.prof.name).filter((v, i, a) => a.indexOf(v) === i).join(' and ')} before the exam session starts on ${Dash.date(S.registrar.examSessionStart)}, and bring the assignments you found hardest.`, go: `professor.html?id=${weak[0].prof.id}`, gl: weak.length > 1 ? 'Your professors' : weak[0].prof.name });
+  if (me.overdue) todo.push({ k: me.overdueDays > 30 ? 'serious' : 'warn', w: 'Pay', t: `${chf(me.overdue)} of your tuition is overdue by ${me.overdueDays} days.`,
+    d: `Pay by bank transfer with the reference printed on your invoice. If you cannot pay the whole amount now, write to the finance office to agree a payment plan.${me.overdueDays > 60 ? ' Fees overdue more than 60 days block exam registration.' : ''}`, go: '#fees', gl: 'Your tuition' });
+  if (me.visa === 'renewal pending') todo.push({ k: 'warn', w: 'Permit', t: 'The renewal of your residence permit is still pending.',
+    d: 'Ask the student office for an enrolment certificate and bring it to the cantonal population office (OCPM) with your passport.', go: '#exams', gl: 'Student office' });
+  if (me.lastLoginDays >= 14) todo.push({ k: 'warn', w: 'Catch up', t: `Your last visit to the course pages was ${me.lastLoginDays} days ago.`, d: 'Open each course page and read the announcements you missed.', go: '#crsT', gl: 'Your courses' });
+  const todoEl = document.getElementById('todo');
+  const regLine = { k: 'none', w: 'Register', t: `Register for your exams between ${Dash.date(S.registrar.examRegistrationOpen)} and ${Dash.date(S.registrar.examRegistrationClose)}.`, d: blocked ? 'You may be blocked from registering for now; the Exams box below says why.' : 'Registration opens on Monday. You can register for every course you are taking this term.', go: '#exams', gl: 'Exams' };
+  if (!todo.length) {
+    todoEl.innerHTML = `<li style="grid-template-columns:1fr"><div class="calm"><div>${st('good', 'On track')}<div class="big" style="margin-top:4px">You are on track. Nothing needs your attention today.</div>
+      <div class="d" style="margin-top:4px">${nextDue ? `Your next deadline is “${esc(nextDue.title)}” in ${esc(U.sec(nextDue.sec).title)}, due ${esc(Dash.dateLong(nextDue.due))} (${daysWord(Dash.daysUntil(nextDue.due))}).` : 'You have no assignment due this term.'}</div></div></div></li>` + row(regLine);
+  } else todoEl.innerHTML = todo.map(row).join('') + row(regLine);
+  function row(a) { return `<li>${st(a.k, a.w)}<div><div class="w">${esc(a.t)}</div><div class="d">${esc(a.d)}</div></div><a class="go" href="${a.go}">${esc(a.gl)} →</a></li>`; }
+
+  /* ---- due in the next 14 days ---- */
+  const cOf = sid => courses.find(c => c.x.id === sid);
+  const dueRows = next14.map(a => { const c = cOf(a.sec), n = Dash.daysUntil(a.due);
+    return `<tr><td class="nw">${esc(Dash.date(a.due))}</td><td><b>${esc(a.title)}</b><div class="why"><i class="key" style="background:${c.color}"></i>${esc(c.x.code)} · ${esc(c.x.title)}</div></td><td class="n">${a.weight} %</td><td class="n">${n <= 3 ? st('warn', daysWord(n)) : esc(daysWord(n))}</td></tr>`; });
+  const lateRows = missing.map(c => `<tr><td class="nw">${c.last ? esc(Dash.date(c.last.due)) : '—'}</td><td>${st('serious', c.miss + ' missing')}${c.last ? ' · the latest was “' + esc(c.last.title) + '”' : ''}<div class="why"><i class="key" style="background:${c.color}"></i>${esc(c.x.code)} · ${esc(c.x.title)}</div></td><td class="n">—</td><td class="n nw">past due</td></tr>`);
+  document.getElementById('dueT').innerHTML = `<tr><th>Due</th><th>What, and in which course</th><th class="n">Weight</th><th class="n">Time left</th></tr>` +
+    (dueRows.concat(lateRows).join('') || `<tr><td colspan="4" class="empty">Nothing is due in the next 14 days. Your next deadline is ${nextDue ? esc(Dash.dateLong(nextDue.due)) : 'not set yet'}.</td></tr>`);
+
+  /* ---- my courses ---- */
+  document.getElementById('crsT').innerHTML = `<tr><th>Course</th><th>Professor</th><th>Attendance</th><th class="n">Grade so far</th><th class="n">Handed in</th><th>Next deadline</th></tr>` + courses.map(c => {
+    const ok = c.r.att >= 80;
+    return `<tr><td><i class="key" style="background:${c.color}"></i><b>${esc(c.x.code)}</b> · ${esc(c.x.title)}<div class="why">${c.x.ects} ECTS · ${esc(c.x.day)} ${esc(U.time(c.x.start))}, room ${esc(c.x.room)}</div></td>
+      <td><a href="professor.html?id=${c.prof.id}">${esc(c.prof.name)}</a></td>
+      <td class="attc"><div class="row"><b>${c.r.att} %</b>${ok ? st('good', 'above 80 %') : st('serious', 'under 80 %')}</div><div class="rm" title="Your attendance ${c.r.att} %; the rule is 80 %"><i style="width:${c.r.att}%;background:${c.color}"></i><b style="left:80%"></b></div></td>
+      <td class="n"><b>${g1(c.r.grade)}</b><div class="why">${c.r.grade >= 4 ? 'pass mark 4.0' : st('warn', 'under 4.0')}</div>${c.r.ungraded ? '<div class="why">1 submission not graded yet</div>' : ''}</td>
+      <td class="n">${c.r.subsDone} / ${c.r.subsTotal}${c.miss ? `<div class="why">${st('warn', c.miss + ' missing')}</div>` : ''}</td>
+      <td>${c.next ? `${esc(Dash.date(c.next.due))} · ${esc(c.next.title)}<div class="why">${c.next.weight} % of the grade · ${esc(daysWord(Dash.daysUntil(c.next.due)))}</div>` : '<span class="why">No deadline left</span>'}</td></tr>`; }).join('');
+
+  /* ---- grades and attendance by course ---- */
+  const lab = c => c.x.code;
+  document.getElementById('gradeLead').textContent = `Grades go from 1 to 6, and 4.0 is the pass mark in every course. The tick is the mean of everyone in the course. ${weak.length ? `You are under 4.0 in ${weak.map(c => c.x.title).join(' and ')}.` : 'You are above 4.0 in every course.'}`;
+  Charts.bars(document.getElementById('grades'), { items: courses.map(c => ({ label: lab(c), value: c.r.grade, cmp: c.x.avgGrade, color: c.color, text: g1(c.r.grade), extra: [['Course', c.x.title], ['Pass mark', '4.0']] })),
+    max: 6, fmt: g1, valueName: 'Your grade', cmpName: 'Class mean', rowH: 32, labelWidth: 84 });
+  Charts.bars(document.getElementById('atts'), { items: courses.map(c => ({ label: lab(c), value: c.r.att, cmp: 80, color: c.color, text: c.r.att + ' %', extra: [['Course', c.x.title], ['Class average', c.x.attendance + ' %']] })),
+    max: 100, fmt: v => v + ' %', valueName: 'Your attendance', cmpName: 'The rule', rowH: 32, labelWidth: 84 });
+
+  /* ---- this week: Mon 16 – Sat 21 Nov, week 12 ---- */
+  const WD = [['Mon', 16], ['Tue', 17], ['Wed', 18], ['Thu', 19], ['Fri', 20], ['Sat', 21]];
+  const thisWeek = courses.filter(c => meetsWeek(c.x, 12));
+  document.getElementById('week').innerHTML = WD.map(([d, n]) => {
+    const ses = thisWeek.filter(c => c.x.day === d).sort((a, b) => a.x.start - b.x.start);
+    return `<li><div class="dn">${d} ${n} Nov${d === 'Mon' ? '<small>exam registration opens</small>' : ''}</div><div>${ses.length ? ses.map(c => `<div class="ses"><i class="key" style="background:${c.color}"></i><b>${esc(U.time(c.x.start))}–${esc(U.time(c.x.start + c.x.hours))}</b> · ${esc(c.x.title)} · ${c.x.room === 'Online' ? 'online' : 'room ' + esc(c.x.room)}</div>`).join('') : '<div class="free">You have no class on this day.</div>'}</div></li>`; }).join('') +
+    (thisWeek.length < courses.length ? `<li style="grid-template-columns:1fr"><div class="free">${me.prog === 'emba' ? 'Your programme meets every other week. Your next teaching weekend is Fri 27 – Sat 28 Nov (week 13).' : me.prog === 'dba' ? 'Your programme meets every fourth week. Your next seminar Saturday is 28 Nov (week 13).' : ''}</div></li>` : '');
+
+  /* ---- exams ---- */
+  const exams = [
+    { k: 'none', w: 'Window', t: `Exam registration is open from ${Dash.dateLong(S.registrar.examRegistrationOpen)} to ${Dash.dateLong(S.registrar.examRegistrationClose)}.`, d: 'Register once for each course you take this term. Registration opens in 2 days.' },
+    { k: 'none', w: 'Session', t: `The exam session starts on ${Dash.dateLong(S.registrar.examSessionStart)}.`, d: `That is in ${Dash.daysUntil(S.registrar.examSessionStart)} days. The timetable of each exam is published when registration closes.` },
+  ];
+  if (!blocked) exams.push({ k: 'good', w: 'Clear', t: 'Nothing blocks your registration today.', d: 'Your attendance is at 80 % or more in every course and you have no fees overdue more than 60 days.' });
+  low.forEach(c => exams.push({ k: 'serious', w: 'Blocked', t: `${c.x.title}: your attendance is ${c.r.att} %, under the 80 % rule.`, d: 'You may not register for this exam until the student office has seen your case. Check with the student office before 30 Nov.' }));
+  if (blockedFees) exams.push({ k: 'serious', w: 'Blocked', t: `Your tuition has been overdue for ${me.overdueDays} days, more than 60.`, d: 'Fees overdue for more than 60 days block exam registration. Check with the student office and the finance office before 30 Nov.' });
+  document.getElementById('exams').innerHTML = exams.map(a => `<li>${st(a.k, a.w)}<div><div class="w">${esc(a.t)}</div><div class="d">${esc(a.d)}</div></div></li>`).join('');
+
+  /* ---- tuition ---- */
+  const annualFull = P.feeUnit === 'per year' ? P.fee : Math.round(P.fee / P.years);
+  document.getElementById('feeLead').textContent = (outstanding === 0 ? `You have paid all ${chf(me.invoiced)} invoiced for this academic year. You owe nothing today.`
+    : `You have paid ${chf(me.paid)} of the ${chf(me.invoiced)} invoiced for this academic year. ${me.overdue ? `${chf(me.overdue)} is overdue by ${me.overdueDays} days: pay it first.` : 'Nothing is overdue.'}${notYetDue ? ` The rest, ${chf(notYetDue)}, is due on 15 January 2027.` : ''}`) + ' These are demo figures, not a real invoice.';
+  const parts = [{ name: 'Paid', value: me.paid, color: 'var(--s1)' }];
+  if (notYetDue) parts.push({ name: 'Due 15 Jan 2027', value: notYetDue, color: 'var(--cmp)', ink: 'var(--ink)' });
+  if (me.overdue) parts.push({ name: `Overdue (${me.overdueDays} days)`, value: me.overdue, color: 'var(--crit)' });
+  Charts.segbar(document.getElementById('fees'), parts, { fmt: chf });
+  document.getElementById('feeKv').innerHTML = [
+    ['Programme fee', `${chf(P.fee)} ${P.feeUnit === 'programme' ? 'for the whole programme' : P.feeUnit}`],
+    ['Your scholarship', me.scholarship ? `${me.scholarship} % (${chf(annualFull - me.invoiced)} off this year)` : 'none'],
+    ['Invoiced this academic year', chf(me.invoiced)],
+    ['Paid', chf(me.paid)],
+    ['Overdue', me.overdue ? `${chf(me.overdue)} · ${me.overdueDays} days` : 'nothing'],
+    ['Next instalment', me.overdue ? 'pay the overdue amount now' + (notYetDue ? `, then ${chf(notYetDue)} on 15 Jan 2027` : '') : notYetDue ? `${chf(notYetDue)} on 15 Jan 2027` : 'none this academic year'],
+  ].map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+})();
+</script>
+</body>
+</html>

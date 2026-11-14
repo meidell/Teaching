@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Finance</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The finance dashboard (14 Nov 2026). The question it answers: is the cash coming in, who owes what,
+     and which programme pays? Everything is read from data.js (fictitious, one seeded school).
+     The programme filter scopes the student-level parts: the tuition tiles, receivables, debtors, scholarships. -->
+<style>
+.scope{font-size:12px;color:var(--muted);margin:-6px 0 10px;}
+.div-list{display:grid;gap:10px;margin-top:4px;}
+.div-row{display:grid;grid-template-columns:52px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px;}
+.div-row .lb{font-weight:600;color:var(--ink2);}
+.div-row .vl{text-align:right;font-weight:650;font-variant-numeric:tabular-nums;}
+.div-track{position:relative;height:16px;}
+.div-track .zero{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--axis);}
+.div-track .b{position:absolute;top:0;height:16px;}
+.div-track .b.pos{border-radius:0 4px 4px 0;}
+.div-track .b.neg{border-radius:4px 0 0 4px;}
+.div-axis{display:grid;grid-template-columns:52px minmax(0,1fr) 64px;gap:10px;font-size:11px;color:var(--muted);}
+.div-axis .ax{position:relative;height:14px;}
+.div-axis .ax span{position:absolute;transform:translateX(-50%);white-space:nowrap;}
+.t td.n{white-space:nowrap;}
+#debtT{min-width:760px;} #comT{min-width:460px;} #marT{min-width:900px;}
+.more{font-size:12.5px;color:var(--ink2);padding:8px 8px 0;}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Cash, receivables and programme margins</h1><div class="sub" id="sub"></div></div>
+    <div class="filters"><label for="pf">Programme</label><div class="seg" id="pf" role="group" aria-label="Programme"></div></div>
+  </div>
+  <p class="scope" id="scope"></p>
+
+  <div class="g c4" id="tiles"></div>
+
+  <div class="g c21">
+    <div class="card"><div class="ch"><h2>To act on</h2><span class="note">derived from the figures below; most urgent first</span></div><ul class="acts" id="acts"></ul></div>
+    <div class="card"><div class="ch"><h2>Receivables by age</h2><span class="note" id="ageNote">CHF overdue, by days past the due date</span></div>
+      <p class="lead" id="ageLead"></p>
+      <div id="aging"></div>
+      <div class="tw" style="margin-top:12px"><table class="t" id="ageT"></table></div></div>
+  </div>
+
+  <div class="section-t">Cash</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Tuition cash collected each month</h2><span class="note">CHF · August–July · November = 1–14 Nov only</span></div>
+      <p class="lead" id="cashLead"></p><div id="cashM"></div></div>
+    <div class="card"><div class="ch"><h2>Tuition cash collected, cumulative</h2><span class="note">CHF · this year against plan and last year</span></div>
+      <p class="lead">The plan spreads the budgeted tuition of the year over the months in which invoices fall due.</p><div id="cashC"></div></div>
+  </div>
+
+  <div class="section-t">Who owes what</div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students with overdue tuition</h2><span class="note" id="debtNote"></span></div>
+    <p class="lead">Read the risk column before you send a reminder. A student who is at risk and also owes money needs a retention conversation with the programme manager, not only a collection letter.</p>
+    <div class="tw"><table class="t" id="debtT"></table></div><div class="more" id="debtMore"></div></div>
+
+  <div class="section-t">Which programme pays</div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>What each programme earns</h2><span class="note">CHF, academic year 2026–27</span></div>
+    <p class="lead">Method: faculty cost is shared by each programme's teaching hours, marketing cost by its share of leads, and overheads (staff, campus, IT, accreditation) by its number of active students.</p>
+    <div class="tw"><table class="t" id="marT"></table></div></div>
+  <div class="g c3">
+    <div class="card"><div class="ch"><h2>Net margin by programme</h2><span class="note">% of tuition · after overheads</span></div>
+      <p class="lead">Net margin = net result ÷ tuition invoiced. A bar left of the zero line is a loss.</p><div id="marD"></div></div>
+    <div class="card"><div class="ch"><h2>Where the money goes</h2><span class="note">CHF, budget 2026–27 · share of all costs</span></div>
+      <p class="lead" id="costLead"></p><div id="costs"></div><div class="tw" style="margin-top:12px"><table class="t" id="costT"></table></div></div>
+    <div class="card"><div class="ch"><h2>Scholarships granted</h2><span class="note" id="schNote">CHF of tuition waived · students with a scholarship</span></div>
+      <p class="lead" id="schLead"></p><div id="sch"></div></div>
+  </div>
+
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Agent commissions to pay</h2><span class="note">CHF · per deposited student</span></div>
+      <p class="lead" id="comLead"></p><div class="tw"><table class="t" id="comT"></table></div></div>
+    <div class="card"><div class="ch"><h2>Revenue by academic year</h2><span class="note">CHF · academic years (21–22 = 2021–22) · 26–27 = forecast · tick = budget</span></div><div id="rev"></div></div>
+  </div>
+  <p class="foot">All names and figures are invented, generated for the design of these dashboards. As of Saturday 14 November 2026, week 11 of the 14-week autumn term. The academic year runs from August to July.</p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, PC, chf, chfK, num, pct, delta, tile, st, esc } = Dash;
+  Dash.shell('finance');
+  const H = S.history, F = S.finance, progs = S.programs, R = S.registrar;
+  document.getElementById('sub').textContent = `${S.school.name}, ${S.school.city} · academic year 2026–27 · as of ${Dash.dateLong(S.school.today)}`;
+
+  const signed = (v, f) => v < 0 ? '−' + f(-v) : f(v);
+  const neg = (v, f) => v < 0 ? st('crit', '−' + f(-v)) : esc(f(v));
+  const waived = s => s.scholarship ? Math.round((s.invoiced / (1 - s.scholarship / 100)) * s.scholarship / 100) : 0;
+  const bucket = d => d <= 30 ? 0 : d <= 60 ? 1 : d <= 90 ? 2 : 3;
+  const BUCKETS = ['0–30 days', '31–60 days', '61–90 days', 'over 90 days'];
+  const AGE_COL = ['var(--seq2)', 'var(--seq3)', 'var(--seq4)', 'var(--seq5)'], AGE_INK = ['#0b0b0b', '#fff', '#fff', '#fff'];
+  const cum = a => { let s = 0; return a.map(v => v == null ? null : (s += v)); };
+
+  /* ---- school-level figures (do not follow the filter) ---- */
+  const nowI = 3;                                     /* November */
+  const novPlanHalf = F.cashPlan[nowI] / 2, novAct = F.cashActual[nowI];
+  const ytdPlan = F.cashPlan.slice(0, nowI).reduce((a, b) => a + b, 0) + novPlanHalf, ytdAct = F.cashActual.slice(0, nowI + 1).reduce((a, b) => a + b, 0);
+  const runway = F.cashOnHandCHF / F.monthlyBurnCHF;
+  const due30 = F.commissionsDue.filter(c => Dash.daysUntil(c.due) >= 0 && Dash.daysUntil(c.due) <= 30);
+
+  /* ---- the programme filter ---- */
+  let prog = 'all';
+  try { const q = new URLSearchParams(location.search).get('p'); if (q && S.P[q]) prog = q; } catch (e) {}
+  const pf = document.getElementById('pf');
+  pf.innerHTML = [['all', 'All']].concat(progs.map(p => [p.id, p.short])).map(([id, l]) => `<button type="button" data-p="${id}">${esc(l)}</button>`).join('');
+  pf.querySelectorAll('button').forEach(b => b.onclick = () => { prog = b.dataset.p; render(); });
+
+  function render() {
+    pf.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.p === prog); b.setAttribute('aria-pressed', b.dataset.p === prog); });
+    const pName = prog === 'all' ? 'all programmes' : S.P[prog].short;
+    document.getElementById('scope').textContent = prog === 'all'
+      ? 'Showing all programmes. The tuition, overdue and scholarship figures, the receivables, the debtors and the scholarships follow this filter; cash, revenue, costs and commissions are school-wide.'
+      : `Showing ${S.P[prog].name} only for the tuition, overdue and scholarship figures, the receivables, the debtors and the scholarships. Cash, revenue, costs and commissions stay school-wide.`;
+    const stu = S.students.filter(s => prog === 'all' || s.prog === prog);
+    const inv = stu.reduce((a, s) => a + s.invoiced, 0), paid = stu.reduce((a, s) => a + s.paid, 0);
+    const debt = stu.filter(s => s.overdue > 0), overdue = debt.reduce((a, s) => a + s.overdue, 0);
+    const d60 = debt.filter(s => s.overdueDays > 60), d90 = debt.filter(s => s.overdueDays > 90);
+    const o60 = d60.reduce((a, s) => a + s.overdue, 0), o90 = d90.reduce((a, s) => a + s.overdue, 0);
+    const schStu = stu.filter(s => s.scholarship > 0), schCHF = schStu.reduce((a, s) => a + waived(s), 0);
+
+    /* ---- tiles ---- */
+    document.getElementById('tiles').innerHTML = [
+      tile({ lab: `Tuition invoiced this year · ${pName}`, val: chfK(inv), note: `${num(stu.length)} students invoiced, including withdrawals` }),
+      tile({ lab: `Tuition collected · ${pName}`, val: chfK(paid), delta: `<span class="flat">${esc(pct(100 * paid / inv))} of the CHF ${esc(chfK(inv).slice(4))} invoiced</span>` }),
+      tile({ lab: `Tuition overdue · ${pName}`, val: chfK(overdue), delta: `<span class="flat">${debt.length} students · ${esc(pct(100 * overdue / inv, 1))} of invoiced</span>` }),
+      tile({ lab: `Overdue more than 60 days · ${pName}`, val: chfK(o60), delta: o60 ? `${st('serious', d60.length + ' students')}` : st('good', 'none') }),
+      tile({ lab: 'Revenue this year, forecast', val: chfK(F.yearForecast), delta: delta(F.yearForecast, F.budget, { pct: true, vs: `against the budget of ${chfK(F.budget)}` }), spark: 'spR' }),
+      tile({ lab: 'Cash on hand', val: chfK(F.cashOnHandCHF), delta: `${runway < 4 ? st('warn', runway.toFixed(1) + ' months') : st('good', runway.toFixed(1) + ' months')} of costs at ${esc(chfK(F.monthlyBurnCHF))} a month` }),
+      tile({ lab: `Scholarships granted · ${pName}`, val: chfK(schCHF), note: `${schStu.length} students, ${pct(100 * schStu.length / stu.length)} of those invoiced` }),
+      tile({ lab: 'Agent commissions due in 30 days', val: chfK(due30.reduce((a, c) => a + c.chf, 0)), note: due30.length ? due30.map(c => `${c.agent} on ${Dash.date(c.due)}`).join(' · ') : 'none due before ' + Dash.date('2026-12-14') }),
+    ].join('');
+    Charts.spark(document.getElementById('spR'), H.revenue.slice(0, 5).concat([F.yearForecast]));
+
+    /* ---- to act on ---- */
+    const acts = [];
+    if (d90.length) acts.push({ sev: 3, kind: 'crit', w: `${d90.length} ${d90.length === 1 ? 'student owes' : 'students owe'} ${chfK(o90)} for more than 90 days`, d: `Exam registration opens ${Dash.date(R.examRegistrationOpen)} (in ${Dash.daysUntil(R.examRegistrationOpen)} days). Decide before then whether students over 90 days are blocked from registering, and call each one first.`, go: '#debtT', gl: 'Debtors' });
+    if (d60.length > d90.length) acts.push({ sev: 2, kind: 'serious', w: `${d60.length - d90.length} more ${d60.length - d90.length === 1 ? 'student owes' : 'students owe'} ${chfK(o60 - o90)} for 61–90 days`, d: `Most of them pass 90 days before exam registration closes on ${Dash.date(R.examRegistrationClose)}. Send a second reminder with a payment plan offer now.`, go: '#debtT', gl: 'Debtors' });
+    const atRiskDebt = debt.filter(s => s.status === 'active' && (s.risk === 'high' || s.risk === 'medium'));
+    if (atRiskDebt.length) acts.push({ sev: 2, kind: 'serious', w: `${atRiskDebt.length} ${atRiskDebt.length === 1 ? 'debtor is' : 'debtors are'} also at risk academically`, d: `Together they owe ${chfK(atRiskDebt.reduce((a, s) => a + s.overdue, 0))}. Agree with the programme managers who calls them; a collection letter alone may lose the student.`, go: 'programme.html', gl: 'Programme manager' });
+    progs.forEach(p => { const m = F.marginByProgram[p.id]; if (m.net < 0) acts.push({ sev: 3, kind: 'crit', w: `${p.short} loses ${chfK(-m.net)} this year`, d: `${m.students} active students bring ${chfK(m.revenue)} of tuition. Teaching (${chfK(m.teaching)}), marketing (${chfK(m.marketing)}) and its share of overheads (${chfK(m.overhead)}) exceed it. Prepare the fee, size and format options for the director.`, go: 'director.html', gl: 'Director' }); });
+    const novGap = novAct - novPlanHalf, ytdGap = ytdAct - ytdPlan;
+    if (ytdGap < 0 || novGap < 0) acts.push({ sev: 2, kind: ytdGap < -0.05 * ytdPlan ? 'serious' : 'warn', w: `Cash collected so far is ${chfK(-ytdGap)} behind plan`, d: `${chfK(ytdAct)} collected from 1 August to 14 November against ${chfK(ytdPlan)} planned (${pct(100 * ytdAct / ytdPlan)}). November so far: ${chfK(novAct)} against ${chfK(novPlanHalf)}, which is half of the month's plan (${signed(Math.round(1000 * novGap / novPlanHalf) / 10, x => x + ' %')}).`, go: '#cashM', gl: 'Monthly cash' });
+    if (runway < 4) acts.push({ sev: 1, kind: 'warn', w: `Cash on hand covers ${runway.toFixed(1)} months of costs`, d: `${chfK(F.cashOnHandCHF)} at ${chfK(F.monthlyBurnCHF)} a month. The February instalments (plan ${chfK(F.cashPlan[6])}) are the next large inflow; check the credit line covers December–January.`, go: '#cashC', gl: 'Cumulative cash' });
+    F.commissionsDue.slice().sort((a, b) => a.due.localeCompare(b.due)).forEach(c => acts.push({ sev: 1, kind: 'warn', w: `Pay ${c.agent} ${chf(c.chf)} by ${Dash.date(c.due)}`, d: `Commission for ${c.students} deposited students at ${chf(S.crm.agentCommission)} each, due in ${Dash.daysUntil(c.due)} days. Check each deposit is received before you pay.`, go: '#comT', gl: 'Commissions' }));
+    acts.sort((a, b) => b.sev - a.sev);
+    document.getElementById('acts').innerHTML = acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Decide' : a.kind === 'serious' ? 'Act' : 'Watch')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><a class="go" href="${a.go}">${esc(a.gl)} →</a></li>`).join('');
+
+    /* ---- receivables ageing ---- */
+    const age = [0, 0, 0, 0], ageN = [0, 0, 0, 0]; debt.forEach(s => { const k = bucket(s.overdueDays); age[k] += s.overdue; ageN[k]++; });
+    document.getElementById('ageNote').textContent = `CHF overdue, by days past the due date · ${pName}`;
+    document.getElementById('ageLead').textContent = overdue ? `${pct(100 * o60 / overdue)} of the ${chfK(overdue)} overdue is older than 60 days. Money this old is collected less often, so these students come first.` : 'No tuition is overdue in this programme.';
+    if (overdue) Charts.segbar(document.getElementById('aging'), BUCKETS.map((b, k) => ({ name: b, value: age[k], color: AGE_COL[k], ink: AGE_INK[k] })), { fmt: chf });
+    else document.getElementById('aging').innerHTML = '<div class="empty">Nothing overdue.</div>';
+    document.getElementById('ageT').innerHTML = `<tr><th>Days overdue</th><th class="n">Students</th><th class="n">CHF overdue</th></tr>` +
+      BUCKETS.map((b, k) => `<tr><td><i class="key" style="background:${AGE_COL[k]}"></i>${esc(b)}</td><td class="n">${ageN[k]}</td><td class="n">${esc(chf(age[k]))}</td></tr>`).join('');
+
+    /* ---- debtors ---- */
+    const list = debt.slice().sort((a, b) => b.overdueDays - a.overdueDays || b.overdue - a.overdue), CAP = 25;
+    document.getElementById('debtNote').textContent = `${debt.length} students · ${pName} · longest overdue first · click a row to open the student`;
+    document.getElementById('debtT').innerHTML = list.length ? `<tr><th>Student</th><th>Programme</th><th class="n">Overdue</th><th class="n">Days</th><th class="n">Invoiced</th><th class="n">Paid</th><th>Risk</th></tr>` +
+      list.slice(0, CAP).map(s => `<tr class="click" data-href="student.html?id=${s.id}"><td><a href="student.html?id=${s.id}">${esc(s.name)}</a><div class="why">year ${s.year} · ${esc(s.nationality)}${s.scholarship ? ` · ${s.scholarship} % scholarship` : ''}</div></td><td>${Dash.progKey(s.prog)}</td><td class="n"><b>${esc(chf(s.overdue))}</b></td><td class="n">${s.overdueDays > 90 ? st('crit', String(s.overdueDays)) : s.overdueDays > 60 ? st('serious', String(s.overdueDays)) : s.overdueDays}</td><td class="n">${esc(chf(s.invoiced))}</td><td class="n">${esc(chf(s.paid))}</td><td>${s.status === 'active' ? Dash.riskSt(s.risk) : st('none', s.status === 'withdrawn' ? 'Withdrawn' : 'On leave')}</td></tr>`).join('')
+      : '<tr><td class="empty">No student in this programme has overdue tuition.</td></tr>';
+    document.getElementById('debtMore').textContent = list.length > CAP ? `And ${list.length - CAP} more students, who together owe ${chf(list.slice(CAP).reduce((a, s) => a + s.overdue, 0))}; each of them is overdue ${list[CAP].overdueDays} days or less.` : '';
+    document.querySelectorAll('#debtT tr[data-href]').forEach(tr => tr.onclick = e => { if (e.target.tagName !== 'A') location.href = tr.dataset.href; });
+
+    /* ---- scholarships by programme ---- */
+    const schBy = progs.map(p => { const l = S.students.filter(s => s.prog === p.id && s.scholarship > 0); return { p, n: l.length, chf: l.reduce((a, s) => a + waived(s), 0), of: S.students.filter(s => s.prog === p.id).length }; });
+    document.getElementById('schNote').textContent = prog === 'all' ? 'CHF of tuition waived · students with a scholarship' : `CHF waived · ${S.P[prog].short} in colour, the others in grey`;
+    document.getElementById('schLead').textContent = `The school waives ${chfK(F.scholarshipsTotal)} of tuition this year. A scholarship is a percentage taken off the fee before it is invoiced, so this money is never billed.`;
+    Charts.bars(document.getElementById('sch'), { items: schBy.map(x => ({ label: x.p.short, value: x.chf, color: prog === 'all' || prog === x.p.id ? PC[x.p.id] : 'var(--cmp)', text: `${chfK(x.chf)} · ${x.n} students`,
+      extra: [['Students with a scholarship', `${x.n} of ${x.of}`], ['Average waived per scholar', x.n ? chf(x.chf / x.n) : '—']] })), valueName: 'Tuition waived', fmt: chfK, rowH: 34, labelWidth: 56, max: Math.max(...schBy.map(x => x.chf)) * 1.7 });
+  }
+
+  /* ---- monthly cash: this year vs plan ---- */
+  document.getElementById('cashLead').textContent = `September and October came in under plan. By 14 November the school has collected ${chfK(novAct)} of November's ${chfK(F.cashPlan[nowI])} plan; half the month's plan would be ${chfK(novPlanHalf)}.`;
+  Charts.columns(document.getElementById('cashM'), { labels: F.months, series: [{ name: 'Collected this year', values: F.cashActual, color: 'var(--s1)' }, { name: 'Plan', values: F.cashPlan, cmp: true, color: 'var(--cmp)' }], fmt: chf, height: 230 });
+
+  /* ---- cumulative ---- */
+  Charts.line(document.getElementById('cashC'), { labels: F.months, series: [{ name: 'Collected this year', values: cum(F.cashActual), color: 'var(--s1)', area: true }, { name: 'Plan', values: cum(F.cashPlan), cmp: true }, { name: 'Last year', values: cum(F.cashLastYear), color: 'var(--s7)' }], fmt: chfK, yFmt: Charts.compact, height: 230 });
+
+  /* ---- margin table ---- */
+  const mt = progs.map(p => ({ p, m: F.marginByProgram[p.id] })), tot = k => mt.reduce((a, x) => a + x.m[k], 0);
+  const mrow = (key, label, m) => { const mg = Math.round(1000 * m.net / m.revenue) / 10, cg = Math.round(1000 * m.contribution / m.revenue) / 10;
+    return `<tr><td>${key}${label ? '' : ''}</td><td class="n">${m.students}</td><td class="n">${esc(chfK(m.revenue))}</td><td class="n">${esc(chfK(m.scholarships))}</td><td class="n">${esc(chfK(m.teaching))}</td><td class="n">${esc(chfK(m.marketing))}</td><td class="n">${neg(m.contribution, chfK)}</td><td class="n">${cg < 0 ? st('crit', '−' + (-cg) + ' %') : cg + ' %'}</td><td class="n">${esc(chfK(m.overhead))}</td><td class="n"><b>${neg(m.net, chfK)}</b></td><td class="n">${mg < 0 ? st('crit', '−' + (-mg) + ' %') : mg + ' %'}</td></tr>`; };
+  const T = { students: tot('students'), revenue: tot('revenue'), scholarships: tot('scholarships'), teaching: tot('teaching'), marketing: tot('marketing'), contribution: tot('contribution'), overhead: tot('overhead'), net: tot('net') };
+  document.getElementById('marT').innerHTML = `<tr><th>Programme</th><th class="n">Active students</th><th class="n">Tuition invoiced</th><th class="n">Scholarships waived</th><th class="n">Teaching</th><th class="n">Marketing</th><th class="n">Contribution</th><th class="n">Contribution margin</th><th class="n">Overheads</th><th class="n">Net</th><th class="n">Net margin</th></tr>` +
+    mt.map(x => mrow(`<span title="${esc(x.p.name)}">${Dash.progKey(x.p.id)}</span>`, true, x.m)).join('') + mrow('<b>School</b>', true, T);
+
+  /* ---- net margin %, diverging around zero ---- */
+  const mg = mt.map(x => ({ p: x.p, v: Math.round(1000 * x.m.net / x.m.revenue) / 10 }));
+  const lo = Math.min(0, ...mg.map(x => x.v)), hi = Math.max(0, ...mg.map(x => x.v)), stepT = (hi - lo) > 60 ? 25 : 10;
+  const a0 = Math.floor(lo / stepT) * stepT, a1 = Math.ceil(hi / stepT) * stepT, P = v => 100 * (v - a0) / (a1 - a0);
+  const ticks = []; for (let v = a0; v <= a1; v += stepT) ticks.push(v);
+  document.getElementById('marD').innerHTML = `<div class="div-list">` + mg.map(x => { const z = P(0), e = P(x.v);
+    return `<div class="div-row"><span class="lb">${esc(x.p.short)}</span><div class="div-track"><span class="zero" style="left:${z}%"></span><span class="b ${x.v < 0 ? 'neg' : 'pos'}" style="left:${Math.min(z, e)}%;width:${Math.abs(e - z)}%;background:${PC[x.p.id]}"></span></div><span class="vl">${x.v < 0 ? st('crit', '−' + (-x.v) + ' %') : esc(x.v + ' %')}</span></div>`; }).join('') +
+    `<div class="div-axis"><span></span><div class="ax">${ticks.map(t => `<span style="left:${P(t)}%">${t < 0 ? '−' + (-t) : t} %</span>`).join('')}</div><span></span></div></div>`;
+
+  /* ---- cost structure: fixed order, slots 1–8 ---- */
+  const COSTS = [['facultyCore', 'Core faculty'], ['facultyAdjunct', 'Adjunct faculty'], ['staff', 'Staff'], ['campus', 'Campus'], ['marketing', 'Marketing'], ['agentCommissions', 'Agent commissions'], ['it', 'IT'], ['accreditation', 'Accreditation']];
+  const CINK = ['#fff', '#fff', '#fff', '#0b0b0b', '#0b0b0b', '#fff', '#fff', '#fff'];
+  const cTot = COSTS.reduce((a, c) => a + F.costs[c[0]], 0);
+  document.getElementById('costLead').textContent = `Costs are budgeted at ${chfK(cTot)} for the year. Faculty, staff and campus make up ${pct(100 * (F.costs.facultyCore + F.costs.facultyAdjunct + F.costs.staff + F.costs.campus) / cTot)} of it.`;
+  Charts.segbar(document.getElementById('costs'), COSTS.map((c, k) => ({ name: c[1], value: F.costs[c[0]], color: `var(--s${k + 1})`, ink: CINK[k] })), { fmt: chf });
+  document.getElementById('costT').innerHTML = `<tr><th>Cost</th><th class="n">CHF</th><th class="n">Share</th></tr>` +
+    COSTS.map((c, k) => `<tr><td><i class="key" style="background:var(--s${k + 1})"></i>${esc(c[1])}</td><td class="n">${esc(chfK(F.costs[c[0]]))}</td><td class="n">${pct(100 * F.costs[c[0]] / cTot)}</td></tr>`).join('');
+
+  /* ---- agent commissions ---- */
+  const comTot = F.commissionsDue.reduce((a, c) => a + c.chf, 0);
+  document.getElementById('comLead').textContent = `${chf(comTot)} is owed to ${F.commissionsDue.length} agents for students who have paid their deposit. An agent earns ${chf(S.crm.agentCommission)} per deposited student.`;
+  document.getElementById('comT').innerHTML = `<tr><th>Agent</th><th class="n">Students</th><th class="n">CHF</th><th class="n">Due</th><th>When</th></tr>` +
+    F.commissionsDue.slice().sort((a, b) => a.due.localeCompare(b.due)).map(c => { const d = Dash.daysUntil(c.due);
+      return `<tr><td>${esc(c.agent)}</td><td class="n">${c.students}</td><td class="n">${esc(chf(c.chf))}</td><td class="n">${esc(Dash.date(c.due))}</td><td>${d <= 30 ? st('warn', `in ${d} days`) : st('none', `in ${d} days`)}</td></tr>`; }).join('') +
+    `<tr><td><b>Total</b></td><td class="n">${F.commissionsDue.reduce((a, c) => a + c.students, 0)}</td><td class="n"><b>${esc(chf(comTot))}</b></td><td></td><td></td></tr>`;
+
+  /* ---- revenue by year ---- */
+  Charts.columns(document.getElementById('rev'), { labels: H.years.map(y => y.replace(/^20/, '')), series: [{ name: 'Revenue', values: H.revenue.slice(0, 5).concat([F.yearForecast]), color: 'var(--s1)' }], fmt: chfK, target: { values: H.years.map((y, i) => i === 5 ? F.budget : null), name: 'Budget' } });
+
+  render();
+})();
+</script>
+</body>
+</html>

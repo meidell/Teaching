@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Sales &amp; marketing</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The sales & marketing dashboard (14 Nov 2026). The question it answers: will we fill the next intakes,
+     and which channels deliver? Everything is read from data.js (fictitious, one seeded school).
+     ?p=bba|msc|emba|dba scopes the page to one programme. -->
+<style>
+  .chk{display:inline-block;margin-left:6px;}
+  .twoch{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;}
+  .twoch h3{font-size:13px;margin:0 0 8px;color:var(--ink2);font-weight:650;}
+  @media(max-width:640px){.twoch{grid-template-columns:minmax(0,1fr);}.acts li{grid-template-columns:minmax(0,1fr);gap:3px;}}
+  .big{font-size:30px;font-weight:650;letter-spacing:-.02em;line-height:1.1;}
+  .tw table.t td{white-space:nowrap;} .tw table.t td.wrap{white-space:normal;min-width:120px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Recruitment and the next intakes</h1><div class="sub" id="sub"></div></div>
+    <div class="filters"><label for="pseg">Programme</label><div class="seg" id="pseg" role="group" aria-label="Programme"></div></div>
+  </div>
+
+  <div class="g c4" id="tiles"></div>
+
+  <div class="g c21">
+    <div class="card"><div class="ch"><h2>What to do this week</h2><span class="note">derived from the figures below; most urgent first</span></div><ul class="acts" id="acts"></ul></div>
+    <div class="card"><div class="ch"><h2>February 2027 intake: closing</h2><span class="note" id="febNote"></span></div>
+      <p class="lead" id="febLead"></p>
+      <div id="feb"></div></div>
+  </div>
+
+  <div class="section-t">September 2027 intake</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>The September 2027 funnel so far</h2><span class="note">bar = this cycle · tick = last cycle at the same week</span></div>
+      <p class="lead">Each stage shows how many people reached it, and the percentage converted from the stage before. Last cycle has no weekly count of complete files or admissions, so those two stages have no tick.</p>
+      <div id="funnel"></div></div>
+    <div class="card"><div class="ch"><h2>Forecast against target, by programme</h2><span class="note">students starting in September 2027 · tick = target</span></div>
+      <p class="lead">The forecast takes last September's intake and multiplies it by this cycle's pace: applications so far divided by applications at the same week last cycle (weighted 70 %), and leads the same way (30 %). The pace is capped between 0.7 and 1.4, because small programmes swing widely this early. The range in brackets runs from 80 % to 115 % of the forecast.</p>
+      <div id="fc"></div></div>
+  </div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>New leads per week, this cycle against last cycle</h2><span class="note">leads per week · x = week of this cycle, last cycle aligned on weeks before its own intake</span></div><div id="leads"></div></div>
+    <div class="card"><div class="ch"><h2>Applications received, cumulative</h2><span class="note">applications since the cycle opened, 52 weeks before intake</span></div><div id="apps"></div></div>
+  </div>
+
+  <div class="section-t">Channels and regions</div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>What each channel delivers</h2><span class="note" id="chNote"></span></div>
+    <p class="lead" id="chLead"></p>
+    <div class="tw"><table class="t" id="chT"></table></div></div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Deposits by channel, this cycle so far</h2><span class="note">students who paid the deposit · September 2027 intake</span></div><div id="chDep"></div></div>
+    <div class="card"><div class="ch"><h2>Applicants by region</h2><span class="note">applications so far this cycle · region of residence</span></div><div id="reg"></div></div>
+  </div>
+
+  <div class="section-t">Follow-up</div>
+  <div class="g c12">
+    <div class="card"><div class="ch"><h2>How fast leads get a first answer</h2><span class="note">median hours from enquiry to first contact, per calendar week</span></div>
+      <p class="lead" id="respLead"></p>
+      <div id="resp"></div></div>
+    <div class="card"><div class="ch"><h2>Open applications waiting longest</h2><span class="note" id="openNote"></span></div><div class="tw"><table class="t" id="openT"></table></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Upcoming recruitment events</h2><span class="note">registered = people signed up so far</span></div><div class="tw"><table class="t" id="evT"></table></div></div>
+  <p class="foot">All names and figures are invented, generated for the design of these dashboards. As of Saturday 14 November 2026, 41 weeks before the September 2027 intake.</p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, PC, chf, chfK, num, pct, delta, tile, st, esc } = Dash;
+  Dash.shell('marketing');
+  const C = S.crm, progs = S.programs, CH = C.channels;
+  const CHC = {}; CH.forEach((c, i) => CHC[c.id] = `var(--s${i + 1})`);   /* the colour follows the channel, in the fixed order */
+  const NOWI = C.weeksBack - C.nowWeek;                                    /* index of this week in the weekly series (0 = 52 weeks before intake) */
+  const sum = a => a.reduce((s, v) => s + (v || 0), 0);
+  const pl = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  document.getElementById('sub').textContent = `${S.school.name}, ${S.school.city} · ${C.nowWeek} weeks before the ${C.cycle} intake · as of ${Dash.dateLong(S.school.today)}`;
+
+  /* ---- the programme filter, kept in ?p= ---- */
+  let scope = new URLSearchParams(location.search).get('p'); if (!S.P[scope]) scope = 'all';
+  const seg = document.getElementById('pseg');
+  function drawSeg() { seg.innerHTML = [['all', 'All']].concat(progs.map(p => [p.id, p.short])).map(([id, n]) => `<button type="button" data-p="${id}" class="${id === scope ? 'on' : ''}" aria-pressed="${id === scope}">${esc(n)}</button>`).join(''); }
+  seg.addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; scope = b.dataset.p;
+    const u = new URL(location.href); if (scope === 'all') u.searchParams.delete('p'); else u.searchParams.set('p', scope); history.replaceState(null, '', u); render(); });
+
+  /* a chart container is replaced by a fresh copy before each draw, so the old drawing stops redrawing on resize */
+  function fresh(id) { const o = document.getElementById(id), n = o.cloneNode(false); o.replaceWith(n); return n; }
+
+  /* spend is school-wide per channel for the last 12 months. This cycle's share of it is estimated by the share of
+     last cycle's leads that had arrived by this week (the lead season), so spend and results cover the same weeks. */
+  const allLeadsPrev = sum(progs.map(p => sum(C.series[p.id].leadsPrev))), byNowPrev = sum(progs.map(p => sum(C.series[p.id].leadsPrev.slice(0, NOWI + 1))));
+  const SEASON = byNowPrev / allLeadsPrev;
+  const progLeadShare = (pid, cid) => { const tot = sum(progs.map(p => C.byChannel[p.id][cid].leads)); return tot ? C.byChannel[pid][cid].leads / tot : 0; };
+
+  function render() {
+    drawSeg();
+    const inS = scope === 'all' ? progs : progs.filter(p => p.id === scope), one = scope !== 'all', P1 = one ? S.P[scope] : null;
+    const scopeName = one ? P1.short : 'all programmes';
+    const F = k => sum(inS.map(p => C.funnel[p.id][k]));
+    const tgt = sum(inS.map(p => C.target[p.id])), fc = F('forecast'), fcLo = F('forecastLow'), fcHi = F('forecastHigh');
+
+    /* ---- channels for the scope ---- */
+    const chRows = CH.map(c => {
+      const r = { c, leads: 0, applications: 0, admitted: 0, deposits: 0 };
+      inS.forEach(p => { const x = C.byChannel[p.id][c.id]; r.leads += x.leads; r.applications += x.applications; r.admitted += x.admitted; r.deposits += x.deposits; });
+      const spend12 = one ? C.spend[c.id] * progLeadShare(scope, c.id) : C.spend[c.id];
+      r.agent = c.id === 'agents';
+      r.spend12 = spend12;
+      r.cost = r.agent ? r.deposits * C.agentCommission : spend12 * SEASON;   /* this cycle so far */
+      r.cpl = r.agent ? null : r.leads ? r.cost / r.leads : null;
+      r.cpa = r.agent ? (r.applications ? r.cost / r.applications : null) : r.applications ? r.cost / r.applications : null;
+      r.cpd = r.deposits ? r.cost / r.deposits : null;
+      r.l2a = r.leads ? 100 * r.applications / r.leads : null;
+      return r; });
+    const withDep = chRows.filter(r => r.cpd != null && r.cost > 0).sort((a, b) => a.cpd - b.cpd);
+    const best = withDep[0], worst = withDep.length > 1 ? withDep[withDep.length - 1] : null;
+    const spend12 = sum(chRows.map(r => r.spend12)), lastFinal = sum(inS.map(p => C.lastCycleFinal[p.id]));
+
+    /* ---- February ---- */
+    const febP = inS.filter(p => C.feb.programs[p.id]), febDep = sum(febP.map(p => C.feb.programs[p.id].deposits)), febTg = sum(febP.map(p => C.feb.programs[p.id].target));
+    const febDays = Dash.daysUntil(C.feb.deadline);
+
+    /* ---- response time: the CRM records it for the school as a whole ---- */
+    const R = C.response, rNow = med(R.slice(-4).map(r => r.hours)), rFirst = med(R.slice(0, 4).map(r => r.hours));
+    function med(a) { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+
+    const openS = C.openApps.filter(a => inS.some(p => p.id === a.prog));
+
+    /* ---- tiles ---- */
+    document.getElementById('tiles').innerHTML = [
+      tile({ lab: 'New leads this cycle so far', val: num(F('leads')), delta: delta(F('leads'), F('leadsPrevSameWeek'), { pct: true, vs: `against ${num(F('leadsPrevSameWeek'))} at the same week last cycle` }) }),
+      tile({ lab: 'Applications this cycle so far', val: num(F('applications')), delta: delta(F('applications'), F('appsPrevSameWeek'), { pct: true, vs: `against ${num(F('appsPrevSameWeek'))} at the same week last cycle` }) }),
+      tile({ lab: 'Deposits paid for September 2027', val: num(F('deposits')), unit: 'students', delta: delta(F('deposits'), F('depositsPrevSameWeek'), { vs: `against ${num(F('depositsPrevSameWeek'))} at the same week last cycle` }) }),
+      tile({ lab: 'September 2027 intake, forecast', val: num(fc), unit: `students (${fcLo}–${fcHi})`, delta: delta(fc, tgt, { vs: `against the target of ${tgt}` }) }),
+      febP.length
+        ? tile({ lab: 'February 2027 intake, deposits paid', val: num(febDep), unit: `of ${febTg} targeted`, delta: `<span class="${febDep >= febTg ? 'up' : 'down'}">${febDep >= febTg ? 'Target reached' : esc(febTg - febDep + ' deposits still needed')}</span> · ${esc(febDays + ' days to the deadline of ' + Dash.date(C.feb.deadline))}` })
+        : tile({ lab: 'February 2027 intake', val: '—', note: 'The DBA admits students in September only.' }),
+      tile({ lab: 'Median time to answer a new lead', val: rNow.toFixed(1), unit: 'hours', delta: delta(rNow, rFirst, { downIsGood: true, vs: `against ${rFirst.toFixed(1)} h eight weeks earlier · whole school`, fmt: x => x.toFixed(1) + ' h' }), spark: 'spR' }),
+      tile({ lab: 'Marketing spend, last 12 months', val: chfK(spend12), delta: `<span class="flat">${esc(chf(spend12 / lastFinal))} per student of the ${lastFinal} who started in September 2026</span>`, note: (one ? `${P1.short} share of each channel, by its leads. ` : '') + 'Agent commission is not included.' }),
+      tile({ lab: 'Open applications waiting over 14 days', val: num(openS.filter(a => a.daysWaiting > 14).length), unit: `of ${openS.length} open`, delta: `<span class="${openS.some(a => a.daysWaiting > 30) ? 'down' : 'flat'}">${esc(openS.filter(a => a.daysWaiting > 30).length + ' wait more than 30 days')}</span>` }),
+    ].join('');
+    Charts.spark(document.getElementById('spR'), R.map(r => r.hours), { color: 'var(--crit)' });
+
+    /* ---- February card ---- */
+    document.getElementById('febNote').textContent = febP.length ? `deposits · tick = target · deadline ${Dash.date(C.feb.deadline)}` : `deadline ${Dash.date(C.feb.deadline)}`;
+    const febEl = fresh('feb');
+    if (febP.length) {
+      document.getElementById('febLead').innerHTML = `<span class="big">${febDays}</span> days to the application deadline on ${esc(Dash.dateLong(C.feb.deadline))}. Classes start on ${esc(Dash.dateLong(C.feb.start))}. An admitted student counts towards the intake only once the deposit is paid.`;
+      Charts.bars(febEl, { items: febP.map(p => { const x = C.feb.programs[p.id]; return { label: p.short, value: x.deposits, cmp: x.target, color: PC[p.id], text: `${x.deposits} of ${x.target}`,
+        extra: [['Applications', x.applications], ['Admitted', x.admitted], ['Admitted, no deposit yet', x.admitted - x.deposits], ['February 2026 intake', x.lastYear]] }; }),
+        valueName: 'Deposits paid', cmpName: 'Target', rowH: 34 });
+    } else { document.getElementById('febLead').textContent = `The BBA, MSc and EMBA close their February applications on ${Dash.dateLong(C.feb.deadline)}, in ${febDays} days.`; febEl.innerHTML = '<div class="empty">The DBA has no February intake: it admits students in September only. Choose All, BBA, MSc or EMBA to see the February deposits.</div>'; }
+
+    /* ---- funnel ---- */
+    Charts.funnel(fresh('funnel'), { stages: [
+      { name: 'Leads', value: F('leads'), cmp: F('leadsPrevSameWeek') },
+      { name: 'Applications', value: F('applications'), cmp: F('appsPrevSameWeek') },
+      { name: 'Complete files', value: F('complete') },
+      { name: 'Admitted', value: F('admitted') },
+      { name: 'Deposits paid', value: F('deposits'), cmp: F('depositsPrevSameWeek') } ], labelWidth: 110 });
+
+    /* ---- forecast vs target ---- */
+    Charts.bars(fresh('fc'), { items: inS.map(p => { const f = C.funnel[p.id]; return { label: p.short, value: f.forecast, cmp: C.target[p.id], color: PC[p.id], text: `${f.forecast} (${f.forecastLow}–${f.forecastHigh})`,
+      extra: [['Range', f.forecastLow + '–' + f.forecastHigh], ['Pace against last cycle', Math.round(f.pace * 100) + ' %'], ['Applications so far', f.applications + ' (last cycle ' + f.appsPrevSameWeek + ')'], ['September 2026 intake', C.lastCycleFinal[p.id]]] }; }),
+      valueName: 'Forecast', cmpName: 'Target', rowH: 34 });
+
+    /* ---- weekly leads and cumulative applications ---- */
+    const intake = new Date('2027-09-01T12:00:00'), labels = [];
+    for (let w = C.weeksBack; w >= 0; w--) { const d = new Date(intake - w * 7 * 864e5); labels.push(d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + (w === C.nowWeek ? ' (this week)' : '')); }
+    const addS = k => labels.map((_, i) => { const v = inS.map(p => C.series[p.id][k][i]); return v.every(x => x == null) ? null : sum(v); });
+    const cum = a => { let s = 0; return a.map(v => v == null ? null : (s += v)); };
+    const col = one ? PC[scope] : 'var(--s1)';
+    Charts.line(fresh('leads'), { labels, series: [{ name: 'This cycle (September 2027)', values: addS('leads'), color: col }, { name: 'Last cycle (September 2026)', values: addS('leadsPrev'), cmp: true }], height: 220 });
+    Charts.line(fresh('apps'), { labels, series: [{ name: 'This cycle (September 2027)', values: cum(addS('apps')), color: col, area: true }, { name: 'Last cycle (September 2026)', values: cum(addS('appsPrev')), cmp: true }], height: 220 });
+
+    /* ---- channel table ---- */
+    document.getElementById('chNote').textContent = `${scopeName} · September 2027 cycle so far · CHF`;
+    document.getElementById('chLead').textContent = `Spend is recorded for the whole school over the last 12 months (${chfK(sum(Object.values(C.spend)))}). This table counts ${Math.round(SEASON * 100)} % of it, the share of last cycle's leads that had arrived by this week, so that spend and results cover the same weeks.` +
+      (one ? ` Each channel's spend is split between programmes by their share of its leads; ${P1.short} carries ${chfK(spend12)} of the 12 months.` : '') +
+      ` Education agents cost nothing up front: they are paid a commission of ${chf(C.agentCommission)} per student who pays a deposit. Deposit counts are still small this early, so cost per application is the steadier comparison.`;
+    document.getElementById('chT').innerHTML = `<tr><th>Channel</th><th class="n">Leads</th><th class="n">Applications</th><th class="n">Deposits</th><th class="n">Lead → application</th><th class="n">Spend, this cycle</th><th class="n">Cost per lead</th><th class="n">Cost per application</th><th class="n">Cost per deposit</th><th>Cost per deposit, compared</th></tr>` +
+      chRows.map(r => { const tag = r === best ? st('good', 'Lowest') : r === worst ? st('serious', 'Highest') : r.deposits === 0 && r.cost > 0 ? st('crit', 'No deposit yet') : r.deposits === 0 ? st('none', 'No deposit yet') : st('none', 'Between');
+        return `<tr><td><i class="key" style="background:${CHC[r.c.id]}"></i>${esc(r.c.name)}</td><td class="n">${num(r.leads)}</td><td class="n">${num(r.applications)}</td><td class="n">${num(r.deposits)}</td><td class="n">${r.l2a == null ? '—' : pct(r.l2a)}</td>` +
+          `<td class="n">${r.agent ? esc(chf(r.cost)) + '<div class="why">commission</div>' : esc(chf(r.cost))}</td><td class="n">${r.agent ? '<span class="why">paid per deposit</span>' : r.cpl == null ? '—' : esc(chf(r.cpl))}</td><td class="n">${r.cpa == null ? '—' : esc(chf(r.cpa))}</td><td class="n">${r.cpd == null ? '—' : esc(chf(r.cpd))}${r.agent && r.cpd != null ? '<div class="why">= commission</div>' : ''}</td><td>${tag}</td></tr>`; }).join('') +
+      `<tr><td><b>All channels</b></td><td class="n"><b>${num(sum(chRows.map(r => r.leads)))}</b></td><td class="n"><b>${num(sum(chRows.map(r => r.applications)))}</b></td><td class="n"><b>${num(sum(chRows.map(r => r.deposits)))}</b></td><td class="n">${pct(100 * sum(chRows.map(r => r.applications)) / Math.max(1, sum(chRows.map(r => r.leads))))}</td><td class="n"><b>${esc(chf(sum(chRows.map(r => r.cost))))}</b></td><td></td><td></td><td class="n">${sum(chRows.map(r => r.deposits)) ? esc(chf(sum(chRows.map(r => r.cost)) / sum(chRows.map(r => r.deposits)))) : '—'}</td><td></td></tr>`;
+    Charts.bars(fresh('chDep'), { items: chRows.map(r => ({ label: r.c.name, value: r.deposits, color: CHC[r.c.id], extra: [['Applications', r.applications], ['Admitted', r.admitted], ['Leads', r.leads]] })), valueName: 'Deposits', max: Math.max(3, ...chRows.map(r => r.deposits)), labelWidth: 180 });
+
+    /* ---- regions ---- */
+    const regs = Object.keys(S.regions).map(k => ({ k, v: sum(inS.map(p => C.byRegion[p.id][k])) })).sort((a, b) => b.v - a.v), regTot = sum(regs.map(r => r.v)) || 1;
+    Charts.bars(fresh('reg'), { items: regs.map(r => ({ label: S.regions[r.k], value: r.v, color: col, text: `${r.v} · ${Math.round(100 * r.v / regTot)} %` })), valueName: 'Applications', labelWidth: 120 });
+
+    /* ---- response time ---- */
+    document.getElementById('respLead').textContent = `The median for the last four weeks is ${rNow.toFixed(1)} hours, against ${rFirst.toFixed(1)} hours in the first four weeks shown. The target is a first answer within 4 hours.` + (one ? ' The CRM records this for the whole school, not per programme.' : '');
+    Charts.line(fresh('resp'), { labels: R.map(r => r.week), series: [{ name: 'Median hours to first contact', values: R.map(r => r.hours), color: 'var(--s1)' }], target: { value: 4, label: 'Target 4 h' }, fmt: v => v.toFixed(1) + ' h', yFmt: v => v + ' h', height: 200 });
+
+    /* ---- open applications ---- */
+    document.getElementById('openNote').textContent = `${openS.length} open · ${scopeName} · oldest first`;
+    const ageSt = d => d > 30 ? st('crit', d + ' days') : d > 14 ? st('serious', d + ' days') : st('none', d + ' days');
+    document.getElementById('openT').innerHTML = openS.length ? `<tr><th>Applicant</th><th>Programme</th><th>Region</th><th>Stage</th><th class="n">Waiting</th><th>Owner</th><th>Came from</th></tr>` +
+      openS.slice(0, 10).map(a => `<tr><td>${esc(a.name)}</td><td>${Dash.progKey(a.prog)}</td><td>${esc(a.region)}</td><td>${esc(a.stage)}</td><td class="n">${ageSt(a.daysWaiting)}</td><td class="wrap">${esc(a.owner)}</td><td class="wrap">${esc(a.source)}</td></tr>`).join('')
+      : '<tr><td class="empty">No open applications for this programme.</td></tr>';
+
+    /* ---- events: the programmes each one is for, read from its title ---- */
+    const evFor = e => /deadline, February/i.test(e.what) ? ['bba', 'msc', 'emba'] : progs.filter(p => p.id === 'emba' ? /MBA/.test(e.what) : new RegExp('\\b' + p.short + '\\b').test(e.what)).map(p => p.id);
+    const evs = C.events.map(e => ({ e, f: evFor(e) })).map(x => ({ ...x, f: x.f.length ? x.f : progs.map(p => p.id) })).filter(x => !one || x.f.includes(scope));
+    document.getElementById('evT').innerHTML = evs.length ? `<tr><th>Date</th><th class="n">In</th><th>Event</th><th>For</th><th class="n">Registered</th></tr>` +
+      evs.map(({ e, f }) => { const d = Dash.daysUntil(e.date); return `<tr><td>${esc(Dash.dateLong(e.date))}</td><td class="n">${d <= 7 ? st('warn', d + ' days') : esc(d + ' days')}</td><td class="wrap">${esc(e.what)}</td><td>${f.map(Dash.progKey).join(' ')}</td><td class="n">${e.registered == null ? '—' : num(e.registered)}</td></tr>`; }).join('')
+      : `<tr><td class="empty">No recruitment event is planned for the ${esc(scopeName)} yet.</td></tr>`;
+
+    /* ---- what to do this week ---- */
+    const acts = [];
+    inS.forEach(p => { const f = C.funnel[p.id], t = C.target[p.id]; if (f.forecast < t) acts.push({ sev: 4, kind: 'crit', w: `${p.short} is behind pace for September 2027: forecast ${f.forecast} for a target of ${t}`, d: `Applications run at ${Math.round(100 * f.applications / Math.max(1, f.appsPrevSameWeek))} % of last cycle's count at this week (${f.applications} against ${f.appsPrevSameWeek}). Even the high end of the range (${f.forecastHigh}) ${f.forecastHigh < t ? 'stays under' : 'barely reaches'} the target. Move budget to the channels that bring ${p.short} applications.`, sec: '#fc' }); });
+    const febShort = febP.map(p => ({ p, x: C.feb.programs[p.id] })).filter(o => o.x.target > o.x.deposits);
+    if (febShort.length) { const need = sum(febShort.map(o => o.x.target - o.x.deposits)), pend = sum(febShort.map(o => o.x.admitted - o.x.deposits)), crit = febShort.some(o => o.x.target - o.x.deposits > o.x.admitted - o.x.deposits);
+      acts.push({ sev: crit ? 4 : 3, kind: crit ? 'crit' : 'serious', w: `February 2027 intake: ${pl(need, 'more deposit')} needed in ${febDays} days`, d: febShort.map(o => `${o.p.short} has ${o.x.deposits} of ${o.x.target}`).join(', ') + `. ${pl(pend, 'admitted student')} ${pend === 1 ? 'has' : 'have'} not paid yet. Call each of them before ${Dash.date(C.feb.deadline)}.` + (crit ? ' Where fewer admitted students are waiting than deposits are needed, new admissions are required too.' : ''), sec: '#feb' }); }
+    if (rNow > rFirst * 1.4) acts.push({ sev: 3, kind: 'serious', w: `New leads now wait ${rNow.toFixed(1)} hours for a first answer, against a target of 4 hours`, d: `The median was ${rFirst.toFixed(1)} hours eight weeks ago. Leads answered late convert less often. Check how the enquiry inbox is staffed.`, sec: '#resp' });
+    const old = openS.filter(a => a.daysWaiting > 30);
+    if (old.length) acts.push({ sev: 3, kind: 'serious', w: `${pl(old.length, 'open application')} ${old.length === 1 ? 'has' : 'have'} waited more than 30 days`, d: `The oldest is ${old[0].name} (${S.P[old[0].prog].short}, ${old[0].stage.toLowerCase()}, ${old[0].daysWaiting} days, owner ${old[0].owner}). Give each one a next step and a date.`, sec: '#openT' });
+    if (best) acts.push({ sev: 2, kind: 'good', w: `Add budget to ${best.c.name}: lowest cost per deposit, ${chf(best.cpd)}`, d: `It brought ${pl(best.deposits, 'deposit')} and ${pl(best.applications, 'application')} for ${scopeName} this cycle; ${best.l2a == null ? '' : Math.round(best.l2a) + ' % of its leads apply. '}The numbers are small this early: confirm with cost per application (${best.cpa == null ? '—' : chf(best.cpa)}).`, sec: '#chT' });
+    const noDep = chRows.filter(r => !r.agent && r.deposits === 0 && r.cost > 0).sort((a, b) => b.cost - a.cost)[0];
+    if (noDep) acts.push({ sev: 2, kind: 'warn', w: `Review ${noDep.c.name}: ${chf(noDep.cost)} spent this cycle, no deposit yet`, d: `${pl(noDep.leads, 'lead')} and ${pl(noDep.applications, 'application')} so far; cost per application ${noDep.cpa == null ? 'cannot be computed' : chf(noDep.cpa)}. Check the targeting before the spring peak.`, sec: '#chT' });
+    const nextEv = evs.map(x => x.e).filter(e => e.registered && Dash.daysUntil(e.date) <= 14)[0];
+    if (nextEv) acts.push({ sev: 1, kind: 'warn', w: `${nextEv.what}: ${Dash.daysUntil(nextEv.date)} days, ${nextEv.registered} registered`, d: 'Send a reminder to everyone registered, and book an advisor to call each one within 48 hours after the event.', sec: '#evT' });
+    acts.sort((a, b) => b.sev - a.sev);
+    const word = k => k === 'crit' ? 'Act now' : k === 'serious' ? 'This week' : k === 'good' ? 'Opportunity' : 'Watch';
+    document.getElementById('acts').innerHTML = acts.length ? acts.map(a => `<li>${st(a.kind, word(a.kind))}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><a class="go" href="${a.sec}">See below ↓</a></li>`).join('') : '<li class="empty">Nothing needs action for this programme this week.</li>';
+  }
+  render();
+})();
+</script>
+</body>
+</html>

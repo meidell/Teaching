@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Admissions & student office</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The admissions & student office dashboard, the Swiss "scolarité" (14 Nov 2026). The question it answers:
+     which files, visas and requests are waiting, and for whom? Everything is read from data.js
+     (fictitious, one seeded school). The intake and programme filters scope everything about applicant files. -->
+<style>
+  .miss{display:flex;flex-wrap:wrap;gap:4px;}
+  .guide{font-size:13px;color:var(--ink2);margin:12px 0 0;padding:10px 12px;background:var(--raised);border-radius:8px;}
+  #fileT{min-width:980px;} #gradeT,#reqT,#leaveT{min-width:460px;}
+  @media(max-width:640px){#acts li{grid-template-columns:auto 1fr;} #acts .go{grid-column:2;}}
+  .scope{font-size:12px;color:var(--muted);margin:-6px 0 12px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Files, visas and requests</h1><div class="sub" id="sub"></div></div>
+    <div class="filters">
+      <label>Intake</label><div class="seg" id="fInt"></div>
+      <label for="fProg">Programme</label><select id="fProg"></select>
+    </div>
+  </div>
+  <p class="scope" id="scope"></p>
+
+  <div class="g c4" id="tiles"></div>
+
+  <div class="g c21">
+    <div class="card"><div class="ch"><h2>Today's work</h2><span class="note">derived from the figures below; what waited longest first, then what is due soonest</span></div><ul class="acts" id="acts"></ul></div>
+    <div class="card"><div class="ch"><h2>Application files by stage</h2><span class="note">number of files · in the order a file moves</span></div>
+      <p class="lead">A file stays at "Documents missing" until every document has arrived; then it moves down the list.</p>
+      <div id="stages"></div></div>
+  </div>
+
+  <div class="section-t">Applicant files</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Which documents are missing</h2><span class="note">number of files missing each document · one file can miss several</span></div><div id="docs"></div></div>
+    <div class="card"><div class="ch"><h2>Visa steps for non-EU applicants</h2><span class="note">files with an offer sent or a deposit paid · in the order of the steps</span></div>
+      <div id="visa"></div>
+      <p class="guide" id="visaNote"></p></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Files waiting longest for contact</h2><span class="note" id="fileNote"></span></div><div class="tw"><table class="t" id="fileT"></table></div></div>
+
+  <div class="section-t">Students already enrolled</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Student requests open</h2><span class="note">status by the oldest request · 7 days or more = act, 30 days or more = late</span></div><div class="tw"><table class="t" id="reqT"></table></div></div>
+    <div class="card"><div class="ch"><h2>Grades not yet entered, by section</h2><span class="note" id="gradeNote"></span></div><div class="tw"><table class="t" id="gradeT"></table></div></div>
+  </div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Room use this term</h2><span class="note">% of the week's teaching hours that each room is booked</span></div>
+      <div id="rooms"></div><p class="guide" id="roomNote"></p></div>
+    <div class="card"><div class="ch"><h2>Students on leave or withdrawn this year</h2><span class="note">all programmes · not scoped by the filters</span></div>
+      <p class="lead">The student office processes each withdrawal and its refund, and each leave of absence, before finance changes the invoice.</p>
+      <div class="tw"><table class="t" id="leaveT"></table></div></div>
+  </div>
+  <p class="foot">All names and figures are invented, generated for the design of these dashboards. As of Saturday 14 November 2026, week 11 of the 14-week autumn term.</p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, PC, num, tile, st, esc } = Dash;
+  Dash.shell('admissions');
+  const R = S.registrar, progs = S.programs;
+  document.getElementById('sub').textContent = `${S.school.name}, ${S.school.city} · ${S.school.term}, week ${S.school.termWeek} of ${S.school.termWeeks} · as of ${Dash.dateLong(S.school.today)}`;
+
+  const INTAKES = [['both', 'Both intakes'], ['2027-02', 'February 2027'], ['2027-09', 'September 2027']];
+  const intakeName = i => i === '2027-02' ? 'Feb 2027' : 'Sep 2027';
+  const STAGES = ['Documents missing', 'Ready for review', 'Interview booked', 'Decision pending', 'Offer sent', 'Deposit paid'];
+  const RAMP = ['var(--seq2)', 'var(--seq3)', 'var(--s1)', 'var(--seq4)', 'var(--seq5)', 'var(--seq5)'];
+  const VISA = ['Visa letter to issue', 'Embassy appointment', 'Waiting for permit', 'Permit granted'];
+  const VRAMP = ['var(--seq2)', 'var(--seq3)', 'var(--seq4)', 'var(--seq5)'];
+  const touchSt = d => d > 14 ? st('crit', d + ' days') : d > 7 ? st('serious', d + ' days') : st('good', d + (d === 1 ? ' day' : ' days'));
+  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : (many || one + 's'));
+
+  let F = { intake: 'both', prog: 'all' };
+  try { const k = JSON.parse(localStorage.getItem('dash_adm_f') || 'null'); if (k) F = Object.assign(F, k); } catch (e) {}
+
+  document.getElementById('fInt').innerHTML = INTAKES.map(([v, l]) => `<button type="button" data-v="${v}">${esc(l)}</button>`).join('');
+  document.getElementById('fProg').innerHTML = `<option value="all">All programmes</option>` + progs.map(p => `<option value="${p.id}">${esc(p.short)}</option>`).join('');
+  document.querySelectorAll('#fInt button').forEach(b => b.onclick = () => { F.intake = b.dataset.v; render(); });
+  document.getElementById('fProg').onchange = e => { F.prog = e.target.value; render(); };
+
+  /* ---- the parts that the filters do not change: built once ---- */
+  const reqOpen = R.requests.reduce((a, r) => a + r.open, 0), reqOldest = R.requests.slice().sort((a, b) => b.oldestDays - a.oldestDays)[0];
+  const ungr = S.sections.filter(x => x.ungraded > 0).sort((a, b) => b.oldestUngradedDays - a.oldestUngradedDays);
+  const ungrN = ungr.reduce((a, x) => a + x.ungraded, 0), gradeDays = Dash.daysUntil(R.gradeEntryDeadline);
+  const over60 = S.students.filter(s => s.status === 'active' && s.overdueDays > 60);
+  const regOpenDays = Dash.daysUntil(R.examRegistrationOpen);
+
+  document.getElementById('reqT').innerHTML = `<tr><th>Request</th><th class="n">Open</th><th class="n">Oldest waiting</th><th>Status</th></tr>` +
+    R.requests.slice().sort((a, b) => b.oldestDays - a.oldestDays).map(r => `<tr><td>${esc(r.type)}</td><td class="n">${r.open}</td><td class="n">${plural(r.oldestDays, 'day')}</td><td>${r.oldestDays >= 30 ? st('crit', 'Late') : r.oldestDays >= 7 ? st('serious', 'Act') : st('good', 'In time')}</td></tr>`).join('') +
+    `<tr><td><b>All requests</b></td><td class="n"><b>${reqOpen}</b></td><td class="n">${plural(reqOldest.oldestDays, 'day')}</td><td></td></tr>`;
+
+  document.getElementById('gradeNote').textContent = `${ungr.length > 12 ? `the 12 oldest of ${ungr.length} sections · ` : ''}submissions waiting for a grade · deadline ${Dash.date(R.gradeEntryDeadline)}, in ${plural(gradeDays, 'day')}`;
+  document.getElementById('gradeT').innerHTML = ungr.length ? `<tr><th>Section</th><th>Professor</th><th class="n">Not graded</th><th class="n">Oldest</th><th>Status</th></tr>` +
+    ungr.slice(0, 12).map(x => { const p = S.util.prof(x.prof); return `<tr><td>${Dash.progKey(x.prog)} · ${esc(x.code)}<div class="why">${esc(x.title)}</div></td><td><a href="professor.html?id=${esc(p.id)}">${esc(p.name)}</a></td><td class="n">${x.ungraded}</td><td class="n">${plural(x.oldestUngradedDays, 'day')}</td><td>${x.oldestUngradedDays > 14 ? st('crit', 'Chase') : x.oldestUngradedDays > 7 ? st('serious', 'Remind') : st('good', 'In time')}</td></tr>`; }).join('')
+    : `<tr><td class="empty">Every section has entered its grades.</td></tr>`;
+
+  const rooms = Object.entries(R.roomUse).sort((a, b) => b[1] - a[1]);
+  Charts.bars(document.getElementById('rooms'), { items: rooms.map(([k, v]) => ({ label: k, value: v, text: v + ' %', color: v >= 90 ? 'var(--seq5)' : 'var(--s1)' })), max: 100, fmt: v => v + ' %', valueName: 'Booked (% of teaching hours)' });
+  const full = rooms.filter(r => r[1] >= 90), quiet = rooms[rooms.length - 1];
+  document.getElementById('roomNote').textContent = full.length
+    ? `${full.map(r => `${r[0]} is booked ${r[1]} %`).join(', ')} of its teaching hours, so a new session there will clash. ${quiet[0]} is the least used room at ${quiet[1]} %, so move sessions that need no computers there or to ${rooms[rooms.length - 2][0]} (${rooms[rooms.length - 2][1]} %).`
+    : 'No room is booked more than 90 % of its teaching hours.';
+
+  const gone = S.students.filter(s => s.status !== 'active').sort((a, b) => a.status.localeCompare(b.status) || a.prog.localeCompare(b.prog));
+  document.getElementById('leaveT').innerHTML = gone.length ? `<tr><th>Student</th><th>Programme</th><th>Cohort</th><th>Status</th></tr>` +
+    gone.map(s => `<tr><td>${esc(s.name)}</td><td>${Dash.progKey(s.prog)}</td><td>${esc(Dash.date(s.cohort + '-01').replace(/^1 /, ''))} ${esc(s.cohort.slice(0, 4))}</td><td>${s.status === 'withdrawn' ? st('serious', 'Withdrawn') : st('warn', 'On leave')}</td></tr>`).join('')
+    : `<tr><td class="empty">No student is on leave or has withdrawn this year.</td></tr>`;
+
+  function render() {
+    try { localStorage.setItem('dash_adm_f', JSON.stringify(F)); } catch (e) {}
+    document.querySelectorAll('#fInt button').forEach(b => b.classList.toggle('on', b.dataset.v === F.intake));
+    document.getElementById('fProg').value = F.prog;
+    const files = R.files.filter(f => (F.intake === 'both' || f.intake === F.intake) && (F.prog === 'all' || f.prog === F.prog));
+    const intakeLab = INTAKES.find(i => i[0] === F.intake)[1], progLab = F.prog === 'all' ? 'all programmes' : S.P[F.prog].short;
+    document.getElementById('scope').textContent = `Applicant files shown: ${intakeLab.toLowerCase()}, ${progLab}. ${plural(files.length, 'file')} of ${R.files.length}. Requests, grades, rooms and leaves are for the whole school.`;
+
+    /* ---- tiles ---- */
+    const missF = files.filter(f => f.missing.length), stale = files.filter(f => f.lastTouchDays >= 7), offerNoDep = files.filter(f => f.stage === 'Offer sent');
+    const vis = files.filter(f => f.visa), granted = vis.filter(f => f.visa === 'Permit granted').length;
+    document.getElementById('tiles').innerHTML = [
+      tile({ lab: 'Open application files', val: num(files.length), note: `${files.filter(f => f.stage === 'Deposit paid').length} of them have paid the deposit` }),
+      tile({ lab: 'Files with documents missing', val: num(missF.length), unit: `of ${files.length}`, note: `${missF.reduce((a, f) => a + f.missing.length, 0)} documents missing in all` }),
+      tile({ lab: 'Files untouched for 7 days or more', val: num(stale.length), delta: stale.filter(f => f.lastTouchDays > 14).length ? `<span class="down">${stale.filter(f => f.lastTouchDays > 14).length} untouched for more than 14 days</span>` : '<span class="flat">none untouched for more than 14 days</span>' }),
+      tile({ lab: 'Offers sent, no deposit yet', val: num(offerNoDep.length), note: offerNoDep.length ? `the oldest has been open ${Math.max(...offerNoDep.map(f => f.daysOpen))} days` : 'no offer is waiting for a deposit' }),
+      tile({ lab: 'Non-EU admitted students in a visa step', val: num(vis.length - granted), note: `${granted} permits already granted, ${vis.length} non-EU admitted in all` }),
+      tile({ lab: 'Student requests open', val: num(reqOpen), delta: `<span class="down">the oldest has waited ${reqOldest.oldestDays} days</span>, for a ${esc(reqOldest.type.replace(/ \(.*\)/, '').toLowerCase())}` }),
+      tile({ lab: 'Residence permits expiring or pending', val: num(R.permitsExpiring), note: 'enrolled non-EU students whose permit must be renewed this term' }),
+      tile({ lab: 'Sections with grades not entered', val: num(ungr.length), unit: `of ${S.sections.length}`, delta: `<span class="${gradeDays <= 7 ? 'down' : 'flat'}">${ungrN} submissions · deadline ${esc(Dash.date(R.gradeEntryDeadline))}, in ${gradeDays} days</span>` }),
+    ].join('');
+
+    /* ---- today's work: each item computed, what waited longest first, then what is due soonest ---- */
+    const acts = [];
+    files.slice().sort((a, b) => b.lastTouchDays - a.lastTouchDays).filter(f => f.lastTouchDays > 14).slice(0, 3).forEach(f => acts.push({ age: f.lastTouchDays, kind: 'crit',
+      w: `${f.name} (${S.P[f.prog].short}, ${intakeName(f.intake)}): no contact for ${f.lastTouchDays} days`, d: `The file is at "${f.stage}"${f.missing.length ? `; it still needs: ${f.missing.join(', ')}` : ''}. ${f.owner} owns it; call or write today.`, tag: 'waiting ' + plural(f.lastTouchDays, 'day') }));
+    const dip = R.requests.find(r => /Diploma/.test(r.type));
+    if (dip) acts.push({ age: dip.oldestDays, kind: dip.oldestDays >= 30 ? 'crit' : 'serious', w: `${dip.open} diplomas for the June 2026 graduates are not issued`, d: `The oldest request has waited ${dip.oldestDays} days. Graduates need the diploma for jobs and permits; print and send this week's batch.`, tag: 'waiting ' + plural(dip.oldestDays, 'day') });
+    acts.push({ age: ungr.length ? ungr[0].oldestUngradedDays : 0, kind: gradeDays <= 7 ? 'serious' : 'warn', w: `${ungr.length} sections have not entered ${ungrN} grades; the deadline is ${Dash.date(R.gradeEntryDeadline)}`, d: `${plural(gradeDays, 'day')} remain. Remind the professors listed under "Grades not yet entered"; the oldest submission has waited ${ungr.length ? ungr[0].oldestUngradedDays : 0} days.`, tag: 'due in ' + plural(gradeDays, 'day') });
+    acts.push({ age: 10, kind: 'serious', w: `Exam registration opens ${Dash.date(R.examRegistrationOpen)} and closes ${Dash.date(R.examRegistrationClose)}`, d: `It opens in ${plural(regOpenDays, 'day')}. ${plural(over60.length, 'student has', 'students have')} fees overdue more than 60 days; agree with finance today whether they may register for the exams starting ${Dash.date(R.examSessionStart)}.`, tag: 'opens in ' + plural(regOpenDays, 'day') });
+    if (R.clashes) acts.push({ age: 5, kind: 'warn', w: `${R.clashes} students are booked in two places at once next week`, d: 'Each clash is a timetable conflict between two sections. Move one session or give the student a written exception before Monday.', tag: 'next week' });
+    acts.sort((a, b) => b.age - a.age);
+    document.getElementById('acts').innerHTML = acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Late' : a.kind === 'serious' ? 'Act' : 'Plan')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><span class="go flat">${esc(a.tag)}</span></li>`).join('');
+
+    /* ---- files by stage ---- */
+    Charts.bars(document.getElementById('stages'), { items: STAGES.map((s, i) => ({ label: s, value: files.filter(f => f.stage === s).length, color: RAMP[i] })), valueName: 'Files', rowH: 30, labelWidth: 132 });
+
+    /* ---- missing documents ---- */
+    const docItems = R.docs.map(d => ({ label: d, value: files.filter(f => f.missing.includes(d)).length })).sort((a, b) => b.value - a.value);
+    Charts.bars(document.getElementById('docs'), { items: docItems, valueName: 'Files missing it', color: 'var(--s1)', labelWidth: 120 });
+
+    /* ---- visa pipeline ---- */
+    Charts.bars(document.getElementById('visa'), { items: VISA.map((v, i) => ({ label: v, value: vis.filter(f => f.visa === v).length, color: VRAMP[i] })), valueName: 'Admitted non-EU applicants', rowH: 30, labelWidth: 142 });
+    const febEarly = vis.filter(f => f.intake === '2027-02' && (f.visa === 'Visa letter to issue' || f.visa === 'Embassy appointment')).length;
+    document.getElementById('visaNote').textContent = `Plan for about 8 to 12 weeks between the visa letter and a Swiss study permit. A February 2027 starter should therefore reach "Waiting for permit" by early December. ${F.intake === '2027-09' ? 'The September 2027 starters shown here have time.' : febEarly ? `${plural(febEarly, 'February starter is', 'February starters are')} still at the letter or embassy step, so issue their letters first.` : 'No February starter shown here is still at the letter or embassy step.'}`;
+
+    /* ---- files table ---- */
+    const rows = files.slice().sort((a, b) => b.lastTouchDays - a.lastTouchDays || b.daysOpen - a.daysOpen).slice(0, 30);
+    document.getElementById('fileNote').textContent = `sorted by days since the last contact · ${rows.length < files.length ? `the first 30 of ${files.length}` : `all ${files.length}`} · more than 7 days = act, more than 14 days = late`;
+    document.getElementById('fileT').innerHTML = rows.length ? `<tr><th>Applicant</th><th>Programme</th><th>Intake</th><th>Region</th><th>Stage</th><th>Documents missing</th><th class="n">Days open</th><th>Since last contact</th><th>Owner</th></tr>` +
+      rows.map(f => `<tr><td>${esc(f.name)}</td><td>${Dash.progKey(f.prog)}</td><td>${esc(intakeName(f.intake))}</td><td>${esc(f.region)}${f.nonEU ? '<div class="why">non-EU · visa needed</div>' : ''}</td><td>${esc(f.stage)}${f.visa ? `<div class="why">${esc(f.visa)}</div>` : ''}</td><td>${f.missing.length ? `<div class="miss">${f.missing.map(m => `<span class="pill">${esc(m)}</span>`).join('')}</div>` : '<span class="flat">none</span>'}</td><td class="n">${f.daysOpen}</td><td>${touchSt(f.lastTouchDays)}</td><td>${esc(f.owner)}</td></tr>`).join('')
+      : `<tr><td class="empty">No application file matches these filters.</td></tr>`;
+  }
+  render();
+})();
+</script>
+</body>
+</html>

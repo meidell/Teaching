@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Director</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The director's dashboard (14 Nov 2026). The question it answers: is the school on track this year,
+     and what needs my decision? Everything is read from data.js (fictitious, one seeded school). -->
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>The school this year</h1><div class="sub" id="sub"></div></div>
+  </div>
+
+  <div class="g c4" id="tiles"></div>
+
+  <div class="g c21">
+    <div class="card"><div class="ch"><h2>What needs a decision</h2><span class="note">derived from the figures below; most urgent first</span></div><ul class="acts" id="acts"></ul></div>
+    <div class="card"><div class="ch"><h2>Next September intake</h2><span class="note">forecast · bar = expected students · tick = target</span></div>
+      <p class="lead">Forecast = last September's intake × this year's pace of applications. The range is wide this early: 41 weeks to go.</p>
+      <div id="intake"></div></div>
+  </div>
+
+  <div class="section-t">Students</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Students enrolled, by programme</h2><span class="note">academic years · tick = this year's budget</span></div><div id="head"></div></div>
+    <div class="card"><div class="ch"><h2>Students at risk, by programme</h2><span class="note">at risk = two or more warning signs</span></div>
+      <p class="lead">Warning signs: attendance under 80 %, average under 4.0, four or more assignments missing, no login for 14 days, fees overdue over 30 days, permit renewal pending.</p>
+      <div id="risk"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Programmes side by side</h2><span class="note">click a row to open the programme</span></div><div class="tw"><table class="t" id="progT"></table></div></div>
+
+  <div class="section-t">Money</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Tuition cash collected, cumulative</h2><span class="note">CHF · this year against plan and last year</span></div><div id="cash"></div></div>
+    <div class="card"><div class="ch"><h2>Revenue by academic year</h2><span class="note">CHF · this year = forecast · tick = budget</span></div><div id="rev"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>What each programme earns</h2><span class="note">CHF, this academic year · faculty cost shared by teaching hours, overheads by headcount</span></div><div class="tw"><table class="t" id="marT"></table></div></div>
+
+  <div class="section-t">Quality and people</div>
+  <div class="g c3">
+    <div class="card"><div class="ch"><h2>Student satisfaction</h2><span class="note">mean of 5 · * this term so far</span></div><div id="sat"></div></div>
+    <div class="card"><div class="ch"><h2>Retention after year one</h2><span class="note">% of a September cohort still enrolled a year later</span></div><div id="ret"></div></div>
+    <div class="card"><div class="ch"><h2>Faculty</h2><span class="note">grading waiting · teaching hours</span></div><div class="tw"><table class="t" id="facT"></table></div></div>
+  </div>
+  <p class="foot">All names and figures are invented, generated for the design of these dashboards. As of Saturday 14 November 2026, week 11 of the 14-week autumn term.</p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, PC, chf, chfK, num, pct, delta, tile, st, esc } = Dash;
+  Dash.shell('director');
+  const H = S.history, A = S.util.active, progs = S.programs, F = S.finance, C = S.crm, Q = S.quality;
+  document.getElementById('sub').textContent = `${S.school.name}, ${S.school.city} · ${S.school.term}, week ${S.school.termWeek} of ${S.school.termWeeks} · as of ${Dash.dateLong(S.school.today)}`;
+
+  /* ---- headline figures ---- */
+  const last = i => progs.reduce((a, p) => a + H.headcount[p.id][i], 0);
+  const nowN = last(5), lastYearN = last(4), budgetN = progs.reduce((a, p) => a + H.budgetHeadcount[p.id], 0);
+  const atRisk = A.filter(s => s.risk === 'high' || s.risk === 'medium').length;
+  const fc = progs.reduce((a, p) => a + C.funnel[p.id].forecast, 0), tg = progs.reduce((a, p) => a + C.target[p.id], 0);
+  const retNow = Math.round(progs.reduce((a, p) => a + H.retention[p.id][4] * H.headcount[p.id][4], 0) / lastYearN), retBefore = Math.round(progs.reduce((a, p) => a + H.retention[p.id][3] * H.headcount[p.id][3], 0) / last(3));
+  const satNow = H.satisfactionTrend.value[5], satLY = H.satisfactionTrend.value[3];
+  const collected = H.collectedYTD / H.invoicedYTD * 100;
+  document.getElementById('tiles').innerHTML = [
+    tile({ lab: 'Students enrolled', val: num(nowN), delta: delta(nowN, budgetN, { vs: `against the budget of ${budgetN}` }), spark: 'spN' }),
+    tile({ lab: 'Revenue this year, forecast', val: chfK(F.yearForecast), delta: delta(F.yearForecast, F.budget, { pct: true, vs: `against the budget of ${chfK(F.budget)}` }), spark: 'spR' }),
+    tile({ lab: 'Tuition collected so far', val: pct(collected), delta: `${esc(chfK(H.invoicedYTD - H.collectedYTD))} still to collect`, note: '' }),
+    tile({ lab: 'September 2027 intake, forecast', val: num(fc), unit: 'students', delta: delta(fc, tg, { vs: `against the target of ${tg}` }) }),
+    tile({ lab: 'Students at risk', val: num(atRisk), unit: `of ${A.length}`, delta: `<span class="flat">${Math.round(100 * atRisk / A.length)} % of active students</span>` }),
+    tile({ lab: 'Retention after year one', val: pct(retNow), delta: delta(retNow, retBefore, { vs: 'points against the cohort before', fmt: x => x }) }),
+    tile({ lab: 'Student satisfaction', val: satNow.toFixed(2), unit: 'of 5', delta: delta(satNow, satLY, { vs: 'against autumn 2025', fmt: x => x.toFixed(2) }) }),
+    tile({ lab: 'Graduates employed after 6 months', val: pct(H.graduateOutcomes.employed6m), note: `median salary ${chf(H.graduateOutcomes.salaryMedianCHF)} · ${H.graduateOutcomes.response} % answered` }),
+  ].join('');
+  Charts.spark(document.getElementById('spN'), H.years.map((_, i) => last(i)));
+  Charts.spark(document.getElementById('spR'), H.revenue.slice(0, 5).concat([F.yearForecast]));
+
+  /* ---- what needs a decision: each item computed, most urgent first ---- */
+  const acts = [];
+  progs.forEach(p => { const f = C.funnel[p.id]; if (f.forecast < C.target[p.id]) acts.push({ sev: 3, kind: 'crit', w: `${p.short}: September 2027 forecast ${f.forecast} for a target of ${C.target[p.id]}`, d: `Applications are running at ${Math.round(f.pace * 100)} % of last year's pace. Decide on extra recruitment spend or a revised target.`, go: 'marketing.html', gl: 'Sales & marketing' }); });
+  progs.forEach(p => { const m = F.marginByProgram[p.id]; if (m.net < 0) acts.push({ sev: 3, kind: 'crit', w: `${p.short} loses ${chfK(-m.net)} this year`, d: `${m.students} students bring ${chfK(m.revenue)}; teaching ${chfK(m.teaching)} and its share of overheads ${chfK(m.overhead)} exceed it. Review its size, fee or format.`, go: 'finance.html', gl: 'Finance' }); });
+  const over60 = F.aging['61–90 days'] + F.aging['over 90 days'];
+  if (over60 > 50000) acts.push({ sev: 2, kind: 'serious', w: `${chfK(over60)} of tuition overdue more than 60 days`, d: `${S.students.filter(s => s.overdueDays > 60).length} students. Agree when finance blocks exam registration (opens ${Dash.date(S.registrar.examRegistrationOpen)}).`, go: 'finance.html', gl: 'Finance' });
+  const backlog = S.faculty.slice().sort((a, b) => b.ungraded - a.ungraded)[0];
+  if (backlog.ungraded > 20) acts.push({ sev: 2, kind: 'serious', w: `${backlog.name}: ${backlog.ungraded} submissions not graded`, d: `Midterm grades are due ${Dash.date(S.registrar.gradeEntryDeadline)}. Students cannot see their standing until they are entered.`, go: 'professor.html?id=' + backlog.id, gl: 'Professor' });
+  const missing = Q.standards.flatMap(s => s.items).filter(i => i[1] === 'missing').length, partial = Q.standards.flatMap(s => s.items).filter(i => i[1] === 'partial').length;
+  acts.push({ sev: 2, kind: 'warn', w: `Accreditation visit ${Dash.date(Q.nextVisit)}: ${missing} pieces of evidence missing, ${partial} incomplete`, d: `${Dash.daysUntil(Q.nextVisit)} days to go. Name an owner for each missing item.`, go: 'quality.html', gl: 'Quality' });
+  const resp = C.response, rNow = resp.slice(-4).reduce((a, r) => a + r.hours, 0) / 4, rBefore = resp.slice(0, 4).reduce((a, r) => a + r.hours, 0) / 4;
+  if (rNow > rBefore * 1.4) acts.push({ sev: 1, kind: 'warn', w: `Leads now wait ${Math.round(rNow)} hours for a first answer`, d: `It was ${Math.round(rBefore)} hours two months ago. Every hour lowers conversion; check admissions staffing.`, go: 'marketing.html', gl: 'Sales & marketing' });
+  const noAvail = S.faculty.filter(f => !f.availabilitySent).length;
+  if (noAvail) acts.push({ sev: 1, kind: 'warn', w: `${noAvail} faculty have not sent their spring availability`, d: 'The spring timetable cannot be built without them.', go: '/lms/planner.html', gl: 'Teaching availability' });
+  acts.sort((a, b) => b.sev - a.sev);
+  document.getElementById('acts').innerHTML = acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Decide' : a.kind === 'serious' ? 'Act' : 'Watch')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><a class="go" href="${a.go}">${esc(a.gl)} →</a></li>`).join('');
+
+  /* ---- intake forecast vs target ---- */
+  Charts.bars(document.getElementById('intake'), { items: progs.map(p => { const f = C.funnel[p.id]; return { label: p.short, value: f.forecast, cmp: C.target[p.id], color: PC[p.id], text: `${f.forecast} (${f.forecastLow}–${f.forecastHigh})`,
+    extra: [['Range', f.forecastLow + '–' + f.forecastHigh], ['Applications so far', f.applications + ' (last year ' + f.appsPrevSameWeek + ')'], ['Last September', C.lastCycleFinal[p.id]]] }; }), valueName: 'Forecast', cmpName: 'Target', rowH: 34 });
+
+  /* ---- headcount by programme, stacked, with budget ticks ---- */
+  Charts.columns(document.getElementById('head'), { labels: H.years, stacked: true, series: progs.map(p => ({ name: p.short, values: H.headcount[p.id], color: PC[p.id] })),
+    target: { values: H.years.map((y, i) => i === 5 ? budgetN : null), name: 'Budget' } });
+
+  /* ---- risk by programme ---- */
+  Charts.bars(document.getElementById('risk'), { items: progs.map(p => { const stu = A.filter(s => s.prog === p.id), r = stu.filter(s => s.risk === 'high' || s.risk === 'medium').length;
+    return { label: p.short, value: Math.round(100 * r / stu.length), color: PC[p.id], text: `${r} of ${stu.length} · ${Math.round(100 * r / stu.length)} %`, extra: [['High risk', stu.filter(s => s.risk === 'high').length], ['Watch (one sign)', stu.filter(s => s.risk === 'watch').length]] }; }),
+    max: 30, valueName: 'Share at risk (%)', rowH: 32 });
+
+  /* ---- programmes table ---- */
+  const avg = (l, k) => l.length ? l.reduce((a, s) => a + s[k], 0) / l.length : null;
+  document.getElementById('progT').innerHTML = `<tr><th>Programme</th><th class="n">Students</th><th class="n">Budget</th><th class="n">At risk</th><th class="n">Attendance</th><th class="n">Average grade</th><th class="n">Retention</th><th class="n">Satisfaction</th><th class="n">Sept 2027 forecast / target</th></tr>` +
+    progs.map(p => { const stu = A.filter(s => s.prog === p.id), r = stu.filter(s => s.risk === 'high' || s.risk === 'medium').length, f = C.funnel[p.id], sat = stu.filter(s => s.satisfaction);
+      return `<tr class="click" data-href="programme.html?p=${p.id}"><td>${Dash.progKey(p.id)} · ${esc(p.name)}</td><td class="n">${stu.length}</td><td class="n">${H.budgetHeadcount[p.id]}</td><td class="n">${r}</td><td class="n">${Math.round(avg(stu, 'attendance'))} %</td><td class="n">${avg(stu, 'avgGrade').toFixed(2)}</td><td class="n">${H.retention[p.id][4]} %</td><td class="n">${(sat.reduce((a, s) => a + s.satisfaction, 0) / sat.length).toFixed(2)}</td><td class="n">${f.forecast} / ${C.target[p.id]} ${f.forecast < C.target[p.id] ? st('crit', 'short') : st('good', 'on track')}</td></tr>`; }).join('');
+  document.querySelectorAll('tr[data-href]').forEach(tr => tr.onclick = () => location.href = tr.dataset.href);
+
+  /* ---- cash, cumulative ---- */
+  const cum = a => { let s = 0; return a.map(v => v == null ? null : (s += v)); };
+  Charts.line(document.getElementById('cash'), { labels: F.months, series: [{ name: 'Collected this year', values: cum(F.cashActual), color: 'var(--s1)', area: true }, { name: 'Plan', values: cum(F.cashPlan), cmp: true }, { name: 'Last year', values: cum(F.cashLastYear).map((v, i) => i < 4 ? v : null), cmp: true }], fmt: chfK, yFmt: Charts.compact, height: 220 });
+
+  /* ---- revenue by year ---- */
+  Charts.columns(document.getElementById('rev'), { labels: H.years, series: [{ name: 'Revenue', values: H.revenue.slice(0, 5).concat([F.yearForecast]), color: 'var(--s1)' }], fmt: chfK, target: { values: H.years.map((y, i) => i === 5 ? F.budget : null), name: 'Budget' } });
+
+  /* ---- margin table ---- */
+  document.getElementById('marT').innerHTML = `<tr><th>Programme</th><th class="n">Students</th><th class="n">Tuition</th><th class="n">Scholarships given</th><th class="n">Teaching</th><th class="n">Marketing</th><th class="n">Contribution</th><th class="n">Overheads</th><th class="n">Net</th><th class="n">Net margin</th></tr>` +
+    progs.map(p => { const m = F.marginByProgram[p.id], mg = Math.round(100 * m.net / m.revenue);
+      return `<tr><td>${Dash.progKey(p.id)}</td><td class="n">${m.students}</td><td class="n">${chfK(m.revenue)}</td><td class="n">${chfK(m.scholarships)}</td><td class="n">${chfK(m.teaching)}</td><td class="n">${chfK(m.marketing)}</td><td class="n">${chfK(m.contribution)}</td><td class="n">${chfK(m.overhead)}</td><td class="n"><b class="${m.net < 0 ? 'down' : ''}">${chfK(m.net)}</b></td><td class="n">${mg < 0 ? st('crit', mg + ' %') : mg + ' %'}</td></tr>`; }).join('');
+
+  /* ---- satisfaction and retention trends ---- */
+  Charts.line(document.getElementById('sat'), { labels: H.satisfactionTrend.terms, series: [{ name: 'Satisfaction', values: H.satisfactionTrend.value, color: 'var(--s1)' }], fmt: v => v.toFixed(2), yFmt: v => v.toFixed(1), yMin: 3.5, height: 170 });
+  Charts.line(document.getElementById('ret'), { labels: H.years.slice(0, 5), series: progs.map(p => ({ name: p.short, values: H.retention[p.id], color: PC[p.id] })), fmt: v => v + ' %', yFmt: v => v + ' %', yMin: 80, height: 190, endLabels: false });
+
+  /* ---- faculty ---- */
+  document.getElementById('facT').innerHTML = `<tr><th>Who</th><th class="n">To grade</th><th class="n">Hours</th></tr>` + S.faculty.slice().sort((a, b) => b.ungraded - a.ungraded).slice(0, 6)
+    .map(f => `<tr class="click" data-href="professor.html?id=${f.id}"><td>${esc(f.name)}<div class="why">${esc(f.type)} · ${esc(f.area)}</div></td><td class="n">${f.ungraded > 20 ? st('serious', String(f.ungraded)) : f.ungraded}</td><td class="n">${Math.round(f.hoursTerm)}</td></tr>`).join('');
+  document.querySelectorAll('#facT tr[data-href]').forEach(tr => tr.onclick = () => location.href = tr.dataset.href);
+})();
+</script>
+</body>
+</html>
