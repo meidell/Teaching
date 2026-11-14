@@ -30,7 +30,7 @@ window.CourseProgress=(function(){
     {mod:'w3', short:T('J3','D3'), name:T('Journée 3 · Crédit digital, néobanques et inclusion financière','Day 3 · Digital credit, neobanks and financial inclusion'), total:9, live:true,  href:T('journee3.html','journee3-en.html')},
     {mod:'w4', short:T('J4','D4'), name:T('Journée 4 · Blockchain, cryptoactifs, DeFi et tokenisation','Day 4 · Blockchain, crypto-assets, DeFi and tokenisation'),     total:10, live:true, href:T('journee4.html','journee4-en.html')},
     {mod:'w5', short:T('J5','D5'), name:T('Journée 5 · Journée atelier · le plan complet de votre appli, sur une page web','Day 5 · Workshop day · your app’s full plan, on one web page'), total:7, live:true, href:T('journee5.html','journee5-en.html')},
-    {mod:'w6', short:T('J6','D6'), name:T('Journée 6 · Stratégie, financement et présentations finales','Day 6 · Strategy, funding and final presentations'),    total:9, live:false}
+    {mod:'w6', short:T('J6','D6'), name:T('Journée 6 · Présentations finales, un vrai portefeuille et votre première appli','Day 6 · Final presentations, a real wallet and your first app'), total:2, live:true, href:T('journee6.html','journee6.html')}
   ];
 
 
