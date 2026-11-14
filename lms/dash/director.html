@@ -13,6 +13,7 @@
 <main>
   <div class="head">
     <div><h1>The school this year</h1><div class="sub" id="sub"></div></div>
+    <div id="pending"></div>
   </div>
 
   <div class="g c4" id="tiles"></div>
@@ -23,6 +24,9 @@
       <p class="lead">Forecast = last September's intake × this year's pace of applications. The range is wide this early: 41 weeks to go.</p>
       <div id="intake"></div></div>
   </div>
+
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Decision windows</h2><span class="note">the school calendar · each date is the last moment a decision still changes the outcome</span></div>
+    <ul class="acts wins" id="wins"></ul></div>
 
   <div class="section-t">Students</div>
   <div class="g c2">
@@ -79,22 +83,15 @@
   Charts.spark(document.getElementById('spN'), H.years.map((_, i) => last(i)));
   Charts.spark(document.getElementById('spR'), H.revenue.slice(0, 5).concat([F.yearForecast]));
 
-  /* ---- what needs a decision: each item computed, most urgent first ---- */
-  const acts = [];
-  progs.forEach(p => { const f = C.funnel[p.id]; if (f.forecast < C.target[p.id]) acts.push({ sev: 3, kind: 'crit', w: `${p.short}: September 2027 forecast ${f.forecast} for a target of ${C.target[p.id]}`, d: `Applications are running at ${Math.round(f.pace * 100)} % of last year's pace. Decide on extra recruitment spend or a revised target.`, go: 'marketing.html', gl: 'Sales & marketing' }); });
-  progs.forEach(p => { const m = F.marginByProgram[p.id]; if (m.net < 0) acts.push({ sev: 3, kind: 'crit', w: `${p.short} loses ${chfK(-m.net)} this year`, d: `${m.students} students bring ${chfK(m.revenue)}; teaching ${chfK(m.teaching)} and its share of overheads ${chfK(m.overhead)} exceed it. Review its size, fee or format.`, go: 'finance.html', gl: 'Finance' }); });
-  const over60 = F.aging['61–90 days'] + F.aging['over 90 days'];
-  if (over60 > 50000) acts.push({ sev: 2, kind: 'serious', w: `${chfK(over60)} of tuition overdue more than 60 days`, d: `${S.students.filter(s => s.overdueDays > 60).length} students. Agree when finance blocks exam registration (opens ${Dash.date(S.registrar.examRegistrationOpen)}).`, go: 'finance.html', gl: 'Finance' });
-  const backlog = S.faculty.slice().sort((a, b) => b.ungraded - a.ungraded)[0];
-  if (backlog.ungraded > 20) acts.push({ sev: 2, kind: 'serious', w: `${backlog.name}: ${backlog.ungraded} submissions not graded`, d: `Midterm grades are due ${Dash.date(S.registrar.gradeEntryDeadline)}. Students cannot see their standing until they are entered.`, go: 'professor.html?id=' + backlog.id, gl: 'Professor' });
-  const missing = Q.standards.flatMap(s => s.items).filter(i => i[1] === 'missing').length, partial = Q.standards.flatMap(s => s.items).filter(i => i[1] === 'partial').length;
-  acts.push({ sev: 2, kind: 'warn', w: `Accreditation visit ${Dash.date(Q.nextVisit)}: ${missing} pieces of evidence missing, ${partial} incomplete`, d: `${Dash.daysUntil(Q.nextVisit)} days to go. Name an owner for each missing item.`, go: 'quality.html', gl: 'Quality' });
-  const resp = C.response, rNow = resp.slice(-4).reduce((a, r) => a + r.hours, 0) / 4, rBefore = resp.slice(0, 4).reduce((a, r) => a + r.hours, 0) / 4;
-  if (rNow > rBefore * 1.4) acts.push({ sev: 1, kind: 'warn', w: `Leads now wait ${Math.round(rNow)} hours for a first answer`, d: `It was ${Math.round(rBefore)} hours two months ago. Every hour lowers conversion; check admissions staffing.`, go: 'marketing.html', gl: 'Sales & marketing' });
-  const noAvail = S.faculty.filter(f => !f.availabilitySent).length;
-  if (noAvail) acts.push({ sev: 1, kind: 'warn', w: `${noAvail} faculty have not sent their spring availability`, d: 'The spring timetable cannot be built without them.', go: '/lms/planner.html', gl: 'Teaching availability' });
-  acts.sort((a, b) => b.sev - a.sev);
-  document.getElementById('acts').innerHTML = acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Decide' : a.kind === 'serious' ? 'Act' : 'Watch')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><a class="go" href="${a.go}">${esc(a.gl)} →</a></li>`).join('');
+  /* ---- what needs a decision: the shared list (Dash.decisions), most urgent first, each with its deadline ---- */
+  const acts = Dash.decisions();
+  document.getElementById('acts').innerHTML = acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Decide' : a.kind === 'serious' ? 'Act' : 'Watch')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}${a.by ? ` <b>Decide by ${esc(Dash.date(a.by))}, ${esc(Dash.cdown(Dash.daysUntil(a.by)))}.</b>` : ''}</div></div><a class="go" href="${a.go}">${esc(a.gl)} →</a></li>`).join('');
+  const crit = acts.filter(a => a.kind === 'crit').length;
+  document.getElementById('pending').innerHTML = `<span class="badge ${crit ? 'crit' : 'serious'}"><b>${acts.length}</b> decisions pending · ${crit} critical</span>`;
+
+  /* ---- decision windows: the calendar, counted down ---- */
+  const W = Dash.windows();
+  document.getElementById('wins').innerHTML = W.map(w => `<li class="win ${w.kind}"><span class="cd"><b>${w.days}</b><small>${w.days === 1 ? 'day' : 'days'}</small></span><div><div class="w">${esc(w.event)} · ${esc(Dash.dateLong(w.date))}</div><div class="d">${esc(w.decide)}. <span class="who">Who decides: ${esc(w.role)}</span></div></div>${st(w.kind, w.word)}</li>`).join('');
 
   /* ---- intake forecast vs target ---- */
   Charts.bars(document.getElementById('intake'), { items: progs.map(p => { const f = C.funnel[p.id]; return { label: p.short, value: f.forecast, cmp: C.target[p.id], color: PC[p.id], text: `${f.forecast} (${f.forecastLow}–${f.forecastHigh})`,

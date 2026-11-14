@@ -39,6 +39,15 @@ window.Charts = (function () {
     if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; t.style.left = x + 'px'; t.style.top = y + 'px'; }
   function hideTip() { if (tipEl) tipEl.style.display = 'none'; }
 
+  /* the label colour inside a filled mark: near-black or white, from the fill's ACTUAL colour in the
+     current theme (a ramp step is dark in one theme and light in the other) */
+  function inkOn(color) {
+    const sp = document.createElement('span'); sp.style.color = color; sp.style.display = 'none'; document.body.appendChild(sp);
+    const m = getComputedStyle(sp).color.match(/[\d.]+/g) || [0, 0, 0]; sp.remove();
+    const L = m.slice(0, 3).map(v => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * L[0] + 0.7152 * L[1] + 0.0722 * L[2] > 0.3 ? '#0b0b0b' : '#ffffff';
+  }
+
   /* ---- scales ---- */
   function nice(max, min) {
     min = min || 0; if (max === min) max = min + 1;
@@ -206,7 +215,7 @@ window.Charts = (function () {
       const tot = parts.reduce((a, p) => a + p.value, 0) || 1, W = Math.max(200, el.clientWidth), H = 28, s = svg(el, W, H); let x = 0, g = '';
       parts.forEach((p, k) => { const w = (W - 2 * (parts.length - 1)) * p.value / tot; if (w <= 0) return;
         g += `<rect class="bar" data-k="${k}" x="${x}" y="0" width="${w}" height="${H}" rx="4" fill="${p.color}"/>`;
-        const lab = Math.round(100 * p.value / tot) + ' %'; if (w > 44) g += `<text x="${x + 8}" y="${H / 2 + 4}" style="fill:${p.ink || '#fff'};font-weight:650">${lab}</text>`;
+        const lab = Math.round(100 * p.value / tot) + ' %'; if (w > 44) g += `<text x="${x + 8}" y="${H / 2 + 4}" style="fill:${inkOn(p.color)};font-weight:650">${lab}</text>`;
         g += `<rect class="hit" data-k="${k}" x="${x}" y="0" width="${w}" height="${H}"/>`; x += w + 2; });
       s.innerHTML = g;
       s.querySelectorAll('.hit').forEach(h => { const p = parts[+h.dataset.k]; h.addEventListener('pointermove', ev => showTip(ev, p.name, [{ name: 'Amount', value: fmt(p.value), color: p.color }, { name: 'Share', value: Math.round(100 * p.value / tot) + ' %' }])); h.addEventListener('pointerleave', hideTip); });
@@ -252,5 +261,5 @@ window.Charts = (function () {
     });
   }
 
-  return { line, bars, columns, funnel, spark, segbar, heat, bullet, redrawAll, showTip, hideTip, moveTip, fmt0, compact, esc };
+  return { inkOn, line, bars, columns, funnel, spark, segbar, heat, bullet, redrawAll, showTip, hideTip, moveTip, fmt0, compact, esc };
 })();

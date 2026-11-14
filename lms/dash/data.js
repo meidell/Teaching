@@ -421,10 +421,23 @@
 
   /* ---- what the director needs at a glance: alerts derived from the data ---- */
   const active = students.filter(s => s.status === 'active');
+  /* ---- the decision calendar: the dates by which someone must decide something (the school's own
+     calendar, fictitious like everything here). A dashboard counts down to each one. ---- */
+  const calendar = [
+    { date: '2026-11-16', event: 'Exam registration opens', decide: 'Decide which students with fees overdue for more than 60 days may not register for exams', owner: 'finance', role: 'Finance' },
+    { date: '2026-11-20', event: 'Midterm grades are due', decide: 'Chase or reassign the grading of any professor with more than 20 submissions waiting', owner: 'professor', role: 'Programme managers' },
+    { date: '2026-11-27', event: 'The spring marketing plan is locked', decide: 'Move budget to the channels that bring EMBA applications, or lower the EMBA target', owner: 'marketing', role: 'Director with Sales & marketing' },
+    { date: '2026-11-27', event: 'Last day to approve spring adjunct contracts (week 13)', decide: 'Approve or cancel the adjunct hires for the spring term', owner: 'director', role: 'Director' },
+    { date: '2026-12-04', event: 'The spring timetable is published', decide: 'Accept that faculty who sent no availability get a timetable without their input', owner: 'programme', role: 'Programme managers' },
+    { date: '2026-12-15', event: 'Board meeting: budget 2027–28', decide: 'Set fees and intake targets, and decide the future of the loss-making DBA', owner: 'director', role: 'Director' },
+    { date: '2026-12-18', event: 'Accreditation: evidence owners named', decide: 'Name one owner for every missing or incomplete piece of evidence', owner: 'quality', role: 'Quality & accreditation' },
+    { date: '2027-01-15', event: 'Application deadline, February 2027 intake', decide: 'Extend the deadline or close the intake below target', owner: 'marketing', role: 'Sales & marketing' },
+  ];
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality,
+    crm, registrar, finance, quality, calendar,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),
