@@ -61,6 +61,19 @@ window.Dash = (function () {
   function tile(o) {
     return `<div class="tile"><div class="lab">${esc(o.lab)}</div><div class="val">${esc(o.val)}${o.unit ? `<small>${esc(o.unit)}</small>` : ''}</div>${o.delta ? `<div class="delta">${o.delta}</div>` : ''}${o.spark ? `<div class="spk" id="${o.spark}"></div>` : ''}${o.note ? `<div class="delta">${esc(o.note)}</div>` : ''}</div>`;
   }
+  /* ---- the ONE course check every page uses (thresholds live in data.js) ----
+     returns [{key, kind, text}], each reason in words with its threshold */
+  function courseIssues(x) {
+    const T = S.thresholds.course, r = [];
+    if (!x.enrolled) return r;
+    if (x.attendance != null && x.attendance < T.attendance) r.push({ key: 'att', kind: 'crit', text: `attendance ${x.attendance} % (alert below ${T.attendance} %)` });
+    if (x.failRate != null && x.failRate >= T.failShare) r.push({ key: 'fail', kind: 'crit', text: `${x.failRate} % of students below ${S.rules.pass.toFixed(1)} (alert from ${T.failShare} %)` });
+    if (x.oldestUngradedDays > T.gradingDays) r.push({ key: 'grading', kind: 'serious', text: `oldest submission waits ${x.oldestUngradedDays} days for a grade (alert after ${T.gradingDays})` });
+    if (x.submissionRate != null && x.submissionRate < T.handedIn) r.push({ key: 'handed', kind: 'serious', text: `${x.submissionRate} % of work handed in (alert below ${T.handedIn} %)` });
+    if (x.feedback < T.feedback) r.push({ key: 'fb', kind: 'warn', text: `student feedback ${x.feedback.toFixed(1)} of 5 (alert below ${T.feedback})` });
+    return r;
+  }
+  const courseRule = () => { const T = S.thresholds.course; return `attendance under ${T.attendance} %, ${T.failShare} % or more of students under ${S.rules.pass.toFixed(1)}, a submission waiting more than ${T.gradingDays} days for a grade, under ${T.handedIn} % of work handed in, or student feedback under ${T.feedback} of 5`; };
   /* status: colour + dot + word, never colour alone */
   const st = (kind, word) => `<span class="st ${kind}">${esc(word)}</span>`;
   const riskSt = r => r === 'high' ? st('crit', 'High risk') : r === 'medium' ? st('serious', 'At risk') : r === 'watch' ? st('warn', 'Watch') : st('good', 'On track');
@@ -81,7 +94,7 @@ window.Dash = (function () {
     if (over60 > 50000) acts.push({ sev: 2, kind: 'serious', role: 'finance', w: `${chfK(over60)} of tuition overdue more than 60 days`, d: `${S.students.filter(s => s.overdueDays > 60).length} students. Decide whether they may register for exams; registration opens ${date(S.registrar.examRegistrationOpen)}.`, go: 'finance.html', gl: 'Finance', by: S.registrar.examRegistrationOpen });
     const backlog = S.faculty.slice().sort((a, b) => b.ungraded - a.ungraded)[0];
     if (backlog.ungraded > 20) acts.push({ sev: 2, kind: 'serious', role: 'professor', w: `${backlog.name}: ${backlog.ungraded} submissions not graded`, d: `Midterm grades are due ${date(S.registrar.gradeEntryDeadline)}. Students cannot see their standing until they are entered.`, go: 'professor.html?id=' + backlog.id, gl: 'Professor', by: S.registrar.gradeEntryDeadline });
-    const items = Q.standards.flatMap(s => s.items), missing = items.filter(i => i[1] === 'missing').length, partial = items.filter(i => i[1] === 'partial').length;
+    const missing = Q.evidence.filter(e => e.status === 'missing').length, partial = Q.evidence.filter(e => e.status === 'incomplete').length;
     acts.push({ sev: 2, kind: 'warn', role: 'quality', w: `Accreditation visit ${date(Q.nextVisit)}: ${missing} pieces of evidence missing, ${partial} incomplete`, d: `${daysUntil(Q.nextVisit)} days to go. Name an owner for each missing item.`, go: 'quality.html', gl: 'Quality', by: '2026-12-18' });
     const resp = C.response, rNow = resp.slice(-4).reduce((a, r) => a + r.hours, 0) / 4, rBefore = resp.slice(0, 4).reduce((a, r) => a + r.hours, 0) / 4;
     if (rNow > rBefore * 1.4) acts.push({ sev: 1, kind: 'warn', role: 'marketing', w: `Leads now wait ${Math.round(rNow)} hours for a first answer`, d: `It was ${Math.round(rBefore)} hours two months ago. Leads answered late convert less often; check admissions staffing.`, go: 'marketing.html', gl: 'Sales & marketing' });
@@ -101,20 +114,20 @@ window.Dash = (function () {
     const crit = acts.filter(a => a.kind === 'crit').length;
     out.director = { kind: crit ? 'crit' : acts.length ? 'serious' : 'good', count: acts.length,
       line: `${acts.length} decisions pending, ${crit} of them critical. The next deadline: ${windows()[0] ? windows()[0].event.toLowerCase() + ' ' + cdown(windows()[0].days) : 'none'}.` };
-    const flagged = S.sections.filter(x => x.attendance < 84 || x.failRate >= 15 || x.oldestUngradedDays > 14 || x.feedback < 3.5), high = A.filter(s => s.risk === 'high').length;
+    const flagged = S.sections.filter(x => courseIssues(x).length), high = A.filter(s => s.risk === 'high').length;
     out.programme = { kind: high >= 15 ? 'crit' : flagged.length ? 'serious' : 'good', count: flagged.length + high,
-      line: `${flagged.length} of ${S.sections.length} courses past a limit (attendance under 84 %, failure 15 % or more, grading waiting over 14 days, feedback under 3.5); ${high} students at high risk.` };
+      line: `${flagged.length} of ${S.sections.length} courses past an alert threshold; ${high} students at high academic risk.` };
     const behind = S.programs.filter(p => C.funnel[p.id].forecast < C.target[p.id]), apps = S.programs.reduce((a, p) => a + C.funnel[p.id].applications, 0), appsLY = S.programs.reduce((a, p) => a + C.funnel[p.id].appsPrevSameWeek, 0);
     const febGap = Object.values(C.feb.programs).reduce((a, x) => a + Math.max(0, x.target - x.deposits), 0);
     out.marketing = { kind: behind.some(p => C.funnel[p.id].forecastHigh < C.target[p.id]) ? 'crit' : behind.length || febGap ? 'serious' : 'good', count: behind.length + (febGap ? 1 : 0),
       line: `${behind.length ? behind.map(p => p.short).join(', ') + ' behind target for September 2027' : 'Every programme on target for September 2027'}; applications ${apps >= appsLY ? '+' : ''}${Math.round(100 * (apps - appsLY) / Math.max(1, appsLY))} % against last year; ${febGap} February deposits still needed.` };
-    const stale = R.files.filter(f => f.lastTouchDays > 14).length, visaFeb = R.files.filter(f => f.intake === '2027-02' && (f.visa === 'Visa letter to issue' || f.visa === 'Embassy appointment')).length, oldReq = R.requests.filter(r => r.oldestDays >= 30).length;
+    const stale = R.files.filter(f => f.open && f.lastTouchDays > S.thresholds.contact.late).length, visaFeb = R.files.filter(f => f.intake === '2027-02' && (f.visa === 'Visa letter to issue' || f.visa === 'Embassy appointment')).length, oldReq = R.requests.filter(r => r.oldestDays >= 30).length;
     out.admissions = { kind: stale > 10 || oldReq ? 'serious' : stale ? 'warn' : 'good', count: stale + visaFeb + oldReq,
-      line: `${stale} files with no contact for over 14 days; ${visaFeb} February starters still at the visa letter or embassy step; ${oldReq} request type${oldReq === 1 ? '' : 's'} waiting over 30 days.` };
+      line: `${stale} open files with no contact for over ${S.thresholds.contact.late} days; ${visaFeb} February starters still at the visa letter or embassy step; ${oldReq} request type${oldReq === 1 ? '' : 's'} waiting over 30 days.` };
     const overdue = S.students.reduce((a, s) => a + s.overdue, 0), debtors = S.students.filter(s => s.overdue > 0).length, over60 = F.aging['61–90 days'] + F.aging['over 90 days'];
     out.finance = { kind: over60 > 150000 ? 'serious' : over60 ? 'warn' : 'good', count: S.students.filter(s => s.overdueDays > 60).length,
       line: `${chfK(overdue)} overdue across ${debtors} students, ${chfK(over60)} of it over 60 days; ${Math.round(100 * S.history.collectedYTD / S.history.invoicedYTD)} % of the year's tuition collected.` };
-    const items = Q.standards.flatMap(s => s.items), miss = items.filter(i => i[1] === 'missing').length, part = items.filter(i => i[1] === 'partial').length, goalsLow = Q.learningGoals.filter(g => g.met < g.target).length;
+    const miss = Q.evidence.filter(e => e.status === 'missing').length, part = Q.evidence.filter(e => e.status === 'incomplete').length, goalsLow = Q.learningGoals.filter(g => g.met < g.target).length;
     out.quality = { kind: miss ? 'serious' : part ? 'warn' : 'good', count: miss + part,
       line: `${miss} pieces of evidence missing and ${part} incomplete, ${daysUntil(Q.nextVisit)} days before the visit; ${goalsLow} of ${Q.learningGoals.length} learning goals under target.` };
     const late = S.faculty.filter(f => f.ungraded > 20), maxF = S.faculty.slice().sort((a, b) => b.ungraded - a.ungraded)[0], noAvail = S.faculty.filter(f => !f.availabilitySent).length;
@@ -127,5 +140,5 @@ window.Dash = (function () {
   }
   const KWORD = { crit: 'Critical', serious: 'Act', warn: 'Watch', good: 'On track', none: 'Passed' };
 
-  return { decisions, signals, windows, cdown, KWORD, S, ROLES, PC, shell, chf, chfK, num, pct, date, dateLong, daysUntil, delta, tile, st, riskSt, progKey, esc };
+  return { decisions, signals, windows, cdown, KWORD, courseIssues, courseRule, S, ROLES, PC, shell, chf, chfK, num, pct, date, dateLong, daysUntil, delta, tile, st, riskSt, progKey, esc };
 })();

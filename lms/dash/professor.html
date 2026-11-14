@@ -107,6 +107,7 @@
       <div id="gradeC"></div></div>
   </div>
   <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Course health</h2><span class="note">this term so far · feedback is the mean of 5 from the course evaluation</span></div>
+    <p class="lead" id="healthLead"></p>
     <div class="tw"><table class="t" id="healthT"></table></div></div>
 
   <div class="g c21">
@@ -153,20 +154,20 @@
   pick.onchange = () => { const u = new URL(location.href); u.searchParams.set('id', pick.value); history.replaceState(null, '', u); render(pick.value); };
 
   /* ---- what a professor may see about a student: academic signs only ---- */
-  const PERSONAL = /overdue|permit/;
+  const TS = S.thresholds.student;
   function academic(s, mySecs) {
     const mine = mySecs.filter(x => x.students.includes(s.id)).map(x => ({ x, r: U.rec(s.id, x.id) }));
     const signs = [];
     mine.forEach(m => {
       if (m.r.att < R.attendance) signs.push({ k: 'att', t: `attendance ${m.r.att} % in ${m.x.code}` });
       if (m.r.grade < R.pass) signs.push({ k: 'grade', t: `grade ${m.r.grade.toFixed(1)} in ${m.x.code}` });
-      const miss = m.r.subsTotal - m.r.subsDone; if (miss >= 2) signs.push({ k: 'miss', t: `${miss} assignments missing in ${m.x.code}` });
-      if (m.r.lastSubmitDays >= 14) signs.push({ k: 'quiet', t: `no hand-in for ${m.r.lastSubmitDays} days in ${m.x.code}` });
+      const miss = m.r.subsTotal - m.r.subsDone; if (miss >= TS.missingInCourse) signs.push({ k: 'miss', t: `${miss} assignments missing in ${m.x.code}` });
+      if (m.r.lastSubmitDays >= TS.quietDays) signs.push({ k: 'quiet', t: `no hand-in for ${m.r.lastSubmitDays} days in ${m.x.code}` });
     });
-    if (s.lastLoginDays >= 14) signs.push({ k: 'login', t: `no visit to the course pages for ${s.lastLoginDays} days` });
+    if (s.lastLoginDays >= TS.quietDays) signs.push({ k: 'login', t: `no visit to the course pages for ${s.lastLoginDays} days` });
     /* other courses: a yes or no, never a figure */
-    const others = s.sections.filter(id => !mySecs.some(x => x.id === id)).some(id => { const r = U.rec(s.id, id); return r.att < R.attendance || r.grade < R.pass || r.subsTotal - r.subsDone >= 2; });
-    const office = s.riskReasons.some(r => PERSONAL.test(r));
+    const others = s.sections.filter(id => !mySecs.some(x => x.id === id)).some(id => { const r = U.rec(s.id, id); return r.att < R.attendance || r.grade < R.pass || r.subsTotal - r.subsDone >= TS.missingInCourse; });
+    const office = s.adminReasons.length > 0;
     const n = signs.length + (others ? 1 : 0), level = n >= 3 ? 'high' : n === 2 ? 'medium' : n === 1 ? 'watch' : 'none';
     return { mine, signs, others, office, level, n };
   }
@@ -283,15 +284,12 @@
       fmt: v => v + (v === 1 ? ' student' : ' students'), yFmt: v => String(v), height: 230 });
 
     /* ---- course health ---- */
+    document.getElementById('healthLead').textContent = `The school flags a course with ${Dash.courseRule()}. The programme managers use the same thresholds.`;
     document.getElementById('healthT').innerHTML = `<tr><th>Course</th><th class="n">Enrolled</th><th class="n">Attendance</th><th class="n">Mean grade</th><th class="n">Fail rate</th><th class="n">Handed in</th><th class="n">Feedback</th><th>Status</th></tr>` +
       secs.map(x => {
-        const issues = [];
-        if (x.attendance < 80) issues.push(['crit', 'attendance under 80 %']);
-        if (x.failRate > 20) issues.push(['crit', 'over 20 % failing']);
-        if (x.oldestUngradedDays > 14) issues.push(['serious', 'grading overdue']);
-        if (x.submissionRate < 85) issues.push(['serious', 'under 85 % handed in']);
-        if (x.feedback < 3.8) issues.push(['warn', 'feedback under 3.8']);
-        const status = issues.length ? issues.map(i => st(i[0], i[1])).join('<br>') : st('good', 'on track');
+        /* the school's one set of course thresholds (data.js), the same as on the programme page */
+        const issues = Dash.courseIssues(x);
+        const status = issues.length ? issues.map(i => st(i.kind, i.text)).join('<br>') : st('good', 'on track');
         return `<tr><td><i class="sk" style="background:${col[x.id]}"></i>${esc(x.code)} ${esc(x.title)}<div class="why">${esc(S.P[x.prog].short)} year ${x.year} · ${x.ects} ECTS · ${x.held} of ${x.sessions} sessions held</div></td>
           <td class="n">${x.enrolled}</td><td class="n">${x.attendance} %</td><td class="n">${x.avgGrade.toFixed(1)}</td><td class="n">${x.failRate} %</td><td class="n">${x.submissionRate} %</td>
           <td class="n">${x.feedback.toFixed(1)}<div class="why">${x.feedbackN} of ${x.enrolled} answered</div></td><td>${status}</td></tr>`;

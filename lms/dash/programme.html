@@ -15,13 +15,34 @@
   .seg button .key{margin-right:6px;}
   table.t td.nw{white-space:nowrap;}
   .more{font-size:12.5px;color:var(--ink2);margin-top:8px;}
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;margin:0 0 16px;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:3px;width:max-content;max-width:100%;}
+  .tabs button{border:none;background:none;padding:7px 16px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--ink2);}
+  .tabs button.on{background:var(--pill);color:#fff;}
+  [data-tab][hidden]{display:none;}
+  .rf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px;}
+  .rf select{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:5px 10px;font-size:13px;}
+  .rf label{font-size:12px;color:var(--muted);font-weight:600;}
+  .linkbtn{border:none;background:none;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;font:inherit;text-align:left;}
+  .morebtn{margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;}
+  .also{font-size:12px;color:var(--muted);margin-top:8px;}
+  dialog.cc{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--r);padding:20px;max-width:680px;width:calc(100% - 32px);max-height:88vh;}
+  dialog.cc::backdrop{background:rgba(0,0,0,.45);}
+  dialog.cc h3{margin:0 0 2px;font-size:19px;} dialog.cc h4{margin:16px 0 6px;font-size:14px;}
+  dialog.cc .x{float:right;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;}
+  dialog.cc .save{border:none;background:var(--pill);color:#fff;border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:650;margin-top:8px;}
+  .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;font-size:13px;}
+  .kv dt{color:var(--ink2);} .kv dd{margin:0;text-align:right;font-weight:650;}
+  .log{list-style:none;margin:0;padding:0;font-size:13px;} .log li{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:5px 0;border-bottom:1px solid var(--grid);} .log li:last-child{border:none;}
+  #cfT{min-width:820px;} #riskT{min-width:820px;}
+  @media(max-width:640px){.tabs{width:auto;}}
 </style>
 </head>
 <body>
 <main>
   <div class="filters pfilters"><label for="pseg">Programme</label><div class="seg" id="pseg" role="group" aria-label="Choose a programme"></div></div>
   <div id="view"></div>
-  <p class="foot">All names and figures are invented, generated for the design of these dashboards. As of Saturday 14 November 2026, week 11 of the 14-week autumn term.</p>
+  <dialog class="cc" id="dlg"></dialog>
+  <p class="foot" id="foot"></p>
 </main>
 <script src="data.js"></script>
 <script src="charts.js"></script>
@@ -42,17 +63,14 @@
   seg.querySelectorAll('button').forEach(b => b.onclick = () => { const u = new URL(location.href); u.searchParams.set('p', b.dataset.p); history.replaceState(null, '', u); render(b.dataset.p); });
 
   /* a course's problems, each in words with its threshold */
-  function courseReasons(x) {
-    const r = [];
-    if (x.attendance != null && x.attendance < 85) r.push(`attendance ${x.attendance} % (alert below 85 %)`);
-    if (x.failRate != null && x.failRate >= 15) r.push(`${x.failRate} % of students below 4.0 (alert from 15 %)`);
-    if (x.oldestUngradedDays > 10) r.push(`oldest ungraded submission waits ${x.oldestUngradedDays} days (alert after 10)`);
-    if (x.feedback < 3.8) r.push(`student feedback ${x.feedback.toFixed(1)} of 5 (alert below 3.8)`);
-    return r;
-  }
+  /* the school's ONE set of course thresholds (data.js → Dash.courseIssues), the same as on the professor page */
+  const courseReasons = x => Dash.courseIssues(x).map(i => i.text);
+  const R = S.rules, TS = S.thresholds.student;
+  document.getElementById('foot').textContent = `All names and figures are invented, generated for the design of these dashboards. As of ${Dash.dateLong(S.school.today)}, week ${S.school.termWeek} of the ${S.school.termWeeks}-week ${S.school.term.toLowerCase()} term.`;
+  let PID = null;
 
   function render(pid) {
-    if (!S.P[pid]) pid = 'bba';
+    if (!S.P[pid]) pid = 'bba'; PID = pid;
     const p = S.P[pid];
     seg.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.p === pid); b.setAttribute('aria-pressed', b.dataset.p === pid); });
     const all = S.students.filter(s => s.prog === pid), A = all.filter(s => s.status === 'active');
@@ -64,50 +82,68 @@
   <div class="head">
     <div><h1>${esc(p.name)}</h1><div class="sub" id="sub"></div></div>
   </div>
+  <nav class="tabs" id="tabs" aria-label="Sections of the dashboard"><button data-t="now">Now</button><button data-t="cohorts">Cohorts</button></nav>
+  <section data-tab="now">
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Decisions and dates for programme managers</h2><span class="note">countdown from today · from the school's decision calendar</span></div>
+    <ul class="acts wins" id="wins"></ul><div class="also" id="alsoDates"></div></div>
   <div class="g c4" id="tiles"></div>
   <div class="card" style="margin-bottom:14px"><div class="ch"><h2>What needs attention</h2><span class="note">derived from the figures below; most urgent first</span></div><ul class="acts" id="acts"></ul></div>
 
   <div class="section-t">Courses this term</div>
   <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Course health</h2><span class="note">click a row to open the professor's dashboard</span></div>
-    <p class="lead">A course is flagged when attendance is under 85 %, 15 % or more of its students average under 4.0, a submission has waited more than 10 days for a grade, or student feedback is under 3.8 of 5.</p>
+    <p class="lead" id="secLead"></p>
     <div class="tw"><table class="t" id="secT"></table></div></div>
   <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Attendance by week, per course</h2><span class="note">% of enrolled students present in each session held</span></div>
     <p class="lead">Each square is one week's session. A course that pales from left to right is losing its students as the term goes on.</p>
     <div id="heat"></div></div>
 
   <div class="section-t" id="risk-list">Students</div>
-  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students who need help</h2><span class="note">click a row to open the student's dashboard</span></div>
-    <p class="lead">Warning signs: attendance under 80 %, average under 4.0, four or more assignments missing, no login for 14 days, fees overdue over 30 days, residence permit renewal pending. High risk = three or more signs, at risk = two, watch = one.</p>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students who need help</h2><span class="note">click a name to open the case</span></div>
+    <p class="lead" id="riskLead"></p>
+    <div class="rf" id="rf"></div>
     <div class="tw"><table class="t" id="riskT"></table></div><div class="more" id="riskMore"></div></div>
   <div class="g c3">
-    <div class="card"><div class="ch"><h2>Students at risk, by cohort</h2><span class="note">% with two or more warning signs</span></div><div id="cohort"></div></div>
+    <div class="card"><div class="ch"><h2>Students at risk, by cohort</h2><span class="note">% with two or more academic warning signs</span></div><div id="cohort"></div></div>
     <div class="card"><div class="ch"><h2>Credits earned, by year</h2><span class="note">mean % of the ${p.ects} ECTS required · tick = expected by now</span></div>
       <p class="lead">Expected = the credits of the years already completed. A bar short of its tick means students are falling behind on credits.</p><div id="ects"></div></div>
     <div class="card"><div class="ch"><h2>Where the students come from</h2><span class="note">${A.length} active students, by region of nationality</span></div><div id="regions"></div><div class="tw" style="margin-top:10px"><table class="t" id="regT"></table></div></div>
   </div>
 
   <div class="section-t">Coming up</div>
-  <div class="card"><div class="ch"><h2>Assignments due in the next 14 days</h2><span class="note">${esc(Dash.date(S.school.today))} to ${esc(Dash.date(new Date(Date.parse(S.school.today) + 14 * 864e5).toISOString().slice(0, 10)))}</span></div><div class="tw"><table class="t" id="dueT"></table></div></div>`;
+  <div class="card"><div class="ch"><h2>Assignments due in the next 14 days</h2><span class="note">${esc(Dash.date(S.school.today))} to ${esc(Dash.date(new Date(Date.parse(S.school.today) + 14 * 864e5).toISOString().slice(0, 10)))}</span></div><div class="tw"><table class="t" id="dueT"></table></div></div>
+  </section>
+
+  <section data-tab="cohorts" hidden>
+  <div class="g c4" id="cfTiles"></div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>What happened to each intake</h2><span class="note">every student who started, by intake · finished intakes on the left</span></div>
+    <p class="lead" id="cfLead"></p><div id="cfC"></div></div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Cohort flow, intake by intake</h2><span class="note">counts of students · the graduation rate counts finished intakes only</span></div>
+    <div class="tw"><table class="t" id="cfT"></table></div></div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Why students withdrew</h2><span class="note">every intake on this page</span></div><div id="wrC"></div></div>
+    <div class="card"><div class="ch"><h2>Withdrawn and on leave, current intakes</h2><span class="note">click a name to open the case</span></div><div class="tw"><table class="t" id="wlT"></table></div></div>
+  </div>
+  </section>`;
 
     document.getElementById('sub').innerHTML = `${esc(p.short)} · managed by ${esc(p.manager)} · ${esc(p.mode)} · ${p.ects} ECTS over ${p.years} years · ${esc(S.school.term)}, week ${S.school.termWeek} of ${S.school.termWeeks} · as of ${esc(Dash.dateLong(S.school.today))}`;
 
     /* ---- headline figures ---- */
     const budget = H.budgetHeadcount[pid];
     const atRisk = A.filter(s => s.risk === 'high' || s.risk === 'medium'), high = A.filter(s => s.risk === 'high');
-    const att = mean(A, s => s.attendance), gr = mean(A, s => s.avgGrade);
+    const underAtt = A.filter(s => s.sections.some(id => U.rec(s.id, id).att < R.attendance)), underPass = A.filter(s => s.avgGrade != null && s.avgGrade < R.pass), failCourse = A.filter(s => s.sections.some(id => U.rec(s.id, id).grade < R.pass));
     const ret = H.retention[pid], retNow = ret[ret.length - 1], retBefore = ret[ret.length - 2];
     const sat = mean(A, s => s.satisfaction), satSchool = mean(U.active, s => s.satisfaction);
     const owing = all.filter(s => s.overdue > 0), owed = owing.reduce((a, s) => a + s.overdue, 0), owed30 = owing.filter(s => s.overdueDays > 30);
     const fmt1 = x => x.toFixed(1), fmt2 = x => x.toFixed(2);
     document.getElementById('tiles').innerHTML = [
       tile({ lab: 'Active students', val: num(A.length), delta: delta(A.length, budget, { vs: `against the budget of ${budget}` }), spark: 'spN' }),
-      tile({ lab: 'Students at risk (two or more signs)', val: num(atRisk.length), unit: `of ${A.length}`, delta: `<span class="flat">${A.length ? Math.round(100 * atRisk.length / A.length) : 0} % of active students · ${high.length} at high risk</span>` }),
-      tile({ lab: 'Mean attendance', val: att == null ? '—' : pct(att), delta: att == null ? '' : delta(Math.round(att), 80, { vs: 'points against the 80 % rule', fmt: x => x }) }),
-      tile({ lab: 'Mean grade', val: gr == null ? '—' : fmt2(gr), unit: 'of 6', delta: gr == null ? '' : delta(gr, 4, { vs: 'against the pass mark of 4.0', fmt: fmt2 }) }),
+      tile({ lab: 'Students at academic risk (two or more signs)', val: num(atRisk.length), unit: `of ${A.length}`, delta: `<span class="flat">${A.length ? Math.round(100 * atRisk.length / A.length) : 0} % of active students · ${high.length} at high risk</span>` }),
+      tile({ lab: `Students under the ${R.attendance} % attendance rule`, val: num(underAtt.length), unit: `of ${A.length}`, delta: `<span class="${underAtt.length ? 'down' : 'flat'}">${A.length ? Math.round(100 * underAtt.length / A.length) : 0} %</span> are under ${R.attendance} % in at least one course and may be blocked from that exam.` }),
+      tile({ lab: `Students averaging under ${R.pass.toFixed(1)}`, val: num(underPass.length), unit: `of ${A.length}`, delta: `<span class="${underPass.length ? 'down' : 'flat'}">${A.length ? Math.round(100 * underPass.length / A.length) : 0} %</span> have a grade so far under the pass mark; ${failCourse.length} fail at least one course.` }),
       tile({ lab: 'Retention after year one', val: pct(retNow), delta: delta(retNow, retBefore, { vs: 'points against the cohort before', fmt: x => x }), spark: 'spRet' }),
       tile({ lab: 'Student satisfaction', val: sat == null ? '—' : fmt2(sat), unit: 'of 5', delta: sat == null ? '' : delta(sat, satSchool, { vs: `against the school mean of ${fmt2(satSchool)}`, fmt: fmt2, flat: 0.005 }) }),
       tile({ lab: 'Fees overdue', val: chfK(owed), delta: `<span class="flat">${owing.length} students owe money · ${owed30.length} of them for over 30 days</span>` }),
-      tile({ lab: 'September 2027 intake, forecast', val: num(f.forecast), unit: 'students', delta: delta(f.forecast, C.target[pid], { vs: `against the target of ${C.target[pid]}` }), note: `range ${f.forecastLow}–${f.forecastHigh} · last September ${C.lastCycleFinal[pid]}` }),
+      tile({ lab: `${C.cycle} intake, forecast`, val: num(f.forecast), unit: 'students', delta: delta(f.forecast, C.target[pid], { vs: `against the target of ${C.target[pid]}` }), note: `range ${f.forecastLow}–${f.forecastHigh} · ${C.lastCycle}: ${C.lastCycleFinal[pid]}` }),
     ].join('');
     Charts.spark(document.getElementById('spN'), H.headcount[pid], { color: PC[pid] });
     Charts.spark(document.getElementById('spRet'), ret, { color: PC[pid] });
@@ -115,19 +151,22 @@
     /* ---- what needs attention ---- */
     const acts = [];
     if (high.length) { const worst = high.slice().sort((a, b) => b.riskReasons.length - a.riskReasons.length || a.attendance - b.attendance)[0];
-      acts.push({ sev: 3, kind: 'crit', w: `${high.length} student${high.length > 1 ? 's are' : ' is'} at high risk (three or more warning signs)`, d: `Ask each advisor to meet them before exam registration closes on ${Dash.date(S.registrar.examRegistrationClose)}. ${worst.name} has the most signs: ${worst.riskReasons.join(', ')}.`, go: 'student.html?id=' + worst.id, gl: 'Open ' + worst.name.split(' ')[0] }); }
+      acts.push({ sev: 3, kind: 'crit', w: `${high.length} student${high.length > 1 ? 's are' : ' is'} at high risk (three or more warning signs)`, d: `Ask each advisor to meet them before exam registration closes on ${Dash.date(S.registrar.examRegistrationClose)}. ${worst.name} has the most signs: ${worst.riskReasons.join(', ')}.`, go: '#case-' + worst.id, gl: 'Open the case' }); }
+    const noCase = atRisk.filter(s => !S.cases.some(c => c.sid === s.id));
+    if (noCase.length) acts.push({ sev: 2.4, kind: 'serious', w: `${noCase.length} student${noCase.length > 1 ? 's' : ''} at academic risk with no case opened`, d: `Nobody has recorded an action for ${noCase.map(s => s.name).join(', ')}. Name an owner for each.`, go: '#case-' + noCase[0].id, gl: 'Open the first case' });
     const flagged = secs.map(x => ({ x, r: courseReasons(x) })).filter(o => o.r.length).sort((a, b) => b.r.length - a.r.length || (a.x.attendance || 100) - (b.x.attendance || 100));
     flagged.slice(0, 6).forEach(({ x, r }) => { const pr = U.prof(x.prof);
       acts.push({ sev: r.length >= 2 ? 2.5 : 1.5, kind: r.length >= 2 ? 'serious' : 'warn', w: `${x.code} ${x.title}: ${r[0]}`, d: (r.length > 1 ? 'Also ' + r.slice(1).join('; ') + '. ' : '') + `Talk to ${pr.name} about it this week.`, go: 'professor.html?id=' + pr.id, gl: 'Professor' }); });
     if (owed30.length) acts.push({ sev: 2, kind: 'serious', w: `${owed30.length} student${owed30.length > 1 ? 's owe' : ' owes'} fees for more than 30 days: ${chfK(owed30.reduce((a, s) => a + s.overdue, 0))}`, d: `Agree with finance whether they may register for the exams, which opens on ${Dash.date(S.registrar.examRegistrationOpen)}.`, go: 'finance.html', gl: 'Finance' });
-    if (f.forecast < C.target[pid]) acts.push({ sev: 2.2, kind: 'serious', w: `September 2027 forecast is ${f.forecast} students for a target of ${C.target[pid]}`, d: `Applications so far are ${f.applications}, against ${f.appsPrevSameWeek} at the same week last cycle. Plan the open days and info evenings with marketing.`, go: 'marketing.html', gl: 'Sales & marketing' });
+    if (f.forecast < C.target[pid]) acts.push({ sev: 2.2, kind: 'serious', w: `${C.cycle} forecast is ${f.forecast} students for a target of ${C.target[pid]}`, d: `Applications so far are ${f.applications}, against ${f.appsPrevSameWeek} at the same week last cycle. Plan the open days and info evenings with marketing.`, go: 'marketing.html', gl: 'Sales & marketing' });
     if (A.length < budget) acts.push({ sev: 1, kind: 'warn', w: `${A.length} active students for a budget of ${budget}`, d: `The programme is ${budget - A.length} students short of the number the budget was built on.`, go: 'finance.html', gl: 'Finance' });
     acts.sort((a, b) => b.sev - a.sev);
     const moreC = flagged.length - 6;
-    document.getElementById('acts').innerHTML = (acts.length ? acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Act now' : a.kind === 'serious' ? 'Act' : 'Watch')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><a class="go" href="${a.go}">${esc(a.gl)} →</a></li>`).join('') : '<li class="empty">Nothing in this programme crosses an alert threshold today.</li>')
+    document.getElementById('acts').innerHTML = (acts.length ? acts.map(a => `<li>${st(a.kind, a.kind === 'crit' ? 'Act now' : a.kind === 'serious' ? 'Act' : 'Watch')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div>${a.go.startsWith('#case-') ? `<button class="go linkbtn" data-case="${esc(a.go.slice(6))}">${esc(a.gl)} →</button>` : `<a class="go" href="${a.go}">${esc(a.gl)} →</a>`}</li>`).join('') : '<li class="empty">Nothing in this programme crosses an alert threshold today.</li>')
       + (moreC > 0 ? `<li><span class="st none">More</span><div class="d">${moreC} more flagged course${moreC > 1 ? 's are' : ' is'} listed in the course health table below.</div><span></span></li>` : '');
 
     /* ---- course health ---- */
+    document.getElementById('secLead').textContent = `The school flags a course with ${Dash.courseRule()}. Professors see the same thresholds on their own dashboard.`;
     document.getElementById('secT').innerHTML = `<tr><th>Course</th><th>Professor</th><th class="n">Year</th><th class="n">Enrolled</th><th class="n">Attendance</th><th class="n">Mean grade</th><th class="n">Below 4.0</th><th class="n">Handed in</th><th class="n">Ungraded (oldest)</th><th class="n">Feedback of 5</th><th class="n">At risk</th><th>Status</th></tr>` +
       secs.map(x => { const pr = U.prof(x.prof), r = courseReasons(x);
         const stat = !x.enrolled ? st('none', 'No students') : r.length >= 2 ? st('serious', 'Act') : r.length ? st('warn', 'Watch') : st('good', 'Fine');
@@ -143,22 +182,47 @@
       values: secs.map(x => Array.from({ length: nW }, (_, i) => x.weekAtt[i] != null ? x.weekAtt[i] : null)), min: 60, max: 100, labelWidth: narrow ? 70 : 230,
       fmt: v => Math.round(v) + ' %', valueName: 'Attendance', scaleNote: 'darker = more students present; scale runs from 60 % to 100 %' });
 
-    /* ---- students who need help ---- */
-    const list = A.filter(s => s.risk !== 'none').sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk] || b.riskReasons.length - a.riskReasons.length || a.attendance - b.attendance);
-    const CAP = 25, shown = list.slice(0, CAP);
-    document.getElementById('riskT').innerHTML = list.length ? `<tr><th>Student</th><th>Year · intake</th><th>Risk</th><th>Warning signs</th><th class="n">Attendance</th><th class="n">Mean grade</th><th class="n">Last login</th><th>Advisor</th></tr>` +
-      shown.map(s => { const ad = U.prof(s.advisor);
-        return `<tr class="click" data-href="student.html?id=${s.id}"><td class="nw"><a href="student.html?id=${s.id}">${esc(s.name)}</a></td><td class="nw">${yearLabel(s.year)} · ${esc(cohortLabel(s.cohort))}</td><td>${Dash.riskSt(s.risk)}</td><td><div class="why">${esc(s.riskReasons.join('; '))}</div></td>
-          <td class="n">${s.attendance == null ? '—' : s.attendance + ' %'}</td><td class="n">${U.grade(s.avgGrade)}</td><td class="n nw">${s.lastLoginDays} days ago</td><td class="nw"><a href="professor.html?id=${ad.id}">${esc(ad.name)}</a></td></tr>`; }).join('')
-      : '<tr><td class="empty">No active student in this programme shows a warning sign.</td></tr>';
-    const watchN = list.filter(s => s.risk === 'watch').length;
-    document.getElementById('riskMore').textContent = (list.length > CAP ? `And ${list.length - CAP} more students on watch are not listed. ` : '') + `${list.length} of ${A.length} active students show at least one sign: ${high.length} high risk, ${atRisk.length - high.length} at risk, ${watchN} on watch.`;
+    /* ---- students who need help: academic signs decide the level; administrative ones are shown apart ---- */
+    document.getElementById('riskLead').textContent = `Academic warning signs: attendance under ${TS.attendance} %, an average under ${TS.grade.toFixed(1)}, ${TS.missing} or more assignments missing, no visit to the course pages for ${TS.quietDays} days. High risk = three or more, at risk = two, watch = one. Administrative matters (fees overdue more than ${TS.overdueDays} days, a residence permit to renew) are shown in their own column and never added to the level: they are followed by finance and the student office.`;
+    const pool = A.filter(s => s.risk !== 'none' || s.adminReasons.length);
+    const RF = { year: '', cohort: '', sign: '', adv: '', cs: '' }; let showAll = false;
+    const opts = (l, f) => [...new Set(l.map(f))].sort();
+    const SIGNS = [['att', 'Attendance'], ['grade', 'Grade'], ['miss', 'Missing work'], ['login', 'No visit'], ['admin', 'Administrative only']];
+    const hasSign = (s, k) => k === 'admin' ? s.risk === 'none' && s.adminReasons.length : s.riskReasons.some(r => ({ att: /attendance/, grade: /average/, miss: /not handed/, login: /login/ })[k].test(r));
+    document.getElementById('rf').innerHTML = `<label>Show</label>
+      <select data-f="year"><option value="">every year</option>${opts(pool, s => s.year).map(y => `<option value="${y}">Year ${y}</option>`).join('')}</select>
+      <select data-f="cohort"><option value="">every intake</option>${opts(pool, s => s.cohort).map(c => `<option value="${c}">${esc(cohortLabel(c))}</option>`).join('')}</select>
+      <select data-f="sign"><option value="">every sign</option>${SIGNS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
+      <select data-f="adv"><option value="">every advisor</option>${opts(pool, s => s.advisor).map(id => `<option value="${id}">${esc(U.prof(id).name)}</option>`).join('')}</select>
+      <select data-f="cs"><option value="">with or without a case</option><option value="none">at risk, no case opened</option><option value="open">case open</option></select>`;
+    const caseOf = id => S.cases.find(c => c.sid === id);
+    const LVW = { high: ['crit', 'High risk'], medium: ['serious', 'At risk'], watch: ['warn', 'Watch'], none: ['none', 'No academic sign'] };
+    const OUTW = { improved: ['good', 'Improved'], 'no change': ['serious', 'No change'], 'too early': ['none', 'Too early to tell'] };
+    function drawRisk() {
+      const list = pool.filter(s => (!RF.year || s.year === +RF.year) && (!RF.cohort || s.cohort === RF.cohort) && (!RF.sign || hasSign(s, RF.sign)) && (!RF.adv || s.advisor === RF.adv)
+          && (!RF.cs || (RF.cs === 'none' ? !caseOf(s.id) && (s.risk === 'high' || s.risk === 'medium') : !!caseOf(s.id))))
+        .sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk] || b.riskReasons.length - a.riskReasons.length || (a.attendance || 0) - (b.attendance || 0));
+      const CAP = 25, shown = showAll ? list : list.slice(0, CAP);
+      document.getElementById('riskT').innerHTML = list.length ? `<tr><th>Student</th><th>Year · intake</th><th>Academic</th><th>Academic signs</th><th>Administrative</th><th>Case</th><th>Advisor</th></tr>` +
+        shown.map(s => { const ad = U.prof(s.advisor), c = caseOf(s.id);
+          return `<tr><td class="nw"><button class="linkbtn" data-case="${s.id}">${esc(s.name)}</button></td><td class="nw">${yearLabel(s.year)} · ${esc(cohortLabel(s.cohort))}</td><td>${st(...LVW[s.risk])}</td><td><div class="why">${esc(s.riskReasons.join('; ') || '—')}</div></td>
+            <td><div class="why">${esc(s.adminReasons.join('; ') || '—')}</div></td>
+            <td class="nw">${c ? `${st(...OUTW[c.outcome])}<div class="why">${esc(c.action)}</div>` : s.risk === 'high' || s.risk === 'medium' ? st('serious', 'No case') : '<span class="why">—</span>'}</td><td class="nw">${esc(ad.name)}</td></tr>`; }).join('')
+        : '<tr><td class="empty">No student matches these filters.</td></tr>';
+      const hi = list.filter(s => s.risk === 'high').length, md = list.filter(s => s.risk === 'medium').length, wt = list.filter(s => s.risk === 'watch').length, adm = list.filter(s => s.adminReasons.length).length;
+      document.getElementById('riskMore').innerHTML = `${list.length} student${list.length === 1 ? '' : 's'} listed: ${hi} high risk, ${md} at risk, ${wt} on watch; ${adm} with an administrative matter. ` +
+        (list.length > CAP ? `<button class="morebtn" id="riskAll">${showAll ? `Show the first ${CAP} only` : `Show all ${list.length}`}</button>` : '');
+      const b = document.getElementById('riskAll'); if (b) b.onclick = () => { showAll = !showAll; drawRisk(); };
+    }
+    document.getElementById('rf').onchange = e => { const f = e.target.dataset.f; if (f) { RF[f] = e.target.value; drawRisk(); } };
+    drawRisk();
 
+    drawWindows(); drawCohorts(pid);
     /* ---- risk by cohort ---- */
     const cohorts = [...new Set(A.map(s => s.year + '|' + s.cohort))].sort().map(k => { const [y, c] = k.split('|'); return { y: +y, c }; });
     Charts.bars(document.getElementById('cohort'), { items: cohorts.map(o => { const g = A.filter(s => s.year === o.y && s.cohort === o.c), r = g.filter(s => s.risk === 'high' || s.risk === 'medium').length;
       return { label: `Y${o.y} · ${cohortLabel(o.c)}`, value: g.length ? Math.round(100 * r / g.length) : 0, color: PC[pid], text: `${r} of ${g.length} · ${g.length ? Math.round(100 * r / g.length) : 0} %`,
-        extra: [['High risk (3+ signs)', g.filter(s => s.risk === 'high').length], ['At risk (2 signs)', g.filter(s => s.risk === 'medium').length], ['Watch (1 sign)', g.filter(s => s.risk === 'watch').length]] }; }),
+        extra: [['High risk (3+ academic signs)', g.filter(s => s.risk === 'high').length], ['At risk (2 signs)', g.filter(s => s.risk === 'medium').length], ['Watch (1 sign)', g.filter(s => s.risk === 'watch').length]] }; }),
       max: 40, valueName: 'Share at risk', fmt: v => v + ' %', labelWidth: 104, rowH: 30 });
 
     /* ---- credits by year ---- */
@@ -185,6 +249,100 @@
 
     v.querySelectorAll('tr[data-href]').forEach(tr => tr.onclick = ev => { if (ev.target.closest('a')) return; location.href = tr.dataset.href; });
   }
+
+  /* =====================================================================
+     DECISION CALENDAR — the dated decisions programme managers own, as countdowns
+     ===================================================================== */
+  function drawWindows() {
+    const mine = Dash.windows().filter(w => /Programme/.test(w.role) || w.owner === 'programme');
+    document.getElementById('wins').innerHTML = mine.length ? mine.map(w => `<li class="win ${w.kind}"><span class="cd"><b>${w.days}</b><small>${w.days === 1 ? 'day' : 'days'}</small></span><div><div class="w">${esc(w.event)} · ${esc(Dash.dateLong(w.date))}</div><div class="d">${esc(w.decide)}. <span class="who">Who decides: ${esc(w.role)}</span></div></div>${st(w.kind, w.word)}</li>`).join('')
+      : '<li class="empty">No decision of the programme managers is due in the school calendar.</li>';
+    const RG = S.registrar, other = [['Exam registration closes', RG.examRegistrationClose], ['The exam session starts', RG.examSessionStart], [`Application deadline, ${S.crm.feb ? 'February 2027 intake' : ''}`, S.crm.feb && S.crm.feb.deadline]]
+      .filter(o => o[1] && Dash.daysUntil(o[1]) >= 0).sort((a, b) => a[1].localeCompare(b[1]));
+    document.getElementById('alsoDates').textContent = 'Other dates that affect the programme: ' + other.map(([t, d]) => `${t} ${Dash.date(d)} (${Dash.cdown(Dash.daysUntil(d))})`).join(' · ') + '.';
+  }
+
+  /* =====================================================================
+     COHORTS — what happened to every student who started, intake by intake
+     ===================================================================== */
+  function drawCohorts(pid) {
+    const p = S.P[pid], past = S.pastCohorts[pid] || [], now = S.students.filter(s => s.prog === pid);
+    const cur = [...new Set(now.map(s => s.cohort))].sort().map(c => { const g = now.filter(s => s.cohort === c), act = g.filter(s => s.status === 'active');
+      return { cohort: c, current: true, started: g.length, onSched: act.filter(s => s.plan && s.plan.grad.onSchedule).length, delayed: act.filter(s => s.plan && !s.plan.grad.onSchedule).length,
+        leave: g.filter(s => s.status === 'on leave').length, withdrawn: g.filter(s => s.status === 'withdrawn').length, year: g[0].year }; });
+    const fin = past.filter(c => !c.still), grads = fin.reduce((t, c) => t + c.onTime + c.late1 + c.late2, 0), startedF = fin.reduce((t, c) => t + c.started, 0), onTime = fin.reduce((t, c) => t + c.onTime, 0);
+    const retakers = now.filter(s => s.status === 'active' && s.plan && s.plan.retakes.length + s.plan.terms.flatMap(t => t.items).filter(i => i.status === 'failedNow').length > 0).length;
+    const wNow = cur.reduce((t, c) => t + c.withdrawn, 0), lNow = cur.reduce((t, c) => t + c.leave, 0), dNow = cur.reduce((t, c) => t + c.delayed, 0), actNow = cur.reduce((t, c) => t + c.onSched + c.delayed, 0);
+    document.getElementById('cfTiles').innerHTML = [
+      tile({ lab: 'Graduation rate, finished intakes', val: startedF ? Math.round(100 * grads / startedF) + ' %' : '—', note: `${grads} of the ${startedF} students who started in the ${fin.length} finished intakes graduated.` }),
+      tile({ lab: 'Graduated on time', val: grads ? Math.round(100 * onTime / grads) + ' %' : '—', unit: 'of graduates', note: `On time = within the normal ${p.years} years. The others needed one term or more extra.` }),
+      tile({ lab: 'Current intakes: still studying', val: num(actNow), unit: `of ${cur.reduce((t, c) => t + c.started, 0)} who started`, delta: (dNow ? st('warn', dNow + ' graduate later because of a retake') : st('good', 'nobody graduates later because of a retake')) + `<div class="delta">${retakers} must retake a failed course.</div>` }),
+      tile({ lab: 'Current intakes: withdrawn or on leave', val: num(wNow + lNow), delta: `<span class="flat">${wNow} withdrew · ${lNow} on leave now</span>` }),
+    ].join('');
+    document.getElementById('cfLead').textContent = `Each column is one intake: everyone who started, split by what happened to them. Finished intakes (left) show who graduated on time, who graduated later and who withdrew. Current intakes (right) show who is still studying, on leave or gone. ${pid === 'dba' ? 'A DBA intake counts as finished when nobody is still writing a thesis.' : ''}`;
+    const rows = past.map(c => ({ ...c, label: cohortLabel(c.cohort) })).concat(cur.map(c => ({ ...c, label: cohortLabel(c.cohort) })));
+    Charts.columns(document.getElementById('cfC'), { labels: rows.map(r => r.label),
+      series: [
+        { name: 'Graduated on time', color: 'var(--s3)', values: rows.map(r => r.current ? 0 : r.onTime) },
+        { name: 'Graduated later', color: 'var(--s7)', values: rows.map(r => r.current ? 0 : r.late1 + r.late2) },
+        { name: 'Still studying', color: 'var(--s1)', values: rows.map(r => r.current ? r.onSched + r.delayed : r.still) },
+        { name: 'On leave', color: 'var(--s4)', values: rows.map(r => r.current ? r.leave : 0) },
+        { name: 'Withdrew', color: 'var(--s8)', values: rows.map(r => r.withdrawn) },
+      ], stacked: true, fmt: v => v + (v === 1 ? ' student' : ' students'), yFmt: v => String(v), height: 240 });
+    const pc = (n, d) => d ? Math.round(100 * n / d) + ' %' : '—';
+    document.getElementById('cfT').innerHTML = `<tr><th>Intake</th><th class="n">Started</th><th class="n">Graduated on time</th><th class="n">One term late</th><th class="n">Two terms or more</th><th class="n">Still studying</th><th class="n">On leave</th><th class="n">Withdrew</th><th class="n">Graduation rate</th><th>Status</th></tr>` +
+      rows.map(r => r.current
+        ? `<tr><td class="nw"><b>${esc(r.label)}</b><div class="why">year ${r.year} now</div></td><td class="n">${r.started}</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">${r.onSched + r.delayed}${r.delayed ? `<div class="why">${r.delayed} delayed by a retake</div>` : ''}</td><td class="n">${r.leave}</td><td class="n">${r.withdrawn}</td><td class="n">—</td><td>${st('none', 'Studying')}</td></tr>`
+        : `<tr><td class="nw"><b>${esc(r.label)}</b></td><td class="n">${r.started}</td><td class="n">${r.onTime}</td><td class="n">${r.late1}</td><td class="n">${r.late2}</td><td class="n">${r.still || '—'}</td><td class="n">—</td><td class="n">${r.withdrawn}</td><td class="n">${r.still ? '—' : pc(r.onTime + r.late1 + r.late2, r.started)}</td><td>${r.still ? st('warn', `${r.still} still writing`) : st('good', 'Finished')}</td></tr>`).join('');
+    const reasons = {}; past.forEach(c => Object.entries(c.reasons).forEach(([k, v]) => reasons[k] = (reasons[k] || 0) + v));
+    now.filter(s => s.withdrawn).forEach(s => reasons[s.withdrawn.reason] = (reasons[s.withdrawn.reason] || 0) + 1);
+    const RI = Object.entries(reasons).sort((a, b) => b[1] - a[1]);
+    const wEl = document.getElementById('wrC'); wEl.innerHTML = '';
+    if (RI.length) Charts.bars(wEl, { items: RI.map(([k, v]) => ({ label: k, value: v, color: PC[pid], text: v + (v === 1 ? ' student' : ' students') })), max: Math.max(...RI.map(x => x[1])), valueName: 'Students', fmt: v => String(v), labelWidth: 220, rowH: 28 });
+    else wEl.innerHTML = '<p class="empty">Nobody has withdrawn from these intakes.</p>';
+    const wl = now.filter(s => s.status !== 'active').sort((a, b) => (b.withdrawn ? b.withdrawn.date : b.leave.from).localeCompare(a.withdrawn ? a.withdrawn.date : a.leave.from));
+    document.getElementById('wlT').innerHTML = wl.length ? `<tr><th>Student</th><th>Intake</th><th>Status</th><th>Since</th><th>Reason</th></tr>` + wl.map(s => `<tr><td class="nw"><button class="linkbtn" data-case="${s.id}">${esc(s.name)}</button></td><td class="nw">${esc(cohortLabel(s.cohort))}</td>
+      <td>${s.withdrawn ? st('serious', 'Withdrew') : st('warn', 'On leave')}</td><td class="nw">${esc(Dash.date(s.withdrawn ? s.withdrawn.date : s.leave.from))} ${(s.withdrawn ? s.withdrawn.date : s.leave.from).slice(0, 4)}</td><td>${esc(s.withdrawn ? s.withdrawn.reason : s.leave.reason)}${s.leave ? `<div class="why">expected back in ${esc(s.leave.back)}</div>` : ''}</td></tr>`).join('')
+      : '<tr><td class="empty">Nobody in the current intakes has withdrawn or taken leave.</td></tr>';
+  }
+
+  /* =====================================================================
+     THE CASE VIEW — what a programme manager needs about one student (not the student's own page)
+     ===================================================================== */
+  const dlg = document.getElementById('dlg');
+  function openCase(sid) {
+    const s = U.byId(sid), pr = S.P[s.prog], ad = U.prof(s.advisor), c = S.cases.find(x => x.sid === sid);
+    const LVW = { high: ['crit', 'High academic risk'], medium: ['serious', 'At academic risk'], watch: ['warn', 'Watch'], none: ['good', 'No academic sign'] };
+    const OUTW = { improved: ['good', 'Improved'], 'no change': ['serious', 'No change yet'], 'too early': ['none', 'Too early to tell'] };
+    const ownerName = o => o === 'office' ? `${pr.short} programme office` : U.prof(o).name;
+    const courses = s.sections.map(id => ({ x: U.sec(id), r: U.rec(s.id, id) }));
+    dlg.innerHTML = `<button class="x" data-close>Close</button><h3>${esc(s.name)}</h3><div class="mini why">${esc(pr.name)} · ${esc(cohortLabel(s.cohort))} intake · year ${s.year} · advisor ${esc(ad.name)}</div>
+      <h4>Status</h4><dl class="kv"><dt>Now</dt><dd>${s.status === 'active' ? st(...LVW[s.risk]) : s.withdrawn ? st('serious', 'Withdrew') : st('warn', 'On leave')}</dd>
+      ${s.plan ? `<dt>Credits passed</dt><dd>${s.plan.earned} of ${pr.ects} ECTS</dd><dt>Expected graduation</dt><dd>${esc(s.plan.grad.date)}${s.plan.grad.onSchedule ? '' : ' · delayed by a retake'}</dd>` : ''}
+      <dt>Academic signs</dt><dd>${esc(s.riskReasons.join('; ') || 'none')}</dd><dt>Administrative</dt><dd>${esc(s.adminReasons.join('; ') || 'none')}</dd></dl>
+      <h4>History</h4><ul class="log">${s.statusLog.slice().sort((a, b) => a.date.localeCompare(b.date)).map(e => `<li><span>${esc(Dash.date(e.date))} ${e.date.slice(0, 4)}</span><span><b>${esc(e.ev)}</b>${e.why ? ` · ${esc(e.why)}` : ''}</span></li>`).join('')}</ul>
+      ${courses.length ? `<h4>This term</h4><div class="tw"><table class="t"><tr><th>Course</th><th class="n">Attendance</th><th class="n">Grade so far</th><th class="n">Handed in</th></tr>${courses.map(({ x, r }) => `<tr><td>${esc(x.code)} ${esc(x.title)}<div class="why">${esc(U.prof(x.prof).name)}</div></td><td class="n">${r.att < R.attendance ? st('crit', r.att + ' %') : r.att + ' %'}</td><td class="n">${r.grade < R.pass ? st('crit', r.grade.toFixed(1)) : r.grade.toFixed(1)}</td><td class="n">${r.subsDone} of ${r.subsTotal}</td></tr>`).join('')}</table></div>` : ''}
+      <h4>Case</h4>${c ? `<dl class="kv"><dt>Owner</dt><dd>${esc(ownerName(c.owner))}</dd><dt>Opened</dt><dd>${esc(Dash.dateLong(c.opened))}</dd><dt>Action taken</dt><dd>${esc(c.action)}, ${esc(Dash.date(c.actionDate))}</dd><dt>Next step</dt><dd>${esc(c.next)}</dd>
+        <dt>Outcome so far</dt><dd>${st(...OUTW[c.outcome])}</dd><dt>Attendance when opened → now</dt><dd>${c.attBefore} % → ${c.attNow} %</dd></dl>`
+        : s.status === 'active' && (s.risk === 'high' || s.risk === 'medium') ? `<p class="lead" style="margin:0">${st('serious', 'No case opened')} Nobody has recorded an action for this student yet.</p><button class="save" id="openC">Open a case, owner: ${esc(ad.name)}</button><span class="why" id="openM" style="margin-left:10px"></span>`
+        : '<p class="lead" style="margin:0">No case is open, and none is needed for the academic signs today.</p>'}`;
+    const oc = dlg.querySelector('#openC'); if (oc) oc.onclick = () => { S.cases.push({ sid, prog: s.prog, opened: S.school.today, action: 'Case opened, advisor to contact the student', actionDate: S.school.today, owner: s.advisor, next: 'Advisor meeting within a week', outcome: 'too early', attBefore: s.attendance, attNow: s.attendance, gradeNow: s.avgGrade }); render(PID); openCase(sid); };
+    dlg.showModal();
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-close]')) { dlg.close(); return; }
+    const b = e.target.closest('[data-case]'); if (b) { if (dlg.open) dlg.close(); openCase(b.dataset.case); return; }
+    const t = e.target.closest('#tabs button'); if (t) { history.replaceState(null, '', location.search + '#' + t.dataset.t); show(); }
+  });
+
+  /* ---- tabs: Now · Cohorts, kept in the address (#cohorts) ---- */
+  const TABS = ['now', 'cohorts'];
+  function show() { const h = location.hash.slice(1), t = TABS.includes(h) ? h : 'now';
+    document.querySelectorAll('[data-tab]').forEach(sec => sec.hidden = sec.dataset.tab !== t);
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    Charts.redrawAll(); }
+  window.addEventListener('hashchange', show);
+  const _render = render; render = function (pid) { _render(pid); show(); };
 
   render(new URLSearchParams(location.search).get('p') || 'bba');
 })();

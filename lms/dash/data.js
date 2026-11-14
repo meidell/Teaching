@@ -54,6 +54,16 @@
     honours: [{ min: 5.0, name: 'with distinction' }, { min: 5.5, name: 'with high distinction' }],
     retake: 'A failed course is retaken once, in the same season one year later. The better of the two grades counts.',
   };
+  /* ---- ONE set of alert thresholds for the whole system (programme v2, 14 Nov 2026: the programme page,
+     the professor page and the overview's signals used three different sets). Every page reads these. ---- */
+  const thresholds = {
+    /* a COURSE is flagged when … */
+    course: { attendance: 85, failShare: 15, gradingDays: 14, feedback: 3.8, handedIn: 85 },
+    /* a STUDENT shows an academic warning sign when … (fees and permits are administrative, counted apart) */
+    student: { attendance: 80, grade: 4.0, missing: 4, quietDays: 14, missingInCourse: 2, overdueDays: 30 },
+    /* days since the last contact with an applicant, and since a request was opened */
+    contact: { act: 7, late: 14 },
+  };
 
   /* ---- the CURRICULUM: every semester of every programme, adding up to the programme's ECTS.
      Semester n is taught in autumn when n is odd and in spring when n is even; a semester marked
@@ -391,16 +401,17 @@
     s.overdueDays = s.overdue ? int(5, 95) : 0;
     s.visa = (s.region === 'CH' || s.region === 'FR' || s.region === 'EU') ? null : (rnd() < 0.08 ? 'renewal pending' : 'valid');
     /* risk: the reasons, each one checkable */
-    const why = [];
+    /* the risk level counts ACADEMIC signs only; fees and permits are listed apart and never added in */
+    const why = [], adm = [], T = thresholds.student;
     if (s.status === 'active') {
-      if (s.attendance !== null && s.attendance < 80) why.push(`attendance ${s.attendance} % (rule: 80 %)`);
-      if (s.avgGrade !== null && s.avgGrade < 4) why.push(`average ${s.avgGrade.toFixed(1)} (pass: 4.0)`);
-      if (s.missing >= 4) why.push(`${s.missing} assignments not handed in`);
-      if (s.lastLoginDays >= 14) why.push(`no login for ${s.lastLoginDays} days`);
-      if (s.overdueDays > 30) why.push(`CHF ${s.overdue.toLocaleString('en-CH')} overdue ${s.overdueDays} days`);
-      if (s.visa === 'renewal pending') why.push('residence permit renewal pending');
+      if (s.attendance !== null && s.attendance < T.attendance) why.push(`attendance ${s.attendance} % (rule: ${T.attendance} %)`);
+      if (s.avgGrade !== null && s.avgGrade < T.grade) why.push(`average ${s.avgGrade.toFixed(1)} (pass: ${T.grade.toFixed(1)})`);
+      if (s.missing >= T.missing) why.push(`${s.missing} assignments not handed in`);
+      if (s.lastLoginDays >= T.quietDays) why.push(`no login for ${s.lastLoginDays} days`);
+      if (s.overdueDays > T.overdueDays) adm.push(`CHF ${s.overdue.toLocaleString('en-CH')} overdue ${s.overdueDays} days`);
+      if (s.visa === 'renewal pending') adm.push('residence permit renewal pending');
     }
-    s.riskReasons = why;
+    s.riskReasons = why; s.adminReasons = adm;
     s.risk = why.length >= 3 ? 'high' : why.length === 2 ? 'medium' : why.length === 1 ? 'watch' : 'none';
     s.satisfaction = s.status === 'active' ? r1(clamp(gauss(4.0 + s.engagement * 0.25, 0.5), 1, 5)) : null;
   });
@@ -456,7 +467,7 @@
   const invoicedYTD = students.reduce((a, s) => a + s.invoiced, 0), collectedYTD = students.reduce((a, s) => a + s.paid, 0);
   const budgetRevenue = 9450000;
   const satisfactionTrend = { terms: ['Spr 24', 'Aut 24', 'Spr 25', 'Aut 25', 'Spr 26', 'Aut 26*'], value: [3.9, 4.0, 4.0, 4.1, 4.05, r2(students.filter(s => s.satisfaction).reduce((a, s) => a + s.satisfaction, 0) / students.filter(s => s.satisfaction).length)] };
-  const graduateOutcomes = { employed6m: 87, salaryMedianCHF: 78000, response: 71 };
+  const graduateOutcomes = { employed6m: 87, salaryMedianCHF: 78000, response: 71, cohort: 'June 2025', surveyed: 'December 2025' };   /* the latest survey: June 2026 graduates are surveyed in December 2026 */
 
   /* ---- CRM: the September 2027 cycle against the September 2026 cycle ----
      weeks are counted back from the intake (week 0 = 1 September); today is
@@ -622,26 +633,154 @@
 
   /* ---- QUALITY & ACCREDITATION ---- */
   faculty.forEach((f, i) => { f.doctorate = i < 7 ? true : i % 2 === 0; f.qualification = f.doctorate ? (i % 4 === 3 ? 'Practice academic' : 'Scholarly academic') : (i % 3 === 0 ? 'Scholarly practitioner' : 'Instructional practitioner'); f.publications3y = f.doctorate ? int(0, 7) : int(0, 2); });
+  /* =====================================================================
+     QUALITY (v2, 14 Nov 2026 — Jan Erik's fourth scope memo). The checklist is keyed to the quality
+     standards for INSTITUTIONAL accreditation of the HEdA Accreditation Ordinance as revised and in
+     force from 15 July 2026 (procedures the AAQ opens from that date use them). Standard wording is
+     quoted from the AAQ's English report template for institutional accreditation, 6 October 2026:
+     https://aaq.ch/wp/wp-content/uploads/dlm_uploads/2026/10/2026-10-06-Template-Bericht-Inst.-Akkreditierung_EN.docx
+     The ordinance itself is on fedlex (SR 414.205.3); check the wording there before quoting it outside
+     this demo. Everything about the school — evidence, owners, dates, findings — is invented.
+     ===================================================================== */
+  const QS = (ref, heading, text) => ({ ref, heading, text });
+  const QHEAD = { 1: 'Organisation and management', 2: 'Governance', 3: 'Quality management', 4: 'Teaching', 5: 'Research', 6: 'Services', 7: 'Staff', 8: 'Finances', 9: 'Infrastructure' };
+  const QAREAS = [{ id: 'I', name: 'Organisation and management, governance and quality management', headings: [1, 2, 3] }, { id: 'II', name: 'Teaching, research and services', headings: [4, 5, 6] }, { id: 'III', name: 'Staff, finances and infrastructure', headings: [7, 8, 9] }];
+  const QSTD = [
+    QS('1', 1, 'The higher education institution or other institution within the higher education sector (hereafter referred to as ‘higher education institution’) shall have an organisational structure and management system that enables it to fulfil its mission.'),
+    QS('2.1', 2, 'The higher education institution shall safeguard the freedom and independence of teaching and research.'),
+    QS('2.2', 2, 'The higher education institution shall safeguard the participatory rights of all representative groups at all levels and enable them to function independently.'),
+    QS('2.3', 2, 'The higher education institution shall publish information on its organisation, governance, funding and activities.'),
+    QS('2.4', 2, 'The higher education institution shall perform its functions with due regard for social sustainability. It shall promote equal opportunities, particularly in relation to gender equality, diversity and inclusion. It shall set objectives in this area and monitor their attainment.'),
+    QS('2.5', 2, 'The higher education institution shall perform its functions with due regard for economic and environmental sustainability. It shall set objectives in this area and monitor their attainment.'),
+    QS('3.1', 3, 'The higher education institution shall have a quality management system that supports it in attaining its strategic and operational objectives. It shall establish its quality management system through a participatory process and foster a culture of quality.'),
+    QS('3.2', 3, 'The higher education institution’s quality management system shall have transparently and clearly assigned tasks and responsibilities.'),
+    QS('3.3', 3, 'The higher education institution shall review its quality management system regularly and make adjustments where necessary.'),
+    QS('4.1', 4, 'The higher education institution shall deliver teaching in accordance with its institutional type. It shall set teaching objectives and monitor their attainment.'),
+    QS('4.2', 4, 'The higher education institution shall structure its range of study programmes and its qualifications in accordance with its institutional type. It shall determine the qualifications to be acquired through the study programmes and publish these qualifications.'),
+    QS('4.3', 4, 'The higher education institution shall regulate all phases of study (particularly admission criteria, academic progress, mobility, recognition of academic performance, and graduation) in accordance with its institutional type and the quality assurance standards and guidelines in the European Higher Education Area. It shall have an appropriate procedure for handling student complaints. It shall set out these regulations and publish them.'),
+    QS('4.4', 4, 'The higher education institution shall evaluate its teaching regularly. It shall inform the relevant stakeholders of both the results and the measures taken in response.'),
+    QS('5.1', 5, 'The higher education institution shall conduct research in accordance with its institutional type. It shall set research objectives and monitor their attainment.'),
+    QS('5.2', 5, 'The higher education institution shall evaluate its research regularly. It shall inform the relevant stakeholders of both the results and the measures taken in response.'),
+    QS('6.1', 6, 'The higher education institution shall provide services in accordance with its institutional type. It shall set objectives for its services and monitor their attainment.'),
+    QS('6.2', 6, 'The higher education institution shall evaluate its services regularly. It shall inform the relevant stakeholders of both the results and the measures taken in response.'),
+    QS('7.1', 7, 'The higher education institution shall have a staff planning strategy appropriate to its institutional type and shall employ its own academic, technical and administrative staff.'),
+    QS('7.2', 7, 'The higher education institution shall have transparent, non-discriminatory procedures for selecting, appointing and promoting staff. Their academic qualifications shall be appropriate to the institutional type. The higher education institution shall inform the relevant stakeholders of this procedure.'),
+    QS('7.3', 7, 'The higher education institution shall evaluate its academic, technical and administrative staff regularly.'),
+    QS('7.4', 7, 'The higher education institution shall support the career development of all staff in general and of early-career researchers in particular.'),
+    QS('8', 8, 'The higher education institution shall have a financial planning strategy appropriate to its institutional type and shall possess the financial resources necessary to fulfil its mission and ensure its long-term existence.'),
+    QS('9', 9, 'The higher education institution shall have an infrastructure planning strategy appropriate to its institutional type. It shall possess the infrastructure (including premises in Switzerland, access to libraries, and research infrastructure) and all other resources necessary to fulfil its mission.'),
+  ];
+  /* the people who own evidence (fictitious; the programme managers are those of data.js) */
+  const OWN = { quality: 'Dr. Nadia Haddad, head of quality', director: 'School director', office: 'Head of the student office', finance: 'Finance director', hr: 'HR manager', library: 'Librarian', research: 'Prof. Thomas Keller, research dean', comms: 'Communications manager', facilities: 'Facilities manager', bba: 'Claire Dubois, BBA manager', msc: 'Marco Bernasconi, MSc manager', careers: 'Head of career services' };
+  /* what we will show for each standard: our one-paragraph line of argument, and the drafting state */
+  const QNARR = {
+    '1': ['The board, the director and the academic council each have written duties; the organisation chart and the mission statement show how decisions reach the programmes.', 'reviewed', 'director'],
+    '2.1': ['Academic freedom is in the faculty regulations and the conflict-of-interest rules keep sponsors and owners out of grading and research choices.', 'first draft', 'director'],
+    '2.2': ['Students, faculty and staff each elect members of the academic council; its minutes show their votes on the study regulations.', 'reviewed', 'quality'],
+    '2.3': ['The website publishes the organisation, the fees, the funding sources and an annual report; the annual quality report is not yet published.', 'first draft', 'comms'],
+    '2.4': ['The school has started an equal-opportunities plan with objectives on gender balance in faculty hiring and on access for students with disabilities.', 'not started', 'hr'],
+    '2.5': ['Financial sustainability is in the three-year plan; environmental objectives (travel, energy of the campus) are still to be set.', 'not started', 'finance'],
+    '3.1': ['The quality policy, adopted by the board, links each strategic objective to an indicator on this dashboard; students and employers sit on the quality committee.', 'reviewed', 'quality'],
+    '3.2': ['A responsibility matrix names who measures, who acts and who reports for every quality process.', 'first draft', 'quality'],
+    '3.3': ['The quality committee reviews the system each June; the 2025 review changed the course evaluation and the assurance-of-learning cycle.', 'first draft', 'quality'],
+    '4.1': ['Each programme has learning goals; assurance of learning measures them twice in a cycle and records the action taken in between.', 'first draft', 'quality'],
+    '4.2': ['The four programmes (BBA, MSc, EMBA, DBA) follow the Bologna levels; each publishes its learning outcomes and ECTS.', 'reviewed', 'bba'],
+    '4.3': ['The study regulations cover admission, progression, retakes, recognition and graduation; the complaints and appeals procedure is published.', 'reviewed', 'office'],
+    '4.4': ['Every course is evaluated each term; the results and the professor’s response go back to the class and to the programme committee.', 'first draft', 'quality'],
+    '5.1': ['As a business school of the university type for continuing education, research focuses on applied management; core faculty have publication objectives.', 'first draft', 'research'],
+    '5.2': ['The research dean reviews output every year; an external review of research has not yet taken place.', 'not started', 'research'],
+    '6.1': ['Career services, executive education and the library serve students, alumni and companies, each with yearly objectives.', 'first draft', 'careers'],
+    '6.2': ['Career services are surveyed each year; the library and executive education are not yet evaluated.', 'not started', 'careers'],
+    '7.1': ['The staffing plan sets the share of teaching given by core faculty and the student-faculty ratio the school aims for.', 'reviewed', 'hr'],
+    '7.2': ['Hiring follows a published procedure with a committee; qualifications are recorded for every faculty member.', 'first draft', 'hr'],
+    '7.3': ['Every member of staff has a yearly review; faculty reviews include the course evaluations.', 'reviewed', 'hr'],
+    '7.4': ['A development budget per person and a mentoring scheme for early-career faculty support careers.', 'first draft', 'hr'],
+    '8': ['The three-year financial plan shows tuition, costs and reserves; the DBA’s loss is the open question.', 'first draft', 'finance'],
+    '9': ['The Geneva campus, the library contracts and the IT systems are listed with their renewal dates.', 'reviewed', 'facilities'],
+  };
+  /* EVIDENCE: one object per piece of evidence, keyed to a standard */
+  const EV = (id, ref, title, desc, owner, due, status, docs, reviewed, reviewer, comment) => ({ id, ref, title, desc, owner, due, status, docs: docs || [], reviewed: reviewed || null, reviewer: reviewer || null, comment: comment || null });
+  const D = (title, version, date) => ({ title, version, date });
+  const evidence = [
+    EV('E01', '1', 'Organisation chart and duties of each body', 'Who decides what: board, director, academic council, programme committees.', OWN.director, '2026-10-30', 'in place', [D('Organisation chart', 'v4', '2026-09-01'), D('Duties of the governing bodies', 'v2', '2026-03-12')], '2026-10-02', 'Mock panel', 'Clear. Add who replaces the director when absent.'),
+    EV('E02', '1', 'Mission statement and strategy 2025–2030', 'The mission, the strategic objectives and their indicators.', OWN.director, '2026-10-30', 'in place', [D('Strategy 2025–2030', 'v1.2', '2025-06-20')], '2026-10-02', 'Mock panel', 'Indicators match the dashboard.'),
+    EV('E03', '2.1', 'Conflict-of-interest rules', 'Rules that keep owners, sponsors and employers out of grading and research choices.', null, '2026-11-06', 'missing', [], null, null, null),
+    EV('E04', '2.1', 'Academic freedom clause in the faculty regulations', 'The article that guarantees freedom of teaching and research.', OWN.director, '2026-11-30', 'incomplete', [D('Faculty regulations', 'v3 draft', '2026-10-15')], '2026-10-20', 'Head of quality', 'The clause covers teaching but not research.'),
+    EV('E05', '2.2', 'Academic council minutes, 2024–2026', 'Minutes showing student, faculty and staff members voting.', OWN.quality, '2026-10-30', 'in place', [D('Minutes 2024–25', 'final', '2025-07-01'), D('Minutes 2025–26', 'final', '2026-07-03')], '2026-10-02', 'Mock panel', null),
+    EV('E06', '2.3', 'Public information: website, fees, funding', 'What the public can read about the organisation, its funding and its activities.', OWN.comms, '2026-11-20', 'incomplete', [D('Website audit', 'v1', '2026-09-28')], '2026-10-02', 'Mock panel', 'Funding sources are not on the website.'),
+    EV('E07', '2.3', 'Annual quality report, published', 'The yearly report of the quality committee, on the website.', null, '2026-11-13', 'missing', [], null, null, null),
+    EV('E08', '2.4', 'Equal-opportunities plan with objectives', 'Objectives on gender equality, diversity and inclusion, and how they are monitored.', OWN.hr, '2026-12-11', 'missing', [], null, null, null),
+    EV('E09', '2.5', 'Sustainability objectives and monitoring', 'Economic and environmental objectives with indicators.', OWN.finance, '2027-01-15', 'incomplete', [D('Three-year financial plan', 'v2', '2026-06-30')], '2026-10-20', 'Head of quality', 'Economic part only; environmental objectives are missing.'),
+    EV('E10', '3.1', 'Quality policy adopted by the board', 'The policy and the board decision that adopted it.', OWN.quality, '2026-10-16', 'in place', [D('Quality policy', 'v2', '2025-11-14'), D('Board decision', 'final', '2025-11-20')], '2026-10-02', 'Mock panel', null),
+    EV('E11', '3.1', 'Stakeholders in the quality committee', 'Students, faculty, staff and employers named on the committee, with meeting attendance.', OWN.quality, '2026-11-13', 'incomplete', [D('Committee members', 'v1', '2026-09-10')], '2026-10-02', 'Mock panel', 'No employer member yet.'),
+    EV('E12', '3.2', 'Quality responsibility matrix', 'Who measures, who acts and who reports, for each quality process.', OWN.quality, '2026-11-27', 'incomplete', [D('Responsibility matrix', 'v0.3', '2026-10-28')], '2026-11-04', 'Head of quality', 'Missing the services and research processes.'),
+    EV('E13', '3.3', 'Yearly review of the quality system', 'Minutes of the June review and the changes it made.', OWN.quality, '2026-10-30', 'in place', [D('Quality review 2025', 'final', '2025-06-27'), D('Quality review 2026', 'final', '2026-06-26')], '2026-10-02', 'Mock panel', null),
+    EV('E14', '4.1', 'Assurance of learning: two measurement cycles', 'Each programme goal measured twice, with the action taken in between.', OWN.quality, '2026-12-04', 'incomplete', [D('Assurance-of-learning report', 'v1', '2026-07-10')], '2026-10-20', 'Head of quality', 'DBA has one cycle only.'),
+    EV('E15', '4.2', 'Programme learning outcomes, published', 'The learning outcomes and ECTS of each programme, as published.', OWN.bba, '2026-10-16', 'in place', [D('Programme handbooks (4)', '2026–27', '2026-08-25')], '2026-10-02', 'Mock panel', null),
+    EV('E16', '4.3', 'Study regulations, published', 'Admission, progression, retakes, recognition and graduation rules.', OWN.office, '2026-10-16', 'in place', [D('Study regulations', 'v5', '2026-08-01')], '2026-10-02', 'Mock panel', null),
+    EV('E17', '4.3', 'Complaints and appeals procedure', 'How a student complains or appeals a grade, with time limits.', OWN.office, '2026-10-16', 'in place', [D('Complaints and appeals procedure', 'v2', '2025-09-01')], '2026-10-02', 'Mock panel', 'Add the number of cases per year.'),
+    EV('E18', '4.4', 'Course evaluations with follow-up', 'Results of every course evaluation and what the professor changed.', OWN.quality, '2026-11-27', 'incomplete', [D('Evaluation results, spring 2026', 'final', '2026-07-15')], '2026-10-20', 'Head of quality', 'The follow-up actions are recorded for half of the courses.'),
+    EV('E19', '5.1', 'Research objectives and output of core faculty', 'Objectives per core faculty member and publications over three years.', OWN.research, '2026-11-27', 'incomplete', [D('Research report 2025', 'v1', '2026-03-30')], '2026-10-20', 'Head of quality', 'Objectives are set for four of seven core faculty.'),
+    EV('E20', '5.2', 'Evaluation of research', 'A regular review of research, with the results reported.', OWN.research, '2026-12-18', 'missing', [], null, null, null),
+    EV('E21', '6.1', 'Service objectives: career services, executive education, library', 'Yearly objectives for each service.', OWN.careers, '2026-11-13', 'in place', [D('Service objectives 2026', 'v1', '2026-02-02')], '2026-10-02', 'Mock panel', null),
+    EV('E22', '6.2', 'Evaluation of services', 'Surveys of the services and the measures taken.', OWN.careers, '2026-11-06', 'incomplete', [D('Career services survey 2026', 'final', '2026-06-12')], '2026-10-20', 'Head of quality', 'Library and executive education are not evaluated.'),
+    EV('E23', '7.1', 'Staffing plan and student–faculty ratio', 'The staffing plan and the ratio with its calculation.', OWN.hr, '2026-10-16', 'in place', [D('Staffing plan 2026–2029', 'v1', '2026-05-18')], '2026-10-02', 'Mock panel', null),
+    EV('E24', '7.2', 'Hiring procedure and faculty qualifications', 'The published hiring procedure and the qualification of every faculty member.', OWN.hr, '2026-10-30', 'in place', [D('Hiring procedure', 'v2', '2025-04-01'), D('Faculty qualification list', 'autumn 2026', '2026-09-15')], '2026-10-02', 'Mock panel', null),
+    EV('E25', '7.3', 'Yearly staff reviews', 'The review process and the share of staff reviewed.', OWN.hr, '2026-10-30', 'in place', [D('Staff review process', 'v1', '2024-09-01')], '2026-10-02', 'Mock panel', null),
+    EV('E26', '7.4', 'Career development and mentoring', 'The development budget and the mentoring of early-career faculty.', OWN.hr, '2026-11-06', 'incomplete', [D('Development budget', '2026', '2026-01-15')], '2026-10-20', 'Head of quality', 'No mentoring scheme is written down.'),
+    EV('E27', '8', 'Three-year financial plan', 'Tuition, costs and reserves for three years.', OWN.finance, '2026-11-20', 'incomplete', [D('Financial plan 2026–2029', 'v2', '2026-06-30')], '2026-10-20', 'Head of quality', 'Must show the decision on the loss-making DBA.'),
+    EV('E28', '9', 'Campus, library and IT', 'Premises in Geneva, library access and IT, with renewal dates.', OWN.facilities, '2026-10-16', 'in place', [D('Infrastructure plan', 'v1', '2026-04-20'), D('Library licences', '2026', '2026-01-10')], '2026-10-02', 'Mock panel', null),
+  ];
+  const STATUS_ORDER = { missing: 0, incomplete: 1, 'in place': 2 };
+  const standards = QSTD.map(q => { const ev = evidence.filter(e => e.ref === q.ref), n = QNARR[q.ref];
+    const miss = ev.filter(e => e.status === 'missing').length, part = ev.filter(e => e.status === 'incomplete').length;
+    /* our own rating on the AAQ's four-level scale, from the state of the evidence */
+    const self = miss ? 'partially fulfilled' : part ? 'largely fulfilled' : 'entirely fulfilled';
+    const hist = ev.filter(e => e.reviewed).map(e => ({ date: e.reviewed, who: e.reviewer, note: `${e.title}: ${e.comment || 'no remark'}` })).sort((a, b) => b.date.localeCompare(a.date));
+    return { ...q, headingName: QHEAD[q.heading], area: QAREAS.find(a => a.headings.includes(q.heading)).id, narrative: n[0], draft: n[1], author: OWN[n[2]], evidence: ev.map(e => e.id), self, history: hist }; });
+
+  /* LEARNING GOALS with two measurement cycles: instrument, course, sample, result */
+  const LG = (prog, goal, target, c1, c2, instrument, course, n1, n2) => ({ prog, goal, target, met: c2 ? c2[1] : c1[1], instrument, course,
+    cycles: [{ term: c1[0], met: c1[1], n: n1 }].concat(c2 ? [{ term: c2[0], met: c2[1], n: n2 }] : []) });
+  const learningGoals = [
+    LG('bba', 'Analyse a business problem with quantitative tools', 80, ['Spring 2025', 68], ['Spring 2026', 74], 'Rubric on the data case in the final exam', 'Statistics for Business', 49, 52),
+    LG('bba', 'Communicate a recommendation in writing', 80, ['Spring 2025', 79], ['Spring 2026', 83], 'Rubric on the written case report', 'Strategic Management', 47, 49),
+    LG('bba', 'Apply ethical reasoning to a business case', 80, ['Spring 2025', 81], ['Spring 2026', 79], 'Rubric on the ethics essay', 'Business Ethics', 50, 51),
+    LG('msc', 'Design an international strategy with evidence', 80, ['Autumn 2024', 78], ['Autumn 2025', 85], 'Rubric on the strategy project', 'Global Strategy', 28, 31),
+    LG('msc', 'Lead a culturally diverse team project', 80, ['Autumn 2024', 86], ['Autumn 2025', 88], 'Peer and supervisor rating of the team project', 'Cross-cultural Leadership', 28, 31),
+    LG('emba', 'Lead an organisational change plan', 80, ['Autumn 2024', 89], ['Autumn 2025', 91], 'Rubric on the change plan', 'Leading Change', 20, 22),
+    LG('emba', 'Make a financially sound investment decision', 80, ['Autumn 2024', 71], ['Autumn 2025', 77], 'Rubric on the investment case', 'Finance for Executives', 20, 22),
+    LG('dba', 'Produce research that meets doctoral standards', 80, ['Autumn 2025', 70], null, 'Rubric applied at the proposal defence', 'Proposal defence and ethics approval', 10, 0),
+  ];
+
+  /* ACTIONS — closing the loop: one record per finding, with the second measurement and its result */
+  const AC = (id, source, ref, finding, action, owner, opened, due, state, m1, m2, unit) => ({ id, source, ref, finding, action, owner, opened, due, state, m1, m2, unit });
+  const actions = [
+    AC('A01', 'Learning goal', '4.1', 'BBA: only 68 % of students analysed the data case correctly (target 80 %).', 'Added two workshops on regression and a practice data case to Statistics for Business.', OWN.bba, '2025-07-10', '2026-06-30', 'done', { term: 'Spring 2025', v: 68 }, { term: 'Spring 2026', v: 74 }, '% meeting the goal'),
+    AC('A02', 'Learning goal', '4.1', 'BBA: ethical reasoning fell from 81 % to 79 % (target 80 %).', 'Add a graded ethics question to two core courses.', OWN.bba, '2026-07-10', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 79 }, null, '% meeting the goal'),
+    AC('A03', 'Learning goal', '4.1', 'EMBA: 71 % made a sound investment decision (target 80 %).', 'Pre-reading and an online valuation module before Finance for Executives.', OWN.quality, '2025-02-01', '2025-09-30', 'done', { term: 'Autumn 2024', v: 71 }, { term: 'Autumn 2025', v: 77 }, '% meeting the goal'),
+    AC('A04', 'Learning goal', '4.1', 'DBA: 70 % of proposals met the doctoral standard (target 80 %); one cycle only.', 'Proposal-writing workshop in residency 2 and a second measurement at the 2026 defences.', null, '2026-01-20', '2026-10-31', 'in progress', { term: 'Autumn 2025', v: 70 }, null, '% meeting the goal'),
+    AC('A05', 'Course evaluation', '4.4', 'Course evaluations: the follow-up action is recorded for only half of the courses.', 'Every professor answers the evaluation in writing within two weeks; the template is in the LMS.', OWN.quality, '2026-07-15', '2026-11-06', 'in progress', { term: 'Spring 2026', v: 50 }, null, '% of courses with a recorded follow-up'),
+    AC('A06', 'Course evaluation', '4.4', 'Response rate to course evaluations was 52 % in spring 2026 (target 60 %).', 'Ten minutes of class time for the evaluation in week 13.', OWN.quality, '2026-07-15', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 52 }, null, '% response'),
+    AC('A07', 'Complaint', '4.3', 'Seven complaints in spring 2026, four about late grades.', 'Grade-entry deadline per assignment, with a reminder to professors after 7 days.', OWN.office, '2026-07-01', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 4 }, null, 'complaints about late grades'),
+    AC('A08', 'Complaint', '9', 'Students complained about the room C3 lab being too small for 30.', 'Move the data courses to the Aula on lab days.', OWN.facilities, '2026-03-02', '2026-09-01', 'done', { term: 'Spring 2026', v: 3 }, { term: 'Autumn 2026', v: 0 }, 'complaints about the room'),
+    AC('A09', 'Panel condition, 2021', '3.2', 'Condition of the 2021 accreditation: tasks and responsibilities in quality management are not assigned clearly.', 'Write the responsibility matrix and have it approved by the quality committee.', OWN.quality, '2021-06-15', '2026-11-27', 'in progress', null, null, null),
+    AC('A10', 'Panel recommendation, 2021', '2.3', 'Recommendation of the 2021 accreditation: publish an annual quality report.', 'Publish the first annual quality report on the website.', null, '2021-06-15', '2026-11-13', 'in progress', null, null, null),
+    AC('A11', 'Panel recommendation, 2021', '4.4', 'Recommendation of the 2021 accreditation: tell students what changed after the evaluations.', 'A "you said, we did" page per programme each term.', OWN.msc, '2021-06-15', '2025-12-31', 'done', null, null, null),
+    AC('A12', 'Panel recommendation, 2021', '5.1', 'Recommendation of the 2021 accreditation: set research objectives for core faculty.', 'Research objectives in each core faculty member’s yearly review.', OWN.research, '2021-06-15', '2026-09-30', 'in progress', { term: '2024', v: 2 }, { term: '2026', v: 4 }, 'core faculty with objectives (of 7)'),
+  ];
+  /* derived: overdue = past its due date and not done */
+  actions.forEach(a => { a.overdue = a.state !== 'done' && a.due < TODAY;
+    a.result = !a.m1 ? (a.state === 'done' ? 'done, nothing to measure' : 'no measurement planned') : !a.m2 ? 'awaiting the second measurement'
+      : (/complaint/.test(a.unit) ? a.m2.v < a.m1.v : a.m2.v > a.m1.v) ? 'improved' : 'not improved'; });
+  const previous = { date: '2021-06-15', result: 'Accredited with one condition', decision: 'Swiss Accreditation Council', ordinance: 'HEdA Accreditation Ordinance of 2015', conditions: ['A09'], recommendations: ['A10', 'A11', 'A12'] };
+
   const quality = {
-    framework: 'Swiss institutional accreditation (HEdA, AAQ) · 5 standard areas',
-    nextVisit: '2027-05-18',
-    standards: [
-      { area: '1 · Quality assurance strategy', items: [['Quality policy adopted by the board', 'done'], ['Quality cycle described (plan–do–check–act)', 'done'], ['Stakeholders involved: students, faculty, employers', 'partial']] },
-      { area: '2 · Governance', items: [['Organisation chart and responsibilities', 'done'], ['Academic council minutes (last 2 years)', 'done'], ['Conflict-of-interest rules', 'missing']] },
-      { area: '3 · Teaching, research, services', items: [['Programme learning goals for every programme', 'done'], ['Assurance of learning results (2 cycles)', 'partial'], ['Course evaluations with follow-up actions', 'partial'], ['Research output of core faculty', 'partial']] },
-      { area: '4 · Resources', items: [['Faculty qualification profile', 'done'], ['Student–faculty ratio', 'done'], ['Financial plan (3 years)', 'partial'], ['Library and digital resources', 'done']] },
-      { area: '5 · Communication', items: [['Public information is accurate and current', 'partial'], ['Complaints and appeals procedure', 'done'], ['Annual quality report published', 'missing']] },
-    ],
-    learningGoals: [
-      { prog: 'bba', goal: 'Analyse a business problem with quantitative tools', target: 80, met: 74 },
-      { prog: 'bba', goal: 'Communicate a recommendation in writing', target: 80, met: 83 },
-      { prog: 'bba', goal: 'Apply ethical reasoning to a business case', target: 80, met: 79 },
-      { prog: 'msc', goal: 'Design an international strategy with evidence', target: 80, met: 85 },
-      { prog: 'msc', goal: 'Lead a culturally diverse team project', target: 80, met: 88 },
-      { prog: 'emba', goal: 'Lead an organisational change plan', target: 80, met: 91 },
-      { prog: 'emba', goal: 'Make a financially sound investment decision', target: 80, met: 77 },
-      { prog: 'dba', goal: 'Produce research that meets doctoral standards', target: 80, met: 70 },
-    ],
+    framework: 'Swiss institutional accreditation under the HEdA Accreditation Ordinance, revised standards in force since 15 July 2026 (AAQ)',
+    source: { title: 'AAQ, report template for institutional accreditation (English), 6 October 2026', url: 'https://aaq.ch/wp/wp-content/uploads/dlm_uploads/2026/10/2026-10-06-Template-Bericht-Inst.-Akkreditierung_EN.docx' },
+    scale: ['entirely fulfilled', 'largely fulfilled', 'partially fulfilled', 'not fulfilled'],
+    nextVisit: '2027-05-18', areas: QAREAS, headings: QHEAD, standards, evidence, owners: OWN, learningGoals, actions, previous,
+    facultyCategories: 'AACSB',
     complaints: [{ term: 'Spr 25', n: 6 }, { term: 'Aut 25', n: 4 }, { term: 'Spr 26', n: 7 }, { term: 'Aut 26', n: 3 }],
     gradeAppeals: 5, evalResponseTarget: 60,
   };
@@ -661,10 +800,242 @@
     { date: '2027-01-15', event: 'Application deadline, February 2027 intake', decide: 'Extend the deadline or close the intake below target', owner: 'marketing', role: 'Sales & marketing' },
   ];
 
+  /* =====================================================================
+     STATUS HISTORY, CASES, PAST COHORTS (programme v2, 14 Nov 2026). Generated after everything else,
+     from the second random stream, so no number above moves.
+     ===================================================================== */
+  const isoBetween = (a, b) => new Date(Date.parse(a) + rnd2() * (Date.parse(b) - Date.parse(a))).toISOString().slice(0, 10);
+  const startOf = c => c.slice(5) === '09' ? c.slice(0, 4) + '-09-14' : c.slice(0, 4) + '-02-09';
+  const W_REASONS = ['Moved to another school', 'Financial reasons', 'Health or family reasons', 'Did not pass the first year', 'Student permit refused or not renewed', 'Took a job'];
+  const L_REASONS = ['Health', 'Family reasons', 'Work commitment', 'Military or civil service', 'Financial reasons'];
+  students.forEach(s => {
+    s.started = startOf(s.cohort);
+    s.statusLog = [{ date: s.started, ev: 'Enrolled' }];
+    if (s.status === 'withdrawn') {
+      const w = /Did not pass/; let r = pick2(W_REASONS); if (s.year === 1 && rnd2() < 0.3) r = 'Did not pass the first year';
+      if (w.test(r) && s.cohort >= '2026-01') r = pick2(W_REASONS.filter(x => !w.test(x)));
+      if (/permit/.test(r) && !s.visa) r = 'Moved to another school';   /* only a non-European student needs a permit */
+      s.withdrawn = { date: isoBetween(s.started, '2026-11-10'), reason: r };
+      s.statusLog.push({ date: s.withdrawn.date, ev: 'Withdrew', why: r });
+    }
+    if (s.status === 'on leave') {
+      const from = isoBetween(s.cohort >= '2026-01' ? s.started : '2026-02-01', '2026-10-20');
+      s.leave = { from, reason: pick2(L_REASONS), back: rnd2() < 0.6 ? 'Spring 2027' : 'Autumn 2027' };
+      s.statusLog.push({ date: from, ev: 'Leave of absence', why: s.leave.reason + ', back ' + s.leave.back });
+    }
+    if (s.plan && s.plan.retakes.length) s.statusLog.push({ date: '2026-07-01', ev: 'Must retake ' + s.plan.retakes.length + ' course' + (s.plan.retakes.length > 1 ? 's' : ''), why: s.plan.retakes.map(i => i.title).join(', ') });
+  });
+  /* a CASE for every student at academic risk who has one open: who owns it, what was done, what changed */
+  const ACTIONS = ['Advisor meeting', 'E-mail reminder from the programme office', 'Study plan agreed', 'Referred to learning support', 'Meeting with the course professor'];
+  const NEXT = ['Check attendance again in two weeks', 'Second meeting after the midterm grades', 'Confirm the study plan before exam registration closes', 'Follow up with the professor'];
+  const cases = [];
+  students.filter(s => s.status === 'active' && (s.risk === 'high' || s.risk === 'medium')).forEach(s => {
+    if (rnd2() < 0.22) return;   /* nobody has opened a case yet: a gap the manager should see */
+    const opened = isoBetween('2026-09-28', '2026-11-06'), action = pick2(ACTIONS);
+    const owner = action === 'Advisor meeting' || action === 'Study plan agreed' ? s.advisor : action === 'Meeting with the course professor' ? sections.find(x => x.id === s.sections[0]).prof : 'office';
+    const daysOpen = Math.round((Date.parse(TODAY) - Date.parse(opened)) / 864e5);
+    const attBefore = clamp(s.attendance + Math.round(gauss2(-4, 3)), 40, 100);
+    const outcome = daysOpen < 14 ? 'too early' : s.engagement > -1.2 && rnd2() < 0.55 ? 'improved' : 'no change';
+    cases.push({ sid: s.id, prog: s.prog, opened, action, actionDate: isoBetween(opened, '2026-11-12'), owner, next: pick2(NEXT), outcome, attBefore, attNow: s.attendance, gradeNow: s.avgGrade });
+  });
+  /* PAST COHORTS: the September intakes that have finished, as counts (their students are no longer in the
+     records). Current cohorts are counted from the students themselves on the page. */
+  const PAST = { bba: ['2020-09', '2021-09', '2022-09', '2023-09'], msc: ['2021-09', '2022-09', '2023-09', '2024-09'], emba: ['2021-09', '2022-09', '2023-09', '2024-09'], dba: ['2018-09', '2019-09', '2020-09', '2021-09', '2022-09'] };
+  const SIZE = { bba: 52, msc: 30, emba: 22, dba: 6 }, DROP = { bba: 0.13, msc: 0.07, emba: 0.06, dba: 0.25 };
+  const pastCohorts = {};
+  Object.entries(PAST).forEach(([pid, list]) => { pastCohorts[pid] = list.map(c => {
+    const started = Math.max(3, Math.round(SIZE[pid] * (0.85 + rnd2() * 0.3))), withdrawn = Math.round(started * DROP[pid] * (0.6 + rnd2() * 0.8));
+    const done = started - withdrawn, late1 = Math.round(done * (pid === 'dba' ? 0.3 : 0.1) * (0.5 + rnd2())), late2 = Math.round(done * (pid === 'dba' ? 0.25 : 0.04) * (0.5 + rnd2()));
+    const still = pid === 'dba' && c === '2022-09' ? Math.max(1, Math.round(done * 0.4)) : 0;
+    const reasons = {}; for (let i = 0; i < withdrawn; i++) { const r = pick2(W_REASONS); reasons[r] = (reasons[r] || 0) + 1; }
+    return { cohort: c, started, withdrawn, onTime: done - late1 - late2 - still, late1, late2, still, reasons }; }); });
+
+  /* =====================================================================
+     ADMISSIONS v2 (14 Nov 2026 — Jan Erik's fifth scope memo): ONE applicant dataset.
+     Every application of the February 2027 intake and of the September 2027 cycle so far is a file,
+     and the counts match the CRM funnel exactly (applications, admitted, deposits per programme), so
+     admissions and marketing can never disagree. Each file has a REAL stage (applied → review →
+     interview → decision → offer → deposit, or closed: rejected / withdrew / declined the offer), a
+     separate flag for missing documents, and a dated list of events. registrar.files and
+     crm.openApps are both derived from it. Generated from the second stream, after everything else.
+     ===================================================================== */
+  const w2 = obj => { const tot = Object.values(obj).reduce((a, b) => a + b, 0); let x = rnd2() * tot; for (const [k, v] of Object.entries(obj)) { x -= v; if (x <= 0) return k; } return Object.keys(obj)[0]; };
+  const person2 = () => { let n; do { n = pick2(FIRST) + ' ' + pick2(LAST); } while (used.has(n)); used.add(n); return n; };
+  const addDays = (iso, d) => new Date(Date.parse(iso) + d * 864e5).toISOString().slice(0, 10);
+  const daysSince = iso => Math.round((Date.parse(TODAY) - Date.parse(iso)) / 864e5);
+  const STAGES = ['applied', 'review', 'interview', 'decision', 'offer', 'deposit'];
+  const STAGE_NAME = { applied: 'Applied', review: 'Under review', interview: 'Interview', decision: 'Decision', offer: 'Offer sent', deposit: 'Deposit paid', rejected: 'Rejected', withdrew: 'Withdrew', declined: 'Declined the offer' };
+  const ADM_OWNERS = { bba: ['Julie (admissions)', 'Karim (admissions)'], msc: ['Karim (admissions)', 'Julie (admissions)'], emba: ['Nina (EMBA advisor)'], dba: ['Prof. Anil Mehta (DBA director)'] };
+  const AGENTS = ['Agent: EduLink Lagos', 'Agent: Study Gulf Dubai'];
+  const DECLINE = ['Chose another school', 'Could not finance the studies', 'Student permit refused', 'Employer did not sponsor', 'Personal reasons'];
+  const REJECT = ['Academic record below the entry requirement', 'English level below the requirement', 'Not enough work experience for the programme'];
+  /* the visa lead time is a SETTING with its source, not a sentence in a page */
+  const visaPolicy = { leadWeeksMin: 8, leadWeeksMax: 12, source: 'The school’s own record of its 2023–2026 intakes (fictitious): weeks from the visa letter to a Geneva study permit (cantonal population office OCPM).', letterWeeksBefore: 14, embassyWeeksBefore: 11 };
+  const START = { '2027-02': crm.feb.start, '2027-09': '2027-09-13' };   /* the September date is crm.intakeDate too */
+  const applicants = [];
+  function makeFile(pid, intake, end) {
+    const region = w2(MIX[pid]), nonEU = !['CH', 'FR', 'EU'].includes(region);
+    const agent = nonEU && pid !== 'emba' && pid !== 'dba' && rnd2() < 0.35 ? pick2(AGENTS) : null;
+    const owner = agent || pick2(ADM_OWNERS[pid]);
+    const chId = w2(CH_MIX[pid]);   /* drawn once: inside find() it would be redrawn for every channel */
+    const source = agent ? 'Education agents' : CHANNELS.find(c => c.id === chId).name;
+    /* how far the file went: the index of the last stage it reached */
+    const reached = end === 'deposit' ? 5 : end === 'offer' || end === 'declined' ? 4 : end === 'rejected' ? 3 : end === 'withdrew' ? Math.floor(rnd2() * 3) : STAGES.indexOf(end);
+    const open = !['deposit', 'rejected', 'withdrew', 'declined'].includes(end);
+    /* the application date: older for files that went further */
+    let applied = addDays(TODAY, -Math.round(6 + reached * 12 + rnd2() * 20));
+    const ev = [{ date: applied, kind: 'stage', what: 'Application received', by: 'Applicant' }];
+    const docsMissing = reached <= 1 && open ? DOCS.filter(d => rnd2() < (d === 'English test' ? 0.35 : d === 'Transcripts' ? 0.28 : d === 'Application fee' ? 0.12 : 0.08)) : [];
+    DOCS.filter(d => !docsMissing.includes(d)).forEach(d => ev.push({ date: addDays(applied, Math.floor(rnd2() * 10)), kind: 'doc', what: d + ' received', by: 'Applicant' }));
+    let t = addDays(applied, 4 + Math.floor(rnd2() * 6)); const stageDates = { applied };
+    for (let k = 1; k <= reached; k++) { stageDates[STAGES[k]] = t; ev.push({ date: t, kind: 'stage', what: { review: 'File complete, under review', interview: pid === 'dba' ? 'Interview with a possible supervisor booked' : 'Interview booked', decision: 'Interview held; file to the admissions committee', offer: 'Admitted; offer letter sent', deposit: 'Deposit paid' }[STAGES[k]], by: owner });
+      t = addDays(t, 5 + Math.floor(rnd2() * 12)); }
+    let lastStage = Object.values(stageDates).sort().pop();
+    if (lastStage > TODAY) { /* keep every event in the past */ const shift = daysSince(lastStage) - 1; ev.forEach(e => e.date = addDays(e.date, shift)); Object.keys(stageDates).forEach(k => stageDates[k] = addDays(stageDates[k], shift)); lastStage = addDays(lastStage, shift); }
+    /* an offer still open was usually sent in the last four weeks: move the whole file forward to that */
+    if (end === 'offer') { const want = 2 + Math.floor(rnd2() * 26), shift = daysSince(stageDates.offer) - want;
+      if (shift > 0) { ev.forEach(e => e.date = addDays(e.date, shift)); Object.keys(stageDates).forEach(k => stageDates[k] = addDays(stageDates[k], shift)); lastStage = addDays(lastStage, shift); } }
+    applied = stageDates.applied;   /* contacts and days open count from the (possibly moved) application date */
+    let closed = null;
+    if (end === 'rejected') closed = { date: addDays(lastStage, 3), what: 'Not admitted', why: pick2(REJECT) };
+    if (end === 'withdrew') closed = { date: addDays(lastStage, 4 + Math.floor(rnd2() * 8)), what: 'Withdrew the application', why: pick2(DECLINE) };
+    if (end === 'declined') closed = { date: addDays(lastStage, 6 + Math.floor(rnd2() * 10)), what: 'Declined the offer', why: pick2(DECLINE) };
+    if (closed) { if (closed.date > TODAY) closed.date = addDays(TODAY, -1); ev.push({ date: closed.date, kind: 'stage', what: `${closed.what}: ${closed.why}`, by: end === 'rejected' ? 'Admissions committee' : 'Applicant' }); }
+    /* contacts: reminders, calls and e-mails; how long since the last one is the main measure */
+    const nC = 1 + Math.floor(rnd2() * 4), silence = open ? Math.floor(Math.abs(gauss2(4, 7))) : 0;
+    for (let k = 0; k < nC; k++) { const d = addDays(TODAY, -silence - Math.floor(rnd2() * Math.max(1, daysSince(applied) - silence)));
+      ev.push({ date: d < applied ? applied : d, kind: 'contact', what: pick2(docsMissing.length ? ['Reminder sent: documents missing', 'Call: documents explained'] : ['E-mail answered', 'Call logged', 'Reminder sent']), by: owner }); }
+    if (open) ev.push({ date: addDays(TODAY, -silence), kind: 'contact', what: docsMissing.length ? 'Reminder sent: ' + docsMissing.join(', ') : 'Call logged', by: owner });
+    /* scholarship and conditions on an offer */
+    const scholarship = reached >= 4 && rnd2() < (pid === 'msc' ? 0.3 : pid === 'bba' ? 0.2 : 0.08) ? pick2([10, 15, 20, 25]) : 0;
+    /* visa: only non-European admitted applicants; steps dated back from the programme start */
+    let visa = null, visaSteps = null;
+    if (nonEU && reached >= 4 && end !== 'declined') {
+      const st0 = START[intake], letterBy = addDays(st0, -7 * visaPolicy.letterWeeksBefore), embassyBy = addDays(st0, -7 * visaPolicy.embassyWeeksBefore);
+      const step = w2(intake === '2027-02' ? { 'Visa letter to issue': 1, 'Embassy appointment': 3, 'Waiting for permit': 4, 'Permit granted': 2 } : { 'Visa letter to issue': 5, 'Embassy appointment': 1 });
+      visa = step;
+      const letter = step === 'Visa letter to issue' ? null : addDays(stageDates.offer, 3), appt = step === 'Visa letter to issue' || step === 'Embassy appointment' ? null : addDays(letter, 14 + Math.floor(rnd2() * 10));
+      visaSteps = { letterBy, embassyBy, letter, appt, permitExpected: appt ? addDays(letter, 7 * Math.round((visaPolicy.leadWeeksMin + visaPolicy.leadWeeksMax) / 2)) : letter ? addDays(letter, 7 * visaPolicy.leadWeeksMax) : null, granted: step === 'Permit granted' ? addDays(TODAY, -Math.floor(rnd2() * 10) - 1) : null };
+      if (letter && letter <= TODAY) ev.push({ date: letter, kind: 'visa', what: 'Visa letter issued', by: owner });
+      if (appt && appt <= TODAY) ev.push({ date: appt, kind: 'visa', what: 'Embassy appointment held', by: 'Applicant' });
+      if (visaSteps.granted) ev.push({ date: visaSteps.granted, kind: 'visa', what: 'Study permit granted', by: 'OCPM Geneva' });
+    }
+    ev.forEach(e => { if (e.date > TODAY) e.date = TODAY; });
+    ev.sort((a, b) => a.date.localeCompare(b.date));
+    const lastContact = ev.filter(e => e.kind === 'contact').map(e => e.date).sort().pop() || applied;
+    const extra = pid === 'emba' ? { sponsor: rnd2() < 0.6 ? pick2(['Firmenich', 'Banque Lombard', 'SGS', 'Lakeside Pharma', 'Geneva Airport']) + ' (fictitious)' : null } : pid === 'dba' ? { proposal: reached >= 1 ? 'received' : 'awaited', supervisor: reached >= 2 ? pick2(faculty.filter(f => f.doctorate)).name : null } : pid === 'bba' ? { guarantor: rnd2() < 0.7 ? 'Parent' : 'Self-funded', diplomaRecognition: nonEU ? (reached >= 1 ? 'Recognised' : 'Being checked') : 'Recognised' } : {};
+    const stage = open ? STAGES[reached] : end;
+    applicants.push({ id: 'ap' + (applicants.length + 1), name: person2(), prog: pid, intake, region: REGIONS[region], nonEU, owner, agent: !!agent, source,
+      stage, stageName: STAGE_NAME[stage], open, reached, closed, missing: docsMissing, visa, visaSteps, scholarship, stageDates, events: ev, extra,
+      daysOpen: daysSince(applied), lastContact, lastTouchDays: daysSince(lastContact) });
+  }
+  /* counts per programme and intake, taken from the CRM so both pages agree */
+  function fill(pid, intake, apps, admitted, deposits) {
+    const declined = Math.round((admitted - deposits) * 0.25), offers = admitted - deposits - declined;
+    const notAdm = apps - admitted, rejected = Math.round(notAdm * 0.22), withdrew = Math.round(notAdm * 0.12), openNA = notAdm - rejected - withdrew;
+    for (let i = 0; i < deposits; i++) makeFile(pid, intake, 'deposit');
+    for (let i = 0; i < offers; i++) makeFile(pid, intake, 'offer');
+    for (let i = 0; i < declined; i++) makeFile(pid, intake, 'declined');
+    for (let i = 0; i < rejected; i++) makeFile(pid, intake, 'rejected');
+    for (let i = 0; i < withdrew; i++) makeFile(pid, intake, 'withdrew');
+    for (let i = 0; i < openNA; i++) makeFile(pid, intake, w2({ applied: 3, review: 3, interview: 2, decision: 2 }));
+  }
+  programs.forEach(p => { const fb = crm.feb.programs[p.id]; if (fb) fill(p.id, '2027-02', fb.applications, fb.admitted, fb.deposits);
+    const f = crm.funnel[p.id]; fill(p.id, '2027-09', f.applications, f.admitted, f.deposits); });
+  registrar.files = applicants;
+  registrar.stages = STAGES; registrar.stageNames = STAGE_NAME; registrar.visaPolicy = visaPolicy; registrar.intakeStart = START;
+  registrar.intakes = [{ id: '2027-02', name: 'February 2027', start: START['2027-02'], deadline: crm.feb.deadline, target: crm.feb.target }, { id: '2027-09', name: crm.cycle, start: START['2027-09'], deadline: null, target: crm.target }];
+  /* the marketing page's waiting list is now the open files of this same dataset */
+  crm.openApps = applicants.filter(f => f.open).map(f => ({ id: f.id, name: f.name, prog: f.prog, region: f.region, stage: f.stageName + (f.missing.length ? ' · documents missing' : ''), daysWaiting: f.lastTouchDays, owner: f.owner, source: f.source })).sort((a, b) => b.daysWaiting - a.daysWaiting);
+
+  /* RESIDENCE PERMITS of enrolled non-European students: one dated row each, instead of a count */
+  registrar.permits = students.filter(s => s.status === 'active' && s.visa).map(s => { const exp = s.visa === 'renewal pending' ? addDays(TODAY, 5 + Math.floor(rnd2() * 50)) : addDays(TODAY, 40 + Math.floor(rnd2() * 330));
+    return { sid: s.id, expires: exp, status: s.visa === 'renewal pending' ? 'renewal filed, waiting for OCPM' : daysSince(exp) > -60 ? 'renew now' : 'valid' }; }).sort((a, b) => a.expires.localeCompare(b.expires));
+  registrar.permitsExpiring = registrar.permits.filter(p => p.status !== 'valid').length;
+
+  /* STUDENT-OFFICE CASES: every open request as a case (student, type, owner, opened, service target, status) */
+  const SVC = { 'Transcript': 5, 'Enrolment certificate (permit, insurance)': 3, 'Diploma (June 2026 graduates)': 30, 'Credit transfer / recognition': 20, 'Leave of absence': 10, 'Withdrawal & refund': 15 };
+  const OFFICE = ['Sandra (student office)', 'Luc (student office)', 'Head of the student office'];
+  registrar.cases = [];
+  registrar.requests.forEach(r => { for (let i = 0; i < r.open; i++) {
+    const age = i === 0 ? r.oldestDays : Math.floor(rnd2() * (r.oldestDays + 1));
+    const grad = /Diploma/.test(r.type), s = grad ? null : pick2(active);
+    registrar.cases.push({ id: 'C' + String(registrar.cases.length + 1).padStart(3, '0'), type: r.type, sid: s ? s.id : null, name: s ? s.name : person2(), prog: s ? s.prog : w2({ bba: 4, msc: 3, emba: 2 }), grad,
+      owner: pick2(OFFICE), opened: addDays(TODAY, -age), target: SVC[r.type], status: age > SVC[r.type] ? 'late' : rnd2() < 0.4 ? 'in progress' : 'new' }); } });
+
+  /* =====================================================================
+     MARKETING v2 (14 Nov 2026 — Jan Erik's sixth scope memo): the link between the CRM and the
+     student records. Every student carries the channel (and agent) that brought them; last cycle's
+     funnel per channel ends at ARRIVED, counted from the real September 2026 students; spend is
+     recorded per channel, programme and month; every lead that has not applied yet is a record with
+     an owner, a score, its first-response time and a next action. Second stream, after everything.
+     ===================================================================== */
+  const AGENT_OF = { AF: 'EduLink Lagos', ME: 'Study Gulf Dubai', AS: 'Campus Asia Partners' };
+  const REG_KEY = {}; Object.entries(REGIONS).forEach(([k, v]) => REG_KEY[v] = k);
+  students.forEach(s => {
+    const nonEU = !['CH', 'FR', 'EU'].includes(s.region);
+    if (nonEU && AGENT_OF[s.region] && s.prog !== 'emba' && rnd2() < 0.4) { s.source = 'agents'; s.agent = AGENT_OF[s.region]; }
+    else { const m = Object.assign({}, CH_MIX[s.prog]); delete m.agents; s.source = w2(m); s.agent = null; }
+  });
+  crm.intakeDate = '2027-09-13'; crm.responseTarget = 4;
+  crm.forecastRule = 'The range is a rule of thumb, 80 % to 115 % of the forecast: the school has no record yet of how far past forecasts missed.';
+  crm.events.forEach(e => e.progs = /Open day/.test(e.what) ? ['bba', 'msc'] : /EMBA/.test(e.what) ? ['emba'] : /MBA Tour/.test(e.what) ? ['emba', 'msc'] : /February/.test(e.what) ? ['bba', 'msc', 'emba'] : programs.map(p => p.id));
+
+  /* SPEND per channel, programme and month (Dec 2025 – Nov 2026, November half spent). The yearly totals
+     are crm.spend; the split by programme follows each programme's leads in the channel; the months follow
+     the recruiting season. "This cycle" = September to November 2026. */
+  const SM = ['Dec 2025', 'Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026', 'Oct 2026', 'Nov 2026'];
+  const SEAS = [0.06, 0.1, 0.1, 0.11, 0.1, 0.08, 0.06, 0.04, 0.06, 0.11, 0.11, 0.07];
+  crm.spendMonths = SM; crm.cycleMonths = [9, 10, 11]; crm.spendBy = {};
+  programs.forEach(p => { crm.spendBy[p.id] = {}; CHANNELS.forEach(c => { const tot = programs.reduce((a, q) => a + crm.byChannel[q.id][c.id].leads, 0) || 1, share = crm.byChannel[p.id][c.id].leads / tot;
+    crm.spendBy[p.id][c.id] = SEAS.map(x => Math.round(SPEND[c.id] * share * x * (0.85 + rnd2() * 0.3))); }); });
+
+  /* LAST CYCLE (September 2026) per channel, to the day of arrival: applications → admitted → deposit →
+     visa refused / no-show → ARRIVED. "Arrived" is counted from the students of the 2026-09 cohort. */
+  const AR = { agents: 0.5, seo: 0.62, paid: 0.55, social: 0.5, fairs: 0.6, referral: 0.75, corp: 0.8 }, YL = { agents: 0.55, seo: 0.6, paid: 0.55, social: 0.5, fairs: 0.6, referral: 0.75, corp: 0.85 };
+  crm.lastCycleByChannel = {};
+  programs.forEach(p => { const coh = students.filter(s => s.prog === p.id && s.cohort === '2026-09'), out = {};
+    CHANNELS.forEach(c => { const arrived = coh.filter(s => s.source === c.id).length; out[c.id] = { arrived, visaRefused: 0, noShow: 0 }; });
+    let gap = crm.lastCycleFinal[p.id] - coh.length;
+    while (gap > 0) { const nonEUch = ['agents', 'social', 'paid', 'seo'], c = rnd2() < 0.6 ? pick2(nonEUch) : pick2(CHANNELS).id; if (rnd2() < 0.55 && (c === 'agents' || c === 'social' || c === 'paid')) out[c].visaRefused++; else out[c].noShow++; gap--; }
+    CHANNELS.forEach(c => { const o = out[c.id]; o.deposits = o.arrived + o.visaRefused + o.noShow; o.admitted = o.deposits ? Math.round(o.deposits / YL[c.id]) : 0; o.applications = o.admitted ? Math.round(o.admitted / AR[c.id]) : 0;
+      /* first-year retention: the September 2025 intake, including those who left during their first year */
+      const c25 = students.filter(s => s.prog === p.id && s.cohort === '2025-09' && s.source === c.id).length;
+      o.started25 = c25; o.left25 = 0; });
+    crm.lastCycleByChannel[p.id] = out; });
+  /* first-year leavers of the September 2025 intake (no longer in the records), sized to the retention history */
+  programs.forEach(p => { const out = crm.lastCycleByChannel[p.id], now25 = students.filter(s => s.prog === p.id && s.cohort === '2025-09' && s.status !== 'withdrawn').length;
+    const ret = retention[p.id][retention[p.id].length - 1] / 100, leavers = Math.max(0, Math.round(now25 / ret - now25));
+    const WL = { agents: 3, social: 2, paid: 1.5, seo: 1, fairs: 1, referral: 0.5, corp: 0.5 };
+    for (let i = 0; i < leavers; i++) { const c = w2(Object.fromEntries(CHANNELS.map(ch => [ch.id, (out[ch.id].started25 + 0.5) * WL[ch.id]]))); out[c].left25++; }
+    CHANNELS.forEach(c => { out[c.id].started25 += out[c.id].left25; }); });
+
+  /* LEADS that have not applied yet, one record each (the funnel's leads minus its applications) */
+  const LEAD_OWNERS = { bba: ['Julie (admissions)', 'Karim (admissions)'], msc: ['Karim (admissions)', 'Julie (admissions)'], emba: ['Nina (EMBA advisor)'], dba: ['Prof. Anil Mehta (DBA director)'] };
+  const LOST = ['Chose another school', 'Fee too high', 'Wrong programme for the person', 'No answer after three contacts', 'Wants an online programme'];
+  const NEXTA = { new: 'First call', contacted: 'Send the programme brochure and book a call', qualified: 'Invite to apply: send the application link', nurturing: 'Invite to the next event' };
+  const cycleStart = addDays(TODAY, -(WEEKS_BACK - NOW) * 7);
+  crm.leads = [];
+  programs.forEach(p => { const n = crm.funnel[p.id].leads - crm.funnel[p.id].applications, chW = Object.fromEntries(CHANNELS.map(c => [c.id, Math.max(0, crm.byChannel[p.id][c.id].leads - crm.byChannel[p.id][c.id].applications)]));
+    for (let i = 0; i < n; i++) {
+      const ch = w2(chW), region = ch === 'agents' ? pick2(['AF', 'ME', 'AS']) : w2(MIX[p.id]);
+      const owner = ch === 'agents' ? 'Agent: ' + AGENT_OF[region] : pick2(LEAD_OWNERS[p.id]);
+      const age = Math.floor(rnd2() * daysSince(cycleStart)), created = addDays(TODAY, -age);
+      /* first answer: slower in the last weeks, as the school-wide trend shows; agents answer themselves */
+      const resp = age < 3 && rnd2() < 0.5 ? null : r1(clamp(gauss2(age < 28 ? 13 : 6, age < 28 ? 6 : 3) * (owner.startsWith('Agent') ? 0.7 : owner.startsWith('Nina') ? 0.8 : 1), 0.5, 72));
+      const stage = resp == null ? 'new' : w2({ contacted: 4, qualified: 2.5, nurturing: 2.5, lost: 1.6 });
+      const score = clamp(Math.round(gauss2(stage === 'qualified' ? 72 : stage === 'nurturing' ? 50 : stage === 'lost' ? 20 : 45, 14) + (ch === 'referral' || ch === 'corp' ? 10 : 0)), 1, 99);
+      const last = stage === 'new' ? null : addDays(TODAY, -Math.min(age, Math.floor(Math.abs(gauss2(0, stage === 'nurturing' ? 12 : 6)))));
+      const lead = { id: 'ld' + (crm.leads.length + 1), name: person2(), prog: p.id, channel: ch, region: REGIONS[region], owner, created, firstResponseH: resp, stage, score, lastContact: last };
+      if (stage === 'lost') lead.lost = pick2(LOST);
+      else lead.next = { what: NEXTA[stage], due: stage === 'new' ? addDays(created, 1) : addDays(last, stage === 'qualified' ? 4 : stage === 'nurturing' ? 21 : 7) };
+      crm.leads.push(lead);
+    } });
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),
