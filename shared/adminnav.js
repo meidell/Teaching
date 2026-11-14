@@ -164,7 +164,7 @@
     h += '<div class="ak">Site</div>';
     h += link('/shared/site.html', ico('site'), 'Statistics & alerts', PATH === '/shared/site.html');
     h += link('/lms/', ico('school'), 'Platform · new', PATH === '/lms/' || PATH === '/lms/index.html');
-    h += link('/lms/planner.html', ico('calendar'), 'My availability · planner', PATH === '/lms/planner.html');
+    h += link('/lms/planner.html', ico('calendar'), 'Teaching availability', PATH === '/lms/planner.html');
 
     if (REG && REG.courses) {
       var list = REG.courses.filter(function (x) { return x.ns && x.status !== 'archived'; });
