@@ -12,7 +12,9 @@
 <!--
   The student's own page on the new platform (3 Nov 2026): every course I am
   enrolled in, with my progress, the next sessions, my attendance so far and
-  my grades as they are entered. Reads GET /me/home with the same session as
+  my grades as they are entered; and (16 Nov 2026) my absence requests: ask
+  to be excused from sessions, withdraw while waiting, read the decision
+  (GET/POST/DELETE /me/absences, API SPEC §7d). Reads GET /me/home with the same session as
   the course pages (localStorage `jem_lms`); signs in with the same email
   code. French or English (?lang=, else the site's remembered choice, else
   the browser). Linked from the course pages' sign-in box ("My courses").
@@ -48,6 +50,20 @@ label.l{display:block;font-size:11px;font-weight:800;color:var(--a-grey);letter-
 .lang{display:inline-flex;border:1px solid rgba(255,255,255,.3);border-radius:20px;overflow:hidden;}
 .lang button{background:none;border:none;color:rgba(255,255,255,.7);font:800 11px var(--a-font);letter-spacing:1px;padding:6px 10px;cursor:pointer;}
 .lang button.on{background:var(--a-glow);color:#0F4C60;}
+/* absence requests (16 Nov 2026, API SPEC §7d) */
+.abs h2{font-size:19px;} .abs ol{margin:8px 0 0;padding-left:20px;} .abs ol>li{margin:0 0 14px;} .abs ol>li>b{display:block;margin-bottom:4px;}
+.sess{border:1px solid var(--a-line);border-radius:8px;max-height:300px;overflow:auto;}
+.sess label{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-bottom:1px solid var(--a-line);cursor:pointer;font-size:13.5px;}
+.sess label:last-child{border-bottom:none;} .sess label.dis{color:var(--a-faint);cursor:default;} .sess input{margin-top:3px;flex:none;}
+.sess .c{font-weight:700;} .rng{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px;font-size:12.5px;}
+.rng input{width:auto;padding:6px 8px;font-size:13.5px;}
+select.f,textarea.f{font:15px var(--a-font);border:1px solid var(--a-line);border-radius:8px;padding:9px 10px;background:#fff;color:var(--a-ink);width:100%;}
+textarea.f{min-height:90px;resize:vertical;}
+.req{border-top:1px solid var(--a-line);padding:10px 0;} .req:first-of-type{border-top:none;}
+.req .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;} .req .top .sp{flex:1;}
+.req ul{margin:4px 0 0;padding-left:18px;font-size:13px;}
+.dec{background:var(--a-wash);border:1px solid var(--a-line);border-radius:8px;padding:7px 10px;margin-top:6px;font-size:13px;}
+.okmsg{color:var(--a-good);}
 </style>
 </head>
 <body>
@@ -79,14 +95,38 @@ const STR = {
     att: 'Attendance', attS: (p, n) => `Present at ${p} of ${n} session${n === 1 ? '' : 's'}`, late: 'late', excused: 'excused', missed: 'Missed:', noatt: 'No session held yet.',
     grades: 'Grades', nograde: 'Nothing graded yet.', total: 'Total so far', weight: 'weight', pending: 'not graded', group: 'Group',
     calLead: 'Your personal calendar link. In Google, Apple or Outlook calendar choose “subscribe by URL” and paste it. Asking again makes a new link and stops the old one.',
-    hello: 'Signed in as' },
+    hello: 'Signed in as',
+    aTitle: 'Absences', aLead: 'If you cannot come to a session, ask to be excused here. The programme manager of the course (or the school administration) accepts or refuses your request. When it is accepted, the session shows “excused” in your attendance and your teacher does not need to do anything. You receive an email with the decision.',
+    aNew: 'Ask to be excused from a session', aMine: 'My absence requests', aNone: 'You have not sent any absence request.',
+    a1: 'Tick the sessions you will miss', a1n: 'You can choose sessions from the last 7 days and every session to come. Sessions that are already in a request cannot be ticked.',
+    aRange: 'Or tick every session from', aTo: 'to', aTick: 'Tick these days', aNoSess: 'You have no session that you can ask to be excused from.',
+    a2: 'Choose the reason', a3: 'Explain in a few sentences why you cannot come', a3n: 'Only the person who decides reads this, never your teacher. At most 1000 characters.',
+    a4: 'Add a link to a document (optional)', a4n: 'For example a medical certificate saved in your own cloud storage, shared by link. This page cannot take a file upload yet.',
+    aSend: 'Send the request', aCancel: 'Close', aPick: 'Tick at least one session first.', aWhy: 'Choose a reason first.',
+    aSent: n => n === 1 ? 'Your request is sent. You will receive an email when it is decided.' : `Your ${n} requests are sent, one per course. You will receive an email when each is decided.`,
+    aWithdraw: 'Withdraw the request', aWdQ: 'Withdraw this request? It will not be decided.', aTaken: 'already requested',
+    st: { waiting: 'waiting for a decision', accepted: 'accepted', refused: 'refused', withdrawn: 'withdrawn' },
+    by: (who, d) => `Decided by ${who} on ${d}`, wd: d => `You withdrew it on ${d}.`, sentOn: d => `Sent on ${d}`, kept: 'you were marked present: unchanged',
+    R: { illness: 'Illness', family: 'Family', work: 'Work', visa: 'Visa or administration', religious: 'Religious holiday', other: 'Other' } },
   fr: { title: 'Mes cours', cal: 'Calendrier', out: 'Se déconnecter', signin: 'Se connecter', lead: 'Avec votre e-mail : un code à 6 chiffres arrive en moins d’une minute. Pas de mot de passe.',
     email: 'E-mail', code: 'Code', send: 'Recevoir un code par e-mail', go: 'Se connecter', none: 'Vous n’êtes inscrit·e à aucun cours pour l’instant. Ouvrez la page d’un cours et connectez-vous là, ou demandez à votre professeur.',
     progress: 'Progression', time: 'de temps sur le cours', open: 'Ouvrir le cours', next: 'Prochaines séances', nonext: 'Aucune séance programmée pour l’instant.', online: 'en ligne',
     att: 'Présence', attS: (p, n) => `Présent·e à ${p} séance${p === 1 ? '' : 's'} sur ${n}`, late: 'en retard', excused: 'excusé·e', missed: 'Absences :', noatt: 'Aucune séance tenue pour l’instant.',
     grades: 'Notes', nograde: 'Rien de noté pour l’instant.', total: 'Total à ce jour', weight: 'pondération', pending: 'pas encore noté', group: 'Groupe',
     calLead: 'Votre lien de calendrier personnel. Dans l’agenda Google, Apple ou Outlook, choisissez « s’abonner par URL » et collez-le. Redemander un lien crée un nouveau lien et désactive l’ancien.',
-    hello: 'Connecté·e en tant que' }
+    hello: 'Connecté·e en tant que',
+    aTitle: 'Absences', aLead: 'Si vous ne pouvez pas venir à une séance, demandez ici à être excusé·e. Le ou la responsable du programme (ou l’administration de l’école) accepte ou refuse votre demande. Si elle est acceptée, la séance apparaît « excusé·e » dans votre présence et votre professeur·e n’a rien à faire. Vous recevez un e-mail avec la décision.',
+    aNew: 'Demander à être excusé·e d’une séance', aMine: 'Mes demandes d’absence', aNone: 'Vous n’avez envoyé aucune demande d’absence.',
+    a1: 'Cochez les séances que vous allez manquer', a1n: 'Vous pouvez choisir les séances des 7 derniers jours et toutes les séances à venir. Une séance déjà dans une demande ne peut pas être cochée.',
+    aRange: 'Ou cochez toutes les séances du', aTo: 'au', aTick: 'Cocher ces jours', aNoSess: 'Vous n’avez aucune séance pour laquelle demander une absence.',
+    a2: 'Choisissez la raison', a3: 'Expliquez en quelques phrases pourquoi vous ne pouvez pas venir', a3n: 'Seule la personne qui décide le lit, jamais votre professeur·e. 1000 caractères au plus.',
+    a4: 'Ajoutez un lien vers un document (facultatif)', a4n: 'Par exemple un certificat médical enregistré dans votre propre espace en ligne et partagé par lien. Cette page ne peut pas encore recevoir de fichier.',
+    aSend: 'Envoyer la demande', aCancel: 'Fermer', aPick: 'Cochez d’abord au moins une séance.', aWhy: 'Choisissez d’abord une raison.',
+    aSent: n => n === 1 ? 'Votre demande est envoyée. Vous recevrez un e-mail quand elle sera décidée.' : `Vos ${n} demandes sont envoyées, une par cours. Vous recevrez un e-mail pour chaque décision.`,
+    aWithdraw: 'Retirer la demande', aWdQ: 'Retirer cette demande ? Elle ne sera pas décidée.', aTaken: 'déjà demandée',
+    st: { waiting: 'en attente de décision', accepted: 'acceptée', refused: 'refusée', withdrawn: 'retirée' },
+    by: (who, d) => `Décidée par ${who} le ${d}`, wd: d => `Vous l’avez retirée le ${d}.`, sentOn: d => `Envoyée le ${d}`, kept: 'vous étiez marqué·e présent·e : inchangé',
+    R: { illness: 'Maladie', family: 'Famille', work: 'Travail', visa: 'Visa ou administration', religious: 'Fête religieuse', other: 'Autre' } }
 };
 let LANG = (new URLSearchParams(location.search).get('lang') || localStorage.getItem('siteLang') || (navigator.language || '').slice(0, 2)) === 'fr' ? 'fr' : 'en';
 const T = () => STR[LANG];
@@ -138,7 +178,7 @@ async function start() {
   $('bOut').hidden = false; $('bCal').hidden = false;
   $('hSub').textContent = `${t.hello} ${h.user.name ? h.user.name + ' · ' : ''}${h.user.email}`;
   if (!h.courses.length) { main.innerHTML = `<div class="course empty">${esc(t.none)}</div>`; return; }
-  main.innerHTML = h.courses.map(c => {
+  main.innerHTML = `<section class="course abs" id="abs"><div class="empty">…</div></section>` + h.courses.map(c => {
     const graded = c.assessments.filter(a => c.grades.some(g => g.assessment_id === a.id && g.points !== null));
     return `<section class="course">
       <div class="chd"><div class="sp"><h2>${esc(c.title)}</h2><div class="small muted">${esc(c.code || c.course_id)} · ${esc(c.label)} · ${esc(c.department)}${c.group_label ? ' · ' + t.group + ' ' + esc(c.group_label) : ''}${c.status !== 'live' ? ' · ' + esc(c.status) : ''}</div></div>
@@ -149,13 +189,69 @@ async function start() {
       <div class="two">
         <div><h3>${esc(t.next)}</h3>${c.next.length ? `<table class="t">${c.next.map(m => `<tr><td>${fDay(m.starts_at)}</td><td class="n">${fTime(m.starts_at)}–${fTime(m.ends_at)}</td><td class="muted">${esc(m.room || (m.online_url ? t.online : ''))}${m.title ? ' · ' + esc(m.title) : ''}</td></tr>`).join('')}</table>` : `<p class="small muted">${esc(t.nonext)}</p>`}
           <h3>${esc(t.att)}</h3>${c.attendance.past ? `<p>${esc(t.attS(c.attendance.present + c.attendance.late, c.attendance.past))}${c.attendance.late ? ` (${c.attendance.late} ${t.late})` : ''}${c.attendance.excused ? ` · ${c.attendance.excused} ${t.excused}` : ''}.</p>
-            ${c.attendance.missed.length ? `<p class="small miss">${esc(t.missed)} ${c.attendance.missed.map(fDay).join(', ')}</p>` : ''}` : `<p class="small muted">${esc(t.noatt)}</p>`}</div>
+            ${c.attendance.missed.length ? `<p class="small miss">${esc(t.missed)} ${c.attendance.missed.map(fDay).join(', ')}</p>` : ''}` : `<p class="small muted">${esc(t.noatt)}</p>`}
+          ${c.attendance.excused_ahead ? `<p class="small muted">${LANG === 'fr' ? `${c.attendance.excused_ahead} séance${c.attendance.excused_ahead === 1 ? '' : 's'} à venir déjà excusée${c.attendance.excused_ahead === 1 ? '' : 's'} (demande d’absence acceptée).` : `${c.attendance.excused_ahead} session${c.attendance.excused_ahead === 1 ? '' : 's'} to come already excused (absence request accepted).`}</p>` : ''}</div>
         <div><h3>${esc(t.grades)}</h3>${c.assessments.length ? `<table class="t">${c.assessments.map(a => { const g = c.grades.find(x => x.assessment_id === a.id); return `<tr><td>${esc(a.title)}<div class="small muted">${esc(t.weight)} ${Number(a.weight)} %</div></td>
             <td class="n">${g && g.points !== null ? `<b>${Number(g.points)}</b> / ${Number(a.max_points)}` : `<span class="muted small">${esc(t.pending)}</span>`}${g && g.comment ? `<div class="small muted">${esc(g.comment)}</div>` : ''}</td></tr>`; }).join('')}
             ${graded.length ? `<tr><td>${esc(t.total)}<div class="small muted">${graded.map(a => esc(a.title)).join(', ')}</div></td><td class="n tot">${c.total == null ? '—' : c.total + ' %'}</td></tr>` : ''}</table>` : `<p class="small muted">${esc(t.nograde)}</p>`}</div>
       </div></section>`;
   }).join('');
   AdminUI.icons(main);
+  absences();
+}
+
+/* ---- absence requests (16 Nov 2026, API SPEC §7d) ---- */
+const PILL = { waiting: 'new', accepted: 'ok', refused: 'bad', withdrawn: 'q' };
+const fWhen = d => `${fDay(d)} ${fTime(d)}`;
+async function absences(form, note) {
+  const box = $('abs'); if (!box) return;
+  const t = T();
+  let mine;
+  try { mine = await call('GET', '/me/absences'); } catch (e) { box.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  box.innerHTML = `<div class="chd"><div class="sp"><h2>${esc(t.aTitle)}</h2></div>${form ? '' : `<button class="ab primary" id="aN">${ic('plus')}<span>${esc(t.aNew)}</span></button>`}</div>
+    <p class="small muted">${esc(t.aLead)}</p>${note ? `<p class="small okmsg"><b>${esc(note)}</b></p>` : ''}
+    <div id="aF"></div>
+    <h3>${esc(t.aMine)}</h3>
+    ${mine.length ? mine.map(r => `<div class="req"><div class="top"><b>${esc(r.course)}</b><span class="small muted">${esc(t.R[r.reason])}</span><span class="sp"></span><span class="apill ${PILL[r.status]}">${esc(t.st[r.status])}</span></div>
+      <div class="small muted">${esc(t.sentOn(fDay(r.created_at)))}</div>
+      <ul>${r.sessions.map(s => `<li>${fDay(s.starts_at)} · ${fTime(s.starts_at)}–${fTime(s.ends_at)}${s.kept_status ? ` <span class="muted">(${esc(t.kept)})</span>` : ''}</li>`).join('')}</ul>
+      ${r.decided_at ? `<div class="dec">${esc(t.by(r.decided_by_name || '—', fDay(r.decided_at)))}${r.decision_comment ? `<br>${esc(r.decision_comment)}` : ''}</div>` : ''}
+      ${r.withdrawn_at ? `<div class="small muted">${esc(t.wd(fDay(r.withdrawn_at)))}</div>` : ''}
+      ${r.status === 'waiting' ? `<button class="ab sm ghost" data-wd="${r.id}" style="margin-top:6px">${ic('x')}<span>${esc(t.aWithdraw)}</span></button>` : ''}</div>`).join('') : `<p class="small muted">${esc(t.aNone)}</p>`}`;
+  AdminUI.icons(box);
+  if ($('aN')) $('aN').onclick = () => absences(true);
+  box.querySelectorAll('[data-wd]').forEach(b => b.onclick = async () => { if (!confirm(t.aWdQ)) return; try { await call('DELETE', `/me/absences/${b.dataset.wd}`); absences(); } catch (e) { alert(e.message); } });
+  if (form) absForm();
+}
+async function absForm() {
+  const t = T(), f = $('aF');
+  let ss;
+  try { ss = await call('GET', '/me/absences/sessions'); } catch (e) { f.innerHTML = `<p class="msg">${esc(e.message)}</p>`; return; }
+  const today = new Date().toISOString().slice(0, 10);
+  f.innerHTML = `<ol>
+    <li><b>${esc(t.a1)}</b><p class="small muted" style="margin:0 0 6px">${esc(t.a1n)}</p>
+      ${ss.length ? `<div class="sess">${ss.map(s => `<label class="${s.requested ? 'dis' : ''}"><input type="checkbox" value="${s.id}" data-day="${new Date(s.starts_at).toLocaleDateString('sv-SE', { timeZone: TZ })}" ${s.requested ? 'disabled' : ''}>
+        <span><span class="c">${esc(s.course)}</span> · ${fDay(s.starts_at)} · ${fTime(s.starts_at)}–${fTime(s.ends_at)}<br><span class="small muted">${esc(s.teacher || '')}${s.room ? ' · ' + esc(s.room) : s.online ? ' · ' + esc(t.online) : ''}${s.requested ? ' · ' + esc(t.aTaken) : ''}</span></span></label>`).join('')}</div>
+        <div class="rng"><span>${esc(t.aRange)}</span><input class="f" type="date" id="aR1" value="${today}"><span>${esc(t.aTo)}</span><input class="f" type="date" id="aR2" value="${today}"><button class="ab sm" id="aRB">${esc(t.aTick)}</button></div>`
+        : `<p class="small muted">${esc(t.aNoSess)}</p>`}</li>
+    <li><b>${esc(t.a2)}</b><select class="f" id="aW"><option value=""></option>${Object.keys(t.R).map(k => `<option value="${k}">${esc(t.R[k])}</option>`).join('')}</select></li>
+    <li><b>${esc(t.a3)}</b><p class="small muted" style="margin:0 0 6px">${esc(t.a3n)}</p><textarea class="f" id="aT" maxlength="1000"></textarea></li>
+    <li><b>${esc(t.a4)}</b><p class="small muted" style="margin:0 0 6px">${esc(t.a4n)}</p><input class="f" id="aL" type="url" placeholder="https://…" maxlength="500"></li></ol>
+    <div class="msg" id="aX"></div>
+    <div class="chd"><button class="ab primary" id="aS"${ss.length ? '' : ' disabled'}>${ic('send')}<span>${esc(t.aSend)}</span></button><button class="ab ghost" id="aC">${esc(t.aCancel)}</button></div>`;
+  AdminUI.icons(f);
+  $('aC').onclick = () => absences();
+  if ($('aRB')) $('aRB').onclick = () => { const a = $('aR1').value, b = $('aR2').value; f.querySelectorAll('.sess input:not([disabled])').forEach(c => { if (c.dataset.day >= a && c.dataset.day <= b) c.checked = true; }); };
+  $('aS').onclick = async () => {
+    const ids = [...f.querySelectorAll('.sess input:checked')].map(c => c.value);
+    if (!ids.length) { $('aX').textContent = t.aPick; return; }
+    if (!$('aW').value) { $('aX').textContent = t.aWhy; return; }
+    $('aS').disabled = true; $('aX').textContent = '';
+    try {
+      const r = await call('POST', '/me/absences', { meeting_ids: ids, reason: $('aW').value, note: $('aT').value.trim(), link: $('aL').value.trim() || null });
+      absences(false, t.aSent(r.requests.length));
+    } catch (e) { $('aX').textContent = e.message; $('aS').disabled = false; }
+  };
 }
 $('bOut').onclick = async () => { await call('POST', '/auth/logout').catch(() => {}); ls.del(SKEY); gate(); };
 $('bCal').onclick = async () => { try { const r = await call('POST', '/me/ical'); prompt(T().calLead, r.url); } catch (e) { alert(e.message); } };

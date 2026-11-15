@@ -18,7 +18,8 @@
   shares its session (localStorage `jem_lms`).
 
   Department view: courses and editions · rooms · people · timetable and
-  student clashes. Edition view: Students (roster, groups, staff) ·
+  student clashes · absence requests to decide (16 Nov 2026, API SPEC §7d)
+  and, for a teacher, the students excused in their coming sessions. Edition view: Students (roster, groups, staff) ·
   Timetable · Attendance · Grades · Settings. Times are Geneva time.
 -->
 <style>
@@ -200,6 +201,7 @@ async function start() {
   $('pDept').value = st.depts.some(d => d.id === d0) ? d0 : st.depts[0].id;
   await loadDept($('pDept').value, want.get('ed') || ls.get('lmsadm_ed'));
   if (want.get('term')) termView(want.get('term'));
+  if (want.get('absence')) absDrawer(want.get('absence'));   /* the link in the decider's email */
 }
 
 /* ---- department ---- */
@@ -239,6 +241,7 @@ async function deptView() {
   main.innerHTML = `
     ${mgr ? `<div class="acard"><h2>You manage ${progs.length === 1 ? 'the programme' : progs.length + ' programmes'}: ${progs.map(p => esc(pName(p))).join(', ')}</h2>
       <p class="small" style="margin:0">A programme manager plans the courses of a programme. For each of its courses you can read the students, their progress, attendance and grades; add, move and cancel sessions in the Timetable tab; and add or remove teachers in the Students tab. Below, under <b>Terms and teacher availability</b>, you can let the computer propose the timetable of your programme for a whole term. The teachers of each course enter the grades and mark attendance. Rooms, terms and the department's settings stay with the department administrator.</p></div>` : ''}
+    <div id="excN"></div><div id="absQ"></div>
     <div class="asec">Courses and editions <small class="muted">${st.courses.length} courses</small></div>
     <div class="acard tw"><table class="t"><tr><th>Course</th><th>Edition</th><th>Status</th><th>Join code</th><th class="n">Students</th><th>Dates</th></tr>
       ${st.courses.map(c => c.editions.length ? c.editions.map(e => `<tr class="click" data-ed="${e.id}"><td><span class="ahd-code">${esc(c.code || c.id)}</span> ${esc(c.title)}</td><td>${esc(e.label)}</td>
@@ -295,6 +298,7 @@ async function deptView() {
     <div class="acard"><p class="small muted" style="margin:0 0 8px">The <b>sandbox</b> is a department of made-up people built to show the planning problems: five teachers who nearly all offer Tuesday and Thursday evenings and one who entered nothing, two cohorts of ten students with Finance and Data Analysis both on Thursday 17:00, two rooms, and Strategy still to be placed. It lives in the same database as the real departments and reaches none of them; the reset rebuilds it from scratch, the delete removes it whole. Its people cannot sign in: test every view as yourself.</p>
       <div class="row"><button class="ab" id="sbR">${ic('refresh')}${st.dept.id === 'sandbox' ? 'Reset the sandbox' : 'Create or reset the sandbox'}</button>${st.dept.id === 'sandbox' ? `<button class="ab ghost" id="sbD">${ic('trash')}Delete the sandbox</button>` : ''}</div><div class="msg" id="sbX"></div></div>` : ''}`;
   AdminUI.icons(main);
+  excusedNotice(); if (planner) absQueue();
   if ($('sbR')) $('sbR').onclick = () => act($('sbX'), () => call('POST', '/sandbox/reset'), async () => { await start(); $('pDept').value = 'sandbox'; await loadDept('sandbox'); }, r => `Sandbox ready: ${r.teachers} teachers, ${r.students} students, ${r.courses} courses, ${r.meetings} sessions.`);
   if ($('sbD')) $('sbD').onclick = () => { if (confirm('Delete the sandbox department and everyone in it?')) act($('sbX'), () => call('DELETE', '/sandbox'), async () => { await start(); }); };
   main.querySelectorAll('[data-ed]').forEach(tr => tr.onclick = () => { $('pEd').value = tr.dataset.ed; loadEd(tr.dataset.ed); });
@@ -316,6 +320,89 @@ async function deptView() {
     main.querySelectorAll('[data-pcs]').forEach(b => b.onclick = () => programmeCourses(b.dataset.pcs));
   }
 }
+/* ---- absence requests (16 Nov 2026, API SPEC §7d) ----
+   A student asks on /lms/me.html; the programme manager of the course decides
+   (the department administrator when the course has no manager). Accepting
+   sets the sessions to "excused"; the teacher only sees a notice. */
+const REASON = { illness: 'illness', family: 'family', work: 'work', visa: 'visa or administration', religious: 'religious holiday', other: 'other' };
+const ABS_PILL = { waiting: 'new', accepted: 'ok', refused: 'bad', withdrawn: 'q' };
+function absStatus(r) { return r.overdue ? '<span class="apill bad">waiting · overdue</span>' : `<span class="apill ${ABS_PILL[r.status]}">${esc(r.status)}</span>`; }
+async function absQueue() {
+  const box = $('absQ'); if (!box) return;
+  const list = await call('GET', `/departments/${st.dept.id}/absences`).catch(e => { box.innerHTML = `<div class="acard empty">${esc(e.message)}</div>`; return null; });
+  if (!list || !$('absQ')) return;
+  const waiting = list.filter(r => r.status === 'waiting'), mine = waiting.filter(r => r.can_decide), late = mine.filter(r => r.overdue);
+  const shown = st.absAll ? list : list.filter(r => r.status === 'waiting' || Date.now() - new Date(r.decided_at || r.withdrawn_at || r.created_at) < 30 * 864e5);
+  box.innerHTML = `<div class="asec">Absence requests <small class="muted">${mine.length} waiting for your decision${late.length ? `, ${late.length} waiting longer than 2 working days` : ''}</small></div>
+    <div class="acard tw">
+      <p class="small muted" style="margin:0 0 8px">Students ask here to be excused from sessions. When you accept a request, the platform marks those sessions “excused” for the student and the teacher sees a notice; the teacher does not have to do anything. Refusing changes nothing in the attendance. The student receives an email with your decision and your comment. ${isAdmin() ? 'A request in a course that belongs to a programme with a manager is that manager’s to decide; you decide the requests of courses without a manager.' : ''}</p>
+      ${shown.length ? `<table class="t"><tr><th></th><th>Student</th><th>Course</th><th>Sessions</th><th>Reason</th><th>Sent</th><th>Status</th><th>Decided by</th></tr>
+        ${shown.map(r => `<tr class="click" data-abs="${r.id}"><td>${r.can_decide ? `<input type="checkbox" data-abtick="${r.id}" title="Tick to accept it with the others">` : ''}</td>
+          <td>${esc(r.student || r.student_email)}</td><td><span class="ahd-code">${esc(r.code || r.course_id)}</span> ${esc(r.course)}</td>
+          <td class="small">${r.sessions.length} · ${r.first ? fDay(r.first) : '—'}${r.sessions.length > 1 ? ' to ' + fDay(r.last) : ''}</td><td>${esc(REASON[r.reason])}</td>
+          <td class="small">${fWhen(r.created_at)}</td><td>${absStatus(r)}</td>
+          <td class="small muted">${r.decided_by_name ? esc(r.decided_by_name) : r.status === 'waiting' ? (r.for === 'manager' ? 'the programme manager' : 'the department administrator') : '—'}</td></tr>`).join('')}</table>`
+        : '<div class="empty">No absence request in the last 30 days.</div>'}
+      <div class="row">${mine.length ? `<button class="ab" id="abBulk">${ic('check')}Accept the ticked requests</button>` : ''}
+        ${list.length > shown.length || st.absAll ? `<button class="ab ghost sm" id="abAll">${st.absAll ? 'Show only the last 30 days' : `Show all ${list.length} requests`}</button>` : ''}</div>
+      <div class="msg" id="abX"></div></div>`;
+  AdminUI.icons(box);
+  box.querySelectorAll('[data-abtick]').forEach(c => c.onclick = e => e.stopPropagation());
+  box.querySelectorAll('[data-abs]').forEach(tr => tr.onclick = () => absDrawer(tr.dataset.abs));
+  if ($('abAll')) $('abAll').onclick = () => { st.absAll = !st.absAll; absQueue(); };
+  if ($('abBulk')) $('abBulk').onclick = () => {
+    const ids = [...box.querySelectorAll('[data-abtick]:checked')].map(c => c.dataset.abtick);
+    if (!ids.length) { $('abX').className = 'msg err'; $('abX').textContent = 'Tick the requests you want to accept first.'; return; }
+    if (!confirm(`Accept ${ids.length} request${ids.length === 1 ? '' : 's'}? The sessions become “excused” and each student gets an email.`)) return;
+    act($('abX'), async () => { for (const id of ids) await call('POST', `/absences/${id}/decide`, { decision: 'accept' }); return ids.length; }, absQueue, n => `${n} accepted.`);
+  };
+}
+async function absDrawer(id) {
+  const dr = $('drawer'); dr.classList.add('on'); dr.innerHTML = '<div class="empty">Loading…</div>';
+  let r;
+  try { r = await call('GET', `/absences/${id}`); } catch (e) { dr.innerHTML = `<div class="row" style="justify-content:flex-end;margin:0"><button class="ab icon ghost" id="dC">${ic('x')}</button></div><div class="empty">${esc(e.message)}</div>`; AdminUI.icons(dr); $('dC').onclick = () => dr.classList.remove('on'); return; }
+  const a = r.attendance, ATT = { present: 'present', late: 'late', absent: 'absent', excused: 'excused' };
+  dr.innerHTML = `<div class="row" style="justify-content:space-between;margin:0"><h2>${esc(r.student || r.student_email)}</h2><button class="ab icon ghost" id="dC">${ic('x')}</button></div>
+    <p class="small muted" style="margin:0">${esc(r.student_email)} · ${esc(r.course)} · ${esc(r.edition)}</p>
+    <p>${absStatus(r)} <span class="small muted">sent ${fWhen(r.created_at)}${r.decided_at ? ` · ${esc(r.status)} by ${esc(r.decided_by_name || '—')} on ${fWhen(r.decided_at)}` : ''}${r.withdrawn_at ? ` · withdrawn by the student on ${fWhen(r.withdrawn_at)}` : ''}</span></p>
+    <div class="asec">The sessions the student asks to miss <small class="muted">Geneva time</small></div>
+    <table class="t"><tr><th>Date</th><th>Time</th><th>Teacher</th><th>Attendance now</th></tr>
+      ${r.sessions.map(s => `<tr class="${s.meeting_status === 'cancelled' ? 'cancelled' : ''}"><td>${fDay(s.starts_at)}</td><td>${fTime(s.starts_at)}–${fTime(s.ends_at)}</td><td>${esc(s.teacher || '—')}</td>
+        <td class="small">${s.attendance ? esc(ATT[s.attendance]) : '<span class="muted">not marked</span>'}${s.kept_status ? ' <span class="muted">(the teacher’s mark was kept)</span>' : ''}${s.overridden_status ? ' <span class="muted">(the teacher marked the student ' + esc(s.overridden_status) + ' later)</span>' : ''}</td></tr>`).join('')}</table>
+    <div class="asec">Why the student cannot come</div>
+    <div class="kv"><div class="muted">Reason</div><div><b>${esc(REASON[r.reason])}</b></div>
+      <div class="muted">What the student wrote</div><div>${r.note ? `<div class="work">${esc(r.note)}</div>` : '<span class="muted">nothing</span>'}</div>
+      <div class="muted">Document</div><div>${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${esc(r.link)}</a>` : '<span class="muted">no link</span>'}</div></div>
+    <div class="asec">The student’s attendance so far in this course <small class="muted">sessions held</small></div>
+    <p class="small" style="margin:0">${a.present} present · ${a.late} late · ${a.absent} absent · ${a.excused} excused · ${a.unmarked} not marked</p>
+    <div class="asec">The student’s other absence requests <small class="muted">since the course started</small></div>
+    ${r.others.length ? `<table class="t">${r.others.map(o => `<tr class="click" data-oth="${o.id}"><td>${esc(o.code || '')} ${esc(o.course)}</td><td class="small">${o.n_sessions} session${o.n_sessions === 1 ? '' : 's'} · ${esc(REASON[o.reason])}</td><td class="small">${fWhen(o.created_at)}</td><td><span class="apill ${ABS_PILL[o.status]}">${esc(o.status)}</span></td></tr>`).join('')}</table>` : '<p class="small muted" style="margin:0">None.</p>'}
+    ${r.decision_comment ? `<div class="asec">Comment sent to the student</div><div class="work">${esc(r.decision_comment)}</div>` : ''}
+    ${r.can_decide ? `<div class="asec">Your decision</div>
+      <p class="small muted" style="margin:0 0 6px">Accepting marks these sessions “excused” for the student; where the teacher has already marked the student present or late, that mark stays. Refusing changes nothing. The student receives an email with your decision and the comment below.</p>
+      <label class="small muted" for="adC">Comment to the student (optional, at most 1000 characters)</label>
+      <textarea class="f" id="adC" maxlength="1000" style="min-height:80px" placeholder="For example: Accepted. Please catch up with the slides of session 4."></textarea>
+      <div class="row"><button class="ab primary" id="adA">${ic('check')}Accept</button><button class="ab" id="adR">${ic('x')}Refuse</button></div><div class="msg" id="adX"></div>`
+      : r.status === 'waiting' ? `<p class="small muted">${r.for === 'manager' ? 'The programme manager of this course decides this request.' : 'The department administrator decides this request.'}</p>` : ''}`;
+  AdminUI.icons(dr);
+  $('dC').onclick = () => dr.classList.remove('on');
+  dr.querySelectorAll('[data-oth]').forEach(tr => tr.onclick = () => absDrawer(tr.dataset.oth));
+  const decide = d => act($('adX'), () => call('POST', `/absences/${id}/decide`, { decision: d, comment: $('adC').value.trim() }), async () => { await absDrawer(id); absQueue(); },
+    () => d === 'accept' ? 'Accepted. The sessions are excused and the student has been emailed.' : 'Refused. The student has been emailed.');
+  if ($('adA')) { $('adA').onclick = () => decide('accept'); $('adR').onclick = () => { if (confirm('Refuse this request? The attendance does not change.')) decide('refuse'); }; }
+}
+/* the teacher's notice: excused students in the sessions I teach in the next 30 days */
+async function excusedNotice() {
+  const box = $('excN'); if (!box) return;
+  const list = await call('GET', '/me/excused').catch(() => []);
+  if (!list.length || !$('excN')) return;
+  const by = {}; list.forEach(x => (by[x.meeting_id] = by[x.meeting_id] || { m: x, who: [] }).who.push(x));
+  box.innerHTML = `<div class="asec">Excused in your coming sessions <small class="muted">the next 30 days</small></div>
+    <div class="acard tw"><p class="small muted" style="margin:0 0 6px">These students asked to be excused and the request was accepted. Their attendance already shows “excused”: you do not have to do anything. If a student comes after all, mark them present and the excuse no longer applies.</p>
+    <table class="t">${Object.values(by).map(g => `<tr><td style="white-space:nowrap">${fDay(g.m.starts_at)} · ${fTime(g.m.starts_at)}</td><td>${esc(g.m.course)}${g.m.title ? ' · ' + esc(g.m.title) : ''}</td>
+      <td>${g.who.map(x => `${esc(x.name || x.email)} <span class="muted">(${esc(REASON[x.reason])})</span>`).join(', ')}</td></tr>`).join('')}</table></div>`;
+}
+
 /* which courses a programme holds: one tick per course of the department */
 function programmeCourses(pid) {
   const p = st.progs.find(x => x.id === pid), have = new Set(p.courses.map(c => c.id)), d = $('drawer');
@@ -706,6 +793,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') $('drawer').
 async function tTimetable() {
   const ed = st.ed, ms = await call('GET', `/editions/${ed.id}/meetings`);
   const rooms = await call('GET', `/departments/${ed.department_id}/rooms`).catch(() => []);
+  /* accepted absence requests per session (API SPEC §7d): a notice, the reason category only */
+  const exc = {}; (await call('GET', `/editions/${ed.id}/excused`).catch(() => [])).forEach(x => (exc[x.meeting_id] = exc[x.meeting_id] || []).push(x));
   const today = dIn(new Date()), tt = ed.can.timetable;   /* teachers, programme managers and admins plan sessions */
   pane().innerHTML = `
     ${tt ? `<div class="acard"><h2>Add sessions</h2><p class="small muted">Geneva time. A room or a teacher cannot be booked twice; the database refuses it.</p>
@@ -723,7 +812,7 @@ async function tTimetable() {
         <button class="ab primary" id="mB">${ic('plus')}Add</button></div><div class="msg" id="mX"></div></div>` : ''}
     <div class="acard tw"><h2>${ms.length} sessions</h2>${ms.length ? `<table class="t"><tr><th>When</th><th>Title</th><th>Group</th><th>Room / link</th><th>Teacher</th><th></th></tr>
       ${ms.map(m => `<tr class="${m.status === 'cancelled' ? 'cancelled' : ''}"><td>${fDay(m.starts_at)} · ${fTime(m.starts_at)}–${fTime(m.ends_at)}${m.kind !== 'class' ? ` <span class="apill new">${m.kind}</span>` : ''}</td>
-        <td>${esc(m.title)}</td><td>${esc(m.group_label || 'all')}</td><td>${m.room ? esc(m.room) : m.online_url ? `<a href="${esc(m.online_url)}" target="_blank" rel="noopener">online</a>` : '—'}</td><td>${esc(m.teacher || '—')}</td>
+        <td>${esc(m.title)}${exc[m.id] ? `<div class="small muted">Excused: ${exc[m.id].map(x => `${esc(x.name || x.email)} (${esc(REASON[x.reason])})`).join(', ')}</div>` : ''}</td><td>${esc(m.group_label || 'all')}</td><td>${m.room ? esc(m.room) : m.online_url ? `<a href="${esc(m.online_url)}" target="_blank" rel="noopener">online</a>` : '—'}</td><td>${esc(m.teacher || '—')}</td>
         <td class="n" style="white-space:nowrap">${tt ? `<button class="ab sm" data-cx="${m.id}|${m.status}">${m.status === 'cancelled' ? 'Restore' : 'Cancel'}</button> <button class="ab sm ghost" data-del="${m.id}" title="Delete">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions yet.</div>'}</div>`;
   AdminUI.icons(pane());
   if (tt) $('mB').onclick = () => act($('mX'), async () => {
@@ -760,18 +849,21 @@ async function tAttendance(meetingId) {
   const def = meetingId || (ms.filter(m => new Date(m.starts_at) <= now + 3600e3).pop() || ms[0]).id;
   const list = await call('GET', `/meetings/${def}/attendance`);
   const marks = {}; list.forEach(s => marks[s.id] = s.status || '');
+  /* accepted absence requests (API SPEC §7d): the reason category only */
+  const exc = list.filter(s => s.excused_reason);
   const S = ['present', 'late', 'absent', 'excused'];
   pane().innerHTML = `<div class="acard"><div class="row" style="margin-top:0"><label style="flex:1">Session<select class="f" id="aM">${ms.map(m => `<option value="${m.id}" ${m.id === def ? 'selected' : ''}>${fDay(m.starts_at)} · ${fTime(m.starts_at)}${m.group_label ? ' · ' + esc(m.group_label) : ''}${m.title ? ' · ' + esc(m.title) : ''}</option>`).join('')}</select></label>
       ${ed.can.staff ? `<button class="ab" id="aAll">All present</button><button class="ab primary" id="aB">${ic('check')}Save</button>` : ''}</div><div class="msg" id="aX"></div>
     ${ed.can.staff ? '' : '<p class="small muted" style="margin:0 0 8px">You can read the attendance. The teacher of the session marks it.</p>'}
-    ${list.length ? `<table class="t att">${list.map(s => `<tr><td>${esc(s.name || s.email)}</td><td class="n">${S.map(k => `<button class="${k} ${marks[s.id] === k ? 'on' : ''}" data-s="${s.id}|${k}">${k}</button>`).join(' ')}</td></tr>`).join('')}</table>` : '<div class="empty">Nobody enrolled in this session’s group.</div>'}</div>`;
+    ${exc.length ? `<div class="awarn" style="margin:0 0 10px">${ic('file')}<div><b>Excused: ${exc.map(s => `${esc(s.name || s.email)} (${esc(REASON[s.excused_reason])})`).join(', ')}.</b> The absence request was accepted, so the attendance already shows “excused”. You do not have to do anything. If the student comes after all, mark them present or late; marking them absent keeps the excuse.</div></div>` : ''}
+    ${list.length ? `<table class="t att">${list.map(s => `<tr><td>${esc(s.name || s.email)}${s.excused_reason ? ` <span class="apill acc" title="An accepted absence request">excused · ${esc(REASON[s.excused_reason])}</span>` : ''}</td><td class="n">${S.map(k => `<button class="${k} ${marks[s.id] === k ? 'on' : ''}" data-s="${s.id}|${k}">${k}</button>`).join(' ')}</td></tr>`).join('')}</table>` : '<div class="empty">Nobody enrolled in this session’s group.</div>'}</div>`;
   AdminUI.icons(pane());
   const paint = () => pane().querySelectorAll('[data-s]').forEach(b => { const [u, k] = b.dataset.s.split('|'); b.classList.toggle('on', marks[u] === k); });
   $('aM').onchange = () => tAttendance($('aM').value);
   if (!ed.can.staff) { pane().querySelectorAll('[data-s]').forEach(b => b.disabled = true); return; }
   pane().querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const [u, k] = b.dataset.s.split('|'); marks[u] = k; paint(); });
   $('aAll').onclick = () => { list.forEach(s => { if (!marks[s.id]) marks[s.id] = 'present'; }); paint(); };
-  $('aB').onclick = () => act($('aX'), () => call('PUT', `/meetings/${def}/attendance`, { marks: Object.keys(marks).filter(u => marks[u]).map(u => ({ user_id: u, status: marks[u] })) }), null, r => `${r.marked} marked.`);
+  $('aB').onclick = () => act($('aX'), () => call('PUT', `/meetings/${def}/attendance`, { marks: Object.keys(marks).filter(u => marks[u]).map(u => ({ user_id: u, status: marks[u] })) }), () => tAttendance(def), r => `${r.marked} marked.${r.kept && r.kept.length ? ` ${r.kept.length} kept as excused, because an absence request was accepted for ${r.kept.length === 1 ? 'that student' : 'those students'}.` : ''}${r.overridden && r.overridden.length ? ` The excuse no longer applies to ${r.overridden.length} student${r.overridden.length === 1 ? '' : 's'} you marked present or late.` : ''}`);
 }
 
 /* Grades: assessments with weights, a grid of points, the weighted total */
