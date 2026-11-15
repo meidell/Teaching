@@ -11,7 +11,8 @@
 <script src="/shared/adminui.js"></script>
 <!--
   The new platform's admin (3 Nov 2026) — the Teaching API on Render.
-  One page for department admins, teachers and assistants: the API decides
+  One page for department admins, programme managers (16 Nov 2026, API
+  SPEC §5a), teachers and assistants: the API decides
   what each may see and do (SPEC.md §5); this page only hides what the API
   would refuse anyway. Signs in with the same email code as lms.js and
   shares its session (localStorage `jem_lms`).
@@ -183,12 +184,13 @@ async function start() {
   if (!ls.get(SKEY)) return gate();
   try { st.me = await call('GET', '/me'); } catch (e) { return; }
   st.depts = await call('GET', '/departments').catch(() => []);
-  /* a teacher without a department membership still sees the departments of what they teach */
-  const extra = [...new Set(st.me.teaching.map(t => t.department_id))].filter(d => !st.depts.some(x => x.id === d));
+  /* a teacher or a programme manager without a department membership still sees the departments of what they teach or manage */
+  st.me.managing = st.me.managing || [];
+  const extra = [...new Set(st.me.teaching.map(t => t.department_id).concat(st.me.managing.map(p => p.department_id)))].filter(d => !st.depts.some(x => x.id === d));
   extra.forEach(d => st.depts.push({ id: d, name: d.toUpperCase(), teachOnly: true }));
   $('bOut').hidden = false; $('bCal').hidden = false; $('bPlan').hidden = false;
   if (!st.depts.length) {
-    main.innerHTML = `<div class="acard empty">Signed in as <b>${esc(st.me.user.email)}</b>. You do not administer or teach any course yet — a department administrator adds you to one.</div>`;
+    main.innerHTML = `<div class="acard empty">Signed in as <b>${esc(st.me.user.email)}</b>. You do not administer, manage or teach any course yet. A department administrator adds you to one.</div>`;
     return;
   }
   const want = new URLSearchParams(location.search);
@@ -214,21 +216,29 @@ async function loadDept(id, edWanted) {
   $('pEd').value = ''; ls.del('lmsadm_ed'); return deptView();
 }
 function isAdmin() { return st.me.user.is_superadmin || st.me.memberships.some(m => m.department_id === st.dept.id && m.role === 'admin'); }
+/* a programme manager of this department who is not its admin (API SPEC §5a) */
+function myProgrammes() { return (st.me.managing || []).filter(p => p.department_id === st.dept.id); }
+function isManager() { return !isAdmin() && myProgrammes().length > 0; }
 function head(t, s) { $('hTitle').textContent = t; $('hSub').textContent = s || ''; }
 function nav(q) { const u = new URL(location.href); u.search = new URLSearchParams(q).toString(); history.replaceState(null, '', u); }
 
 async function deptView() {
   st.ed = null; nav({ dept: st.dept.id }); head(st.dept.name, 'Department overview');
-  const admin = isAdmin();
+  const admin = isAdmin(), mgr = isManager(), planner = admin || mgr;
   const from = new Date(), to = new Date(Date.now() + 14 * 864e5);
-  const [rooms, people, tt, clash, terms] = await Promise.all([
+  const [rooms, people, tt, clash, terms, progs] = await Promise.all([
     call('GET', `/departments/${st.dept.id}/rooms`).catch(() => []),
     admin ? call('GET', `/departments/${st.dept.id}/members`).catch(() => []) : [],
     call('GET', `/departments/${st.dept.id}/timetable?from=${from.toISOString()}&to=${to.toISOString()}`).catch(() => []),
-    admin ? call('GET', `/departments/${st.dept.id}/conflicts?from=${from.toISOString()}&to=${new Date(Date.now() + 120 * 864e5).toISOString()}`).catch(() => []) : [],
+    planner ? call('GET', `/departments/${st.dept.id}/conflicts?from=${from.toISOString()}&to=${new Date(Date.now() + 120 * 864e5).toISOString()}`).catch(() => []) : [],
     call('GET', `/departments/${st.dept.id}/terms`).catch(() => []),
+    planner ? call('GET', `/departments/${st.dept.id}/programmes`).catch(() => []) : [],
   ]);
+  st.progs = progs;
+  const pName = p => (p.code ? p.code + ' · ' : '') + p.name;
   main.innerHTML = `
+    ${mgr ? `<div class="acard"><h2>You manage ${progs.length === 1 ? 'the programme' : progs.length + ' programmes'}: ${progs.map(p => esc(pName(p))).join(', ')}</h2>
+      <p class="small" style="margin:0">A programme manager plans the courses of a programme. For each of its courses you can read the students, their progress, attendance and grades; add, move and cancel sessions in the Timetable tab; and add or remove teachers in the Students tab. Below, under <b>Terms and teacher availability</b>, you can let the computer propose the timetable of your programme for a whole term. The teachers of each course enter the grades and mark attendance. Rooms, terms and the department's settings stay with the department administrator.</p></div>` : ''}
     <div class="asec">Courses and editions <small class="muted">${st.courses.length} courses</small></div>
     <div class="acard tw"><table class="t"><tr><th>Course</th><th>Edition</th><th>Status</th><th>Join code</th><th class="n">Students</th><th>Dates</th></tr>
       ${st.courses.map(c => c.editions.length ? c.editions.map(e => `<tr class="click" data-ed="${e.id}"><td><span class="ahd-code">${esc(c.code || c.id)}</span> ${esc(c.title)}</td><td>${esc(e.label)}</td>
@@ -240,27 +250,39 @@ async function deptView() {
     <div class="acard tw">${tt.length ? `<table class="t"><tr><th>When</th><th>Course</th><th>Group</th><th>Room / link</th><th>Teacher</th></tr>
       ${tt.map(m => `<tr class="${m.status === 'cancelled' ? 'cancelled' : ''}"><td>${fDay(m.starts_at)} · ${fTime(m.starts_at)}–${fTime(m.ends_at)}</td><td>${esc(m.course)}${m.title ? ' · ' + esc(m.title) : ''}</td>
         <td>${esc(m.group_label || 'all')}</td><td>${esc(m.room || (m.online_url ? 'online' : '—'))}</td><td>${esc(m.teacher || '—')}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions in the next 14 days.</div>'}</div>
-    ${admin ? `<div class="asec">Students booked in two places at once <small class="muted">next 120 days · allowed, but worth knowing</small></div>
+    ${planner ? `<div class="asec">Students booked in two places at once <small class="muted">${mgr ? 'the clashes that involve a course of your programmes, ' : ''}in the next 120 days. The platform allows it, but each one is worth checking</small></div>
     <div class="acard tw">${clash.length ? `<table class="t"><tr><th>Student</th><th>From</th></tr>${clash.map(c => `<tr><td>${esc(c.name || c.email)}</td><td>${fWhen(c.overlap_from)}</td></tr>`).join('')}</table>` : '<div class="empty">No clashes.</div>'}</div>` : ''}
     <div class="asec">Terms and teacher availability <small class="muted">each teacher marks one typical week per term; the timetable is built from those weeks</small></div>
     <div class="acard tw">
       ${terms.length ? `<table class="t"><tr><th>Term</th><th>Dates</th><th>Grid</th><th>Enter by</th><th class="n">Entered</th><th></th></tr>
         ${terms.map(t => `<tr><td><b>${esc(t.label)}</b></td><td class="small">${fDay(t.starts_on)} – ${fDay(t.ends_on)}</td><td class="small muted">${gridLabel(t)}</td>
           <td class="small">${t.deadline ? fDay(t.deadline) : '—'}</td><td class="n">${t.filled} / ${t.expected}${t.filled < t.expected ? ` <span class="apill warn" title="${t.expected - t.filled} not entered">${t.expected - t.filled} missing</span>` : ''}</td>
-          <td class="n" style="white-space:nowrap">${admin ? `<button class="ab sm" data-term="${t.id}">${ic('users')}All teachers</button> ` : ''}<a class="ab sm ghost" href="/lms/planner.html?term=${t.id}">${ic('grid')}My week</a></td></tr>`).join('')}</table>`
-        : `<p class="muted small" style="margin:0 0 6px">No term opened yet. ${admin ? 'Open one below: every teacher of the department then sees it on <b>Teaching availability</b> and marks the hours they can teach.' : 'Once the department opens one, you mark your hours on <b>Teaching availability</b> (top right).'}</p>`}
+          <td class="n" style="white-space:nowrap">${planner ? `<button class="ab sm" data-term="${t.id}">${ic('users')}${admin ? 'All teachers' : 'Your teachers'} and the timetable</button> ` : ''}<a class="ab sm ghost" href="/lms/planner.html?term=${t.id}">${ic('grid')}My week</a></td></tr>`).join('')}</table>`
+        : `<p class="muted small" style="margin:0 0 6px">No term opened yet. ${admin ? 'Open one below: every teacher of the department then sees it on <b>Teaching availability</b> and marks the hours they can teach.' : mgr ? 'The department administrator opens a term. You can then propose the timetable of your programme for it here.' : 'Once the department opens one, you mark your hours on <b>Teaching availability</b> (top right).'}</p>`}
       ${admin ? `<div class="row" style="margin-top:12px"><label>Term label<input class="f" id="tL" placeholder="e.g. Spring 2027" style="width:150px"></label><label>First day<input class="f" type="date" id="tS"></label><label>Last day<input class="f" type="date" id="tE"></label>
           <label>Grid from<select class="f" id="tF">${hourOpts(8)}</select></label><label>Grid to<select class="f" id="tT">${hourOpts(22)}</select></label>
           <label>Days<select class="f" id="tD"><option value="5">Mon–Fri</option><option value="6" selected>Mon–Sat</option><option value="7">Mon–Sun</option></select></label>
           <label>Enter by<input class="f" type="date" id="tX"></label><button class="ab" id="tB">${ic('plus')}Open the term</button></div>
         <div class="row"><label style="flex:1">What to tell the teachers (optional)<input class="f" id="tN" placeholder="e.g. Evening courses run 17:30–21:00; Saturday blocks 09:30–17:30."></label></div><div class="msg" id="tX2"></div>` : ''}
     </div>
+    ${admin ? `<div class="asec">Programmes and their managers <small class="muted">a programme groups the courses one person plans, for example the Bachelor</small></div>
+    <div class="acard tw">
+      ${progs.length ? `<table class="t"><tr><th>Programme</th><th>Courses</th><th>Managers</th><th></th></tr>
+        ${progs.map(p => `<tr><td><b>${esc(pName(p))}</b><div class="small muted">${p.editions.length} edition${p.editions.length === 1 ? '' : 's'}</div></td>
+          <td class="small">${p.courses.length ? p.courses.map(c => esc(c.code || c.title)).join(', ') : '<span class="muted">no course yet</span>'}</td>
+          <td class="small">${p.managers.map(m => `<div>${esc(m.name || m.email)} <button class="ab sm ghost icon" data-unpm="${p.id}|${m.id}" title="Remove ${esc(m.name || m.email)} as manager">${ic('x')}</button></div>`).join('') || '<span class="apill warn">no manager</span>'}
+            <div class="row" style="margin:4px 0 0"><input class="f" type="email" data-pme="${p.id}" placeholder="manager@school.ch" style="width:180px"><button class="ab sm" data-pmb="${p.id}">${ic('plus')}Add manager</button></div></td>
+          <td class="n" style="white-space:nowrap"><button class="ab sm" data-pcs="${p.id}">${ic('settings')}Courses</button> <button class="ab sm ghost" data-pdel="${p.id}" title="Delete the programme">${ic('trash')}</button></td></tr>`).join('')}</table>`
+        : '<p class="muted small" style="margin:0 0 6px">No programme yet. A programme lets one person, its manager, plan the timetable and the teachers of its courses without seeing the rest of the department.</p>'}
+      <div class="row" style="margin-top:12px"><label style="flex:1">Name of the new programme<input class="f" id="npN" placeholder="e.g. Bachelor of Business Administration"></label><label>Short code<input class="f" id="npC" placeholder="BBA" style="width:90px"></label><button class="ab" id="npB">${ic('plus')}Create the programme</button></div>
+      <div class="msg" id="npX"></div>
+      <p class="small muted" style="margin:0">A manager reads the students, progress, attendance and grades of the programme's courses, plans their sessions and their teachers, and proposes their timetable for a term. A manager does not enter grades, mark attendance or change rooms, terms or course settings. A course can belong to several programmes.</p></div>` : ''}
     <div class="grid2">
       <div><div class="asec">Rooms</div><div class="acard">
         ${rooms.length ? `<table class="t">${rooms.map(r => `<tr><td>${esc(r.name)}</td><td class="n muted">${r.capacity ? r.capacity + ' seats' : ''}</td>
           <td class="n small">${admin ? `<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" data-lab="${r.id}" ${r.lab ? 'checked' : ''}>computer lab</label>` : (r.lab ? 'computer lab' : '')}</td></tr>`).join('')}</table>` : '<p class="muted small">No rooms yet. Online-only courses need none.</p>'}
         ${admin ? `<div class="row"><label>Room<input class="f" id="rN" placeholder="e.g. Room 3.12"></label><label>Seats<input class="f" id="rC" type="number" min="1" style="width:80px"></label><label style="flex-direction:row;align-items:center;gap:5px">Computer lab<input type="checkbox" id="rL"></label><button class="ab" id="rB">${ic('plus')}Add</button></div><div class="msg" id="rX"></div>
-          <p class="small muted" style="margin:0">Tick “computer lab” for a room with computers: the automatic timetable puts a course that needs one only there.</p>` : ''}
+          <p class="small muted" style="margin:0">Tick “computer lab” for a room with computers: the automatic timetable puts a course that needs one only there.</p>` : mgr ? '<p class="small muted" style="margin:0">You book these rooms when you add a session in a course’s Timetable tab. The department administrator adds and changes rooms.</p>' : ''}
       </div></div>
       ${admin ? `<div><div class="asec">People with a role here</div><div class="acard">
         ${people.length ? `<table class="t">${people.map(p => `<tr><td>${esc(p.name || p.email)}<div class="small muted">${esc(p.email)}</div></td><td><span class="apill acc">${esc(p.role)}</span></td>
@@ -285,7 +307,28 @@ async function deptView() {
     main.querySelectorAll('[data-lab]').forEach(c => c.onchange = () => act($('rX'), () => call('PATCH', `/rooms/${c.dataset.lab}`, { lab: c.checked }), null, () => c.checked ? 'Marked as a computer lab.' : 'No longer a computer lab.'));
     $('pB').onclick = () => act($('pX'), () => call('POST', `/departments/${st.dept.id}/members`, { email: $('pE').value.trim(), role: $('pR').value }), deptView);
     main.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const [u, r] = b.dataset.rm.split('|'); if (confirm('Remove this role?')) act(null, () => call('DELETE', `/departments/${st.dept.id}/members/${u}/${r}`), deptView); });
+    /* programmes (16 Nov 2026) */
+    $('npB').onclick = () => act($('npX'), () => call('POST', `/departments/${st.dept.id}/programmes`, { name: $('npN').value.trim(), code: $('npC').value.trim() }), deptView, () => 'The programme is created. Add its courses and a manager.');
+    main.querySelectorAll('[data-pmb]').forEach(b => b.onclick = () => { const inp = main.querySelector(`[data-pme="${b.dataset.pmb}"]`);
+      act($('npX'), () => call('POST', `/programmes/${b.dataset.pmb}/managers`, { email: inp.value.trim() }), deptView, () => 'Manager added. They see the programme the next time they open this page.'); });
+    main.querySelectorAll('[data-unpm]').forEach(b => b.onclick = () => { const [p, u] = b.dataset.unpm.split('|'); if (confirm('Remove this manager from the programme?')) act($('npX'), () => call('DELETE', `/programmes/${p}/managers/${u}`), deptView); });
+    main.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { if (confirm('Delete this programme? Its courses and their data stay; only the grouping and its managers go.')) act($('npX'), () => call('DELETE', `/programmes/${b.dataset.pdel}`), deptView); });
+    main.querySelectorAll('[data-pcs]').forEach(b => b.onclick = () => programmeCourses(b.dataset.pcs));
   }
+}
+/* which courses a programme holds: one tick per course of the department */
+function programmeCourses(pid) {
+  const p = st.progs.find(x => x.id === pid), have = new Set(p.courses.map(c => c.id)), d = $('drawer');
+  d.innerHTML = `<div class="row" style="justify-content:space-between;margin:0 0 8px"><h2>${esc(p.name)}</h2><button class="ab ghost icon" id="dX">${ic('x')}</button></div>
+    <p class="small muted" style="margin:0 0 8px">Tick the courses this programme holds. Its managers then see every edition of these courses.</p>
+    <div class="row" style="margin:0 0 8px"><label style="flex:1">Programme name<input class="f" id="pcN" value="${esc(p.name)}"></label><label>Short code<input class="f" id="pcC" value="${esc(p.code)}" style="width:90px"></label></div>
+    <table class="t">${st.courses.map(c => `<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" data-pc="${esc(c.id)}" ${have.has(c.id) ? 'checked' : ''}><span><span class="ahd-code">${esc(c.code || c.id)}</span> ${esc(c.title)}</span></label></td></tr>`).join('')}</table>
+    <div class="row"><button class="ab primary" id="pcB">${ic('check')}Save</button></div><div class="msg" id="pcX"></div>`;
+  AdminUI.icons(d); d.classList.add('on'); $('dX').onclick = () => d.classList.remove('on');
+  $('pcB').onclick = () => act($('pcX'), async () => {
+    if ($('pcN').value.trim() !== p.name || $('pcC').value.trim() !== p.code) await call('PATCH', `/programmes/${pid}`, { name: $('pcN').value.trim(), code: $('pcC').value.trim() });
+    return call('PUT', `/programmes/${pid}/courses`, { courses: [...d.querySelectorAll('[data-pc]:checked')].map(i => i.dataset.pc) });
+  }, async () => { d.classList.remove('on'); await deptView(); }, r => `Saved: ${r.courses.length} course${r.courses.length === 1 ? '' : 's'}.`);
 }
 async function newEdition(courseId) {
   const label = prompt('Label for the new edition, e.g. "Spring 2027"'); if (!label) return;
@@ -309,14 +352,15 @@ async function termView(id) {
   let r;
   try { r = await call('GET', `/terms/${id}/availability`); } catch (e) { main.innerHTML = `<div class="acard empty">${esc(e.message)}</div>`; return; }
   const t = r.term, T = r.teachers, entered = T.filter(x => x.entry), missing = T.filter(x => !x.entry && !x.former);
-  st.ed = null; nav({ dept: st.dept.id, term: id }); head(t.label, `Teacher availability · ${st.dept.name}`);
+  const admin = isAdmin(), mine = r.scope === 'programmes';
+  st.ed = null; nav({ dept: st.dept.id, term: id }); head(t.label, mine ? `Your programmes · ${st.dept.name}` : `Teacher availability · ${st.dept.name}`);
   const who = (k, s) => entered.filter(x => x.entry.slots[k] === s).map(x => x.name || x.email);
   const hmCell = k => { const y = who(k, 'y'), m = who(k, 'm'), n = who(k, 'n'); const cls = y.length ? 'hm y' : m.length ? 'hm m' : n.length === entered.length && n.length ? 'hm n' : 'hm';
     const title = [y.length ? 'Available: ' + y.join(', ') : '', m.length ? 'If needed: ' + m.join(', ') : '', n.length ? 'Unavailable: ' + n.join(', ') : ''].filter(Boolean).join('\n');
     return [cls, (y.length || m.length) ? `${y.length || ''}${m.length ? `<small>${y.length ? ' +' : ''}${m.length}</small>` : ''}` : '', title]; };
   main.innerHTML = `
     <div class="row" style="margin:0 0 10px"><button class="ab ghost" id="bBack">${ic('back')}Department</button></div>
-    <div class="asec">The week, every teacher together <small class="muted">${entered.length} of ${T.filter(x => !x.former).length} teachers have entered · a cell shows how many are available, +how many if needed · hover a cell for the names</small></div>
+    <div class="asec">The week, ${mine ? 'the teachers of your programmes' : 'every teacher'} together <small class="muted">${entered.length} of ${T.filter(x => !x.former).length} teachers have entered their week. A cell shows how many are available, and after “+” how many only if needed. Hover a cell to see the names</small></div>
     <div class="acard">${entered.length ? weekTable(t, hmCell) : '<div class="empty">Nobody has entered a week yet.</div>'}
       <p class="small muted" style="margin:10px 0 0">${t.deadline ? `Teachers were asked to enter by ${fDay(t.deadline)}. ` : ''}Hours are Geneva time. The timetable tab of every edition checks a session against these marks before adding it.</p></div>
     <div class="asec">Teachers <small class="muted">hours per week they want, at most per day, and what they marked</small></div>
@@ -329,7 +373,7 @@ async function termView(id) {
       ${missing.length ? `<div class="row" style="margin-top:10px"><button class="ab sm" id="bMail">${ic('mail')}Copy the ${missing.length} email address${missing.length > 1 ? 'es' : ''} of those who have not entered</button><span class="msg" id="mlX" style="margin:0"></span></div>` : ''}</div>
     <div class="asec" id="autoH">Automatic timetable <small class="muted">the computer proposes the whole term; you check it, ask each teacher once, and publish</small></div>
     <div class="acard" id="auto"><div class="empty">Loading…</div></div>
-    <div class="asec">Term settings</div>
+    ${admin ? `<div class="asec">Term settings</div>
     <div class="acard">
       <div class="row"><label>Label<input class="f" id="eL" value="${esc(t.label)}" style="width:150px"></label><label>First day<input class="f" type="date" id="eS" value="${dIn(t.starts_on)}"></label><label>Last day<input class="f" type="date" id="eE" value="${dIn(t.ends_on)}"></label>
         <label>Grid from<select class="f" id="eF">${hourOpts(t.day_from)}</select></label><label>Grid to<select class="f" id="eT">${hourOpts(t.day_to)}</select></label>
@@ -337,7 +381,7 @@ async function termView(id) {
         <label>Enter by<input class="f" type="date" id="eX" value="${t.deadline ? dIn(t.deadline) : ''}"></label></div>
       <div class="row"><label style="flex:1">What to tell the teachers<input class="f" id="eN" value="${esc(t.note)}"></label><button class="ab primary" id="eB">${ic('check')}Save</button><button class="ab ghost" id="eDel">${ic('trash')}Delete the term</button></div>
       <div class="msg" id="eX2"></div>
-      <p class="small muted">Shrinking the grid keeps the marks outside it in the database but hides them; teachers will not see them again until the grid grows back.</p></div>`;
+      <p class="small muted">Shrinking the grid keeps the marks outside it in the database but hides them; teachers will not see them again until the grid grows back.</p></div>` : ''}`;
   AdminUI.icons(main);
   autoPanel(t);
   $('bBack').onclick = deptView;
@@ -356,6 +400,7 @@ async function termView(id) {
   });
   if ($('bMail')) $('bMail').onclick = async () => { const list = missing.map(x => x.email).join(', ');
     try { await navigator.clipboard.writeText(list); $('mlX').className = 'msg ok'; $('mlX').textContent = 'Copied.'; } catch (e) { prompt('Copy these addresses:', list); } };
+  if (!admin) return;
   $('eB').onclick = () => act($('eX2'), () => call('PATCH', `/terms/${id}`, { label: $('eL').value.trim(), starts_on: $('eS').value, ends_on: $('eE').value, day_from: $('eF').value, day_to: $('eT').value, days: $('eD').value, deadline: $('eX').value || null, note: $('eN').value.trim() }), () => termView(id));
   $('eDel').onclick = async () => {
     if (!confirm(`Delete the term "${t.label}"?`)) return;
@@ -368,12 +413,12 @@ async function termView(id) {
 /* ---- the automatic timetable (16 Nov 2026) — API SPEC §7c ----
    Propose → pin what must stay and solve again → send each teacher their draft once →
    solve again around the objections → publish the sessions for every week of the term. */
-const AT = { term: null, runs: [], view: null, pins: [], len: 2 };
+const AT = { term: null, runs: [], view: null, pins: [], len: 2, programmes: [], admin: false, scope: '' };
 const DAYL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const STATUSW = { draft: 'Draft: only you can see it', sent: 'Sent to the teachers: waiting for their answers', resolved: 'Objections solved: ready to publish', published: 'Published: the sessions are in the timetable' };
 async function autoPanel(t, runId) {
   AT.term = t;
-  try { const r = await call('GET', `/terms/${t.id}/autotimetable/runs`); AT.runs = r.runs; AT.pins = r.pins; } catch (e) { $('auto').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  try { const r = await call('GET', `/terms/${t.id}/autotimetable/runs`); AT.runs = r.runs; AT.pins = r.pins; AT.programmes = r.programmes || []; AT.admin = !!r.admin; } catch (e) { $('auto').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
   const id = runId || (AT.runs[0] && AT.runs[0].id);
   AT.view = null;
   if (id) { try { AT.view = await call('GET', `/terms/${t.id}/autotimetable/runs/${id}`); } catch (e) {} }
@@ -389,12 +434,20 @@ function drawAuto(note) {
     'Send each teacher their draft. Each one answers once: accept, or object and say why.',
     'Solve again around the objections. Every class whose teacher did not object stays where it is.',
     'Publish. The sessions are written for every week of the term, and the database refuses any double booking.'];
+  /* which courses: the whole department (admins), or one or all of the caller's programmes */
+  const pLabel = p => (p.code ? p.code + ' · ' : '') + p.name;
+  const scopeOpts = (AT.admin ? [['', 'Every course of the department']] : (AT.programmes.length > 1 ? [['', 'Every course of my ' + AT.programmes.length + ' programmes']] : []))
+    .concat(AT.programmes.map(p => [p.id, 'The courses of ' + pLabel(p)]));
+  if (!scopeOpts.some(o => o[0] === AT.scope)) AT.scope = scopeOpts.length ? scopeOpts[0][0] : '';
+  const runScope = r => r.programmes ? r.programmes.map(pLabel).join(', ') : r.programme_ids ? AT.programmes.filter(p => r.programme_ids.includes(p.id)).map(pLabel).join(', ') : 'the whole department';
   let h = `<p class="small" style="margin:0 0 6px">A timetable built by hand takes many rounds of emails, and every change can create a new clash. Here the computer places every course at once, with no student, teacher or room in two places, and you ask the teachers only once. Students see nothing until you publish.</p>
+    ${AT.admin ? '' : '<p class="small" style="margin:0 0 6px">You plan only the courses of your programmes. The sessions that other courses already have stay where they are: the computer keeps their rooms, their teachers and their students free at those hours.</p>'}
     <ol class="ttsteps">${steps.map((x, i) => `<li class="${step(i + 1)}">${step(i + 1) === 'done' ? '✓ ' : ''}${esc(x)}</li>`).join('')}</ol>
-    <div class="row"><label>A session lasts, when nothing else says<select class="f" id="atL">${[1, 2, 3, 4].map(n => `<option value="${n}" ${AT.len === n ? 'selected' : ''}>${n} hour${n > 1 ? 's' : ''}</option>`).join('')}</select></label>
+    <div class="row">${scopeOpts.length > 1 ? `<label>Which courses<select class="f" id="atW">${scopeOpts.map(([k, l]) => `<option value="${k}" ${AT.scope === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
+      <label>A session lasts, when nothing else says<select class="f" id="atL">${[1, 2, 3, 4].map(n => `<option value="${n}" ${AT.len === n ? 'selected' : ''}>${n} hour${n > 1 ? 's' : ''}</option>`).join('')}</select></label>
       <button class="ab primary" id="atP">${ic('zap')}Propose a timetable</button>
       ${v ? `<button class="ab" id="atA" title="Uses the pins, and keeps the other classes where they are unless moving them improves the timetable">${ic('refresh')}Solve again</button>` : ''}
-      ${AT.runs.length > 1 ? `<label>Earlier proposals<select class="f" id="atR">${AT.runs.map(r => `<option value="${r.id}" ${v && v.run.id === r.id ? 'selected' : ''}>${fWhen(r.created_at)} · ${r.placed} placed · ${r.status}</option>`).join('')}</select></label>` : ''}</div>
+      ${AT.runs.length > 1 ? `<label>Earlier proposals<select class="f" id="atR">${AT.runs.map(r => `<option value="${r.id}" ${v && v.run.id === r.id ? 'selected' : ''}>${fWhen(r.created_at)} · ${esc(runScope(r))} · ${r.placed} placed · ${r.status}</option>`).join('')}</select></label>` : ''}</div>
     <p class="small muted" style="margin:0">The length comes first from what you pin, then from the sessions a course already has, then from the session length its teacher entered on Teaching availability.</p>
     <div class="msg" id="atX">${note ? esc(note) : ''}</div>`;
   if (!v) { box.innerHTML = h + `<div class="empty">No proposal yet. Press “Propose a timetable”.</div>`; wireAuto(); return; }
@@ -402,7 +455,7 @@ function drawAuto(note) {
   const pinOf = id => AT.pins.find(p => p.class === id);
   const objT = new Set(v.answers.filter(a => a.decision === 'object').map(a => a.user_id));
   const placed = Object.keys(v.assignments).length;
-  h += `<div class="row" style="margin:6px 0 10px"><span class="apill ${st0 === 'published' ? 'ok' : st0 === 'draft' ? '' : 'acc'}">${esc(STATUSW[st0])}</span><span class="small muted">Proposal of ${fWhen(v.run.created_at)}</span></div>
+  h += `<div class="row" style="margin:6px 0 10px"><span class="apill ${st0 === 'published' ? 'ok' : st0 === 'draft' ? '' : 'acc'}">${esc(STATUSW[st0])}</span><span class="small muted">Proposal of ${fWhen(v.run.created_at)} for ${esc(runScope(v.run))}</span></div>
     <div class="kpis">
       <div class="kpi"><div class="k">Classes placed</div><div class="v">${placed} <small>of ${v.classes.length}</small></div><div class="n">${v.unplaced.length ? v.unplaced.length + ' could not be placed: see why below' : 'every class has a time'}</div></div>
       <div class="kpi"><div class="k">Students with two classes at once</div><div class="v">${v.counts.studentsWithClash}</div><div class="n">the computer never books a student twice</div></div>
@@ -443,10 +496,13 @@ function drawAuto(note) {
 function wireAuto() {
   const v = AT.view, t = AT.term;
   $('atL').onchange = () => { AT.len = Number($('atL').value); };
-  $('atP').onclick = () => act($('atX'), () => call('POST', `/terms/${t.id}/autotimetable`, { default_len: AT.len, seed: 1 + AT.runs.length }), r => { AT.view = r; return autoPanel(t, r.run.id); }, r => `Proposed: ${r.run.placed} of ${r.classes.length} classes placed.`);
-  if ($('atA')) $('atA').onclick = () => act($('atX'), () => call('POST', `/terms/${t.id}/autotimetable`, { default_len: AT.len, seed: 1 + AT.runs.length, prefer_run: v.run.id }), r => autoPanel(t, r.run.id), r => `Solved again: ${r.run.placed} of ${r.classes.length} classes placed.`);
+  if ($('atW')) $('atW').onchange = () => { AT.scope = $('atW').value; };
+  const scopeBody = () => AT.scope ? { programmes: [AT.scope] } : {};
+  $('atP').onclick = () => act($('atX'), () => call('POST', `/terms/${t.id}/autotimetable`, { default_len: AT.len, seed: 1 + AT.runs.length, ...scopeBody() }), r => { AT.view = r; return autoPanel(t, r.run.id); }, r => `Proposed: ${r.run.placed} of ${r.classes.length} classes placed.`);
+  /* solving again keeps the scope of the proposal on screen */
+  if ($('atA')) $('atA').onclick = () => act($('atX'), () => call('POST', `/terms/${t.id}/autotimetable`, { default_len: AT.len, seed: 1 + AT.runs.length, prefer_run: v.run.id, ...(v.run.programme_ids ? { programmes: v.run.programme_ids } : {}) }), r => autoPanel(t, r.run.id), r => `Solved again: ${r.run.placed} of ${r.classes.length} classes placed.`);
   if ($('atR')) $('atR').onchange = () => autoPanel(t, $('atR').value);
-  if ($('atS')) $('atS').onclick = () => { if (confirm('Send each teacher their draft now? They can answer only once, and you can send only one draft per term at a time.')) act($('atY'), () => call('POST', `/runs/${v.run.id}/send`, { answer_by: $('atD').value || null }), () => autoPanel(t, v.run.id), r => `Sent to ${r.mailed.length} teacher${r.mailed.length === 1 ? '' : 's'}${r.mail_failed.length ? '; the email to ' + r.mail_failed.join(', ') + ' failed' : ''}.`); };
+  if ($('atS')) $('atS').onclick = () => { if (confirm('Send each teacher their draft now? They can answer only once. While this round is open, no other draft for the same courses can be sent.')) act($('atY'), () => call('POST', `/runs/${v.run.id}/send`, { answer_by: $('atD').value || null }), () => autoPanel(t, v.run.id), r => `Sent to ${r.mailed.length} teacher${r.mailed.length === 1 ? '' : 's'}${r.mail_failed.length ? '; the email to ' + r.mail_failed.join(', ') + ' failed' : ''}.`); };
   if ($('atV')) $('atV').onclick = () => { if (confirm('Solve again around the objections? This closes the round: teachers can no longer answer.')) act($('atY'), () => call('POST', `/runs/${v.run.id}/resolve`), () => autoPanel(t, v.run.id), r => `${r.moved.length} class${r.moved.length === 1 ? '' : 'es'} moved.`); };
   if ($('atB')) $('atB').onclick = () => { if (confirm('Publish the sessions for every week of the term?')) act($('atY'), () => call('POST', `/runs/${v.run.id}/publish`, { replace: $('atRep').checked }), () => autoPanel(t, v.run.id), r => `Published ${r.meetings} sessions of ${r.classes} classes.${r.away.length ? ' ' + r.away.join(' ') : ''}`); };
   $('auto').querySelectorAll('[data-cls]').forEach(el => el.onclick = () => classDrawer(el.dataset.cls));
@@ -582,40 +638,40 @@ async function reader(field, label) {
 
 /* Students: the cohort, the roster paste, groups, staff */
 async function tStudents() {
-  const ed = st.ed, d = await call('GET', `/editions/${ed.id}/students`);
+  const ed = st.ed, d = await call('GET', `/editions/${ed.id}/students`), can = ed.can, w = can.staff;   /* w: roster, groups, status (teachers and assistants) */
   const groupOpts = sel => `<option value="">—</option>` + ed.groups.map(g => `<option value="${g.id}" ${sel === g.id ? 'selected' : ''}>${esc(g.label)}</option>`).join('');
   pane().innerHTML = `
     <div class="acard tw"><h2>${d.students.length} enrolled${d.waiting.length ? ` · <span class="muted">${d.waiting.length} waiting to sign in</span>` : ''}</h2>
       ${d.students.length ? `<table class="t"><tr><th>Student</th><th>Group</th><th>Progress</th><th class="n">Time</th><th>Last active</th><th>Status</th></tr>
       ${d.students.map(s => `<tr class="click" data-u="${s.id}"><td>${esc(s.name || '—')}<div class="small muted">${esc(s.email)}</div></td>
-        <td><select class="f" data-grp="${s.id}" onclick="event.stopPropagation()">${groupOpts(s.group_id)}</select></td>
+        <td>${w ? `<select class="f" data-grp="${s.id}" onclick="event.stopPropagation()">${groupOpts(s.group_id)}</select>` : esc(s.group_label || '—')}</td>
         <td>${s.pct == null ? '<span class="muted small">no counted modules</span>' : `<div class="bar" title="${s.pct}%"><i style="width:${s.pct}%"></i></div><span class="small muted">${s.pct}%</span>`}</td>
         <td class="n">${hrs(s.secs)}</td><td class="small">${fWhen(s.last_activity || s.last_seen)}</td>
         <td><span class="apill ${s.status === 'active' ? 'ok' : 'q'}">${s.status}</span></td></tr>`).join('')}</table>` : '<div class="empty">Nobody enrolled yet. Paste the class list below, or give students the join code.</div>'}
       ${d.waiting.length ? `<div class="asec">Waiting <small class="muted">enrolled automatically the first time they sign in with this address</small></div>
-        <table class="t">${d.waiting.map(w => `<tr><td>${esc(w.email)}</td><td>${esc(w.name)}</td><td class="n"><button class="ab sm ghost" data-unr="${esc(w.email)}" title="Remove">${ic('x')}</button></td></tr>`).join('')}</table>` : ''}
+        <table class="t">${d.waiting.map(w => `<tr><td>${esc(w.email)}</td><td>${esc(w.name)}</td><td class="n">${can.staff ? `<button class="ab sm ghost" data-unr="${esc(w.email)}" title="Remove">${ic('x')}</button>` : ''}</td></tr>`).join('')}</table>` : ''}
     </div>
     <div class="grid2">
-      <div class="acard"><h2>Add students</h2><p class="small muted">One per line: <b>email</b>, optionally <b>, name</b> and <b>, group</b>. Known addresses are enrolled at once; the others when they first sign in.${ed.join_code ? ` Students can also join themselves with the code <b>${esc(ed.join_code)}</b>.` : ''}</p>
+      ${w ? `<div class="acard"><h2>Add students</h2><p class="small muted">One per line: <b>email</b>, optionally <b>, name</b> and <b>, group</b>. Known addresses are enrolled at once; the others when they first sign in.${ed.join_code ? ` Students can also join themselves with the code <b>${esc(ed.join_code)}</b>.` : ''}</p>
         <textarea class="f" id="rL" placeholder="ana.martin@school.ch, Ana Martin, Group 1"></textarea>
-        <div class="row"><button class="ab primary" id="rB">${ic('plus')}Add to the course</button></div><div class="msg" id="rX"></div></div>
-      <div class="acard"><h2>Groups</h2><p class="small muted">For a course taught in several rooms or slots. A session can then be for one group only.</p>
+        <div class="row"><button class="ab primary" id="rB">${ic('plus')}Add to the course</button></div><div class="msg" id="rX"></div></div>` : ''}
+      <div class="acard"><h2>Groups</h2><p class="small muted">For a course taught in several rooms or slots. A session can then be for one group only.${w ? '' : ' The course’s teachers create the groups and place the students in them.'}</p>
         ${ed.groups.length ? `<table class="t">${ed.groups.map(g => `<tr><td>${esc(g.label)}</td><td class="n muted">${g.students} students</td></tr>`).join('')}</table>` : ''}
-        <div class="row"><input class="f" id="gL" placeholder="Group 1"><button class="ab" id="gB">${ic('plus')}Add group</button></div><div class="msg" id="gX"></div>
+        ${w ? `<div class="row"><input class="f" id="gL" placeholder="Group 1"><button class="ab" id="gB">${ic('plus')}Add group</button></div><div class="msg" id="gX"></div>` : ''}
         <h2 style="margin-top:18px">Teaching staff</h2>
         ${ed.staff.length ? `<table class="t">${ed.staff.map(s => `<tr><td>${esc(s.name || s.email)}<div class="small muted">${esc(s.email)}</div></td><td><span class="apill acc">${s.role}</span></td>
-          <td class="n">${ed.can.admin ? `<button class="ab sm ghost" data-unstaff="${s.id}" title="Remove">${ic('x')}</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="small muted">Nobody yet.</p>'}
-        ${ed.can.admin ? `<div class="row"><input class="f" id="sE" type="email" placeholder="teacher@school.ch" style="flex:1"><select class="f" id="sR"><option value="teacher">teacher</option><option value="assistant">assistant (no grades)</option></select><button class="ab" id="sB">${ic('plus')}Add</button></div><div class="msg" id="sX"></div>` : ''}
+          <td class="n">${can.staffing ? `<button class="ab sm ghost" data-unstaff="${s.id}" title="Remove">${ic('x')}</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="small muted">Nobody yet.</p>'}
+        ${can.staffing ? `<div class="row"><input class="f" id="sE" type="email" placeholder="teacher@school.ch" style="flex:1"><select class="f" id="sR"><option value="teacher">teacher</option><option value="assistant">assistant (no grades)</option></select><button class="ab" id="sB">${ic('plus')}Add</button></div><div class="msg" id="sX"></div>` : ''}
       </div>
     </div>`;
   AdminUI.icons(pane());
   pane().querySelectorAll('[data-u]').forEach(tr => tr.onclick = () => drawer(tr.dataset.u));
   pane().querySelectorAll('[data-grp]').forEach(s => s.onchange = () => act(null, () => call('PATCH', `/editions/${ed.id}/students/${s.dataset.grp}`, { group_id: s.value || null })));
   pane().querySelectorAll('[data-unr]').forEach(b => b.onclick = () => act(null, () => call('DELETE', `/editions/${ed.id}/pending/${encodeURIComponent(b.dataset.unr)}`), tStudents));
-  $('rB').onclick = () => act($('rX'), () => call('POST', `/editions/${ed.id}/roster`, { lines: $('rL').value }), () => loadEd(ed.id),
+  if (w) $('rB').onclick = () => act($('rX'), () => call('POST', `/editions/${ed.id}/roster`, { lines: $('rL').value }), () => loadEd(ed.id),
     r => `${r.enrolled} enrolled, ${r.waiting} waiting${r.rejected.length ? ' · not an email: ' + r.rejected.join(', ') : ''}.`);
-  $('gB').onclick = () => act($('gX'), () => call('POST', `/editions/${ed.id}/groups`, { label: $('gL').value.trim() }), () => loadEd(ed.id));
-  if (ed.can.admin) {
+  if (w) $('gB').onclick = () => act($('gX'), () => call('POST', `/editions/${ed.id}/groups`, { label: $('gL').value.trim() }), () => loadEd(ed.id));
+  if (can.staffing) {
     $('sB').onclick = () => act($('sX'), () => call('POST', `/editions/${ed.id}/staff`, { email: $('sE').value.trim(), role: $('sR').value }), () => loadEd(ed.id));
     pane().querySelectorAll('[data-unstaff]').forEach(b => b.onclick = () => { if (confirm('Remove from the teaching staff?')) act(null, () => call('DELETE', `/editions/${ed.id}/staff/${b.dataset.unstaff}`), () => loadEd(ed.id)); });
   }
@@ -638,10 +694,10 @@ async function drawer(uid) {
       <p class="small">${att.present} present · ${att.late} late · ${att.absent} absent · ${att.excused} excused · ${att.none} not marked</p>
       <div class="asec">Workbook <small class="muted">${s.work.length} answers</small></div>
       ${s.work.length ? s.work.map(w => `<div class="small muted">${esc(w.module_id)} · ${esc(w.label || w.field_id)} · ${fWhen(w.updated_at)}</div><div class="work">${esc(w.value)}</div>`).join('') : '<p class="small muted">None.</p>'}
-      <div class="row"><button class="ab sm" id="dW">${s.user.status === 'active' ? 'Mark as withdrawn' : 'Re-activate'}</button></div>`;
+      ${st.ed.can.staff ? `<div class="row"><button class="ab sm" id="dW">${s.user.status === 'active' ? 'Mark as withdrawn' : 'Re-activate'}</button></div>` : ''}`;
     AdminUI.icons(dr);
     $('dC').onclick = () => dr.classList.remove('on');
-    $('dW').onclick = () => act(null, () => call('PATCH', `/editions/${st.ed.id}/students/${uid}`, { status: s.user.status === 'active' ? 'withdrawn' : 'active' }), () => { drawer(uid); tStudents(); });
+    if ($('dW')) $('dW').onclick = () => act(null, () => call('PATCH', `/editions/${st.ed.id}/students/${uid}`, { status: s.user.status === 'active' ? 'withdrawn' : 'active' }), () => { drawer(uid); tStudents(); });
   } catch (e) { dr.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $('drawer').classList.remove('on'); });
@@ -650,9 +706,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') $('drawer').
 async function tTimetable() {
   const ed = st.ed, ms = await call('GET', `/editions/${ed.id}/meetings`);
   const rooms = await call('GET', `/departments/${ed.department_id}/rooms`).catch(() => []);
-  const today = dIn(new Date());
+  const today = dIn(new Date()), tt = ed.can.timetable;   /* teachers, programme managers and admins plan sessions */
   pane().innerHTML = `
-    <div class="acard"><h2>Add sessions</h2><p class="small muted">Geneva time. A room or a teacher cannot be booked twice; the database refuses it.</p>
+    ${tt ? `<div class="acard"><h2>Add sessions</h2><p class="small muted">Geneva time. A room or a teacher cannot be booked twice; the database refuses it.</p>
       <div class="row">
         <label>Date<input class="f" type="date" id="mD" value="${today}"></label>
         <label>Start<input class="f" type="time" id="mS" value="09:00"></label>
@@ -664,13 +720,13 @@ async function tTimetable() {
         <label>Kind<select class="f" id="mK"><option>class</option><option>exam</option><option>other</option></select></label>
       </div>
       <div class="row"><label style="flex:1">Title (optional)<input class="f" id="mN" placeholder="e.g. Session 4 · Loading the warehouse"></label><label style="flex:1">Online link (optional)<input class="f" id="mU" placeholder="https://…"></label>
-        <button class="ab primary" id="mB">${ic('plus')}Add</button></div><div class="msg" id="mX"></div></div>
+        <button class="ab primary" id="mB">${ic('plus')}Add</button></div><div class="msg" id="mX"></div></div>` : ''}
     <div class="acard tw"><h2>${ms.length} sessions</h2>${ms.length ? `<table class="t"><tr><th>When</th><th>Title</th><th>Group</th><th>Room / link</th><th>Teacher</th><th></th></tr>
       ${ms.map(m => `<tr class="${m.status === 'cancelled' ? 'cancelled' : ''}"><td>${fDay(m.starts_at)} · ${fTime(m.starts_at)}–${fTime(m.ends_at)}${m.kind !== 'class' ? ` <span class="apill new">${m.kind}</span>` : ''}</td>
         <td>${esc(m.title)}</td><td>${esc(m.group_label || 'all')}</td><td>${m.room ? esc(m.room) : m.online_url ? `<a href="${esc(m.online_url)}" target="_blank" rel="noopener">online</a>` : '—'}</td><td>${esc(m.teacher || '—')}</td>
-        <td class="n" style="white-space:nowrap">${ed.can.teacher ? `<button class="ab sm" data-cx="${m.id}|${m.status}">${m.status === 'cancelled' ? 'Restore' : 'Cancel'}</button> <button class="ab sm ghost" data-del="${m.id}" title="Delete">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions yet.</div>'}</div>`;
+        <td class="n" style="white-space:nowrap">${tt ? `<button class="ab sm" data-cx="${m.id}|${m.status}">${m.status === 'cancelled' ? 'Restore' : 'Cancel'}</button> <button class="ab sm ghost" data-del="${m.id}" title="Delete">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</table>` : '<div class="empty">No sessions yet.</div>'}</div>`;
   AdminUI.icons(pane());
-  $('mB').onclick = () => act($('mX'), async () => {
+  if (tt) $('mB').onclick = () => act($('mX'), async () => {
     const n = Number($('mR').value), out = [];
     /* did the teacher offer that hour this term? (the planner, 7 Nov 2026) — a warning, never a refusal */
     const tu = $('mT').value && ed.staff.find(s => s.email === $('mT').value);
@@ -706,13 +762,15 @@ async function tAttendance(meetingId) {
   const marks = {}; list.forEach(s => marks[s.id] = s.status || '');
   const S = ['present', 'late', 'absent', 'excused'];
   pane().innerHTML = `<div class="acard"><div class="row" style="margin-top:0"><label style="flex:1">Session<select class="f" id="aM">${ms.map(m => `<option value="${m.id}" ${m.id === def ? 'selected' : ''}>${fDay(m.starts_at)} · ${fTime(m.starts_at)}${m.group_label ? ' · ' + esc(m.group_label) : ''}${m.title ? ' · ' + esc(m.title) : ''}</option>`).join('')}</select></label>
-      <button class="ab" id="aAll">All present</button><button class="ab primary" id="aB">${ic('check')}Save</button></div><div class="msg" id="aX"></div>
+      ${ed.can.staff ? `<button class="ab" id="aAll">All present</button><button class="ab primary" id="aB">${ic('check')}Save</button>` : ''}</div><div class="msg" id="aX"></div>
+    ${ed.can.staff ? '' : '<p class="small muted" style="margin:0 0 8px">You can read the attendance. The teacher of the session marks it.</p>'}
     ${list.length ? `<table class="t att">${list.map(s => `<tr><td>${esc(s.name || s.email)}</td><td class="n">${S.map(k => `<button class="${k} ${marks[s.id] === k ? 'on' : ''}" data-s="${s.id}|${k}">${k}</button>`).join(' ')}</td></tr>`).join('')}</table>` : '<div class="empty">Nobody enrolled in this session’s group.</div>'}</div>`;
   AdminUI.icons(pane());
   const paint = () => pane().querySelectorAll('[data-s]').forEach(b => { const [u, k] = b.dataset.s.split('|'); b.classList.toggle('on', marks[u] === k); });
+  $('aM').onchange = () => tAttendance($('aM').value);
+  if (!ed.can.staff) { pane().querySelectorAll('[data-s]').forEach(b => b.disabled = true); return; }
   pane().querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const [u, k] = b.dataset.s.split('|'); marks[u] = k; paint(); });
   $('aAll').onclick = () => { list.forEach(s => { if (!marks[s.id]) marks[s.id] = 'present'; }); paint(); };
-  $('aM').onchange = () => tAttendance($('aM').value);
   $('aB').onclick = () => act($('aX'), () => call('PUT', `/meetings/${def}/attendance`, { marks: Object.keys(marks).filter(u => marks[u]).map(u => ({ user_id: u, status: marks[u] })) }), null, r => `${r.marked} marked.`);
 }
 
@@ -730,7 +788,7 @@ async function tGrades() {
         <td class="small">${a.due_at ? fDay(a.due_at) : '—'}</td><td class="n">${teach ? `<button class="ab sm ghost" data-adel="${a.id}" title="Delete">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</table>
         ${teach ? `<div class="row"><button class="ab" id="aS">${ic('check')}Save assessments</button></div>` : ''}` : '<div class="empty">No assessments yet.</div>'}
       ${teach ? `<div class="row"><label style="flex:1">New assessment<input class="f" id="nT" placeholder="e.g. Final exam"></label><label>Weight %<input class="f pts" id="nW" type="number" min="0" value="0"></label><label>Out of<input class="f pts" id="nM" type="number" min="1" value="100"></label>
-        <label>Due<input class="f" id="nD" type="date"></label><button class="ab" id="nB">${ic('plus')}Add</button></div>` : '<p class="small muted">Assistants can read the gradebook but not grade.</p>'}
+        <label>Due<input class="f" id="nD" type="date"></label><button class="ab" id="nB">${ic('plus')}Add</button></div>` : `<p class="small muted">${ed.can.manager ? 'You can read the gradebook. The course’s teachers create the assessments and enter the grades.' : 'Assistants can read the gradebook but not grade.'}</p>`}
       <div class="msg" id="nX"></div></div>
     ${g.assessments.length && g.students.length ? `<div class="acard tw"><h2>Gradebook</h2><p class="small muted">Points per assessment. The total is weighted over what has been graded so far. Every change is logged with who made it.</p>
       <table class="t"><tr><th>Student</th>${g.assessments.map(a => `<th class="n">${esc(a.title)}<div class="muted" style="text-transform:none;letter-spacing:0">/ ${Number(a.max_points)} · ${Number(a.weight)}%</div></th>`).join('')}<th class="n">Total %</th></tr>
