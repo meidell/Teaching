@@ -189,3 +189,20 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,400);});
   else setTimeout(go,400);
 })();
+
+/* ---- "Join the class online" (15 Nov 2026) ----------------------------
+   Jan Erik asked for an online meeting link on his GBS cyberwar course.
+   /shared/meet.js draws a strip at the top of every page of a course whose
+   courses.json entry has `meeting.url`: coloured "the class is on now"
+   during a session (Geneva time), otherwise the next session's date. */
+(function(){
+  function go(){
+    try{
+      var p=location.pathname||''; if(p.indexOf('/admin/')===0||p.indexOf('/shared/')===0||p.indexOf('/lms/')===0)return;
+      if(!document.body||!document.body.getAttribute('data-course'))return;
+      var s=document.createElement('script');s.src='/shared/meet.js';s.defer=true;document.head.appendChild(s);
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,300);});
+  else setTimeout(go,300);
+})();

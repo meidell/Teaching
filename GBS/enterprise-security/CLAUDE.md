@@ -381,3 +381,10 @@ global `EscWall`; `courseprogress.js` a port).
   stored anywhere else; tamperable like every wall. The memo's minute plan (0–20, 20–60, hour two) is on the
   page as three numbered steps, per WRITING.md rule 7. Tested headless with two phones at 390 px
   (start, list, join, ask, reveal on both, wrong → missed pile, right → point, alternate).
+
+- **Online class with team rooms (15 Nov 2026).** Every page of the course shows the strip from
+  `/shared/meet.js` (loaded by track.js; `meeting` in courses.json, provider jitsi, prefix
+  `GBS-escwa-a3fc89a2`): *Join the class room* and *Join your team room* (A–F from `escwa_team`, the
+  teams board), opened in a panel inside the page with *Open in a new tab* for when meet.jit.si cuts the
+  embedded call after about 5 minutes. Jan Erik opens each room first (meet.jit.si sign-in) and has a menu
+  of all six team rooms on his device. See the root CLAUDE.md, `meet.js`.
