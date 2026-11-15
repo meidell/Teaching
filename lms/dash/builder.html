@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Programme builder</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The programme builder (15 Nov 2026). Jan Erik: "let's start with building a program". A programme manager
+     designs a curriculum: semesters, courses, ECTS, the programme's learning goals and which course teaches (T)
+     or assesses (A) each one, prerequisites, assessment and contact hours. Checks run on every change: total
+     and semester ECTS, every goal taught twice and assessed once, prerequisites before the course, the thesis
+     last, courses that serve no goal. It shows student workload and teaching cost per semester, and every change
+     against the current curriculum (what an accreditation panel asks for). ?p=bba|msc|emba|dba|new.
+     A draft is kept per programme in this browser (localStorage dash_builder_<p>); nothing is sent anywhere. -->
+<style>
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:3px;width:max-content;max-width:100%;}
+  .tabs button{border:none;background:none;padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--ink2);}
+  .tabs button.on{background:var(--pill);color:#fff;}
+  .btn{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:650;color:var(--ink);}
+  .btn.primary{background:var(--pill);color:#fff;border-color:var(--pill);}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px;}
+  .draft{font-size:12.5px;color:var(--muted);}
+  input.tx,select.tx,textarea.tx{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:6px 8px;font:inherit;color:inherit;}
+  /* semesters */
+  .sems{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:10px;overflow-x:auto;padding-bottom:6px;}
+  .sem{background:var(--raised);border-radius:12px;padding:10px;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .sem.over{outline:2px dashed var(--s1);outline-offset:-2px;}
+  .sem .sh{display:flex;justify-content:space-between;gap:6px;align-items:baseline;}
+  .sem .sh b{font-size:14px;} .sem .sh small{color:var(--muted);font-size:12px;}
+  .crs{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--s1);border-radius:9px;padding:7px 9px;font-size:12.5px;line-height:1.35;cursor:grab;}
+  .crs.t-thesis,.crs.t-project,.crs.t-internship,.crs.t-milestone{border-left-color:var(--s7);} .crs.t-elective{border-left-color:var(--s3);}
+  .crs.bad{box-shadow:inset 0 0 0 1.5px var(--serious);}
+  .crs .ct{font-weight:650;font-size:13px;} .crs .cm{color:var(--ink2);margin-top:2px;}
+  .crs .gs{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;}
+  .gchip{font-size:10.5px;font-weight:700;border-radius:5px;padding:0 5px;border:1px solid var(--line);color:var(--ink2);}
+  .gchip.A{background:var(--s1);color:#fff;border-color:var(--s1);}
+  .crs .ca{display:flex;gap:4px;margin-top:5px;}
+  .crs .ca button{border:1px solid var(--line);background:var(--raised);border-radius:6px;padding:1px 7px;cursor:pointer;font-size:12px;color:var(--ink);}
+  .addc{border:1px dashed var(--axis);background:none;border-radius:9px;padding:7px;cursor:pointer;font-size:12.5px;color:var(--ink2);}
+  /* goals */
+  .gl{list-style:none;margin:0;padding:0;}
+  .gl li{display:grid;grid-template-columns:32px 1fr 90px auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);}
+  .gl li:last-child{border:none;}
+  .gl input.tx{width:100%;}
+  /* matrix */
+  #mxT td.c,#mxT th.c{text-align:center;}
+  .mx{display:inline-block;min-width:22px;border-radius:5px;font-weight:700;font-size:11.5px;}
+  .mx.A{background:var(--s1);color:#fff;} .mx.T{border:1px solid var(--axis);color:var(--ink2);}
+  #mxT{min-width:420px;} #wlT{min-width:440px;} #chgT{min-width:480px;}
+  dialog.cc{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--r);padding:20px;max-width:620px;width:calc(100% - 32px);max-height:90vh;}
+  dialog.cc::backdrop{background:rgba(0,0,0,.45);}
+  .fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .fg label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:3px;}
+  .fg .full{grid-column:1/-1;} .fg .tx{width:100%;}
+  .pq{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;max-height:140px;overflow:auto;}
+  @media(max-width:640px){.sems{grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;} .fg{grid-template-columns:minmax(0,1fr);} .gl li{grid-template-columns:28px 1fr;} .tabs{width:auto;}}
+  @media print{.bar,.crs .ca,.addc,#gAdd{display:none !important;}}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Programme builder</h1><div class="sub" id="sub"></div></div>
+    <div class="filters"><nav class="tabs" id="pick" aria-label="Choose a programme"></nav></div>
+  </div>
+  <div class="bar">
+    <button class="btn" id="bReset" type="button">Start again from the current curriculum</button>
+    <button class="btn" id="bExport" type="button">Download the draft (JSON)</button>
+    <button class="btn" id="bPrint" type="button">Print</button>
+    <a class="btn" id="bBack" href="programme.html">Back to the programme</a>
+    <span class="draft" id="draftNote"></span>
+  </div>
+
+  <div class="card" style="margin-bottom:14px" id="newBox" hidden></div>
+
+  <div class="g c21">
+    <div class="card"><div class="ch"><h2>Checks</h2><span class="note">run on every change</span></div><ul class="acts" id="checks"></ul></div>
+    <div class="card"><div class="ch"><h2>Learning goals</h2><span class="note">what a graduate must be able to do</span></div>
+      <p class="lead">Each goal must be taught in at least two courses and assessed in at least one. "Assessed" means the course measures the goal on graded work for assurance of learning.</p>
+      <ul class="gl" id="goals"></ul><button class="btn" id="gAdd" type="button" style="margin-top:8px">Add a goal</button></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Semesters and courses</h2><span class="note" id="semNote"></span></div>
+    <p class="lead">Drag a course to another semester, or use ◀ ▶. ✎ opens the course: its credits, type, goals, prerequisites, assessment and contact hours. The coloured edge shows the kind of item: a taught course, an elective, or supervised work (thesis, project, internship, milestone).</p>
+    <div class="sems" id="sems"></div></div>
+
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Which course serves which goal</h2><span class="note">T = taught · A = assessed</span></div><div class="tw"><table class="t" id="mxT"></table></div></div>
+    <div class="card"><div class="ch"><h2>Student workload and teaching cost</h2><span class="note" id="wlNote"></span></div><p class="lead" id="wlLead"></p><div class="tw"><table class="t" id="wlT"></table></div></div>
+  </div>
+  <div class="card"><div class="ch"><h2>Changes against the current curriculum</h2><span class="note">what the programme committee and the accreditation panel will ask to see</span></div><div class="tw"><table class="t" id="chgT"></table></div></div>
+
+  <dialog class="cc" id="dlg"></dialog>
+  <p class="foot" id="foot"></p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, PC, chf, num, st, esc } = Dash;
+  Dash.shell('programme');
+  const RU = S.programmeRules, TYPES = { course: 'Course', elective: 'Elective', thesis: 'Thesis', project: 'Project', internship: 'Internship', milestone: 'Milestone' };
+  const AREAS = ['Finance', 'Accounting', 'Marketing', 'Strategy', 'Economics', 'Data & AI', 'Operations', 'Leadership & HR', 'Law & Ethics', 'Entrepreneurship', 'Statistics', 'Digital Business', 'Research', 'Practice', 'Elective'];
+  document.getElementById('foot').textContent = `All names and figures are invented. ${RU.source} A draft is kept in this browser only.`;
+  let uid = 0; const nid = () => 'c' + (++uid);
+
+  /* ---- a draft = a deep copy of the programme's curriculum and goals ---- */
+  function fromCurrent(pid) {
+    const P = S.P[pid], goals = S.quality.learningGoals.filter(g => g.prog === pid);
+    return { pid, name: P.name, level: P.level, ects: P.ects,
+      goals: goals.map(g => ({ text: g.goal, target: g.target })),
+      sems: S.curriculum[pid].map(m => ({ n: m.n, any: !!m.any, items: m.items.map(it => ({ id: nid(), code: it.code, title: it.title, ects: it.ects, type: it.type, area: it.area, goals: it.goals.slice(), prereq: it.prereq.slice(), assessment: it.assessment, hours: it.hours })) })) };
+  }
+  function blank() { return { pid: 'new', name: 'MSc in Sustainable Finance', level: 'Master', ects: 90, goals: [{ text: 'Analyse the financial effect of climate risk on a company', target: 80 }, { text: 'Recommend an investment that meets a sustainability standard', target: 80 }], sems: [1, 2, 3].map(n => ({ n, any: n === 3, items: [] })) }; }
+  const KEY = p => 'dash_builder_' + p;
+  function load(pid) { try { const d = JSON.parse(localStorage.getItem(KEY(pid)) || 'null'); if (d && d.sems) { d.sems.forEach(m => m.items.forEach(it => it.id = nid())); return d; } } catch (e) {} return pid === 'new' ? blank() : fromCurrent(pid); }
+  function save() { try { localStorage.setItem(KEY(D.pid), JSON.stringify(D)); document.getElementById('draftNote').textContent = 'Draft saved in this browser.'; } catch (e) { document.getElementById('draftNote').textContent = 'This browser does not keep drafts.'; } }
+
+  let pid = new URLSearchParams(location.search).get('p'); if (!S.P[pid] && pid !== 'new') pid = 'bba';
+  let D = load(pid);
+  const CUR = pid === 'new' ? null : fromCurrent(pid);
+  const all = () => D.sems.flatMap(m => m.items.map(it => ({ it, m })));
+  const semEcts = m => m.items.reduce((a, i) => a + (+i.ects || 0), 0);
+  const fmtE = v => (Math.round(v * 10) / 10).toString();
+
+  document.getElementById('pick').innerHTML = S.programs.map(p => `<button data-p="${p.id}" class="${p.id === pid ? 'on' : ''}"><i class="key" style="background:${PC[p.id]}"></i>${esc(p.short)}</button>`).join('') + `<button data-p="new" class="${pid === 'new' ? 'on' : ''}">New programme</button>`;
+  document.getElementById('pick').onclick = e => { const b = e.target.closest('button'); if (b) location.search = '?p=' + b.dataset.p; };
+  document.getElementById('bBack').href = pid === 'new' ? 'programme.html' : 'programme.html?p=' + pid;
+
+  /* =====================================================================
+     RENDER
+     ===================================================================== */
+  function render() {
+    document.getElementById('sub').textContent = `${D.name} · ${D.level} · ${D.ects} ECTS in ${D.sems.length} semesters · ${D.goals.length} learning goals`;
+    drawNew(); drawGoals(); drawSems(); const issues = drawChecks(); drawMatrix(); drawLoad(); drawChanges(); markBad(issues); save();
+  }
+
+  /* settings of a new programme */
+  function drawNew() {
+    const box = document.getElementById('newBox'); box.hidden = D.pid !== 'new'; if (box.hidden) return;
+    const lv = RU.levels.find(l => l.id === D.level) || RU.levels[1];
+    box.innerHTML = `<div class="ch"><h2>The new programme</h2><span class="note">name, level and length</span></div><div class="fg">
+      <div class="full"><label for="nName">Name</label><input class="tx" id="nName" value="${esc(D.name)}"></div>
+      <div><label for="nLevel">Level</label><select class="tx" id="nLevel">${RU.levels.map(l => `<option ${l.id === D.level ? 'selected' : ''}>${l.id}</option>`).join('')}</select></div>
+      <div><label for="nEcts">Credits required (ECTS)</label><select class="tx" id="nEcts">${lv.ects.map(e => `<option ${e === D.ects ? 'selected' : ''}>${e}</option>`).join('')}</select></div>
+      <div><label>Semesters</label><button class="btn" id="nMinus" type="button">− one</button> <b>${D.sems.length}</b> <button class="btn" id="nPlus" type="button">+ one</button></div></div>`;
+    box.querySelector('#nName').onchange = e => { D.name = e.target.value || 'New programme'; render(); };
+    box.querySelector('#nLevel').onchange = e => { const l = RU.levels.find(x => x.id === e.target.value); D.level = l.id; D.ects = l.ects[0];
+      while (D.sems.length < l.semesters) D.sems.push({ n: D.sems.length + 1, any: false, items: [] }); render(); };
+    box.querySelector('#nEcts').onchange = e => { D.ects = +e.target.value; render(); };
+    box.querySelector('#nPlus').onclick = () => { D.sems.push({ n: D.sems.length + 1, any: false, items: [] }); render(); };
+    box.querySelector('#nMinus').onclick = () => { const l = D.sems[D.sems.length - 1]; if (D.sems.length > 1 && !l.items.length) { D.sems.pop(); render(); } else alert('Move or remove the courses of the last semester first.'); };
+  }
+
+  /* goals: edit, add, remove (removing a goal removes its column in every course) */
+  function drawGoals() {
+    document.getElementById('goals').innerHTML = D.goals.map((g, k) => { const t = all().filter(x => x.it.goals[k]).length, a = all().filter(x => x.it.goals[k] === 'A').length;
+      return `<li><b>G${k + 1}</b><input class="tx" data-g="${k}" value="${esc(g.text)}" aria-label="Goal ${k + 1}"><span class="why">${t} course${t === 1 ? '' : 's'} · ${a} assess</span><button class="btn" data-gdel="${k}" type="button" title="Remove this goal">✕</button></li>`; }).join('') || '<li class="empty">No goal yet. Add the first one.</li>';
+  }
+  document.getElementById('goals').addEventListener('change', e => { const k = e.target.dataset.g; if (k != null) { D.goals[+k].text = e.target.value; render(); } });
+  document.getElementById('goals').addEventListener('click', e => { const b = e.target.closest('[data-gdel]'); if (!b) return; const k = +b.dataset.gdel;
+    if (!confirm(`Remove goal G${k + 1}? Every course loses its link to it.`)) return; D.goals.splice(k, 1); all().forEach(x => x.it.goals.splice(k, 1)); render(); });
+  document.getElementById('gAdd').onclick = () => { D.goals.push({ text: 'Describe what a graduate must be able to do', target: 80 }); all().forEach(x => x.it.goals.push(null)); render(); };
+
+  /* semesters and their courses */
+  const season = m => m.any ? 'autumn or spring' : m.n % 2 ? 'autumn' : 'spring';
+  function drawSems() {
+    const target = RU.ectsPerSemester;
+    document.getElementById('semNote').textContent = `${fmtE(D.sems.reduce((a, m) => a + semEcts(m), 0))} of ${D.ects} ECTS placed · ${target} ECTS per semester`;
+    document.getElementById('sems').innerHTML = D.sems.map((m, si) => { const e = semEcts(m), ok = Math.abs(e - target) < 0.01;
+      return `<div class="sem" data-si="${si}"><div class="sh"><b>Semester ${m.n}</b><small>${season(m)}</small></div><div>${ok ? st('good', fmtE(e) + ' ECTS') : st(e > target ? 'serious' : 'warn', `${fmtE(e)} of ${target} ECTS`)}</div>` +
+        m.items.map(it => `<div class="crs t-${it.type}" draggable="true" data-id="${it.id}"><div class="ct">${esc(it.title)}</div><div class="cm">${esc(it.code || 'new')} · ${fmtE(it.ects)} ECTS · ${esc(TYPES[it.type])} · ${esc(it.area || '')}</div>
+          <div class="gs">${it.goals.map((g, k) => g ? `<span class="gchip ${g}" title="Goal ${k + 1}: ${g === 'A' ? 'assessed' : 'taught'}">G${k + 1}${g === 'A' ? ' A' : ''}</span>` : '').join('') || '<span class="why">serves no goal</span>'}</div>
+          ${it.prereq.length ? `<div class="cm">needs: ${esc(it.prereq.join(', '))}</div>` : ''}
+          <div class="ca"><button data-mv="-1" data-id="${it.id}" title="Earlier semester" ${si === 0 ? 'disabled' : ''}>◀</button><button data-mv="1" data-id="${it.id}" title="Later semester" ${si === D.sems.length - 1 ? 'disabled' : ''}>▶</button><button data-ed="${it.id}" title="Edit">✎</button><button data-rm="${it.id}" title="Remove">✕</button></div></div>`).join('') +
+        `<button class="addc" data-add="${si}" type="button">+ Add a course</button></div>`; }).join('');
+  }
+  const findIt = id => { for (const m of D.sems) { const i = m.items.findIndex(x => x.id === id); if (i >= 0) return { m, i, it: m.items[i] }; } };
+  const moveTo = (id, si) => { const f = findIt(id); if (!f || !D.sems[si] || D.sems[si] === f.m) return; f.m.items.splice(f.i, 1); D.sems[si].items.push(f.it); render(); };
+  const semsEl = document.getElementById('sems');
+  semsEl.addEventListener('click', e => {
+    const mv = e.target.closest('[data-mv]'); if (mv) { const f = findIt(mv.dataset.id); moveTo(mv.dataset.id, D.sems.indexOf(f.m) + (+mv.dataset.mv)); return; }
+    const ed = e.target.closest('[data-ed]'); if (ed) { edit(ed.dataset.ed); return; }
+    const rm = e.target.closest('[data-rm]'); if (rm) { const f = findIt(rm.dataset.rm); if (confirm(`Remove “${f.it.title}” from the programme?`)) { f.m.items.splice(f.i, 1); all().forEach(x => x.it.prereq = x.it.prereq.filter(t => t !== f.it.title)); render(); } return; }
+    const ad = e.target.closest('[data-add]'); if (ad) { const it = { id: nid(), code: '', title: 'New course', ects: 6, type: 'course', area: 'Strategy', goals: D.goals.map(() => null), prereq: [], assessment: 'Exam and coursework', hours: 36 }; D.sems[+ad.dataset.add].items.push(it); render(); edit(it.id); }
+  });
+  semsEl.addEventListener('dragstart', e => { const c = e.target.closest('.crs'); if (c) e.dataTransfer.setData('text/plain', c.dataset.id); });
+  semsEl.addEventListener('dragover', e => { const s = e.target.closest('.sem'); if (s) { e.preventDefault(); semsEl.querySelectorAll('.sem').forEach(x => x.classList.toggle('over', x === s)); } });
+  semsEl.addEventListener('dragleave', e => { if (!semsEl.contains(e.relatedTarget)) semsEl.querySelectorAll('.sem').forEach(x => x.classList.remove('over')); });
+  semsEl.addEventListener('drop', e => { const s = e.target.closest('.sem'); if (!s) return; e.preventDefault(); moveTo(e.dataTransfer.getData('text/plain'), +s.dataset.si); });
+
+  /* the course editor */
+  const dlg = document.getElementById('dlg');
+  function edit(id) {
+    const { it } = findIt(id), others = all().filter(x => x.it.id !== id).map(x => x.it.title);
+    dlg.innerHTML = `<h3 style="margin:0 0 10px">Edit the course</h3><div class="fg">
+      <div class="full"><label for="eT">Title</label><input class="tx" id="eT" value="${esc(it.title)}"></div>
+      <div><label for="eE">Credits (ECTS)</label><input class="tx" id="eE" type="number" min="0.5" max="60" step="0.5" value="${it.ects}"></div>
+      <div><label for="eY">Type</label><select class="tx" id="eY">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${k === it.type ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div><label for="eA">Subject area</label><select class="tx" id="eA">${AREAS.map(a => `<option ${a === it.area ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div>
+      <div><label for="eH">Contact hours</label><input class="tx" id="eH" type="number" min="0" step="1" value="${it.hours}"></div>
+      <div class="full"><label for="eS">How it is assessed</label><input class="tx" id="eS" value="${esc(it.assessment)}"></div>
+      <div class="full"><label>Learning goals</label>${D.goals.map((g, k) => `<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><select class="tx" data-eg="${k}"><option value="">—</option><option value="T" ${it.goals[k] === 'T' ? 'selected' : ''}>taught</option><option value="A" ${it.goals[k] === 'A' ? 'selected' : ''}>assessed</option></select><span style="font-size:13px">G${k + 1} · ${esc(g.text)}</span></div>`).join('') || '<span class="why">The programme has no goal yet.</span>'}</div>
+      <div class="full"><label>Prerequisites: courses a student must have passed first</label><div class="pq">${others.map(t => `<label style="font-weight:500;color:var(--ink)"><input type="checkbox" value="${esc(t)}" ${it.prereq.includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}</div></div></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn" id="eX" type="button">Cancel</button><button class="btn primary" id="eOk" type="button">Save the course</button></div>`;
+    dlg.querySelector('#eX').onclick = () => dlg.close();
+    dlg.querySelector('#eOk').onclick = () => { const old = it.title;
+      it.title = dlg.querySelector('#eT').value.trim() || 'Untitled course'; it.ects = Math.max(0.5, +dlg.querySelector('#eE').value || 0); it.type = dlg.querySelector('#eY').value;
+      it.area = dlg.querySelector('#eA').value; it.hours = Math.max(0, Math.round(+dlg.querySelector('#eH').value || 0)); it.assessment = dlg.querySelector('#eS').value.trim();
+      it.goals = D.goals.map((_, k) => dlg.querySelector(`[data-eg="${k}"]`).value || null);
+      it.prereq = [...dlg.querySelectorAll('.pq input:checked')].map(x => x.value);
+      if (old !== it.title) all().forEach(x => x.it.prereq = x.it.prereq.map(t => t === old ? it.title : t));
+      dlg.close(); render(); };
+    dlg.showModal();
+  }
+
+  /* =====================================================================
+     CHECKS — each rule in words, with what breaks it
+     ===================================================================== */
+  function drawChecks() {
+    const out = [], bad = new Set(), A = all(), tot = A.reduce((a, x) => a + (+x.it.ects || 0), 0), T = RU.ectsPerSemester;
+    const pos = {}; D.sems.forEach((m, si) => m.items.forEach(it => pos[it.title] = si));
+    out.push(Math.abs(tot - D.ects) < 0.01 ? ['good', 'Credits', `The programme adds up to ${D.ects} ECTS.`] : ['crit', 'Credits', `The courses add up to ${fmtE(tot)} ECTS; the ${D.level.toLowerCase()} needs ${D.ects}. ${tot < D.ects ? 'Add' : 'Remove'} ${fmtE(Math.abs(D.ects - tot))} ECTS.`]);
+    const offS = D.sems.filter(m => Math.abs(semEcts(m) - T) > 0.01);
+    out.push(!offS.length ? ['good', 'Semesters', `Every semester carries ${T} ECTS, a full-time load.`] : ['serious', 'Semesters', offS.map(m => `semester ${m.n} has ${fmtE(semEcts(m))}`).join('; ') + `. A semester should carry ${T} ECTS (${T * RU.hoursPerEcts[0]}–${T * RU.hoursPerEcts[1]} hours of student work).`]);
+    D.goals.forEach((g, k) => { const t = A.filter(x => x.it.goals[k]).length, a = A.filter(x => x.it.goals[k] === 'A').length;
+      if (t >= RU.goalMin.taught && a >= RU.goalMin.assessed) out.push(['good', `Goal G${k + 1}`, `Taught in ${t} courses, assessed in ${a}.`]);
+      else out.push(['serious', `Goal G${k + 1}`, `“${g.text}” is ${t < RU.goalMin.taught ? `served by ${t} course${t === 1 ? '' : 's'} (at least ${RU.goalMin.taught} needed)` : ''}${t < RU.goalMin.taught && a < 1 ? ' and ' : ''}${a < RU.goalMin.assessed ? 'not assessed in any course' : ''}. Without it, assurance of learning cannot show the goal is met.`]); });
+    /* supervised work (thesis, project, milestone) may take its prerequisite in the same semester, taught alongside it */
+    const SUP = ['thesis', 'project', 'milestone', 'internship'], pq = [];
+    A.forEach(x => x.it.prereq.forEach(t => { const me = pos[x.it.title], p0 = pos[t], okSame = SUP.includes(x.it.type) && p0 === me;
+      if (p0 == null) pq.push(`“${x.it.title}” needs “${t}”, which is no longer in the programme`); else if (p0 >= me && !okSame) pq.push(`“${x.it.title}” (semester ${me + 1}) needs “${t}”, placed in semester ${p0 + 1}`);
+      if (p0 == null || (p0 >= me && !okSame)) bad.add(x.it.id); }));
+    out.push(!pq.length ? ['good', 'Order', 'Every prerequisite comes before the course that needs it (supervised work may take it in the same semester).'] : ['crit', 'Order', pq.join('; ') + '.']);
+    const th = A.filter(x => x.it.type === 'thesis'), lastSi = D.sems.length - 1, early = th.filter(x => D.sems.indexOf(x.m) < lastSi - (D.level === 'Doctorate' ? 4 : 0));
+    if (th.length) out.push(!early.length ? ['good', 'Thesis', 'The thesis sits in the last semester, after the research methods.'] : ['warn', 'Thesis', early.map(x => `“${x.it.title}” is in semester ${x.m.n}`).join('; ') + '. A thesis normally comes last, when the student has the methods.']);
+    else out.push(['warn', 'Thesis', 'The programme has no thesis or final project. Most accredited programmes end with one.']);
+    const none = A.filter(x => !x.it.goals.some(Boolean));
+    out.push(!none.length ? ['good', 'Purpose', 'Every course serves at least one programme goal.'] : ['warn', 'Purpose', `${none.map(x => '“' + x.it.title + '”').join(', ')} serve${none.length === 1 ? 's' : ''} no programme goal. Link ${none.length === 1 ? 'it' : 'them'} to a goal, or ask why ${none.length === 1 ? 'it is' : 'they are'} in the programme.`]);
+    none.forEach(x => bad.add(x.it.id));
+    const dup = A.map(x => x.it.title).filter((t, i, a) => a.indexOf(t) !== i);
+    if (dup.length) out.push(['crit', 'Duplicates', `${[...new Set(dup)].join(', ')} appear${dup.length === 1 ? 's' : ''} twice.`]);
+    const n = out.filter(o => o[0] !== 'good').length;
+    document.getElementById('checks').innerHTML = `<li style="grid-template-columns:1fr"><div class="w">${n ? `${n} check${n === 1 ? '' : 's'} need${n === 1 ? 's' : ''} attention.` : 'The programme meets every rule.'}</div></li>` +
+      out.map(([k, w, d]) => `<li style="grid-template-columns:auto 1fr">${st(k, w)}<div class="d" style="font-size:13px;color:var(--ink)">${esc(d)}</div></li>`).join('');
+    return bad;
+  }
+  function markBad(bad) { bad.forEach(id => { const c = document.querySelector(`.crs[data-id="${id}"]`); if (c) c.classList.add('bad'); }); }
+
+  function drawMatrix() {
+    const A = all();
+    document.getElementById('mxT').innerHTML = `<tr><th>Course</th><th class="n">Sem.</th>${D.goals.map((g, k) => `<th class="c" title="${esc(g.text)}">G${k + 1}</th>`).join('')}</tr>` +
+      A.map(x => `<tr><td>${esc(x.it.title)}</td><td class="n">${x.m.n}</td>${D.goals.map((_, k) => `<td class="c">${x.it.goals[k] ? `<span class="mx ${x.it.goals[k]}">${x.it.goals[k]}</span>` : ''}</td>`).join('')}</tr>`).join('') +
+      `<tr><td><b>Courses per goal</b></td><td></td>${D.goals.map((_, k) => { const t = A.filter(x => x.it.goals[k]).length, a = A.filter(x => x.it.goals[k] === 'A').length; return `<td class="c"><b>${t}</b><div class="why">${a} A</div></td>`; }).join('')}</tr>`;
+  }
+  function drawLoad() {
+    const [lo, hi] = RU.hoursPerEcts, rate = RU.teachRate;
+    document.getElementById('wlNote').textContent = `${lo}–${hi} hours of student work per ECTS · teaching at CHF ${rate} an hour`;
+    document.getElementById('wlLead').textContent = `Student work = credits × ${lo} to ${hi} hours, which includes classes, reading and assignments; "per week" spreads it over a 14-week term. Contact hours are the hours a teacher spends in class or supervising; the cost of one run uses the adjunct rate of CHF ${rate} an hour, so it is the price of teaching the semester once, before any overhead.`;
+    let tc = 0, th = 0;
+    document.getElementById('wlT').innerHTML = `<tr><th>Semester</th><th class="n">ECTS</th><th class="n">Student hours</th><th class="n">Per week</th><th class="n">Contact h</th><th class="n">Cost of one run</th></tr>` +
+      D.sems.map(m => { const e = semEcts(m), h = m.items.reduce((a, i) => a + (+i.hours || 0), 0); tc += h * rate; th += h;
+        return `<tr><td>Semester ${m.n}</td><td class="n">${fmtE(e)}</td><td class="n">${Math.round(e * lo)}–${Math.round(e * hi)}</td><td class="n">${Math.round(e * lo / 14)}–${Math.round(e * hi / 14)} h</td><td class="n">${h}</td><td class="n">${esc(chf(h * rate))}</td></tr>`; }).join('') +
+      `<tr><td><b>Whole programme</b></td><td class="n"><b>${fmtE(D.sems.reduce((a, m) => a + semEcts(m), 0))}</b></td><td></td><td></td><td class="n"><b>${th}</b></td><td class="n"><b>${esc(chf(tc))}</b></td></tr>`;
+  }
+
+  /* what changed against the current curriculum (by title) */
+  function drawChanges() {
+    const el = document.getElementById('chgT');
+    if (!CUR) { el.innerHTML = `<tr><td>A new programme: every course is new. The programme committee approves the whole curriculum, then the accreditation report describes it under standard 4.2 (study programmes and their qualifications).</td></tr>`; return; }
+    const cur = {}, now = {}; CUR.sems.forEach(m => m.items.forEach(it => cur[it.title] = { it, n: m.n })); D.sems.forEach(m => m.items.forEach(it => now[it.title] = { it, n: m.n }));
+    const rows = [];
+    Object.keys(now).forEach(t => { const a = now[t], b = cur[t]; if (!b) { rows.push(['Added', t, `semester ${a.n}, ${fmtE(a.it.ects)} ECTS`]); return; }
+      if (a.n !== b.n) rows.push(['Moved', t, `semester ${b.n} → ${a.n}`]);
+      if (+a.it.ects !== +b.it.ects) rows.push(['Credits', t, `${fmtE(b.it.ects)} → ${fmtE(a.it.ects)} ECTS`]);
+      if (a.it.goals.join() !== b.it.goals.join()) rows.push(['Goals', t, `${b.it.goals.map((g, k) => g ? 'G' + (k + 1) + g : '').filter(Boolean).join(' ') || 'none'} → ${a.it.goals.map((g, k) => g ? 'G' + (k + 1) + g : '').filter(Boolean).join(' ') || 'none'}`]);
+      if (a.it.prereq.join() !== b.it.prereq.join()) rows.push(['Prerequisites', t, `${b.it.prereq.join(', ') || 'none'} → ${a.it.prereq.join(', ') || 'none'}`]);
+      if (a.it.type !== b.it.type) rows.push(['Type', t, `${TYPES[b.it.type]} → ${TYPES[a.it.type]}`]); });
+    Object.keys(cur).forEach(t => { if (!now[t]) rows.push(['Removed', t, `was in semester ${cur[t].n}, ${fmtE(cur[t].it.ects)} ECTS`]); });
+    if (D.goals.map(g => g.text).join('|') !== CUR.goals.map(g => g.text).join('|')) rows.push(['Goals', 'The programme’s learning goals', `${CUR.goals.length} → ${D.goals.length} goals, or a goal reworded`]);
+    const K = { Added: 'good', Removed: 'crit', Moved: 'warn', Credits: 'warn', Goals: 'none', Prerequisites: 'none', Type: 'none' };
+    el.innerHTML = rows.length ? `<tr><th>Change</th><th>Course</th><th>From → to</th></tr>` + rows.map(([k, t, d]) => `<tr><td>${st(K[k] || 'none', k)}</td><td>${esc(t)}</td><td>${esc(d)}</td></tr>`).join('')
+      : `<tr><td class="empty">No change yet: this is the curriculum as it runs today.</td></tr>`;
+  }
+
+  /* ---- the buttons ---- */
+  document.getElementById('bReset').onclick = () => { if (!confirm(D.pid === 'new' ? 'Start the new programme again from the example?' : 'Throw this draft away and start again from the current curriculum?')) return; try { localStorage.removeItem(KEY(D.pid)); } catch (e) {} D = D.pid === 'new' ? blank() : fromCurrent(D.pid); render(); };
+  document.getElementById('bExport').onclick = () => { const out = JSON.parse(JSON.stringify(D)); out.sems.forEach(m => m.items.forEach(it => delete it.id));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })); a.download = `programme-${D.pid}-draft.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  document.getElementById('bPrint').onclick = () => window.print();
+  render();
+})();
+</script>
+</body>
+</html>

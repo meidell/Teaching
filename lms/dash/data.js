@@ -1132,10 +1132,48 @@
     overdue60: students.filter(s => s.overdueDays > 60).length - 2, ungraded: sections.reduce((a, x) => a + x.ungraded, 0) - 18,
     decisionsPending: null };
 
+  /* =====================================================================
+     PROGRAMME BUILDER (15 Nov 2026): what each curriculum item does for the programme. Every item gets
+     its subject area, the programme goals it serves (indices into that programme's learning goals) and
+     whether it ASSESSES them (the course where the goal is measured) or only teaches them, its
+     prerequisites, its assessment and its contact hours. Rules a curriculum must meet live in
+     `programmeRules`. No random draws: the mapping follows the subject area.
+     ===================================================================== */
+  const GOAL_AREAS = {
+    bba: [['Statistics', 'Finance', 'Accounting', 'Economics', 'Data & AI', 'Operations'], ['Strategy', 'Marketing', 'Leadership & HR', 'Digital Business'], ['Law & Ethics', 'Entrepreneurship', 'Strategy']],
+    msc: [['Strategy', 'Marketing', 'Statistics', 'Data & AI', 'Operations', 'Finance'], ['Leadership & HR', 'Operations', 'Entrepreneurship']],
+    emba: [['Leadership & HR', 'Strategy', 'Data & AI', 'Digital Business'], ['Finance', 'Accounting', 'Operations', 'Marketing']],
+    dba: [['Statistics', 'Strategy', 'Leadership & HR', 'Finance', 'Data & AI', 'Digital Business', 'Economics', 'Operations', 'Marketing', 'Accounting', 'Law & Ethics', 'Entrepreneurship']],
+  };
+  const PREREQ = { 'Corporate Finance': ['Financial Accounting'], 'Statistics for Business': ['Business Mathematics'], 'Strategic Management': ['Principles of Management'], 'Management Accounting': ['Financial Accounting'], 'Macroeconomics': ['Microeconomics'],
+    'Bachelor thesis': ['Statistics for Business'], 'Digital Business & AI': ['Statistics for Business'], 'Master thesis': ['Research Methods'], 'Applied workplace project': ['Strategy Execution'],
+    'Proposal defence and ethics approval': ['Research proposal'], 'Thesis research: data collection': ['Proposal defence and ethics approval'], 'Thesis research: analysis': ['Thesis research: data collection'],
+    'Thesis research: first full draft': ['Thesis research: analysis'], 'Thesis writing': ['Thesis research: first full draft'], 'Thesis submission and defence': ['Thesis writing'], 'Doctoral Seminar II': ['Doctoral Seminar I'], 'Doctoral Seminar III': ['Doctoral Seminar II'] };
+  Object.entries(curriculum).forEach(([pid, sems]) => {
+    const goals = learningGoals.filter(g => g.prog === pid);
+    sems.forEach(m => m.items.forEach(it => {
+      const area = /thesis|Thesis|proposal|Proposal|Literature/.test(it.title) ? 'Research' : /Elective|Specialisation course/.test(it.title) ? 'Elective' : /Internship|project|residency/i.test(it.title) ? 'Practice' : AREA_OF(it.title);
+      it.area = area;
+      it.goals = goals.map((g, k) => {
+        const assessed = g.course === it.title || it.type === 'thesis' || it.type === 'project' || (pid === 'dba' && it.type === 'milestone');
+        const taught = (GOAL_AREAS[pid][k] || []).includes(area) || area === 'Research' || area === 'Practice' || (k === 1 && pid === 'bba' && /Communication/.test(it.title)) || (k === 2 && pid === 'bba' && /Ethics/.test(it.title));
+        return assessed ? 'A' : taught ? 'T' : null; });
+      it.prereq = PREREQ[it.title] || [];
+      it.assessment = it.type === 'thesis' ? 'Thesis and defence' : it.type === 'project' ? 'Project report' : it.type === 'internship' ? 'Internship report' : it.type === 'milestone' ? 'Panel review' : pid === 'dba' ? 'Research paper' : 'Exam and coursework';
+      it.hours = it.type === 'course' || it.type === 'elective' ? Math.round(it.ects * 6) : it.type === 'thesis' ? Math.round(it.ects) : 12;
+    }));
+  });
+  const programmeRules = {
+    ectsPerSemester: 30, hoursPerEcts: [25, 30], source: 'ECTS in Switzerland: 1 credit = 25 to 30 hours of student work; a full-time semester = 30 credits.',
+    levels: [{ id: 'Bachelor', ects: [180], semesters: 6 }, { id: 'Master', ects: [90, 120], semesters: 3 }, { id: 'MBA', ects: [60, 90], semesters: 3 }, { id: 'Doctorate', ects: [180], semesters: 7 }],
+    goalMin: { taught: 2, assessed: 1 },
+    teachRate: finance.adjunctRate,
+  };
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),
