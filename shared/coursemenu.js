@@ -20,8 +20,8 @@
     var fr = c.lang === 'fr', th = (reg.themes || {})[c.theme] || {}, ink = th.accent || '#14213d', hot = th.accentBright || '#c9a961';
     var base = '/' + c.dir + '/', here = decodeURI(location.pathname).replace(/\/$/, '/index.html');
     var today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(new Date());
-    var T = fr ? { course: 'Cours', home: 'Accueil du cours', sess: 'Séances', tools: 'Outils et références', next: 'prochaine', soon: 'pas encore en ligne', exam: 'examen', extra: 'Séance en plus', fold: 'Réduire le menu', unfold: 'Ouvrir le menu', menu: 'Cours', close: 'Fermer', tutor: 'Poser une question au tuteur', msg: 'Écrire à l’enseignant', room: 'Rejoindre la salle du cours', s: 'S' }
-      : { course: 'Course', home: 'Course home', sess: 'Sessions', tools: 'Tools and references', next: 'next', soon: 'not online yet', exam: 'exam', extra: 'Extra session', fold: 'Fold the menu', unfold: 'Open the menu', menu: 'Course', close: 'Close', tutor: 'Ask the course tutor', msg: 'Message the instructor', room: 'Join the class room', s: 'S' };
+    var T = fr ? { course: 'Cours', home: 'Accueil du cours', sess: 'Séances', tools: 'Outils et références', next: 'prochaine', soon: 'pas encore en ligne', exam: 'examen', extra: 'Séance en plus', fold: 'Réduire le menu', unfold: 'Ouvrir le menu', menu: 'Cours', close: 'Fermer', tutor: 'Poser une question au tuteur', msg: 'Écrire à l’enseignant', room: 'Rejoindre en ligne', cal: 'Ajouter les séances à mon agenda', calA: 'Apple Calendrier ou Outlook (abonnement)', calG: 'Google Agenda', calF: 'Télécharger le fichier (.ics)', calN: 'Un abonnement se met à jour tout seul quand une date change.', s: 'S' }
+      : { course: 'Course', home: 'Course home', sess: 'Sessions', tools: 'Tools and references', next: 'next', soon: 'not online yet', exam: 'exam', extra: 'Extra session', fold: 'Fold the menu', unfold: 'Open the menu', menu: 'Course', close: 'Close', tutor: 'Ask the course tutor', msg: 'Message the instructor', room: 'Join online', cal: 'Add the sessions to my calendar', calA: 'Apple Calendar or Outlook (subscribe)', calG: 'Google Calendar', calF: 'Download the file (.ics)', calN: 'A subscription updates itself when a date moves.', s: 'S' };
     var dshort = function (iso) { return new Date(iso + 'T12:00:00').toLocaleDateString(fr ? 'fr-CH' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); };
     var S = c.menu.sessions || [], nextS = S.filter(function (s) { return s.date >= today; })[0];
     var title = (c.title && (c.title[c.lang] || c.title.en || c.title.fr)) || c.id;
@@ -36,6 +36,8 @@
       '#jcm .it{display:flex;gap:8px;align-items:baseline;padding:6px 8px;border-radius:8px;font-size:13px}#jcm a.it:hover{background:rgba(255,255,255,.08)}' +
       '#jcm .it .n{flex:none;min-width:24px;font-weight:800;color:' + hot + ';font-size:12px}#jcm .it .l{flex:1;min-width:0}#jcm .it em{display:block;font-style:normal;font-size:11.5px;color:rgba(233,238,245,.62)}' +
       '#jcm .it.cur{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 0 ' + hot + '}#jcm .it.off{opacity:.55}#jcm .tag{font-size:10.5px;font-weight:800;border-radius:20px;padding:0 7px;margin-left:4px;background:' + hot + ';color:#111}' +
+      '#jcm .cal{margin:10px 6px 2px}#jcm .cal details summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.08);font:600 13px system-ui,sans-serif}#jcm .cal summary::-webkit-details-marker{display:none}#jcm .cal summary:hover{background:rgba(255,255,255,.16)}' +
+      '#jcm .cal .m{display:flex;flex-direction:column;gap:2px;margin-top:4px;padding:4px;background:rgba(0,0,0,.18);border-radius:8px}#jcm .cal .m a{padding:7px 10px;border-radius:6px;font-size:13px}#jcm .cal .m a:hover{background:rgba(255,255,255,.1)}#jcm .cal .m small{font-size:11.5px;color:rgba(233,238,245,.62);padding:2px 10px 4px}' +
       '#jcm .ft{border-top:1px solid rgba(255,255,255,.12);padding:8px;display:flex;flex-direction:column;gap:4px}#jcm .ft button{background:rgba(255,255,255,.08);border:0;color:#fff;border-radius:8px;padding:8px 10px;text-align:left;font:600 13px system-ui,sans-serif;cursor:pointer}#jcm .ft button:hover{background:rgba(255,255,255,.16)}' +
       '@media(min-width:1100px){body.jcm-on .topbar>.home,body.jcm-rail .topbar>.home{display:none}}' +
       'body.jcm-on{padding-left:250px}body.jcm-on #jt-btn,body.jcm-on #pw-btn{left:264px}' +
@@ -53,7 +55,7 @@
     var M = document.createElement('nav'); M.id = 'jcm'; M.setAttribute('aria-label', T.course);
     M.innerHTML = '<div class="hd"><a class="t" href="' + esc('/' + c.home) + '"><small>' + esc(c.code || c.id) + '</small><b>' + esc(title) + '</b></a><button class="x" type="button" title="' + T.fold + '" aria-label="' + T.fold + '">«</button></div>' +
       '<div class="bd">' + item(String(c.home || '').replace(c.dir + '/', ''), null, T.home) +
-      '<h6>' + T.sess + '</h6>' + S.map(function (s) {
+      '<div class="cal" hidden></div><h6>' + T.sess + '</h6>' + S.map(function (s) {
         var sub = dshort(s.date) + (s.href ? '' : ' · ' + T.soon);
         var tag = s === nextS ? '<span class="tag">' + T.next + '</span>' : s.exam ? '<span class="tag" style="background:rgba(255,255,255,.2);color:#fff">' + T.exam + '</span>' : '';
         return item(s.href, s.n === '+' ? '+' : T.s + s.n, s.n === '+' ? T.extra + ': ' + s.title : s.title, sub, tag);
@@ -85,6 +87,16 @@
       if (ft.getAttribute('data-h') === h) return; ft.setAttribute('data-h', h); ft.innerHTML = h; ft.style.display = h ? '' : 'none';
       ft.querySelectorAll('button').forEach(function (b) { b.onclick = function () { show(false); var t = { tut: document.getElementById('jt-btn'), msg: document.getElementById('jc-btn'), room: document.querySelector('.jem-meet .join') }[b.getAttribute('data-k')]; if (t) t.click(); }; });
     }
+    /* "Add the sessions to my calendar", just above the sessions: the sender worker's live feed GET /ical/<id>.ics */
+    fetch('https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/_site/push.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (x) {
+      if (!x || !x.url || !((c.schedule || {}).dates || []).length) return;
+      var feed = x.url.replace(/\/+$/, '') + '/ical/' + c.id + '.ics', web = feed.replace(/^https?:/, 'webcal:'), box = M.querySelector('.cal');
+      box.innerHTML = '<details><summary>📅 ' + T.cal + '</summary><div class="m"><a href="' + web + '">' + T.calA + '</a><a target="_blank" rel="noopener" href="https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(web) + '">' + T.calG + '</a><a href="' + feed + '" download>' + T.calF + '</a><small>' + T.calN + '</small></div></details>';
+      box.hidden = false;
+      var dt = box.querySelector('details');
+      box.querySelectorAll('.m a').forEach(function (a) { a.addEventListener('click', function () { setTimeout(function () { dt.open = false; }, 60); }); });
+      document.addEventListener('click', function (e) { if (dt.open && !dt.contains(e.target)) dt.open = false; });
+    }).catch(function () {});
     shortcuts(); setTimeout(shortcuts, 1500); setTimeout(shortcuts, 4000); setInterval(shortcuts, 10000);
   }).catch(function () {});
 })();

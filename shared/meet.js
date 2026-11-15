@@ -73,10 +73,10 @@
       live: 'Le cours a lieu maintenant, ' + when + ' (heure de Genève). Vous pouvez le suivre en ligne.',
       today: 'Le cours a lieu aujourd’hui, ' + when + ' (heure de Genève). Vous pouvez le suivre en ligne.',
       next: 'Vous pouvez suivre ce cours en ligne. Prochaine séance : ' + (next ? dl(next) : '') + (when ? ', ' + when : '') + ' (heure de Genève).',
-      cls: 'Rejoindre la salle du cours', team: 'Rejoindre la salle de votre équipe', pick: 'Choisir votre équipe', all: 'Salles des équipes',
+      cls: 'Rejoindre en ligne', team: 'Salle de votre équipe', pick: 'Choisir votre équipe', all: 'Salles des équipes',
       recClose: 'Fermer', rec: 'Enregistrements des séances', recT: 'Enregistrements des séances passées', recNone: 'Aucune séance n’est encore enregistrée. Une séance apparaît ici quelques minutes après la fin, si l’enseignant l’a enregistrée.', recMin: 'min', recSum: 'Résumé', recPts: 'Points principaux', recQ: 'Questions posées', recNext: 'À préparer pour la prochaine séance', recNote: 'Le résumé est écrit par une IA à partir de la transcription : vérifiez un point important dans la vidéo.', recErr: 'La liste n’a pas pu être lue',
       cal: 'Ajouter à mon agenda', calA: 'Apple Calendrier ou Outlook (abonnement)', calG: 'Google Agenda', calF: 'Télécharger le fichier (.ics)', calN: 'Un abonnement se met à jour tout seul quand une date change.',
-      tab: 'Ouvrir dans un nouvel onglet', close: 'Quitter l’appel', big: 'Plein écran', small: 'Réduire', clsT: 'Salle du cours', teamT: 'salle de l’équipe',
+      tab: 'Ouvrir dans un nouvel onglet', close: 'Quitter l’appel', big: 'Plein écran', small: 'Réduire', clsT: 'Cours en ligne', teamT: 'salle de l’équipe',
       lim: 'Si l’appel s’arrête après environ 5 minutes, ouvrez-le dans un nouvel onglet : c’est une limite du serveur gratuit Jitsi, et l’appel continue sans limite dans l’onglet.',
       mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.',
       opening: 'Ouverture de la salle…', signin: 'connectez-vous d’abord au cours', modOn: 'Vous êtes modérateur de cette salle : vous pouvez couper les micros, ouvrir des sous-salles et enregistrer.',
@@ -85,10 +85,10 @@
       live: 'The class is on now, ' + when + ' (Geneva time). You can follow it online.',
       today: 'The class is today, ' + when + ' (Geneva time). You can follow it online.',
       next: 'You can follow this class online. The next session is on ' + (next ? dl(next) : '') + (when ? ', ' + when : '') + ' (Geneva time).',
-      cls: 'Join the class room', team: 'Join your team room', pick: 'Pick your team', all: 'Team rooms',
+      cls: 'Join online', team: 'Your team room', pick: 'Pick your team', all: 'Team rooms',
       recClose: 'Close', rec: 'Recordings of past classes', recT: 'Recordings of past classes', recNone: 'No class has been recorded yet. A class appears here a few minutes after it ends, if the instructor recorded it.', recMin: 'min', recSum: 'Summary', recPts: 'Main points', recQ: 'Questions students asked', recNext: 'To prepare for the next class', recNote: 'An AI wrote the summary from the transcript: check an important point in the video.', recErr: 'The list could not be read',
       cal: 'Add to my calendar', calA: 'Apple Calendar or Outlook (subscribe)', calG: 'Google Calendar', calF: 'Download the file (.ics)', calN: 'A subscription updates itself when a date moves.',
-      tab: 'Open in a new tab', close: 'Leave the call', big: 'Full screen', small: 'Make smaller', clsT: 'Class room', teamT: 'team room',
+      tab: 'Open in a new tab', close: 'Leave the call', big: 'Full screen', small: 'Make smaller', clsT: 'Online class', teamT: 'team room',
       lim: 'If the call stops after about 5 minutes, open it in a new tab. This is a limit of the free Jitsi server, and the call continues without a limit in the new tab.',
       mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.',
       opening: 'Opening the room…', signin: 'sign in to the course first', modOn: 'You are the moderator of this room: you can mute everyone, open breakout rooms and record.',
@@ -116,8 +116,10 @@
       '.jem-mp.big{width:100vw;min-width:0}' +
       '.jem-mp .hd{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:8px 10px;background:#18212c;color:#e8ecf1;font:600 14px system-ui,sans-serif}' +
       '.jem-mp .hd b{flex:1;min-width:140px}' +
-      '.jem-mp .hd button,.jem-mp .hd a{padding:6px 11px;font-size:12.5px}' +
-      '.jem-mp .hd .ghost{background:transparent;border:1.5px solid #6b7a8c;color:#e8ecf1}' +
+      '.jem-mp .hd{background:' + accent + ';padding:10px 12px;gap:8px}.jem-mp .hd b{font:700 14.5px/1.3 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff}' +
+      '.jem-mp .hd button,.jem-mp .hd a,.jem-mp .rl a.b{font:700 12.5px/1.2 system-ui,-apple-system,Segoe UI,sans-serif!important;display:inline-flex;align-items:center;padding:6px 12px!important;border-radius:999px!important;background:transparent!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.55)!important;text-decoration:none!important;cursor:pointer;white-space:nowrap}' +
+      '.jem-mp .hd button:hover,.jem-mp .hd a:hover{border-color:#fff!important;background:rgba(255,255,255,.1)!important}' +
+      '.jem-mp .hd .main{background:' + hot + '!important;color:' + hotInk + '!important;border-color:' + hot + '!important}' +
       '.jem-mp iframe{flex:1;border:0;width:100%;background:#000}' +
       '.jem-mp .ft{padding:7px 12px;font:12.5px/1.45 system-ui,sans-serif;color:#b9c3cf;background:#18212c}' +
       '.jem-mp .rl{flex:1;overflow:auto;padding:12px 14px;background:#f4f6f9;color:#14213d;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}' +
@@ -141,7 +143,7 @@
       var h = document.createElement('b'); h.textContent = title; hd.appendChild(h); panel.appendChild(hd); return hd;
     }
     function frame(hd, title, src, tabUrl, foot) {
-      var a = document.createElement('a'); a.href = tabUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.tab;
+      var a = document.createElement('a'); a.className = 'main'; a.href = tabUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.tab;
       a.onclick = function () { setTimeout(close, 300); }; hd.appendChild(a);
       var bg = document.createElement('button'); bg.type = 'button'; bg.className = 'ghost'; bg.textContent = T.big;
       bg.onclick = function () { var on = panel.classList.toggle('big'); bg.textContent = on ? T.small : T.big; }; hd.appendChild(bg);
@@ -164,7 +166,7 @@
         if (!panel) return;
         wait.textContent = T.failed + ' (' + (e && e.message || e) + ')';
         var alt = document.createElement('a'); alt.href = URL0(slug); alt.target = '_blank'; alt.rel = 'noopener'; alt.textContent = T.fallback;
-        alt.style.cssText = 'margin:0 12px 12px;align-self:flex-start'; panel.appendChild(alt);
+        alt.className = 'b'; alt.style.cssText = 'margin:0 12px 12px;align-self:flex-start;background:' + accent + '!important'; panel.appendChild(alt);
         var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
       });
     }
@@ -198,7 +200,7 @@
     /* ---- the strip ---- */
     var d = document.createElement('div'); d.className = 'jem-meet'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', fr ? 'Cours en ligne' : 'Online class');
     function lab(el, long, short) { el.innerHTML = '<span class="lg">' + escH(long) + '</span><span class="sh">' + escH(short) + '</span>'; return el; }
-    var S = fr ? { cls: 'Salle', team: 'Équipe', cal: 'Agenda', rec: 'Enregistrements', live: 'en direct' } : { cls: 'Join class', team: 'Team room', cal: 'Calendar', rec: 'Recordings', live: 'live' };
+    var S = fr ? { cls: 'En ligne', team: 'Équipe', cal: 'Agenda', rec: 'Enregistrements', live: 'en direct' } : { cls: 'Online', team: 'Team room', cal: 'Calendar', rec: 'Recordings', live: 'live' };
     function draw() {
       d.innerHTML = '';
       var bc = lab(document.createElement('button'), jitsi ? T.cls : 'Join the class on ' + (m.tool || 'the meeting'), S.cls); bc.type = 'button'; bc.className = 'join';
@@ -223,7 +225,7 @@
       }
       /* calendar sync: the sender worker serves the course's class dates as a live feed (GET /ical/<id>.ics);
          the menu closes after a choice, on a click outside it and on Escape */
-      if (calBase) {
+      if (calBase && !(c.menu && c.menu.on)) {
         var feed = calBase + '/ical/' + c.id + '.ics', web = feed.replace(/^https?:/, 'webcal:');
         var dt = document.createElement('details'); dt.className = 'cal';
         dt.innerHTML = '<summary title="' + escH(T.cal) + '"><span class="lg">' + escH(T.cal) + '</span><span class="sh">' + escH(S.cal) + '</span></summary><div class="calm"><a href="' + web + '">' + T.calA + '</a><a target="_blank" rel="noopener" href="https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(web) + '">' + T.calG + '</a><a href="' + feed + '" download>' + T.calF + '</a><small>' + T.calN + '</small></div>';
