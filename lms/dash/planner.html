@@ -46,6 +46,18 @@
   .cell .who{color:var(--ink2);} .cell button{margin-top:auto;align-self:flex-start;}
   .chip{display:block;border-left:4px solid var(--s1);background:var(--card);border-radius:6px;padding:3px 6px;margin:2px 0;font-size:11.5px;cursor:pointer;}
   .chip.bad{box-shadow:inset 0 0 0 1.5px var(--crit);}
+  /* automatic timetable */
+  .flow{margin:0 0 12px;padding-left:22px;font-size:13px;line-height:1.55;} .flow li.done{color:var(--muted);} .flow li.done::marker{color:var(--good);} .flow li.cur{font-weight:700;}
+  .flow li .st{margin-left:6px;}
+  .chip .pin{float:right;margin:0 0 0 6px;border:1px solid var(--line);background:var(--raised);color:var(--ink2);border-radius:999px;font-size:10.5px;font-weight:700;padding:0 7px;cursor:pointer;line-height:17px;}
+  .chip.pinned{border-left-style:double;border-left-width:6px;} .chip.pinned .pin{background:var(--pill);border-color:var(--pill);color:#fff;}
+  .chip.moved{box-shadow:inset 0 0 0 1.5px var(--warn);}
+  .chip .tch{display:block;color:var(--ink2);}
+  #aRT{min-width:640px;} #aChgT{min-width:520px;}
+  .opts{display:flex;gap:6px;align-items:flex-start;font-size:13px;color:var(--ink2);margin:4px 0 0;}
+  .msgs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;} .msg{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--raised);font-size:12.5px;line-height:1.5;min-width:0;}
+  .msg h4{margin:0 0 4px;font-size:13px;} .msg ul{margin:4px 0 0;padding-left:18px;}
+  @media(max-width:760px){.msgs{grid-template-columns:minmax(0,1fr);}}
   @media(max-width:760px){.grid7,.grid7.we{grid-template-columns:minmax(0,1fr);} .gh.blank,.gh.day{display:none;} .gh.mob{display:block;} .tabs{width:auto;}}
 </style>
 </head>
@@ -57,7 +69,7 @@
   </div>
   <div class="bar">
     <nav class="tabs" id="views" aria-label="Choose a view" style="margin:0">
-      <button data-v="cls" class="on">Classes and next steps</button><button data-v="find">Find a time</button><button data-v="tt">Timetable</button><button data-v="dl">Deadlines</button>
+      <button data-v="cls" class="on">Classes and next steps</button><button data-v="find">Find a time</button><button data-v="tt">Timetable</button><button data-v="dl">Deadlines</button><button data-v="auto">Automatic timetable</button>
     </nav>
     <button class="btn" id="bReset" type="button">Start again from today’s state</button>
     <a class="btn" href="programme.html" style="text-decoration:none">Back to the programme</a>
@@ -97,12 +109,40 @@
       <div class="tw"><table class="t" id="dlT"></table></div></div>
   </section>
 
+  <section data-view="auto" hidden>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Let the computer propose the whole timetable</h2><span class="note" id="aNote"></span></div>
+      <p class="lead">Placing classes one at a time means going back every time a later class does not fit, and asking the same teachers again. Here the computer looks at every class of the term at once. It uses three things collected once: the times each teacher marked as available, the students who take each class (from their study plans), and the rooms. It proposes a timetable in which no student of a cohort has two classes at once, no teacher or room is booked twice, and no teacher teaches at a time they marked as not free. You check the proposal, keep what you like, and ask each teacher only once.</p>
+      <ol class="flow" id="aFlow"></ol>
+      <div class="bar" style="margin:0 0 6px" id="aBtns"></div>
+      <label class="opts"><input type="checkbox" id="aOver"> <span>Let the computer give a class to a teacher who has no contract hours left. Tick this only if the director agrees to pay the extra hours.</span></label>
+    </div>
+    <div id="aRes" hidden>
+      <div class="g c4" id="aTiles" style="margin-bottom:14px"></div>
+      <div class="card" style="margin-bottom:14px" id="aChgC"><div class="ch"><h2>What changed since the previous proposal</h2><span class="note" id="aChgN"></span></div><div class="tw"><table class="t" id="aChgT"></table></div></div>
+      <div class="card" style="margin-bottom:14px" id="aUnC"><div class="ch"><h2>Classes the computer could not place</h2><span class="note">place them by hand in “Classes and next steps”, or change what blocks them and solve again</span></div><ul class="acts" id="aUn"></ul></div>
+      <div class="card" style="margin-bottom:14px"><div class="ch"><h2>The proposed week of a full-time student</h2><span class="note" id="aWN"></span></div>
+        <p class="lead">Each box is one class with its room and teacher. Click a class to read why the computer put it there. Press <b>Pin</b> on a class to keep it where it is for certain. “Solve again” never moves a pinned class, and moves the other classes only when that makes the timetable better. An amber edge marks a class that moved in the last solve.</p>
+        <div id="aW"></div></div>
+      <div class="g c2" style="margin-bottom:14px">
+        <div class="card"><div class="ch"><h2>Proposed teaching weekends</h2><span class="note">Executive MBA, every other week</span></div><div id="aE"></div></div>
+        <div class="card"><div class="ch"><h2>Proposed block weeks</h2><span class="note">residencies</span></div><div id="aB"></div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px" id="aRoundC" hidden><div class="ch"><h2>Ask each teacher once</h2><span class="note" id="aRN"></span></div>
+      <p class="lead">Each teacher receives a draft with only their own classes: the time, the room and the group. They answer once: they accept, or they object and give a reason. Every accepted class is then fixed, and the computer moves only the classes with an objection, to a time the teacher can take. Nobody is asked twice. In this demo the answers are simulated; nothing is sent.</p>
+      <div class="bar" id="aRB" style="margin:0 0 10px"></div>
+      <div class="tw"><table class="t" id="aRT"></table></div></div>
+    <div class="card" id="aPubC" hidden><div class="ch"><h2>What the students and teachers receive</h2><span class="note" id="aPN"></span></div><div id="aPub"></div></div>
+  </section>
+
+  <dialog class="cc" id="dlgA"></dialog>
   <dialog class="cc" id="dlg"></dialog>
   <p class="foot" id="foot"></p>
 </main>
 <script src="data.js"></script>
 <script src="charts.js"></script>
 <script src="shell.js"></script>
+<script src="timetable-solver.js"></script>
 <script>
 (function () {
   const { S, PC, esc, st } = Dash;
@@ -154,10 +194,10 @@
     const V = VIS();
     document.getElementById('sub').textContent = `${P.term.label} · ${PROG === 'all' ? 'all programmes' : S.P[PROG].name} · ${pl(V.length, 'class')} · the term starts in ${days(P.term.start)} days`;
     document.getElementById('progs').innerHTML = `<button data-p="all" class="${PROG === 'all' ? 'on' : ''}">All</button>` + S.programs.map(p => `<button data-p="${p.id}" class="${p.id === PROG ? 'on' : ''}"><i class="key" style="background:${PC[p.id]}"></i>${esc(p.short)}</button>`).join('');
-    ({ cls: drawClasses, find: drawFinder, tt: drawTT, dl: drawDL })[VIEW]();
+    ({ cls: drawClasses, find: drawFinder, tt: drawTT, dl: drawDL, auto: drawAuto })[VIEW]();
   }
   document.getElementById('progs').onclick = e => { const b = e.target.closest('button'); if (!b) return; PROG = b.dataset.p; history.replaceState(null, '', (PROG === 'all' ? location.pathname : '?p=' + PROG) + (VIEW === 'cls' ? '' : '#' + VIEW)); render(); };
-  let VIEW = ['cls', 'find', 'tt', 'dl'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'cls';
+  let VIEW = ['cls', 'find', 'tt', 'dl', 'auto'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'cls';
   function showView(v) { VIEW = v; document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('section[data-view]').forEach(x => x.hidden = x.dataset.view !== v);
     history.replaceState(null, '', location.search + (v === 'cls' ? '' : '#' + v)); render(); }
   document.getElementById('views').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.v); };
@@ -309,7 +349,179 @@
       V.map(k => `<tr class="click" data-open="${k.id}"><td><i class="key" style="background:${PC[k.prog]}"></i>${esc(cname(k))}</td>${STEPS.map(x => { const z = state(k, x); return `<td class="c">${z === 'done' ? '<span class="ok">✓</span>' : `<span class="${z === 'late' ? 'lt' : z === 'soon' ? 'sn' : 'why'}">${dt(x.due)}</span>`}</td>`; }).join('')}</tr>`).join('');
   }
 
-  document.getElementById('bReset').onclick = () => { if (!confirm('Throw away the changes made in this browser and start again from the state of 15 November?')) return; ST = clone(P.seed); render(); };
+  document.getElementById('bReset').onclick = () => { if (!confirm('Throw away the changes made in this browser and start again from the state of 15 November?')) return; ST = clone(P.seed); AUTO = freshAuto(); saveAuto(); render(); };
+  /* ================= AUTOMATIC TIMETABLE (16 Nov 2026) =================
+     collect once → the computer proposes the whole timetable (timetable-solver.js) → the manager pins and
+     solves again → apply → ONE round with the teachers (accept, or object with a reason) → re-solve with every
+     accepted class pinned → publish. Kept in localStorage dash_planner_auto; the classes themselves in dash_planner. */
+  const AKEY = 'dash_planner_auto', SOLVER = window.TimetableSolver;
+  function freshAuto() { return { seed: 1, runs: 0, pins: {}, prop: null, prev: null, over: false, applied: false, round: null, resolved: false, published: null }; }
+  let AUTO; try { AUTO = JSON.parse(localStorage.getItem(AKEY) || 'null'); } catch (e) {} if (!AUTO || typeof AUTO !== 'object' || !AUTO.pins) AUTO = freshAuto();
+  function saveAuto() { try { localStorage.setItem(AKEY, JSON.stringify(AUTO)); } catch (e) {} }
+  const hs = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
+  const MODE_OF = {}; P.slots.weekly.forEach(s => MODE_OF[s.id] = 'weekly'); P.slots.weekend.forEach(s => MODE_OF[s.id] = 'weekend'); P.slots.block.forEach(s => MODE_OF[s.id] = 'block');
+  const objections = () => AUTO.round ? Object.entries(AUTO.round.answers).filter(([, a]) => a.answer === 'object').map(([t, a]) => ({ teacher: t, slot: a.slot, reason: a.reason, classId: a.classId })) : [];
+  /* the planner's state → the solver's input */
+  function solverInput(pinIds) {
+    const fixed = {}, obj = objections();
+    const classes = P.classes.map(k => { const s = ST[k.id], keep = !!s.prof && (s.profStatus === 'accepted' || s.profStatus === 'invited');
+      if (keep) fixed[s.prof] = (fixed[s.prof] || 0) + k.hours;
+      const a = AUTO.prop && AUTO.prop.assignments[k.id], pin = pinIds ? pinIds.has(k.id) : AUTO.pins[k.id];
+      return { id: k.id, name: cname(k), mode: k.mode, size: k.size, lab: k.lab, hours: k.hours, students: k.students, retakers: k.retakeIds,
+        teacher: keep ? s.prof : null, candidates: k.cand.filter(f => !(s.profStatus === 'declined' && f === s.prof)),
+        pinned: pin && a ? { slot: a.slot, room: a.room, teacher: a.teacher } : {}, prefer: a ? { slot: a.slot, room: a.room, teacher: a.teacher } : null }; });
+    const teachers = S.faculty.map(f => { const av = Object.assign({}, P.avail[f.id]); obj.filter(o => o.teacher === f.id).forEach(o => av[o.slot] = 'n');
+      return { id: f.id, name: f.name, avail: av, maxPerDay: 2, maxHours: AUTO.over ? 1e9 : Math.max(f.contractHours, fixed[f.id] || 0) }; });
+    return { slots: ALLSLOTS.map(s => ({ id: s.id, mode: MODE_OF[s.id], day: s.day, label: slotTxt(s.id) })), rooms: P.rooms.map(r => ({ id: r.id, cap: r.cap, lab: !!r.lab, blocked: [] })),
+      teachers, classes, weights: { ifNeeded: 3, retakerClash: 4, teacherSameDay: 1, spread: 1.5, roomFit: 0.4, teacherChoice: 0.6, keep: 1 }, seed: AUTO.seed };
+  }
+  function runSolve(pinIds) {
+    const r = SOLVER.solve(solverInput(pinIds));
+    AUTO.prev = AUTO.prop ? { assignments: AUTO.prop.assignments, unplaced: AUTO.prop.unplaced.map(u => u.classId) } : null;
+    AUTO.prop = r; AUTO.runs++;
+    Object.keys(AUTO.pins).forEach(id => { if (!r.assignments[id]) delete AUTO.pins[id]; });
+  }
+  function applyProp() {
+    const r = AUTO.prop;
+    P.classes.forEach(k => { const s = ST[k.id], a = r.assignments[k.id];
+      if (!a) { if (s.slot || s.room) Object.assign(s, { slot: null, room: null, assess: false, tell: false, valid: false }); return; }
+      if (s.slot !== a.slot) Object.assign(s, { assess: false, tell: false, valid: false });
+      s.slot = a.slot; s.room = a.room;
+      if (s.prof !== a.teacher || !['accepted', 'invited'].includes(s.profStatus)) Object.assign(s, { prof: a.teacher, profStatus: 'invited', profAt: TODAY, syl: 'none', valid: false }); });
+    AUTO.applied = true;
+  }
+  /* the confirmation round, simulated: most teachers accept; two object to one of their times, with a reason */
+  function sendDrafts() {
+    const r = AUTO.prop, by = {};
+    Object.entries(r.assignments).forEach(([id, a]) => (by[a.teacher] = by[a.teacher] || []).push(id));
+    const order = Object.keys(by).sort((a, b) => hs(a + 'draft') - hs(b + 'draft'));
+    /* the demo's two objections fall on classes that can move: each is tried against everything else pinned */
+    const firstWeekly = t => by[t].filter(id => MODE_OF[r.assignments[id].slot] === 'weekly').sort()[0];
+    const objectors = [];
+    for (const t of order) { if (objectors.length >= 2) break; const id = firstWeekly(t); if (!id) continue;
+      const inp = solverInput(new Set(Object.keys(r.assignments).filter(x => x !== id && !objectors.some(o => o.id === x))));
+      inp.teachers.find(x => x.id === t).avail[r.assignments[id].slot] = 'n'; objectors.forEach(o => inp.teachers.find(x => x.id === o.t).avail[r.assignments[o.id].slot] = 'n');
+      inp.iterations = 3000; const tr = SOLVER.solve(inp); if (tr.unplaced.length <= r.unplaced.length) objectors.push({ t, id }); }
+    const WHY = ['I teach at another school on %s.', 'I have a standing meeting with my employer on %s.', 'I look after my children on %s; any other time this term works for me.'];
+    const answers = {};
+    order.forEach(t => { const ids = by[t].slice().sort((a, b) => ALLSLOTS.findIndex(x => x.id === r.assignments[a].slot) - ALLSLOTS.findIndex(x => x.id === r.assignments[b].slot));
+      const ob = objectors.find(o => o.t === t);
+      if (ob) { const id = ob.id, sl = SL(r.assignments[id].slot);
+        answers[t] = { answer: 'object', classId: id, slot: sl.id, classes: ids, reason: WHY[Math.floor(hs(t + 'why') * WHY.length)].replace('%s', `${DAYN[sl.day]} ${sl.part}s`) }; }
+      else { answers[t] = { answer: 'accept', classes: ids }; ids.forEach(id => Object.assign(ST[id], { prof: t, profStatus: 'accepted', profAt: TODAY })); } });
+    AUTO.round = { sent: TODAY, answers }; AUTO.resolved = false;
+  }
+  function resolveObjections() {
+    const obj = objections(), keepIds = new Set(Object.keys(AUTO.prop.assignments).filter(id => !obj.some(o => o.classId === id || (AUTO.prop.assignments[id].teacher === o.teacher && AUTO.prop.assignments[id].slot === o.slot))));
+    const before = AUTO.prop.assignments; runSolve(keepIds); applyProp(); AUTO.resolved = true;
+    AUTO.round.moved = obj.map(o => ({ classId: o.classId, from: before[o.classId] && before[o.classId].slot, to: AUTO.prop.assignments[o.classId] ? AUTO.prop.assignments[o.classId].slot : null }));
+  }
+  function publish() {
+    Object.entries(AUTO.prop.assignments).forEach(([id, a]) => Object.assign(ST[id], { slot: a.slot, room: a.room, prof: a.teacher, profStatus: 'accepted', profAt: ST[id].profAt || TODAY, ttPublished: TODAY }));
+    AUTO.published = { at: TODAY };
+  }
+  const phase = () => !AUTO.prop ? 0 : !AUTO.applied ? 1 : !AUTO.round ? 2 : !AUTO.resolved ? 3 : !AUTO.published ? 4 : 5;
+  function drawAuto() {
+    const ph = phase(), R = AUTO.prop, V = VIS(), N = P.classes.length;
+    document.getElementById('aNote').textContent = `${pl(N, 'class')} of every programme, planned together because they share teachers and rooms`;
+    const FL = ['The computer proposes a time, a room and a teacher for every class of the term.', 'You check the proposal and pin the classes you want to keep. “Solve again” moves only the classes that are not pinned.',
+      'You apply the proposal to the planner. The times and rooms go into each class; a teacher the computer chose is marked as invited, not as accepted.',
+      'Each teacher receives a draft of their own classes once and accepts, or objects and gives a reason.', 'The computer moves only the classes with an objection, and you publish the timetable to students and teachers.'];
+    const doneN = [ph >= 1, ph >= 2, ph >= 2, ph >= 3, ph >= 5], curI = doneN.indexOf(false);
+    document.getElementById('aFlow').innerHTML = FL.map((t, i) => `<li class="${doneN[i] ? 'done' : i === curI ? 'cur' : ''}">${esc(t)}${doneN[i] ? st('good', 'done') : i === curI ? st('warn', 'next') : ''}</li>`).join('');
+    const B = (id, label, primary, dis) => `<button class="btn ${primary ? 'primary' : ''}" id="${id}" type="button" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
+    document.getElementById('aBtns').innerHTML = (ph === 0 ? B('aGo', 'Propose a timetable', true) : '') + (ph === 1 || ph === 2 ? B('aAgain', 'Solve again, keeping the pinned classes', false) + B('aApply', ph === 2 ? 'The planner holds this proposal' : 'Apply to the planner', ph === 1, ph === 2) : '') +
+      (ph > 0 ? B('aReset', 'Start the automatic timetable again', false) : '') + (R ? `<span class="why">Worked out in ${R.stats.ms < 1 ? 'under 1' : Math.round(R.stats.ms)} ms after ${R.stats.iterations.toLocaleString('en-GB')} tries · proposal ${AUTO.runs}</span>` : '');
+    const ov = document.getElementById('aOver'); ov.checked = !!AUTO.over; ov.disabled = ph >= 3;
+    document.getElementById('aRes').hidden = !R;
+    document.getElementById('aRoundC').hidden = ph < 2; document.getElementById('aPubC').hidden = ph < 5;
+    if (!R) return;
+    /* tiles */
+    const c = R.score.counts, tM = [...new Set(Object.values(R.assignments).filter(a => (solverAvail(a.teacher, a.slot)) === 'm').map(a => a.teacher))];
+    const nowClash = new Set(); P.classes.forEach(k => { const s = ST[k.id]; if (s.slot) clashAt(k, s.slot).forEach(x => nowClash.add(x.id)); });
+    const off = Object.values(R.assignments).filter(a => a.room === SOLVER.OFF).length;
+    document.getElementById('aTiles').innerHTML = Dash.tile({ lab: 'Classes the computer placed', val: `${c.placed} of ${N}`, note: R.unplaced.length ? `${pl(R.unplaced.length, 'class')} could not be placed; the reasons are below` : 'every class has a time, a room and a teacher' }) +
+      Dash.tile({ lab: 'Students with two classes at once', val: String(c.studentsWithClash), note: `${ph >= 2 ? 'the planner now has' : 'the planner has'} ${nowClash.size}; only a student retaking a course can be left with one` }) +
+      Dash.tile({ lab: 'Teachers placed in an “if needed” hour', val: String(tM.length), note: tM.length ? tM.slice(0, 3).map(nm).join(', ') + (tM.length > 3 ? ` and ${tM.length - 3} more` : '') : 'every teacher teaches at a time they marked as available' }) +
+      Dash.tile({ lab: 'Rooms the timetable uses', val: `${c.roomsUsed} of ${P.rooms.length}`, note: `${off ? pl(off, 'class') + ' off campus · ' : ''}${c.teacherDays} teaching days in all` });
+    /* what changed */
+    const prev = AUTO.prev, moved = new Set(), rows = [];
+    if (prev) P.classes.forEach(k => { const a = prev.assignments[k.id], b = R.assignments[k.id]; if (!a && !b) return; const w = [];
+      if (!a) w.push('placed now'); else if (!b) w.push('not placed any more');
+      else { if (a.slot !== b.slot) w.push(`moved from ${slotTxt(a.slot)} to ${slotTxt(b.slot)}`); if (a.room !== b.room) w.push(`room ${a.room} → ${b.room}`); if (a.teacher !== b.teacher) w.push(`teacher ${nm(a.teacher)} → ${nm(b.teacher)}`); }
+      if (w.length) { moved.add(k.id); rows.push(`<tr><td><i class="key" style="background:${PC[k.prog]}"></i>${esc(cname(k))}</td><td>${esc(w.join('; '))}</td></tr>`); } });
+    document.getElementById('aChgC').hidden = !prev;
+    document.getElementById('aChgN').textContent = prev ? pl(rows.length, 'class') + ' changed' : '';
+    document.getElementById('aChgT').innerHTML = rows.length ? '<tr><th>Class</th><th>What changed</th></tr>' + rows.join('') : '<tr><td class="empty">Nothing changed: with these pins, the computer found the same timetable again.</td></tr>';
+    /* unplaced */
+    document.getElementById('aUnC').hidden = !R.unplaced.length;
+    document.getElementById('aUn').innerHTML = R.unplaced.map(u => { const k = P.classes.find(x => x.id === u.classId);
+      return `<li>${st('crit', 'not placed')}<div><div class="w">${esc(cname(k))} <span class="why">${esc(S.P[k.prog].short)} · ${k.size} students${k.lab ? ' · needs computers' : ''}</span></div><div class="d">${esc(u.reasons[0])}</div>${u.reasons.slice(1).map(x => `<div class="d" style="margin-top:3px">${esc(x)}</div>`).join('')}</div><a class="go" href="#" data-open="${k.id}">Open →</a></li>`; }).join('');
+    /* grids */
+    const canPin = ph <= 2;
+    const chip = k => { const a = R.assignments[k.id], pin = AUTO.pins[k.id];
+      return `<span class="chip ${pin ? 'pinned' : ''} ${moved.has(k.id) ? 'moved' : ''}" data-why="${k.id}" style="border-left-color:${PC[k.prog]}">${canPin ? `<button class="pin" data-pin="${k.id}" type="button" aria-pressed="${pin ? 'true' : 'false'}" title="${pin ? 'Unpin: let the computer move this class' : 'Pin: keep this class here when solving again'}">${pin ? 'Pinned' : 'Pin'}</button>` : ''}${esc(cname(k))}<span class="tch">${esc(a.room)} · ${esc(nm(a.teacher))}</span></span>`; };
+    const at = id => V.filter(k => R.assignments[k.id] && R.assignments[k.id].slot === id);
+    const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    document.getElementById('aWN').textContent = `${PROG === 'all' ? 'all programmes' : S.P[PROG].name} · ${pl(Object.keys(AUTO.pins).length, 'class')} pinned`;
+    document.getElementById('aW').innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + ['am', 'pm'].map(pt => `<span class="gh row">${pt === 'am' ? 'Morning' : 'Afternoon'}</span>` + D.map(d => `<div class="cell"><span class="gh mob" style="padding:0">${DAYN[d]} ${pt === 'am' ? '08:30' : '13:30'}</span>${at(d + '-' + pt).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('')).join('') + '</div>';
+    document.getElementById('aE').innerHTML = P.slots.weekend.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(slotTxt(sl.id))}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
+    document.getElementById('aB').innerHTML = P.slots.block.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(sl.label)}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
+    drawRound(ph); if (ph === 5) drawPublished();
+  }
+  const solverAvail = (t, sl) => { const o = objections().find(x => x.teacher === t && x.slot === sl); if (o) return 'n'; const v = (P.avail[t] || {})[sl]; return v === 'y' || v === 'n' ? v : 'm'; };
+  function drawRound(ph) {
+    if (ph < 2) return;
+    const R = AUTO.prop, rd = AUTO.round, B = (id, label, primary, dis) => `<button class="btn ${primary ? 'primary' : ''}" id="${id}" type="button" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
+    const by = {}; Object.entries(R.assignments).forEach(([id, a]) => (by[a.teacher] = by[a.teacher] || []).push(id));
+    const T = Object.keys(by).sort((a, b) => nm(a).localeCompare(nm(b)));
+    const nObj = rd ? objections().length : 0;
+    document.getElementById('aRN').textContent = rd ? `${pl(T.length, 'teacher')} asked on ${dt(rd.sent)} · ${T.length - nObj} accepted · ${nObj} objected` : `${pl(T.length, 'teacher')} to ask`;
+    document.getElementById('aRB').innerHTML = !rd ? B('aSend', 'Send each teacher their draft', true) : !AUTO.resolved ? B('aRes2', 'Re-solve around the objections', true) + `<span class="why">Every accepted class stays where it is; only ${pl(nObj, 'class')} with an objection can move.</span>`
+      : !AUTO.published ? B('aPubB', 'Publish the timetable', true) + `<span class="why">Publishing sends every student and teacher their own timetable and marks the time and the room of each class as done.</span>` : `<span class="ok">Published on ${dt(AUTO.published.at)}.</span>`;
+    const mv = (rd && rd.moved) || [];
+    document.getElementById('aRT').innerHTML = '<tr><th>Teacher</th><th>Classes in the draft</th><th>Answer</th><th>Reason given</th></tr>' + T.map(t => { const a = rd && rd.answers[t];
+      const cls = by[t].map(id => { const k = P.classes.find(x => x.id === id), x = R.assignments[id], m = mv.find(z => z.classId === id);
+        return `<div>${esc(cname(k))} · ${esc(slotTxt(x.slot))} · ${esc(x.room)}${m && m.from && m.to ? ` <span class="sn">moved from ${esc(slotTxt(m.from))}</span>` : m && !m.to ? ' <span class="lt">no other time works; place it by hand</span>' : ''}</div>`; }).join('');
+      const ans = !a ? '<span class="why">not sent yet</span>' : a.answer === 'accept' ? st('good', 'accepted') : AUTO.resolved ? st('warn', 'objected; class moved') : st('crit', 'objected');
+      return `<tr><td>${esc(nm(t))}<div class="why">${(F(t) || {}).type === 'Core faculty' ? 'core faculty' : 'adjunct'}</div></td><td>${cls}</td><td>${ans}</td><td>${a && a.reason ? esc(a.reason) + `<div class="why">refuses ${esc(slotTxt(a.slot))} for ${esc(cname(P.classes.find(x => x.id === a.classId)))}</div>` : ''}</td></tr>`; }).join('');
+  }
+  function drawPublished() {
+    const R = AUTO.prop, ids = Object.keys(R.assignments), stu = new Set(), T = new Set(ids.map(id => R.assignments[id].teacher));
+    let newc = 0; ids.forEach(id => { const k = P.classes.find(x => x.id === id); k.students.forEach(s => stu.add(s)); newc += k.newcomers; });
+    document.getElementById('aPN').textContent = `published on ${dt(AUTO.published.at)}`;
+    const first = (P.classes.find(k => VIS().includes(k) && R.assignments[k.id] && k.students.length) || P.classes.find(k => R.assignments[k.id] && k.students.length));
+    const sid = first.students[0], mine = P.classes.filter(k => k.students.includes(sid) && R.assignments[k.id]);
+    const tid = R.assignments[first.id].teacher, theirs = ids.filter(id => R.assignments[id].teacher === tid).map(id => P.classes.find(x => x.id === id));
+    const line = k => { const a = R.assignments[k.id]; return `<li>${esc(cname(k))}: ${esc(slotTxt(a.slot))}, ${a.room === SOLVER.OFF ? 'off campus' : 'room ' + esc(a.room)}, with ${esc(nm(a.teacher))}</li>`; };
+    document.getElementById('aPub').innerHTML = `<p class="lead">${pl(stu.size, 'enrolled student')} receive their own week on the platform and in their calendar; the ${newc} newcomers of the February intake receive theirs when they enrol. ${pl(T.size, 'teacher')} receive the list of their classes. The time and the room of ${pl(ids.length, 'class')} are now done in “Classes and next steps”.${R.unplaced.length ? ` ${pl(R.unplaced.length, 'class')} still ${R.unplaced.length === 1 ? 'has' : 'have'} no time and must be placed by hand.` : ''}</p>
+      <div class="msgs"><div class="msg"><h4>What ${esc(sname(sid))}, a student, receives</h4>Your timetable for ${esc(P.term.label)}, from ${dt(P.term.start)} 2027:<ul>${mine.map(line).join('')}</ul></div>
+      <div class="msg"><h4>What ${esc(nm(tid))}, a teacher, receives</h4>Your classes for ${esc(P.term.label)}:<ul>${theirs.map(line).join('')}</ul>Please send the syllabus of each class by ${dt(STEPS[4].due)} 2027.</div></div>`;
+  }
+  /* the explanation of one class */
+  const dlgA = document.getElementById('dlgA');
+  function openWhy(id) {
+    const R = AUTO.prop, k = P.classes.find(x => x.id === id), a = R.assignments[id], cl = R.clashes.filter(x => x.classes.includes(id));
+    dlgA.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:start"><div><h3 style="margin:0">${esc(cname(k))}</h3><div class="why" style="margin-top:3px">${esc(S.P[k.prog].name)} · ${k.size} students · ${esc(slotTxt(a.slot))} · ${a.room === SOLVER.OFF ? 'off campus' : 'room ' + esc(a.room)} · ${esc(nm(a.teacher))}</div></div><button class="btn" data-x type="button">Close</button></div>
+      <h4 style="margin:14px 0 4px;font-size:14px">Why the computer put the class here</h4><ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.55">${(R.explain[id] || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      ${cl.length ? `<h4 style="margin:14px 0 4px;font-size:14px">Students left with two classes at once</h4><ul style="margin:0;padding-left:20px;font-size:13px">${cl.map(x => `<li>${esc(sname(x.student))} also has ${esc(x.classes.filter(c => c !== id).map(c => cname(P.classes.find(z => z.id === c))).join(' and '))}</li>`).join('')}</ul>` : ''}
+      <div class="bar" style="margin:16px 0 0">${phase() <= 2 ? `<button class="btn primary" data-pin="${id}" type="button">${AUTO.pins[id] ? 'Unpin: let the computer move it' : 'Pin: keep it here when solving again'}</button>` : ''}<button class="btn" data-go="${id}" type="button">Open the nine steps of this class</button></div>`;
+    if (!dlgA.open) dlgA.showModal();
+  }
+  dlgA.addEventListener('click', e => { if (e.target.closest('[data-x]')) dlgA.close(); const g = e.target.closest('[data-go]'); if (g) { dlgA.close(); openClass(g.dataset.go); } });
+  document.querySelector('section[data-view="auto"]').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    const id = b && b.id;
+    const act = { aGo: () => runSolve(), aAgain: () => { AUTO.seed++; runSolve(); AUTO.applied = false; },
+      aApply: () => { if (!confirm('Apply the proposal to the planner? Each class gets the proposed time and room. A teacher the computer chose is marked as invited. Classes the computer could not place lose any time they had.')) return false; applyProp(); },
+      aReset: () => { if (!confirm('Throw away the proposals, the pins and the teachers’ answers? What was already applied to the planner stays; use “Start again from today’s state” to undo that too.')) return false; AUTO = freshAuto(); },
+      aSend: () => sendDrafts(), aRes2: () => resolveObjections(), aPubB: () => { if (!confirm('Publish the timetable to every student and teacher?')) return false; publish(); } }[id];
+    if (act) { if (act() === false) return; saveAuto(); render(); return; }
+    const p = e.target.closest('[data-pin]'); if (p) { e.stopPropagation(); const k = p.dataset.pin; if (AUTO.pins[k]) delete AUTO.pins[k]; else AUTO.pins[k] = true; saveAuto(); render(); return; }
+    const w = e.target.closest('[data-why]'); if (w) openWhy(w.dataset.why);
+  });
+  dlgA.addEventListener('click', e => { const p = e.target.closest('[data-pin]'); if (!p) return; const k = p.dataset.pin; if (AUTO.pins[k]) delete AUTO.pins[k]; else AUTO.pins[k] = true; saveAuto(); render(); openWhy(k); });
+  document.getElementById('aOver').onchange = e => { AUTO.over = e.target.checked; saveAuto(); render(); };
   showView(VIEW);
 })();
 </script>
