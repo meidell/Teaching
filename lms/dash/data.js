@@ -1163,6 +1163,139 @@
       it.hours = it.type === 'course' || it.type === 'elective' ? Math.round(it.ects * 6) : it.type === 'thesis' ? Math.round(it.ects) : 12;
     }));
   });
+  /* =====================================================================
+     PROGRAMME DESIGN TOOLS (15 Nov 2026): the data behind the builder's three design tabs.
+     (1) `skills`: what employers ask for. A fixed catalogue of skills; for each programme, the share
+     of job ads that name the skill now and two years ago, in an INVENTED sample of ads for the jobs that
+     programme's graduates take. A skill is "taught" by a course whose subject area is in `areas` or
+     whose title matches `kw` — computed live from the draft, so editing a course moves the radar.
+     (2) `competitors`: the programmes an applicant compares, INVENTED schools, total fee in CHF,
+     length, format, a published outcome, and the features each offers (`features` catalogue; the
+     ones marked `derive` are read from our draft, the others are switched on or off by the manager).
+     (3) the learning experience: each course's teaching formats and assessment weights (defaults
+     follow the subject area and type), signature experiences per year, and the rules that flag a
+     dull stretch. No random draws.
+     ===================================================================== */
+  const DESIGN_FORMATS = [
+    { id: 'lecture', name: 'Lectures' }, { id: 'case', name: 'Case discussions' }, { id: 'lab', name: 'Computer or data lab' },
+    { id: 'live', name: 'Project for a real company' }, { id: 'field', name: 'Field visit or trip' }, { id: 'sim', name: 'Simulation or business game' },
+    { id: 'group', name: 'Group work' }, { id: 'solo', name: 'Individual research' },
+  ];
+  const DESIGN_ASSESS = [
+    { id: 'exam', name: 'Written exam' }, { id: 'project', name: 'Project or report' }, { id: 'present', name: 'Presentation' },
+    { id: 'essay', name: 'Essay or paper' }, { id: 'part', name: 'Participation' },
+  ];
+  function designDefaults(it, pid) {
+    const a = it.area, t = it.type;
+    let f, w;
+    if (t === 'thesis') { f = ['solo']; w = { essay: 80, present: 20 }; }
+    else if (t === 'milestone') { f = ['solo']; w = { essay: 70, present: 30 }; }
+    else if (t === 'internship') { f = ['live']; w = { project: 80, present: 20 }; }
+    else if (t === 'project') { f = ['live', 'group']; w = { project: 70, present: 30 }; }
+    else if (/residency/i.test(it.title)) { f = ['field', 'group']; w = { project: 50, present: 30, part: 20 }; }
+    else if (pid === 'dba') { f = ['lecture', 'solo']; w = { essay: 80, part: 20 }; }
+    else if (a === 'Entrepreneurship' && /Lab/.test(it.title)) { f = ['live', 'group']; w = { project: 60, present: 30, part: 10 }; }
+    else if (['Statistics', 'Data & AI'].includes(a)) { f = ['lecture', 'lab']; w = { exam: 70, project: 20, part: 10 }; }
+    else if (['Finance', 'Accounting', 'Economics'].includes(a)) { f = ['lecture', 'case']; w = { exam: 70, project: 20, part: 10 }; }
+    else if (['Strategy', 'Marketing', 'Leadership & HR'].includes(a)) { f = ['lecture', 'case', 'group']; w = { exam: 40, project: 30, present: 20, part: 10 }; }
+    else if (a === 'Elective') { f = ['lecture', 'case']; w = { exam: 60, project: 30, part: 10 }; }
+    else { f = ['lecture', 'case']; w = { exam: 60, project: 30, part: 10 }; }
+    if (pid === 'emba' && t === 'course' && !f.includes('group')) f = f.concat('group');
+    return { formats: f, assess: w };
+  }
+  const assessLabel = w => DESIGN_ASSESS.filter(x => w[x.id]).map(x => `${x.name.toLowerCase()} ${w[x.id]} %`).join(', ');
+  Object.entries(curriculum).forEach(([pid, sems]) => sems.forEach(m => m.items.forEach(it => {
+    const d = designDefaults(it, pid); it.formats = d.formats; it.assess = d.assess; it.assessment = assessLabel(d.assess); })));
+
+  const SK = (id, name, areas, kw, d) => ({ id, name, areas, kw, demand: d });
+  const programmeDesign = {
+    formats: DESIGN_FORMATS, assessTypes: DESIGN_ASSESS, defaults: designDefaults, assessLabel,
+    rules: { examHeavy: 55, demandHigh: 35, demandLow: 15, tableStakes: 5 },
+    /* demand = [% of ads naming the skill now, % two years ago] per programme */
+    skills: [
+      SK('data', 'Analysing data and building dashboards', ['Data & AI', 'Statistics'], 'Analytics|Data', { bba: [52, 40], msc: [58, 44], emba: [46, 35], dba: [40, 33] }),
+      SK('ai', 'Using AI tools in business work', [], '\\bAI\\b|Artificial|Machine learning|Automation', { bba: [38, 9], msc: [41, 12], emba: [49, 14], dba: [36, 10] }),
+      SK('strategy', 'Writing a strategy and a business case', ['Strategy'], 'Strateg', { bba: [24, 25], msc: [52, 50], emba: [61, 60], dba: [44, 45] }),
+      SK('finance', 'Reading financial statements and valuing a project', ['Finance', 'Accounting'], 'Financ|Accounting', { bba: [45, 47], msc: [47, 49], emba: [55, 54], dba: [30, 31] }),
+      SK('pm', 'Running a project to a budget and a deadline', [], 'Project management|Agile|workplace project', { bba: [41, 38], msc: [45, 43], emba: [39, 40], dba: [15, 16] }),
+      SK('esg', 'Measuring and reporting sustainability (ESG)', ['Sustainability'], 'Sustainab|ESG|Climate|Green', { bba: [27, 14], msc: [38, 21], emba: [34, 19], dba: [29, 17] }),
+      SK('lead', 'Leading a team across cultures', ['Leadership & HR'], 'Leader|Leading', { bba: [22, 23], msc: [33, 34], emba: [58, 57], dba: [41, 40] }),
+      SK('nego', 'Negotiating and managing stakeholders', [], 'Negotiat|Stakeholder|Communication', { bba: [30, 29], msc: [31, 30], emba: [44, 45], dba: [22, 22] }),
+      SK('mkt', 'Understanding customers and selling online', ['Marketing'], 'Marketing|Customer', { bba: [36, 38], msc: [29, 31], emba: [21, 24], dba: [9, 10] }),
+      SK('lang', 'Working in French or German', [], 'French|German|Language', { bba: [39, 38], msc: [36, 35], emba: [18, 19], dba: [7, 7] }),
+      SK('ops', 'Planning operations and supply chains', ['Operations'], 'Operations|Supply', { bba: [25, 27], msc: [22, 20], emba: [26, 28], dba: [8, 9] }),
+      SK('law', 'Applying company law, governance and compliance', ['Law & Ethics'], 'Law|Governance|Compliance', { bba: [17, 18], msc: [13, 19], emba: [23, 22], dba: [12, 12] }),
+      SK('entre', 'Starting and growing a new business', ['Entrepreneurship'], 'Entrepreneur|Venture|Start-up', { bba: [14, 12], msc: [12, 13], emba: [16, 15], dba: [6, 6] }),
+      SK('research', 'Designing and running a research study', ['Research'], 'Research|Methods|Literature', { bba: [6, 6], msc: [9, 9], emba: [5, 5], dba: [62, 60] }),
+    ],
+    adPool: {
+      period: 'November 2024 to October 2026', region: 'Switzerland and the French border regions',
+      bba: { ads: 2140, roles: 'first jobs of bachelor graduates: junior analyst, assistant manager, sales and marketing assistant' },
+      msc: { ads: 1240, roles: 'jobs MSc graduates take: consultant, project manager, business analyst' },
+      emba: { ads: 610, roles: 'senior jobs: director, head of a business unit, general manager' },
+      dba: { ads: 180, roles: 'senior and academic jobs held by doctoral graduates: research director, professor of practice, partner' },
+    },
+    features: [
+      { id: 'internship', name: 'An internship of at least 12 weeks', derive: 'internship' },
+      { id: 'live', name: 'A project for a real company', derive: 'live' },
+      { id: 'trip', name: 'A study trip or residency abroad', derive: 'field' },
+      { id: 'ai', name: 'A course on AI for business', derive: 'skill:ai' },
+      { id: 'esg', name: 'A course on sustainability', derive: 'skill:esg' },
+      { id: 'lang', name: 'Classes in French and in English' },
+      { id: 'exchange', name: 'An exchange semester at a partner school' },
+      { id: 'parttime', name: 'A part-time or evening option' },
+      { id: 'online', name: 'An online option' },
+      { id: 'double', name: 'A double degree with a partner school' },
+      { id: 'coach', name: 'Personal career coaching' },
+      { id: 'io', name: 'Visits and projects with international organisations in Geneva' },
+      { id: 'incub', name: 'A start-up incubator' },
+    ],
+    ourFeatures: { bba: ['lang', 'exchange', 'coach'], msc: ['coach'], emba: ['parttime', 'coach'], dba: ['parttime'], new: ['coach'] },
+    outcome: { bba: 'employed 6 months after graduating', msc: 'employed 6 months after graduating', emba: 'promoted within 2 years', dba: 'graduated within 5 years' },
+    ourOutcome: { bba: 83, msc: 86, emba: 57, dba: 48 },
+    /* fee = total tuition for the whole programme, CHF; out = the outcome above, as published (null = not published) */
+    competitors: {
+      bba: [
+        { name: 'Montbrillant Institute', city: 'Geneva', fee: 99000, months: 36, format: 'Full time', out: 84, f: ['internship', 'exchange', 'coach', 'ai'] },
+        { name: 'Salève Business School', city: 'Geneva', fee: 87000, months: 36, format: 'Full time', out: 80, f: ['internship', 'exchange', 'online', 'coach'] },
+        { name: 'Jorat School of Management', city: 'Lausanne', fee: 78000, months: 36, format: 'Full time', out: 86, f: ['internship', 'exchange', 'lang', 'live', 'incub'] },
+        { name: 'Arve University of Applied Sciences', city: 'Geneva', fee: 3600, months: 36, format: 'Full or part time', out: 88, f: ['internship', 'lang', 'parttime', 'exchange'], pub: true },
+        { name: 'Lyon Confluence School of Management', city: 'Lyon', fee: 42000, months: 36, format: 'Full time', out: 85, f: ['internship', 'exchange', 'double', 'trip', 'esg'] },
+        { name: 'Northbridge Online University', city: 'online', fee: 30000, months: 48, format: 'Online', out: null, f: ['online', 'parttime', 'ai'] },
+      ],
+      msc: [
+        { name: 'Montbrillant Institute', city: 'Geneva', fee: 48000, months: 16, format: 'Full time', out: 87, f: ['internship', 'ai', 'coach', 'io'] },
+        { name: 'Salève Business School', city: 'Geneva', fee: 39500, months: 12, format: 'Full time', out: 82, f: ['live', 'ai', 'esg', 'coach', 'online'] },
+        { name: 'Jorat School of Management', city: 'Lausanne', fee: 31000, months: 18, format: 'Full time', out: 90, f: ['internship', 'live', 'lang', 'double', 'coach'] },
+        { name: 'Arve University of Applied Sciences', city: 'Geneva', fee: 2400, months: 24, format: 'Full or part time', out: 85, f: ['internship', 'lang', 'parttime', 'esg'], pub: true },
+        { name: 'Northbridge Online University', city: 'online', fee: 22000, months: 24, format: 'Online', out: null, f: ['online', 'ai', 'parttime'] },
+        { name: 'Lyon Confluence School of Management', city: 'Lyon', fee: 33000, months: 18, format: 'Full time', out: 91, f: ['internship', 'live', 'trip', 'esg', 'double', 'coach', 'incub'] },
+        { name: 'Rhine Valley Business School', city: 'Basel', fee: 45000, months: 12, format: 'Full time', out: 88, f: ['live', 'ai', 'trip', 'coach'] },
+      ],
+      emba: [
+        { name: 'Montbrillant Institute', city: 'Geneva', fee: 78000, months: 18, format: 'Part time', out: 61, f: ['trip', 'ai', 'coach', 'live', 'parttime'] },
+        { name: 'Rhine Valley Business School', city: 'Basel', fee: 92000, months: 20, format: 'Part time', out: 66, f: ['trip', 'live', 'coach', 'double', 'parttime'] },
+        { name: 'Jorat School of Management', city: 'Lausanne', fee: 49000, months: 24, format: 'Part time', out: 52, f: ['lang', 'live', 'coach', 'parttime'] },
+        { name: 'Northbridge Online University', city: 'online', fee: 28000, months: 24, format: 'Online', out: null, f: ['online', 'ai', 'parttime'] },
+        { name: 'Lyon Confluence School of Management', city: 'Lyon', fee: 58000, months: 18, format: 'Part time', out: 61, f: ['trip', 'esg', 'double', 'live', 'parttime'] },
+        { name: 'Chamonix Mont-Blanc Institute', city: 'Chamonix', fee: 64000, months: 15, format: 'Part time', out: 58, f: ['trip', 'esg', 'coach', 'parttime'] },
+      ],
+      dba: [
+        { name: 'Montbrillant Institute', city: 'Geneva', fee: 75000, months: 48, format: 'Part time', out: 58, f: ['parttime', 'coach'] },
+        { name: 'Northbridge Online University', city: 'online', fee: 45000, months: 48, format: 'Online', out: 41, f: ['online', 'parttime'] },
+        { name: 'Rhine Valley Business School', city: 'Basel', fee: 88000, months: 36, format: 'Part time', out: 63, f: ['parttime', 'trip', 'coach'] },
+        { name: 'Lyon Confluence School of Management', city: 'Lyon', fee: 52000, months: 48, format: 'Part time', out: 55, f: ['parttime', 'double', 'trip'] },
+        { name: 'Jorat School of Management (PhD)', city: 'Lausanne', fee: 0, months: 48, format: 'Full time, salaried', out: 71, f: ['lang'], pub: true },
+      ],
+    },
+    signature: {
+      bba: [{ sem: 4, title: 'Exchange semester at a partner university' }, { sem: 6, title: 'Internship of at least 12 weeks' }],
+      msc: [], emba: [{ sem: 2, title: 'International residency: one week abroad' }],
+      dba: [{ sem: 1, title: 'Residency: research design week in Geneva' }, { sem: 3, title: 'Residency: doctoral colloquium' }, { sem: 5, title: 'Residency: doctoral colloquium' }, { sem: 7, title: 'Public defence' }],
+      new: [],
+    },
+    source: 'All market figures are invented for this demonstration. A real platform would read job ads from a job-posting data provider and competitors from their published programme pages.',
+  };
   const programmeRules = {
     ectsPerSemester: 30, hoursPerEcts: [25, 30], source: 'ECTS in Switzerland: 1 credit = 25 to 30 hours of student work; a full-time semester = 30 credits.',
     levels: [{ id: 'Bachelor', ects: [180], semesters: 6 }, { id: 'Master', ects: [90, 120], semesters: 3 }, { id: 'MBA', ects: [60, 90], semesters: 3 }, { id: 'Doctorate', ects: [180], semesters: 7 }],
@@ -1173,7 +1306,7 @@
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),

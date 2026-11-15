@@ -12,7 +12,11 @@
      and semester ECTS, every goal taught twice and assessed once, prerequisites before the course, the thesis
      last, courses that serve no goal. It shows student workload and teaching cost per semester, and every change
      against the current curriculum (what an accreditation panel asks for). ?p=bba|msc|emba|dba|new.
-     A draft is kept per programme in this browser (localStorage dash_builder_<p>); nothing is sent anywhere. -->
+     A draft is kept per programme in this browser (localStorage dash_builder_<p>); nothing is sent anywhere.
+     Three design tabs (15 Nov 2026, "build 1,2,4"): Skills employers ask for (programmeDesign.skills, demand in
+     invented job ads, coverage computed from the draft), Competitors (invented schools, fees, features; ours
+     derived from the draft plus the manager's switches), Learning experience (formats and assessment weights per
+     course, signature experiences per year, flags for dull stretches). -->
 <style>
   .tabs{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:3px;width:max-content;max-width:100%;}
   .tabs button{border:none;background:none;padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--ink2);}
@@ -54,8 +58,21 @@
   .fg label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:3px;}
   .fg .full{grid-column:1/-1;} .fg .tx{width:100%;}
   .pq{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;max-height:140px;overflow:auto;}
+  .views{margin:0 0 14px;}
+  .fm{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;}
+  .fm label{font-weight:500 !important;color:var(--ink) !important;font-size:12.5px !important;}
+  .aw{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;} .aw input{width:100%;}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--s1);}
+  .dot.ours{background:var(--s2);}
+  tr.ours td{background:var(--raised);font-weight:650;}
+  #cpT td.n{white-space:nowrap;} #skT{min-width:640px;} #cpT{min-width:600px;} #ftT{min-width:720px;} #fmT{min-width:420px;} #lowT{min-width:420px;}
+  .hc{display:inline-block;min-width:22px;border-radius:5px;font-weight:700;font-size:12px;text-align:center;padding:1px 0;}
+  .hc.z{color:var(--muted);border:1px dashed var(--axis);} .hc.p{background:var(--s1);color:#fff;}
+  .sigl{list-style:none;margin:0;padding:0;} .sigl li{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--grid);font-size:13px;flex-wrap:wrap;}
+  .semmix{margin:0 0 12px;} .semmix b{font-size:13px;display:block;margin-bottom:4px;}
+  @media(max-width:640px){.aw{grid-template-columns:repeat(2,minmax(0,1fr));}}
   @media(max-width:640px){.sems{grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;} .fg{grid-template-columns:minmax(0,1fr);} .gl li{grid-template-columns:28px 1fr;} .tabs{width:auto;}}
-  @media print{.bar,.crs .ca,.addc,#gAdd{display:none !important;}}
+  @media print{.bar,.views,.crs .ca,.addc,#gAdd,.noprint{display:none !important;}}
 </style>
 </head>
 <body>
@@ -72,6 +89,11 @@
     <span class="draft" id="draftNote"></span>
   </div>
 
+  <nav class="tabs views" id="views" aria-label="Choose a view">
+    <button data-v="cur" class="on">Curriculum and checks</button><button data-v="skills">Skills employers ask for</button><button data-v="comp">Competitors</button><button data-v="exp">Learning experience</button>
+  </nav>
+
+  <section data-view="cur">
   <div class="card" style="margin-bottom:14px" id="newBox" hidden></div>
 
   <div class="g c21">
@@ -90,6 +112,41 @@
     <div class="card"><div class="ch"><h2>Student workload and teaching cost</h2><span class="note" id="wlNote"></span></div><p class="lead" id="wlLead"></p><div class="tw"><table class="t" id="wlT"></table></div></div>
   </div>
   <div class="card"><div class="ch"><h2>Changes against the current curriculum</h2><span class="note">what the programme committee and the accreditation panel will ask to see</span></div><div class="tw"><table class="t" id="chgT"></table></div></div>
+  </section>
+
+  <section data-view="skills" hidden>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Does the programme teach what employers ask for?</h2><span class="note" id="skNote"></span></div>
+      <p class="lead" id="skLead"></p><div class="g c4" id="skTiles" style="margin:0"></div></div>
+    <div class="g c2">
+      <div class="card"><div class="ch"><h2>Share of job ads that name each skill</h2><span class="note">bar = now · black line = two years ago</span></div><div id="skChart"></div></div>
+      <div class="card"><div class="ch"><h2>Courses that teach no skill employers often ask for</h2><span class="note" id="lowNote"></span></div><p class="lead">A course appears here when every skill it teaches is named in fewer than the threshold share of ads. Research courses, electives and the thesis are left out: they serve the degree, not a job ad. Keep such a course only if a learning goal needs it.</p><div class="tw"><table class="t" id="lowT"></table></div></div>
+    </div>
+    <div class="card"><div class="ch"><h2>Each skill, its demand and the courses that teach it</h2><span class="note">a course teaches a skill through its subject area or its title</span></div><div class="tw"><table class="t" id="skT"></table></div></div>
+  </section>
+
+  <section data-view="comp" hidden>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>How the programme compares with the ones applicants also consider</h2><span class="note" id="cpNote"></span></div>
+      <p class="lead" id="cpLead"></p><div class="g c4" id="cpSum" style="margin:0"></div></div>
+    <div class="g c2">
+      <div class="card"><div class="ch"><h2>Total tuition for the whole programme</h2><span class="note">CHF</span></div><div class="fg noprint" style="margin-bottom:10px"><div><label for="ourFee">Our total fee (CHF), to test a price</label><input class="tx" id="ourFee" type="number" min="0" step="500"></div></div><div id="feeChart"></div></div>
+      <div class="card"><div class="ch"><h2>The programmes side by side</h2><span class="note" id="outNote"></span></div><div class="tw"><table class="t" id="cpT"></table></div></div>
+    </div>
+    <div class="card"><div class="ch"><h2>What each programme offers</h2><span class="note">tick a box in our column to say we offer it</span></div>
+      <p class="lead">"Expected" means at least 60 % of the competitors offer it, so an applicant takes it for granted. "Open space" means one competitor or none offers it: offering it would set the programme apart. Rows marked "from the curriculum" follow the draft: add a course or a format on the other tabs and they change.</p>
+      <div class="tw"><table class="t" id="ftT"></table></div></div>
+  </section>
+
+  <section data-view="exp" hidden>
+    <div class="g c21">
+      <div class="card"><div class="ch"><h2>What the learning experience looks like</h2><span class="note">run on every change</span></div><p class="lead">These flags look for stretches where students only sit exams, never work in a group or never meet a company. Change a course's formats and assessment with ✎ on the curriculum tab.</p><ul class="acts" id="expChecks"></ul></div>
+      <div class="card"><div class="ch"><h2>Signature experiences</h2><span class="note">one each year</span></div><p class="lead">A signature experience is the moment students tell applicants about: a trip, a consulting project, a residency. Each year of the programme should have one.</p><ul class="sigl" id="sigL"></ul>
+        <div class="fg noprint" style="margin-top:10px"><div><label for="sigSem">Semester</label><select class="tx" id="sigSem"></select></div><div><label for="sigT">What students do</label><input class="tx" id="sigT" placeholder="For example: a week in Brussels with the EU institutions"></div></div><button class="btn" id="sigAdd" type="button" style="margin-top:8px">Add the experience</button></div>
+    </div>
+    <div class="g c2">
+      <div class="card"><div class="ch"><h2>How students learn, semester by semester</h2><span class="note">number of courses using each format</span></div><div class="tw"><table class="t" id="fmT"></table></div></div>
+      <div class="card"><div class="ch"><h2>How students are graded, semester by semester</h2><span class="note">share of the semester's grade, weighted by credits</span></div><div id="awMix"></div></div>
+    </div>
+  </section>
 
   <dialog class="cc" id="dlg"></dialog>
   <p class="foot" id="foot"></p>
@@ -101,8 +158,8 @@
 (function () {
   const { S, PC, chf, num, st, esc } = Dash;
   Dash.shell('programme');
-  const RU = S.programmeRules, TYPES = { course: 'Course', elective: 'Elective', thesis: 'Thesis', project: 'Project', internship: 'Internship', milestone: 'Milestone' };
-  const AREAS = ['Finance', 'Accounting', 'Marketing', 'Strategy', 'Economics', 'Data & AI', 'Operations', 'Leadership & HR', 'Law & Ethics', 'Entrepreneurship', 'Statistics', 'Digital Business', 'Research', 'Practice', 'Elective'];
+  const RU = S.programmeRules, DS = S.programmeDesign, TYPES = { course: 'Course', elective: 'Elective', thesis: 'Thesis', project: 'Project', internship: 'Internship', milestone: 'Milestone' };
+  const AREAS = ['Finance', 'Accounting', 'Marketing', 'Strategy', 'Economics', 'Data & AI', 'Operations', 'Leadership & HR', 'Law & Ethics', 'Entrepreneurship', 'Statistics', 'Digital Business', 'Research', 'Practice', 'Sustainability', 'Elective'];
   document.getElementById('foot').textContent = `All names and figures are invented. ${RU.source} A draft is kept in this browser only.`;
   let uid = 0; const nid = () => 'c' + (++uid);
 
@@ -111,11 +168,20 @@
     const P = S.P[pid], goals = S.quality.learningGoals.filter(g => g.prog === pid);
     return { pid, name: P.name, level: P.level, ects: P.ects,
       goals: goals.map(g => ({ text: g.goal, target: g.target })),
-      sems: S.curriculum[pid].map(m => ({ n: m.n, any: !!m.any, items: m.items.map(it => ({ id: nid(), code: it.code, title: it.title, ects: it.ects, type: it.type, area: it.area, goals: it.goals.slice(), prereq: it.prereq.slice(), assessment: it.assessment, hours: it.hours })) })) };
+      sems: S.curriculum[pid].map(m => ({ n: m.n, any: !!m.any, items: m.items.map(it => ({ id: nid(), code: it.code, title: it.title, ects: it.ects, type: it.type, area: it.area, goals: it.goals.slice(), prereq: it.prereq.slice(), assessment: it.assessment, hours: it.hours, formats: it.formats.slice(), assess: Object.assign({}, it.assess) })) })),
+      features: DS.ourFeatures[pid].slice(), signature: DS.signature[pid].map(x => Object.assign({}, x)), fee: P.feeUnit === 'per year' ? Math.round(P.fee * P.years) : P.fee };
   }
-  function blank() { return { pid: 'new', name: 'MSc in Sustainable Finance', level: 'Master', ects: 90, goals: [{ text: 'Analyse the financial effect of climate risk on a company', target: 80 }, { text: 'Recommend an investment that meets a sustainability standard', target: 80 }], sems: [1, 2, 3].map(n => ({ n, any: n === 3, items: [] })) }; }
+  /* drafts saved before the design tabs existed get the defaults */
+  function upgrade(d) {
+    d.sems.forEach(m => m.items.forEach(it => { if (!it.formats || !it.assess) { const x = DS.defaults(it, d.pid); it.formats = x.formats; it.assess = x.assess; } }));
+    if (!d.features) d.features = (DS.ourFeatures[d.pid] || []).slice();
+    if (!d.signature) d.signature = (DS.signature[d.pid] || []).map(x => Object.assign({}, x));
+    if (d.fee == null) d.fee = d.pid === 'new' ? 50000 : fromCurrent(d.pid).fee;
+    return d;
+  }
+  function blank() { return { pid: 'new', name: 'MSc in Sustainable Finance', level: 'Master', ects: 90, goals: [{ text: 'Analyse the financial effect of climate risk on a company', target: 80 }, { text: 'Recommend an investment that meets a sustainability standard', target: 80 }], sems: [1, 2, 3].map(n => ({ n, any: n === 3, items: [] })), features: DS.ourFeatures.new.slice(), signature: [], fee: 50000 }; }
   const KEY = p => 'dash_builder_' + p;
-  function load(pid) { try { const d = JSON.parse(localStorage.getItem(KEY(pid)) || 'null'); if (d && d.sems) { d.sems.forEach(m => m.items.forEach(it => it.id = nid())); return d; } } catch (e) {} return pid === 'new' ? blank() : fromCurrent(pid); }
+  function load(pid) { try { const d = JSON.parse(localStorage.getItem(KEY(pid)) || 'null'); if (d && d.sems) { d.sems.forEach(m => m.items.forEach(it => it.id = nid())); return upgrade(d); } } catch (e) {} return pid === 'new' ? blank() : fromCurrent(pid); }
   function save() { try { localStorage.setItem(KEY(D.pid), JSON.stringify(D)); document.getElementById('draftNote').textContent = 'Draft saved in this browser.'; } catch (e) { document.getElementById('draftNote').textContent = 'This browser does not keep drafts.'; } }
 
   let pid = new URLSearchParams(location.search).get('p'); if (!S.P[pid] && pid !== 'new') pid = 'bba';
@@ -134,8 +200,15 @@
      ===================================================================== */
   function render() {
     document.getElementById('sub').textContent = `${D.name} · ${D.level} · ${D.ects} ECTS in ${D.sems.length} semesters · ${D.goals.length} learning goals`;
-    drawNew(); drawGoals(); drawSems(); const issues = drawChecks(); drawMatrix(); drawLoad(); drawChanges(); markBad(issues); save();
+    drawNew(); drawGoals(); drawSems(); const issues = drawChecks(); drawMatrix(); drawLoad(); drawChanges(); markBad(issues);
+    if (VIEW === 'skills') drawSkills(); if (VIEW === 'comp') drawComp(); if (VIEW === 'exp') drawExp(); save();
   }
+  /* the four views; the open one is kept in the address (#skills, #comp, #exp) */
+  const VIEWS = ['cur', 'skills', 'comp', 'exp'];
+  let VIEW = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'cur';
+  function showView(v) { VIEW = v; document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    document.querySelectorAll('section[data-view]').forEach(x => x.hidden = x.dataset.view !== v); history.replaceState(null, '', v === 'cur' ? location.pathname + location.search : '#' + v); render(); }
+  document.getElementById('views').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.v); };
 
   /* settings of a new programme */
   function drawNew() {
@@ -184,7 +257,7 @@
     const mv = e.target.closest('[data-mv]'); if (mv) { const f = findIt(mv.dataset.id); moveTo(mv.dataset.id, D.sems.indexOf(f.m) + (+mv.dataset.mv)); return; }
     const ed = e.target.closest('[data-ed]'); if (ed) { edit(ed.dataset.ed); return; }
     const rm = e.target.closest('[data-rm]'); if (rm) { const f = findIt(rm.dataset.rm); if (confirm(`Remove “${f.it.title}” from the programme?`)) { f.m.items.splice(f.i, 1); all().forEach(x => x.it.prereq = x.it.prereq.filter(t => t !== f.it.title)); render(); } return; }
-    const ad = e.target.closest('[data-add]'); if (ad) { const it = { id: nid(), code: '', title: 'New course', ects: 6, type: 'course', area: 'Strategy', goals: D.goals.map(() => null), prereq: [], assessment: 'Exam and coursework', hours: 36 }; D.sems[+ad.dataset.add].items.push(it); render(); edit(it.id); }
+    const ad = e.target.closest('[data-add]'); if (ad) { const it = { id: nid(), code: '', title: 'New course', ects: 6, type: 'course', area: 'Strategy', goals: D.goals.map(() => null), prereq: [], hours: 36, formats: ['lecture', 'case'], assess: { exam: 60, project: 30, part: 10 } }; it.assessment = DS.assessLabel(it.assess); D.sems[+ad.dataset.add].items.push(it); render(); edit(it.id); }
   });
   semsEl.addEventListener('dragstart', e => { const c = e.target.closest('.crs'); if (c) e.dataTransfer.setData('text/plain', c.dataset.id); });
   semsEl.addEventListener('dragover', e => { const s = e.target.closest('.sem'); if (s) { e.preventDefault(); semsEl.querySelectorAll('.sem').forEach(x => x.classList.toggle('over', x === s)); } });
@@ -201,14 +274,19 @@
       <div><label for="eY">Type</label><select class="tx" id="eY">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${k === it.type ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
       <div><label for="eA">Subject area</label><select class="tx" id="eA">${AREAS.map(a => `<option ${a === it.area ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div>
       <div><label for="eH">Contact hours</label><input class="tx" id="eH" type="number" min="0" step="1" value="${it.hours}"></div>
-      <div class="full"><label for="eS">How it is assessed</label><input class="tx" id="eS" value="${esc(it.assessment)}"></div>
+      <div class="full"><label>How students learn in it (tick every format the course uses)</label><div class="fm">${DS.formats.map(f => `<label><input type="checkbox" data-ef="${f.id}" ${it.formats.includes(f.id) ? 'checked' : ''}> ${esc(f.name)}</label>`).join('')}</div></div>
+      <div class="full"><label>How it is graded: the share of the grade, in %, must add up to 100</label><div class="aw">${DS.assessTypes.map(a => `<div><label for="ew-${a.id}" style="font-size:11.5px">${esc(a.name)}</label><input class="tx" id="ew-${a.id}" data-ew="${a.id}" type="number" min="0" max="100" step="5" value="${it.assess[a.id] || 0}"></div>`).join('')}</div><div class="why" id="ewSum" style="margin-top:4px"></div></div>
       <div class="full"><label>Learning goals</label>${D.goals.map((g, k) => `<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><select class="tx" data-eg="${k}"><option value="">—</option><option value="T" ${it.goals[k] === 'T' ? 'selected' : ''}>taught</option><option value="A" ${it.goals[k] === 'A' ? 'selected' : ''}>assessed</option></select><span style="font-size:13px">G${k + 1} · ${esc(g.text)}</span></div>`).join('') || '<span class="why">The programme has no goal yet.</span>'}</div>
       <div class="full"><label>Prerequisites: courses a student must have passed first</label><div class="pq">${others.map(t => `<label style="font-weight:500;color:var(--ink)"><input type="checkbox" value="${esc(t)}" ${it.prereq.includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}</div></div></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn" id="eX" type="button">Cancel</button><button class="btn primary" id="eOk" type="button">Save the course</button></div>`;
+    const wsum = () => [...dlg.querySelectorAll('[data-ew]')].reduce((a, x) => a + (+x.value || 0), 0);
+    const showSum = () => { const n = wsum(); dlg.querySelector('#ewSum').textContent = n === 100 ? 'The weights add up to 100 %.' : `The weights add up to ${n} %; they must add up to 100 %.`; };
+    dlg.querySelectorAll('[data-ew]').forEach(x => x.oninput = showSum); showSum();
     dlg.querySelector('#eX').onclick = () => dlg.close();
-    dlg.querySelector('#eOk').onclick = () => { const old = it.title;
+    dlg.querySelector('#eOk').onclick = () => { const old = it.title; if (wsum() !== 100) { alert('The grading weights must add up to 100 %.'); return; }
       it.title = dlg.querySelector('#eT').value.trim() || 'Untitled course'; it.ects = Math.max(0.5, +dlg.querySelector('#eE').value || 0); it.type = dlg.querySelector('#eY').value;
-      it.area = dlg.querySelector('#eA').value; it.hours = Math.max(0, Math.round(+dlg.querySelector('#eH').value || 0)); it.assessment = dlg.querySelector('#eS').value.trim();
+      it.area = dlg.querySelector('#eA').value; it.hours = Math.max(0, Math.round(+dlg.querySelector('#eH').value || 0)); 
+      it.formats = [...dlg.querySelectorAll('[data-ef]:checked')].map(x => x.dataset.ef); const w = {}; dlg.querySelectorAll('[data-ew]').forEach(x => { if (+x.value > 0) w[x.dataset.ew] = +x.value; }); it.assess = w; it.assessment = DS.assessLabel(w);
       it.goals = D.goals.map((_, k) => dlg.querySelector(`[data-eg="${k}"]`).value || null);
       it.prereq = [...dlg.querySelectorAll('.pq input:checked')].map(x => x.value);
       if (old !== it.title) all().forEach(x => x.it.prereq = x.it.prereq.map(t => t === old ? it.title : t));
@@ -267,6 +345,7 @@
   }
 
   /* what changed against the current curriculum (by title) */
+  const fmN = l => l.map(id => (DS.formats.find(f => f.id === id) || { name: id }).name.toLowerCase()).join(', ') || 'none';
   function drawChanges() {
     const el = document.getElementById('chgT');
     if (!CUR) { el.innerHTML = `<tr><td>A new programme: every course is new. The programme committee approves the whole curriculum, then the accreditation report describes it under standard 4.2 (study programmes and their qualifications).</td></tr>`; return; }
@@ -277,20 +356,151 @@
       if (+a.it.ects !== +b.it.ects) rows.push(['Credits', t, `${fmtE(b.it.ects)} → ${fmtE(a.it.ects)} ECTS`]);
       if (a.it.goals.join() !== b.it.goals.join()) rows.push(['Goals', t, `${b.it.goals.map((g, k) => g ? 'G' + (k + 1) + g : '').filter(Boolean).join(' ') || 'none'} → ${a.it.goals.map((g, k) => g ? 'G' + (k + 1) + g : '').filter(Boolean).join(' ') || 'none'}`]);
       if (a.it.prereq.join() !== b.it.prereq.join()) rows.push(['Prerequisites', t, `${b.it.prereq.join(', ') || 'none'} → ${a.it.prereq.join(', ') || 'none'}`]);
-      if (a.it.type !== b.it.type) rows.push(['Type', t, `${TYPES[b.it.type]} → ${TYPES[a.it.type]}`]); });
+      if (a.it.type !== b.it.type) rows.push(['Type', t, `${TYPES[b.it.type]} → ${TYPES[a.it.type]}`]);
+      if (a.it.assessment !== b.it.assessment) rows.push(['Grading', t, `${b.it.assessment} → ${a.it.assessment}`]);
+      if (a.it.formats.join() !== b.it.formats.join()) rows.push(['Formats', t, `${fmN(b.it.formats)} → ${fmN(a.it.formats)}`]); });
+    if (JSON.stringify(D.signature) !== JSON.stringify(CUR.signature)) rows.push(['Experience', 'Signature experiences', `${CUR.signature.length} → ${D.signature.length}`]);
     Object.keys(cur).forEach(t => { if (!now[t]) rows.push(['Removed', t, `was in semester ${cur[t].n}, ${fmtE(cur[t].it.ects)} ECTS`]); });
     if (D.goals.map(g => g.text).join('|') !== CUR.goals.map(g => g.text).join('|')) rows.push(['Goals', 'The programme’s learning goals', `${CUR.goals.length} → ${D.goals.length} goals, or a goal reworded`]);
-    const K = { Added: 'good', Removed: 'crit', Moved: 'warn', Credits: 'warn', Goals: 'none', Prerequisites: 'none', Type: 'none' };
+    const K = { Grading: 'none', Formats: 'none', Experience: 'none', Added: 'good', Removed: 'crit', Moved: 'warn', Credits: 'warn', Goals: 'none', Prerequisites: 'none', Type: 'none' };
     el.innerHTML = rows.length ? `<tr><th>Change</th><th>Course</th><th>From → to</th></tr>` + rows.map(([k, t, d]) => `<tr><td>${st(K[k] || 'none', k)}</td><td>${esc(t)}</td><td>${esc(d)}</td></tr>`).join('')
       : `<tr><td class="empty">No change yet: this is the curriculum as it runs today.</td></tr>`;
   }
+
+  /* =====================================================================
+     SKILLS EMPLOYERS ASK FOR
+     ===================================================================== */
+  const LVL = { Bachelor: 'bba', Master: 'msc', MBA: 'emba', Doctorate: 'dba' };
+  const pool = () => D.pid === 'new' ? (LVL[D.level] || 'msc') : D.pid;
+  const SUGGEST = { data: ['Business Analytics', 'Data & AI'], ai: ['AI for Business', 'Data & AI'], strategy: ['Business Strategy', 'Strategy'], finance: ['Financial Analysis', 'Finance'],
+    pm: ['Project Management', 'Operations'], esg: ['Sustainability Reporting (ESG)', 'Sustainability'], lead: ['Leading Teams Across Cultures', 'Leadership & HR'], nego: ['Negotiation and Stakeholder Management', 'Leadership & HR'],
+    mkt: ['Customer Insight and Digital Marketing', 'Marketing'], lang: ['Business French', 'Leadership & HR'], ops: ['Operations and Supply Chains', 'Operations'], law: ['Company Law and Compliance', 'Law & Ethics'],
+    entre: ['Entrepreneurship Lab', 'Entrepreneurship'], research: ['Research Methods', 'Research'] };
+  const teaches = (sk, it) => sk.areas.includes(it.area) || (!!sk.kw && new RegExp(sk.kw, 'i').test(it.title));
+  const skillCourses = sk => all().filter(x => teaches(sk, x.it));
+  function skillRows() {
+    const p = pool(), R = DS.rules;
+    return DS.skills.map(sk => { const [now, then] = sk.demand[p], cs = skillCourses(sk), n = cs.length;
+      const status = now >= R.demandHigh ? (n === 0 ? 'gap' : n === 1 ? 'thin' : 'ok') : now < R.demandLow ? 'low' : (n === 0 ? 'mid0' : 'ok');
+      return { sk, now, then, ch: now - then, cs, n, status }; }).sort((a, b) => b.now - a.now);
+  }
+  const SKST = { gap: ['crit', 'In demand, not taught'], thin: ['warn', 'In demand, taught in one course'], mid0: ['warn', 'Asked for, not taught'], ok: ['good', 'Taught'], low: ['none', 'Rarely asked for'] };
+  function drawSkills() {
+    const p = pool(), pl = DS.adPool[p], R = DS.rules, rows = skillRows();
+    document.getElementById('skNote').textContent = `${num(pl.ads)} invented job ads · ${DS.adPool.period}`;
+    document.getElementById('skLead').textContent = `Why this matters: a programme is worth its fee when its graduates get the jobs they came for. The figures count how many job ads name each skill, in a sample of ${num(pl.ads)} ads for ${pl.roles}, in ${DS.adPool.region}${D.pid === 'new' ? ` (the ${D.level.toLowerCase()} sample is used for a new programme)` : ''}. A skill named in at least ${R.demandHigh} % of the ads is "in demand"; under ${R.demandLow} % it is "rarely asked for". A skill is taught when a course's subject area or title covers it. The market figures are invented.`;
+    const hi = rows.filter(r => r.now >= R.demandHigh), gaps = rows.filter(r => r.status === 'gap'), rise = rows.slice().sort((a, b) => b.ch - a.ch)[0], low = lowCourses();
+    document.getElementById('skTiles').innerHTML =
+      Dash.tile({ lab: 'In-demand skills the programme teaches', val: `${hi.length - gaps.length} of ${hi.length}`, note: `named in ${R.demandHigh} % or more of the ads` }) +
+      Dash.tile({ lab: 'In demand and taught nowhere', val: String(gaps.length), note: gaps.map(r => r.sk.name).join('; ') || 'no gap' }) +
+      Dash.tile({ lab: 'The skill rising fastest', val: `${rise.ch > 0 ? '+' : ''}${rise.ch} points`, note: `${rise.sk.name}: ${rise.then} % of ads two years ago, ${rise.now} % now` }) +
+      Dash.tile({ lab: 'Courses on rarely-asked skills only', val: String(low.length), note: low.map(x => x.it.title).join('; ') || 'none' });
+    const colOf = r => r.n ? 'var(--s1)' : 'var(--s2)';
+    Charts.bars(document.getElementById('skChart'), { items: rows.map(r => ({ label: r.sk.name, value: r.now, cmp: r.then, color: colOf(r), text: r.now + ' %', extra: [['Courses that teach it', String(r.n)]] })),
+      legend: [{ name: 'Taught in the programme', color: 'var(--s1)' }, { name: 'Not taught', color: 'var(--s2)' }], valueName: 'Ads naming it now', cmpName: 'Two years ago', fmt: v => v + ' %', labelWidth: Math.min(330, Math.max(170, document.getElementById('skChart').clientWidth * 0.5)), max: 70 });
+    document.getElementById('skT').innerHTML = `<tr><th>Skill</th><th class="n">Ads now</th><th class="n">Two years ago</th><th class="n">Change</th><th>Courses that teach it</th><th>Status</th><th class="noprint"></th></tr>` +
+      rows.map(r => `<tr><td>${esc(r.sk.name)}</td><td class="n">${r.now} %</td><td class="n">${r.then} %</td><td class="n">${r.ch > 0 ? '+' : ''}${r.ch}</td><td>${r.cs.map(x => esc(x.it.title) + ` <span class="why">(sem. ${x.m.n})</span>`).join('<br>') || '<span class="why">none</span>'}</td><td>${st(...SKST[r.status])}</td><td class="noprint">${r.status === 'gap' || r.status === 'mid0' || r.status === 'thin' ? `<button class="btn" data-addsk="${r.sk.id}" type="button">Add a course for it</button>` : ''}</td></tr>`).join('');
+    document.getElementById('lowNote').textContent = `under ${R.demandLow} % of the ads`;
+    document.getElementById('lowT').innerHTML = low.length ? `<tr><th>Course</th><th class="n">Sem.</th><th>Skills it teaches</th></tr>` + low.map(x => `<tr><td>${esc(x.it.title)}</td><td class="n">${x.m.n}</td><td>${x.sks.map(r => `${esc(r.sk.name)} <span class="why">${r.now} %</span>`).join('<br>') || '<span class="why">no skill in the list</span>'}</td></tr>`).join('')
+      : `<tr><td class="empty">Every taught course covers at least one skill employers ask for.</td></tr>`;
+  }
+  function lowCourses() {
+    const rows = skillRows(), R = DS.rules;
+    return all().filter(x => (x.it.type === 'course') && x.it.area !== 'Research' && !/Research|Methods|Seminar/i.test(x.it.title))
+      .map(x => Object.assign({}, x, { sks: rows.filter(r => teaches(r.sk, x.it)) })).filter(x => x.sks.every(r => r.now < R.demandLow));
+  }
+  document.getElementById('skT').addEventListener('click', e => { const b = e.target.closest('[data-addsk]'); if (!b) return;
+    const [title, area] = SUGGEST[b.dataset.addsk], taught = D.sems.filter(m => m.items.some(i => i.type === 'course' || i.type === 'elective'));
+    const m = (taught.length ? taught : D.sems).slice().sort((a, c) => semEcts(a) - semEcts(c))[0];
+    const it = { id: nid(), code: '', title, ects: 6, type: 'course', area, goals: D.goals.map(() => null), prereq: [], hours: 36 }; Object.assign(it, DS.defaults(it, D.pid)); it.assessment = DS.assessLabel(it.assess);
+    m.items.push(it); alert(`“${title}” was added to semester ${m.n} with 6 ECTS. Open the curriculum tab to link it to a goal and to rebalance the semester's credits.`); render(); });
+
+  /* =====================================================================
+     COMPETITORS
+     ===================================================================== */
+  const derived = { internship: () => all().some(x => x.it.type === 'internship'), live: () => all().some(x => x.it.type !== 'thesis' && x.it.formats.includes('live')),
+    field: () => all().some(x => x.it.formats.includes('field')), 'skill:ai': () => skillCourses(DS.skills.find(k => k.id === 'ai')).length > 0, 'skill:esg': () => skillCourses(DS.skills.find(k => k.id === 'esg')).length > 0 };
+  const ours = f => f.derive ? derived[f.derive]() : D.features.includes(f.id);
+  const short = n => n.replace(/ (Institute|Business School|School of Management|University of Applied Sciences|Online University|Mont-Blanc Institute)/, '').replace(' (PhD)', ' PhD');
+  function drawComp() {
+    const p = pool(), C = DS.competitors[p], N = C.length, out = DS.outcome[p], myOut = D.pid === 'new' ? null : DS.ourOutcome[p];
+    const months = D.pid === 'new' ? D.sems.length * 6 : Math.round(S.P[D.pid].years * 12);
+    document.getElementById('cpNote').textContent = `${N} invented competitors`;
+    document.getElementById('cpLead').textContent = `Why this matters: an applicant chooses between a handful of programmes. A programme that offers what all the others offer, at the same price, has no reason to be chosen. This tab compares price, length, the published outcome and what each programme offers, so you can see what is expected, what is missing and what only this programme could offer. The schools and figures are invented${D.pid === 'new' ? `; a new programme is compared with the ${D.level.toLowerCase()} programmes` : ''}.`;
+    const feeIn = document.getElementById('ourFee'); if (document.activeElement !== feeIn) feeIn.value = D.fee;
+    const rows = [{ name: D.name + ' (ours)', city: 'Geneva', fee: D.fee, months, format: D.pid === 'new' ? '—' : S.P[D.pid].mode.split(' · ')[0], out: myOut, us: true }].concat(C).sort((a, b) => b.fee - a.fee);
+    const rank = rows.findIndex(r => r.us) + 1, fees = C.map(c => c.fee).sort((a, b) => a - b), med = N % 2 ? fees[(N - 1) / 2] : (fees[N / 2 - 1] + fees[N / 2]) / 2;
+    Charts.bars(document.getElementById('feeChart'), { items: rows.map(r => ({ label: r.us ? 'Ours' : short(r.name), value: r.fee, color: r.us ? 'var(--s2)' : 'var(--s1)', text: chf(r.fee), extra: [['Length', r.months + ' months']] })),
+      legend: [{ name: 'Our programme', color: 'var(--s2)' }, { name: 'Competitor', color: 'var(--s1)' }], valueName: 'Total fee', fmt: v => chf(v), labelWidth: 150 });
+    document.getElementById('outNote').textContent = `outcome = ${out}`;
+    document.getElementById('cpT').innerHTML = `<tr><th>Programme</th><th>City</th><th class="n">Total fee</th><th class="n">Months</th><th>Format</th><th class="n">Outcome</th></tr>` +
+      rows.map(r => `<tr class="${r.us ? 'ours' : ''}"><td>${esc(r.name)}${r.pub ? ' <span class="why">public school</span>' : ''}</td><td>${esc(r.city)}</td><td class="n">${esc(chf(r.fee))}</td><td class="n">${r.months}</td><td>${esc(r.format)}</td><td class="n">${r.out == null ? '<span class="why">not published</span>' : r.out + ' %'}</td></tr>`).join('');
+    const F = DS.features.map(f => { const n = C.filter(c => c.f.includes(f.id)).length, o = ours(f), share = n / N;
+      const kind = o ? (share >= 0.6 ? ['none', 'Expected, we offer it'] : n <= 1 ? ['good', 'Sets us apart'] : ['good', 'We offer it']) : (share >= 0.6 ? ['crit', 'Expected, we do not offer it'] : n <= 1 ? ['warn', 'Open space'] : ['none', 'Some offer it']);
+      return { f, n, o, kind }; });
+    document.getElementById('ftT').innerHTML = `<tr><th>Feature</th><th class="c">Ours</th>${C.map(c => `<th class="c" title="${esc(c.name)}">${esc(short(c.name))}</th>`).join('')}<th class="n">Offered by</th><th>What it means</th></tr>` +
+      F.map(x => `<tr><td>${esc(x.f.name)}${x.f.derive ? ' <span class="why">from the curriculum</span>' : ''}</td><td class="c">${x.f.derive ? (x.o ? '<span class="dot ours" title="yes, from the curriculum"></span>' : '') : `<input type="checkbox" data-feat="${x.f.id}" ${x.o ? 'checked' : ''} aria-label="We offer: ${esc(x.f.name)}">`}</td>${C.map(c => `<td class="c">${c.f.includes(x.f.id) ? '<span class="dot"></span>' : ''}</td>`).join('')}<td class="n">${x.n} of ${N}</td><td>${st(...x.kind)}</td></tr>`).join('');
+    const apart = F.filter(x => x.o && x.n <= 1), miss = F.filter(x => !x.o && x.n / N >= 0.6), open = F.filter(x => !x.o && x.n <= 1);
+    const card = (h, list, empty) => `<div class="tile"><div class="lab">${h}</div><div class="val">${list.length}</div><div class="delta">${list.map(x => esc(x.f.name)).join('; ') || empty}</div></div>`;
+    document.getElementById('cpSum').innerHTML =
+      `<div class="tile"><div class="lab">Our price</div><div class="val">${rank}<small>of ${N + 1}, highest first</small></div><div class="delta">${esc(chf(D.fee))} for the whole programme; the middle competitor charges ${esc(chf(med))}, so we are ${D.fee >= med ? esc(chf(D.fee - med)) + ' above' : esc(chf(med - D.fee)) + ' below'} it.</div></div>` +
+      card('What most competitors offer and we do not', miss, 'nothing: we offer everything that is expected') +
+      card('What sets us apart (one competitor or none has it)', apart, 'nothing yet. Pick one from the open space below.') +
+      `<div class="tile"><div class="lab">Open space: hardly anyone offers it</div><div class="val">${open.length}</div><div class="delta">${open.map(x => esc(x.f.name)).join('; ') || 'none'}</div></div>`;
+  }
+  document.getElementById('ftT').addEventListener('change', e => { const id = e.target.dataset.feat; if (!id) return; D.features = D.features.filter(x => x !== id); if (e.target.checked) D.features.push(id); render(); });
+  document.getElementById('ourFee').addEventListener('change', e => { D.fee = Math.max(0, Math.round(+e.target.value || 0)); render(); });
+
+  /* =====================================================================
+     LEARNING EXPERIENCE
+     ===================================================================== */
+  const ACOL = { exam: 'var(--s1)', project: 'var(--s3)', present: 'var(--s4)', essay: 'var(--s7)', part: 'var(--s5)' };
+  function mixOf(m) { const w = {}; let e = 0; m.items.forEach(it => { const c = +it.ects || 0; e += c; Object.entries(it.assess || {}).forEach(([k, v]) => w[k] = (w[k] || 0) + c * v / 100); });
+    Object.keys(w).forEach(k => w[k] = e ? 100 * w[k] / e : 0); return w; }
+  function drawExp() {
+    const R = DS.rules, out = [], lastSi = D.sems.length - 1, mixes = D.sems.map(mixOf);
+    /* 1 exam-heavy semesters, and two in a row */
+    const heavy = D.sems.map((m, i) => (mixes[i].exam || 0) > R.examHeavy);
+    const runs = []; heavy.forEach((h, i) => { if (h && heavy[i - 1]) runs.push(i); });
+    if (runs.length) out.push(['serious', 'Exams', `Semesters ${runs.map(i => `${D.sems[i - 1].n} and ${D.sems[i].n}`).join(', ')} both take more than ${R.examHeavy} % of their grade from written exams. Two such semesters in a row mean months of revision and no work to show an employer. Turn one exam per semester into a project or a presentation.`]);
+    else if (heavy.some(Boolean)) out.push(['warn', 'Exams', `${D.sems.filter((m, i) => heavy[i]).map(m => `Semester ${m.n}`).join(', ')} take${heavy.filter(Boolean).length === 1 ? 's' : ''} more than ${R.examHeavy} % of the grade from written exams.`]);
+    else out.push(['good', 'Exams', `No semester takes more than ${R.examHeavy} % of its grade from written exams.`]);
+    /* 2 a real company before the final semester */
+    const liveBefore = D.sems.slice(0, Math.max(1, lastSi)).some(m => m.items.some(it => it.type !== 'thesis' && it.formats.includes('live')));
+    out.push(liveBefore ? ['good', 'Companies', 'Students work on a project for a real company before the final semester.'] : ['serious', 'Companies', `Students do no project for a real company before semester ${D.sems[lastSi].n}. They meet employers only at the end, when they are already looking for a job. Add a live company project, for example in semester ${D.sems[Math.min(1, lastSi)].n}.`]);
+    /* 3 group work and hands-on work in every semester */
+    const noGroup = D.sems.filter(m => m.items.length && !m.items.some(it => it.formats.includes('group')));
+    out.push(!noGroup.length ? ['good', 'Group work', 'Every semester has at least one course with group work.'] : ['warn', 'Group work', `${noGroup.map(m => 'Semester ' + m.n).join(', ')} ${noGroup.length === 1 ? 'has' : 'have'} no group work. Employers name teamwork in most job ads.`]);
+    const flat = D.sems.filter(m => m.items.length && m.items.every(it => it.formats.every(f => f === 'lecture' || f === 'case')));
+    out.push(!flat.length ? ['good', 'Variety', 'Every semester mixes lectures with labs, projects, trips or games.'] : ['warn', 'Variety', `In ${flat.map(m => 'semester ' + m.n).join(', ')} every course is lectures and case discussions only. Add a lab, a simulation or a field visit.`]);
+    /* 4 a signature experience each year */
+    const years = Math.ceil(D.sems.length / 2), noSig = [];
+    for (let y = 1; y <= years; y++) if (!D.signature.some(x => Math.ceil(x.sem / 2) === y)) noSig.push(y);
+    out.push(!noSig.length ? ['good', 'Signature', 'Every year of the programme has a signature experience.'] : ['warn', 'Signature', `Year ${noSig.join(' and year ')} ${noSig.length === 1 ? 'has' : 'have'} no signature experience (year 1 = semesters 1–2). Add one in the box on the right.`]);
+    const n = out.filter(o => o[0] !== 'good').length;
+    document.getElementById('expChecks').innerHTML = `<li style="grid-template-columns:1fr"><div class="w">${n ? `${n} flag${n === 1 ? '' : 's'} on the learning experience.` : 'No flag on the learning experience.'}</div></li>` +
+      out.map(([k, w, d]) => `<li style="grid-template-columns:auto 1fr">${st(k, w)}<div class="d" style="font-size:13px;color:var(--ink)">${esc(d)}</div></li>`).join('');
+    /* formats table */
+    document.getElementById('fmT').innerHTML = `<tr><th>Format</th>${D.sems.map(m => `<th class="c">Sem. ${m.n}</th>`).join('')}</tr>` +
+      DS.formats.map(f => `<tr><td>${esc(f.name)}</td>${D.sems.map(m => { const c = m.items.filter(it => it.formats.includes(f.id)).length; return `<td class="c"><span class="hc ${c ? 'p' : 'z'}">${c}</span></td>`; }).join('')}</tr>`).join('');
+    /* grading mix per semester */
+    const box = document.getElementById('awMix'); box.innerHTML = D.sems.map((m, i) => `<div class="semmix"><b>Semester ${m.n}</b><div id="mix${i}"></div></div>`).join('');
+    D.sems.forEach((m, i) => { const w = mixes[i], parts = DS.assessTypes.filter(a => w[a.id] > 0).map(a => ({ name: a.name, value: Math.round(w[a.id] * 10) / 10, color: ACOL[a.id] }));
+      const el = document.getElementById('mix' + i); if (parts.length) Charts.segbar(el, parts, { fmt: v => Math.round(v) + ' %' }); else el.innerHTML = '<span class="why">no course yet</span>'; });
+    /* signature list */
+    document.getElementById('sigL').innerHTML = D.signature.slice().sort((a, b) => a.sem - b.sem).map(x => `<li><b>Year ${Math.ceil(x.sem / 2)} · semester ${x.sem}</b><span style="flex:1">${esc(x.title)}</span><button class="btn noprint" data-sigdel="${D.signature.indexOf(x)}" type="button" title="Remove">✕</button></li>`).join('') || '<li class="empty">No signature experience yet.</li>';
+    const ss = document.getElementById('sigSem'), keep = ss.value; ss.innerHTML = D.sems.map(m => `<option value="${m.n}">Semester ${m.n} (year ${Math.ceil(m.n / 2)})</option>`).join(''); if (keep) ss.value = keep;
+  }
+  document.getElementById('sigL').addEventListener('click', e => { const b = e.target.closest('[data-sigdel]'); if (b) { D.signature.splice(+b.dataset.sigdel, 1); render(); } });
+  document.getElementById('sigAdd').onclick = () => { const t = document.getElementById('sigT').value.trim(); if (!t) { alert('Write what the students do, for example "a week in Brussels with the EU institutions".'); return; }
+    D.signature.push({ sem: +document.getElementById('sigSem').value, title: t }); document.getElementById('sigT').value = ''; render(); };
 
   /* ---- the buttons ---- */
   document.getElementById('bReset').onclick = () => { if (!confirm(D.pid === 'new' ? 'Start the new programme again from the example?' : 'Throw this draft away and start again from the current curriculum?')) return; try { localStorage.removeItem(KEY(D.pid)); } catch (e) {} D = D.pid === 'new' ? blank() : fromCurrent(D.pid); render(); };
   document.getElementById('bExport').onclick = () => { const out = JSON.parse(JSON.stringify(D)); out.sems.forEach(m => m.items.forEach(it => delete it.id));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })); a.download = `programme-${D.pid}-draft.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
   document.getElementById('bPrint').onclick = () => window.print();
-  render();
+  showView(VIEW);
 })();
 </script>
 </body>
