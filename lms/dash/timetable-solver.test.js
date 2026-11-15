@@ -100,12 +100,48 @@ test('check() finds hard violations', () => {
   assert.ok(v.some(x => /booked twice/.test(x)) && v.some(x => /share regular students/.test(x)), v.join(' | '));
 });
 
+/* 16 Nov 2026 — overlapping slots: a block week shares real time with the weekly slots of that week */
+const wkB = [...wk, { id: 'blk', mode: 'block', label: 'Week of 8 March', overlaps: wk.map(s => s.id) }];
+test('a block week blocks its teacher for the weekly slots of that week', () => {
+  const inp = base({ slots: wkB, teachers: [{ id: 't1', name: 'Dr One', avail: yes(wkB.map(s => s.id)) }],
+    classes: [cls('res', { mode: 'block', pinned: { slot: 'blk' } }), cls('wk')] });
+  const r = TS.solve(inp); valid(inp, r);
+  assert.strictEqual(r.assignments.res.slot, 'blk'); assert.strictEqual(r.unplaced.length, 1); assert.strictEqual(r.unplaced[0].classId, 'wk');
+  assert.match(r.unplaced[0].reasons[0], /Dr One teaches both res and wk, and every possible time of one overlaps/);
+  assert.ok(r.stats.nodes < 50, 'the impossible pair is settled before the search: ' + r.stats.nodes + ' nodes');
+  /* a class whose teacher the solver chooses gets the time-by-time reason */
+  const inp2 = base({ slots: wkB, teachers: [{ id: 't1', name: 'Dr One', avail: yes(wkB.map(s => s.id)) }],
+    classes: [cls('res', { name: 'Residency', mode: 'block', pinned: { slot: 'blk' } }), cls('wk', { teacher: null, candidates: ['t1'] })] });
+  const r2 = TS.solve(inp2); valid(inp2, r2); assert.strictEqual(r2.unplaced[0].classId, 'wk');
+  assert.match(r2.unplaced[0].reasons.join(' '), /Mon-am: Dr One teaches Residency in Week of 8 March, which takes in this time/);
+});
+test('a block week blocks its room for the weekly slots of that week', () => {
+  const inp = base({ slots: wkB, rooms: [{ id: 'R1', cap: 40 }], classes: [cls('res', { mode: 'block', pinned: { slot: 'blk', room: 'R1' } }), cls('wk', { teacher: 't2' })] });
+  const r = TS.solve(inp); valid(inp, r);
+  assert.strictEqual(r.unplaced.length, 1); assert.match(r.unplaced[0].reasons.join(' '), /rooms that hold 20 students are already taken/);
+  /* with a second room the weekly class is placed, in the other room */
+  const inp2 = base({ slots: wkB, classes: [cls('res', { mode: 'block', pinned: { slot: 'blk', room: 'R1' } }), cls('wk', { teacher: 't2' })] });
+  const r2 = TS.solve(inp2); valid(inp2, r2); assert.strictEqual(r2.assignments.wk.room, 'R2');
+});
+test('a regular student is never in two overlapping slots; check() names overlaps', () => {
+  const sl = [{ id: 'a9', mode: 'w3', day: 'Mon', overlaps: ['b10'] }, { id: 'b10', mode: 'w2', day: 'Mon' }, { id: 'c14', mode: 'w2', day: 'Mon' }];
+  const inp = base({ slots: sl, teachers: [{ id: 't1', avail: yes(['a9', 'b10', 'c14']) }, { id: 't2', avail: yes(['a9', 'b10', 'c14']) }],
+    classes: [cls('long', { mode: 'w3', students: ['s'], pinned: { slot: 'a9' } }), cls('short', { mode: 'w2', students: ['s'], teacher: 't2' })] });
+  const r = TS.solve(inp); valid(inp, r); assert.strictEqual(r.assignments.short.slot, 'c14');
+  const v = TS.check(inp, { long: { slot: 'a9', room: 'R1', teacher: 't1' }, short: { slot: 'b10', room: 'R1', teacher: 't1' } });
+  assert.ok(v.some(x => /R1 is booked at a9 and at b10, which overlap/.test(x)) && v.some(x => /teaches at a9 and at b10/.test(x)) && v.some(x => /which overlap\.$/.test(x)), v.join(' | '));
+});
+test('modeLabel names the kind of time in the reasons', () => {
+  const inp = base({ slots: [{ id: 'x', mode: 'w2', modeLabel: '2-hour weekly' }], teachers: [{ id: 't1', name: 'Dr X', avail: { x: 'n' } }], classes: [cls('a', { mode: 'w2' })] });
+  assert.match(TS.solve(inp).unplaced[0].reasons[0], /every remaining 2-hour weekly time/);
+});
+
 /* ---------- the demo school ---------- */
 global.window = {}; require(path.join(__dirname, 'data.js'));
 const S = window.SCHOOL, P = S.planning;
 function demoInput(seed) {
   const fixedLoad = {};
-  const slots = [...P.slots.weekly.map(s => ({ id: s.id, mode: 'weekly', day: s.day, label: s.id })), ...P.slots.weekend.map(s => ({ id: s.id, mode: 'weekend', day: s.day, label: s.id })), ...P.slots.block.map(s => ({ id: s.id, mode: 'block', label: s.label }))];
+  const slots = [...P.slots.weekly.map(s => ({ id: s.id, mode: 'weekly', day: s.day, label: s.id })), ...P.slots.weekend.map(s => ({ id: s.id, mode: 'weekend', day: s.day, label: s.id })), ...P.slots.block.map(s => ({ id: s.id, mode: 'block', label: s.label, overlaps: P.slots.weekly.map(w => w.id) }))];
   const classes = P.classes.map(k => { const s = P.seed[k.id], keep = s.prof && (s.profStatus === 'accepted' || s.profStatus === 'invited');
     if (keep) fixedLoad[s.prof] = (fixedLoad[s.prof] || 0) + k.hours;
     return { id: k.id, name: k.title + (k.group ? ' ' + k.group : ''), mode: k.mode, size: k.size, lab: k.lab, hours: k.hours, students: k.students, retakers: k.retakeIds,
@@ -125,7 +161,9 @@ test('demo data: zero hard violations, no regular student clash, under one secon
   demo.clashes.forEach(c => assert.ok(c.classes.some(id => P.classes.find(k => k.id === id).retakeIds.includes(c.student)), 'regular student clash ' + JSON.stringify(c)));
   /* what cannot be placed is said in words: in the demo, teachers out of contract hours */
   assert.ok(demo.unplaced.length <= 3, 'too many unplaced');
-  demo.unplaced.forEach(u => assert.ok(u.reasons.length && /contract hours/.test(u.reasons[0]), u.reasons.join(' ')));
+  /* (16 Nov 2026: with block weeks overlapping their week's weekly slots, a teacher who has a
+     residency and a weekly class cannot keep both, and the page says so) */
+  demo.unplaced.forEach(u => assert.ok(u.reasons.length && /contract hours|every possible time of one overlaps/.test(u.reasons[0]), u.reasons.join(' ')));
   assert.strictEqual(demo.score.counts.studentsWithClash, 0);
 });
 test('demo data: same seed, same answer; another seed, still valid', () => {

@@ -26,6 +26,11 @@
   (online · hybrid · computer lab · executive cohort); and "Send to the planner",
   possible only when no hour is left blank ("Mark the rest unavailable / if needed").
   Fields: block_len, hours_max, away, tags, submitted_at (API migration 004).
+  16 Nov 2026 — "Your draft timetable": once the department sends the automatic
+  timetable's draft (API SPEC §7c), the teacher sees their classes for the term
+  above the grid and answers ONCE: Accept, or Object with a reason, the classes it
+  concerns and the hours they cannot teach (GET /me/draft-timetable/:term,
+  POST …/answer). After the round closes the card shows the times as they now are.
 -->
 <style>
 *{box-sizing:border-box;}
@@ -99,6 +104,14 @@ i.hz.z1{background:#FCD9A8;} i.hz.z2{background:#F59E0B;} i.hz.z3{background:#B4
 .termrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
 .termrow select{width:auto;min-width:220px;}
 .done{color:var(--a-good);font-weight:700;} .todo{color:var(--a-warn);font-weight:700;}
+/* the draft timetable sent by the department (16 Nov 2026) */
+.dcard{border-left:4px solid var(--a-accent);}
+table.dt{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0;} table.dt th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-grey);padding:6px;border-bottom:1px solid var(--a-line);}
+table.dt td{padding:7px 6px;border-bottom:1px solid var(--a-line);vertical-align:top;} .dtw{overflow-x:auto;}
+.mv{display:inline-block;font-size:11px;font-weight:800;background:var(--a-warn-bg);color:var(--a-warn);border-radius:6px;padding:0 6px;margin-left:4px;}
+.ans{font-size:13.5px;margin:6px 0;} .ans.ok{color:var(--a-good);font-weight:700;} .ans.obj{color:var(--a-warn);font-weight:700;}
+.objf{border-top:1px solid var(--a-line);margin-top:10px;padding-top:6px;}
+.objf .row2 select{width:auto;}
 </style>
 </head>
 <body>
@@ -145,7 +158,16 @@ const STR = {
     copied: 'Copied. Check the week.',
     saving: 'Saving…', saved: 'Saved', unsaved: 'Not saved yet', failed: 'Could not save. The page will try again at the next change.',
     leave: 'Your last changes are not saved yet.', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], dshort: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    geneva: 'Geneva time.' },
+    geneva: 'Geneva time.',
+    dTitle: 'Your draft timetable', dWhy: 'The department has placed your classes for the whole term. Check the day, the hours and the room of each one, then answer once: Accept, or Object and say why.',
+    dBy: d => `Please answer by ${d}.`, dKeep: 'If you do not answer, your classes keep these times.',
+    dClosed: 'The planner has closed the round. These are your times now; a class marked “moved” changed after the objections.', dPub: 'This timetable is published: the sessions are in your timetable and your calendar link.',
+    dCourse: 'Course', dWhen: 'Every week', dRoom: 'Room', dStud: 'Students', dSess: 'Sessions', dOnline: 'Online', dMoved: 'moved',
+    dSessions: (n, a, b) => `${n} (${a} to ${b})`,
+    dAccept: 'Accept', dObject: 'Object', dYouA: d => `You accepted on ${d}.`, dYouO: d => `You objected on ${d}:`, dChange: 'You can change your answer until the planner closes the round.',
+    dWhich: 'Which classes does your objection concern?', dReason: 'Why does the draft not work for you? (required)', dReasonPh: 'e.g. I teach at another school on Tuesday mornings.',
+    dHours: 'Hours you cannot teach (optional): pick a day and the hours, then press Add.', dDay: 'Day', dFrom: 'From', dTo: 'To', dAdd: 'Add', dSend: 'Send my objection', dCancel: 'Cancel',
+    dNeedReason: 'Write in a sentence why the draft does not work for you.', dNeedClass: 'Tick at least one class.', dSent: 'Your answer is saved.', },
   fr: { title: 'Disponibilités d’enseignement', ask: 'Quand pouvez-vous enseigner ?', out: 'Se déconnecter', adm: 'Plateforme', signin: 'Se connecter', lead: 'Un code à 6 chiffres arrive par e-mail. Pas de mot de passe.',
     email: 'E-mail', code: 'Code', send: 'Recevoir un code', go: 'Se connecter', hello: 'Connecté·e :',
     none: 'Aucun semestre n’est ouvert pour vous.', filled: 'saisi', notfilled: 'non saisi', sentS: 'envoyé', deadline: 'avant le',
@@ -168,7 +190,16 @@ const STR = {
     copied: 'Repris. Vérifiez la semaine.',
     saving: 'Enregistrement…', saved: 'Enregistré', unsaved: 'Pas encore enregistré', failed: 'Impossible d’enregistrer. Nouvel essai au prochain changement.',
     leave: 'Vos derniers changements ne sont pas encore enregistrés.', days: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'], dshort: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-    geneva: 'Heure de Genève.' }
+    geneva: 'Heure de Genève.',
+    dTitle: 'Votre horaire provisoire', dWhy: 'Le département a placé vos cours pour tout le semestre. Vérifiez le jour, les heures et la salle de chacun, puis répondez une seule fois : Accepter, ou Objecter en disant pourquoi.',
+    dBy: d => `Merci de répondre avant le ${d}.`, dKeep: 'Sans réponse de votre part, vos cours gardent ces horaires.',
+    dClosed: 'La planification a clos le tour. Voici vos horaires actuels ; un cours marqué « déplacé » a changé après les objections.', dPub: 'Cet horaire est publié : les séances sont dans votre horaire et votre lien de calendrier.',
+    dCourse: 'Cours', dWhen: 'Chaque semaine', dRoom: 'Salle', dStud: 'Étudiant·es', dSess: 'Séances', dOnline: 'En ligne', dMoved: 'déplacé',
+    dSessions: (n, a, b) => `${n} (du ${a} au ${b})`,
+    dAccept: 'Accepter', dObject: 'Objecter', dYouA: d => `Vous avez accepté le ${d}.`, dYouO: d => `Vous avez objecté le ${d} :`, dChange: 'Vous pouvez changer votre réponse jusqu’à ce que la planification close le tour.',
+    dWhich: 'Quels cours votre objection concerne-t-elle ?', dReason: 'Pourquoi l’horaire provisoire ne vous convient-il pas ? (obligatoire)', dReasonPh: 'p. ex. J’enseigne dans une autre école le mardi matin.',
+    dHours: 'Heures où vous ne pouvez pas enseigner (facultatif) : choisissez un jour et les heures, puis Ajouter.', dDay: 'Jour', dFrom: 'De', dTo: 'À', dAdd: 'Ajouter', dSend: 'Envoyer mon objection', dCancel: 'Annuler',
+    dNeedReason: 'Écrivez en une phrase pourquoi l’horaire provisoire ne vous convient pas.', dNeedClass: 'Cochez au moins un cours.', dSent: 'Votre réponse est enregistrée.', }
 };
 /* ---- state ---- */
 const st = { me: null, terms: [], term: null, entry: null, previous: null, courses: [], scope: 'department', brush: 'y', crowd: false, dirty: false, saving: false, timer: null, lastSaved: null, failed: false };
@@ -237,6 +268,7 @@ async function loadTerm(id) {
   st.term = r.term; st.previous = r.previous; st.others = r.others || {}; st.booked = r.booked || {}; st.courses = r.courses || []; st.scope = r.booked_scope || 'department';
   st.entry = Object.assign({ slots: {}, hours_week: 0, hours_max: 0, max_day: 0, block_len: 0, away: [], tags: {}, note: '', updated_at: null, submitted_at: null }, r.entry || {});
   st.lastSaved = st.entry.updated_at; st.dirty = false; st.failed = false;
+  st.draft = await call('GET', `/me/draft-timetable/${id}`).catch(() => null); st.obj = null;   /* 404 = no draft was sent to this teacher */
   ls.set('jem_plan_term', id);
   const u = new URL(location.href); u.searchParams.set('term', id); history.replaceState(null, '', u);
   render();
@@ -258,6 +290,7 @@ function render() {
     <h2 class="ask">${esc(t.ask)}</h2>
     <p class="lead">${esc(t.how)} ${esc(t.geneva)}</p>
     ${term.note ? `<div class="tnote">${esc(term.note)}</div>` : ''}
+    ${st.draft ? '<div class="card dcard" id="draft"></div>' : ''}
     <div class="lay">
       <div class="card">
         <div class="brush" role="radiogroup">
@@ -332,7 +365,56 @@ function render() {
   $('bSend').onclick = () => save(true);
   if ($('bCopy')) $('bCopy').onclick = () => { const p = st.previous; st.entry.slots = {}; for (const [k, v] of Object.entries(p.slots || {})) { const [d, h] = k.split('-').map(Number); if (d <= term.days && h >= term.day_from && h < term.day_to) st.entry.slots[k] = v; }
     if (!st.entry.hours_week) st.entry.hours_week = p.hours_week; if (!st.entry.max_day) st.entry.max_day = p.max_day; st.dirty = true; render(); setState('ok', t.copied); queueSave(); };
-  drawAway(); refreshGrid(); refreshPanel(); showState();
+  drawAway(); refreshGrid(); refreshPanel(); showState(); drawDraft();
+}
+/* ---- the draft timetable (16 Nov 2026): read it, answer once ---- */
+function drawDraft() {
+  const box = $('draft'), dr = st.draft; if (!box || !dr) return;
+  const t = T(), a = dr.answer || {}, o = st.obj;
+  const fD = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString(LANG === 'fr' ? 'fr-CH' : 'en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' }) : '';
+  const when = c => `${t.days[c.day - 1]} ${hh(c.hour)}–${hh(c.hour + c.len)}`;
+  let h = `<h3>${esc(t.dTitle)}</h3>
+    <p class="lead" style="margin:0 0 4px">${esc(dr.can_answer ? t.dWhy : dr.run.status === 'published' ? t.dPub : t.dClosed)}</p>
+    ${dr.can_answer ? `<p class="small muted" style="margin:0">${dr.run.answer_by ? esc(t.dBy(fDay(dr.run.answer_by))) + ' ' : ''}${esc(t.dKeep)} ${esc(t.geneva)}</p>` : ''}
+    <div class="dtw"><table class="dt"><tr><th>${esc(t.dCourse)}</th><th>${esc(t.dWhen)}</th><th>${esc(t.dRoom)}</th><th>${esc(t.dStud)}</th><th>${esc(t.dSess)}</th></tr>
+      ${dr.classes.map(c => `<tr><td><b>${esc(c.course)}</b>${c.group ? ' · ' + esc(c.group) : ''}<div class="small muted">${esc(c.code || '')} ${esc(c.edition || '')}</div></td>
+        <td>${esc(when(c))}${dr.moved.includes(c.id) ? `<span class="mv">${esc(t.dMoved)}</span>` : ''}</td><td>${esc(c.online ? t.dOnline : c.room)}</td><td>${c.students}</td>
+        <td class="small">${esc(t.dSessions(c.sessions, fD(c.first), fD(c.last)))}</td></tr>`).join('')}</table></div>
+    ${a.decision === 'accept' ? `<p class="ans ok">✓ ${esc(t.dYouA(fWhen(a.answered_at)))}</p>` : ''}
+    ${a.decision === 'object' ? `<p class="ans obj">${esc(t.dYouO(fWhen(a.answered_at)))}</p><div class="tnote" style="margin:4px 0">${esc(a.reason)}</div>` : ''}
+    ${dr.can_answer && a.decision ? `<p class="small muted" style="margin:0">${esc(t.dChange)}</p>` : ''}`;
+  if (dr.can_answer && !o) h += `<div class="row2" style="margin-top:10px"><button type="button" class="ab primary" id="dA">${AdminUI.icon('check')}${esc(t.dAccept)}</button><button type="button" class="ab" id="dO">${AdminUI.icon('alert')}${esc(t.dObject)}</button></div>`;
+  if (dr.can_answer && o) {
+    const days = []; for (let d = 1; d <= dr.term.days; d++) days.push(d);
+    const hrs = []; for (let x = dr.term.day_from; x <= dr.term.day_to; x++) hrs.push(x);
+    h += `<div class="objf">
+      <label class="l">${esc(t.dWhich)}</label>${dr.classes.map(c => `<label class="small" style="display:block;margin:3px 0;cursor:pointer"><input type="checkbox" data-oc="${esc(c.id)}" ${o.classes.includes(c.id) ? 'checked' : ''}> ${esc(c.course)}${c.group ? ' · ' + esc(c.group) : ''} · ${esc(when(c))}</label>`).join('')}
+      <label class="l">${esc(t.dReason)}</label><textarea class="f" id="dR" rows="2" maxlength="1000" placeholder="${esc(t.dReasonPh)}">${esc(o.reason)}</textarea>
+      <label class="l">${esc(t.dHours)}</label>
+      <div class="row2"><select class="f" id="dHd" aria-label="${esc(t.dDay)}">${days.map(d => `<option value="${d}">${esc(t.days[d - 1])}</option>`).join('')}</select>
+        <span class="small muted">${esc(t.dFrom)}</span><select class="f" id="dHf">${hrs.slice(0, -1).map(x => `<option value="${x}">${hh(x)}</option>`).join('')}</select>
+        <span class="small muted">${esc(t.dTo)}</span><select class="f" id="dHt">${hrs.slice(1).map(x => `<option value="${x}">${hh(x)}</option>`).join('')}</select>
+        <button type="button" class="ab sm" id="dHa">${AdminUI.icon('plus')}${esc(t.dAdd)}</button></div>
+      <div class="chips">${o.avoid.map((k, i) => { const [d, x] = k.split('-'); return `<button type="button" class="chip on" data-av="${i}" title="×">${esc(t.dshort[d - 1])} ${x}:00 ✕</button>`; }).join('')}</div>
+      <div class="row2"><button type="button" class="ab primary" id="dS">${AdminUI.icon('send')}${esc(t.dSend)}</button><button type="button" class="ab ghost" id="dC">${esc(t.dCancel)}</button></div></div>`;
+  }
+  h += `<div class="msg" id="dX"></div>`;
+  box.innerHTML = h;
+  const answer = async body => { $('dX').textContent = '';
+    try { const r = await call('POST', `/me/draft-timetable/${dr.term.id}/answer`, body); dr.answer = r; st.obj = null; drawDraft(); const m = $('dX'); if (m) { m.style.color = 'var(--a-good)'; m.textContent = t.dSent; } }
+    catch (e) { if ($('dX')) $('dX').textContent = e.message; } };
+  if ($('dA')) $('dA').onclick = () => answer({ decision: 'accept' });
+  if ($('dO')) $('dO').onclick = () => { st.obj = { classes: dr.classes.map(c => c.id), reason: a.decision === 'object' ? a.reason : '', avoid: a.decision === 'object' ? (a.avoid || []).slice() : [] }; drawDraft(); $('dR').focus(); };
+  if (o && $('dS')) {
+    box.querySelectorAll('[data-oc]').forEach(c => c.onchange = () => { o.classes = [...box.querySelectorAll('[data-oc]')].filter(x => x.checked).map(x => x.dataset.oc); });
+    $('dR').oninput = () => { o.reason = $('dR').value; };
+    $('dHa').onclick = () => { const d = $('dHd').value, f = Number($('dHf').value), to = Number($('dHt').value);
+      for (let x = f; x < Math.max(f + 1, to); x++) { const k = `${d}-${String(x).padStart(2, '0')}`; if (!o.avoid.includes(k)) o.avoid.push(k); } drawDraft(); };
+    box.querySelectorAll('[data-av]').forEach(b => b.onclick = () => { o.avoid.splice(Number(b.dataset.av), 1); drawDraft(); });
+    $('dC').onclick = () => { st.obj = null; drawDraft(); };
+    $('dS').onclick = () => { if (o.reason.trim().length < 3) { $('dX').textContent = t.dNeedReason; return; } if (!o.classes.length) { $('dX').textContent = t.dNeedClass; return; }
+      answer({ decision: 'object', reason: o.reason.trim(), classes: o.classes, avoid: o.avoid }); };
+  }
 }
 const clamp = (v, max) => { const x = Math.round(Number(v) || 0); return Math.min(max, Math.max(0, x)); };   /* whole hours only */
 function setSlot(k, v) {

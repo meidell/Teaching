@@ -81,6 +81,16 @@ table.g td.hm{color:var(--a-ink);cursor:default;} table.g td.hm small{color:#8A5
 .qq .opt.ok{color:var(--a-good);font-weight:700;} .qq .opt .bar{height:6px;} .qq .opt .bar i{background:var(--a-faint);} .qq .opt.ok .bar i{background:var(--a-good);}
 .pct{font-weight:800;} .pct.bad{color:var(--a-bad);} .pct.mid{color:var(--a-warn);} .pct.ok{color:var(--a-good);}
 .wrow{cursor:pointer;} .wrow:hover td{background:var(--a-wash);}
+/* the automatic timetable (16 Nov 2026): propose, pin, ask the teachers once, publish */
+ol.ttsteps{margin:6px 0 12px;padding-left:22px;font-size:13.5px;} ol.ttsteps li{margin:3px 0;} ol.ttsteps li.done{color:var(--a-good);} ol.ttsteps li.next{font-weight:800;}
+.ttweek{display:grid;grid-template-columns:repeat(var(--tt-days,5),minmax(150px,1fr));gap:8px;overflow-x:auto;padding-bottom:4px;}
+.ttday h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-grey);}
+.ttc{border:1px solid var(--a-line);border-left:4px solid var(--a-accent-bright);border-radius:8px;padding:7px 9px;margin-bottom:6px;background:#fff;font-size:12.5px;cursor:pointer;}
+.ttc:hover{background:var(--a-wash);} .ttc b{display:block;font-size:13px;} .ttc .w{color:var(--a-grey);}
+.ttc.pin{border-left-color:var(--a-ink);} .ttc.moved{border-left-color:var(--a-warn);} .ttc.obj{box-shadow:inset 0 0 0 1px var(--a-bad);}
+.ttc .tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:0 5px;margin:3px 3px 0 0;background:var(--a-wash);color:var(--a-ink2);}
+.ttun{border-left:3px solid var(--a-bad);padding:4px 10px;margin:8px 0;font-size:13px;} .ttun ul{margin:4px 0 0;padding-left:18px;}
+@media(max-width:700px){ .ttweek{grid-template-columns:1fr;} }
 #drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:#fff;border-left:1px solid var(--a-line);box-shadow:-20px 0 40px -30px rgba(0,0,0,.4);z-index:60;overflow:auto;padding:18px 20px;display:none;}
 #drawer.on{display:block;}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:4px 12px;font-size:13px;}
@@ -247,8 +257,10 @@ async function deptView() {
     </div>
     <div class="grid2">
       <div><div class="asec">Rooms</div><div class="acard">
-        ${rooms.length ? `<table class="t">${rooms.map(r => `<tr><td>${esc(r.name)}</td><td class="n muted">${r.capacity ? r.capacity + ' seats' : ''}</td></tr>`).join('')}</table>` : '<p class="muted small">No rooms yet. Online-only courses need none.</p>'}
-        ${admin ? `<div class="row"><label>Room<input class="f" id="rN" placeholder="e.g. Room 3.12"></label><label>Seats<input class="f" id="rC" type="number" min="1" style="width:80px"></label><button class="ab" id="rB">${ic('plus')}Add</button></div><div class="msg" id="rX"></div>` : ''}
+        ${rooms.length ? `<table class="t">${rooms.map(r => `<tr><td>${esc(r.name)}</td><td class="n muted">${r.capacity ? r.capacity + ' seats' : ''}</td>
+          <td class="n small">${admin ? `<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" data-lab="${r.id}" ${r.lab ? 'checked' : ''}>computer lab</label>` : (r.lab ? 'computer lab' : '')}</td></tr>`).join('')}</table>` : '<p class="muted small">No rooms yet. Online-only courses need none.</p>'}
+        ${admin ? `<div class="row"><label>Room<input class="f" id="rN" placeholder="e.g. Room 3.12"></label><label>Seats<input class="f" id="rC" type="number" min="1" style="width:80px"></label><label style="flex-direction:row;align-items:center;gap:5px">Computer lab<input type="checkbox" id="rL"></label><button class="ab" id="rB">${ic('plus')}Add</button></div><div class="msg" id="rX"></div>
+          <p class="small muted" style="margin:0">Tick “computer lab” for a room with computers: the automatic timetable puts a course that needs one only there.</p>` : ''}
       </div></div>
       ${admin ? `<div><div class="asec">People with a role here</div><div class="acard">
         ${people.length ? `<table class="t">${people.map(p => `<tr><td>${esc(p.name || p.email)}<div class="small muted">${esc(p.email)}</div></td><td><span class="apill acc">${esc(p.role)}</span></td>
@@ -269,7 +281,8 @@ async function deptView() {
   if (admin && $('tB')) $('tB').onclick = () => act($('tX2'), () => call('POST', `/departments/${st.dept.id}/terms`, { label: $('tL').value.trim(), starts_on: $('tS').value, ends_on: $('tE').value,
     day_from: $('tF').value, day_to: $('tT').value, days: $('tD').value, deadline: $('tX').value || null, note: $('tN').value.trim() }), deptView, () => 'The term is open. Teachers see it on Teaching availability.');
   if (admin) {
-    $('rB').onclick = () => act($('rX'), () => call('POST', `/departments/${st.dept.id}/rooms`, { name: $('rN').value.trim(), capacity: $('rC').value || null }), deptView);
+    $('rB').onclick = () => act($('rX'), () => call('POST', `/departments/${st.dept.id}/rooms`, { name: $('rN').value.trim(), capacity: $('rC').value || null, lab: $('rL').checked }), deptView);
+    main.querySelectorAll('[data-lab]').forEach(c => c.onchange = () => act($('rX'), () => call('PATCH', `/rooms/${c.dataset.lab}`, { lab: c.checked }), null, () => c.checked ? 'Marked as a computer lab.' : 'No longer a computer lab.'));
     $('pB').onclick = () => act($('pX'), () => call('POST', `/departments/${st.dept.id}/members`, { email: $('pE').value.trim(), role: $('pR').value }), deptView);
     main.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const [u, r] = b.dataset.rm.split('|'); if (confirm('Remove this role?')) act(null, () => call('DELETE', `/departments/${st.dept.id}/members/${u}/${r}`), deptView); });
   }
@@ -314,6 +327,8 @@ async function termView(id) {
           <td class="small">${fWhen(x.entry.updated_at)}</td><td class="small">${esc(x.entry.note)}</td></tr>`
         : `<tr><td>${esc(x.name || x.email)}<div class="small muted">${esc(x.email)}</div></td><td class="small">${x.roles.join(', ')}</td><td colspan="9"><span class="apill warn">nothing entered</span></td></tr>`).join('')}</table>
       ${missing.length ? `<div class="row" style="margin-top:10px"><button class="ab sm" id="bMail">${ic('mail')}Copy the ${missing.length} email address${missing.length > 1 ? 'es' : ''} of those who have not entered</button><span class="msg" id="mlX" style="margin:0"></span></div>` : ''}</div>
+    <div class="asec" id="autoH">Automatic timetable <small class="muted">the computer proposes the whole term; you check it, ask each teacher once, and publish</small></div>
+    <div class="acard" id="auto"><div class="empty">Loading…</div></div>
     <div class="asec">Term settings</div>
     <div class="acard">
       <div class="row"><label>Label<input class="f" id="eL" value="${esc(t.label)}" style="width:150px"></label><label>First day<input class="f" type="date" id="eS" value="${dIn(t.starts_on)}"></label><label>Last day<input class="f" type="date" id="eE" value="${dIn(t.ends_on)}"></label>
@@ -324,6 +339,7 @@ async function termView(id) {
       <div class="msg" id="eX2"></div>
       <p class="small muted">Shrinking the grid keeps the marks outside it in the database but hides them; teachers will not see them again until the grid grows back.</p></div>`;
   AdminUI.icons(main);
+  autoPanel(t);
   $('bBack').onclick = deptView;
   main.querySelectorAll('[data-who]').forEach(tr => tr.onclick = () => {
     const x = T.find(y => y.id === tr.dataset.who), e = x.entry, d = $('drawer');
@@ -346,6 +362,109 @@ async function termView(id) {
     try { await call('DELETE', `/terms/${id}`); }
     catch (e) { if (e.status !== 409 || !confirm(e.message + '\n\nDelete the term AND every teacher\'s entries for it?')) { alert(e.message); return; } try { await call('DELETE', `/terms/${id}?force=1`); } catch (e2) { alert(e2.message); return; } }
     deptView();
+  };
+}
+
+/* ---- the automatic timetable (16 Nov 2026) — API SPEC §7c ----
+   Propose → pin what must stay and solve again → send each teacher their draft once →
+   solve again around the objections → publish the sessions for every week of the term. */
+const AT = { term: null, runs: [], view: null, pins: [], len: 2 };
+const DAYL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const STATUSW = { draft: 'Draft: only you can see it', sent: 'Sent to the teachers: waiting for their answers', resolved: 'Objections solved: ready to publish', published: 'Published: the sessions are in the timetable' };
+async function autoPanel(t, runId) {
+  AT.term = t;
+  try { const r = await call('GET', `/terms/${t.id}/autotimetable/runs`); AT.runs = r.runs; AT.pins = r.pins; } catch (e) { $('auto').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  const id = runId || (AT.runs[0] && AT.runs[0].id);
+  AT.view = null;
+  if (id) { try { AT.view = await call('GET', `/terms/${t.id}/autotimetable/runs/${id}`); } catch (e) {} }
+  drawAuto();
+}
+function drawAuto(note) {
+  const box = $('auto'); if (!box) return;
+  const v = AT.view, st0 = v ? v.run.status : null;
+  const step = n => { const done = { 1: !!v, 2: !!v && AT.runs.length > 1 || (v && AT.pins.length > 0), 3: ['sent', 'resolved', 'published'].includes(st0), 4: ['resolved', 'published'].includes(st0), 5: st0 === 'published' };
+    const next = [1, 2, 3, 4, 5].find(k => !done[k] && !(k === 2 && done[3])); return done[n] ? 'done' : n === next ? 'next' : ''; };
+  const steps = ['Propose a timetable. The computer reads every teacher’s week, the students of each course and the rooms.',
+    'Check it. Pin a class you want to keep where it is, then press “Solve again”: pinned classes stay, the rest may move.',
+    'Send each teacher their draft. Each one answers once: accept, or object and say why.',
+    'Solve again around the objections. Every class whose teacher did not object stays where it is.',
+    'Publish. The sessions are written for every week of the term, and the database refuses any double booking.'];
+  let h = `<p class="small" style="margin:0 0 6px">A timetable built by hand takes many rounds of emails, and every change can create a new clash. Here the computer places every course at once, with no student, teacher or room in two places, and you ask the teachers only once. Students see nothing until you publish.</p>
+    <ol class="ttsteps">${steps.map((x, i) => `<li class="${step(i + 1)}">${step(i + 1) === 'done' ? '✓ ' : ''}${esc(x)}</li>`).join('')}</ol>
+    <div class="row"><label>A session lasts, when nothing else says<select class="f" id="atL">${[1, 2, 3, 4].map(n => `<option value="${n}" ${AT.len === n ? 'selected' : ''}>${n} hour${n > 1 ? 's' : ''}</option>`).join('')}</select></label>
+      <button class="ab primary" id="atP">${ic('zap')}Propose a timetable</button>
+      ${v ? `<button class="ab" id="atA" title="Uses the pins, and keeps the other classes where they are unless moving them improves the timetable">${ic('refresh')}Solve again</button>` : ''}
+      ${AT.runs.length > 1 ? `<label>Earlier proposals<select class="f" id="atR">${AT.runs.map(r => `<option value="${r.id}" ${v && v.run.id === r.id ? 'selected' : ''}>${fWhen(r.created_at)} · ${r.placed} placed · ${r.status}</option>`).join('')}</select></label>` : ''}</div>
+    <p class="small muted" style="margin:0">The length comes first from what you pin, then from the sessions a course already has, then from the session length its teacher entered on Teaching availability.</p>
+    <div class="msg" id="atX">${note ? esc(note) : ''}</div>`;
+  if (!v) { box.innerHTML = h + `<div class="empty">No proposal yet. Press “Propose a timetable”.</div>`; wireAuto(); return; }
+  const C = {}; v.classes.forEach(c => C[c.id] = c);
+  const pinOf = id => AT.pins.find(p => p.class === id);
+  const objT = new Set(v.answers.filter(a => a.decision === 'object').map(a => a.user_id));
+  const placed = Object.keys(v.assignments).length;
+  h += `<div class="row" style="margin:6px 0 10px"><span class="apill ${st0 === 'published' ? 'ok' : st0 === 'draft' ? '' : 'acc'}">${esc(STATUSW[st0])}</span><span class="small muted">Proposal of ${fWhen(v.run.created_at)}</span></div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Classes placed</div><div class="v">${placed} <small>of ${v.classes.length}</small></div><div class="n">${v.unplaced.length ? v.unplaced.length + ' could not be placed: see why below' : 'every class has a time'}</div></div>
+      <div class="kpi"><div class="k">Students with two classes at once</div><div class="v">${v.counts.studentsWithClash}</div><div class="n">the computer never books a student twice</div></div>
+      <div class="kpi"><div class="k">Classes in an “if needed” hour</div><div class="v">${v.counts.ifNeeded}</div><div class="n">hours a teacher offered only if nothing else works</div></div>
+      <div class="kpi"><div class="k">Rooms used</div><div class="v">${v.counts.roomsUsed}</div><div class="n">online classes need none</div></div></div>`;
+  if (v.violations.length) h += `<div class="awarn">${ic('alert')}<div><b>This proposal breaks a rule, so it cannot be published.</b> ${v.violations.map(esc).join(' ')}</div></div>`;
+  if (v.warnings.length) h += `<div class="awarn">${ic('alert')}<div><b>Check these before you send the drafts:</b><ul style="margin:4px 0 0;padding-left:18px">${v.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div></div>`;
+  if (v.unplaced.length) h += `<div class="asec" style="margin-top:6px">Classes the computer could not place <small class="muted">and why</small></div>` +
+    v.unplaced.map(u => `<div class="ttun"><b>${esc((C[u.classId] || {}).name || u.classId)}</b><ul>${u.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`).join('');
+  /* the week, one column per day */
+  const days = []; for (let d = 1; d <= AT.term.days; d++) days.push(d);
+  h += `<div class="asec" style="margin-top:6px">The week <small class="muted">every week of the term looks like this · Geneva time · click a class to see why it is there, or to pin it</small></div>
+    <div class="ttweek" style="--tt-days:${AT.term.days}">${days.map(d => { const list = Object.entries(v.assignments).filter(([, a]) => a.day === d).sort((x, y) => x[1].hour - y[1].hour);
+      return `<div class="ttday"><h4>${DAYL[d - 1]}</h4>${list.length ? list.map(([cid, a]) => { const c = C[cid] || {}, pin = pinOf(cid), mv = v.moved.includes(cid), ob = objT.has(a.teacher_id) && st0 === 'sent';
+        return `<div class="ttc ${pin ? 'pin' : ''} ${mv ? 'moved' : ''} ${ob ? 'obj' : ''}" data-cls="${esc(cid)}"><span class="w">${hh(a.hour)}–${hh(a.hour + a.len)}</span><b>${esc(c.name)}</b>${esc(a.room === 'online' ? 'Online' : a.room)} · ${esc(a.teacher)}
+          <div>${pin ? `<span class="tag">pinned</span>` : ''}${mv ? `<span class="tag">moved after an objection</span>` : ''}${ob ? `<span class="tag">its teacher objected</span>` : ''}${c.lab ? '<span class="tag">computer lab</span>' : ''}</div></div>`; }).join('') : '<div class="small muted">No class.</div>'}</div>`; }).join('')}</div>`;
+  /* the round with the teachers */
+  if (st0 === 'draft') h += `<div class="asec">Ask the teachers once</div><div class="row"><label>Ask them to answer by<input class="f" type="date" id="atD"></label>
+      <button class="ab primary" id="atS">${ic('send')}Send each teacher their draft</button></div>
+      <p class="small muted" style="margin:0">Each teacher of a placed class receives an email with their classes and a link to <b>Teaching availability</b>, where they press Accept or Object. A teacher who does not answer keeps the draft times.</p>`;
+  if (v.answers.length) {
+    const n = k => v.answers.filter(a => (a.decision || null) === k).length;
+    h += `<div class="asec">The teachers’ answers <small class="muted">${n('accept')} accepted · ${n('object')} objected · ${n(null)} no answer yet</small></div>
+      <div class="tw"><table class="t"><tr><th>Teacher</th><th>Answer</th><th>Reason</th><th>Hours they cannot teach</th><th>When</th></tr>
+      ${v.answers.map(a => `<tr><td>${esc(a.name)}<div class="small muted">${esc(a.email)}${a.mail_error ? ' · the email failed' : ''}</div></td>
+        <td>${a.decision === 'accept' ? '<span class="apill ok">accepted</span>' : a.decision === 'object' ? '<span class="apill warn">objected</span>' : '<span class="apill">no answer</span>'}</td>
+        <td class="small">${esc(a.reason || '')}</td><td class="small">${(a.avoid || []).map(k => { const [d, hr] = k.split('-'); return DOW[d - 1] + ' ' + hr + ':00'; }).join(', ')}</td><td class="small">${a.answered_at ? fWhen(a.answered_at) : '—'}</td></tr>`).join('')}</table></div>`;
+  }
+  if (st0 === 'sent') h += `<div class="row"><button class="ab primary" id="atV">${ic('refresh')}Solve again around the objections</button></div>
+    <p class="small muted" style="margin:0">Classes whose teacher accepted or did not answer stay where they are. A class whose teacher objected moves away from its draft time and from the hours the teacher named. This closes the round: teachers can no longer answer.</p>`;
+  if (st0 !== 'published') h += `<div class="asec">Publish</div><div class="row"><label style="flex-direction:row;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--a-ink)"><input type="checkbox" id="atRep">Replace the sessions these courses already have in this term</label>
+      <button class="ab ${st0 === 'resolved' ? 'primary' : ''}" id="atB">${ic('calendar')}Publish the sessions</button></div>
+      <p class="small muted" style="margin:0">Publishing writes one session a week for every placed class, from the first to the last day of the term (inside the course’s own dates), in the room and with the teacher shown. Students and teachers then see them in their timetable and calendar. Sessions where attendance was taken are never replaced.</p>`;
+  else h += `<p class="small" style="margin:10px 0 0">Published on ${fWhen(v.run.published_at)}. Each course’s Timetable tab now holds its sessions; change a single session there.</p>`;
+  h += `<div class="msg" id="atY"></div>`;
+  box.innerHTML = h; AdminUI.icons(box); wireAuto();
+}
+function wireAuto() {
+  const v = AT.view, t = AT.term;
+  $('atL').onchange = () => { AT.len = Number($('atL').value); };
+  $('atP').onclick = () => act($('atX'), () => call('POST', `/terms/${t.id}/autotimetable`, { default_len: AT.len, seed: 1 + AT.runs.length }), r => { AT.view = r; return autoPanel(t, r.run.id); }, r => `Proposed: ${r.run.placed} of ${r.classes.length} classes placed.`);
+  if ($('atA')) $('atA').onclick = () => act($('atX'), () => call('POST', `/terms/${t.id}/autotimetable`, { default_len: AT.len, seed: 1 + AT.runs.length, prefer_run: v.run.id }), r => autoPanel(t, r.run.id), r => `Solved again: ${r.run.placed} of ${r.classes.length} classes placed.`);
+  if ($('atR')) $('atR').onchange = () => autoPanel(t, $('atR').value);
+  if ($('atS')) $('atS').onclick = () => { if (confirm('Send each teacher their draft now? They can answer only once, and you can send only one draft per term at a time.')) act($('atY'), () => call('POST', `/runs/${v.run.id}/send`, { answer_by: $('atD').value || null }), () => autoPanel(t, v.run.id), r => `Sent to ${r.mailed.length} teacher${r.mailed.length === 1 ? '' : 's'}${r.mail_failed.length ? '; the email to ' + r.mail_failed.join(', ') + ' failed' : ''}.`); };
+  if ($('atV')) $('atV').onclick = () => { if (confirm('Solve again around the objections? This closes the round: teachers can no longer answer.')) act($('atY'), () => call('POST', `/runs/${v.run.id}/resolve`), () => autoPanel(t, v.run.id), r => `${r.moved.length} class${r.moved.length === 1 ? '' : 'es'} moved.`); };
+  if ($('atB')) $('atB').onclick = () => { if (confirm('Publish the sessions for every week of the term?')) act($('atY'), () => call('POST', `/runs/${v.run.id}/publish`, { replace: $('atRep').checked }), () => autoPanel(t, v.run.id), r => `Published ${r.meetings} sessions of ${r.classes} classes.${r.away.length ? ' ' + r.away.join(' ') : ''}`); };
+  $('auto').querySelectorAll('[data-cls]').forEach(el => el.onclick = () => classDrawer(el.dataset.cls));
+}
+function classDrawer(cid) {
+  const v = AT.view, c = v.classes.find(x => x.id === cid), a = v.assignments[cid], d = $('drawer'), pin = AT.pins.find(p => p.class === cid);
+  d.innerHTML = `<div class="row" style="justify-content:space-between;margin:0 0 8px"><h2>${esc(c.name)}</h2><button class="ab ghost icon" id="dX">${ic('x')}</button></div>
+    <div class="kv"><span class="muted">When</span><b>${esc(a.label)}, every week</b><span class="muted">Room</span><b>${esc(a.room === 'online' ? 'Online' : a.room)}</b>
+      <span class="muted">Teacher</span><b>${esc(a.teacher)}</b><span class="muted">Students</span><b>${c.size}</b>
+      <span class="muted">One session</span><span>${c.len} hours (${esc(c.lenFrom)})</span>${c.lab ? '<span class="muted">Needs</span><span>a computer lab</span>' : ''}</div>
+    <div class="asec">Why it is there</div><ul class="small" style="padding-left:18px;margin:0">${(v.explain[cid] || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <div class="asec">Pin</div><p class="small muted" style="margin:0 0 6px">A pinned class keeps this day, hour, room and teacher in every later proposal of this term.</p>
+    <div class="row"><button class="ab ${pin ? '' : 'primary'}" id="dP">${ic('lock')}${pin ? 'Unpin this class' : 'Pin it here'}</button></div><div class="msg" id="dPX"></div>`;
+  AdminUI.icons(d); d.classList.add('on'); $('dX').onclick = () => d.classList.remove('on');
+  $('dP').onclick = () => {
+    const list = AT.pins.filter(p => p.class !== cid);
+    if (!pin) list.push({ class: cid, day: a.day, hour: a.hour, room_id: a.online ? 'online' : a.room_id, teacher_id: a.teacher_id });
+    act($('dPX'), () => call('PUT', `/terms/${AT.term.id}/autotimetable/pins`, { pins: list }), () => { AT.pins = list; drawAuto(); classDrawer(cid); }, () => pin ? 'Unpinned. Press “Solve again” to use it.' : 'Pinned. Press “Solve again”: it stays here.');
   };
 }
 

@@ -7,8 +7,14 @@
    check(input, assignments) → [ hard violations in words ]   (empty = valid)
 
    INPUT (plain JSON)
-     slots:    [{ id, mode, day?, label? }]           mode: weekly | weekend | block …
+     slots:    [{ id, mode, day?, label?, overlaps?:[slotIds], modeLabel? }]   mode: weekly | weekend | block …
                 day groups slots for maxPerDay and spread (default: the id)
+                overlaps = other slots that take place (partly) at the same real time, read both
+                ways: a block week overlaps every weekly slot of that week, a 3-hour slot from
+                09:00 overlaps the 2-hour slot from 10:00. A room, a teacher and a regular student
+                are then never in two overlapping slots at once (16 Nov 2026, the port to the API; before, a block
+                week was only its own slot and did not block its week's weekly slots).
+                modeLabel = the words for the kind of time in the reasons ("2-hour weekly")
      rooms:    [{ id, cap, lab?, blocked?:[slotId] }]
      teachers: [{ id, name?, avail:{slotId:'y'|'m'|'n'}, maxPerDay?, maxClasses?, maxHours? }]
                 a slot missing from avail counts as 'm' (if needed)
@@ -24,7 +30,8 @@
 
    HARD: one slot of the class's own mode; no two classes sharing a student who is a
    regular (non-retaker) member of both at the same slot; the teacher is 'y' or 'm' there
-   and teaches one class at a time, at most maxPerDay a day, maxClasses and maxHours in
+   and teaches one class at a time (overlapping slots count as the same time), at most
+   maxPerDay a day, maxClasses and maxHours in
    total; the room holds the class, is a lab when needed, is not booked twice or blocked
    (a block-mode class may go 'Off campus'); pins and avoidSlots are obeyed.
    SOFT (weighted): 'if needed' hours, retaker double bookings (per student and slot),
@@ -54,6 +61,12 @@
     if (input.weights && input.weights.teacherSameDay != null && input.weights.teacherDays == null) W.teacherDays = input.weights.teacherSameDay;
     const slots = (input.slots || []).map(s => ({ id: s.id, mode: s.mode, day: s.day && s.day !== 'week' ? s.day : s.id, label: s.label || s.id }));
     const SL = {}; slots.forEach(s => SL[s.id] = s);
+    /* overlapping slots, both ways; OVL[id] = the other slots that share real time with it */
+    const OV = {}; slots.forEach(s => OV[s.id] = new Set());
+    (input.slots || []).forEach(s => (s.overlaps || []).forEach(o => { if (o !== s.id && OV[s.id] && OV[o]) { OV[s.id].add(o); OV[o].add(s.id); } }));
+    const OVL = {}; slots.forEach(s => OVL[s.id] = Array.from(OV[s.id]));
+    const same = (a, b) => a === b || (!!OV[a] && OV[a].has(b));
+    const modeLabel = {}; (input.slots || []).forEach(s => { if (s.modeLabel && !modeLabel[s.mode]) modeLabel[s.mode] = s.modeLabel; });
     const rooms = (input.rooms || []).map(r => ({ id: r.id, cap: +r.cap || 0, lab: !!r.lab, blocked: new Set(r.blocked || []) }));
     const RM = {}; rooms.forEach(r => RM[r.id] = r);
     const TE = {}; (input.teachers || []).forEach(t => TE[t.id] = { id: t.id, name: t.name || t.id, avail: t.avail || {}, maxPerDay: t.maxPerDay || Infinity, maxClasses: t.maxClasses || Infinity, maxHours: t.maxHours || Infinity });
@@ -101,7 +114,7 @@
         g.sort((a, b) => a.base - b.base || a.k - b.k); if (g.length) c.bySlot.push(g); });
       c.optIndex = {}; c.opts.forEach(o => c.optIndex[o.s + '\u0001' + o.r + '\u0001' + o.t] = o);
     });
-    return { W, slots, SL, rooms, RM, TE, tName, av, classes, n, hardN, hardList, softList, memb, roomH, roomC };
+    return { W, slots, SL, OVL, same, modeLabel, rooms, RM, TE, tName, av, classes, n, hardN, hardList, softList, memb, roomH, roomC };
   }
 
   /* ---------- the mutable state ---------- */
@@ -113,11 +126,14 @@
     function assign(i, o) { const c = P.classes[i]; A[i] = o; tAt[o.t + '|' + o.s] = i; if (!o.off) rAt[o.r + '|' + o.s] = i; add(tDay, o.t + '|' + o.day, 1); if (!c.fixedT) { add(tCnt, o.t, 1); add(tHrs, o.t, c.hours); } }
     function unassign(i) { const o = A[i], c = P.classes[i]; if (!o) return; delete tAt[o.t + '|' + o.s]; if (!o.off) delete rAt[o.r + '|' + o.s]; add(tDay, o.t + '|' + o.day, -1); if (!c.fixedT) { add(tCnt, o.t, -1); add(tHrs, o.t, -c.hours); } A[i] = null; }
     /* can class i take option o, given everybody else (i itself ignored)? */
-    function slotFree(i, s) { const h = P.hardN[i]; for (let x = 0; x < h.length; x++) { const b = A[h[x]]; if (b && b.s === s) return false; } return true; }
+    function slotFree(i, s) { const h = P.hardN[i]; for (let x = 0; x < h.length; x++) { const b = A[h[x]]; if (b && P.same(b.s, s)) return false; } return true; }
     function ok(i, o, skipSlot) {
       if (!skipSlot && !slotFree(i, o.s)) return false;
       const ta = tAt[o.t + '|' + o.s]; if (ta !== undefined && ta !== i) return false;
       if (!o.off) { const ra = rAt[o.r + '|' + o.s]; if (ra !== undefined && ra !== i) return false; }
+      const ovl = P.OVL[o.s] || [];
+      for (let x = 0; x < ovl.length; x++) { const t2 = tAt[o.t + '|' + ovl[x]]; if (t2 !== undefined && t2 !== i) return false;
+        if (!o.off) { const r2 = rAt[o.r + '|' + ovl[x]]; if (r2 !== undefined && r2 !== i) return false; } }
       const T = P.TE[o.t], cur = A[i], c = P.classes[i], same = cur && cur.t === o.t;
       if ((tDay[o.t + '|' + o.day] || 0) - (same && cur.day === o.day ? 1 : 0) + 1 > T.maxPerDay) return false;
       if (!c.fixedT) { if ((tCnt[o.t] || 0) - (same ? 1 : 0) + 1 > P.roomC(o.t)) return false;
@@ -133,7 +149,7 @@
       const W = P.W; let base = 0, unpl = 0;
       const parts = { ifNeeded: 0, roomFit: 0, teacherChoice: 0, keep: 0, retakerClash: 0, spread: 0, teacherDays: 0 };
       for (let i = 0; i < P.n; i++) { const o = A[i]; if (!o) { unpl++; continue; } if (o.m) parts.ifNeeded += W.ifNeeded; parts.roomFit += W.roomFit * o.fit; parts.keep += W.keep * o.keep; parts.teacherChoice += o.base - (o.m ? W.ifNeeded : 0) - W.roomFit * o.fit - W.keep * o.keep; }
-      for (const [a, b, w] of P.softList) { const x = A[a], y = A[b]; if (x && y && x.s === y.s) parts.retakerClash += W.retakerClash * w; }
+      for (const [a, b, w] of P.softList) { const x = A[a], y = A[b]; if (x && y && P.same(x.s, y.s)) parts.retakerClash += W.retakerClash * w; }
       for (const [a, b] of P.hardList) { const x = A[a], y = A[b]; if (x && y && x.day === y.day && x.s !== y.s) parts.spread += W.spread; }
       const days = {}; for (let i = 0; i < P.n; i++) { const o = A[i]; if (o) (days[o.t] = days[o.t] || new Set()).add(o.day); }
       Object.keys(days).forEach(t => parts.teacherDays += W.teacherDays * (days[t].size - 1));
@@ -142,7 +158,7 @@
     }
     /* incremental cost of giving class i option o, against what is assigned */
     function incCost(i, o) { const W = P.W; let v = o.base;
-      for (const [a, b, w] of P.softList) if (a === i || b === i) { const y = A[a === i ? b : a]; if (y && y.s === o.s) v += W.retakerClash * w; }
+      for (const [a, b, w] of P.softList) if (a === i || b === i) { const y = A[a === i ? b : a]; if (y && P.same(y.s, o.s)) v += W.retakerClash * w; }
       for (const j of P.hardN[i]) { const y = A[j]; if (y && y.day === o.day) v += W.spread; }
       if (!(tDay[o.t + '|' + o.day] > 0) && A.some(y => y && y.t === o.t)) v += W.teacherDays;
       return v; }
@@ -152,7 +168,10 @@
   /* ---------- words: why a class cannot be placed ---------- */
   function reasonsFor(P, X, i) {
     const c = P.classes[i], R = [], T = P.tName, pin = c.pinned;
-    const modeWord = { weekly: 'weekday', weekend: 'weekend', block: 'block-week' }[c.mode] || c.mode;
+    if (P.exclusive && P.exclusive[i]) { const e = P.exclusive[i], k = P.classes[e.keep];
+      return [`${T(e.t)} teaches both ${k.name} and ${c.name}, and every possible time of one overlaps every possible time of the other (a block week takes in the weekly times of that week). Only one of the two can be placed, and ${k.name} was kept${k.pinned.slot ? ' because it is pinned' : ''}.`,
+        'Give one of the two classes another teacher.']; }
+    const modeWord = { weekly: 'weekday', weekend: 'weekend', block: 'block-week' }[c.mode] || P.modeLabel[c.mode] || c.mode;
     const all = P.slots.filter(s => s.mode === c.mode);
     if (!all.length) return [`There is no ${modeWord} time in the term to put it in.`];
     if (pin.slot && !all.some(s => s.id === pin.slot)) R.push('It is pinned to a time that does not belong to its kind of class.');
@@ -174,12 +193,12 @@
     const per = [];
     c.slotsC.forEach(s => {
       const why = [];
-      const clashWith = P.hardN[i].filter(j => X.A[j] && X.A[j].s === s.id);
+      const clashWith = P.hardN[i].filter(j => X.A[j] && P.same(X.A[j].s, s.id));
       if (clashWith.length) { const shared = clashWith.reduce((a, j) => a + P.classes[j].students.filter(id => c.students.includes(id) && !c.retakers.has(id) && !P.classes[j].retakers.has(id)).length, 0);
         why.push(`${plural(shared, 'student')} already ${shared === 1 ? 'has' : 'have'} ${listWords(clashWith.map(j => P.classes[j].name))} then`); }
       const tw = teachersOk.map(t => { const a = P.av(t, s.id); if (a === 'n') return `${T(t)} is unavailable`;
-        const busy = Object.keys(X.A).find(j => X.A[j] && X.A[j].t === t && X.A[j].s === s.id && +j !== i);
-        if (busy !== undefined) return `${T(t)} teaches ${P.classes[busy].name} then`;
+        const busy = Object.keys(X.A).find(j => X.A[j] && X.A[j].t === t && P.same(X.A[j].s, s.id) && +j !== i);
+        if (busy !== undefined) return X.A[busy].s === s.id ? `${T(t)} teaches ${P.classes[busy].name} then` : `${T(t)} teaches ${P.classes[busy].name} in ${P.SL[X.A[busy].s].label}, which takes in this time`;
         const sameDay = X.A.filter((o, j) => o && j !== i && o.t === t && o.day === s.day).length;
         if (sameDay + 1 > P.TE[t].maxPerDay) return `${T(t)} already teaches ${plural(sameDay, 'class')} that day`;
         if (!c.fixedT) { const mine = X.A.map((o, j) => o && j !== i && o.t === t && !P.classes[j].fixedT ? j : -1).filter(j => j >= 0);
@@ -188,7 +207,7 @@
         return null; });
       const freeT = teachersOk.filter((t, x) => !tw[x]);
       if (!freeT.length) why.push(teachersOk.length === 1 ? tw[0] : `none of the ${teachersOk.length} possible teachers is free`);
-      const freeR = c.roomsC.filter(r => r.off || (!r.blocked.has(s.id) && X.A.every((o, j) => !o || j === i || o.s !== s.id || o.r !== r.id)));
+      const freeR = c.roomsC.filter(r => r.off || (!r.blocked.has(s.id) && X.A.every((o, j) => !o || j === i || !P.same(o.s, s.id) || o.r !== r.id)));
       if (!freeR.length) why.push(`no free room holds ${c.size} students${c.lab ? ' with computers' : ''}`);
       if (!why.length) why.push('the free teacher and the free rooms do not combine at this time');
       per.push(`${s.label}: ${why.join('; ')}.`);
@@ -204,7 +223,18 @@
     const t0 = now();
     const P = prepare(input), X = makeState(P), rnd = mulberry32((input.seed >>> 0) || 1);
     const nodeBudget = input.nodeBudget || 20000;
-    const live = P.classes.filter(c => c.opts.length).map(c => c.i);
+    /* two classes with the same fixed teacher whose every time overlaps every time of the
+       other can never both be placed (a block week against a weekly class): keep one up front,
+       the pinned one or else the first, instead of letting the search spend its whole budget */
+    P.exclusive = {};
+    const fixedBy = {}; P.classes.forEach(c => { if (c.fixedT && c.opts.length) (fixedBy[c.fixedT] = fixedBy[c.fixedT] || []).push(c.i); });
+    Object.keys(fixedBy).forEach(t => { const L = fixedBy[t];
+      for (let x = 0; x < L.length; x++) for (let y = x + 1; y < L.length; y++) { const a = P.classes[L[x]], b = P.classes[L[y]];
+        if (P.exclusive[a.i] || P.exclusive[b.i]) continue;
+        const sa = Array.from(new Set(a.opts.map(o => o.s))), sb = Array.from(new Set(b.opts.map(o => o.s)));
+        if (!sa.every(u => sb.every(v => u !== v && P.same(u, v)))) continue;
+        const drop = b.pinned.slot && !a.pinned.slot ? a : b; P.exclusive[drop.i] = { keep: drop === a ? b.i : a.i, t }; } });
+    const live = P.classes.filter(c => c.opts.length && !P.exclusive[c.i]).map(c => c.i);
     /* 1. backtracking with forward checking */
     let nodes = 0, best = { n: -1, snap: null };
     const un = new Set(live);
@@ -241,8 +271,8 @@
       const unpl = live.filter(i => !X.A[i]);
       if (unpl.length && r < 0.15) { /* eject and repair: place an unplaced class by moving one blocker */
         const u = unpl[Math.floor(rnd() * unpl.length)], c = P.classes[u], o = c.opts[Math.floor(rnd() * c.opts.length)];
-        const blockers = new Set(P.hardN[u].filter(j => X.A[j] && X.A[j].s === o.s));
-        X.A.forEach((y, j) => { if (y && y.s === o.s && (y.t === o.t || (!o.off && y.r === o.r))) blockers.add(j); });
+        const blockers = new Set(P.hardN[u].filter(j => X.A[j] && P.same(X.A[j].s, o.s)));
+        X.A.forEach((y, j) => { if (y && P.same(y.s, o.s) && (y.t === o.t || (!o.off && y.r === o.r))) blockers.add(j); });
         if (blockers.size !== 1) continue;
         const v = [...blockers][0]; if (P.classes[v].opts.length < 2 || P.classes[v].pinned.slot) continue;
         const old = X.A[v]; X.unassign(v);
@@ -281,9 +311,13 @@
     /* clashes that remain: a student in two classes at one slot (only retakers can be here) */
     const at = {}; P.classes.forEach(c => { const o = X.A[c.i]; if (o) c.students.forEach(s => (at[s + '|' + o.s] = at[s + '|' + o.s] || []).push(c.id)); });
     const clashes = Object.keys(at).filter(k => at[k].length > 1).sort().map(k => { const p = k.lastIndexOf('|'); return { student: k.slice(0, p), classes: at[k], slot: k.slice(p + 1) }; });
+    /* and in two different slots that overlap (only when the input says slots overlap) */
+    const byStu = {}; P.classes.forEach(c => { const o = X.A[c.i]; if (o && P.OVL[o.s].length) c.students.forEach(s => (byStu[s] = byStu[s] || []).push([c.id, o.s])); });
+    Object.keys(byStu).sort().forEach(s => { const L = byStu[s]; for (let x = 0; x < L.length; x++) for (let y = x + 1; y < L.length; y++)
+      if (L[x][1] !== L[y][1] && P.same(L[x][1], L[y][1])) clashes.push({ student: s, classes: [L[x][0], L[y][0]], slot: L[x][1], overlaps: L[y][1] }); });
     P.classes.forEach(c => { const o = X.A[c.i]; if (!o) return; const E = [], pin = c.pinned;
       if (pin.slot) E.push('You pinned it to this time.');
-      const sharing = P.softList.filter(([a, b]) => (a === c.i || b === c.i)).filter(([a, b]) => { const y = X.A[a === c.i ? b : a]; return y && y.s === o.s; });
+      const sharing = P.softList.filter(([a, b]) => (a === c.i || b === c.i)).filter(([a, b]) => { const y = X.A[a === c.i ? b : a]; return y && P.same(y.s, o.s); });
       const rk = sharing.reduce((a, x) => a + x[2], 0);
       E.push(rk ? `${plural(rk, 'retaking student')} also ${rk === 1 ? 'has' : 'have'} another class at this time; no regular student does.` : 'No student of this class has another class at this time.');
       E.push(o.m ? `${P.tName(o.t)} marked this time as “if needed”, not as available.` : `${P.tName(o.t)} marked this time as available.`);
@@ -318,7 +352,13 @@
       else { const r = P.RM[a.room]; if (!r) V.push(`${c.name}: unknown room ${a.room}.`); else { if (r.cap < c.size) V.push(`${c.name}: ${r.id} is too small.`); if (c.lab && !r.lab) V.push(`${c.name}: needs a lab.`); if (r.blocked.has(a.slot)) V.push(`${c.name}: ${r.id} is blocked then.`); }
         const k = 'r|' + a.room + '|' + a.slot; if (used[k]) V.push(`${a.room} is booked twice at ${a.slot}.`); used[k] = 1; }
       const k2 = 't|' + t + '|' + a.slot; if (used[k2]) V.push(`${P.tName(t)} teaches twice at ${a.slot}.`); used[k2] = 1; });
-    P.hardList.forEach(([x, y]) => { const a = A[P.classes[x].id], b = A[P.classes[y].id]; if (a && b && a.slot === b.slot) V.push(`${P.classes[x].name} and ${P.classes[y].name} share regular students at ${a.slot}.`); });
+    /* the same room or teacher in two different slots that overlap */
+    const placed = P.classes.filter(c => A[c.id] && P.SL[A[c.id].slot]);
+    for (let x = 0; x < placed.length; x++) for (let y = x + 1; y < placed.length; y++) { const a = A[placed[x].id], b = A[placed[y].id];
+      if (a.slot === b.slot || !P.same(a.slot, b.slot)) continue;
+      if (a.room === b.room && a.room !== OFF) V.push(`${a.room} is booked at ${a.slot} and at ${b.slot}, which overlap.`);
+      if (a.teacher === b.teacher) V.push(`${P.tName(a.teacher)} teaches at ${a.slot} and at ${b.slot}, which overlap.`); }
+    P.hardList.forEach(([x, y]) => { const a = A[P.classes[x].id], b = A[P.classes[y].id]; if (a && b && P.same(a.slot, b.slot)) V.push(`${P.classes[x].name} and ${P.classes[y].name} share regular students at ${a.slot}${a.slot !== b.slot ? ' and ' + b.slot + ', which overlap' : ''}.`); });
     const day = {}, cnt = {}, hrs = {};
     P.classes.forEach(c => { const a = A[c.id]; if (!a) return; const d = (P.SL[a.slot] || {}).day; day[a.teacher + '|' + d] = (day[a.teacher + '|' + d] || 0) + 1; cnt[a.teacher] = (cnt[a.teacher] || 0) + 1; hrs[a.teacher] = (hrs[a.teacher] || 0) + c.hours; });
     Object.keys(day).forEach(k => { const t = k.split('|')[0]; if (P.TE[t] && day[k] > P.TE[t].maxPerDay) V.push(`${P.tName(t)} teaches more than ${P.TE[t].maxPerDay} a day.`); });
@@ -326,5 +366,5 @@
     return V;
   }
 
-  return { solve, check, OFF, version: '2026-11-16' };
+  return { solve, check, OFF, version: '2026-11-16b' };
 });
