@@ -389,3 +389,36 @@ global `EscWall`; `courseprogress.js` a port).
   embedded call after about 5 minutes. Jan Erik opens each room first (meet.jit.si sign-in) and has a menu
   of all six team rooms on his device. See the root CLAUDE.md, `meet.js`.
   **Switched to JaaS the same day** (provider `jaas`, app `vpaas-magic-cookie-d385d91070b7474195943739154d47b9`, worker secrets set by Jan Erik, worker deployed): no 5-minute cut, Jan Erik enters as moderator.
+
+- **`cables.html` — the undersea cable map (15 Nov 2026), a course tool for Session 5.** A full-width
+  `<canvas>` world map (equirectangular, own code, no library or CDN): drag, wheel, pinch, + / − / ⌂,
+  arrow and +/− keys; hover = tooltip, click/tap = a side panel with length, owners, ready-for-service
+  date, landing points and the owners' site; search by cable or country (combobox), "Show only the cables
+  that land in <country>" (the Natural Earth shape lights up), a ready-for-service year slider with
+  "Play the growth from 1989", and **"Show Arvane's routes"**: gold = cables landing in Marseille, Toulon
+  or Genoa AND in Singapore or Malaysia (AAE-1, SeaMeWe-4, SeaMeWe-5), blue = cables landing in Romania
+  or Bulgaria (KAFOS, Caucasus Cable System); Geneva, Constanța and Singapore are gold diamonds. A link
+  can carry `#arvane`, `#country=Egypt` or `#cable=<id>`. Three-question task (Marseille–Singapore
+  cables, cables landing in Egypt by 2021 — 14 of 18 in the data, the Red Sea cut with the 2024 Rubymar
+  and Sep 2025 Jeddah facts as in week5) with optional notes in localStorage only
+  (`escwa_cablemap_n1..3`), no `data-work`, no database. Not a counted session (no `data-module`).
+  ⚠ **DATA AND LICENCE, verified 15 Nov 2026:** the live API (`submarinecablemap.com/api/v3/…`) sends
+  no CORS header, and TeleGeography now says the underlying data is "restricted to paying subscribers"
+  (licence page); only maps/screenshots are CC BY-SA 4.0, and the interactive map "is not an embeddable
+  resource". The CC BY-NC-SA 3.0 licence belonged to the old GitHub repo, deleted in 2022. So the page
+  uses **the last openly licensed release, TeleGeography's commit of 12 Nov 2021** (author Nicholas
+  Browning, TeleGeography), taken from the unmodified mirror `naushad2007/Submarinecablemap786`
+  at `fbdba6a1a15d148ca7fed871519db5195396aeb8` (LICENSE file = CC BY-NC-SA 3.0): 497 cables, 1,327
+  landing points, 61 still planned in 2021 (dashed; 2Africa, PEACE…); nothing announced since is on it,
+  and the page says so. Files: `data/cables-2021.json` (381 KB, routes Douglas-Peucker 0.03°, ×100
+  integers, metadata merged from the per-cable JSONs), `data/cables-world.json` (390 KB, Natural Earth
+  1:50m countries, public domain, DP 0.04°), `data/cables-LICENSE-CC-BY-NC-SA-3.0.txt`. Attribution,
+  licence, "simplified" and the 2021 date are on the page (ShareAlike: the simplified file is offered
+  under the same licence). The build script is not in the repo (it was a one-off in the session
+  scratchpad); to rebuild, download the mirror's `web/public/api/v3/cable/*.json`, `cable-geo.json`,
+  `landing-point-geo.json` and NE `ne_50m_admin_0_countries.geojson` and repeat the simplification. If
+  Jan Erik ever licenses current data from TeleGeography, swap the file; the page reads only
+  `{k, cables:[{id,n,len,o,rfs,y,pl,u,c,lp,g}], lp:[{id,n,k,x,y}]}`. Linked from week5 step 2 (after
+  "The scale") and the hub's Course reference. Tested headless at 1320 and 390 px: no errors, hover,
+  click, search, country filter, slider, Arvane preset, drag, wheel, buttons, tap, two-finger pinch,
+  `#arvane` deep link, scrollWidth = viewport width.

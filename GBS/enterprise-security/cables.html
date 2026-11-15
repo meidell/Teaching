@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/enterprise-security/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The undersea cable map · Enterprise Security · IIG</title>
+<meta name="description" content="An interactive world map of the undersea data cables and the places where they come ashore, from TeleGeography's openly licensed data of November 2021. Find the cables between Europe and Singapore and in the Black Sea that Arvane Commodities depends on.">
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#0a2540">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/iig.css">
+<link rel="stylesheet" href="esc.css">
+<style>
+/* =====================================================================
+   The undersea cable map (15 Nov 2026), a course tool for Session 5.
+   Data: data/cables-2021.json (TeleGeography, release of 12 Nov 2021,
+   CC BY-NC-SA 3.0 — the last openly licensed release; since 2022 the
+   data is sold) and data/cables-world.json (Natural Earth 1:50m,
+   public domain). Both built by a script from the downloads; see the
+   course CLAUDE.md. The map is drawn on a <canvas> by the script below:
+   equirectangular projection, pan / wheel / pinch / buttons / keys.
+   No library, no CDN. Students' notes stay in localStorage only.
+   ===================================================================== */
+.wrap.wide{max-width:1240px;}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start;}
+@media(max-width:980px){.mapgrid{grid-template-columns:minmax(0,1fr);}}
+.ctl{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 14px;align-items:end;}
+.ctl label{display:block;font-size:11.5px;font-weight:800;color:var(--grey);letter-spacing:.3px;margin-bottom:4px;}
+.ctl input[type=search],.ctl select{width:100%;font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:6px;padding:7px 9px;background:#fff;color:var(--ink);}
+.ctl input[type=range]{width:100%;accent-color:#86692c;}
+.ctl .yr{display:flex;gap:8px;align-items:center;}
+.ctl .yr output{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;min-width:3.2em;}
+.ctl .btns{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;}
+.ctl .btn{padding:9px 14px;font-size:11.5px;}
+.srch{position:relative;}
+.srch ul{position:absolute;left:0;right:0;top:100%;z-index:30;list-style:none;background:#fff;border:1.5px solid var(--line);border-top:none;border-radius:0 0 6px 6px;max-height:280px;overflow:auto;box-shadow:0 8px 20px rgba(10,37,64,.15);}
+.srch li{padding:7px 10px;font-size:13.5px;cursor:pointer;border-top:1px solid var(--line);}
+.srch li small{color:var(--grey);font-size:11.5px;margin-left:6px;}
+.srch li.on,.srch li:hover{background:var(--accent-pale);}
+.status{grid-column:1/-1;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+.status b{color:var(--navy);}
+
+.mapbox{position:relative;background:#0a2540;border-radius:6px;overflow:hidden;height:min(68vh,640px);min-height:340px;touch-action:none;user-select:none;-webkit-user-select:none;}
+.mapbox canvas{display:block;width:100%;height:100%;cursor:grab;outline:none;}
+.mapbox canvas:focus-visible{box-shadow:inset 0 0 0 3px #c9a961;}
+.mapbox canvas.dragging{cursor:grabbing;}
+.mapbox canvas.over{cursor:pointer;}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;}
+.zoom button{width:38px;height:38px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:rgba(10,37,64,.85);color:#fff;font:800 20px/1 inherit;cursor:pointer;}
+.zoom button:hover{border-color:#c9a961;}
+.tip{position:absolute;pointer-events:none;background:#fff;color:var(--ink);border-radius:6px;padding:6px 9px;font-size:12.5px;line-height:1.35;box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:240px;display:none;z-index:5;}
+.tip b{color:var(--navy);display:block;}
+.tip small{color:var(--grey);}
+.maplegend{position:absolute;left:10px;bottom:8px;font-size:11px;color:rgba(255,255,255,.8);background:rgba(10,37,64,.75);border-radius:4px;padding:4px 8px;line-height:1.5;max-width:calc(100% - 70px);}
+.maplegend i{display:inline-block;width:18px;height:0;border-top:2px solid #9fd3f5;vertical-align:middle;margin-right:4px;}
+.maplegend i.d{border-top-style:dashed;}
+.maplegend i.g{border-top:3px solid #fff;box-shadow:0 0 0 2px rgba(201,169,97,.6);}
+.mapmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding:20px;text-align:center;}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-size:13.5px;line-height:1.55;max-height:calc(min(68vh,640px) + 0px);overflow:auto;}
+@media(max-width:980px){.panel{max-height:none;}}
+.panel h3{font-size:19px;line-height:1.2;margin-bottom:6px;}
+.panel .k{font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--accent-deep);margin:12px 0 3px;}
+.panel .k:first-child{margin-top:0;}
+.panel dl{margin:4px 0 8px;}
+.panel dt{font-size:11.5px;font-weight:800;color:var(--grey);margin-top:7px;}
+.panel dd{margin:1px 0 0;color:var(--ink);overflow-wrap:anywhere;}
+.panel .lps{columns:2 140px;column-gap:14px;margin:4px 0 0;padding:0;list-style:none;font-size:12.5px;}
+.panel .lps li{break-inside:avoid;margin-bottom:2px;}
+.panel .lps li.hl{font-weight:800;color:var(--navy);}
+.panel .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.panel .row .btn{padding:8px 12px;font-size:11px;}
+.panel .list{list-style:none;padding:0;margin:6px 0 0;}
+.panel .list li{margin:0;}
+.panel .list button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--line);padding:6px 2px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;}
+.panel .list button:hover,.panel .list button.on{background:var(--accent-pale);}
+.panel .list .sw{flex:none;width:12px;height:12px;border-radius:2px;}
+.panel .list small{margin-left:auto;color:var(--grey);font-size:11.5px;white-space:nowrap;}
+.panel .help ol{margin:6px 0 0 18px;}
+.panel .help li{margin-bottom:5px;}
+.panel .note{font-size:12px;color:var(--grey);margin-top:8px;}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;border-radius:3px;padding:1px 6px;background:var(--surface-2);color:var(--ink-soft);vertical-align:2px;}
+
+.arv{background:var(--navy-surface);color:#fff;border-radius:6px;padding:14px 17px;margin:14px 0;}
+.arv .dh{font-family:var(--font-label);font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:var(--accent);margin-bottom:5px;}
+.arv p{color:rgba(255,255,255,.9);font-size:14px;line-height:1.6;margin:0;max-width:80ch;}
+.arv b{color:#fff;}
+
+.task{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:16px 18px;margin:16px 0;}
+.task h2{font-size:22px;margin-bottom:6px;}
+.task p{font-size:14px;line-height:1.6;margin:6px 0;color:var(--ink);}
+.task ol.q{margin:10px 0 0 0;padding:0;list-style:none;counter-reset:q;}
+.task ol.q>li{counter-increment:q;position:relative;padding-left:38px;margin:14px 0;font-size:14px;line-height:1.6;}
+.task ol.q>li::before{content:counter(q);position:absolute;left:0;top:0;width:27px;height:27px;border-radius:50%;background:var(--navy-surface);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.task ol.q>li>b:first-child{color:var(--navy);display:block;}
+.task textarea{width:100%;min-height:70px;font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;margin-top:6px;background:#fff;color:var(--ink);resize:vertical;}
+.task .src{display:block;font-size:12px;color:var(--grey);margin-top:4px;}
+.task .savenote{font-size:12px;color:var(--grey);}
+.about{font-size:13px;line-height:1.65;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin:16px 0;}
+.about h2{font-size:17px;margin-bottom:6px;}
+.about p{margin:6px 0;}
+.about a,.task a,.panel a{color:var(--navy-bright);font-weight:700;}
+@media(max-width:520px){.wrap.wide{padding:18px 16px 70px;}.banner{padding:18px 18px;}.banner h1{font-size:24px;}.banner .lead{font-size:13.5px;}.task{padding:14px 14px;}.task ol.q>li{padding-left:34px;}}
+</style>
+</head>
+<body data-course="escwa">
+
+<div class="topbar">
+  <picture><source srcset="iig-logo.avif" type="image/avif"><img class="logo" src="iig-logo.png" alt="International Institute in Geneva"></picture>
+  <span class="tb-sess">Course tool · the cable map</span>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap wide">
+
+  <div class="banner">
+    <div class="kick">Course tool · Session 5 · cables, satellites and the sky</div>
+    <h1>The undersea data cables of the world, and the routes Arvane's traffic depends on</h1>
+    <div class="when">Use this map in Session 5, Step 2, and when your team chooses Arvane's weakest physical link in Step 6.</div>
+    <p class="lead"><b>Why this page exists.</b> Session 5 explains that undersea cables carry almost all the internet traffic between continents. This map shows where each cable runs, where it comes ashore, who owns it and when it started to carry traffic. With it, you can name the actual cables behind Arvane's connection to Singapore instead of guessing.</p>
+  </div>
+
+  <div class="ctl">
+    <div class="srch">
+      <label for="q">Find a cable or a country by typing its name</label>
+      <input type="search" id="q" placeholder="e.g. SeaMeWe-5 or Egypt" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list">
+      <ul id="qList" role="listbox" hidden></ul>
+    </div>
+    <div>
+      <label for="ctry">Show only the cables that land in this country</label>
+      <select id="ctry"><option value="">Show the cables of every country</option></select>
+    </div>
+    <div>
+      <label for="yr">Show only the cables ready for service by the end of this year</label>
+      <div class="yr"><input type="range" id="yr" min="1989" max="2026" step="1" value="2026"><output id="yrOut" for="yr">2026</output></div>
+    </div>
+    <div class="btns">
+      <button class="btn" id="bArv" type="button">Show Arvane's routes</button>
+      <button class="btn ghost" id="bPlay" type="button">Play the growth from 1989</button>
+      <button class="btn ghost" id="bAll" type="button">Show every cable again</button>
+    </div>
+    <div class="status" id="status" aria-live="polite">Loading the map…</div>
+  </div>
+
+  <div class="mapgrid">
+    <div class="mapbox" id="mapBox">
+      <canvas id="map" tabindex="0" aria-label="World map of undersea data cables. Drag to move, use the mouse wheel, two fingers or the plus and minus keys to zoom, and click a line to see the cable's details."></canvas>
+      <div class="zoom"><button type="button" id="zIn" aria-label="Zoom in">+</button><button type="button" id="zOut" aria-label="Zoom out">−</button><button type="button" id="zHome" aria-label="Show the whole world" style="font-size:15px">⌂</button></div>
+      <div class="maplegend"><i></i>Solid lines carried traffic in November 2021, <i class="d"></i>dashed lines were still planned, and <i class="g"></i>the white line is the cable you chose.</div>
+      <div class="tip" id="tip"></div>
+      <div class="mapmsg" id="mapMsg">Loading the map…</div>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <div class="arv">
+    <div class="dh">Why a trader in Geneva depends on these cables</div>
+    <p>Arvane's traders in Geneva send orders to the company's Singapore desk all day, and that traffic leaves Europe at the cable landing stations of <b>Marseille, Toulon or Genoa</b> and runs through the Mediterranean, past Egypt and through the Red Sea, so a cut there makes every order slower, or stops it until the telecom provider moves the traffic to another cable. Arvane's terminal in <b>Constanța</b> sends its data to Geneva over land networks or over the few cables in the Black Sea, which come ashore at Mangalia in Romania and at Varna and Balchik in Bulgaria, 40 to 120 km from the terminal.</p>
+  </div>
+
+  <div class="task">
+    <h2>Your task: three facts for the decision on Arvane's weakest link</h2>
+    <p><b>Why.</b> In Step 6 of Session 5, your team chooses the physical link whose loss would hurt Arvane most. A choice that names the actual cables, and the places where they come ashore, is one the board can check. The three questions below give you those facts.</p>
+    <p>Writing your answers here is optional. They are kept in this browser only and are not sent to anyone; copy them into your team's notes.</p>
+    <ol class="q">
+      <li><b>Name the cables that link southern France and Singapore.</b>
+        Press <b>Show Arvane's routes</b>, then click each gold line in the Mediterranean, or each name in the list beside the map. In the list of landing points (the places where a cable comes ashore), look for a place in France (Marseille or Toulon) and for Singapore. Write the name of every cable that lands in both.
+        <textarea id="n1" aria-label="The cables that land both in southern France and in Singapore" placeholder="e.g. Cable name: lands in Marseille and in Tuas, Singapore. Cable name: …"></textarea></li>
+      <li><b>Count the cables that land in Egypt.</b>
+        Choose <b>Egypt</b> in the box "Show only the cables that land in this country". Then move the year slider to <b>2021</b>, so that the count includes only the cables that were already carrying traffic in November 2021, when the data was published. Write the number, and the names of two places in Egypt where several cables come ashore.
+        <textarea id="n2" aria-label="The number of cables that land in Egypt, and two landing places" placeholder="e.g. … cables land in Egypt by 2021. Several of them come ashore at … and at …"></textarea></li>
+      <li><b>Say what a cut in the Red Sea does to Arvane's Singapore desk.</b>
+        In February and March 2024, three cables in the Red Sea (AAE-1, Seacom and EIG) were damaged, most likely by the anchor of the cargo ship Rubymar, which drifted after a Houthi missile hit it. Seacom said that the repair permit "could take up to eight weeks to obtain". On 6 September 2025, two more cables, SeaMeWe-4 and IMEWE, were cut near Jeddah, and Microsoft reported "increased delays" for its cloud traffic through the Middle East. Find AAE-1, SeaMeWe-4 and IMEWE with the search box and look at where each one comes ashore. Then write two sentences: does the Singapore desk lose its connection, or does it only become slower, and which question should Arvane put to its telecom provider?
+        <span class="src">Sources: Seacom via TechCentral, 8 March 2024; Data Center Knowledge and gCaptain, 7 March 2024 (the Rubymar's anchor as the likely cause); Microsoft via AFP, 7 September 2025. The delay of the longer route round Africa is computed in <a href="week5.html#s2">Session 5, Step 2</a>.</span>
+        <textarea id="n3" aria-label="What a cut in the Red Sea does to the Singapore desk" placeholder="e.g. If the Red Sea cables are cut, the desk … because … Arvane should ask its provider: …"></textarea></li>
+    </ol>
+    <div class="savenote" id="nNote">Kept in this browser only. <a href="#" id="nClear" style="color:var(--grey);font-weight:400;">Delete my notes on this device</a></div>
+  </div>
+
+  <div class="about">
+    <h2>Where the data comes from, and what it does not show</h2>
+    <p><b>The cables, their owners, lengths, dates and landing points</b> come from TeleGeography's Submarine Cable Map, in the version TeleGeography published openly on 12 November 2021, under the licence <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank" rel="noopener license">Creative Commons Attribution-NonCommercial-ShareAlike 3.0</a> (CC BY-NC-SA 3.0). That version is the latest one that may be copied: since 2022, TeleGeography sells its cable data under a paid licence, and its live map at <a href="https://www.submarinecablemap.com" target="_blank" rel="noopener">submarinecablemap.com</a> may be looked at but not copied.</p>
+    <p><b>So this map shows the network as it stood in November 2021.</b> It holds 497 cable systems; TeleGeography counted 607 in service in 2026. Cables that were still being built in 2021, such as 2Africa and PEACE, are drawn with a dashed line and their planned year; cables announced after November 2021 are missing. Before you quote a cable's status in a report, check it on submarinecablemap.com.</p>
+    <p><b>The lines are schematic.</b> TeleGeography draws each route by hand to show which places a cable connects; the exact path on the sea floor is not public. On this page the routes are simplified and the coordinates rounded to about 1 km so that the map loads quickly. The simplified files are shared under the same licence: <a href="data/cables-2021.json">data/cables-2021.json</a> and <a href="data/cables-LICENSE-CC-BY-NC-SA-3.0.txt">the licence text</a>. The country shapes are from <a href="https://www.naturalearthdata.com" target="_blank" rel="noopener">Natural Earth</a> (1:50 million scale), which is in the public domain. The places marked in gold for Arvane (Geneva, Constanța, Singapore) are real cities; Arvane Commodities SA itself is fictional.</p>
+    <p style="font-size:12px;color:var(--grey)">Data © TeleGeography, Submarine Cable Map, release of 12 November 2021, CC BY-NC-SA 3.0, simplified for this page. Used for non-commercial teaching. Map shapes: Made with Natural Earth.</p>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · <a href="week5.html">Session 5: cables, satellites and the sky</a> · International Institute in Geneva
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var K='escwa';
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- colours (the map is always dark navy, in the course's palette) */
+var SEA='#0a2540',LAND='#1b3a58',LANDHL='#35628c',BORDER='#2b5174',DIM='rgba(190,214,236,.13)',GOLD='#c9a961',GOLDB='#e3c98c';
+
+/* ---------- Arvane's places, real coordinates */
+var ARV=[{n:'Geneva',x:6.14,y:46.20},{n:'Constanța',x:28.63,y:44.17},{n:'Singapore',x:103.85,y:1.29}];
+var ARV_EU=['marseille-france','toulon-france','genoa-italy'];
+
+var cv=$('map'),ctx=cv.getContext('2d'),box=$('mapBox'),tip=$('tip');
+var W=0,H=0,DPR=1,s=2,tx=0,ty=0,minS=1,maxS=160;
+var world=[],cables=[],byId={},LP={},countries={},maxYear=2026;
+var st={sel:null,hover:null,act:null,kind:null,label:'',country:null,year:2026,groups:null};
+var queued=false;
+function req(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;draw();});}
+
+/* ---------- data */
+function getJSON(u){return fetch(u,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(u+' '+r.status);return r.json();});}
+Promise.all([getJSON('data/cables-world.json'),getJSON('data/cables-2021.json')]).then(init).catch(function(e){
+  $('mapMsg').textContent='The map data could not be loaded. Open this page from the course website (not as a file on your computer) and reload it.';
+  $('status').textContent='The map data could not be loaded.';
+  if(window.console)console.error(e);
+});
+
+var NE_ALIAS={'United States':'United States of America','Congo, Dem. Rep.':'Democratic Republic of the Congo','Congo, Rep.':'Republic of the Congo',"Côte d'Ivoire":'Ivory Coast','Korea, Rep.':'South Korea','China':"People's Republic of China",'Taiwan':'Taiwan','Bahamas':'The Bahamas','Gambia':'The Gambia','Micronesia':'Federated States of Micronesia','Timor-Leste':'East Timor','Sao Tome and Principe':'São Tomé and Príncipe','Cabo Verde':'Cape Verde'};
+
+function init(a){
+  var w=a[0],d=a[1],kw=w.k,kd=d.k;
+  w.c.forEach(function(c){
+    var p=new Path2D();
+    c.r.forEach(function(r){for(var i=0;i<r.length;i+=2){if(i)p.lineTo(r[i]/kw,r[i+1]/kw);else p.moveTo(r[i]/kw,r[i+1]/kw);}p.closePath();});
+    world.push({n:c.n,p:p,hl:false});
+  });
+  d.lp.forEach(function(l){LP[l.id]=l;});
+  d.cables.forEach(function(c){
+    var p=new Path2D(),b=[999,999,-999,-999],lines=[];
+    c.g.forEach(function(g){
+      var f=new Float32Array(g.length);
+      for(var i=0;i<g.length;i+=2){var x=g[i]/kd,y=g[i+1]/kd;f[i]=x;f[i+1]=y;if(i)p.lineTo(x,y);else p.moveTo(x,y);
+        if(x<b[0])b[0]=x;if(y<b[1])b[1]=y;if(x>b[2])b[2]=x;if(y>b[3])b[3]=y;}
+      lines.push(f);
+    });
+    var ks={};c.lp.forEach(function(id){var l=LP[id];if(l&&l.k)ks[l.k]=1;});
+    var o={id:c.id,n:c.n,len:c.len,o:c.o,rfs:c.rfs,y:c.y,pl:c.pl,u:c.u,c:c.c||'#9fd3f5',lp:c.lp,p:p,b:b,lines:lines,ks:Object.keys(ks),key:norm(c.n)};
+    cables.push(o);byId[o.id]=o;
+    o.ks.forEach(function(k){(countries[k]=countries[k]||[]).push(o.id);});
+  });
+  cables.sort(function(x,y){return x.n.localeCompare(y.n);});
+  maxYear=Math.max.apply(null,cables.map(function(c){return c.y||0;}));
+  $('yr').max=maxYear;$('yr').value=maxYear;st.year=maxYear;$('yrOut').textContent=maxYear;
+  var sel=$('ctry');
+  Object.keys(countries).sort(function(x,y){return x.localeCompare(y);}).forEach(function(k){
+    var op=document.createElement('option');op.value=k;op.textContent=k+' ('+countries[k].length+')';sel.appendChild(op);
+  });
+  $('mapMsg').remove();
+  resize();home(false);
+  readHash();
+  renderPanel();status();req();
+}
+
+/* ---------- view */
+function resize(){
+  var r=box.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2.5);
+  var cx=W?(W/2-tx)/s:null,cy=W?(ty-H/2)/s:null;
+  W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  minS=Math.max(W/360,H/170)*0.999;if(minS>maxS)minS=maxS;
+  if(cx!==null){s=Math.max(s,minS);tx=W/2-cx*s;ty=H/2+cy*s;clampView();}
+  req();
+}
+function clampView(){
+  s=Math.max(minS,Math.min(maxS,s));
+  var top=84,bot=-84;
+  /* no empty sea above lat 84 or below lat -84: ty/s is the latitude at the top edge, (ty-H)/s at the bottom */
+  if((top-bot)*s<=H){ty=H/2+((top+bot)/2)*s;}else{ty=Math.min(top*s,Math.max(H+bot*s,ty));}
+  var cl=(W/2-tx)/s;while(cl>180){tx+=360*s;cl-=360;}while(cl<-180){tx-=360*s;cl+=360;}
+}
+function fit(x0,y0,x1,y1,anim){
+  var pad=0.88,ns=Math.min(W/Math.max(1,(x1-x0))*pad,H/Math.max(1,(y1-y0))*pad);
+  ns=Math.max(minS,Math.min(maxS,ns));
+  var cx=(x0+x1)/2,cy=(y0+y1)/2;
+  go(ns,W/2-cx*ns,H/2+cy*ns,anim);
+}
+var animId=0;
+function go(ns,ntx,nty,anim){
+  if(!anim||RM){s=ns;tx=ntx;ty=nty;clampView();req();return;}
+  var s0=s,tx0=tx,ty0=ty,t0=performance.now(),id=++animId;
+  /* interpolate the centre in world units, so the motion does not swing */
+  var c0x=(W/2-tx0)/s0,c0y=(ty0-H/2)/s0,c1x=(W/2-ntx)/ns,c1y=(nty-H/2)/ns;
+  if(c1x-c0x>180)c0x+=360;else if(c0x-c1x>180)c0x-=360;
+  (function step(t){if(id!==animId)return;var k=Math.min(1,(t-t0)/420),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    s=Math.exp(Math.log(s0)+(Math.log(ns)-Math.log(s0))*e);var cx=c0x+(c1x-c0x)*e,cy=c0y+(c1y-c0y)*e;
+    tx=W/2-cx*s;ty=H/2+cy*s;clampView();draw();if(k<1)requestAnimationFrame(step);})(t0);
+}
+function home(anim){if(W<600)fit(-15,-12,125,62,anim);else fit(-180,-60,180,80,anim);}
+function zoomAt(px,py,f){var ns=Math.max(minS,Math.min(maxS,s*f));var lon=(px-tx)/s,lat=(ty-py)/s;s=ns;tx=px-lon*s;ty=py+lat*s;clampView();req();}
+
+/* ---------- which cables are on */
+function yearOK(c){return !c.y||c.y<=st.year;}
+function shown(){return cables.filter(yearOK);}
+
+/* ---------- drawing */
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=SEA;ctx.fillRect(0,0,W,H);
+  if(!world.length)return;
+  var act=st.act,sel=st.sel?byId[st.sel]:null,hov=st.hover&&st.hover!==st.sel?byId[st.hover]:null;
+  for(var k=-1;k<=1;k++){
+    var ox=tx+k*360*s;if(ox+180*s<0||ox-180*s>W)continue;
+    ctx.setTransform(DPR*s,0,0,-DPR*s,DPR*ox,DPR*ty);
+    ctx.lineJoin='round';ctx.lineCap='round';ctx.lineWidth=0.8/s;ctx.strokeStyle=BORDER;
+    for(var i=0;i<world.length;i++){var c=world[i];ctx.fillStyle=c.hl?LANDHL:LAND;ctx.fill(c.p);ctx.stroke(c.p);}
+    var lw=s>8?1.7:1.3;
+    for(i=0;i<cables.length;i++){c=cables[i];if(!yearOK(c))continue;
+      var on=!act||act[c.id];if(act&&on)continue;
+      ctx.strokeStyle=act?DIM:c.c;ctx.lineWidth=(act?1:lw)/s;ctx.setLineDash(c.pl?[5/s,4/s]:[]);ctx.stroke(c.p);}
+    if(act){for(i=0;i<cables.length;i++){c=cables[i];if(!yearOK(c)||!act[c.id])continue;
+      ctx.strokeStyle=(st.groups&&st.groups[c.id])||c.c;ctx.lineWidth=(lw+1.1)/s;ctx.setLineDash(c.pl?[6/s,4/s]:[]);ctx.stroke(c.p);}}
+    if(hov){ctx.setLineDash([]);ctx.strokeStyle='#fff';ctx.lineWidth=3/s;ctx.stroke(hov.p);}
+    if(sel){ctx.setLineDash([]);ctx.strokeStyle='rgba(201,169,97,.55)';ctx.lineWidth=10/s;ctx.stroke(sel.p);ctx.strokeStyle='#fff';ctx.lineWidth=2.8/s;ctx.stroke(sel.p);}
+    ctx.setLineDash([]);
+  }
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  /* landing points */
+  var dots={};
+  if(s>=5){shown().forEach(function(c){if(act&&!act[c.id])return;c.lp.forEach(function(id){dots[id]=1;});});}
+  else if(act){cables.forEach(function(c){if(act[c.id]&&yearOK(c))c.lp.forEach(function(id){dots[id]=1;});});}
+  ctx.fillStyle='rgba(235,244,252,.85)';
+  Object.keys(dots).forEach(function(id){var l=LP[id];if(!l)return;var p=scr(l.x,l.y);if(!p)return;ctx.beginPath();ctx.arc(p[0],p[1],act?2.4:1.7,0,6.2832);ctx.fill();});
+  var boxes=[];
+  /* Arvane's places */
+  ctx.font='800 12px "Avenir Next",Avenir,Arial,sans-serif';
+  ARV.forEach(function(a){var p=scr(a.x,a.y);if(!p)return;
+    ctx.save();ctx.translate(p[0],p[1]);ctx.rotate(Math.PI/4);ctx.fillStyle=GOLD;ctx.strokeStyle='#0a2540';ctx.lineWidth=1.5;ctx.fillRect(-4.5,-4.5,9,9);ctx.strokeRect(-4.5,-4.5,9,9);ctx.restore();
+    label(a.n,p[0]+8,p[1]-7,boxes,GOLDB,true);});
+  if(sel){ctx.font='700 11.5px "Avenir Next",Avenir,Arial,sans-serif';
+    sel.lp.forEach(function(id){var l=LP[id];if(!l)return;var p=scr(l.x,l.y);if(!p)return;
+      ctx.beginPath();ctx.arc(p[0],p[1],4.5,0,6.2832);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=GOLD;ctx.stroke();
+      label(l.n.replace(/,\s*[^,]+$/,''),p[0]+7,p[1]+4,boxes,'#fff',false);});}
+}
+function scr(lon,lat){var x=tx+lon*s,y=ty-lat*s;if(x<-30)x+=360*s;else if(x>W+30)x-=360*s;if(x<-30||x>W+30||y<-30||y>H+30)return null;return [x,y];}
+function label(t,x,y,boxes,col,force){
+  var w=ctx.measureText(t).width,h=13,r=[x-2,y-h+2,x+w+2,y+3];
+  if(r[2]>W-4){x=x-w-16;r=[x-2,y-h+2,x+w+2,y+3];}
+  if(!force)for(var i=0;i<boxes.length;i++){var b=boxes[i];if(r[0]<b[2]&&r[2]>b[0]&&r[1]<b[3]&&r[3]>b[1])return;}
+  boxes.push(r);ctx.lineWidth=3.5;ctx.strokeStyle='rgba(10,37,64,.92)';ctx.lineJoin='round';ctx.strokeText(t,x,y);ctx.fillStyle=col;ctx.fillText(t,x,y);
+}
+
+/* ---------- hit test, in degrees */
+function hit(px,py){
+  var lon=(px-tx)/s,lat=(ty-py)/s;lon=((lon+180)%360+360)%360-180;
+  var tol=9/s,best=null,bd=tol*tol;
+  function test(c){var b=c.b;
+    var L=[lon];if(lon-tol<-180)L.push(lon+360);if(lon+tol>180)L.push(lon-360);
+    for(var q=0;q<L.length;q++){var x=L[q];
+      if(x<b[0]-tol||x>b[2]+tol||lat<b[1]-tol||lat>b[3]+tol)continue;
+      for(var j=0;j<c.lines.length;j++){var f=c.lines[j];
+        for(var i=0;i+3<f.length;i+=2){var ax=f[i],ay=f[i+1],dx=f[i+2]-ax,dy=f[i+3]-ay,LL=dx*dx+dy*dy||1e-12;
+          var t=((x-ax)*dx+(lat-ay)*dy)/LL;t=t<0?0:t>1?1:t;var ex=ax+t*dx-x,ey=ay+t*dy-lat,dd=ex*ex+ey*ey;
+          if(dd<bd){bd=dd;best=c;}}}}}
+  var act=st.act;
+  cables.forEach(function(c){if(yearOK(c)&&(!act||act[c.id]))test(c);});
+  if(!best&&act)cables.forEach(function(c){if(yearOK(c)&&!act[c.id])test(c);});
+  return best;
+}
+
+/* ---------- pointer: drag, pinch, wheel, tap */
+var P={},drag=null,pinch=null,moved=0;
+function pos(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+function pts(){return Object.keys(P).map(function(k){return P[k];});}
+cv.addEventListener('pointerdown',function(e){
+  if(e.button&&e.button!==0)return;
+  try{cv.setPointerCapture(e.pointerId);}catch(err){}
+  animId++;P[e.pointerId]=pos(e);var a=pts();
+  if(a.length===1){drag={x:a[0].x,y:a[0].y,tx:tx,ty:ty};moved=0;cv.classList.add('dragging');}
+  else if(a.length===2){var m={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};
+    pinch={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1,s:s,lon:(m.x-tx)/s,lat:(ty-m.y)/s};drag=null;moved=99;}
+  hideTip();
+});
+cv.addEventListener('pointermove',function(e){
+  var p=pos(e);
+  if(P[e.pointerId]){P[e.pointerId]=p;var a=pts();
+    if(pinch&&a.length>=2){var m={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2},d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1;
+      s=Math.max(minS,Math.min(maxS,pinch.s*d/pinch.d));tx=m.x-pinch.lon*s;ty=m.y+pinch.lat*s;clampView();req();return;}
+    if(drag){var dx=p.x-drag.x,dy=p.y-drag.y;moved=Math.max(moved,Math.abs(dx)+Math.abs(dy));
+      if(moved>3){tx=drag.tx+dx;ty=drag.ty+dy;clampView();req();}return;}
+  }
+  if(e.pointerType==='mouse'&&!drag){var c=hit(p.x,p.y),id=c?c.id:null;
+    if(id!==st.hover){st.hover=id;req();}
+    cv.classList.toggle('over',!!c);
+    if(c)showTip(c,p);else hideTip();}
+});
+function up(e){
+  var p=P[e.pointerId];delete P[e.pointerId];var a=pts();
+  if(a.length<2)pinch=null;
+  if(a.length===1){drag={x:a[0].x,y:a[0].y,tx:tx,ty:ty};}
+  if(!a.length){cv.classList.remove('dragging');
+    if(drag&&moved<=6&&p&&e.type==='pointerup'){var c=hit(p.x,p.y);select(c?c.id:null,false);}
+    drag=null;}
+}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse'){st.hover=null;hideTip();req();}});
+cv.addEventListener('wheel',function(e){e.preventDefault();var p=pos(e);var dy=e.deltaMode===1?e.deltaY*16:e.deltaY;zoomAt(p.x,p.y,Math.exp(-dy*0.0016));hideTip();},{passive:false});
+cv.addEventListener('dblclick',function(e){var p=pos(e);zoomAt(p.x,p.y,2);});
+cv.addEventListener('keydown',function(e){var k=e.key,step=60;
+  if(k==='+'||k==='='){zoomAt(W/2,H/2,1.5);}else if(k==='-'||k==='_'){zoomAt(W/2,H/2,1/1.5);}
+  else if(k==='ArrowLeft'){tx+=step;}else if(k==='ArrowRight'){tx-=step;}else if(k==='ArrowUp'){ty+=step;}else if(k==='ArrowDown'){ty-=step;}
+  else if(k==='Escape'){select(null);}else return;
+  e.preventDefault();clampView();req();});
+$('zIn').onclick=function(){zoomAt(W/2,H/2,1.6);};
+$('zOut').onclick=function(){zoomAt(W/2,H/2,1/1.6);};
+$('zHome').onclick=function(){home(true);};
+if(window.ResizeObserver)new ResizeObserver(resize).observe(box);else window.addEventListener('resize',resize);
+
+function showTip(c,p){
+  tip.innerHTML='<b>'+esc(c.n)+'</b><small>'+esc([c.len,c.y?(c.pl?'planned for '+c.y:'in service since '+c.y):''].filter(Boolean).join(' · '))+'</small><br><small>Click the line to see the owners and landing points.</small>';
+  tip.style.display='block';var tw=tip.offsetWidth,th=tip.offsetHeight,x=p.x+14,y=p.y+14;
+  if(x+tw>W-6)x=p.x-tw-12;if(y+th>H-6)y=p.y-th-12;tip.style.left=Math.max(4,x)+'px';tip.style.top=Math.max(4,y)+'px';
+}
+function hideTip(){tip.style.display='none';}
+
+/* ---------- selection and filters */
+function select(id,zoom){
+  st.sel=id&&byId[id]?id:null;renderPanel();req();
+  if(st.sel&&zoom){var b=byId[st.sel].b;if(b[2]-b[0]<300)fit(b[0]-2,b[1]-2,b[2]+2,b[3]+2,true);}
+  writeHash();
+}
+function setFilter(kind,ids,label,groups){
+  st.kind=kind;st.label=label||'';st.groups=groups||null;
+  if(!ids){st.act=null;}else{st.act={};ids.forEach(function(i){st.act[i]=1;});}
+  st.country=kind==='country'?label:null;
+  var ne=st.country?(NE_ALIAS[st.country]||st.country):null;
+  world.forEach(function(c){c.hl=!!ne&&c.n===ne;});
+  $('ctry').value=st.country||'';
+  if(st.sel&&st.act&&!st.act[st.sel])st.sel=null;
+  renderPanel();status();req();writeHash();
+}
+function countryFilter(k,zoom){
+  if(!k||!countries[k]){setFilter(null,null);return;}
+  setFilter('country',countries[k],k);
+  if(zoom){var xs=[],ys=[];cables.forEach(function(c){c.lp.forEach(function(id){var l=LP[id];if(l&&l.k===k){xs.push(l.x);ys.push(l.y);}});});
+    if(xs.length){var x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs),y0=Math.min.apply(null,ys),y1=Math.max.apply(null,ys);
+      if(x1-x0<120){var m=Math.max(6,(x1-x0)*.4,(y1-y0)*.4);fit(x0-m,y0-m,x1+m,y1+m,true);}}}
+}
+function arvane(){
+  var g={},ids=[];
+  cables.forEach(function(c){
+    var eu=c.lp.some(function(id){return ARV_EU.indexOf(id)>=0;});
+    var asia=c.ks.indexOf('Singapore')>=0||c.ks.indexOf('Malaysia')>=0;
+    var bs=c.ks.indexOf('Romania')>=0||c.ks.indexOf('Bulgaria')>=0;
+    if(eu&&asia){ids.push(c.id);g[c.id]=GOLD;}
+    else if(bs){ids.push(c.id);g[c.id]='#56B4E9';}
+  });
+  setFilter('arvane',ids,"Arvane's routes",g);
+  fit(-6,-6,112,52,true);
+}
+$('bArv').onclick=arvane;
+$('bAll').onclick=function(){stopPlay();$('q').value='';setFilter(null,null);st.sel=null;setYear(maxYear);renderPanel();home(true);writeHash();};
+$('ctry').onchange=function(){countryFilter(this.value,true);};
+
+/* year slider */
+function setYear(y){st.year=+y;$('yr').value=y;$('yrOut').textContent=y;if(st.sel&&!yearOK(byId[st.sel]))st.sel=null;renderPanel();status();req();}
+$('yr').addEventListener('input',function(){stopPlay();setYear(this.value);});
+var playT=null;
+function stopPlay(){if(playT){clearInterval(playT);playT=null;$('bPlay').textContent='Play the growth from 1989';}}
+$('bPlay').onclick=function(){
+  if(playT){stopPlay();return;}
+  var y=1989;setYear(y);this.textContent='Stop the growth';
+  playT=setInterval(function(){y++;if(y>maxYear){stopPlay();return;}setYear(y);},RM?600:280);
+};
+
+/* search */
+var qi=$('q'),ql=$('qList'),qHits=[],qOn=-1;
+function qRender(){
+  var v=norm(qi.value);qHits=[];qOn=-1;
+  if(v.length>=2){
+    Object.keys(countries).forEach(function(k){if(norm(k).indexOf(v)>=0)qHits.push({t:'c',k:k,n:k,sub:'country · '+countries[k].length+' cables land here'});});
+    cables.forEach(function(c){var kk=c.key;if(kk.indexOf(v)>=0||kk.replace(/ /g,'').indexOf(v.replace(/ /g,''))>=0)qHits.push({t:'k',k:c.id,n:c.n,sub:'cable'+(c.y?' · '+c.y:'')});});
+    qHits.sort(function(a,b){var ai=norm(a.n).indexOf(v),bi=norm(b.n).indexOf(v);return (ai!==0)-(bi!==0)||a.n.length-b.n.length;});
+    qHits=qHits.slice(0,12);
+  }
+  if(!qHits.length){ql.hidden=true;qi.setAttribute('aria-expanded','false');
+    if(v.length>=2){ql.innerHTML='<li aria-disabled="true">No cable or country has this name in the 2021 data.</li>';ql.hidden=false;}
+    return;}
+  ql.innerHTML=qHits.map(function(h,i){return '<li role="option" id="qo'+i+'" data-i="'+i+'">'+esc(h.n)+'<small>'+esc(h.sub)+'</small></li>';}).join('');
+  ql.hidden=false;qi.setAttribute('aria-expanded','true');
+}
+function qPick(i){var h=qHits[i];if(!h)return;ql.hidden=true;qi.setAttribute('aria-expanded','false');
+  if(h.t==='c'){qi.value=h.n;countryFilter(h.k,true);}else{qi.value=h.n;if(st.act&&!st.act[h.k])setFilter(null,null);if(!yearOK(byId[h.k]))setYear(maxYear);select(h.k,true);}}
+qi.addEventListener('input',qRender);
+qi.addEventListener('focus',function(){if(qi.value)qRender();});
+qi.addEventListener('keydown',function(e){
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!qHits.length)return;qOn=(qOn+(e.key==='ArrowDown'?1:-1)+qHits.length)%qHits.length;
+    [].forEach.call(ql.children,function(li,i){li.classList.toggle('on',i===qOn);});qi.setAttribute('aria-activedescendant','qo'+qOn);}
+  else if(e.key==='Enter'){e.preventDefault();qPick(qOn<0?0:qOn);}
+  else if(e.key==='Escape'){ql.hidden=true;}
+});
+ql.addEventListener('mousedown',function(e){var li=e.target.closest('li[data-i]');if(li){e.preventDefault();qPick(+li.dataset.i);}});
+document.addEventListener('click',function(e){if(!e.target.closest('.srch'))ql.hidden=true;});
+
+/* ---------- the side panel */
+function cableList(ids,groups){
+  var list=ids.map(function(i){return byId[i];}).filter(yearOK).sort(function(a,b){return a.n.localeCompare(b.n);});
+  return '<ul class="list">'+list.map(function(c){return '<li><button type="button" data-c="'+esc(c.id)+'"'+(c.id===st.sel?' class="on"':'')+'><span class="sw" style="background:'+esc((groups&&groups[c.id])||c.c)+'"></span>'+esc(c.n)+'<small>'+(c.y?(c.pl?'planned '+c.y:c.y):'')+'</small></button></li>';}).join('')+'</ul>';
+}
+function renderPanel(){
+  var h='',c=st.sel?byId[st.sel]:null;
+  if(c){
+    var lps=c.lp.map(function(id){return LP[id];}).filter(Boolean);
+    h+='<div class="k">You chose this cable</div><h3>'+esc(c.n)+(c.pl?' <span class="tag">planned in 2021</span>':'')+'</h3><dl>'+
+      '<dt>How long the cable system is</dt><dd>'+esc(c.len||'The 2021 data gives no length for this cable.')+'</dd>'+
+      '<dt>When it started, or was planned to start, to carry traffic (its ready-for-service date)</dt><dd>'+esc(c.rfs||(c.y?String(c.y):'The 2021 data gives no date for this cable.'))+(c.pl?'. In November 2021 the cable was still planned; check its status today on submarinecablemap.com.':'')+'</dd>'+
+      '<dt>Who owns it</dt><dd>'+esc(c.o||'The 2021 data names no owner.')+'</dd>'+
+      '<dt>Where it comes ashore: its '+lps.length+' landing points</dt><dd><ul class="lps">'+
+      lps.map(function(l){var hl=(st.country&&l.k===st.country)||ARV_EU.indexOf(l.id)>=0||l.k==='Singapore'||l.k==='Romania';return '<li'+(hl?' class="hl"':'')+'>'+esc(l.n)+'</li>';}).join('')+'</ul></dd>'+
+      (c.u?'<dt>Where the owners describe it</dt><dd><a href="'+esc(c.u)+'" target="_blank" rel="noopener">'+esc(c.u.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,''))+' ↗</a></dd>':'')+
+      '</dl><div class="row"><button class="btn ghost" type="button" id="pZoom">Zoom to this cable</button><button class="btn ghost" type="button" id="pClose">Close the details</button></div>';
+  }
+  if(st.act){
+    var ids=Object.keys(st.act),n=ids.filter(function(i){return yearOK(byId[i]);}).length;
+    if(st.kind==='arvane'){
+      var gs=ids.filter(function(i){return st.groups[i]===GOLD;}),bs=ids.filter(function(i){return st.groups[i]!==GOLD;});
+      h+='<div class="k">Arvane\'s routes</div><p>Gold: the cables that come ashore in Marseille, Toulon or Genoa <b>and</b> in Singapore or in Malaysia, across the strait from Singapore. Blue: the cables that come ashore in Romania or Bulgaria, on the Black Sea near Constanța. Click a name to see where the cable lands.</p>'+
+        '<div class="k">Cables that run from Europe to Singapore or Malaysia</div>'+cableList(gs,st.groups)+'<div class="k">Cables that land in the Black Sea near Constanța</div>'+cableList(bs,st.groups)+
+        '<p class="note">Other cables reach Singapore from Europe with one change of cable in Egypt, the Gulf or India; this list shows only the cables that make the whole journey. Cables built after November 2021 are missing.</p>';
+    }else{
+      h+='<div class="k">'+n+' cable'+(n===1?'':'s')+' land in '+esc(st.label)+(st.year<maxYear?' by the end of '+st.year:'')+'</div>'+cableList(ids,null);
+    }
+  }
+  if(!c&&!st.act){
+    h+='<div class="help"><div class="k">How to use the map</div><ol>'+
+      '<li>Drag the map to move it. Zoom with the mouse wheel, with two fingers, or with the + and − buttons.</li>'+
+      '<li>Click or tap a line to see the cable\'s name, its length, its owners, the year it started to carry traffic and the places where it comes ashore.</li>'+
+      '<li>Type a cable name or a country in the search box, or choose a country in the list, to show only the cables that land there.</li>'+
+      '<li>Press <b>Show Arvane\'s routes</b> to show the cables between Europe and Singapore and the cables in the Black Sea near Constanța.</li>'+
+      '<li>Move the year slider to see how the network grew: the map then shows only the cables that were ready for service by the end of that year.</li></ol>'+
+      '<p class="note">The gold diamonds mark Arvane\'s three places: the head office in Geneva, the terminal in Constanța and the desk in Singapore.</p></div>';
+  }
+  $('panel').innerHTML=h;
+  var z=$('pZoom');if(z)z.onclick=function(){select(st.sel,true);};
+  var x=$('pClose');if(x)x.onclick=function(){select(null);};
+  [].forEach.call($('panel').querySelectorAll('button[data-c]'),function(b){b.onclick=function(){select(b.dataset.c,true);};});
+}
+function status(){
+  var all=cables.length,sh=shown().length,pl=shown().filter(function(c){return c.pl;}).length;
+  var t='The map shows <b>'+sh+'</b> of the '+all+' cable systems in TeleGeography\'s data of November 2021'+(st.year<maxYear?', those ready for service by the end of <b>'+st.year+'</b>':'')+(pl?'; '+pl+' of them were still planned then and are dashed':'')+'.';
+  if(st.act){var n=Object.keys(st.act).filter(function(i){return yearOK(byId[i]);}).length;t+=' '+(st.kind==='arvane'?'Arvane\'s routes: ':'Landing in '+esc(st.label)+': ')+'<b>'+n+'</b> highlighted.';}
+  $('status').innerHTML=t;
+}
+
+/* ---------- a link can carry a cable or a country: #cable=<id> or #country=<name> */
+function writeHash(){try{var h=st.sel?'cable='+encodeURIComponent(st.sel):st.kind==='country'?'country='+encodeURIComponent(st.country):st.kind==='arvane'?'arvane':'';
+  history.replaceState(null,'',h?'#'+h:location.pathname+location.search);}catch(e){}}
+function readHash(){var h=decodeURIComponent(location.hash.slice(1));
+  if(h==='arvane')arvane();else if(h.indexOf('country=')===0)countryFilter(h.slice(8),true);else if(h.indexOf('cable=')===0)select(h.slice(6),true);}
+
+/* ---------- the student's notes: this browser only */
+['n1','n2','n3'].forEach(function(id){var el=$(id),key=K+'_cablemap_'+id;
+  try{el.value=localStorage.getItem(key)||'';}catch(e){}
+  el.addEventListener('input',function(){try{localStorage.setItem(key,el.value);}catch(e){}});});
+$('nClear').onclick=function(e){e.preventDefault();if(!confirm('Delete your three notes on this device?'))return;
+  ['n1','n2','n3'].forEach(function(id){$(id).value='';try{localStorage.removeItem(K+'_cablemap_'+id);}catch(err){}});};
+
+/* ---------- the signed-in chip, as on the session pages */
+function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=$('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}$('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+chip();window.addEventListener('statstrack:named',chip);
+
+window.CableMap={state:st,select:select,arvane:arvane,countryFilter:countryFilter,hit:hit,view:function(){return {s:s,tx:tx,ty:ty,W:W,H:H};},
+  screenOf:function(lon,lat){return scr(lon,lat);},cables:function(){return cables;}};
+})();
+</script>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

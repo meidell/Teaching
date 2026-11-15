@@ -1402,10 +1402,193 @@
     return { term: T, slots, rooms, maxGroup, steps, classes, avail, seed, supervision, newcomers: feb };
   })();
 
+  /* =====================================================================
+     WHATSAPP DEMO (15 Nov 2026). Jan Erik: "add whatsapp for admissions and student communications"
+     — a demo now, a real connection later. `whatsapp` = conversations as the WhatsApp Business
+     Platform (Cloud API) would return them: one thread per opted-in contact (open or deposit-paid
+     applicant files, and some enrolled students), each with its opt-in date and channel, owner, the
+     24-hour customer-service window, unread count and messages {from, text, at, status, template}.
+     `whatsappTemplates` = the approved templates the school may send outside the window, EN and FR,
+     with invented prices. School messages sit on the dates of the file's existing contact events, so
+     registrar.files (and its lastContact) is NOT changed. Built from the hash `hsh`, never from
+     rnd()/rnd2(), so no other dashboard moves. Nothing is sent anywhere.
+     ===================================================================== */
+  const whatsappTemplates = [
+    { id: 'document_reminder', name: 'Document reminder', category: 'utility', for: 'applicant', params: ['first name', 'officer', 'programme', 'documents missing'],
+      EN: 'Hello {{1}}, this is {{2}} from Lakeside School of Management. Your application for the {{3}} still needs: {{4}}. You can upload it in your applicant portal. Reply here if you have a question.',
+      FR: 'Bonjour {{1}}, ici {{2}} de la Lakeside School of Management. Votre dossier pour le {{3}} attend encore : {{4}}. Vous pouvez le déposer sur votre portail candidat. Répondez ici si vous avez une question.' },
+    { id: 'interview_booking', name: 'Interview booking', category: 'utility', for: 'applicant', params: ['first name', 'programme', 'proposed time'],
+      EN: 'Hello {{1}}, your file for the {{2}} is complete and we would like to meet you. We propose an online interview on {{3}}. Reply YES to confirm, or send us another time that suits you.',
+      FR: 'Bonjour {{1}}, votre dossier pour le {{2}} est complet et nous aimerions vous rencontrer. Nous vous proposons un entretien en ligne le {{3}}. Répondez OUI pour confirmer, ou proposez-nous un autre moment.' },
+    { id: 'offer_sent', name: 'Offer sent', category: 'utility', for: 'applicant', params: ['first name', 'programme', 'intake', 'deposit due date'],
+      EN: 'Congratulations {{1}}! You are admitted to the {{2}}, {{3}} intake. Your offer letter is in your e-mail and in your portal. Please pay the deposit by {{4}} to keep your place.',
+      FR: 'Félicitations {{1}} ! Vous êtes admis·e au {{2}}, rentrée {{3}}. Votre lettre d’admission est dans votre e-mail et sur votre portail. Merci de payer l’acompte avant le {{4}} pour garder votre place.' },
+    { id: 'deposit_reminder', name: 'Deposit reminder', category: 'utility', for: 'applicant', params: ['first name', 'programme', 'deposit due date'],
+      EN: 'Hello {{1}}, a reminder that the deposit for your place in the {{2}} is due on {{3}}. Reply here if you need more time or want to talk about financing.',
+      FR: 'Bonjour {{1}}, un rappel : l’acompte pour votre place au {{2}} est dû le {{3}}. Répondez ici si vous avez besoin de plus de temps ou souhaitez parler du financement.' },
+    { id: 'visa_letter_ready', name: 'Visa letter ready', category: 'utility', for: 'applicant', params: ['first name', 'programme', 'embassy appointment by'],
+      EN: 'Hello {{1}}, your visa letter for the {{2}} is ready in your portal. Please book your embassy appointment before {{3}} so that your study permit arrives in time.',
+      FR: 'Bonjour {{1}}, votre lettre pour le visa ({{2}}) est disponible sur votre portail. Prenez rendez-vous à l’ambassade avant le {{3}} pour que votre permis d’études arrive à temps.' },
+    { id: 'class_moved', name: 'Class moved', category: 'utility', for: 'student', params: ['first name', 'course', 'old time', 'new time and room'],
+      EN: 'Hello {{1}}, your class {{2}} on {{3}} moves to {{4}}. The timetable in the student portal is already updated.',
+      FR: 'Bonjour {{1}}, votre cours {{2}} du {{3}} est déplacé au {{4}}. L’horaire du portail étudiant est déjà à jour.' },
+    { id: 'exam_registration', name: 'Exam registration reminder', category: 'utility', for: 'student', params: ['first name', 'opens on', 'closes on'],
+      EN: 'Hello {{1}}, exam registration for the December session opens on {{2}} and closes on {{3}}. Register for each exam in the student portal.',
+      FR: 'Bonjour {{1}}, l’inscription aux examens de décembre ouvre le {{2}} et ferme le {{3}}. Inscrivez-vous à chaque examen sur le portail étudiant.' },
+    { id: 'fee_reminder', name: 'Fee reminder', category: 'utility', for: 'student', params: ['first name', 'amount open', 'open for'],
+      EN: 'Hello {{1}}, our records show {{2}} of your tuition still open for {{3}}. Please pay it, or reply here to agree a payment plan with the student office.',
+      FR: 'Bonjour {{1}}, selon nos registres, {{2}} de vos frais d’études sont encore ouverts depuis {{3}}. Merci de les régler, ou répondez ici pour convenir d’un plan de paiement avec le bureau des étudiants.' },
+    { id: 'open_day_invite', name: 'Open day invitation', category: 'marketing', for: 'applicant', params: ['first name', 'date'],
+      EN: 'Hello {{1}}, Lakeside School of Management opens its campus on {{2}}. Meet the professors and students of your programme. Reply YES and we keep you a seat.',
+      FR: 'Bonjour {{1}}, la Lakeside School of Management ouvre son campus le {{2}}. Rencontrez les professeurs et les étudiants de votre programme. Répondez OUI et nous vous gardons une place.' },
+  ];
+  /* invented prices per template message delivered (CHF); free-form replies inside the window cost nothing */
+  const WA_PRICE = { utility: 0.05, marketing: 0.09 };
+  whatsappTemplates.forEach(t => { t.priceCHF = WA_PRICE[t.category]; });
+  const whatsapp = (() => {
+    const NOW = TODAY + 'T16:00';   /* the demo's "now": 14 Nov 2026, 16:00 Geneva time */
+    const ms = iso => Date.parse(iso + ':00Z'), iso = m => new Date(m).toISOString().slice(0, 16), H = 36e5, NOWm = ms(NOW);
+    const at = (day, hour) => iso(ms(day + 'T00:00') + hour * H);
+    const CC = { CH: '+41 79', FR: '+33 6', EU: '+49 151', ME: '+971 50', AF: '+234 803', AS: '+91 98', AM: '+1 415' };
+    const RK = {}; Object.entries(REGIONS).forEach(([k, v]) => RK[v] = k);
+    const phone = (key, reg) => `${CC[reg] || '+41 79'} ••• •• ${String(Math.floor(hsh(key + 'ph') * 90) + 10)}`;
+    const first = n => n.split(' ')[0], offFirst = o => o.replace(/^Prof\. /, '').split(' ')[0].replace(/\W+$/, '');
+    const TPL = {}; whatsappTemplates.forEach(t => TPL[t.id] = t);
+    const fill = (t, lang, vals) => t[lang].replace(/\{\{(\d)\}\}/g, (m, i) => vals[i - 1]);
+    const dLong = (d, lang) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'FR' ? 'fr-CH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const pk = (key, arr) => arr[Math.floor(hsh(key) * arr.length)];
+    /* how long the school took to answer, in hours: a third within the hour, a long tail past a day's work */
+    const delayH = key => { const r = hsh(key + 'dl'); return r < 0.32 ? 0.2 + r * 2.5 : r < 0.62 ? 1.5 + (r - 0.32) * 12 : r < 0.85 ? 5 + (r - 0.62) * 30 : 12 + (r - 0.85) * 66; };
+    const threads = [];
+
+    /* ---- applicants: open files and deposit-paid files (they still have a visa or a start to prepare) ---- */
+    const Q = { /* [contact's question, school's answer] per situation, EN and FR */
+      missing: { EN: [['Hi, I am still waiting for my {{d}} from my university. Can I send it next week?', 'Yes, that is fine. Upload it in the portal when you have it and we review your file the same week.'], ['Hello, my {{d}} is in my e-mail but the portal says the file is too big. What can I do?', 'Please send it as a PDF under 5 MB, or reply with the file here and I attach it for you.']],
+        FR: [['Bonjour, j’attends encore mon {{d}} de mon université. Je peux l’envoyer la semaine prochaine ?', 'Oui, sans problème. Déposez-le sur le portail dès que vous l’avez, nous relisons votre dossier la même semaine.'], ['Bonjour, le portail refuse mon {{d}}, il dit que le fichier est trop lourd.', 'Envoyez-le en PDF de moins de 5 Mo, ou répondez ici avec le fichier et je le joins pour vous.']] },
+      applied: { EN: [['Hi, I submitted my application yesterday. Did you receive everything?', 'Yes, your file is complete on our side. The review takes about ten days, then we propose an interview.']], FR: [['Bonjour, j’ai envoyé ma candidature hier. Vous avez tout reçu ?', 'Oui, votre dossier est complet de notre côté. L’examen prend une dizaine de jours, ensuite nous vous proposons un entretien.']] },
+      review: { EN: [['Hello, how long does the review of my file take?', 'Usually ten working days. I expect to propose an interview to you next week.']], FR: [['Bonjour, combien de temps prend l’examen de mon dossier ?', 'En général dix jours ouvrables. Je pense vous proposer un entretien la semaine prochaine.']] },
+      interview: { EN: [['Thursday at 10:00 works for me. Is it on Teams or Zoom?', 'Teams. The link is in your e-mail. It takes about 30 minutes.'], ['Can we move the interview one day later? I have an exam that morning.', 'Of course, I moved it to the next day at the same time. You have the new invitation by e-mail.']],
+        FR: [['Jeudi à 10h me convient. C’est sur Teams ou Zoom ?', 'Teams. Le lien est dans votre e-mail. Cela dure environ 30 minutes.'], ['Est-ce qu’on peut décaler l’entretien d’un jour ? J’ai un examen ce matin-là.', 'Bien sûr, je l’ai déplacé au lendemain à la même heure. Vous avez la nouvelle invitation par e-mail.']] },
+      decision: { EN: [['Hello, do you know when the committee will decide on my application?', 'The committee meets on Wednesday. You will have the answer by e-mail and here on Thursday at the latest.']], FR: [['Bonjour, savez-vous quand le comité décidera pour ma candidature ?', 'Le comité se réunit mercredi. Vous aurez la réponse par e-mail et ici au plus tard jeudi.']] },
+      offer: { EN: [['Thank you so much! Is it possible to pay the deposit in two parts?', 'Yes. Pay half by the due date and the rest within 30 days; I note it on your file.'], ['Thank you! Is the scholarship already deducted from the fee in the offer?', 'Yes, the fee in your offer letter already has the scholarship deducted.']],
+        FR: [['Merci beaucoup ! Est-il possible de payer l’acompte en deux fois ?', 'Oui. Payez la moitié avant l’échéance et le reste dans les 30 jours ; je le note dans votre dossier.'], ['Merci ! La bourse est-elle déjà déduite des frais dans l’offre ?', 'Oui, les frais de votre lettre d’offre tiennent déjà compte de la bourse.']] },
+      deposit: { EN: [['Do you help students find accommodation in Geneva?', 'Yes. The housing list for new students is in your portal under "Arrival", and the student office answers questions about it.'], ['When do I get my timetable for the first term?', 'Two weeks before the start, in your portal and by e-mail.']],
+        FR: [['Est-ce que vous aidez à trouver un logement à Genève ?', 'Oui. La liste des logements pour les nouveaux étudiants est sur votre portail, rubrique « Arrivée », et le bureau des étudiants répond à vos questions.'], ['Quand est-ce que je reçois mon horaire du premier semestre ?', 'Deux semaines avant la rentrée, sur votre portail et par e-mail.']] },
+      visa: { EN: [['I have my embassy appointment. Which documents do I bring besides the visa letter?', 'Your passport, the visa letter, proof of funds (a bank statement) and your health insurance. The list is in the letter, page 2.']], FR: [['J’ai mon rendez-vous à l’ambassade. Quels documents dois-je apporter en plus de la lettre ?', 'Votre passeport, la lettre, une preuve de moyens financiers (relevé bancaire) et votre assurance maladie. La liste est à la page 2 de la lettre.']] },
+    };
+    const WAITQ = { /* the contact's message still waiting for an answer */
+      EN: { missing: ['I uploaded the {{d}} this morning. Can you check it is OK?', 'Sorry, one more question: does the {{d}} need a certified translation?'], applied: ['Hello? I have not heard anything since I applied.'], review: ['Is there any news about my file?'], interview: ['Hi, I did not receive the interview link yet.'], decision: ['Any news from the committee?'], offer: ['Can I start in February instead of September?', 'My parents ask if there is a payment plan for the tuition.'], deposit: ['I paid the deposit on Monday, can you confirm you received it?'], visa: ['The embassy offers me an appointment on 7 December. Is that early enough for the start?'] },
+      FR: { missing: ['J’ai déposé le {{d}} ce matin. Pouvez-vous vérifier que c’est bon ?', 'Désolé, encore une question : le {{d}} doit-il être traduit par un traducteur juré ?'], applied: ['Bonjour ? Je n’ai pas eu de nouvelles depuis ma candidature.'], review: ['Y a-t-il des nouvelles de mon dossier ?'], interview: ['Bonjour, je n’ai pas encore reçu le lien pour l’entretien.'], decision: ['Des nouvelles du comité ?'], offer: ['Est-ce que je peux commencer en février plutôt qu’en septembre ?', 'Mes parents demandent s’il existe un plan de paiement pour les frais.'], deposit: ['J’ai payé l’acompte lundi, pouvez-vous confirmer la réception ?'], visa: ['L’ambassade me propose un rendez-vous le 7 décembre. Est-ce assez tôt pour la rentrée ?'] },
+    };
+    const OPT_HOW = ['Ticked “contact me on WhatsApp” on the application form', 'Replied START to the school’s first message', 'Asked for WhatsApp at an open day; consent recorded by the officer'];
+    registrar.files.filter(f => f.open || f.stage === 'deposit').forEach(f => {
+      const key = f.id + 'wa', reg = RK[f.region] || 'EU';
+      if (hsh(key) >= (f.nonEU ? 0.78 : 0.55)) return;   /* not opted in: no thread, no message may be sent */
+      const lang = reg === 'FR' || (reg === 'CH' && hsh(key + 'fr') < 0.55) ? 'FR' : 'EN';
+      const optDay = addDays(f.stageDates.applied, Math.floor(hsh(key + 'od') * 3)), optIn = { at: at(optDay > TODAY ? TODAY : optDay, 9 + hsh(key + 'oh') * 8), how: pk(key + 'oh2', OPT_HOW) };
+      const sit = f.missing.length ? 'missing' : f.visa && f.visa !== 'Permit granted' && f.visa !== 'Visa letter to issue' ? 'visa' : f.stage;
+      const owner = f.owner, d = f.missing[0] || '', msgs = [];
+      const P = programs.find(p => p.id === f.prog), intakeName = f.intake === '2027-02' ? (lang === 'FR' ? 'février 2027' : 'February 2027') : (lang === 'FR' ? 'septembre 2027' : 'September 2027');
+      const contacts = f.events.filter(e => e.kind === 'contact' && e.date >= optDay).map(e => e.date).sort();
+      const last = f.lastContact >= optDay ? f.lastContact : null;
+      /* exchange A: a template on an earlier contact date (the school starts the conversation) */
+      const earlier = contacts.filter(c => last && ms(c + 'T00:00') < ms(last + 'T00:00') - 2 * 864e5).pop();
+      if (earlier) {
+        const tid = sit === 'missing' ? 'document_reminder' : sit === 'offer' || sit === 'deposit' ? 'offer_sent' : sit === 'visa' ? 'visa_letter_ready' : sit === 'interview' || sit === 'decision' ? 'interview_booking' : 'document_reminder';
+        const vals = tid === 'document_reminder' ? [first(f.name), offFirst(owner), P.name, f.missing.join(', ') || (lang === 'FR' ? 'votre CV à jour' : 'an updated CV')]
+          : tid === 'offer_sent' ? [first(f.name), P.name, intakeName, dLong(addDays(f.stageDates.offer || earlier, 21), lang)]
+          : tid === 'visa_letter_ready' ? [first(f.name), P.name, dLong(f.visaSteps.embassyBy, lang)]
+          : [first(f.name), P.name, dLong(addDays(earlier, 4), lang) + (lang === 'FR' ? ' à 10h' : ' at 10:00')];
+        const t0 = ms(earlier + 'T00:00') + (9 + hsh(key + 'a') * 3) * H;
+        msgs.push({ from: 'school', text: fill(TPL[tid], lang, vals), at: iso(t0), template: tid, by: owner });
+        const ack = { EN: ['Thank you, noted.', 'Thanks! 👍', 'Got it, thank you.'], FR: ['Merci, c’est noté.', 'Merci ! 👍', 'Bien reçu, merci.'] }[lang];
+        if (hsh(key + 'ack') < 0.7) msgs.push({ from: 'contact', text: pk(key + 'ak', ack), at: iso(t0 + (0.3 + hsh(key + 'ar') * 5) * H), ack: true });
+      }
+      /* exchange B: the contact asks, the school answers on the last logged contact date */
+      if (last) {
+        const pair = pk(key + 'q', Q[sit][lang]), tAns = ms(last + 'T00:00') + (last === TODAY ? 9 + hsh(key + 'b') * 5 : 9 + hsh(key + 'b') * 8) * H;
+        const prevEnd = msgs.length ? ms(msgs[msgs.length - 1].at) : 0, tQ = Math.max(prevEnd + 0.5 * H, tAns - delayH(key) * H);
+        if (tQ < tAns) { msgs.push({ from: 'contact', text: pair[0].replace('{{d}}', d.toLowerCase()), at: iso(tQ) }); msgs.push({ from: 'school', text: pair[1], at: iso(tAns), by: owner }); }
+      }
+      /* exchange C: about four in ten threads end with a message the school has not answered */
+      if (hsh(key + 'w') < 0.42) {
+        const lastAt = msgs.length ? ms(msgs[msgs.length - 1].at) : ms(optIn.at), r = hsh(key + 'wt');
+        const tW = r < 0.5 ? NOWm - (0.3 + r * 40) * H : lastAt + (1 + (r - 0.5) * 2 * Math.max(1, (NOWm - lastAt) / H - 2)) * H;
+        if (tW > lastAt && tW < NOWm) { msgs.push({ from: 'contact', text: pk(key + 'wq', WAITQ[lang][sit]).replace('{{d}}', d.toLowerCase()), at: iso(tW) });
+          if (hsh(key + 'w2') < 0.25 && tW + 0.2 * H < NOWm) msgs.push({ from: 'contact', text: lang === 'FR' ? 'Merci d’avance !' : 'Thanks in advance!', at: iso(tW + 0.1 * H), follow: true }); }
+      }
+      if (!msgs.length) return;
+      threads.push({ id: 'wa-' + f.id, kind: 'applicant', ref: f.id, name: f.name, prog: f.prog, region: f.region, phone: phone(key, reg), lang, owner, optIn, situation: sit, msgs });
+    });
+
+    /* ---- enrolled students: permits, fees, exam registration, requests, timetable ---- */
+    const OFFICE2 = ['Sandra (student office)', 'Luc (student office)'];
+    const SQ = {
+      permit: { EN: ['My residence permit expires soon. Can I get an enrolment certificate for the OCPM?', 'Yes. I issued it today; it is in your portal under Documents. Bring it to the OCPM with your passport.'], FR: ['Mon permis de séjour expire bientôt. Puis-je avoir une attestation d’inscription pour l’OCPM ?', 'Oui. Je l’ai émise aujourd’hui, elle est sur votre portail, rubrique Documents. Apportez-la à l’OCPM avec votre passeport.'] },
+      fee: { EN: ['I received the fee reminder. Can I pay the rest in three monthly parts?', 'Yes, finance accepts three parts. I sent you the payment plan by e-mail; please sign it this week.'], FR: ['J’ai reçu le rappel des frais. Puis-je payer le reste en trois mensualités ?', 'Oui, la comptabilité accepte trois mensualités. Je vous ai envoyé le plan par e-mail ; merci de le signer cette semaine.'] },
+      exam: { EN: ['Do I have to register for the retake exam separately?', 'Yes. The retake is a separate line in the exam registration; tick it when registration opens on 16 November.'], FR: ['Est-ce que je dois m’inscrire séparément à l’examen de rattrapage ?', 'Oui. Le rattrapage est une ligne à part dans l’inscription ; cochez-la quand l’inscription ouvre le 16 novembre.'] },
+      transcript: { EN: ['Hello, when will my transcript be ready? I need it for an internship.', 'It is signed tomorrow. You get it in your portal and I send you a message here when it is there.'], FR: ['Bonjour, quand mon relevé de notes sera-t-il prêt ? J’en ai besoin pour un stage.', 'Il est signé demain. Vous le recevez sur votre portail et je vous écris ici quand il y est.'] },
+      general: { EN: ['Is the library open on Saturday during the exam period?', 'Yes, from 9:00 to 17:00 every Saturday in December.'], FR: ['La bibliothèque est-elle ouverte le samedi pendant les examens ?', 'Oui, de 9h à 17h tous les samedis de décembre.'] },
+    };
+    const SWAIT = { EN: { permit: ['The OCPM asks for a confirmation that I attend classes. Is the certificate enough?'], fee: ['I paid the first part yesterday. Can you confirm?'], exam: ['The portal does not show my retake exam. Can you check?'], transcript: ['Any news about the transcript? The company asks again.'], general: ['Where do I find the room for the make-up class on Tuesday?'] },
+      FR: { permit: ['L’OCPM demande une confirmation de présence aux cours. L’attestation suffit-elle ?'], fee: ['J’ai payé la première mensualité hier. Pouvez-vous confirmer ?'], exam: ['Le portail n’affiche pas mon examen de rattrapage. Pouvez-vous vérifier ?'], transcript: ['Des nouvelles du relevé ? L’entreprise redemande.'], general: ['Où se trouve la salle du cours de rattrapage de mardi ?'] } };
+    const permitOf = {}; registrar.permits.forEach(p => permitOf[p.sid] = p);
+    const caseOf = {}; registrar.cases.forEach(c => { if (c.sid && !caseOf[c.sid]) caseOf[c.sid] = c; });
+    students.filter(s => s.status === 'active').forEach(s => {
+      const key = s.id + 'wa', reg = s.region;
+      const pm = permitOf[s.id] && permitOf[s.id].status !== 'valid', cs = caseOf[s.id];
+      if (hsh(key) >= (pm || s.overdueDays > 30 || (cs && /Transcript/.test(cs.type)) ? 0.6 : 0.12)) return;
+      const lang = reg === 'FR' || (reg === 'CH' && hsh(key + 'fr') < 0.55) ? 'FR' : 'EN';
+      const topic = pm ? 'permit' : s.overdueDays > 30 ? 'fee' : cs && /Transcript/.test(cs.type) ? 'transcript' : hsh(key + 'tp') < 0.5 ? 'exam' : 'general';
+      const owner = cs ? cs.owner : pk(key + 'ow', OFFICE2);
+      const optIn = { at: at(s.cohort + '-0' + (1 + Math.floor(hsh(key + 'om') * 8)), 10 + hsh(key + 'oh') * 6), how: 'Chose WhatsApp in the student portal settings' };
+      const msgs = [];
+      const dA = addDays(TODAY, -(4 + Math.floor(hsh(key + 'da') * 20)));
+      if (topic === 'fee') msgs.push({ from: 'school', text: fill(TPL.fee_reminder, lang, [first(s.name), 'CHF ' + s.overdue.toLocaleString('en-US').replace(/,/g, "'"), (s.overdueDays - Math.round((Date.parse(TODAY) - Date.parse(dA)) / 864e5)) + (lang === 'FR' ? ' jours' : ' days')]), at: at(dA, 9.5 + hsh(key + 'a') * 2), template: 'fee_reminder', by: owner });
+      if (topic === 'exam' || hsh(key + 'ex') < 0.3) msgs.push({ from: 'school', text: fill(TPL.exam_registration, lang, [first(s.name), dLong(registrar.examRegistrationOpen, lang), dLong(registrar.examRegistrationClose, lang)]), at: at(addDays(TODAY, -3), 10 + hsh(key + 'e') * 0.5), template: 'exam_registration', by: 'Student office' });
+      msgs.sort((a, b) => a.at.localeCompare(b.at));
+      const lastAt = msgs.length ? ms(msgs[msgs.length - 1].at) : ms(addDays(TODAY, -10) + 'T08:00');
+      const ansDay = iso(Math.min(NOWm - 2 * H, lastAt + (20 + hsh(key + 'b') * 60) * H)).slice(0, 10);   /* the office answers in office hours */
+      const tAns = Math.min(NOWm - 0.5 * H, ms(ansDay + 'T00:00') + (9 + hsh(key + 'bh') * 8) * H), tQ = Math.max(lastAt + 0.3 * H, tAns - delayH(key) * H);
+      if (tQ < tAns) { msgs.push({ from: 'contact', text: SQ[topic][lang][0], at: iso(tQ) }); msgs.push({ from: 'school', text: SQ[topic][lang][1], at: iso(tAns), by: owner }); }
+      if (hsh(key + 'w') < 0.38) { const r = hsh(key + 'wt'), base = ms(msgs[msgs.length - 1].at), tW = base + (0.5 + r * Math.max(0.5, (NOWm - base) / H - 0.6)) * H;
+        if (tW < NOWm) msgs.push({ from: 'contact', text: SWAIT[lang][topic][0], at: iso(tW) }); }
+      threads.push({ id: 'wa-' + s.id, kind: 'student', ref: s.id, name: s.name, prog: s.prog, region: REGIONS[reg], phone: phone(key, reg), lang, owner, optIn, situation: topic, msgs });
+    });
+
+    /* ---- derived per thread: statuses, the 24-hour window, waiting, unread, response times ---- */
+    threads.forEach(t => {
+      t.msgs.sort((a, b) => a.at.localeCompare(b.at));
+      const inb = t.msgs.filter(m => m.from === 'contact'), lastIn = inb.length ? inb[inb.length - 1].at : null;
+      t.msgs.forEach((m, i) => { if (m.from !== 'school') return;
+        const replied = t.msgs.slice(i + 1).some(x => x.from === 'contact'), r = hsh(t.id + m.at);
+        m.status = replied ? 'read' : r < 0.62 ? 'read' : r < 0.9 ? 'delivered' : 'sent'; });
+      t.lastInbound = lastIn;
+      t.windowEnds = lastIn ? iso(ms(lastIn) + 24 * H) : null;
+      t.windowOpen = !!lastIn && ms(t.windowEnds) > NOWm;
+      const lastMsg = t.msgs[t.msgs.length - 1];
+      t.waiting = lastMsg.from === 'contact' && !lastMsg.ack;   /* a "thanks, noted" needs no answer */
+      t.waitingSince = t.waiting ? inb.find(m => !m.ack && !t.msgs.some(x => x.from === 'school' && x.at > m.at)).at : null;   /* the first message not answered */
+      t.unread = t.waiting && hsh(t.id + 'un') < 0.7 ? t.msgs.filter(m => m.from === 'contact' && m.at >= t.waitingSince).length : 0;
+      /* first response: from a contact message that opens a burst to the school's next message, in minutes */
+      t.responses = [];
+      /* (an acknowledgement opens no question; a question counts from its first message) */
+      t.msgs.forEach((m, i) => { if (m.from !== 'contact' || m.ack || m.follow) return; const prev = t.msgs.slice(0, i).reverse().find(x => !x.ack); if (prev && prev.from === 'contact') return;
+        const ans = t.msgs.slice(i + 1).find(x => x.from === 'school');
+        if (ans) t.responses.push(Math.round((ms(ans.at) - ms(m.at)) / 6e4)); });
+      t.lastAt = lastMsg.at;
+    });
+    threads.sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+    const eligible = registrar.files.filter(f => f.open || f.stage === 'deposit').length;
+    return { now: NOW, tz: 'Europe/Zurich', number: '+41 22 ••• •• 40 (Lakeside School of Management, fictitious)', threads, eligibleApplicants: eligible, activeStudents: students.filter(s => s.status === 'active').length,
+      windowHours: 24, priceNote: 'Prices are invented for this demo. Meta charges for template messages at a price set by category and by the contact’s country; free-form replies inside the 24-hour window are not charged.',
+      officers: [...new Set(threads.map(t => t.owner))].sort() };
+  })();
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign, planning,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign, planning, whatsapp, whatsappTemplates,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),

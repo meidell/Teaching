@@ -74,6 +74,8 @@
       today: 'Le cours a lieu aujourd’hui, ' + when + ' (heure de Genève). Vous pouvez le suivre en ligne.',
       next: 'Vous pouvez suivre ce cours en ligne. Prochaine séance : ' + (next ? dl(next) : '') + (when ? ', ' + when : '') + ' (heure de Genève).',
       cls: 'Rejoindre la salle du cours', team: 'Rejoindre la salle de votre équipe', pick: 'Choisir une équipe pour avoir sa salle', all: 'Salles des équipes',
+      recClose: 'Fermer', rec: 'Enregistrements des séances', recT: 'Enregistrements des séances passées', recNone: 'Aucune séance n’est encore enregistrée. Une séance apparaît ici quelques minutes après la fin, si l’enseignant l’a enregistrée.', recMin: 'min', recSum: 'Résumé', recPts: 'Points principaux', recQ: 'Questions posées', recNext: 'À préparer pour la prochaine séance', recNote: 'Le résumé est écrit par une IA à partir de la transcription : vérifiez un point important dans la vidéo.', recErr: 'La liste n’a pas pu être lue',
+      cal: 'Ajouter les dates à mon agenda', calA: 'Apple Calendrier ou Outlook (abonnement)', calG: 'Google Agenda', calF: 'Télécharger le fichier (.ics)', calN: 'Un abonnement se met à jour tout seul quand une date change.',
       tab: 'Ouvrir dans un nouvel onglet', close: 'Quitter l’appel', big: 'Plein écran', small: 'Réduire', clsT: 'Salle du cours', teamT: 'salle de l’équipe',
       lim: 'Si l’appel s’arrête après environ 5 minutes, ouvrez-le dans un nouvel onglet : c’est une limite du serveur gratuit Jitsi, et l’appel continue sans limite dans l’onglet.',
       mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.',
@@ -84,6 +86,8 @@
       today: 'The class is today, ' + when + ' (Geneva time). You can follow it online.',
       next: 'You can follow this class online. The next session is on ' + (next ? dl(next) : '') + (when ? ', ' + when : '') + ' (Geneva time).',
       cls: 'Join the class room', team: 'Join your team room', pick: 'Pick a team to get a team room', all: 'Team rooms',
+      recClose: 'Close', rec: 'Recordings of past classes', recT: 'Recordings of past classes', recNone: 'No class has been recorded yet. A class appears here a few minutes after it ends, if the instructor recorded it.', recMin: 'min', recSum: 'Summary', recPts: 'Main points', recQ: 'Questions students asked', recNext: 'To prepare for the next class', recNote: 'An AI wrote the summary from the transcript: check an important point in the video.', recErr: 'The list could not be read',
+      cal: 'Add the class dates to my calendar', calA: 'Apple Calendar or Outlook (subscribe)', calG: 'Google Calendar', calF: 'Download the file (.ics)', calN: 'A subscription updates itself when a date moves.',
       tab: 'Open in a new tab', close: 'Leave the call', big: 'Full screen', small: 'Make smaller', clsT: 'Class room', teamT: 'team room',
       lim: 'If the call stops after about 5 minutes, open it in a new tab. This is a limit of the free Jitsi server, and the call continues without a limit in the new tab.',
       mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.',
@@ -109,8 +113,15 @@
       '.jem-mp .hd .ghost{background:transparent;border:1.5px solid #6b7a8c;color:#e8ecf1}' +
       '.jem-mp iframe{flex:1;border:0;width:100%;background:#000}' +
       '.jem-mp .ft{padding:7px 12px;font:12.5px/1.45 system-ui,sans-serif;color:#b9c3cf;background:#18212c}' +
+      '.jem-mp .rl{flex:1;overflow:auto;padding:12px 14px;background:#f4f6f9;color:#14213d;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}' +
+      '.jem-mp .rc{background:#fff;border:1px solid #dde2e8;border-radius:12px;padding:12px 14px;margin:0 0 12px}.jem-mp .rc h4{margin:0 0 6px;font-size:15px}.jem-mp .rc h5{margin:8px 0 2px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#556}' +
+      '.jem-mp .rc video{width:100%;max-height:52vh;background:#000;border-radius:8px;margin:6px 0}.jem-mp .rc ul{margin:0 0 4px 18px;padding:0}.jem-mp .rc p{margin:0 0 4px}.jem-mp .rc small{color:#667}' +
       'body.jem-mp-on{margin-right:min(46vw,760px)}' +
       '@media(max-width:820px){.jem-mp{width:100vw;min-width:0}body.jem-mp-on{margin-right:0}}' +
+      '.jem-meet details.cal{position:relative}.jem-meet details.cal summary{cursor:pointer;list-style:none;font-weight:600;font-size:13px;text-decoration:underline;text-underline-offset:3px}.jem-meet details.cal summary::-webkit-details-marker{display:none}' +
+      '.jem-meet .calm{position:absolute;right:0;top:calc(100% + 6px);background:#fff;color:#14213d;border:1px solid #dde2e8;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:260px;z-index:60}' +
+      '.jem-meet .calm a{background:none;color:' + accent + ';border-radius:8px;padding:7px 10px;font-weight:600;text-decoration:none;white-space:normal}.jem-meet .calm a:hover{background:#f3f5f8}.jem-meet .calm small{color:#667;font-size:12px;padding:4px 10px}' +
+      '@media(max-width:600px){.jem-meet .calm{right:auto;left:50%;transform:translateX(-50%)}}' +
       '@media print{.jem-meet,.jem-mp{display:none}}' +
       '[data-theme="dark"] .jem-meet:not(.live){background:#1b2129;color:#e8ecf1;border-color:#2c3440}';
     document.head.appendChild(css);
@@ -153,6 +164,31 @@
     }
     function close() { if (panel) { panel.remove(); panel = null; } document.body.classList.remove('jem-mp-on'); }
 
+    /* ---- recordings of past classes (sender worker: POST /rec/list, roster password or instructor token;
+       each item carries a 6-hour signed play URL served from the R2 bucket with Range for seeking) ---- */
+    var RECS = null;
+    function recList(base) {
+      var body = { ns: c.ns }, h = { 'Content-Type': 'application/json' };
+      var who = instructor ? fbToken().then(function (t) { h.Authorization = 'Bearer ' + t; })
+        : Promise.resolve().then(function () { var a = JSON.parse(ls(KP + '_auth') || 'null'); if (!a || !a.sid || !a.pass) throw new Error(T.signin); body.sid = a.sid; body.pass = a.pass; });
+      return who.then(function () { return fetch(base + '/rec/list', { method: 'POST', headers: h, body: JSON.stringify(body) }); })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('error ' + r.status)); return j.recordings || []; }); });
+    }
+    function escH(x) { return String(x == null ? '' : x).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); }
+    function li(a) { return (a || []).length ? '<ul>' + a.map(function (x) { return '<li>' + escH(x) + '</li>'; }).join('') + '</ul>' : ''; }
+    function openRecs() {
+      var hd = shell(T.recT);
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.recClose; x.onclick = close; hd.appendChild(x);
+      var box = document.createElement('div'); box.className = 'rl'; panel.appendChild(box);
+      var list = RECS || [];
+      box.innerHTML = list.length ? list.map(function (r) { var s = r.summary;
+        return '<div class="rc"><h4>' + escH(r.date ? dl(r.date) : '') + ' · ' + escH(r.label) + (r.durationSec ? ' · ' + Math.round(r.durationSec / 60) + ' ' + T.recMin : '') + '</h4>' +
+          '<video controls preload="metadata" src="' + escH(r.play) + '"></video>' +
+          (s ? '<h5>' + T.recSum + '</h5><p>' + escH(s.summary) + '</p>' + (s.points && s.points.length ? '<h5>' + T.recPts + '</h5>' + li(s.points) : '') +
+            (s.questions && s.questions.length ? '<h5>' + T.recQ + '</h5>' + li(s.questions) : '') + (s.next && s.next.length ? '<h5>' + T.recNext + '</h5>' + li(s.next) : '') + '<small>' + T.recNote + '</small>' : '') + '</div>'; }).join('')
+        : '<p>' + escH(T.recNone) + '</p>';
+    }
+
     /* ---- the strip ---- */
     var d = document.createElement('div'); d.className = 'jem-meet' + (live ? ' live' : ''); d.setAttribute('role', 'region'); d.setAttribute('aria-label', fr ? 'Cours en ligne' : 'Online class');
     function draw() {
@@ -174,9 +210,26 @@
         }
       }
       if (m.note) { var n = document.createElement('span'); n.className = 'n'; n.textContent = m.note; d.appendChild(n); }
+      /* calendar sync: the sender worker serves the course's class dates as a live feed (GET /ical/<id>.ics) */
+      if (calBase) {
+        var feed = calBase + '/ical/' + c.id + '.ics', web = feed.replace(/^https?:/, 'webcal:');
+        var dt = document.createElement('details'); dt.className = 'cal';
+        dt.innerHTML = '<summary>' + T.cal + '</summary><div class="calm"><a href="' + web + '">' + T.calA + '</a><a target="_blank" rel="noopener" href="https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(web) + '">' + T.calG + '</a><a href="' + feed + '" download>' + T.calF + '</a><small>' + T.calN + '</small></div>';
+        d.appendChild(dt);
+      }
+      if (jaas && RECS && (RECS.length || instructor)) {
+        var br = document.createElement('button'); br.type = 'button'; br.className = 'alt'; br.textContent = T.rec + (RECS.length ? ' (' + RECS.length + ')' : '');
+        br.onclick = openRecs; d.appendChild(br);
+      }
     }
+    var calBase = null;
     draw();
     b.insertBefore(d, b.firstChild);
+    (m.tokenUrl ? Promise.resolve(m.tokenUrl.replace(/\/jaas$/, '')) : fetch(DB + '/_site/push.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (x) { return x && x.url ? x.url.replace(/\/+$/, '') : null; }))
+      .then(function (u) {
+        if (u && (sch.dates || []).length) { calBase = u; draw(); }
+        if (u && jaas && (instructor || ls(KP + '_auth'))) recList(u).then(function (l) { RECS = l; draw(); }).catch(function () {});
+      }).catch(function () {});
     /* the team (and its name) can change on the teams board: redraw when it does */
     var last = myTeam() + '|' + (myTeam() ? teamLabel(myTeam()) : '');
     setInterval(function () { var now = myTeam() + '|' + (myTeam() ? teamLabel(myTeam()) : ''); if (now !== last) { last = now; draw(); } }, 4000);

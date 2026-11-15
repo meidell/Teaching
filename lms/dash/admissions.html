@@ -11,7 +11,12 @@
      One applicant dataset: registrar.files, every application of February 2027 and of the September 2027
      cycle so far, with real stages (applied → review → interview → decision → offer → deposit, or closed),
      a separate missing-documents flag and dated events. Its counts equal the CRM funnel. A file opens in
-     a file view with its timeline and actions. Everything is fictitious (data.js). -->
+     a file view with its timeline and actions. Everything is fictitious (data.js).
+     15 Nov 2026: a third tab, WHATSAPP (Jan Erik: "add whatsapp for admissions and student communications",
+     a demo now, real later). Inbox, chat view with ticks and the 24-hour window, a composer that sends free
+     text inside the window and only an approved template outside it. Sending adds the message in memory and,
+     for an applicant, a dated contact event on the file (so lastContact stays the one measure). Data:
+     S.whatsapp + S.whatsappTemplates. Nothing is sent anywhere. -->
 <style>
   .miss{display:flex;flex-wrap:wrap;gap:4px;}
   .guide{font-size:13px;color:var(--ink2);margin:12px 0 0;padding:10px 12px;background:var(--raised);border-radius:8px;}
@@ -45,6 +50,44 @@
   .tl .stage .dot{background:var(--s1);} .tl .doc .dot{background:var(--good);} .tl .contact .dot{background:var(--warn);} .tl .visa .dot{background:var(--s7);} .tl .new{background:color-mix(in srgb,var(--s1) 12%,transparent);}
   .vsteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
   .vsteps div{background:var(--raised);border-radius:10px;padding:8px 10px;font-size:12.5px;} .vsteps b{display:block;font-size:13px;}
+  /* WhatsApp tab */
+  :root{--wa-out:#0b4a3a;--wa-read:#53bdeb;--wa-chat:#0d1422;}
+  :root[data-theme="light"]{--wa-out:#d9fdd3;--wa-read:#0277b0;--wa-chat:#efeae2;}
+  .wa-note{font-size:13px;color:var(--ink2);margin:0;} .wa-note b{color:var(--ink);}
+  .wa-f{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px;}
+  .wa-f select,.wa-f input[type=search]{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:5px 10px;font-size:13px;min-width:0;}
+  .wa-f .chk{font-size:12.5px;color:var(--ink2);display:flex;gap:5px;align-items:center;}
+  .wa-list{list-style:none;margin:0;padding:0;max-height:640px;overflow-y:auto;}
+  .wa-list li button{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;width:100%;text-align:left;border:none;border-bottom:1px solid var(--grid);background:none;padding:9px 6px;cursor:pointer;color:var(--ink);border-radius:8px;}
+  .wa-list li button:hover{background:var(--raised);} .wa-list li button.on{background:var(--accent-wash);}
+  .wa-list .nm{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .wa-list .tm{font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap;}
+  .wa-list .pv{font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .wa-list .meta{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);}
+  .wa-un{display:inline-flex;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--good);color:#fff;font-size:11.5px;font-weight:750;align-items:center;justify-content:center;justify-self:end;}
+  .wa-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px;}
+  .wa-head h3{margin:0;font-size:17px;} .wa-head .why{font-size:12.5px;color:var(--ink2);}
+  .wa-win{font-size:13px;padding:8px 12px;border-radius:10px;margin:0 0 10px;border:1px solid var(--line);background:var(--raised);}
+  .wa-win.open{box-shadow:inset 3px 0 0 var(--good);} .wa-win.closed{box-shadow:inset 3px 0 0 var(--serious);}
+  .wa-msgs{display:flex;flex-direction:column;gap:6px;max-height:480px;overflow-y:auto;padding:12px;background:var(--wa-chat);border-radius:12px;}
+  .wa-day{align-self:center;font-size:11.5px;color:var(--ink2);background:var(--card);border-radius:8px;padding:2px 10px;margin:6px 0 2px;}
+  .bub{max-width:80%;padding:7px 10px 5px;border-radius:12px;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere;box-shadow:0 1px 1px rgba(0,0,0,.12);}
+  .bub.in{align-self:flex-start;background:var(--card);border-top-left-radius:4px;}
+  .bub.out{align-self:flex-end;background:var(--wa-out);border-top-right-radius:4px;}
+  .bub .ft{display:flex;justify-content:flex-end;gap:6px;align-items:center;font-size:11px;color:var(--muted);margin-top:2px;flex-wrap:wrap;}
+  .bub .tg{font-size:11px;color:var(--ink2);font-weight:650;margin-bottom:2px;}
+  .tk{letter-spacing:-3px;padding-right:3px;font-size:12px;} .tk.read{color:var(--wa-read);}
+  .bub .demo{font-size:11px;font-weight:650;color:var(--serious);}
+  .wa-comp{margin-top:10px;display:grid;gap:8px;}
+  #waConv{scroll-margin-top:80px;}
+  .wa-comp textarea{font:inherit;width:100%;min-height:64px;border:1px solid var(--line);background:var(--raised);border-radius:10px;padding:8px 10px;font-size:13.5px;resize:vertical;}
+  .wa-comp select,.wa-comp input{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:5px 8px;font-size:13px;min-width:0;max-width:100%;}
+  .wa-params{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;} .wa-params label{font-size:12px;color:var(--muted);display:grid;gap:2px;}
+  .wa-prev{font-size:13px;background:var(--raised);border-radius:10px;padding:8px 10px;color:var(--ink);}
+  .wa-send{justify-self:start;border:none;background:var(--pill);color:#fff;border-radius:999px;padding:7px 16px;font-weight:650;cursor:pointer;font-size:13px;}
+  .wa-send:disabled{opacity:.45;cursor:default;}
+  #tplT{min-width:720px;}
+  @media(max-width:640px){.wa-params{grid-template-columns:minmax(0,1fr);} .bub{max-width:92%;}
+    #tplT{min-width:0;} #tplT tr:first-child{display:none;} #tplT tr{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:2px 12px;padding:8px 0;border-bottom:1px solid var(--grid);}
+    #tplT td{border:none;padding:0;text-align:left;} #tplT td:first-child,#tplT td:last-child{grid-column:1 / -1;}}
   @media(max-width:640px){#acts li,#acts2 li{grid-template-columns:auto 1fr;} #acts .go,#acts2 .go{grid-column:2;} .tabs{width:auto;} .vsteps{grid-template-columns:minmax(0,1fr);}}
 </style>
 </head>
@@ -53,7 +96,7 @@
   <div class="head">
     <div><h1>Admissions and student office</h1><div class="sub" id="sub"></div></div>
   </div>
-  <nav class="tabs" id="tabs" aria-label="The two jobs of this office"><button data-t="admissions">Admissions · applicants</button><button data-t="office">Student office · enrolled students</button></nav>
+  <nav class="tabs" id="tabs" aria-label="The parts of this office's work"><button data-t="admissions">Admissions · applicants</button><button data-t="office">Student office · enrolled students</button><button data-t="whatsapp" id="waTab">WhatsApp · messages</button></nav>
 
   <section data-tab="admissions">
   <div class="filters" style="margin:0 0 10px">
@@ -105,6 +148,18 @@
   </div>
   </section>
 
+  <section data-tab="whatsapp" hidden>
+  <p class="scope" id="waScope"></p>
+  <div class="g c4" id="waTiles"></div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>This tab is a demo: what the real connection would need</h2><span class="note">nothing on this page is sent</span></div><p class="wa-note" id="waNote"></p></div>
+  <div class="g c12">
+    <div class="card"><div class="ch"><h2>Conversations</h2><span class="note" id="waListNote"></span></div><div class="wa-f" id="waF"></div><ul class="wa-list" id="waList"></ul></div>
+    <div class="card" id="waConv"></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Approved message templates</h2><span class="note">the only messages the school may start, or send after the 24-hour window</span></div>
+    <p class="lead" id="tplLead"></p><div class="tw"><table class="t" id="tplT"></table></div></div>
+  </section>
+
   <dialog class="cc" id="dlg"></dialog>
   <p class="foot" id="foot"></p>
 </main>
@@ -115,7 +170,7 @@
 (function () {
   const { S, PC, num, tile, st, esc } = Dash;
   Dash.shell('admissions');
-  const R = S.registrar, C = S.crm, progs = S.programs, TC = S.thresholds.contact, TODAY = S.school.today, VP = R.visaPolicy;
+  const WA = S.whatsapp, R = S.registrar, C = S.crm, progs = S.programs, TC = S.thresholds.contact, TODAY = S.school.today, VP = R.visaPolicy;
   document.getElementById('sub').textContent = `${S.school.name}, ${S.school.city} · ${S.school.term}, week ${S.school.termWeek} of ${S.school.termWeeks} · as of ${Dash.dateLong(TODAY)}`;
   document.getElementById('foot').textContent = `All names and figures are invented, generated for the design of these dashboards. As of ${Dash.dateLong(TODAY)}, week ${S.school.termWeek} of the ${S.school.termWeeks}-week ${S.school.term.toLowerCase()} term.`;
 
@@ -238,6 +293,7 @@
   function openFile(id) {
     const f = R.files.find(x => x.id === id), P = S.P[f.prog];
     const got = R.docs.filter(d => !f.missing.includes(d)), contacts = f.events.filter(e => e.kind === 'contact');
+    const waT = WA.threads.find(t => t.ref === f.id);
     const iv = f.stageDates.interview, dec = f.stageDates.offer || (f.stage === 'rejected' && f.closed ? f.closed.date : null), V = f.visaSteps;
     const EXTRA = f.extra.sponsor !== undefined ? [['Employer sponsor', f.extra.sponsor || 'none: self-funded']] : f.extra.proposal ? [['Research proposal', f.extra.proposal], ['Possible supervisor', f.extra.supervisor || 'not matched yet']] : f.extra.guarantor ? [['Who pays', f.extra.guarantor === 'Parent' ? 'Parent or guarantor (a contact on the file)' : 'Self-funded'], ['Secondary-school diploma', f.extra.diplomaRecognition]] : [];
     dlg.innerHTML = `<button class="x" data-close>Close</button><h3>${esc(f.name)}</h3><div class="why" style="color:var(--ink2);font-size:13px">${esc(P.name)} · ${esc(intakeName(f.intake))} intake · ${esc(f.region)}${f.nonEU ? ' · non-European' : ''} · came through ${esc(f.source)}</div>
@@ -245,9 +301,11 @@
         <button data-act="reminder" ${f.missing.length && f.open ? '' : 'disabled'}>Send a reminder for the missing documents</button>
         <button data-act="call" ${f.open ? '' : 'disabled'}>Record a call</button>
         <button data-act="interview" ${f.open && f.reached === 1 ? '' : 'disabled'}>Book the interview</button>
-        <button data-act="visa" ${f.visa === 'Visa letter to issue' ? '' : 'disabled'}>Issue the visa letter</button></div>
+        <button data-act="visa" ${f.visa === 'Visa letter to issue' ? '' : 'disabled'}>Issue the visa letter</button>
+        <button data-wa="${waT ? waT.id : ''}" ${waT ? '' : 'disabled title="This applicant has not agreed to be contacted on WhatsApp"'}>${waT ? `Message on WhatsApp${waT.waiting ? ' · waiting for an answer' : ''}` : 'WhatsApp: no opt-in on this file'}</button></div>
       <h4>The file</h4><dl class="kv"><dt>Stage</dt><dd>${esc(SN[f.stage])}${f.closed ? ` · ${esc(f.closed.why)}` : ''}</dd><dt>Owner</dt><dd>${esc(f.owner)}</dd><dt>Applied</dt><dd>${esc(Dash.dateLong(f.stageDates.applied))} · ${plural(f.daysOpen, 'day')} ago</dd>
         <dt>Last contact</dt><dd>${esc(Dash.date(f.lastContact))} · ${f.open ? touchSt(f.lastTouchDays) : plural(f.lastTouchDays, 'day') + ' ago'} · ${plural(contacts.length, 'contact')} logged</dd>
+        <dt>WhatsApp</dt><dd>${waT ? `opted in ${esc(Dash.date(waT.optIn.at.slice(0, 10)))} ${waT.optIn.at.slice(0, 4)} · ${waT.waiting ? st(waT.windowOpen ? 'serious' : 'crit', 'waiting for an answer') : plural(waT.msgs.length, 'message')}` : 'no opt-in: e-mail and phone only'}</dd>
         <dt>Interview</dt><dd>${iv ? esc(Dash.dateLong(iv)) : 'not booked'}</dd><dt>Decision</dt><dd>${dec ? `${f.stage === 'rejected' ? 'not admitted' : 'admitted'}, ${esc(Dash.date(dec))}` : 'not yet'}</dd>
         <dt>Scholarship</dt><dd>${f.scholarship ? f.scholarship + ' % of the fee' : f.reached >= 4 ? 'none' : 'decided with the offer'}</dd>${EXTRA.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
       <h4>Documents · ${got.length} of ${R.docs.length} received</h4><div class="miss">${got.map(d => `<span class="pill">✓ ${esc(d)}</span>`).join('')}${f.missing.map(d => `<span class="pill" style="border-color:var(--crit);color:var(--crit)">missing: ${esc(d)}</span>`).join('')}</div>
@@ -267,6 +325,7 @@
   }
   document.addEventListener('click', e => {
     if (e.target.closest('[data-close]')) { dlg.close(); return; }
+    const w = e.target.closest('[data-wa]'); if (w && w.dataset.wa) { dlg.close(); waOpen(w.dataset.wa); return; }
     const b = e.target.closest('[data-file]'); if (b) { openFile(b.dataset.file); return; }
     const t = e.target.closest('#tabs button'); if (t) { history.replaceState(null, '', location.search + '#' + t.dataset.t); show(); }
   });
@@ -327,8 +386,135 @@
       : `<tr><td class="empty">No student is on leave or has withdrawn.</td></tr>`;
   })();
 
+  /* =====================================================================
+     WHATSAPP — a demo of the WhatsApp Business Platform for applicants and students (15 Nov 2026)
+     ===================================================================== */
+  const TPLS = S.whatsappTemplates, TPL = {}; TPLS.forEach(t => TPL[t.id] = t);
+  const NOWm = Date.parse(WA.now + ':00Z');
+  const wms = a => Date.parse(a + ':00Z'), hm = a => a.slice(11, 16);
+  const wDay = a => { const d = a.slice(0, 10); return d === TODAY ? 'today' : d === addDays(TODAY, -1) ? 'yesterday' : d === addDays(TODAY, 1) ? 'tomorrow' : 'on ' + Dash.dateLong(d); };
+  const wWhen = a => `${hm(a)} ${/^on /.test(wDay(a)) ? 'on ' + Dash.date(a.slice(0, 10)) : wDay(a)}`;
+  const hrs = m => m < 60 ? `${m} min` : m < 1440 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}` : `${Math.round(m / 144) / 10} days`;
+  const waitFor = t => Math.round((NOWm - wms(t.waitingSince)) / 6e4);
+  let clock = 0;   /* each demo message is stamped one minute after the last, from 16:00 on 14 Nov */
+  const W = { kind: 'all', owner: '', q: '', waiting: false, sel: null, mode: null, tpl: null };
+
+  function waTiles() {
+    const T = WA.threads, waiting = T.filter(t => t.waiting), closedW = waiting.filter(t => !t.windowOpen), unread = T.reduce((a, t) => a + t.unread, 0);
+    const resp = T.flatMap(t => t.responses), med = median(resp), tgt = C.responseTarget * 60, inT = resp.filter(x => x <= tgt).length;
+    const ap = T.filter(t => t.kind === 'applicant').length, stu = T.filter(t => t.kind === 'student').length;
+    const sm = T.flatMap(t => t.msgs.filter(m => m.from === 'school')), rd = sm.filter(m => m.status === 'read').length, dl = sm.filter(m => m.status === 'delivered').length;
+    document.getElementById('waScope').textContent = `Shown: the whole school, ${plural(T.length, 'conversation')} (${ap} applicants, ${stu} students). The intake and programme choice of the Admissions tab does not apply here. The demo's clock stands at ${hm(WA.now)} on ${Dash.dateLong(TODAY)}, Geneva time.`;
+    document.getElementById('waTiles').innerHTML = [
+      tile({ lab: 'Conversations waiting for an answer', val: num(waiting.length), unit: `of ${T.length}`, delta: closedW.length ? `<span class="down">${closedW.length} are past the 24-hour window and need a template</span> · ${unread} messages unread` : `<span class="up">every waiting contact can still get a free reply</span> · ${unread} unread` }),
+      tile({ lab: 'Median time to the first answer', val: med == null ? '—' : hrs(Math.round(med)), unit: `target ${C.responseTarget} h`, delta: `<span class="${med <= tgt ? 'up' : 'down'}">${Math.round(100 * inT / resp.length)} % of ${resp.length} questions answered within ${C.responseTarget} hours</span>` }),
+      tile({ lab: 'Applicants who agreed to WhatsApp', val: Math.round(100 * ap / WA.eligibleApplicants) + ' %', note: `${ap} of ${WA.eligibleApplicants} open or deposit-paid files · ${stu} of ${WA.activeStudents} active students` }),
+      tile({ lab: 'School messages read by the contact', val: sm.length ? Math.round(100 * rd / sm.length) + ' %' : '—', note: `${rd} read, ${dl} delivered but not read, ${sm.length - rd - dl} not delivered yet, of ${sm.length} sent` }),
+    ].join('');
+    const unreadN = T.filter(t => t.unread).length; document.getElementById('waTab').textContent = 'WhatsApp · messages' + (unreadN ? ` (${unreadN})` : '');
+  }
+
+  function waFilters() {
+    const f = document.getElementById('waF');
+    f.innerHTML = `<span class="seg" role="group" aria-label="Show applicants or students">${[['all', 'Everyone'], ['applicant', 'Applicants'], ['student', 'Students']].map(([v, l]) => `<button type="button" data-k="${v}" class="${W.kind === v ? 'on' : ''}">${l}</button>`).join('')}</span>
+      <select data-w="owner" aria-label="Choose whose conversations to show"><option value="">every owner</option>${WA.officers.map(o => `<option${W.owner === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>
+      <input type="search" data-w="q" placeholder="Search a name" aria-label="Search a name" value="${esc(W.q)}">
+      <label class="chk"><input type="checkbox" data-w="waiting" ${W.waiting ? 'checked' : ''}> show only the ones waiting</label>`;
+    f.onclick = e => { const b = e.target.closest('[data-k]'); if (b) { W.kind = b.dataset.k; waFilters(); waList(); } };
+    f.oninput = e => { const k = e.target.dataset.w; if (!k) return; W[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; waList(); };
+  }
+
+  function waList() {
+    const L = WA.threads.filter(t => (W.kind === 'all' || t.kind === W.kind) && (!W.owner || t.owner === W.owner) && (!W.q || t.name.toLowerCase().includes(W.q.toLowerCase())) && (!W.waiting || t.waiting))
+      .sort((a, b) => (b.unread > 0) - (a.unread > 0) || b.waiting - a.waiting || b.lastAt.localeCompare(a.lastAt));
+    document.getElementById('waListNote').textContent = `${plural(L.length, 'conversation')} · unread first, then waiting, then the newest`;
+    document.getElementById('waList').innerHTML = L.length ? L.map(t => { const m = t.msgs[t.msgs.length - 1];
+      return `<li><button type="button" data-th="${t.id}" class="${W.sel === t.id ? 'on' : ''}"><span class="nm">${esc(t.name)}</span><span class="tm">${esc(wWhen(m.at))}</span>
+        <span class="pv">${m.from === 'school' ? 'You: ' : ''}${esc(m.text)}</span>${t.unread ? `<span class="wa-un" aria-label="${t.unread} unread">${t.unread}</span>` : '<span></span>'}
+        <span class="meta">${Dash.progKey(t.prog)} <span class="pill">${t.kind === 'applicant' ? 'Applicant' : 'Student'}</span> ${t.waiting ? st(t.windowOpen ? 'serious' : 'crit', `waiting ${hrs(waitFor(t))}`) : ''} <span>${esc(t.owner)}</span></span></button></li>`; }).join('')
+      : '<li class="empty">No conversation matches.</li>';
+    document.getElementById('waList').onclick = e => { const b = e.target.closest('[data-th]'); if (b) waOpen(b.dataset.th, true); };
+  }
+
+  /* placeholders filled from the file or the student record, in the contact's language */
+  function tplValues(t, tpl) {
+    const fr = t.lang === 'FR', dl = d => new Date(d + 'T12:00:00').toLocaleDateString(fr ? 'fr-CH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const first = t.name.split(' ')[0], off = t.owner.replace(/^Prof\. /, '').split(' ')[0];
+    if (t.kind === 'applicant') { const f = R.files.find(x => x.id === t.ref), P = S.P[f.prog], intake = f.intake === '2027-02' ? (fr ? 'février 2027' : 'February 2027') : (fr ? 'septembre 2027' : 'September 2027');
+      const depBy = dl(addDays(f.stageDates.offer || TODAY, 21)), od = C.events.find(e => /Open day/.test(e.what) && e.date >= TODAY && (e.progs || []).includes(f.prog));
+      const V = { document_reminder: [first, off, P.name, f.missing.length ? f.missing.join(', ') : null], interview_booking: [first, P.name, dl(addDays(TODAY, 5)) + (fr ? ' à 10h' : ' at 10:00')],
+        offer_sent: f.reached >= 4 ? [first, P.name, intake, depBy] : null, deposit_reminder: f.stage === 'offer' ? [first, P.name, depBy] : null,
+        visa_letter_ready: f.visaSteps ? [first, P.name, dl(f.visaSteps.embassyBy)] : null, open_day_invite: od ? [first, dl(od.date)] : null }[tpl.id];
+      const why = { document_reminder: 'no document is missing', offer_sent: 'no offer on this file', deposit_reminder: 'no offer waiting for a deposit', visa_letter_ready: 'no visa needed', open_day_invite: 'no open day for this programme' }[tpl.id];
+      return V && V.every(v => v != null) ? { vals: V } : { why: why || 'not for this file' }; }
+    const s = S.util.byId(t.ref), x = S.util.sec(s.sections[0]);
+    const V = { class_moved: x ? [first, `${x.code} ${x.title}`, `${x.day} ${S.util.time(x.start)}`, `${x.day === 'Thu' ? 'Fri' : 'Thu'} ${S.util.time(x.start)}, ${fr ? 'salle' : 'room'} ${x.room}`] : null,
+      exam_registration: [first, dl(R.examRegistrationOpen), dl(R.examRegistrationClose)], fee_reminder: s.overdue ? [first, 'CHF ' + num(s.overdue), s.overdueDays + (fr ? ' jours' : ' days')] : null }[tpl.id];
+    return V ? { vals: V } : { why: tpl.id === 'fee_reminder' ? 'no fee is open' : 'no class this term' };
+  }
+  const fillT = (tpl, lang, vals) => tpl[lang].replace(/\{\{(\d)\}\}/g, (m, i) => vals[i - 1] || `{{${i}}}`);
+  const DEFAULT_TPL = { missing: 'document_reminder', interview: 'interview_booking', review: 'interview_booking', decision: 'interview_booking', applied: 'document_reminder', offer: 'deposit_reminder', deposit: 'offer_sent', visa: 'visa_letter_ready', fee: 'fee_reminder', exam: 'exam_registration', permit: 'exam_registration', transcript: 'exam_registration', general: 'class_moved' };
+
+  function waOpen(id, fromList) {
+    const t = WA.threads.find(x => x.id === id); if (!t) return;
+    if (W.sel !== id) { W.sel = id; W.mode = t.windowOpen ? 'free' : 'tpl'; W.tpl = null; }
+    t.unread = 0;
+    if (location.hash !== '#whatsapp') { history.replaceState(null, '', location.search + '#whatsapp'); show(); }
+    waTiles(); waList(); waConv();
+    if (!fromList) document.getElementById('waConv').scrollIntoView({ block: 'start' });
+  }
+
+  function waConv() {
+    const el = document.getElementById('waConv'), t = WA.threads.find(x => x.id === W.sel);
+    if (!t) { el.innerHTML = '<div class="ch"><h2>Conversation</h2></div><p class="empty">Choose a conversation on the left to read it and answer.</p>'; return; }
+    const open = t.windowOpen && wms(t.windowEnds) > NOWm + clock * 6e4, f = t.kind === 'applicant' ? R.files.find(x => x.id === t.ref) : null, s = t.kind === 'student' ? S.util.byId(t.ref) : null;
+    let day = '', body = '';
+    t.msgs.forEach(m => { const d = m.at.slice(0, 10); if (d !== day) { day = d; body += `<div class="wa-day">${esc(/^on /.test(wDay(m.at)) ? Dash.dateLong(d) : wDay(m.at)[0].toUpperCase() + wDay(m.at).slice(1))}</div>`; }
+      const tick = m.from === 'school' ? (m.status === 'read' ? '<span class="tk read" title="read" aria-label="read">✓✓</span>' : m.status === 'delivered' ? '<span class="tk" title="delivered, not read" aria-label="delivered">✓✓</span>' : '<span class="tk" title="sent, not delivered yet" aria-label="sent">✓</span>') : '';
+      body += `<div class="bub ${m.from === 'school' ? 'out' : 'in'}">${m.template ? `<div class="tg">Template · ${esc(TPL[m.template].name)}</div>` : ''}${esc(m.text)}<div class="ft">${m.demo ? '<span class="demo">demo, nothing sent</span>' : ''}${m.from === 'school' && m.by ? `<span>${esc(m.by.split(' (')[0])}</span>` : ''}<span>${hm(m.at)}</span>${tick}</div></div>`; });
+    const lastIn = t.lastInbound;
+    const win = open ? `<div class="wa-win open"><b>You can reply freely until ${esc(hm(t.windowEnds))} ${wDay(t.windowEnds)}.</b> ${esc(t.name.split(' ')[0])} wrote last at ${esc(wWhen(lastIn))}; WhatsApp allows free text for ${WA.windowHours} hours after the contact's last message.</div>`
+      : `<div class="wa-win closed"><b>Outside the 24-hour window: send an approved template.</b> ${lastIn ? `${esc(t.name.split(' ')[0])} wrote last at ${esc(wWhen(lastIn))}, so the window closed at ${esc(hm(t.windowEnds))} ${wDay(t.windowEnds)}.` : 'The contact has not written yet.'} The window opens again when the contact replies.</div>`;
+    const mode = open ? W.mode : 'tpl';
+    const list = TPLS.filter(x => x.for === t.kind), cur = TPL[W.tpl] || TPL[DEFAULT_TPL[t.situation]] || list[0];
+    const tv = tplValues(t, cur);
+    const comp = `<div class="wa-comp">${open ? `<span class="seg" role="group" aria-label="Choose what to send"><button type="button" data-m="free" class="${mode === 'free' ? 'on' : ''}">Write a free reply</button><button type="button" data-m="tpl" class="${mode === 'tpl' ? 'on' : ''}">Send a template</button></span>` : ''}
+      ${mode === 'free' ? `<textarea id="waTxt" placeholder="Write your answer to ${esc(t.name.split(' ')[0])} in ${t.lang === 'FR' ? 'French' : 'English'}" aria-label="Write your answer"></textarea>`
+        : `<label style="font-size:12px;color:var(--muted)">Choose the template<select id="waTpl" style="display:block;margin-top:2px">${list.map(x => { const ok = tplValues(t, x); return `<option value="${x.id}" ${x.id === cur.id ? 'selected' : ''} ${ok.vals ? '' : 'disabled'}>${esc(x.name)} · ${x.category}${ok.vals ? '' : ' (' + esc(ok.why) + ')'}</option>`; }).join('')}</select></label>
+          ${tv.vals ? `<div class="wa-params">${TPL[cur.id].params.map((p, i) => `<label>Placeholder {{${i + 1}}}: ${esc(p)}<input data-p="${i}" value="${esc(tv.vals[i])}"></label>`).join('')}</div>
+          <div class="wa-prev" id="waPrev">${esc(fillT(cur, t.lang, tv.vals))}</div><div class="why" style="font-size:12px;color:var(--muted)">Sent in ${t.lang === 'FR' ? 'French' : 'English'}, the contact's language · ${cur.category} template · CHF ${cur.priceCHF.toFixed(2)} per message delivered (invented price)</div>` : `<p class="empty">This template does not apply: ${esc(tv.why)}.</p>`}`}
+      <button type="button" class="wa-send" id="waSend" ${mode === 'tpl' && !tv.vals ? 'disabled' : ''}>${mode === 'free' ? 'Send the reply' : 'Send the template'} (demo: nothing is sent)</button></div>`;
+    el.innerHTML = `<div class="wa-head"><div><h3>${esc(t.name)}</h3><div class="why">${t.kind === 'applicant' ? `Applicant, ${esc(S.P[t.prog].short)}, ${esc(SN[f.stage])}` : `Student, ${esc(S.P[t.prog].short)} year ${s.year}`} · ${esc(t.region)} · ${esc(t.phone)} · writes in ${t.lang === 'FR' ? 'French' : 'English'}</div>
+        <div class="why">Owner: ${esc(t.owner)} · Opt-in on ${esc(Dash.dateLong(t.optIn.at.slice(0, 10)))}: ${esc(t.optIn.how)}</div></div>
+        ${f ? `<button class="linkbtn" data-file="${f.id}">Open the application file →</button>` : ''}</div>${win}<div class="wa-msgs" id="waMsgs">${body}</div>${comp}`;
+    const box = document.getElementById('waMsgs'); box.scrollTop = box.scrollHeight;
+    el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { W.mode = b.dataset.m; waConv(); });
+    const sel = document.getElementById('waTpl'); if (sel) sel.onchange = () => { W.tpl = sel.value; waConv(); };
+    const vals = () => [...el.querySelectorAll('[data-p]')].map(i => i.value.trim());
+    el.querySelectorAll('[data-p]').forEach(i => i.oninput = () => { document.getElementById('waPrev').textContent = fillT(cur, t.lang, vals()); });
+    document.getElementById('waSend').onclick = () => {
+      let text, tid = null;
+      if (mode === 'free') { text = document.getElementById('waTxt').value.trim(); if (!text) { document.getElementById('waTxt').focus(); return; } }
+      else { tid = cur.id; text = fillT(cur, t.lang, vals()); }
+      clock++; const at = new Date(NOWm + clock * 6e4).toISOString().slice(0, 16);
+      t.msgs.push({ from: 'school', text, at, template: tid, by: t.owner, status: 'sent', demo: true });
+      t.waiting = false; t.unread = 0; t.lastAt = at;
+      if (f) { /* the same contact event the other actions write, so "last contact" stays the one measure */
+        f.events.push({ date: TODAY, kind: 'contact', what: `WhatsApp ${tid ? 'template sent: ' + TPL[tid].name : 'reply sent'} (demo: nothing is sent)`, by: t.owner, isNew: true });
+        f.lastContact = TODAY; f.lastTouchDays = 0; render(); }
+      waTiles(); waList(); waConv(); };
+  }
+
+  (function waInit() {
+    document.getElementById('waNote').innerHTML = `Many applicants, above all those outside Europe, answer a WhatsApp message within hours and an e-mail within days, so the office wants to reach them where they read. <b>This tab shows how that would work, and it sends nothing:</b> every name, number and message is invented, and a message you send here is only added to this page until you reload it. To connect it for real, the school needs five things. First, a <b>Meta Business account</b>, verified with the school's company documents. Second, a <b>phone number registered on the WhatsApp Business Platform</b> (the Cloud API), which the dashboard would use to send and receive. Third, <b>approved templates</b>: Meta must approve the wording of every message the school starts, and only a template may be sent more than ${WA.windowHours} hours after the contact's last message. Fourth, a <b>recorded opt-in from each contact</b>: WhatsApp's rules require the person's agreement before the school writes, and the Swiss data protection act requires the school to tell each person how their data is used and that it is stored by Meta abroad. Fifth, a <b>budget for Meta's fees</b>: Meta charges per template message, by category and country, while free replies inside the ${WA.windowHours}-hour window are not charged.`;
+    document.getElementById('tplLead').textContent = `${TPLS.length} templates, each in English and French. A utility template is about the contact's own file or studies; a marketing template promotes something and needs the contact's agreement to marketing messages. ${WA.priceNote}`;
+    document.getElementById('tplT').innerHTML = `<tr><th>Template</th><th>For</th><th>Category</th><th class="n">Price per message</th><th>Text in English (placeholders in braces)</th></tr>` +
+      TPLS.map(x => `<tr><td><b>${esc(x.name)}</b><div class="why">${esc(x.id)} · EN, FR</div></td><td>${x.for === 'applicant' ? 'Applicants' : 'Students'}</td><td>${x.category === 'marketing' ? st('warn', 'Marketing') : st('good', 'Utility')}</td><td class="n">CHF ${x.priceCHF.toFixed(2)}</td><td>${esc(x.EN)}<div class="why">${x.params.map((p, i) => `{{${i + 1}}} = ${esc(p)}`).join(' · ')}</div></td></tr>`).join('');
+    waFilters(); waTiles(); waList(); waConv();
+  })();
+
   /* ---- tabs ---- */
-  const TABS = ['admissions', 'office'];
+  const TABS = ['admissions', 'office', 'whatsapp'];
   function show() { const h = location.hash.slice(1), t = TABS.includes(h) ? h : 'admissions';
     document.querySelectorAll('[data-tab]').forEach(sec => sec.hidden = sec.dataset.tab !== t);
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
@@ -337,6 +523,8 @@
   render(); show();
   /* ?file=<id> opens that file (the marketing sales desk links here) */
   const qf = new URLSearchParams(location.search).get('file'); if (qf && R.files.some(f => f.id === qf)) openFile(qf);
+  /* ?wa=<thread id> opens that conversation */
+  const qw = new URLSearchParams(location.search).get('wa'); if (qw) waOpen(qw);
 })();
 </script>
 </body>

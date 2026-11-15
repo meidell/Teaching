@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/financial-modelling/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Python lab · Build Meridia Cold's valuation in Python · GBS</title>
+<meta name="description" content="Finance Modelling (MIM), practice page. Six Python exercises on the Meridia Cold case, run in the browser: historical growth, the revenue and EBITDA forecast, free cash flow, the discounted cash flow value and the price per share, a sensitivity table with pandas, and a chart of the three plans with matplotlib. Each exercise checks its own answer.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="finmod.css">
+<style>
+/* =====================================================================
+   python-lab.html — the Python lab (15 Nov 2026). Jan Erik approved ONE
+   CDN exception for it: /shared/codelab.js loads Pyodide from jsDelivr
+   (pinned) on the first Run. Not a session: no data-module, nothing is
+   counted in progress. The model is Session 1's v01 model line for line
+   (= model() in week3.html): history FY2023–25, three forecast years,
+   tax 24 %, D&A +5 % a year, WACC 8.5 %, g 2 %, net debt 60, 40 m shares
+   → EV 159.36, €2.48; plan €2.98, lender €1.89; WACC 9 % → €2.20.
+   Every expected value was recomputed in Python and every model answer
+   re-run headlessly in the page on 15 Nov 2026.
+   ===================================================================== */
+.ex{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);scroll-margin-top:70px;}
+.ex.solved{border-color:var(--accent);}
+.ex>.clock{display:inline-block;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);background:var(--accent-pale);border-radius:20px;padding:3px 11px;margin-bottom:9px;}
+.ex h2{font-size:19px;line-height:1.2;margin-bottom:9px;}
+.ex p,.ex li{font-size:14px;line-height:1.6;}
+.ex ol,.ex ul{padding-left:20px;margin:6px 0 8px;}
+.ex .wy{background:var(--accent-pale);border-radius:10px;padding:10px 13px;margin:8px 0 10px;font-size:13.5px;line-height:1.55;}
+.ex .tk{font-weight:800;color:var(--navy);margin-top:10px;font-size:14px;}
+.ex code,.facts code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#EEF1F5;border-radius:4px;padding:1px 4px;}
+details.kbd{border:1px solid var(--line);border-radius:12px;background:#fff;margin:10px 0;}
+details.kbd>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+details.kbd>div{padding:0 14px 12px;font-size:13.5px;line-height:1.55;}
+details.kbd pre{font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.45;background:#F6F8FB;border-radius:8px;padding:10px;overflow-x:auto;}
+.facts{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:20px;}
+.facts h2{font-size:17px;margin-bottom:6px;}
+.facts p{font-size:13.5px;line-height:1.55;color:var(--ink-soft);}
+.facts .tw{overflow-x:auto;margin:8px 0 10px;}
+.facts table{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:100%;}
+.facts th,.facts td{border-bottom:1px solid var(--line);padding:6px 9px;text-align:right;white-space:nowrap;}
+.facts th:first-child,.facts td:first-child{text-align:left;}
+.facts th{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);}
+</style>
+</head>
+<body data-course="finmod">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Practice · Python lab</span>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Practice page · after Sessions 1 and 2</div>
+    <h1>Build Meridia Cold's valuation in Python: six exercises that check their own answer</h1>
+    <p class="lead"><b>Why this page exists.</b> In Session 1 you built Meridia's valuation in Excel, and in Session 2 you tested what drives it. Analysts at banks and funds increasingly build the same models in <b>Python</b>, a programming language, because a few lines of code can recalculate a model for hundreds of scenarios and draw the chart in the same step. On this page you rebuild Session 1's model in Python, one block at a time, and arrive at the same €2.48 a share.</p>
+    <p class="lead"><b>How to use it.</b></p>
+    <ol class="doli" style="color:#fff">
+      <li>Read Meridia's figures in the table below once.</li>
+      <li>Do the exercises in order: each one uses what the one before it taught.</li>
+      <li>In each exercise, complete the code in the grey box and press <b>▶ Run</b>. What your code prints appears under the box. When your numbers are right, the page writes <b>Correct</b>; otherwise it says which number is different.</li>
+      <li>The first Run loads Python into your browser (about 6 MB, once per visit). Exercise 5 then loads pandas, the table library (about 8 MB), and Exercise 6 loads matplotlib, the chart library (about 9 MB), each once per visit. Everything runs on your own laptop: the code you type in the boxes is not sent anywhere.</li>
+    </ol>
+    <p class="lead" style="font-size:13px">Your code is kept in this browser, so you can close the page and come back. "Reset the code" in a box's top right corner puts the starting code back. Nothing on this page is graded. No Python experience is assumed: every exercise gives the starting lines and says which ones to complete.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 6</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">exercises solved</span>
+  </div>
+
+  <div class="facts" id="facts">
+    <h2>Meridia Cold's figures, from Session 1</h2>
+    <p>Meridia Cold SL (fictional) runs 14 cold-storage warehouses in Spain, France and Italy. All amounts are in € million, financial years FY2023 to FY2025.</p>
+    <div class="tw"><table>
+      <tr><th>€ million</th><th>FY2023</th><th>FY2024</th><th>FY2025</th></tr>
+      <tr><td>Revenue</td><td>160.2</td><td>171.0</td><td>180.4</td></tr>
+      <tr><td>EBITDA (earnings before interest, tax, depreciation and amortisation)</td><td>23.2</td><td>26.2</td><td>29.0</td></tr>
+      <tr><td>D&amp;A (depreciation and amortisation)</td><td>9.6</td><td>10.1</td><td>10.6</td></tr>
+      <tr><td>Capex (money spent on warehouses and equipment)</td><td>12.0</td><td>13.5</td><td>14.2</td></tr>
+      <tr><td>Increase in working capital</td><td>1.2</td><td>1.4</td><td>1.1</td></tr>
+    </table></div>
+    <p>The <b>base case</b> for FY2026 to FY2028: revenue grows 6.7 % a year; the EBITDA margin is 16.1 % of revenue; D&amp;A grows 5 % a year; capex is 8 % of revenue; working capital rises by 10 % of each year's <i>new</i> revenue; tax is 24 %. The valuation discounts at a WACC (weighted average cost of capital, the return investors require) of 8.5 % and assumes growth of 2 % a year after FY2028. Net debt is €60.0 million and there are 40.0 million shares.</p>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="try">
+    <span class="clock">Before you start</span>
+    <h2>Run your first line of Python</h2>
+    <p>This box is not checked. Press <b>▶ Run</b> to load Python. <code>print(…)</code> shows a value under the box. Then change the numbers and run it again.</p>
+<div class="codelab" id="p0" data-lang="python">revenue_2025 = 180.4      # € million
+ebitda_2025 = 29.0
+margin = ebitda_2025 / revenue_2025 * 100
+print("EBITDA margin FY2025:", round(margin, 2), "%")</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e1">
+    <span class="clock">Exercise 1 · lists and arithmetic</span>
+    <h2>Calculate Meridia's revenue growth in FY2024 and FY2025, and the average growth over the two years</h2>
+    <div class="wy"><b>Why.</b> The base case assumes 6.7 % growth a year. Before the board accepts that number, it compares it with what Meridia actually achieved. If the history is lower, the forecast needs a reason.</div>
+    <p>A <b>list</b> holds several values in order: <code>revenue[0]</code> is the first (FY2023), <code>revenue[2]</code> the third (FY2025). Growth in a year is this year ÷ last year − 1. The <b>CAGR</b> (compound annual growth rate) is the single yearly rate that turns the first value into the last: (last ÷ first) to the power 1 ÷ number of years, minus 1. In Python, <code>**</code> means "to the power".</p>
+    <p class="tk">Your task</p>
+    <ol><li>Create <code>growth</code>, a list of two numbers: the growth of FY2024 and of FY2025, <b>in %</b> (multiply by 100).</li><li>Create <code>cagr</code>, the CAGR from FY2023 to FY2025 (two years), in %.</li><li>Print both.</li></ol>
+<div class="codelab" id="p1" data-lang="python"
+ data-check='{"vars":{"growth":[[6.7416,5.4971],0.01],"cagr":[6.1175,0.01]}}'
+ data-hint="Growth in FY2024 is (revenue[1] / revenue[0] - 1) * 100. The CAGR is ((revenue[2] / revenue[0]) ** (1 / 2) - 1) * 100."
+ data-ok="growth was 6.74 % and then 5.50 %, 6.12 % a year on average. The base case's 6.7 % is above the average and well above the latest year: the plan assumes growth speeds up again.">revenue = [160.2, 171.0, 180.4]   # FY2023, FY2024, FY2025, € million
+
+growth = [
+    (revenue[1] / revenue[0] - 1) * 100,
+    # add the growth of FY2025
+]
+cagr = 0   # replace 0 with the formula
+
+print("Growth, %:", growth)
+print("CAGR, %:", cagr)</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e2">
+    <span class="clock">Exercise 2 · a loop</span>
+    <h2>Forecast revenue and EBITDA for FY2026 to FY2028</h2>
+    <div class="wy"><b>Why.</b> A valuation is built on a forecast. In Excel you wrote one formula and copied it across three columns. In Python you write it once inside a <b>loop</b>, which repeats the same lines for each year.</div>
+    <p><code>for year in range(3):</code> repeats the indented lines three times. <code>revenue_fc.append(x)</code> adds the value <code>x</code> at the end of the list. <code>revenue_fc[-1]</code> is the last value in the list, so each year grows from the year before.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Complete the loop so that <code>revenue_fc</code> holds FY2026, FY2027 and FY2028 revenue, each 6.7 % above the year before, starting from FY2025's 180.4.</li><li>Inside the same loop, add each year's EBITDA to <code>ebitda_fc</code>: 16.1 % of that year's revenue.</li></ol>
+<div class="codelab" id="p2" data-lang="python"
+ data-check='{"vars":{"revenue_fc":[[192.4868,205.3834,219.1441],0.01],"ebitda_fc":[[30.9904,33.0667,35.2822],0.01]}}'
+ data-hint="Inside the loop, the first line is new = last * (1 + growth). After revenue_fc.append(new), add ebitda_fc.append(new * margin). Keep the four lines inside the loop indented by four spaces."
+ data-ok="revenue reaches €219.1 million in FY2028 and EBITDA €35.3 million, the same figures as your Session 1 workbook.">growth = 0.067    # 6.7 % a year
+margin = 0.161    # EBITDA = 16.1 % of revenue
+
+revenue_fc = []
+ebitda_fc = []
+last = 180.4      # FY2025 revenue, € million
+for year in range(3):
+    new = last    # replace: grow last by 6.7 %
+    revenue_fc.append(new)
+    # add this year's EBITDA to ebitda_fc
+    last = new
+
+print("Revenue FY2026–28:", [round(x, 2) for x in revenue_fc])
+print("EBITDA  FY2026–28:", [round(x, 2) for x in ebitda_fc])</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e3">
+    <span class="clock">Exercise 3 · free cash flow</span>
+    <h2>Calculate Meridia's free cash flow for FY2026 to FY2028</h2>
+    <div class="wy"><b>Why.</b> A buyer pays for the cash the business will produce, not for its profit. <b>Free cash flow</b> (FCF) is the cash left after tax, after the investment in warehouses (capex) and after the money tied up in working capital: the cash that could be paid to lenders and shareholders. It is the number the valuation discounts in Exercise 4.</div>
+    <p>The formula of Session 1, for each year: <b>FCF = (EBITDA − D&amp;A) × (1 − 24 %) + D&amp;A − capex − increase in working capital</b>. D&amp;A is added back because it is a cost in the profit but not a payment of cash. The starting code already has revenue and EBITDA from Exercise 2. <code>zip(a, b)</code> walks through two lists side by side.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Inside the loop, calculate the year's D&amp;A (5 % above last year's, starting from FY2025's 10.6), capex (8 % of the year's revenue), and the increase in working capital (10 % of the year's revenue minus last year's revenue).</li><li>Append the year's FCF to <code>fcf</code>.</li></ol>
+<div class="codelab" id="p3" data-lang="python"
+ data-check='{"vars":{"fcf":[[9.6163,10.2151,10.8519],0.01]}}'
+ data-hint="For FY2026: D&amp;A = 10.6 * 1.05 = 11.13; capex = 0.08 * 192.49 = 15.40; working capital = 0.10 * (192.49 - 180.4) = 1.21; FCF = (30.99 - 11.13) * 0.76 + 11.13 - 15.40 - 1.21 = 9.62. Check that da, prev_rev are updated at the end of the loop."
+ data-ok="free cash flow is €9.62 million in FY2026, €10.22 million in FY2027 and €10.85 million in FY2028. Of €31.0 million of EBITDA in FY2026, less than a third is free cash: tax, capex and working capital take the rest.">revenue_fc = [180.4 * 1.067 ** n for n in (1, 2, 3)]   # from Exercise 2
+ebitda_fc = [r * 0.161 for r in revenue_fc]
+
+tax = 0.24
+da = 10.6          # FY2025 D&A
+prev_rev = 180.4   # FY2025 revenue
+fcf = []
+for rev, ebitda in zip(revenue_fc, ebitda_fc):
+    da = da                 # replace: 5 % more than last year
+    capex = 0               # replace: 8 % of rev
+    nwc = 0                 # replace: 10 % of (rev - prev_rev)
+    fcf.append((ebitda - da) * (1 - tax) + da - capex - nwc)
+    prev_rev = rev
+
+print("FCF FY2026–28, € million:", [round(x, 2) for x in fcf])</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e4">
+    <span class="clock">Exercise 4 · discounting</span>
+    <h2>Value Meridia with a discounted cash flow, and turn the value into a price per share</h2>
+    <div class="wy"><b>Why.</b> A euro in 2028 is worth less than a euro today, because today's euro could be invested in the meantime. A <b>discounted cash flow</b> (DCF) valuation divides each future cash flow by (1 + WACC) to the power of the number of years until it arrives. This gives its <b>present value</b>. The cash flows after FY2028 are summed in one <b>terminal value</b>, which assumes they grow at 2 % a year forever. Their sum is the <b>enterprise value</b> (EV), the value of the whole business; the shareholders get what is left after the net debt.</div>
+    <ul>
+      <li>Present value of the FCF of year <i>t</i> (t = 1 for FY2026, 2, 3): FCF ÷ (1 + 0.085) ** t.</li>
+      <li>Terminal value at the end of FY2028 (the Gordon growth formula): FCF of FY2028 × (1 + g) ÷ (WACC − g). Its present value divides it by (1.085) ** 3.</li>
+      <li>EV = the sum of the three present values + the present value of the terminal value. Equity = EV − net debt of 60.0. Price per share = equity ÷ 40.0 million shares.</li>
+    </ul>
+    <p class="tk">Your task</p>
+    <ol><li>Create <code>pv_fcf</code> (the sum of the three present values), <code>pv_tv</code>, <code>ev</code> and <code>price</code>, all in € million except the price, which is in € per share.</li><li>Print them.</li></ol>
+<div class="codelab" id="p4" data-lang="python"
+ data-check='{"vars":{"pv_fcf":[26.0362,0.01],"pv_tv":[133.3222,0.01],"ev":[159.3584,0.01],"price":[2.4840,0.006]}}'
+ data-hint="enumerate(fcf, start=1) gives t = 1, 2, 3 with each cash flow. The terminal value uses fcf[-1], the FY2028 value, and is discounted three years like FY2028's cash flow."
+ data-ok="EV €159.36 million = €26.04 million from the three forecast years + €133.32 million from the terminal value, so €2.48 a share. The terminal value is 84 % of the value: most of what a buyer pays for lies after FY2028, which is why Session 2 tested the growth and the WACC.">fcf = [9.6163, 10.2151, 10.8519]   # FY2026–28, from Exercise 3
+wacc = 0.085
+g = 0.02
+net_debt = 60.0
+shares = 40.0
+
+pv_fcf = 0
+for t, cash in enumerate(fcf, start=1):
+    pv_fcf += 0             # replace: the present value of cash
+
+pv_tv = 0                   # replace
+ev = 0                      # replace
+price = 0                   # replace
+
+print("PV of FCF:", round(pv_fcf, 2), " PV of terminal value:", round(pv_tv, 2))
+print("EV:", round(ev, 2), "€ million  ·  price:", round(price, 2), "€ per share")</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e5">
+    <span class="clock">Exercise 5 · a table with pandas</span>
+    <h2>Build a sensitivity table of the price per share for five WACCs and five growth rates</h2>
+    <div class="wy"><b>Why.</b> Nobody knows the WACC or the long-term growth exactly, and Exercise 4 showed that 84 % of the value depends on them. A <b>sensitivity table</b> shows the price for every combination, so the board sees the range instead of one number. In Excel this is a data table; in Python it is a loop and a <b>pandas DataFrame</b>, a table with labelled rows and columns.</div>
+    <p>The page has already loaded a function <code>value(wacc, g)</code> that runs Exercises 2 to 4 and returns the price per share; <code>value(8.5, 2.0)</code> gives 2.48. Both arguments are in %. <code>[f(x) for x in list]</code> builds a list in one line.</p>
+    <p class="tk">Your task</p>
+    <ol><li>For each WACC in <code>waccs</code>, build a row of five prices, one per growth rate in <code>growths</code>, each rounded to two decimals.</li><li>Create <code>table</code> as <code>pd.DataFrame(rows, index=waccs, columns=growths)</code>: one row per WACC, one column per growth rate.</li><li>End the code with the line <code>table</code>, so the page shows it.</li></ol>
+<div class="codelab" id="p5" data-lang="python" data-setup="meridia" data-check='{"py":"chk5"}'
+ data-ok="at a WACC of 8.5 % and 2 % growth the price is €2.48; at 9.0 % it falls to €2.20, and at 7.5 % with 3 % growth it would be €4.16. Half a point more WACC (8.5 % to 9.0 %) takes €0.28 off the price, and half a point more growth (2.0 % to 2.5 %) adds €0.30: the two guesses weigh about the same.">import pandas as pd
+
+waccs = [7.5, 8.0, 8.5, 9.0, 9.5]     # %
+growths = [1.0, 1.5, 2.0, 2.5, 3.0]   # % a year after FY2028
+
+rows = []
+for w in waccs:
+    row = [0 for g in growths]   # replace 0 with round(value(w, g), 2)
+    rows.append(row)
+
+table = pd.DataFrame(rows, index=waccs, columns=growths)
+table</div>
+    <details class="kbd"><summary>Show the function value() that the page loaded for you</summary><div><pre id="meridiaShow"></pre></div></details>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e6">
+    <span class="clock">Exercise 6 · a chart with matplotlib</span>
+    <h2>Draw the price per share under management's plan, the base case and the lender's case</h2>
+    <div class="wy"><b>Why.</b> In Session 2 the board had three plans in front of it: management's plan (9.0 % growth, 17.5 % margin), the base case, and the lender's cautious case (3.0 % growth, 14.5 % margin). A board member reads one chart faster than three columns of numbers. <b>matplotlib</b> is the Python library that draws charts.</div>
+    <p>The function <code>value()</code> also takes the four drivers: <code>value(wacc, g, growth, margin, capex, nwc)</code>, all in %. <code>plt.bar(names, prices)</code> draws one bar per name.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Complete the loop so that <code>prices</code> holds the three prices per share, in the order of <code>names</code>, at a WACC of 8.5 % and 2 % growth.</li><li>Draw a bar chart of <code>prices</code> by <code>names</code>.</li><li>Give the chart a title that says what it shows, and label the vertical axis with its unit: € per share.</li></ol>
+<div class="codelab" id="p6" data-lang="python" data-setup="meridia" data-check='{"py":"chk6"}'
+ data-ok="management's plan is worth €2.98 a share, the base case €2.48 and the lender's case €1.89. The gap between the highest and the lowest, €1.09 a share or €43.6 million for 40 million shares, is what the board's review is about.">import matplotlib.pyplot as plt
+
+names = ["Management's plan", "Base case", "Lender's case"]
+plans = [   # growth %, EBITDA margin %, capex % of revenue, working capital % of new revenue
+    (9.0, 17.5, 8.5, 10),
+    (6.7, 16.1, 8.0, 10),
+    (3.0, 14.5, 7.5, 12),
+]
+
+prices = []
+for growth, margin, capex, nwc in plans:
+    prices.append(0)   # replace 0: value(8.5, 2.0, growth, margin, capex, nwc)
+print([round(p, 2) for p in prices])
+
+# draw the bars, then add the title and the label of the vertical axis
+</div>
+  </div>
+
+  <div class="foot"><a href="index.html">← Back to the course</a> · Meridia Cold, Boreal Logistics and Arco Partners are fictional; the figures are invented for the course. Python runs in your browser through Pyodide.</div>
+</div>
+
+<script type="text/python" id="meridia">
+def value(wacc=8.5, g=2.0, growth=6.7, margin=16.1, capex=8.0, nwc=10.0,
+          net_debt=60.0, shares=40.0):
+    """Meridia Cold's price per share in euros: Session 1's model.
+    All rates in %. FY2025: revenue 180.4, D&A 10.6 (€ million)."""
+    w, g = wacc / 100, g / 100
+    rev, da, pv, fcf = 180.4, 10.6, 0.0, 0.0
+    for t in (1, 2, 3):                       # FY2026, FY2027, FY2028
+        new = rev * (1 + growth / 100)
+        da = da * 1.05
+        ebitda = new * margin / 100
+        fcf = (ebitda - da) * (1 - 0.24) + da - new * capex / 100 - (new - rev) * nwc / 100
+        pv += fcf / (1 + w) ** t
+        rev = new
+    pv_tv = fcf * (1 + g) / (w - g) / (1 + w) ** 3
+    return (pv + pv_tv - net_debt) / shares
+</script>
+<script type="text/python" id="chk5">
+def _check():
+    import numpy as np
+    exp = np.array([[2.56, 2.86, 3.21, 3.64, 4.16], [2.26, 2.52, 2.82, 3.17, 3.59],
+                    [2.01, 2.23, 2.48, 2.78, 3.13], [1.79, 1.98, 2.20, 2.45, 2.74],
+                    [1.59, 1.76, 1.95, 2.16, 2.41]])
+    t = globals().get('table')
+    if t is None:
+        return 'Create a DataFrame named table.'
+    if not hasattr(t, 'to_numpy'):
+        return 'table must be a pandas DataFrame: pd.DataFrame(rows, index=waccs, columns=growths).'
+    if t.shape != (5, 5):
+        return 'table has %d rows and %d columns. It needs 5 and 5: one row per WACC, one column per growth rate. Check that each row is a list of five prices.' % t.shape
+    try:
+        v = t.to_numpy(dtype=float)
+    except Exception:
+        return 'Every cell of table must be a number.'
+    if np.allclose(v, exp.T, atol=0.006):
+        return 'The table is on its side: the WACCs go down the rows (index=waccs) and the growth rates across (columns=growths), and the loop must call value(w, g), WACC first.'
+    if not np.allclose(v, exp, atol=0.006):
+        return 'Some prices are not right yet. Each cell is round(value(w, g), 2), with w the WACC of the row and g the growth rate of the column.'
+    return True
+_check()
+</script>
+<script type="text/python" id="chk6">
+def _check():
+    import sys
+    p = globals().get('prices')
+    try:
+        p = [float(x) for x in p]
+    except Exception:
+        return 'prices must be a list of three numbers. Replace the 0 inside append(…) with the call to value().'
+    want = [2.98, 2.48, 1.89]
+    if len(p) != 3 or any(abs(a - b) > 0.006 for a, b in zip(p, want)):
+        return 'prices should be three prices per share, in the order management\'s plan, base case, lender\'s case. Yours: ' + ', '.join('%.2f' % x for x in p) + '.'
+    if 'matplotlib.pyplot' not in sys.modules:
+        return 'The prices are right. Now draw the chart with plt.bar(names, prices).'
+    import matplotlib.pyplot as plt
+    if not plt.get_fignums() or not plt.gcf().axes:
+        return 'The prices are right, but no chart was drawn. Add plt.bar(names, prices).'
+    ax = plt.gcf().axes[0]
+    if len(ax.patches) < 3:
+        return 'The chart needs three bars, one per plan: plt.bar(names, prices).'
+    if not ax.get_title().strip():
+        return 'Give the chart a title with plt.title("…") that says what it shows.'
+    if not ax.get_ylabel().strip():
+        return 'Label the vertical axis with plt.ylabel("…"), with its unit: € per share.'
+    return True
+_check()
+</script>
+<script src="/shared/codelab.js"></script>
+<script>
+(function(){
+  var IDS=['p1','p2','p3','p4','p5','p6'];
+  function paint(){
+    var s=window.CodeLab?CodeLab.solved():[],n=0;
+    IDS.forEach(function(id){var ok=s.indexOf(id)>=0;if(ok)n++;var ex=document.getElementById(id);ex=ex&&ex.closest('.ex');if(ex)ex.classList.toggle('solved',ok);});
+    document.getElementById('spLbl').textContent=n+' / '+IDS.length;
+    document.getElementById('spFill').style.width=Math.round(n/IDS.length*100)+'%';
+  }
+  document.addEventListener('codelab:solved',paint);
+  function boot(){paint();var m=document.getElementById('meridia'),s=document.getElementById('meridiaShow');if(m&&s)s.textContent=m.textContent.trim();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem('finmod_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}}
+  window.addEventListener('DOMContentLoaded',chip);window.addEventListener('statstrack:named',chip);
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

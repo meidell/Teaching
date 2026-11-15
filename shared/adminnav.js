@@ -62,6 +62,7 @@
     ['pres', 'presence', 'Presence', '/shared/admin2.html', '#presence'],
     ['chat', 'chat', 'Messages', '/shared/chat.html', ''],
     ['ins', 'insights', 'Insights', '/shared/insights.html', ''],
+    ['tutor', 'chat', 'Tutor', '/shared/tutor.html', ''],
     ['board', 'board', 'Board · TV', '/shared/board.html', '']
   ];
   /* icons come from /shared/adminui.js (one set, currentColor); a page
@@ -158,6 +159,7 @@
     h += '<div class="ak">Course' + (c || id ? ' · <em>' + esc(c ? (c.code || c.id) : id) + '</em>' : '') + '</div>';
     TOOLS.forEach(function (t) {
       if (t[0] === 'pres' && c && !hasPresence(c)) return;
+      if (t[0] === 'tutor' && !(c && c.tutor && c.tutor.on)) return;
       h += link(toolHref(t, id), ico(t[1]), t[2], tool === t[0], ' data-tool="' + t[0] + '"');
     });
 
@@ -220,6 +222,7 @@
       try { localStorage.setItem('jem_admin_last', cid); } catch (x) {}
       var tool = currentTool() || 'dash', c = course(cid);
       if (tool === 'pres' && !hasPresence(c)) tool = 'dash';
+      if (tool === 'tutor' && !(c && c.tutor && c.tutor.on)) tool = 'dash';
       var t = TOOLS.filter(function (x) { return x[0] === tool; })[0];
       go(toolHref(t, cid));
       return;

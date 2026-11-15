@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Tutor · what students ask</title>
+<!-- The instructor's end of the course tutor (/shared/tutor.js + the sender worker's /tutor routes),
+     15 Nov 2026. Jan Erik: "let the professor see the questions asked and other feedback".
+     Reads the course namespace whole with the instructor token (like admin2) and collects every
+     <sid>/tutor entry: k:'q' = a question {page, q, a, ts}; k:'f' = a feedback {page, field, label, words,
+     text, fb:{summary, strengths, improve, criteria[{criterion, rating}], length}, ts}. Shows tiles, questions
+     per page, the newest questions with their answers, feedback per student, how the class does on each
+     criterion, and on request a Claude summary of the themes (POST /tutor/insights, names never sent).
+     Same gate and sign-in as the other instructor pages; ?course=<id>. -->
+<link rel="stylesheet" href="/shared/admin.css">
+<script src="/shared/adminui.js"></script>
+<style>
+  body{margin:0;background:var(--a-wash,#f4f6f9);color:var(--a-ink,#14213d);font:14.5px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px;}
+  .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px;}
+  .tile{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:12px 14px;}
+  .tile .l{font-size:12.5px;color:#667;font-weight:600}.tile .v{font-size:28px;font-weight:800;margin-top:2px}.tile .n{font-size:12px;color:#667}
+  .card{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:14px 16px;margin:0 0 14px;}
+  .card h2{font-size:16px;margin:0 0 8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.card h2 small{font-weight:500;color:#667;font-size:12.5px}
+  .g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}th{text-align:left;font-size:11.5px;color:#667;font-weight:700;padding:6px 8px;border-bottom:1px solid #e3e7ee}td{padding:7px 8px;border-bottom:1px solid #eef1f5;vertical-align:top}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tw{overflow-x:auto}#qT{min-width:640px}#fT{min-width:640px}
+  details summary{cursor:pointer;color:var(--a-accent,#1d3a5f);font-weight:600}
+  .ans{background:#f6f8fb;border-radius:10px;padding:8px 11px;margin:6px 0;white-space:pre-wrap;font-size:13.5px}
+  .r{display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:1px 8px;margin:1px 3px 1px 0}
+  .r.met{background:#e6f4ea;color:#1a7f37}.r.partly{background:#fff4d6;color:#7a5200}.r.not{background:#fde8ea;color:#9b2335}
+  .bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#eef1f5;min-width:120px}.bar i{display:block;height:100%}
+  .th{border-left:4px solid var(--a-accent,#1d3a5f);padding:6px 10px;margin:8px 0;background:#f8fafc;border-radius:6px}
+  .muted{color:#667;font-size:13px}.err{color:#9b2335;font-weight:600}
+  #locked{position:fixed;inset:0;background:#f4f6f9;z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+  #locked .lk{background:#fff;border:1px solid #e3e7ee;border-radius:18px;padding:30px;max-width:420px;text-align:center}
+  @media(max-width:860px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header class="ahd"><div class="ahd-in">
+  <div class="ahd-title"><div class="ahd-k">Instructor · course tutor</div><h1 id="ttl">What students ask the tutor</h1></div>
+  <span class="sp"></span>
+  <div class="ahd-tools">
+    <select class="apick" id="pick" aria-label="Choose a course"></select>
+    <button class="ab primary" id="bAuth" style="display:none"><i data-ic="key"></i>Sign in</button>
+    <button class="ab icon" id="bRefresh" title="Read again"><i data-ic="refresh"></i></button>
+    <a class="ab" id="lDash" href="admin2.html"><i data-ic="dashboard"></i><span class="lbl">Dashboard</span></a>
+  </div>
+</div></header>
+<div class="wrap">
+  <div id="warn" class="card" style="display:none"></div>
+  <p class="muted" id="meta">Reading the course…</p>
+  <div class="tiles" id="tiles"></div>
+  <div class="card"><h2>What students find unclear <small>a summary by Claude of the questions of the last 30 days; student names are never sent</small></h2>
+    <button class="ab primary" id="bIns" type="button">Summarise the questions</button> <span class="muted" id="insMeta"></span><div id="ins"></div></div>
+  <div class="g2">
+    <div class="card"><h2>Questions per page <small>where students get stuck</small></h2><div class="tw"><table id="pT"></table></div></div>
+    <div class="card"><h2>How the class does on each criterion <small>from every feedback the tutor gave</small></h2><div class="tw"><table id="cT"></table></div></div>
+  </div>
+  <div class="card"><h2>The newest questions <small id="qN"></small></h2><div class="tw"><table id="qT"></table></div></div>
+  <div class="card"><h2>Feedback on written answers <small>what the tutor told each student before they handed in</small></h2><div class="tw"><table id="fT"></table></div></div>
+</div>
+<div id="locked"><div class="lk"><h2>Course tutor</h2><p>Sign in once at the admin console; this device then opens every instructor page.</p><a class="ab primary" href="/admin/">Sign in at the admin console</a></div></div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+"use strict";
+var DB = window.CourseConfig.DB, $ = function (id) { return document.getElementById(id); };
+var REG = null, C = null, ENTRIES = [];
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function when(ts) { var d = new Date(ts); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+function pageName(p) { return String(p || '').split('/').pop().replace('.html', '').replace(/^week(\d+)$/, 'Session $1').replace(/^index$/, 'Course home'); }
+function unslug(s) { return String(s || '').split('-').map(function (w) { return w ? w[0].toUpperCase() + w.slice(1) : ''; }).join(' '); }
+async function token() { return window.__fbUser ? window.__fbUser.getIdToken() : Promise.reject(new Error('signed out')); }
+
+function load() {
+  if (!C) return;
+  $('meta').textContent = 'Reading ' + (C.code || C.id) + '…';
+  token().then(function (t) { return fetch(DB + '/' + C.ns + '.json?auth=' + encodeURIComponent(t)); })
+    .then(function (r) { if (!r.ok) throw new Error('the database refused the read (' + r.status + ')'); return r.json(); })
+    .then(function (d) {
+      ENTRIES = [];
+      Object.keys(d || {}).forEach(function (sid) {
+        if (sid.charAt(0) === '_' || !d[sid] || !d[sid].tutor) return;
+        var name = d[sid].name || unslug(sid);
+        Object.keys(d[sid].tutor).forEach(function (k) { var e = d[sid].tutor[k]; if (e && e.ts) ENTRIES.push(Object.assign({ sid: sid, name: name }, e)); });
+      });
+      ENTRIES.sort(function (a, b) { return b.ts - a.ts; });
+      render();
+    }).catch(function (e) { $('meta').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; if (/signed out/.test(e.message)) needSignIn(); });
+}
+function render() {
+  var Q = ENTRIES.filter(function (e) { return e.k === 'q'; }), F = ENTRIES.filter(function (e) { return e.k === 'f'; });
+  var week = Date.now() - 7 * 864e5, qw = Q.filter(function (e) { return e.ts > week; });
+  var who = {}; Q.forEach(function (e) { who[e.sid] = 1; });
+  var rat = { met: 0, partly: 0, not: 0 }; F.forEach(function (e) { ((e.fb || {}).criteria || []).forEach(function (c) { rat[c.rating === 'met' ? 'met' : c.rating === 'partly' ? 'partly' : 'not']++; }); });
+  var rt = rat.met + rat.partly + rat.not;
+  $('meta').textContent = (C.title && (C.title.en || C.title.fr) || C.id) + ' · ' + Q.length + ' questions and ' + F.length + ' feedbacks in total. The newest are at the top.';
+  $('tiles').innerHTML =
+    '<div class="tile"><div class="l">Questions in the last 7 days</div><div class="v">' + qw.length + '</div><div class="n">' + Q.length + ' since the start</div></div>' +
+    '<div class="tile"><div class="l">Students who asked</div><div class="v">' + Object.keys(who).length + '</div><div class="n">at least one question</div></div>' +
+    '<div class="tile"><div class="l">Feedback requests</div><div class="v">' + F.length + '</div><div class="n">' + new Set(F.map(function (e) { return e.sid; })).size + ' students</div></div>' +
+    '<div class="tile"><div class="l">Criteria rated "not yet"</div><div class="v">' + (rt ? Math.round(100 * rat.not / rt) : 0) + ' %</div><div class="n">' + rt + ' criterion ratings</div></div>';
+  /* per page */
+  var pg = {}; Q.forEach(function (e) { pg[e.page] = (pg[e.page] || 0) + 1; });
+  var pl = Object.keys(pg).sort(function (a, b) { return pg[b] - pg[a]; });
+  $('pT').innerHTML = pl.length ? '<tr><th>Page</th><th class="n">Questions</th></tr>' + pl.map(function (p) { return '<tr><td><a href="' + esc(p) + '" target="_blank">' + esc(pageName(p)) + '</a></td><td class="n">' + pg[p] + '</td></tr>'; }).join('') : '<tr><td class="muted">No question yet.</td></tr>';
+  /* per criterion */
+  var cr = {}; F.forEach(function (e) { ((e.fb || {}).criteria || []).forEach(function (c) { var k = c.criterion; cr[k] = cr[k] || { met: 0, partly: 0, not: 0 }; cr[k][c.rating === 'met' ? 'met' : c.rating === 'partly' ? 'partly' : 'not']++; }); });
+  var ck = Object.keys(cr).sort(function (a, b) { return cr[b].not - cr[a].not; });
+  $('cT').innerHTML = ck.length ? '<tr><th>Criterion</th><th>Met · partly · not yet</th></tr>' + ck.map(function (k) { var x = cr[k], t = x.met + x.partly + x.not;
+    return '<tr><td>' + esc(k) + '</td><td><div class="bar" title="' + x.met + ' met, ' + x.partly + ' partly, ' + x.not + ' not yet"><i style="width:' + 100 * x.met / t + '%;background:#2da44e"></i><i style="width:' + 100 * x.partly / t + '%;background:#d4a72c"></i><i style="width:' + 100 * x.not / t + '%;background:#cf222e"></i></div><span class="muted">' + x.met + ' · ' + x.partly + ' · ' + x.not + '</span></td></tr>'; }).join('') : '<tr><td class="muted">No feedback yet.</td></tr>';
+  /* questions */
+  $('qN').textContent = Q.length > 60 ? 'the 60 newest of ' + Q.length : Q.length + ' in total';
+  $('qT').innerHTML = Q.length ? '<tr><th>When</th><th>Student</th><th>Page</th><th>Question and answer</th></tr>' + Q.slice(0, 60).map(function (e) {
+    return '<tr><td class="n">' + when(e.ts) + '</td><td>' + esc(e.name) + '</td><td>' + esc(pageName(e.page)) + '</td><td>' + esc(e.q) + '<details><summary>The tutor’s answer</summary><div class="ans">' + esc(e.a) + '</div></details></td></tr>'; }).join('') : '<tr><td class="muted">No question yet. Students see “Ask the course tutor” at the bottom left of every page of the course.</td></tr>';
+  /* feedback */
+  $('fT').innerHTML = F.length ? '<tr><th>When</th><th>Student</th><th>Answer</th><th>Criteria</th></tr>' + F.slice(0, 80).map(function (e) { var f = e.fb || {};
+    return '<tr><td class="n">' + when(e.ts) + '</td><td>' + esc(e.name) + '</td><td>' + esc(e.label || e.field) + ' <span class="muted">(' + (e.words || 0) + ' words)</span><details><summary>Their text and the feedback</summary><div class="ans">' + esc(e.text) + '</div><div class="ans"><b>' + esc(f.summary) + '</b>\nWhat works: ' + esc((f.strengths || []).join(' · ')) + '\nWhat to change: ' + esc((f.improve || []).join(' · ')) + '\nLength: ' + esc(f.length) + '</div></details></td><td>' +
+      (f.criteria || []).map(function (c) { var k = c.rating === 'met' ? 'met' : c.rating === 'partly' ? 'partly' : 'not'; return '<span class="r ' + k + '" title="' + esc(c.criterion + ': ' + c.note) + '">' + esc(c.rating) + '</span>'; }).join('') + '</td></tr>'; }).join('') : '<tr><td class="muted">No feedback yet. Students see “Get feedback on this answer” under the longer writing fields.</td></tr>';
+}
+$('bIns').onclick = function () {
+  var since = Date.now() - 30 * 864e5, qs = ENTRIES.filter(function (e) { return e.k === 'q' && e.ts > since; }).map(function (e) { return '[' + pageName(e.page) + '] ' + e.q; });
+  if (!qs.length) { $('insMeta').textContent = 'No question in the last 30 days.'; return; }
+  $('bIns').disabled = true; $('insMeta').textContent = 'Reading ' + qs.length + ' questions…';
+  Promise.all([token(), fetch(DB + '/_site/push.json').then(function (r) { return r.json(); })]).then(function (x) {
+    return fetch(x[1].url.replace(/\/+$/, '') + '/tutor/insights', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + x[0] }, body: JSON.stringify({ ns: C.ns, questions: qs }) });
+  }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; }); })
+    .then(function (j) { $('insMeta').textContent = 'From ' + qs.length + ' questions.'; $('ins').innerHTML = '<p>' + esc(j.summary) + '</p>' + (j.themes || []).map(function (t) { return '<div class="th"><b>' + esc(t.theme) + '</b> <span class="muted">' + t.count + ' questions</span><div class="muted">' + (t.examples || []).map(esc).join(' · ') + '</div><div>For the next class: ' + esc(t.suggestion) + '</div></div>'; }).join(''); })
+    .catch(function (e) { $('insMeta').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; })
+    .then(function () { $('bIns').disabled = false; });
+};
+function needSignIn() { $('warn').style.display = 'block'; $('bAuth').style.display = ''; if (!$('warn').querySelector('.fba')) { $('warn').innerHTML = '<p>Reading the tutor log needs the signed-in instructor account.</p><div id="wf"></div>'; FBAuth.form($('wf'), function () { $('warn').style.display = 'none'; $('bAuth').style.display = 'none'; load(); }, ''); } }
+function start() {
+  window.CourseConfig.load().then(function (reg) {
+    REG = reg; var list = reg.courses.filter(function (c) { return c.tutor && c.tutor.on && c.ns; });
+    var want = new URLSearchParams(location.search).get('course');
+    C = list.find(function (c) { return c.id === want; }) || list[0];
+    if (want && (!C || C.id !== want)) { $('meta').innerHTML = '<span class="err">The course "' + esc(want) + '" has no tutor switched on.</span>'; }
+    $('pick').innerHTML = list.map(function (c) { return '<option value="' + c.id + '"' + (C && c.id === C.id ? ' selected' : '') + '>' + esc(c.code || c.id) + '</option>'; }).join('');
+    if (!C) { $('meta').textContent = 'No course has the tutor switched on yet (courses.json → tutor.on).'; return; }
+    if (window.AdminUI && reg.themes && reg.themes[C.theme]) AdminUI.theme(reg.themes[C.theme]);
+    $('lDash').href = 'admin2.html?course=' + C.id;
+    FBAuth.restore(function (u) { if (u) load(); else needSignIn(); });
+  });
+  $('pick').onchange = function () { location.search = '?course=' + this.value; };
+  $('bRefresh').onclick = load;
+  $('bAuth').onclick = needSignIn;
+  if (window.AdminUI) AdminUI.icons(document);
+}
+(function () { if (AdminGate.isUnlocked()) { start(); return; } $('locked').style.display = 'flex'; })();
+</script>
+<script src="/track.js" defer></script>
+<script src="/shared/adminnav.js" defer></script>
+</body>
+</html>

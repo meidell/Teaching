@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SQL lab · Ask ÒRBITA's data warehouse questions in SQL · GBS</title>
+<meta name="description" content="Business Intelligence (MIM), practice page. Eight SQL exercises on ÒRBITA's star schema, run in the browser: from SELECT and WHERE to GROUP BY, joins across the star, the churn KPI by city and a window function. Each exercise checks its own answer.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="bi.css">
+<style>
+/* =====================================================================
+   sql-lab.html — the SQL lab (15 Nov 2026). Jan Erik approved ONE CDN
+   exception for it: /shared/codelab.js loads DuckDB-WASM from jsDelivr
+   (pinned) on the first Run. Not a session: no data-module, nothing is
+   counted in progress. The data is data/*.csv, made by
+   _private/gen-sql-lab-data.py (fixed seed). The expected rows in each
+   data-check were computed from the model answers in DuckDB and re-run
+   headlessly in the page on 15 Nov 2026; regenerate the data and they
+   must all be recomputed.
+   ===================================================================== */
+.ex{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);scroll-margin-top:70px;}
+.ex.solved{border-color:var(--accent);}
+.ex>.clock{display:inline-block;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);background:var(--accent-pale);border-radius:20px;padding:3px 11px;margin-bottom:9px;}
+.ex h2{font-size:19px;line-height:1.2;margin-bottom:9px;}
+.ex p,.ex li{font-size:14px;line-height:1.6;}
+.ex ol{padding-left:20px;margin:6px 0 8px;}
+.ex .wy{background:var(--accent-pale);border-radius:10px;padding:10px 13px;margin:8px 0 10px;font-size:13.5px;line-height:1.55;}
+.ex .tk{font-weight:800;color:var(--navy);margin-top:10px;font-size:14px;}
+.ex code,.sch code,.intro code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#EEF1F5;border-radius:4px;padding:1px 4px;}
+details.kbd{border:1px solid var(--line);border-radius:12px;background:#fff;margin:10px 0;}
+details.kbd>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+details.kbd>div{padding:0 14px 12px;font-size:13.5px;line-height:1.55;}
+.sch{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:20px;}
+.sch h2{font-size:17px;margin-bottom:6px;}
+.sch .tw{overflow-x:auto;margin:6px 0 12px;}
+.sch table{border-collapse:collapse;width:100%;font-size:13px;}
+.sch th,.sch td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+.sch th{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);}
+.sch td.c{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--navy);white-space:nowrap;}
+.sch h3{font-size:14.5px;margin:14px 0 2px;color:var(--navy);}
+.sch .rw{font-size:12.5px;color:var(--grey);margin:0 0 4px;}
+.starfig{overflow-x:auto;margin:8px 0 6px;}
+.starfig svg{min-width:560px;width:100%;height:auto;display:block;}
+.cnt{font-size:13px;color:var(--ink-soft);}
+</style>
+</head>
+<body data-course="bi">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Practice · SQL lab</span>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Practice page · after Sessions 3 and 4</div>
+    <h1>Ask ÒRBITA's data warehouse questions in SQL: eight exercises that check their own answer</h1>
+    <p class="lead"><b>Why this page exists.</b> In Session 3 your team designed ÒRBITA's warehouse as a star schema, and in Session 4 you chose the rules that load the data into it. A warehouse is only worth building if someone can ask it a question and get a number back. The language for that question is <b>SQL</b> (Structured Query Language), the language every warehouse, BI tool and data team uses. On this page you write SQL against a loaded copy of ÒRBITA's star and get the answer in a second.</p>
+    <p class="lead"><b>How to use it.</b></p>
+    <ol class="doli" style="color:#fff">
+      <li>Read the tables below once, so you know what each one holds.</li>
+      <li>Do the exercises in order: each one uses what the one before it taught.</li>
+      <li>In each exercise, change the code in the grey box and press <b>▶ Run</b>. The result appears under the box. When your result is the right one, the page writes <b>Correct</b>; otherwise it says what is different.</li>
+      <li>The first Run loads the SQL engine into your browser (about 6 MB, once per visit). Everything runs on your own laptop: the code you type in the boxes is not sent anywhere.</li>
+    </ol>
+    <p class="lead" style="font-size:13px">Your code is kept in this browser, so you can close the page and come back. "Reset the code" in a box's top right corner puts the starting code back. Nothing on this page is graded.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 8</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">exercises solved</span>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="sch" id="tables">
+    <h2>The six tables in this warehouse</h2>
+    <p class="cnt">The data is <b>invented for this lab</b>: a random sample of 500 ÒRBITA accounts on 1 October 2026, with the same mix as Session 1's sample (84 % active, 9.5 % paused, 4 % trial, 2.5 % unpaid), plus the 34 accounts that signed up during October, and every ride these accounts took in October 2026: 6,908 rides. It is already loaded with good rules from Session 4: times are in local time, every city is spelled one way, failed unlocks are marked, and the ride of the unknown subscriber is set aside. The table holds no names and no email addresses.</p>
+    <p class="cnt">A <b>star schema</b> is a warehouse design with one central table of events (the <b>fact table</b>, one row per ride) and, around it, tables that describe each event (the <b>dimension tables</b>: which day, which city, which subscriber, which vehicle). The fact table holds a <b>key</b> for each dimension: a number that points to one row of that dimension table.</p>
+    <div class="starfig" aria-label="The star: fact_ride in the middle, linked to dim_date, dim_city, dim_subscriber and dim_vehicle; fact_subscription linked to dim_subscriber.">
+      <svg viewBox="0 0 720 250" role="img">
+        <g font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="12">
+          <g stroke="#9AA6B8" stroke-width="1.5"><line x1="360" y1="125" x2="140" y2="45"/><line x1="360" y1="125" x2="140" y2="205"/><line x1="360" y1="125" x2="580" y2="45"/><line x1="360" y1="125" x2="580" y2="205"/><line x1="580" y1="205" x2="580" y2="125"/></g>
+          <rect x="270" y="95" width="180" height="60" rx="8" fill="#101F44"/><text x="360" y="120" fill="#fff" text-anchor="middle" font-weight="800">fact_ride</text><text x="360" y="138" fill="#C9D3E6" text-anchor="middle">one row per ride · 6,908 rows</text>
+          <rect x="50" y="22" width="180" height="46" rx="8" fill="#fff" stroke="#101F44"/><text x="140" y="42" fill="#101F44" text-anchor="middle" font-weight="800">dim_date</text><text x="140" y="58" fill="#5A6573" text-anchor="middle">one row per day · 31</text>
+          <rect x="50" y="182" width="180" height="46" rx="8" fill="#fff" stroke="#101F44"/><text x="140" y="202" fill="#101F44" text-anchor="middle" font-weight="800">dim_city</text><text x="140" y="218" fill="#5A6573" text-anchor="middle">one row per city · 6</text>
+          <rect x="490" y="22" width="180" height="46" rx="8" fill="#fff" stroke="#101F44"/><text x="580" y="42" fill="#101F44" text-anchor="middle" font-weight="800">dim_vehicle</text><text x="580" y="58" fill="#5A6573" text-anchor="middle">one row per model · 4</text>
+          <rect x="490" y="182" width="180" height="46" rx="8" fill="#fff" stroke="#101F44"/><text x="580" y="202" fill="#101F44" text-anchor="middle" font-weight="800">dim_subscriber</text><text x="580" y="218" fill="#5A6573" text-anchor="middle">one row per account · 534</text>
+          <rect x="500" y="104" width="160" height="42" rx="8" fill="#FFF4E5" stroke="#F39229"/><text x="580" y="122" fill="#101F44" text-anchor="middle" font-weight="800">fact_subscription</text><text x="580" y="138" fill="#5A6573" text-anchor="middle">account-month · 534</text>
+        </g>
+      </svg>
+    </div>
+    <p class="cnt">The second fact table, <code>fact_subscription</code>, has one row per account for October (the "account-month" table of Session 3). It holds what the churn KPI needs.</p>
+
+    <h3>fact_ride</h3><p class="rw">One row per ride in October 2026 · 6,908 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">ride_id</td><td>The number of the ride.</td></tr>
+      <tr><td class="c">date_key</td><td>The day of the ride in local time, written as a number: 20261005 is 5 October 2026. It points to <code>dim_date</code>.</td></tr>
+      <tr><td class="c">city_key</td><td>The city where the ride started. It points to <code>dim_city</code>.</td></tr>
+      <tr><td class="c">subscriber_key</td><td>The account that took the ride. It points to <code>dim_subscriber</code>.</td></tr>
+      <tr><td class="c">vehicle_key</td><td>The vehicle model. It points to <code>dim_vehicle</code>.</td></tr>
+      <tr><td class="c">start_hour_local</td><td>The hour the ride started, in local time, from 0 to 23.</td></tr>
+      <tr><td class="c">km</td><td>The distance of the ride in kilometres.</td></tr>
+      <tr><td class="c">duration_min</td><td>The length of the ride in minutes.</td></tr>
+      <tr><td class="c">failed_unlock</td><td>1 if the vehicle did not unlock (0 km, 0 or 1 minute), 0 for a real ride.</td></tr></table></div>
+
+    <h3>fact_subscription</h3><p class="rw">One row per account for October 2026 · 534 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">subscriber_key</td><td>The account. It points to <code>dim_subscriber</code>.</td></tr>
+      <tr><td class="c">month</td><td>The month this row describes: <code>'2026-10'</code> for every row here.</td></tr>
+      <tr><td class="c">status_on_1st</td><td>The account's status on 1 October: <code>'active'</code>, <code>'paused'</code>, <code>'trial'</code> or <code>'unpaid'</code>. It is empty (NULL) for the 34 accounts that signed up during October.</td></tr>
+      <tr><td class="c">mrr_eur_on_1st</td><td>What the account paid each month on 1 October, in euros: 49 for city-flex, 79 for ebike-pro, 0 while paused or on trial.</td></tr>
+      <tr><td class="c">cancelled</td><td>1 if the account cancelled during October, else 0.</td></tr>
+      <tr><td class="c">cancel_date</td><td>The day of the cancellation, empty if there was none.</td></tr>
+      <tr><td class="c">reversed_within_30d</td><td>1 if the customer took the cancellation back within 30 days, else 0.</td></tr></table></div>
+
+    <h3>dim_date</h3><p class="rw">One row per day of October 2026 · 31 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">date_key</td><td>The day as a number, for example 20261005. The key the fact table uses.</td></tr>
+      <tr><td class="c">date</td><td>The same day as a date, for example 2026-10-05.</td></tr>
+      <tr><td class="c">day_name</td><td>The weekday in English, for example Monday.</td></tr>
+      <tr><td class="c">iso_week</td><td>The week of the year, for example 2026-W41.</td></tr>
+      <tr><td class="c">is_weekend</td><td>1 on Saturday and Sunday, else 0.</td></tr></table></div>
+
+    <h3>dim_city</h3><p class="rw">One row per city · 6 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">city_key</td><td>1 Barcelona, 2 Madrid, 3 Lisbon, 4 Milan, 5 Zürich, 6 London.</td></tr>
+      <tr><td class="c">city_name</td><td>The city's name, spelled one way.</td></tr>
+      <tr><td class="c">country</td><td>The country.</td></tr>
+      <tr><td class="c">time_zone</td><td>The time zone used to turn telematics' UTC times into local times.</td></tr>
+      <tr><td class="c">currency</td><td>The currency of the city's ad spend before the load converted it to euros.</td></tr></table></div>
+
+    <h3>dim_subscriber</h3><p class="rw">One row per account · 534 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">subscriber_key</td><td>The warehouse's own number for the account (a surrogate key), from 5001.</td></tr>
+      <tr><td class="c">subscriber_id</td><td>The account number in billing.</td></tr>
+      <tr><td class="c">plan</td><td><code>'city-flex'</code> (49 euros a month) or <code>'ebike-pro'</code> (79 euros a month).</td></tr>
+      <tr><td class="c">home_city_key</td><td>The city the account rides in most: the rule "most rides" from Session 4. It points to <code>dim_city</code>.</td></tr>
+      <tr><td class="c">signup_date</td><td>The day the account was opened.</td></tr>
+      <tr><td class="c">signup_channel</td><td>Where the customer came from: Meta, Google, TikTok, Referral or Organic.</td></tr></table></div>
+
+    <h3>dim_vehicle</h3><p class="rw">One row per vehicle model · 4 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">vehicle_key</td><td>1 to 4.</td></tr>
+      <tr><td class="c">vehicle_type</td><td><code>'e-bike'</code> or <code>'scooter'</code>.</td></tr>
+      <tr><td class="c">model</td><td>The model name.</td></tr></table></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="try">
+    <span class="clock">Before you start</span>
+    <h2>Run your first query and see the six cities</h2>
+    <p>This box is not checked. Press <b>▶ Run</b> to load the engine and see one table. Then replace <code>dim_city</code> with the name of any other table above and run it again.</p>
+    <p><code>SELECT *</code> means "every column", and <code>FROM</code> names the table. <code>LIMIT 10</code> shows only the first ten rows, which is wise on a large table.</p>
+<div class="codelab" id="q0" data-lang="sql" data-setup="orbita">SELECT *
+FROM dim_city
+LIMIT 10;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e1">
+    <span class="clock">Exercise 1 · SELECT, WHERE, ORDER BY</span>
+    <h2>List the rides longer than 18 km, the longest first</h2>
+    <div class="wy"><b>Why.</b> The head of fleet suspects that some riders take e-bikes far outside the city, which drains batteries and wears tyres. Before any rule is written, she wants to see the very long rides one by one.</div>
+    <p><code>WHERE</code> keeps only the rows that meet a condition, for example <code>WHERE km &gt; 18</code>. <code>ORDER BY km DESC</code> sorts the rows from the largest km to the smallest (<code>DESC</code> = descending; without it the order is ascending).</p>
+    <p class="tk">Your task</p>
+    <ol><li>Show two columns from <code>fact_ride</code>: <code>ride_id</code> and <code>km</code>, in this order.</li><li>Keep only the rides with more than 18 km.</li><li>Sort them so the longest ride is first.</li></ol>
+<div class="codelab" id="q1" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[[91898,24.6],[94999,19.2],[93975,18.9],[94407,18.8],[92274,18.2]],"ordered":true,"tol":0.001}'
+ data-hint="Check three things: the two columns are ride_id and km, in that order; the condition is km &gt; 18; the sort is ORDER BY km DESC."
+ data-ok="five rides are longer than 18 km, and one of them is 24.6 km. That is a short list the head of fleet can check by hand.">SELECT ride_id, km
+FROM fact_ride
+-- write the WHERE line here
+;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e2">
+    <span class="clock">Exercise 2 · COUNT and SUM</span>
+    <h2>Count the failed unlocks and all the rides in October</h2>
+    <div class="wy"><b>Why.</b> A failed unlock is a customer standing next to a vehicle that will not open. Session 4 decided to keep these rows but mark them, so the fleet team can measure them. The first number the team asks for is how many there were, out of how many rides.</div>
+    <p><code>COUNT(*)</code> counts rows. <code>SUM(column)</code> adds a column up. Because <code>failed_unlock</code> is 1 for a failed unlock and 0 otherwise, <code>SUM(failed_unlock)</code> counts the failed unlocks. <code>AS</code> gives a result column a name.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Return one row with two columns: the number of failed unlocks, named <code>failed</code>, and the number of all rides, named <code>rides</code>.</li><li>Use the whole of <code>fact_ride</code>, with no WHERE.</li></ol>
+<div class="codelab" id="q2" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[[207,6908]],"ordered":true}'
+ data-hint="The first column is SUM(failed_unlock), the second COUNT(*). Separate them with a comma."
+ data-ok="207 of 6,908 rides were failed unlocks, which is 3.0 %. One customer in 33 who tried to ride could not.">SELECT
+  -- the number of failed unlocks AS failed,
+  -- the number of rides AS rides
+FROM fact_ride;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e3">
+    <span class="clock">Exercise 3 · GROUP BY</span>
+    <h2>Find the five days of October with the most rides</h2>
+    <div class="wy"><b>Why.</b> The operations team plans how many people move and charge vehicles each day. It wants to know which days were the busiest, to see whether they are weekdays and whether staff were short on those days.</div>
+    <p><code>GROUP BY date_key</code> puts all rides of the same day into one group, so that <code>COUNT(*)</code> counts the rides of each day instead of all rides. Every column you show that is not inside COUNT or SUM must be in the GROUP BY.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Show two columns: <code>date_key</code> and the number of rides on that day, named <code>rides</code>.</li><li>Sort by <code>rides</code>, the busiest day first.</li><li>Keep only the first five rows with <code>LIMIT 5</code>.</li></ol>
+<div class="codelab" id="q3" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[[20261006,271],[20261023,261],[20261029,256],[20261015,252],[20261014,252]],"ordered":false}'
+ data-hint="The query needs four parts in this order: SELECT date_key, COUNT(*) AS rides · FROM fact_ride · GROUP BY date_key · ORDER BY rides DESC, then LIMIT 5."
+ data-ok="the busiest day was Tuesday 6 October with 271 rides, and all five busiest days are weekdays. Commuting, not leisure, drives ÒRBITA's peaks.">SELECT date_key, COUNT(*) AS rides
+FROM fact_ride
+-- group by the day, sort, and keep five rows
+;</div>
+    <details class="kbd"><summary>Show what weekday each date is</summary><div>Run <code>SELECT * FROM dim_date</code> in the first box of the page. Exercise 5 lets SQL look this up for you, with a join.</div></details>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e4">
+    <span class="clock">Exercise 4 · JOIN one dimension</span>
+    <h2>Count the rides and the kilometres in each city, with the city's name</h2>
+    <div class="wy"><b>Why.</b> <code>fact_ride</code> knows a city only as a number (<code>city_key</code>), and a board member does not know that 4 is Milan. A <b>join</b> fetches the matching row of a dimension table for every fact row, so the result can show the name. This is the reason a star schema has dimension tables at all.</div>
+    <p><code>FROM fact_ride r JOIN dim_city c ON r.city_key = c.city_key</code> puts, next to each ride, the row of <code>dim_city</code> with the same key. <code>r</code> and <code>c</code> are short names (aliases) for the two tables, so <code>c.city_name</code> means "the column city_name of dim_city". <code>ROUND(x, 1)</code> rounds to one decimal.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Show three columns: <code>city_name</code>, the number of rides named <code>rides</code>, and the total kilometres rounded to one decimal, named <code>km</code>.</li><li>Group by the city's name.</li><li>Sort by <code>rides</code>, the city with the most rides first.</li></ol>
+<div class="codelab" id="q4" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[["Barcelona",2295,9090.8],["Madrid",1561,6170.1],["Milan",1040,4165.2],["Lisbon",968,3772.9],["London",547,2297.6],["Zürich",497,2004.6]],"ordered":true,"tol":0.05}'
+ data-hint="Join on r.city_key = c.city_key, then GROUP BY c.city_name and ORDER BY rides DESC. The km column is ROUND(SUM(r.km), 1)."
+ data-ok="Barcelona has 2,295 of the 6,908 rides (33 %), and the six cities are now readable by anyone. The same join gives every chart in a BI tool its labels.">SELECT c.city_name,
+       COUNT(*) AS rides
+       -- add the total km, rounded to one decimal, AS km
+FROM fact_ride r
+JOIN dim_city c ON r.city_key = c.city_key
+-- group and sort
+;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e5">
+    <span class="clock">Exercise 5 · JOIN two dimensions</span>
+    <h2>Compare e-bikes and scooters on weekdays and at weekends</h2>
+    <div class="wy"><b>Why.</b> ÒRBITA is deciding which vehicles to buy for 2027. If e-bikes are used for longer rides and at weekends, the mix should change. The question needs two dimensions at once: the vehicle (from <code>dim_vehicle</code>) and the kind of day (from <code>dim_date</code>). A star answers it with two joins from the same fact table.</div>
+    <p>Two joins are written one after the other. Failed unlocks are not rides, so leave them out with <code>WHERE r.failed_unlock = 0</code>; otherwise the zeros pull the average down. <code>AVG(x)</code> is the average.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Join <code>fact_ride</code> to <code>dim_vehicle</code> (on <code>vehicle_key</code>) and to <code>dim_date</code> (on <code>date_key</code>).</li><li>Leave out the failed unlocks.</li><li>Show four columns: <code>vehicle_type</code>, <code>is_weekend</code>, the number of rides named <code>rides</code>, and the average km rounded to two decimals, named <code>avg_km</code>.</li><li>Group by the vehicle type and by is_weekend. The result has four rows.</li></ol>
+<div class="codelab" id="q5" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[["e-bike",0,2354,5.13],["e-bike",1,776,5.09],["scooter",0,2735,3.21],["scooter",1,836,3.24]],"ordered":false,"tol":0.006}'
+ data-hint="Check the WHERE line (failed_unlock = 0) and that GROUP BY names both columns: GROUP BY v.vehicle_type, d.is_weekend."
+ data-ok="an e-bike ride is about 5.1 km and a scooter ride about 3.2 km, on weekdays and at weekends alike. The weekend does not change the kind of ride; the vehicle does.">SELECT v.vehicle_type,
+       d.is_weekend,
+       COUNT(*) AS rides
+       -- add the average km AS avg_km
+FROM fact_ride r
+JOIN dim_vehicle v ON r.vehicle_key = v.vehicle_key
+-- join dim_date, leave out the failed unlocks, group
+;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e6">
+    <span class="clock">Exercise 6 · the churn KPI by city</span>
+    <h2>Calculate October's churn by city with the definition from Session 3</h2>
+    <div class="wy"><b>Why.</b> This is the KPI your team built the warehouse for in Session 3: <i>monthly churn by city</i>. Its contract says: the accounts paying on the 1st are the <b>active and paused</b> accounts (trial and unpaid are left out); a churned account is one of these that <b>cancelled</b> during the month, unless the cancellation was <b>taken back within 30 days</b>; churn is churned ÷ paying on the 1st, in %. Billing has no city, so the city comes from <code>dim_subscriber.home_city_key</code>.</div>
+    <p><code>COUNT(*) FILTER (WHERE …)</code> counts only the rows that meet a condition, inside one group. <code>status_on_1st IN ('active','paused')</code> is true when the status is one of the two. Multiply by <code>100.0</code>, not <code>100</code>, so that SQL divides with decimals.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Join <code>fact_subscription</code> to <code>dim_subscriber</code> (on <code>subscriber_key</code>) and <code>dim_subscriber</code> to <code>dim_city</code> (on <code>home_city_key = city_key</code>).</li><li>Show four columns per city: <code>city_name</code>, <code>paying_on_1st</code>, <code>churned</code>, and <code>churn_pct</code> rounded to two decimals.</li><li>Sort by <code>churn_pct</code>, the highest first.</li></ol>
+<div class="codelab" id="q6" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[["Milan",66,5,7.58],["Lisbon",56,2,3.57],["London",34,1,2.94],["Barcelona",177,3,1.69],["Madrid",104,1,0.96],["Zürich",31,0,0]],"ordered":true,"tol":0.006}'
+ data-hint="The churned count needs three conditions joined by AND: status_on_1st IN ('active','paused'), cancelled = 1 and reversed_within_30d = 0. Then churn_pct = ROUND(100.0 * churned / paying_on_1st, 2)."
+ data-ok="Milan's churn is 7.58 % and Zürich's 0 %, while the whole sample is 12 ÷ 468 = 2.56 %, close to finance's 2.62 %. With 31 to 177 paying accounts per city, one cancellation moves a city's churn by 0.6 points (Barcelona) to 3.2 points (Zürich): a sample this small shows the method, not a finding about Milan.">SELECT c.city_name,
+       COUNT(*) FILTER (WHERE f.status_on_1st IN ('active','paused')) AS paying_on_1st,
+       COUNT(*) FILTER (WHERE /* paying on the 1st, cancelled, not taken back */ ) AS churned,
+       ROUND(100.0 * churned / paying_on_1st, 2) AS churn_pct
+FROM fact_subscription f
+JOIN dim_subscriber s ON f.subscriber_key = s.subscriber_key
+-- join dim_city on the home city, group, sort
+;</div>
+    <details class="kbd"><summary>Show why <code>churned</code> can be reused on the next line</summary><div>DuckDB, the engine on this page, lets a column named in SELECT be used again later in the same SELECT. Many other databases (PostgreSQL, SQL Server) do not: there you write the two COUNT expressions again inside ROUND.</div></details>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e7">
+    <span class="clock">Exercise 7 · a window function</span>
+    <h2>Name the three subscribers who rode the most kilometres in each city</h2>
+    <div class="wy"><b>Why.</b> Marketing wants to invite the three heaviest riders of each city to a "city ambassador" programme. A plain GROUP BY gives one total per subscriber, but it cannot number them <i>inside each city</i>. A <b>window function</b> can: it calculates a value for each row while looking at a group of rows (the "window"), without merging the rows into one.</div>
+    <p><code>RANK() OVER (PARTITION BY c.city_name ORDER BY SUM(r.km) DESC)</code> gives 1 to the subscriber with the most km in each city, 2 to the next, and starts again at 1 in the next city. <code>PARTITION BY</code> says where the numbering restarts. A window function cannot be used in WHERE, so the query is wrapped: the inner query ranks, the outer one keeps the ranks 1 to 3.</p>
+    <p class="tk">Your task</p>
+    <ol><li>In the inner query, show <code>city_name</code>, <code>subscriber_key</code>, the subscriber's total km in that city rounded to one decimal named <code>km</code>, and the rank named <code>rnk</code>. Group by the city's name and the subscriber.</li><li>In the outer query, keep the rows with <code>rnk &lt;= 3</code>. The result has 18 rows: three per city.</li></ol>
+<div class="codelab" id="q7" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[["Barcelona",5150,146.8,1],["Barcelona",5030,144.6,2],["Barcelona",5147,140.2,3],["Lisbon",5434,276.6,1],["Lisbon",5356,202.6,2],["Lisbon",5178,162.9,3],["London",5297,214.2,1],["London",5358,158.8,2],["London",5248,127.7,3],["Madrid",5021,141.7,1],["Madrid",5242,135.6,2],["Madrid",5038,133.2,3],["Milan",5217,137.4,1],["Milan",5441,132.2,2],["Milan",5289,131.7,3],["Zürich",5323,262.3,1],["Zürich",5416,171.5,2],["Zürich",5432,137.8,3]],"ordered":false,"tol":0.05}'
+ data-hint="The inner query needs GROUP BY c.city_name, r.subscriber_key, and the rank must be ordered by SUM(r.km) DESC inside OVER (…). The outer query is SELECT * FROM ( … ) WHERE rnk &lt;= 3."
+ data-ok="in Lisbon and in Zürich one subscriber rode more than 260 km in the month, 74 km and 91 km more than the next rider. In Barcelona the top three are within 7 km of each other.">SELECT *
+FROM (
+  SELECT c.city_name,
+         r.subscriber_key,
+         ROUND(SUM(r.km), 1) AS km,
+         RANK() OVER (/* restart in each city, most km first */) AS rnk
+  FROM fact_ride r
+  JOIN dim_city c ON r.city_key = c.city_key
+  GROUP BY c.city_name, r.subscriber_key
+)
+-- keep the first three of each city
+ORDER BY city_name, rnk;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e8">
+    <span class="clock">Exercise 8 · the secondary KPI</span>
+    <h2>Count the rides that new subscribers took in their first 14 days, by the channel that brought them</h2>
+    <div class="wy"><b>Why.</b> The secondary KPI of Session 3 is <i>rides in the first 14 days</i>: a subscriber who rides often in the first two weeks is less likely to cancel later. Marketing pays for Meta, Google and TikTok and wants to know which channel brings subscribers who actually ride. The trap in this question: a new subscriber who never rode must still be counted, with 0 rides. A plain <code>JOIN</code> drops them; a <b>LEFT JOIN</b> keeps every row of the first table even when the second has no match.</div>
+    <p>The query is written in two named steps with <code>WITH</code> (a common table expression): <code>new_subs</code> lists the subscribers who signed up from 1 to 18 October (so that all 14 days fall in October), and <code>ride_days</code> gives each ride its date from <code>dim_date</code>. A ride counts if its date is between the signup day and 13 days later: the signup day plus 13 more days make 14 days.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Complete the last part: join <code>new_subs</code> to <code>ride_days</code> with a <b>LEFT JOIN</b> on the subscriber and on the date window.</li><li>Show four columns per channel: <code>signup_channel</code>, <code>new_subscribers</code> (distinct subscribers), <code>rides</code> (count the ride_id, which is empty for a subscriber with no ride), and <code>rides_per_subscriber</code> rounded to two decimals.</li><li>Sort by <code>signup_channel</code>.</li></ol>
+<div class="codelab" id="q8" data-lang="sql" data-setup="orbita"
+ data-check='{"rows":[["Google",9,35,3.89],["Meta",4,18,4.5],["Organic",1,10,10],["Referral",1,11,11],["TikTok",4,23,5.75]],"ordered":true,"tol":0.006}'
+ data-hint="If Google shows 7 new subscribers instead of 9, the join is a plain JOIN and it has dropped the subscribers with no ride: write LEFT JOIN. Count COUNT(rd.ride_id), not COUNT(*): COUNT(*) counts the empty row of a subscriber with no ride as one ride."
+ data-ok="Google brought the most new subscribers (9) but the fewest rides each (3.89), because two of its nine did not ride in their first 14 days. The sample has only 19 new subscribers, so this shows the method; the real answer needs the whole company's 47,700 accounts.">WITH new_subs AS (
+  SELECT s.subscriber_key, s.signup_channel, s.signup_date
+  FROM dim_subscriber s
+  JOIN fact_subscription f ON f.subscriber_key = s.subscriber_key
+  WHERE f.status_on_1st IS NULL              -- signed up during October
+    AND s.signup_date <= DATE '2026-10-18'
+),
+ride_days AS (
+  SELECT r.ride_id, r.subscriber_key, d.date
+  FROM fact_ride r
+  JOIN dim_date d ON r.date_key = d.date_key
+)
+SELECT n.signup_channel,
+       COUNT(DISTINCT n.subscriber_key) AS new_subscribers
+       -- add rides and rides_per_subscriber
+FROM new_subs n
+-- LEFT JOIN ride_days rd ON … AND rd.date BETWEEN n.signup_date AND n.signup_date + 13
+GROUP BY n.signup_channel
+ORDER BY n.signup_channel;</div>
+  </div>
+
+  <div class="foot"><a href="index.html">← Back to the course</a> · <a href="systems.html">ÒRBITA's five systems</a> · ÒRBITA and every value on this page are fictional and made for the course. The SQL engine is DuckDB, running in your browser.</div>
+</div>
+
+<script type="text/sql" id="orbita">
+CREATE OR REPLACE TABLE dim_city          AS SELECT * FROM read_csv_auto('data/dim_city.csv');
+CREATE OR REPLACE TABLE dim_date          AS SELECT * FROM read_csv_auto('data/dim_date.csv');
+CREATE OR REPLACE TABLE dim_vehicle       AS SELECT * FROM read_csv_auto('data/dim_vehicle.csv');
+CREATE OR REPLACE TABLE dim_subscriber    AS SELECT * FROM read_csv_auto('data/dim_subscriber.csv');
+CREATE OR REPLACE TABLE fact_ride         AS SELECT * FROM read_csv_auto('data/fact_ride.csv');
+CREATE OR REPLACE TABLE fact_subscription AS SELECT * FROM read_csv_auto('data/fact_subscription.csv');
+</script>
+<script src="/shared/codelab.js"></script>
+<script>
+/* the solved counter: one per checked exercise (q1–q8) */
+(function(){
+  var IDS=['q1','q2','q3','q4','q5','q6','q7','q8'];
+  function paint(){
+    var s=window.CodeLab?CodeLab.solved():[],n=0;
+    IDS.forEach(function(id){var ok=s.indexOf(id)>=0;if(ok)n++;var ex=document.getElementById(id);ex=ex&&ex.closest('.ex');if(ex)ex.classList.toggle('solved',ok);});
+    document.getElementById('spLbl').textContent=n+' / '+IDS.length;
+    document.getElementById('spFill').style.width=Math.round(n/IDS.length*100)+'%';
+  }
+  document.addEventListener('codelab:solved',paint);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint);else paint();
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem('bi_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}}
+  window.addEventListener('DOMContentLoaded',chip);window.addEventListener('statstrack:named',chip);
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

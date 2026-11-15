@@ -243,3 +243,20 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   checks stay the homework. Part 5 reviews S3 (four €1 m events, the WC sign, the RE roll-forward) and S1–S2 (EV
   159.36 = 26.04 + 133.32, TV 84 %, → €2.48, +1 point margin +24.4 vs growth +0.2). week5.html now says the reply
   is due before Session 5 (Thu 19 Nov, 18:45) and the quiz opens Session 5; "▶ Slides" in its top bar.
+- **Python lab — `python-lab.html` (15 Nov 2026).** Jan Erik asked for in-browser Python and SQL labs;
+  this is the Python one, on `/shared/codelab.js` (Pyodide 314.0.7 = Python 3.14.2 from jsDelivr, the
+  approved CDN exception; pandas 3.0.2 and matplotlib 3.10.8 load only in Exercises 5–6). A practice
+  page, not a session and not Excel: `<body data-course="finmod">`, no `data-module`, nothing counted,
+  nothing graded; "n / 6 solved" bar. Linked from the hub (a ghost button under the team board, and a
+  tool card "Python, in the browser (practice)"). **The model is Session 1's v01 line for line**
+  (= `model()` in week3.html), no new figures: growth 6.74 % / 5.50 %, CAGR 6.12 % · revenue 192.49 /
+  205.38 / 219.14, EBITDA 30.99 / 33.07 / 35.28 · FCF 9.62 / 10.22 / 10.85 · PV FCF 26.04 + PV TV
+  133.32 = EV 159.36 → €2.48 (TV 84 %) · WACC × g table 7.5–9.5 × 1–3 (8.5/2 = 2.48, 9.0/2 = 2.20,
+  9.5/2 = 1.95, 7.5/3 = 4.16) · plan 2.98 / base 2.48 / lender 1.89 as a bar chart. Exercises 5–6 use
+  `value(wacc, g, growth, margin, capex, nwc)` from the `<script type="text/python" id="meridia">`
+  block, shown to students in a drawer. Checks: `vars` with tolerances (1–4) and the Python scripts
+  `chk5` (5 × 5 table, detects a transposed table) and `chk6` (prices, three bars, title, y-label).
+  Figures recomputed in Python; probed headlessly 15 Nov 2026 with the real engine: 6/6 model answers
+  Correct, starter code and wrong answers give the intended message, the chart renders, 390 px fits,
+  no page errors.
+
