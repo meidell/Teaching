@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Transcripts and study plans</title>
+<link rel="stylesheet" href="dash.css">
+<!-- Transcripts and study plans (15 Nov 2026). Jan Erik: "build a transcript function — not sure who manages this?".
+     The STUDENT OFFICE prepares and issues; the ACADEMIC DIRECTION signs; the programme manager, the advisor and
+     the student read the study plan. Two documents from one record (s.plan in data.js):
+     - Transcript of records: the courses PASSED, with the grade that counts, credits, term averages, cumulative
+       average, honours band. Interim until the programme is complete. Official only once signed and issued.
+     - Study plan: every attempt (failed ones too), the term's academic standing, courses now and planned, retakes,
+       expected graduation. Internal; "does not confirm completion".
+     Issuing: four checks → signature → number + verification code; the log is kept in this browser
+     (localStorage dash_transcripts). Swiss 1–6 scale, pass 4.0 (S.rules). ?id=<student>&doc=transcript|plan. -->
+<style>
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:3px;width:max-content;max-width:100%;}
+  .tabs button{border:none;background:none;padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--ink2);}
+  .tabs button.on{background:var(--pill);color:#fff;}
+  .btn{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:650;color:var(--ink);}
+  .btn.primary{background:var(--pill);color:#fff;border-color:var(--pill);} .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .tx{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:7px 9px;font:inherit;color:inherit;width:100%;}
+  .lay{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:14px;align-items:start;}
+  .side .card{margin-bottom:14px;}
+  .chk{list-style:none;margin:0;padding:0;font-size:13px;} .chk li{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);align-items:flex-start;} .chk li:last-child{border:none;}
+  .roles{font-size:12.5px;color:var(--ink2);margin:0;padding-left:18px;line-height:1.55;}
+  /* the paper: always black on white, like the printed document */
+  .paper{background:#fff;color:#1a1a1a;border-radius:6px;padding:46px 52px;box-shadow:0 2px 18px rgba(0,0,0,.25);font-size:12.5px;line-height:1.45;position:relative;overflow:hidden;}
+  .paper h1{font-size:24px;margin:0;text-align:center;color:#111;font-weight:800;letter-spacing:-.01em;}
+  .paper .org{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #1d3a5f;padding-bottom:8px;margin-bottom:22px;}
+  .paper .org b{font-size:16px;color:#1d3a5f;letter-spacing:.01em;} .paper .org span{font-size:11px;color:#555;text-align:right;}
+  .paper .subt{text-align:center;color:#333;margin:4px 0 18px;font-size:13px;}
+  .paper .meta{display:grid;grid-template-columns:1fr 1fr;gap:2px 30px;font-size:12px;margin-bottom:18px;}
+  .paper .meta div{display:flex;gap:6px;} .paper .meta dt{color:#666;min-width:118px;} .paper .meta dd{margin:0;font-weight:600;}
+  .paper table{width:100%;border-collapse:collapse;font-size:12px;}
+  .paper th{text-align:left;font-weight:700;color:#444;border-bottom:1.5px solid #333;padding:5px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;}
+  .paper td{padding:4px 6px;border-bottom:1px solid #e3e3e3;vertical-align:top;}
+  .paper td.n,.paper th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .paper tr.term td{font-weight:700;padding-top:14px;border-bottom:1px solid #999;color:#1d3a5f;}
+  .paper tr.sum td{font-weight:700;background:#f4f6f8;}
+  .paper tr.note td{font-size:11px;color:#8a1c1c;border-bottom:none;padding-top:0;}
+  .paper .fail{color:#a11d1d;font-weight:700;} .paper .mute{color:#777;}
+  .paper .tot{margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border:1.5px solid #333;padding:10px 12px;}
+  .paper .tot div{font-size:11px;color:#555;} .paper .tot b{display:block;font-size:15px;color:#111;}
+  .paper .scale{font-size:10.5px;color:#555;margin-top:12px;}
+  .paper .sign{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:34px;font-size:11px;color:#444;}
+  .paper .sign div{border-top:1px solid #777;padding-top:5px;min-height:34px;}
+  .paper .sign i{display:block;order:-1;font-family:Georgia,serif;font-size:15px;color:#1d3a5f;margin-bottom:2px;}
+  .paper .ver{margin-top:14px;font-size:10.5px;color:#555;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .paper .wm{position:absolute;top:42%;left:-10%;right:-10%;text-align:center;transform:rotate(-24deg);font-size:84px;font-weight:900;color:rgba(170,30,30,.09);pointer-events:none;letter-spacing:.06em;}
+  .log{list-style:none;margin:0;padding:0;font-size:12.5px;} .log li{padding:6px 0;border-bottom:1px solid var(--grid);} .log li:last-child{border:none;}
+  @media(max-width:900px){.lay{grid-template-columns:minmax(0,1fr);} .paper{padding:26px 18px;} .paper .meta{grid-template-columns:1fr;} .paper .tot{grid-template-columns:1fr 1fr;} .paper .sign{grid-template-columns:1fr;}}
+  .ptw{overflow-x:auto;}
+  @media print{
+    body *{visibility:hidden !important;} .paper,.paper *{visibility:visible !important;}
+    .paper{position:absolute;left:0;top:0;width:100%;box-shadow:none;padding:0;border-radius:0;}
+    @page{size:A4;margin:16mm 14mm;}
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Transcripts and study plans</h1><div class="sub" id="sub"></div></div>
+    <div class="filters"><nav class="tabs" id="doc" aria-label="Choose the document"><button data-d="transcript">Transcript of records</button><button data-d="plan">Study plan</button></nav></div>
+  </div>
+  <div class="lay">
+    <div class="side">
+      <div class="card"><div class="ch"><h2>Student</h2><span class="note">demo control</span></div>
+        <input class="tx" id="q" placeholder="Type a name or a student number" aria-label="Find a student" list="stuList"><datalist id="stuList"></datalist>
+        <p class="lead" style="margin:8px 0 0" id="who"></p></div>
+      <div class="card" id="issueCard"><div class="ch"><h2>Issue the transcript</h2><span class="note">student office, then academic direction</span></div>
+        <ul class="chk" id="checks"></ul>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px" id="issueBtns"></div>
+        <p class="lead" style="margin:10px 0 0" id="issueMsg"></p></div>
+      <div class="card"><div class="ch"><h2>Issued for this student</h2></div><ul class="log" id="log"></ul></div>
+      <div class="card"><div class="ch"><h2>Who does what</h2></div>
+        <ul class="roles">
+          <li><b>The student office</b> prepares the transcript, checks the record and issues it with a number and a verification code. It is the only office that may issue one.</li>
+          <li><b>The academic direction</b> signs it. An unsigned transcript is a draft and is never sent.</li>
+          <li><b>The programme manager and the advisor</b> read the study plan to follow retakes, warnings and the graduation date; they do not issue transcripts.</li>
+          <li><b>The student</b> sees the study plan on the student dashboard and asks the student office for a transcript.</li>
+          <li><b>An employer or another school</b> checks a transcript by its verification code.</li>
+        </ul></div>
+    </div>
+    <div class="ptw"><div class="paper" id="paper"></div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="bPrint" type="button">Print or save as PDF</button><a class="btn" id="bProg" href="programme.html" style="text-decoration:none">Back to the programme</a></div></div>
+  </div>
+  <p class="foot" id="foot"></p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, esc, st } = Dash;
+  Dash.shell('admissions');
+  const U = S.util, R = S.rules, TODAY = S.school.today;
+  const LIST = S.students.filter(s => s.plan);
+  const qs = new URLSearchParams(location.search);
+  let SID = LIST.some(s => s.id === qs.get('id')) ? qs.get('id') : (LIST.find(s => s.plan.terms.some(t => t.items.some(i => i.status === 'retake' || i.status === 'failedNow')) && s.year >= 3) || LIST[0]).id;
+  let DOC = qs.get('doc') === 'plan' ? 'plan' : 'transcript';
+  document.getElementById('foot').textContent = 'All names, grades and documents are invented. Issued documents are kept in this browser only.';
+
+  /* identity derived from the record */
+  const hsh = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0); };
+  const num = s => `${s.cohort.slice(2, 4)}-${String(s.id.replace(/\D/g, '')).padStart(4, '0')}`;
+  const birth = s => { const h = hsh(s.id), y = 2026 - s.age - (h % 2), m = 1 + (h >>> 3) % 12, d = 1 + (h >>> 7) % 28; return `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.${y}`; };
+  const MON = { '01': 'January', '02': 'February', '09': 'September' };
+  const intake = c => `${MON[c.slice(5, 7)] || c.slice(5, 7)} ${c.slice(0, 4)} intake`;
+  const g1 = v => v == null ? '—' : (Math.round(v * 10) / 10).toFixed(1);
+  const g2 = v => v == null ? '—' : v.toFixed(2);
+  const ects = v => (Math.round(v * 10) / 10).toString();
+  const wavg = items => { const e = items.reduce((a, i) => a + i.ects, 0); return e ? items.reduce((a, i) => a + i.grade * i.ects, 0) / e : null; };
+  const dmy = iso => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
+
+  /* the counted record: passed items, the better grade of two attempts (rule in S.rules) */
+  function record(s) {
+    const P = S.P[s.prog], terms = s.plan.terms, past = terms.filter(t => t.when === 'past');
+    const passed = past.map(t => ({ t, items: t.items.filter(i => i.status === 'passed') })).filter(x => x.items.length);
+    const all = passed.flatMap(x => x.items), earned = all.reduce((a, i) => a + i.ects, 0), avg = wavg(all);
+    const failedOpen = past.flatMap(t => t.items.filter(i => i.status === 'retake' || i.status === 'failedNow'));
+    const nowItems = terms.filter(t => t.when === 'now').flatMap(t => t.items);
+    const hon = R.honours.slice().reverse().find(h => avg != null && avg >= h.min);
+    const complete = earned >= P.ects && !failedOpen.length;
+    return { P, past, passed, earned, avg, failedOpen, nowItems, hon, complete };
+  }
+
+  /* ---- issuing ---- */
+  const LKEY = 'dash_transcripts';
+  let LOG; try { LOG = JSON.parse(localStorage.getItem(LKEY) || '{}'); } catch (e) { LOG = {}; }
+  const saveLog = () => { try { localStorage.setItem(LKEY, JSON.stringify(LOG)); } catch (e) {} };
+  let STEP = { checked: false, identity: false, signed: false, issued: null };
+  const resetStep = () => { STEP = { checked: false, identity: false, signed: false, issued: null }; };
+
+  function drawSide(s, r) {
+    document.getElementById('stuList').innerHTML = LIST.map(x => `<option value="${esc(x.name)} · ${num(x)}">`).join('');
+    document.getElementById('who').innerHTML = `${esc(s.name)} · ${esc(r.P.short)} · ${esc(intake(s.cohort))} · ${s.status === 'active' ? 'enrolled' : esc(s.status)}${s.risk && s.risk !== 'none' ? '' : ''}. <a href="programme.html?p=${s.prog}">Programme page</a>`;
+    const card = document.getElementById('issueCard'); card.hidden = DOC !== 'transcript';
+    const pastMissing = r.past.flatMap(t => t.items.filter(i => i.grade == null)).length;
+    const C = [
+      [pastMissing === 0, `Every finished course has a final grade${pastMissing ? ` (${pastMissing} missing: ask the teachers before issuing)` : ''}.`],
+      [true, `The credits add up: ${ects(r.earned)} ECTS passed out of ${r.P.ects}.`],
+      [STEP.identity, 'The name and the date of birth match the passport copy in the student file.', 'identity'],
+      [true, r.failedOpen.length ? `${r.failedOpen.length} failed course${r.failedOpen.length === 1 ? ' is' : 's are'} still to be retaken. They are left off the transcript and shown on the study plan.` : 'No failed course is waiting for a retake.'],
+    ];
+    document.getElementById('checks').innerHTML = C.map(([ok, t, k]) => `<li>${k ? `<input type="checkbox" data-k="${k}" ${ok ? 'checked' : ''} ${STEP.issued ? 'disabled' : ''} aria-label="${esc(t)}">` : st(ok ? 'good' : 'crit', ok ? 'OK' : 'Stop')}<span>${esc(t)}</span></li>`).join('');
+    const ready = pastMissing === 0 && STEP.identity;
+    const b = document.getElementById('issueBtns'), m = document.getElementById('issueMsg');
+    if (STEP.issued) { b.innerHTML = `<button class="btn" id="bNew" type="button">Prepare a new copy</button>`; m.innerHTML = `${st('good', 'Issued')} Number ${esc(STEP.issued.no)}, verification code ${esc(STEP.issued.code)}. Print it, or send the PDF to the student.`; }
+    else if (STEP.signed) { b.innerHTML = `<button class="btn primary" id="bIssue" type="button">Issue: give it a number and a code</button>`; m.innerHTML = `${st('good', 'Signed')} by the academic direction. The student office can now issue it.`; }
+    else { b.innerHTML = `<button class="btn primary" id="bSign" type="button" ${ready ? '' : 'disabled'}>Send for signature and sign as academic direction</button>`; m.innerHTML = ready ? 'The checks are done. The academic direction signs next.' : 'Tick the identity check. Until it is signed the document is a draft and shows DRAFT across the page.'; }
+    const L = LOG[s.id] || [];
+    document.getElementById('log').innerHTML = L.length ? L.slice().reverse().map(x => `<li><b>${esc(x.no)}</b> · ${esc(x.kind)} · ${dmy(x.date)}<div class="why">code ${esc(x.code)} · ${ects(x.ects)} ECTS · average ${g2(x.avg)}</div></li>`).join('') : '<li class="empty">No transcript issued yet.</li>';
+  }
+  document.getElementById('issueCard').addEventListener('change', e => { const k = e.target.dataset.k; if (k) { STEP[k] = e.target.checked; render(); } });
+  document.getElementById('issueCard').addEventListener('click', e => {
+    const s = U.byId(SID), r = record(s);
+    if (e.target.id === 'bSign') { STEP.signed = true; render(); }
+    else if (e.target.id === 'bIssue') { const all = Object.values(LOG).flat().length; const no = `LSM-2026-${String(4100 + all + 1).padStart(5, '0')}`, code = (hsh(s.id + no) .toString(36).toUpperCase() + 'XK7Q').slice(0, 8).replace(/(.{4})/, '$1-');
+      STEP.issued = { no, code, date: TODAY, kind: r.complete ? 'Final transcript' : 'Interim transcript', ects: r.earned, avg: r.avg }; (LOG[s.id] = LOG[s.id] || []).push(STEP.issued); saveLog(); render(); }
+    else if (e.target.id === 'bNew') { resetStep(); render(); } });
+
+  /* ---- the two documents ---- */
+  const head = (s, r, title, subt) => `<div class="org"><b>LAKESIDE SCHOOL OF MANAGEMENT</b><span>Student office · Geneva, Switzerland<br>registrar@lakeside.example</span></div>
+    <h1>${esc(title)}</h1><div class="subt">${esc(subt)}</div>
+    <dl class="meta"><div><dt>Name</dt><dd>${esc(s.name)}</dd></div><div><dt>Programme</dt><dd>${esc(r.P.name)}</dd></div>
+    <div><dt>Date of birth</dt><dd>${birth(s)}</dd></div><div><dt>Level and credits</dt><dd>${esc(r.P.level)}, ${r.P.ects} ECTS</dd></div>
+    <div><dt>Student number</dt><dd>${num(s)}</dd></div><div><dt>Intake</dt><dd>${esc(intake(s.cohort))}</dd></div>
+    <div><dt>Status</dt><dd>${r.complete ? 'Programme completed' : s.status === 'active' ? 'Enrolled' : esc(s.status[0].toUpperCase() + s.status.slice(1))}</dd></div><div><dt>${r.complete ? 'Completed' : 'Expected graduation'}</dt><dd>${esc(s.plan.grad.date)}</dd></div></dl>`;
+
+  /* laid out like the school's own transcript PDF (Jan Erik, 15 Nov 2026: "follow the way it is in the transcript pdf"):
+     header with name, birth date, student ID and intake on the left, finishing and graduation dates on the right;
+     courses passed only, per term, with grade, grade points (grade × ECTS, the analogue of quality points) and ECTS;
+     a term-average row; the required-vs-earned block, the academic achievement, release, approval and seal lines. */
+  function transcript(s, r) {
+    const pts = items => items.reduce((a, i) => a + i.grade * i.ects, 0), ec = items => items.reduce((a, i) => a + i.ects, 0);
+    const rows = r.passed.map(({ t, items }) => `<tr class="term"><td></td><td colspan="4">${esc(t.label)}</td></tr>` +
+      items.map(i => `<tr><td>${esc(i.code)}</td><td>${esc(i.title)}</td><td class="n">${g1(i.grade)}</td><td class="n">${(Math.round(i.grade * i.ects * 100) / 100).toFixed(2)}</td><td class="n">${ects(i.ects)}</td></tr>`).join('') +
+      `<tr class="sum"><td></td><td>Term average</td><td class="n">${g2(wavg(items))}</td><td class="n">${pts(items).toFixed(2)}</td><td class="n">${ec(items).toFixed(2)}</td></tr>`).join('');
+    const all = r.passed.flatMap(x => x.items), req = r.P.ects;
+    const ach = r.hon ? r.hon.name[0].toUpperCase() + r.hon.name.slice(1) : r.avg != null && r.avg >= R.pass ? 'Minimum required' : 'Below the minimum';
+    const fin = r.complete ? s.plan.grad.date : `${s.plan.grad.date} (expected)`;
+    const date = STEP.issued ? dmy(STEP.issued.date) : dmy(TODAY);
+    return `${!STEP.signed ? '<div class="wm">DRAFT</div>' : ''}<div class="org"><b>LAKESIDE SCHOOL OF MANAGEMENT</b><span>Geneva, Switzerland</span></div>
+      <h1>Transcript</h1><div class="subt">${esc(r.P.name)}</div>
+      <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:12px;margin-bottom:18px"><div>Name: ${esc(s.name)}<br>Birthdate: ${birth(s).replace(/\./g, '/')}<br>Student ID: ${num(s)}<br>Intake: ${esc(intake(s.cohort))}</div>
+      <div style="text-align:right">Finishing date: ${esc(fin)}<br>Graduation date: ${r.complete ? esc(s.plan.grad.date) : '—'}</div></div>
+      <table><tr><th>Code</th><th>Course</th><th class="n">Grade</th><th class="n">Grade points</th><th class="n">ECTS</th></tr>${rows || '<tr><td colspan="5">No course completed yet.</td></tr>'}
+      <tr><td colspan="5" style="border:none;padding-top:16px"></td></tr>
+      <tr class="sum"><td colspan="2">Minimum average and credits required to graduate</td><td class="n">Average: ${R.pass.toFixed(2)}</td><td class="n">Points: ${(R.pass * req).toFixed(2)}</td><td class="n">ECTS: ${ects(req)}</td></tr>
+      <tr class="sum"><td colspan="2">Cumulative average and credits earned</td><td class="n">Average: ${g2(r.avg)}</td><td class="n">Points: ${pts(all).toFixed(2)}</td><td class="n">ECTS: ${ects(r.earned)}</td></tr>
+      <tr><td colspan="5" style="font-weight:700;border:none">Academic achievement: ${esc(ach)}</td></tr></table>
+      <div class="sign"><div>Release authorized by the administration${STEP.issued ? '<i>Student office</i>' : ''}</div><div>${date}, Geneva, Switzerland<br>Place and date</div><div>${STEP.signed ? '<i>N. Berger</i>' : ''}Approved by the academic direction</div></div>
+      <div class="ver"><span>Must bear the seal of Lakeside School of Management${STEP.issued ? ` · document ${esc(STEP.issued.no)}` : ''}</span><span>${STEP.issued ? `Verification code <b>${esc(STEP.issued.code)}</b>` : 'Draft: not valid until signed and issued.'}</span></div>`;
+  }
+
+  function plan(s, r) {
+    const W = { passed: x => g1(x.grade), failedNow: x => `<span class="fail">${g1(x.grade)} failed</span>`, retake: x => `<span class="fail">${g1(x.grade)} failed</span>`, now: x => x.retakeOf != null ? `retaking (first attempt ${g1(x.retakeOf)})` : 'in progress', planned: () => '<span class="mute">planned</span>' };
+    const ST = { passed: 'passed', failedNow: 'retake running now', retake: x => `retake in ${x.retakeTerm || 'the next run'}`, now: 'this term', planned: '' };
+    const retakeOf = code => (s.plan.retakes || []).find(x => x.code === code);
+    const rows = s.plan.terms.map(t => {
+      const notes = [];
+      if (t.when === 'past') { if (t.avg != null && t.avg < R.pass) notes.push(`Academic warning: term average ${g2(t.avg)}, under ${R.pass.toFixed(1)}.`);
+        const f = t.items.filter(i => i.status === 'failedNow' || i.status === 'retake'); if (f.length) notes.push(`Must retake: ${f.map(i => i.title).join(', ')}.`);
+        if (t.att != null && t.att < R.attendance) notes.push(`Attendance ${t.att} %, under the ${R.attendance} % rule.`); }
+      const info = t.note ? [t.note] : [];
+      return `<tr class="term"><td colspan="4">${esc(t.label)} · semester ${t.sem}${t.when === 'now' ? ' · this term' : t.when === 'future' ? ' · planned' : ''}</td></tr>` +
+        t.items.map(i => { const rt = i.status === 'retake' ? retakeOf(i.code) : null; const stx = typeof ST[i.status] === 'function' ? ST[i.status](rt || i) : ST[i.status];
+          return `<tr><td>${esc(i.code)}</td><td>${esc(i.title)}${stx ? ` <span class="mute">· ${esc(stx)}</span>` : ''}</td><td class="n">${(W[i.status] || (() => ''))(i)}</td><td class="n">${ects(i.ects)}</td></tr>`; }).join('') +
+        (t.when === 'past' ? `<tr class="sum"><td></td><td>Term average${t.att != null ? ` · attendance ${t.att} %` : ''}</td><td class="n">${g2(t.avg)}</td><td class="n">${ects(t.items.filter(i => i.status === 'passed').reduce((a, i) => a + i.ects, 0))}</td></tr>` : '') +
+        notes.map(n => `<tr class="note"><td></td><td colspan="3">${esc(n)}</td></tr>`).join('') + info.map(n => `<tr class="note"><td></td><td colspan="3" class="mute" style="color:#666">${esc(n)}</td></tr>`).join('');
+    }).join('');
+    const inProg = r.nowItems.reduce((a, i) => a + i.ects, 0);
+    return head(s, r, 'Study plan', 'This document does not confirm the completion of the programme. It lists every attempt, failed ones included.') +
+      `<table><tr><th>Code</th><th>Course</th><th class="n">Grade</th><th class="n">ECTS</th></tr>${rows}</table>
+      <div class="tot"><div>Passed<b>${ects(r.earned)} ECTS</b></div><div>In progress this term<b>${ects(inProg)} ECTS</b></div><div>Still to take<b>${ects(Math.max(0, r.P.ects - r.earned - inProg))} ECTS</b></div><div>Expected graduation<b>${esc(s.plan.grad.date)}${s.plan.grad.onSchedule ? '' : ' (delayed)'}</b></div></div>
+      <p class="scale">Internal document for the student, the advisor and the programme manager. Prepared ${dmy(TODAY)} by the student office from the student record.</p>`;
+  }
+
+  function render() {
+    const s = U.byId(SID), r = record(s);
+    document.getElementById('sub').textContent = `${s.name} · ${DOC === 'transcript' ? (r.complete ? 'final transcript' : 'interim transcript') : 'study plan'} · ${ects(r.earned)} of ${r.P.ects} ECTS passed`;
+    document.querySelectorAll('#doc button').forEach(b => b.classList.toggle('on', b.dataset.d === DOC));
+    document.getElementById('bProg').href = 'programme.html?p=' + s.prog;
+    document.getElementById('paper').innerHTML = DOC === 'transcript' ? transcript(s, r) : plan(s, r);
+    drawSide(s, r);
+    history.replaceState(null, '', `?id=${SID}&doc=${DOC}`);
+  }
+  document.getElementById('doc').onclick = e => { const b = e.target.closest('button'); if (b) { DOC = b.dataset.d; render(); } };
+  document.getElementById('q').addEventListener('change', e => { const v = e.target.value.toLowerCase(); const s = LIST.find(x => (x.name + ' · ' + num(x)).toLowerCase() === v) || LIST.find(x => x.name.toLowerCase().includes(v) || num(x).includes(v)); if (s) { SID = s.id; resetStep(); render(); e.target.value = ''; } });
+  document.getElementById('bPrint').onclick = () => window.print();
+  render();
+})();
+</script>
+</body>
+</html>

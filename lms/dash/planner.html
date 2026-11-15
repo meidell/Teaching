@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Class planner</title>
+<link rel="stylesheet" href="dash.css">
+<!-- The class planner (15 Nov 2026). Jan Erik: "build a programme manager planner for preparing a class — which
+     are the steps (create course?, syllabus, find professor, find time for professor, find classroom, what more?)".
+     Every class of next term (S.planning: Spring 2027, from the students' study plans) goes through nine steps:
+     size, teacher, time, room, syllabus, books and course page, assessment dates, enrol and tell, validate. Each step
+     has a due date; the time finder counts, for every slot, the students who would have two classes at once
+     (retakers), whether the teacher is free and how many rooms fit. Progress is kept in this browser
+     (localStorage dash_planner); nothing is sent. -->
+<style>
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:3px;width:max-content;max-width:100%;margin:0 0 14px;}
+  .tabs button{border:none;background:none;padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:650;color:var(--ink2);}
+  .tabs button.on{background:var(--pill);color:#fff;}
+  .btn{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:6px 13px;cursor:pointer;font-size:13px;font-weight:650;color:var(--ink);}
+  .btn.primary{background:var(--pill);color:#fff;border-color:var(--pill);} .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px;}
+  select.tx{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:6px 8px;font:inherit;color:inherit;max-width:100%;}
+  .dots{display:flex;gap:3px;} .dots i{width:11px;height:11px;border-radius:50%;background:var(--grid);border:1px solid var(--axis);display:inline-block;}
+  .dots i.done{background:var(--good);border-color:var(--good);} .dots i.late{background:var(--crit);border-color:var(--crit);} .dots i.soon{background:var(--warn);border-color:var(--warn);}
+  #clsT{min-width:860px;} #dlT{min-width:980px;} #supT{min-width:460px;} #pbT{min-width:520px;}
+  #dlT td,#dlT th{white-space:nowrap;font-size:12px;} #dlT td.c,#dlT th.c{text-align:center;}
+  .ok{color:var(--good);font-weight:700;} .lt{color:var(--crit);font-weight:650;} .sn{color:var(--warn);font-weight:650;}
+  dialog.cc{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--r);padding:20px;max-width:760px;width:calc(100% - 32px);max-height:92vh;}
+  dialog.cc::backdrop{background:rgba(0,0,0,.45);}
+  .step{border-top:1px solid var(--grid);padding:12px 0;display:grid;grid-template-columns:30px 1fr;gap:10px;}
+  .step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:750;font-size:13px;background:var(--raised);border:1px solid var(--axis);}
+  .step.done .n{background:var(--good);border-color:var(--good);color:#fff;} .step.late .n{background:var(--crit);border-color:var(--crit);color:#fff;}
+  .step h4{margin:0;font-size:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;} .step .why{font-size:12.5px;color:var(--ink2);margin:3px 0 7px;}
+  .step .act{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;}
+  .cand{width:100%;font-size:12.5px;} .cand td,.cand th{padding:5px 6px;border-bottom:1px solid var(--grid);text-align:left;} .cand th{color:var(--muted);font-weight:650;font-size:11.5px;}
+  /* time finder */
+  .grid7{display:grid;grid-template-columns:90px repeat(5,minmax(0,1fr));gap:6px;}
+  .grid7.we{grid-template-columns:90px repeat(3,minmax(0,1fr));}
+  .gh{font-size:12px;font-weight:700;color:var(--ink2);align-self:end;padding:2px 4px;} .gh.row{align-self:center;} .gh.mob{display:none;}
+  .cell{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;font-size:12px;line-height:1.35;display:flex;flex-direction:column;gap:4px;}
+  .cell.cur{outline:2px solid var(--s1);outline-offset:-2px;}
+  .cell .big{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;}
+  .bub{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:50%;color:#fff;font-weight:750;font-size:12px;padding:0 4px;}
+  .bub.g{background:var(--good);} .bub.r{background:var(--crit);} .bub.a{background:var(--warn);color:#111;}
+  .cell .who{color:var(--ink2);} .cell button{margin-top:auto;align-self:flex-start;}
+  .chip{display:block;border-left:4px solid var(--s1);background:var(--card);border-radius:6px;padding:3px 6px;margin:2px 0;font-size:11.5px;cursor:pointer;}
+  .chip.bad{box-shadow:inset 0 0 0 1.5px var(--crit);}
+  @media(max-width:760px){.grid7,.grid7.we{grid-template-columns:minmax(0,1fr);} .gh.blank,.gh.day{display:none;} .gh.mob{display:block;} .tabs{width:auto;}}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Class planner</h1><div class="sub" id="sub"></div></div>
+    <div class="filters"><nav class="tabs" id="progs" aria-label="Choose a programme" style="margin:0"></nav></div>
+  </div>
+  <div class="bar">
+    <nav class="tabs" id="views" aria-label="Choose a view" style="margin:0">
+      <button data-v="cls" class="on">Classes and next steps</button><button data-v="find">Find a time</button><button data-v="tt">Timetable</button><button data-v="dl">Deadlines</button>
+    </nav>
+    <button class="btn" id="bReset" type="button">Start again from today’s state</button>
+    <a class="btn" href="programme.html" style="text-decoration:none">Back to the programme</a>
+  </div>
+
+  <section data-view="cls">
+    <div class="g c4" id="tiles" style="margin-bottom:14px"></div>
+    <div class="g c21">
+      <div class="card"><div class="ch"><h2>What to do next</h2><span class="note">the next open step of each class, latest first</span></div><ul class="acts" id="next"></ul></div>
+      <div class="card"><div class="ch"><h2>The nine steps</h2><span class="note">every class goes through them</span></div><ol id="stepList" style="margin:0;padding-left:20px;font-size:13px;line-height:1.5"></ol></div>
+    </div>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Every class of the term</h2><span class="note">click a class to work on it</span></div>
+      <p class="lead">A class is one group of students taking one course with one teacher at one time. A course with more than <b id="maxG"></b> students runs as two groups. The dots show the nine steps: green done, red late, amber due within a week.</p>
+      <div class="tw"><table class="t" id="clsT"></table></div></div>
+    <div class="card"><div class="ch"><h2>Supervised work to arrange</h2><span class="note">theses, internships and projects have supervisors, not a timetable</span></div><div class="tw"><table class="t" id="supT"></table></div></div>
+  </section>
+
+  <section data-view="find" hidden>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Can this class move to another time?</h2><span class="note" id="fNote"></span></div>
+      <p class="lead">Pick a class. Each box is a time in the week. The circle counts the students of this class who already have another class at that time: green means none, red means that many students would have two classes at once. The box also says whether the teacher is free then and how many rooms large enough are free.</p>
+      <div class="fg" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px"><div><label for="fCls" style="display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:3px">Class</label><select class="tx" id="fCls"></select></div><span id="fNow" style="font-size:13px"></span></div>
+      <div id="finder"></div></div>
+  </section>
+
+  <section data-view="tt" hidden>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Problems in the timetable</h2><span class="note">fix these before the timetable deadline</span></div><div class="tw"><table class="t" id="pbT"></table></div></div>
+    <div class="card" style="margin-bottom:14px"><div class="ch"><h2>The week of a full-time student</h2><span class="note">Monday to Friday, every week of the term</span></div><div id="ttW"></div></div>
+    <div class="g c2">
+      <div class="card"><div class="ch"><h2>Teaching weekends</h2><span class="note">Executive MBA, every other week</span></div><div id="ttE"></div></div>
+      <div class="card"><div class="ch"><h2>Block weeks</h2><span class="note">residencies</span></div><div id="ttB"></div></div>
+    </div>
+  </section>
+
+  <section data-view="dl" hidden>
+    <div class="card"><div class="ch"><h2>Deadlines of every step, class by class</h2><span class="note" id="dlNote"></span></div>
+      <p class="lead">✓ means the step is done. A red date has passed and the step is still open; an amber date falls within the next seven days.</p>
+      <div class="tw"><table class="t" id="dlT"></table></div></div>
+  </section>
+
+  <dialog class="cc" id="dlg"></dialog>
+  <p class="foot" id="foot"></p>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  const { S, PC, esc, st } = Dash;
+  Dash.shell('programme');
+  const P = S.planning, U = S.util, TODAY = S.school.today, STEPS = P.steps;
+  const KEY = 'dash_planner';
+  const clone = o => JSON.parse(JSON.stringify(o));
+  let ST; try { ST = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {} if (!ST || !P.classes.every(k => ST[k.id])) ST = clone(P.seed);
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) {} };
+  const days = iso => Math.round((new Date(iso + 'T12:00:00') - new Date(TODAY + 'T12:00:00')) / 864e5);
+  const dt = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const pl = (n, w) => `${n} ${w}${n === 1 ? '' : /s$/.test(w) ? 'es' : 's'}`;
+  const F = id => U.prof(id), nm = id => (F(id) || {}).name || '—', sname = id => (U.byId(id) || {}).name || id;
+  const ALLSLOTS = [...P.slots.weekly, ...P.slots.weekend, ...P.slots.block];
+  const SL = id => ALLSLOTS.find(s => s.id === id);
+  const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+  const DAYN = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
+  const slotTxt = id => { const s = SL(id); if (!s) return 'no time yet'; return s.label || `${DAYN[s.day]} ${hh(s.from)}–${hh(s.to)}`; };
+  const slotsOf = k => P.slots[k.mode];
+  const cname = k => `${k.title}${k.group ? ' · group ' + k.group : ''}`;
+  let PROG = new URLSearchParams(location.search).get('p'); if (!S.P[PROG]) PROG = 'all';
+  const VIS = () => P.classes.filter(k => PROG === 'all' || k.prog === PROG);
+  document.getElementById('maxG').textContent = P.maxGroup;
+  document.getElementById('foot').textContent = `All names and figures are invented. Today is ${dt(TODAY)} 2026; the term starts on ${dt(P.term.start)} 2027. Progress is kept in this browser only.`;
+
+  /* ---- what each step needs ---- */
+  const done = (k, sid) => { const s = ST[k.id]; return { size: s.size, prof: s.profStatus === 'accepted', slot: !!s.slot, room: !!s.room, syl: s.syl === 'approved', mat: s.books && s.page, assess: s.assess, tell: s.tell, valid: s.valid }[sid]; };
+  const state = (k, step) => done(k, step.id) ? 'done' : days(step.due) < 0 ? 'late' : days(step.due) <= 7 ? 'soon' : 'open';
+  const nextStep = k => STEPS.find(x => !done(k, x.id));
+  /* who is where: student → slot → classes; teacher and room bookings */
+  function occupancy() {
+    const stu = {}, prof = {}, room = {};
+    P.classes.forEach(k => { const s = ST[k.id]; if (!s.slot) return;
+      k.students.forEach(id => ((stu[id + '|' + s.slot] = stu[id + '|' + s.slot] || [])).push(k));
+      if (s.prof && s.profStatus !== 'declined') (prof[s.prof + '|' + s.slot] = prof[s.prof + '|' + s.slot] || []).push(k);
+      if (s.room) (room[s.room + '|' + s.slot] = room[s.room + '|' + s.slot] || []).push(k); });
+    return { stu, prof, room };
+  }
+  let OCC = occupancy();
+  /* students of k who have another class at slot sl */
+  const clashAt = (k, sl) => k.students.map(id => ({ id, other: (OCC.stu[id + '|' + sl] || []).filter(x => x !== k) })).filter(x => x.other.length);
+  const roomsFree = (k, sl) => P.rooms.filter(r => r.cap >= k.size && (!k.lab || r.lab) && !(OCC.room[r.id + '|' + sl] || []).some(x => x !== k)).sort((a, b) => a.cap - b.cap);
+  const profAt = (k, sl) => { const s = ST[k.id]; if (!s.prof || s.profStatus === 'declined') return null; const busy = (OCC.prof[s.prof + '|' + sl] || []).filter(x => x !== k);
+    return busy.length ? { kind: 'r', txt: `${nm(s.prof)} teaches ${cname(busy[0])} then` } : { y: { kind: 'g', txt: `${nm(s.prof)} is free` }, m: { kind: 'a', txt: `${nm(s.prof)} is free if needed` }, n: { kind: 'r', txt: `${nm(s.prof)} is not free` } }[(P.avail[s.prof] || {})[sl] || 'y']; };
+  const loadOf = fid => P.classes.filter(k => ST[k.id].prof === fid && ST[k.id].profStatus === 'accepted').reduce((a, k) => a + k.hours, 0);
+
+  function render() {
+    OCC = occupancy(); save();
+    const V = VIS();
+    document.getElementById('sub').textContent = `${P.term.label} · ${PROG === 'all' ? 'all programmes' : S.P[PROG].name} · ${pl(V.length, 'class')} · the term starts in ${days(P.term.start)} days`;
+    document.getElementById('progs').innerHTML = `<button data-p="all" class="${PROG === 'all' ? 'on' : ''}">All</button>` + S.programs.map(p => `<button data-p="${p.id}" class="${p.id === PROG ? 'on' : ''}"><i class="key" style="background:${PC[p.id]}"></i>${esc(p.short)}</button>`).join('');
+    ({ cls: drawClasses, find: drawFinder, tt: drawTT, dl: drawDL })[VIEW]();
+  }
+  document.getElementById('progs').onclick = e => { const b = e.target.closest('button'); if (!b) return; PROG = b.dataset.p; history.replaceState(null, '', (PROG === 'all' ? location.pathname : '?p=' + PROG) + (VIEW === 'cls' ? '' : '#' + VIEW)); render(); };
+  let VIEW = ['cls', 'find', 'tt', 'dl'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'cls';
+  function showView(v) { VIEW = v; document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('section[data-view]').forEach(x => x.hidden = x.dataset.view !== v);
+    history.replaceState(null, '', location.search + (v === 'cls' ? '' : '#' + v)); render(); }
+  document.getElementById('views').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.v); };
+
+  /* ================= CLASSES ================= */
+  function nextLine(k) {
+    const x = nextStep(k), s = ST[k.id]; if (!x) return null;
+    let d = '';
+    if (x.id === 'prof') d = s.profStatus === 'invited' ? `${nm(s.prof)} was invited on ${dt(s.profAt)} and has not answered for ${-days(s.profAt)} days. Send a reminder or invite someone else.` : s.profStatus === 'declined' ? `${nm(s.prof)} declined. Invite another teacher.` : 'Nobody has been invited yet.';
+    else if (x.id === 'slot') d = s.profStatus === 'accepted' ? `${nm(s.prof)} has accepted; the class has no time yet.` : 'Find the teacher first.';
+    else if (x.id === 'room') d = `The class meets ${slotTxt(s.slot)} and needs a room for ${k.size} students${k.lab ? ' with computers' : ''}.`;
+    else if (x.id === 'size') d = `${k.size} students expected: ${k.students.length - k.retakers} continuing, ${k.retakers} retaking, ${k.newcomers} from the February intake.`;
+    else if (x.id === 'syl') d = s.syl === 'received' ? 'The syllabus has arrived and waits for your approval.' : s.syl === 'requested' ? `The syllabus was asked from ${nm(s.prof)} and has not arrived.` : 'Ask the teacher for the syllabus.';
+    else d = x.why;
+    return { k, x, d, kind: state(k, x) };
+  }
+  function drawClasses() {
+    const V = VIS(), stCount = V.reduce((a, k) => a + STEPS.filter(x => state(k, x) === 'late').length, 0);
+    const clashStu = new Set(); V.forEach(k => { const s = ST[k.id]; if (s.slot) clashAt(k, s.slot).forEach(c => clashStu.add(c.id)); });
+    const noProf = V.filter(k => ST[k.id].profStatus !== 'accepted').length, val = V.filter(k => ST[k.id].valid).length;
+    document.getElementById('tiles').innerHTML = Dash.tile({ lab: 'Classes to run next term', val: String(V.length), note: `${V.reduce((a, k) => a + k.size, 0)} seats, from ${new Set(V.map(k => k.title)).size} courses` }) +
+      Dash.tile({ lab: 'Classes with no teacher yet', val: String(noProf), note: `an accepted invitation is due by ${dt(STEPS[1].due)}` }) +
+      Dash.tile({ lab: 'Students with two classes at once', val: String(clashStu.size), note: clashStu.size ? 'open “Find a time” to move one of the classes' : 'no clash in the timetable' }) +
+      Dash.tile({ lab: 'Steps past their due date', val: String(stCount), note: `${val} of ${V.length} classes validated` });
+    const L = V.map(nextLine).filter(Boolean).sort((a, b) => days(a.x.due) - days(b.x.due) || STEPS.indexOf(a.x) - STEPS.indexOf(b.x));
+    document.getElementById('next').innerHTML = L.slice(0, 10).map(l => { const n = days(l.x.due);
+      return `<li>${st(l.kind === 'late' ? 'crit' : l.kind === 'soon' ? 'warn' : 'none', n < 0 ? `${-n} days late` : n === 0 ? 'due today' : `due in ${n} days`)}<div><div class="w">${esc(cname(l.k))} <span class="why">${esc(S.P[l.k.prog].short)}</span>: ${esc(l.x.name.toLowerCase())}</div><div class="d">${esc(l.d)}</div></div><a class="go" href="#" data-open="${l.k.id}">Open →</a></li>`; }).join('') || '<li class="empty">Every class is ready.</li>';
+    document.getElementById('stepList').innerHTML = STEPS.map(x => `<li><b>${esc(x.name)}</b> <span class="why">by ${dt(x.due)}</span></li>`).join('');
+    document.getElementById('clsT').innerHTML = `<tr><th>Class</th><th class="n">Students</th><th>Teacher</th><th>Time</th><th>Room</th><th>Steps</th><th>Next step</th></tr>` +
+      V.map(k => { const s = ST[k.id], c = s.slot ? clashAt(k, s.slot).length : 0, x = nextStep(k);
+        const t = s.profStatus === 'accepted' ? esc(nm(s.prof)) : s.profStatus === 'invited' ? `<span class="sn">${esc(nm(s.prof))} invited</span>` : s.profStatus === 'declined' ? `<span class="lt">${esc(nm(s.prof))} declined</span>` : '<span class="lt">none</span>';
+        return `<tr class="click" data-open="${k.id}"><td><i class="key" style="background:${PC[k.prog]}"></i>${esc(cname(k))}<div class="why">${esc(S.P[k.prog].short)} · ${k.ects} ECTS · ${k.hours} h</div></td><td class="n">${k.size}${k.retakers ? `<div class="why">${k.retakers} retaking</div>` : ''}</td><td>${t}</td><td>${s.slot ? esc(slotTxt(s.slot)) + (c ? `<div class="lt">${pl(c, 'student')} with a clash</div>` : '') : '<span class="why">not set</span>'}</td><td>${s.room ? esc(s.room) : '<span class="why">not booked</span>'}</td>
+          <td><div class="dots">${STEPS.map(y => `<i class="${state(k, y)}" title="${esc(y.name)}: ${state(k, y) === 'done' ? 'done' : 'due ' + dt(y.due)}"></i>`).join('')}</div></td><td>${x ? esc(x.name) : '<span class="ok">Ready</span>'}</td></tr>`; }).join('');
+    const SUP = P.supervision.filter(x => PROG === 'all' || x.prog === PROG);
+    document.getElementById('supT').innerHTML = SUP.length ? `<tr><th>Supervised work</th><th class="n">Students</th><th class="n">Supervisor named</th><th>Status</th></tr>` + SUP.map(x => `<tr><td><i class="key" style="background:${PC[x.prog]}"></i>${esc(x.title)}</td><td class="n">${x.n}</td><td class="n">${x.assigned}</td><td>${x.assigned === x.n ? st('good', 'Every student has a supervisor') : st('warn', `${x.n - x.assigned} students still need a supervisor`)}</td></tr>`).join('') : '<tr><td class="empty">No supervised work this term.</td></tr>';
+  }
+  document.addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); openClass(o.dataset.open); } });
+
+  /* ================= ONE CLASS: the nine steps ================= */
+  const dlg = document.getElementById('dlg');
+  function openClass(id) { CUR = id; drawClass(); if (!dlg.open) dlg.showModal(); }
+  let CUR = null;
+  function drawClass() {
+    const k = P.classes.find(x => x.id === CUR), s = ST[k.id], c = s.slot ? clashAt(k, s.slot) : [];
+    const blk = (i, x, body) => { const z = state(k, x), n = days(x.due);
+      return `<div class="step ${z}"><span class="n">${z === 'done' ? '✓' : i + 1}</span><div><h4>${esc(x.name)} ${z === 'done' ? st('good', 'done') : st(z === 'late' ? 'crit' : z === 'soon' ? 'warn' : 'none', n < 0 ? `${-n} days late (due ${dt(x.due)})` : `due ${dt(x.due)}`)}</h4><div class="why">${esc(x.why)}</div><div class="act">${body}</div></div></div>`; };
+    const need = ids => ids.filter(i => !done(k, i)).map(i => STEPS.find(x => x.id === i).name.toLowerCase());
+    const B = (act, label, opt) => `<button class="btn ${opt && opt.primary ? 'primary' : ''}" data-act="${act}" type="button" ${opt && opt.dis ? 'disabled' : ''}>${esc(label)}</button>`;
+    /* step bodies */
+    const b = [];
+    b.push(`<span>${k.students.length - k.retakers} continuing, ${k.retakers} retaking it, ${k.newcomers} newcomers from the February intake who paid a deposit: <b>${k.size} students</b>.</span>` + (s.size ? '' : B('size', 'Confirm the number', { primary: true })));
+    let pr = '';
+    if (s.profStatus === 'accepted') pr = `<span><b>${esc(nm(s.prof))}</b> accepted on ${dt(s.profAt)}.</span>${B('profReset', 'Change the teacher')}`;
+    else {
+      if (s.profStatus === 'invited') pr += `<span><b>${esc(nm(s.prof))}</b> was invited on ${dt(s.profAt)}; no answer for ${-days(s.profAt)} days.</span>${B('accept', 'Record: accepted', { primary: true })}${B('decline', 'Record: declined')}${B('remind', 'Send a reminder')}`;
+      if (s.profStatus === 'declined') pr += `<span class="lt">${esc(nm(s.prof))} declined. Invite another teacher below.</span>`;
+      pr += `<table class="cand"><tr><th>Teacher</th><th>Subject</th><th>Contract</th><th>Rating</th><th>Spring load</th><th>${s.slot ? 'Free at ' + esc(slotTxt(s.slot)) : 'Free times'}</th><th></th></tr>` + k.cand.map(fid => { const f = F(fid), l = loadOf(fid), av = P.avail[fid];
+        const free = s.slot ? ({ y: '<span class="ok">yes</span>', m: '<span class="sn">if needed</span>', n: '<span class="lt">no</span>' }[av[s.slot]]) : `${slotsOf(k).filter(x => av[x.id] === 'y').length} of ${slotsOf(k).length}`;
+        return `<tr><td>${esc(f.name)}</td><td>${esc(f.area)}${f.area === k.area ? '' : ' <span class="why">related</span>'}</td><td>${f.type === 'Core faculty' ? 'core' : 'adjunct'}</td><td>${f.eval.toFixed(1)}</td><td>${l} of ${f.contractHours} h${l + k.hours > f.contractHours ? ' <span class="lt">over</span>' : ''}</td><td>${free}</td><td>${s.prof === fid && s.profStatus === 'invited' ? 'invited' : `<button class="btn" data-inv="${fid}" type="button">Invite</button>`}</td></tr>`; }).join('') + '</table>';
+      if (!k.cand.length) pr += '<span class="why">No teacher in this subject. Ask the dean to recruit an adjunct.</span>';
+    }
+    b.push(pr);
+    b.push(s.slot ? `<span>${esc(slotTxt(s.slot))}${c.length ? ` · <span class="lt">${pl(c.length, 'student')} would have two classes at once</span>` : ' · <span class="ok">no student clash</span>'}</span>${B('find', c.length ? 'Find a better time' : 'Change the time')}` : `${B('find', 'Find a time', { primary: true, dis: s.profStatus !== 'accepted' })}${s.profStatus !== 'accepted' ? '<span class="why">First find the teacher: the time depends on when they are free.</span>' : ''}`);
+    if (s.room) b.push(`<span>Room <b>${esc(s.room)}</b> is booked.</span>${B('roomReset', 'Change the room')}`);
+    else if (!s.slot) b.push('<span class="why">Set the time first: a room is booked for a time.</span>');
+    else { const rf = roomsFree(k, s.slot); b.push((rf.length ? rf.map(r => `<button class="btn" data-room="${esc(r.id)}" type="button">Book ${esc(r.id)} (${r.cap} seats${r.lab ? ', computers' : ''})</button>`).join('') : `<span class="lt">No free room holds ${k.size} students${k.lab ? ' with computers' : ''} at this time. Move the class or split it.</span>`) + (k.mode === 'block' ? `<button class="btn" data-room="Off campus" type="button">Off campus (venue of the residency)</button>` : '')); }
+    const sy = { none: [`<span class="why">Nothing asked yet.</span>`, B('sylAsk', `Ask ${s.profStatus === 'accepted' ? nm(s.prof) : 'the teacher'} for the syllabus`, { primary: true, dis: s.profStatus !== 'accepted' })], requested: ['<span>Asked; not received yet.</span>', B('sylGot', 'Record: received')], received: ['<span>Received; check the learning goals, the assessment and the reading list.</span>', B('sylOk', 'Approve the syllabus', { primary: true })], approved: ['<span class="ok">Approved.</span>', ''] }[s.syl];
+    b.push(sy.join(''));
+    b.push(`<label><input type="checkbox" data-chk="books" ${s.books ? 'checked' : ''}> Books and readings ordered</label> <label><input type="checkbox" data-chk="page" ${s.page ? 'checked' : ''}> Course page opened on the platform</label>`);
+    const dates = assessDates(k); b.push(s.slot ? `<span>${dates.map(d => `${esc(d[0])}: ${dt(d[1])}`).join(' · ')}</span>` + (s.assess ? '' : B('assess', 'Confirm these dates', { primary: true })) : '<span class="why">Set the time first: the deadlines fall on the day of the class.</span>');
+    const nt = need(['prof', 'slot', 'room', 'syl']);
+    b.push(s.tell ? `<span class="ok">${k.students.length} students enrolled and told on the platform.</span>` : B('tell', `Enrol ${k.students.length} students and send them the time, room, teacher and syllabus`, { primary: true, dis: nt.length }) + (nt.length ? `<span class="why">Still missing: ${esc(nt.join(', '))}.</span>` : ''));
+    const nv = need(['size', 'prof', 'slot', 'room', 'syl', 'mat', 'assess', 'tell']);
+    b.push(s.valid ? '<span class="ok">Validated: the class is on the timetable and the dashboards.</span>' + B('unvalid', 'Withdraw the validation') : B('valid', 'Validate the class', { primary: true, dis: nv.length }) + (nv.length ? `<span class="why">Still missing: ${esc(nv.join(', '))}.</span>` : ''));
+    dlg.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:start"><div><h3 style="margin:0">${esc(cname(k))}</h3><div class="why" style="margin-top:3px">${esc(S.P[k.prog].name)} · semester ${k.sem} · ${k.ects} ECTS · ${k.hours} contact hours · ${k.mode === 'weekly' ? 'weekly, 14 weeks' : k.mode === 'weekend' ? 'teaching weekends' : 'block week'}${k.lab ? ' · needs a computer lab' : ''}</div></div><button class="btn" id="dX" type="button">Close</button></div>` + STEPS.map((x, i) => blk(i, x, b[i])).join('');
+    dlg.querySelector('#dX').onclick = () => dlg.close();
+  }
+  function assessDates(k) { const s = ST[k.id], sl = SL(s.slot); if (!sl) return [];
+    const dayIdx = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 }[sl.day] || 0, start = new Date(P.term.start + 'T12:00:00');
+    const at = w => { const d = new Date(start); d.setDate(d.getDate() + (w - 1) * 7 + dayIdx); return d.toISOString().slice(0, 10); };
+    const ex = new Date(P.term.examFrom + 'T12:00:00'); ex.setDate(ex.getDate() + (P.classes.indexOf(k) % 10)); if (ex.getDay() === 0) ex.setDate(ex.getDate() + 1); if (ex.getDay() === 6) ex.setDate(ex.getDate() + 2);
+    return k.mode === 'block' ? [['Paper due', at(10)]] : [['Assignment 1', at(4)], ['Assignment 2', at(8)], ['Assignment 3', at(12)], ['Exam', ex.toISOString().slice(0, 10)]]; }
+  dlg.addEventListener('click', e => {
+    const k = P.classes.find(x => x.id === CUR), s = ST[k.id], t = e.target.closest('button'); if (!t || t.disabled) return;
+    const a = t.dataset.act;
+    if (t.dataset.inv) { s.prof = t.dataset.inv; s.profStatus = 'invited'; s.profAt = TODAY; }
+    else if (t.dataset.room) { s.room = t.dataset.room; }
+    else if (a === 'size') s.size = true;
+    else if (a === 'accept') { s.profStatus = 'accepted'; s.profAt = TODAY; }
+    else if (a === 'decline') s.profStatus = 'declined';
+    else if (a === 'remind') s.profAt = TODAY;
+    else if (a === 'profReset') { if (!confirm('Change the teacher? The time, room, syllabus and later steps are reset.')) return; Object.assign(s, { prof: null, profStatus: 'none', slot: null, room: null, syl: 'none', assess: false, tell: false, valid: false }); }
+    else if (a === 'roomReset') { s.room = null; s.tell = false; s.valid = false; }
+    else if (a === 'find') { dlg.close(); FCLS = k.id; showView('find'); return; }
+    else if (a === 'sylAsk') s.syl = 'requested'; else if (a === 'sylGot') s.syl = 'received'; else if (a === 'sylOk') s.syl = 'approved';
+    else if (a === 'assess') s.assess = true; else if (a === 'tell') s.tell = true; else if (a === 'valid') s.valid = true; else if (a === 'unvalid') s.valid = false;
+    else return;
+    render(); drawClass(); });
+  dlg.addEventListener('change', e => { const c = e.target.dataset.chk; if (!c) return; ST[CUR][c] = e.target.checked; render(); drawClass(); });
+
+  /* ================= FIND A TIME ================= */
+  let FCLS = null;
+  function drawFinder() {
+    const V = VIS(); if (!V.find(k => k.id === FCLS)) { const withClash = V.find(k => ST[k.id].slot && clashAt(k, ST[k.id].slot).length); FCLS = (withClash || V.find(k => ST[k.id].profStatus === 'accepted' && !ST[k.id].slot) || V[0] || {}).id; }
+    const sel = document.getElementById('fCls'); sel.innerHTML = V.map(k => `<option value="${k.id}" ${k.id === FCLS ? 'selected' : ''}>${esc(S.P[k.prog].short)} · ${esc(cname(k))}${ST[k.id].slot && clashAt(k, ST[k.id].slot).length ? ' (clash)' : ''}</option>`).join('');
+    const k = P.classes.find(x => x.id === FCLS); if (!k) { document.getElementById('finder').innerHTML = '<p class="empty">No class.</p>'; return; }
+    const s = ST[k.id];
+    document.getElementById('fNote').textContent = `${k.size} students · ${s.profStatus === 'accepted' ? 'teacher ' + nm(s.prof) : 'no teacher yet'}`;
+    document.getElementById('fNow').innerHTML = s.slot ? `Now: <b>${esc(slotTxt(s.slot))}</b>${s.room ? ', room ' + esc(s.room) : ''}` : '<span class="why">No time set yet.</span>';
+    const cell = sl => { const c = clashAt(k, sl.id), p = profAt(k, sl.id), rf = roomsFree(k, sl.id), cur = s.slot === sl.id;
+      const names = c.slice(0, 4).map(x => `${esc(sname(x.id))} <span class="why">(${esc(x.other.map(cname).join(', '))})</span>`).join('<br>') + (c.length > 4 ? `<br>and ${c.length - 4} more` : '');
+      return `<div class="cell ${cur ? 'cur' : ''}"><div class="big"><span class="bub ${c.length ? 'r' : 'g'}">${c.length}</span>${c.length ? pl(c.length, 'student') + ' with a clash' : 'no student clash'}</div>${c.length ? `<div class="who">${names}</div>` : ''}
+        <div>${p ? `<span class="${p.kind === 'g' ? 'ok' : p.kind === 'a' ? 'sn' : 'lt'}">${esc(p.txt)}</span>` : '<span class="why">no teacher yet</span>'}</div><div class="why">${pl(rf.length, 'room')} free for ${k.size}${k.lab ? ' with computers' : ''}</div>
+        ${cur ? '<b>The class is here now</b>' : `<button class="btn" data-move="${sl.id}" type="button">Move the class here</button>`}</div>`; };
+    const box = document.getElementById('finder');
+    if (k.mode === 'weekly') { const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+      box.innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + ['am', 'pm'].map(pt => `<span class="gh row">${pt === 'am' ? 'Morning<br>08:30–11:45' : 'Afternoon<br>13:30–16:45'}</span>` + D.map(d => { const sl = SL(d + '-' + pt); return `<div><span class="gh mob">${DAYN[d]}</span>${cell(sl)}</div>`; }).join('')).join('') + '</div>';
+    } else box.innerHTML = `<div class="grid7 we"><span class="gh blank"></span>${slotsOf(k).map(sl => `<span class="gh">${esc(slotTxt(sl.id))}</span>`).join('')}<span class="gh">${k.mode === 'weekend' ? 'Each teaching weekend' : 'Block week'}</span>${slotsOf(k).map(cell).join('')}</div>`;
+  }
+  document.getElementById('fCls').onchange = e => { FCLS = e.target.value; drawFinder(); };
+  document.getElementById('finder').addEventListener('click', e => { const b = e.target.closest('[data-move]'); if (!b) return; const k = P.classes.find(x => x.id === FCLS), s = ST[k.id], sl = b.dataset.move;
+    const c = clashAt(k, sl).length, p = profAt(k, sl);
+    if ((c || (p && p.kind === 'r')) && !confirm(`Move ${cname(k)} to ${slotTxt(sl)}? ${c ? pl(c, 'student') + ' would have two classes at once. ' : ''}${p && p.kind === 'r' ? p.txt + '.' : ''}`)) return;
+    s.slot = sl; if (s.room && !roomsFree(k, sl).some(r => r.id === s.room) && s.room !== 'Off campus') s.room = null; s.assess = false; s.tell = false; s.valid = false; render(); });
+
+  /* ================= TIMETABLE ================= */
+  function drawTT() {
+    const V = VIS(), chip = k => { const s = ST[k.id], c = clashAt(k, s.slot).length; return `<span class="chip ${c ? 'bad' : ''}" data-open="${k.id}" style="border-left-color:${PC[k.prog]}">${esc(cname(k))}<span class="why"> · ${esc(s.room || 'no room')}${c ? ` · <b class="lt">${pl(c, 'student')} with a clash</b>` : ''}</span></span>`; };
+    const at = id => V.filter(k => ST[k.id].slot === id);
+    const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    document.getElementById('ttW').innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + ['am', 'pm'].map(pt => `<span class="gh row">${pt === 'am' ? 'Morning' : 'Afternoon'}</span>` + D.map(d => `<div class="cell"><span class="gh mob" style="padding:0">${DAYN[d]} ${pt === 'am' ? '08:30' : '13:30'}</span>${at(d + '-' + pt).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('')).join('') + '</div>';
+    document.getElementById('ttE').innerHTML = P.slots.weekend.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(slotTxt(sl.id))}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
+    document.getElementById('ttB').innerHTML = P.slots.block.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(sl.label)}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
+    const rows = [], seen = new Set();
+    Object.entries(OCC.stu).forEach(([key, ks]) => { const vs = ks.filter(k => V.includes(k)); if (vs.length < 2) return; const [id, sl] = key.split('|'); rows.push(['crit', 'Student clash', `${sname(id)} has ${vs.map(cname).join(' and ')} at the same time (${slotTxt(sl)}).`, vs[0].id]); });
+    Object.entries(OCC.prof).forEach(([key, ks]) => { const vs = ks.filter(k => V.includes(k)); if (vs.length < 2) return; const [f, sl] = key.split('|'); rows.push(['crit', 'Teacher booked twice', `${nm(f)} is down for ${vs.map(cname).join(' and ')} at ${slotTxt(sl)}.`, vs[1].id]); });
+    Object.entries(OCC.room).forEach(([key, ks]) => { const vs = ks.filter(k => V.includes(k)); if (vs.length < 2 || key.startsWith('Off campus')) return; const [r, sl] = key.split('|'); rows.push(['crit', 'Room booked twice', `${r} holds ${vs.map(cname).join(' and ')} at ${slotTxt(sl)}.`, vs[1].id]); });
+    V.forEach(k => { const s = ST[k.id]; if (s.slot && s.prof && s.profStatus === 'accepted' && (P.avail[s.prof] || {})[s.slot] === 'n') rows.push(['serious', 'Teacher not free', `${nm(s.prof)} marked ${slotTxt(s.slot)} as not free, but teaches ${cname(k)} then.`, k.id]); });
+    const unplaced = V.filter(k => !ST[k.id].slot).length; if (unplaced) rows.push(['warn', 'No time yet', `${pl(unplaced, 'class')} ${unplaced === 1 ? 'has' : 'have'} no time. The timetable is due on ${dt(STEPS[2].due)}.`, null]);
+    document.getElementById('pbT').innerHTML = rows.length ? `<tr><th>Problem</th><th>What is wrong</th><th></th></tr>` + rows.map(r => `<tr><td>${st(r[0], r[1])}</td><td>${esc(r[2])}</td><td>${r[3] ? `<a href="#" data-fix="${r[3]}">Find a time →</a>` : ''}</td></tr>`).join('') : '<tr><td class="empty">No clash: no student, teacher or room is in two places at once.</td></tr>';
+  }
+  document.getElementById('pbT').addEventListener('click', e => { const a = e.target.closest('[data-fix]'); if (!a) return; e.preventDefault(); FCLS = a.dataset.fix; showView('find'); });
+
+  /* ================= DEADLINES ================= */
+  function drawDL() {
+    const V = VIS();
+    document.getElementById('dlNote').textContent = `${pl(V.length, 'class')} × ${STEPS.length} steps`;
+    document.getElementById('dlT').innerHTML = `<tr><th>Class</th>${STEPS.map((x, i) => `<th class="c" title="${esc(x.name)}">${i + 1}. ${esc(x.name.split(' ').slice(0, 3).join(' '))}<div class="why">${dt(x.due)}</div></th>`).join('')}</tr>` +
+      V.map(k => `<tr class="click" data-open="${k.id}"><td><i class="key" style="background:${PC[k.prog]}"></i>${esc(cname(k))}</td>${STEPS.map(x => { const z = state(k, x); return `<td class="c">${z === 'done' ? '<span class="ok">✓</span>' : `<span class="${z === 'late' ? 'lt' : z === 'soon' ? 'sn' : 'why'}">${dt(x.due)}</span>`}</td>`; }).join('')}</tr>`).join('');
+  }
+
+  document.getElementById('bReset').onclick = () => { if (!confirm('Throw away the changes made in this browser and start again from the state of 15 November?')) return; ST = clone(P.seed); render(); };
+  showView(VIEW);
+})();
+</script>
+</body>
+</html>

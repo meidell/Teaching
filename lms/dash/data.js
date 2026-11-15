@@ -1303,10 +1303,109 @@
     teachRate: finance.adjunctRate,
   };
 
+  /* =====================================================================
+     CLASS PLANNER (15 Nov 2026): preparing next term's classes. Jan Erik: "build a programme manager
+     planner for preparing a class — which are the steps". `planning.classes` = every taught course of
+     Spring 2027 that students' study plans hold (continuing students, retakes, and the February
+     newcomers who already paid a deposit), split into groups of at most `maxGroup`. Each class knows its
+     students, so the planner can count STUDENT CLASHES per time slot. `planning.avail` = each teacher's
+     week (y available / m if needed / n no). `planning.seed` = how far each class's preparation has got
+     on 15 Nov 2026 (a deterministic hash, no random stream, so no other dashboard moves).
+     ===================================================================== */
+  const hsh = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 100000) / 100000; };
+  const planning = (() => {
+    const T = { label: 'Spring 2027', start: '2027-02-15', end: '2027-05-21', weeks: 14, examFrom: '2027-06-01' };
+    const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const slots = {
+      weekly: DAYS.flatMap(d => [{ id: d + '-am', day: d, from: 8.5, to: 11.75, part: 'morning' }, { id: d + '-pm', day: d, from: 13.5, to: 16.75, part: 'afternoon' }]),
+      weekend: [{ id: 'Fri-eve', day: 'Fri', from: 17, to: 21, part: 'evening' }, { id: 'Sat-am', day: 'Sat', from: 8.5, to: 12, part: 'morning' }, { id: 'Sat-pm', day: 'Sat', from: 13, to: 16.5, part: 'afternoon' }],
+      block: [{ id: 'wk-2027-03-08', day: 'week', label: 'Week of 8 March 2027' }, { id: 'wk-2027-04-12', day: 'week', label: 'Week of 12 April 2027' }, { id: 'wk-2027-05-10', day: 'week', label: 'Week of 10 May 2027' }],
+    };
+    const rooms = [{ id: 'A101', cap: 60 }, { id: 'A204', cap: 40 }, { id: 'B12', cap: 35 }, { id: 'B15', cap: 80 }, { id: 'C3 (lab)', cap: 30, lab: true }, { id: 'Aula', cap: 150 }];
+    const maxGroup = 45;
+    const calDate = id => (calendar.find(c => c.id === id) || {}).date;
+    const steps = [
+      { id: 'size', name: 'Confirm who takes the class', why: 'The number of students decides the groups, the room and the cost. It comes from the study plans: continuing students, retakes and the February newcomers.', due: '2026-11-20' },
+      { id: 'prof', name: 'Find a teacher who accepts', why: 'A teacher must be qualified in the subject, free at the time and within their contract hours. Adjuncts must be approved by the director before the deadline.', due: calDate('adjuncts') },
+      { id: 'slot', name: 'Find a time with no clash', why: 'No student may have two classes at the same time, and the teacher must be free. Retakers are the usual source of clashes.', due: calDate('timetable') },
+      { id: 'room', name: 'Book a room', why: 'The room must hold the group, be free at that time, and be a computer lab when the course needs one.', due: '2026-12-11' },
+      { id: 'syl', name: 'Get the syllabus and approve it', why: 'Students must see the syllabus before the term; the programme manager checks the learning goals, the assessment and the reading list.', due: '2027-01-11' },
+      { id: 'mat', name: 'Order the books and open the course page', why: 'Books take three weeks to arrive and the course page must exist before students are enrolled in it.', due: '2027-01-25' },
+      { id: 'assess', name: 'Fix the assessment dates', why: 'Assignment deadlines and the exam date go into every student’s calendar; two exams on one day is a clash too.', due: '2027-01-25' },
+      { id: 'tell', name: 'Enrol the students and tell them', why: 'Students receive the time, the room, the teacher and the syllabus two weeks before the first class.', due: '2027-02-01' },
+      { id: 'valid', name: 'Validate the class', why: 'A validated class appears on the dashboards, the timetable and the students’ calendars. Only validate when every step above is done.', due: '2027-02-08' },
+    ];
+    /* electives: the placeholder becomes the options offered this term; a student keeps one track */
+    const EL = { 'Elective 1': ['Luxury Brand Management', 'Fintech Fundamentals', 'Family Business'], 'Elective 2': ['Sports Business', 'Hospitality Management', 'Sustainability Reporting'],
+      'Specialisation course 1': ['Specialisation: Finance · Valuation', 'Specialisation: Marketing · Brand Strategy'], 'Specialisation course 2': ['Specialisation: Finance · Risk', 'Specialisation: Marketing · Digital Analytics'] };
+    const EL_AREA = { 'Luxury Brand Management': 'Marketing', 'Fintech Fundamentals': 'Finance', 'Family Business': 'Strategy', 'Sports Business': 'Marketing', 'Hospitality Management': 'Operations', 'Sustainability Reporting': 'Accounting',
+      'Specialisation: Finance · Valuation': 'Finance', 'Specialisation: Marketing · Brand Strategy': 'Marketing', 'Specialisation: Finance · Risk': 'Finance', 'Specialisation: Marketing · Digital Analytics': 'Data & AI' };
+    const itemOf = (pid, title) => { for (const m of curriculum[pid]) for (const it of m.items) if (it.title === title) return it; return null; };
+    const need = {}, sup = {};
+    const add = (s, it, kind) => {
+      let title = it.title, area = (itemOf(s.prog, it.title) || {}).area; if (area === 'Practice') area = 'Strategy';
+      if (EL[title]) { const opts = EL[title]; title = opts[Math.floor(hsh(s.id + (s.prog === 'msc' ? 'track' : title)) * opts.length)]; area = EL_AREA[title]; }
+      if (!['course', 'elective'].includes(it.type)) { const k = s.prog + '|' + it.title; (sup[k] = sup[k] || { prog: s.prog, title: it.title, type: it.type, n: 0 }).n++; return; }
+      const k = s.prog + '|' + title, src = itemOf(s.prog, it.title) || {};
+      const c = need[k] = need[k] || { prog: s.prog, code: it.code, title, area: area || 'Strategy', ects: it.ects, type: it.type, sem: it.sem, hours: src.hours || Math.round(it.ects * 6), students: [], retakers: [], newcomers: 0 };
+      c.students.push(s.id); if (kind === 'retake') c.retakers.push(s.id);
+    };
+    students.filter(s => s.status === 'active' && s.plan).forEach(s => {
+      s.plan.terms.filter(t => t.label === T.label).forEach(t => t.items.forEach(it => add(s, it, 'plan')));
+      (s.plan.retakes || []).filter(r => r.retakeTerm === T.label).forEach(r => add(s, r, 'retake'));
+    });
+    /* February newcomers: deposits paid for 2027-02 take semester 2 */
+    const feb = {}; registrar.files.filter(f => f.intake === '2027-02' && f.stage === 'deposit').forEach(f => feb[f.prog] = (feb[f.prog] || 0) + 1);
+    Object.values(need).forEach(c => { if (c.sem === 2 && feb[c.prog]) c.newcomers = Math.round(feb[c.prog] / (c.type === 'elective' ? 2 : 1)); });
+    /* groups: split by a stable hash of the student, so group A of one course is group A of the next */
+    const classes = [];
+    Object.values(need).sort((a, b) => a.prog.localeCompare(b.prog) || a.sem - b.sem || a.title.localeCompare(b.title)).forEach(c => {
+      const total = c.students.length + c.newcomers, g = Math.max(1, Math.ceil(total / maxGroup));
+      const mode = c.prog === 'emba' ? (/residency/i.test(c.title) ? 'block' : 'weekend') : c.prog === 'dba' ? 'block' : 'weekly';
+      for (let k = 0; k < (mode === 'weekly' ? g : 1); k++) {
+        const st = g > 1 && mode === 'weekly' ? c.students.filter(id => Math.floor(hsh(id + 'grp') * g) === k) : c.students;
+        classes.push({ id: 'k' + (classes.length + 1), prog: c.prog, code: c.code, title: c.title, group: g > 1 && mode === 'weekly' ? 'ABCD'[k] : null, area: c.area, ects: c.ects, type: c.type, sem: c.sem, hours: c.hours, mode,
+          lab: /Data|Analytics|Statist|Quantitative|Fintech/.test(c.title), students: st, retakeIds: c.retakers.filter(id => st.includes(id)), retakers: c.retakers.filter(id => st.includes(id)).length, newcomers: g > 1 ? Math.round(c.newcomers / g) : c.newcomers });
+      }
+    });
+    classes.forEach(k => { k.size = k.students.length + k.newcomers; });
+    /* teaching candidates: same subject area first, then the neighbours */
+    const NEAR = { Accounting: ['Finance'], Finance: ['Accounting', 'Economics'], Economics: ['Finance', 'Statistics'], Statistics: ['Data & AI', 'Economics'], 'Data & AI': ['Statistics', 'Digital Business'], 'Digital Business': ['Data & AI', 'Marketing'], Marketing: ['Digital Business', 'Strategy'], Strategy: ['Leadership & HR', 'Entrepreneurship'], 'Leadership & HR': ['Strategy'], Operations: ['Strategy', 'Data & AI'], 'Law & Ethics': ['Strategy'], Entrepreneurship: ['Strategy', 'Marketing'] };
+    classes.forEach(k => { k.cand = faculty.filter(f => f.area === k.area).map(f => f.id).concat(faculty.filter(f => (NEAR[k.area] || []).includes(f.area)).map(f => f.id)); });
+    /* availability of each teacher: core faculty mostly free on weekdays, adjuncts more often at the weekend */
+    const avail = {};
+    faculty.forEach(f => { const a = avail[f.id] = {}; const core = f.type === 'Core faculty';
+      slots.weekly.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = core ? (r < 0.72 ? 'y' : r < 0.86 ? 'm' : 'n') : (r < 0.38 ? 'y' : r < 0.6 ? 'm' : 'n'); });
+      slots.weekend.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = core ? (r < 0.35 ? 'y' : r < 0.6 ? 'm' : 'n') : (r < 0.7 ? 'y' : r < 0.85 ? 'm' : 'n'); });
+      slots.block.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = r < 0.6 ? 'y' : r < 0.8 ? 'm' : 'n'; }); });
+    /* where preparation stands on 15 Nov 2026. Slots are dealt per cohort and group so a cohort has no clash
+       with itself; retakers (who follow another cohort) are where clashes appear. */
+    const seed = {}, used = {}, profBusy = {}, roomBusy = {}, retakersOf = k => k.retakeIds || []; const ALLRK = new Set(classes.flatMap(k => k.retakeIds));
+    const order = ['Mon-am', 'Tue-pm', 'Wed-am', 'Thu-pm', 'Fri-am', 'Mon-pm', 'Tue-am', 'Wed-pm', 'Thu-am', 'Fri-pm'];
+    classes.forEach((k, i) => {
+      const r = hsh(k.id + k.title), st = { size: r < 0.8, prof: null, profStatus: 'none', profAt: null, slot: null, room: null, syl: 'none', books: false, page: false, assess: false, tell: false, valid: false };
+      if (r < 0.6) st.profStatus = 'accepted'; else if (r < 0.85) st.profStatus = 'invited'; else if (r < 0.9) st.profStatus = 'declined';
+      if (st.profStatus !== 'none') { const c = k.cand.filter(f => !(st.profStatus === 'accepted' && profBusy[f] >= 3)); st.prof = c[Math.floor(hsh(k.id + 'p') * Math.min(2, c.length))] || k.cand[0] || null; st.profAt = st.profStatus === 'invited' ? ['2026-11-02', '2026-11-05', '2026-11-11', '2026-11-13'][Math.floor(hsh(k.id + 'd') * 4)] : '2026-10-' + (20 + Math.floor(hsh(k.id + 'd') * 9)); }
+      if (st.profStatus === 'accepted') { profBusy[st.prof] = (profBusy[st.prof] || 0) + 1;
+        if (hsh(k.id + 's') < 0.8) {
+          const base = k.mode === 'weekly' ? order : k.mode === 'weekend' ? slots.weekend.map(s => s.id) : slots.block.map(s => s.id), off = Math.floor(hsh(k.prog + k.sem) * base.length);
+          const pool = base.slice(off).concat(base.slice(0, off)), own = k.students;
+          const rk = ALLRK, free = sl => own.every(id => rk.has(id) || !used[id + '|' + sl]);
+          const hitsRetaker = sl => k.students.some(id => ALLRK.has(id) && used[id + '|' + sl]), wantClash = hsh(k.id + 'c') < 0.35;
+          const pick = (wantClash && pool.find(sl => free(sl) && hitsRetaker(sl) && (avail[st.prof] || {})[sl] !== 'n')) || pool.find(sl => free(sl) && (avail[st.prof] || {})[sl] !== 'n') || pool.find(free);
+          if (pick) { st.slot = pick; k.students.forEach(id => used[id + '|' + pick] = 1); } }
+        if (st.slot && hsh(k.id + 'r') < 0.7) { const rm = rooms.filter(x => x.cap >= k.size && (k.lab ? x.lab : !x.lab) && !((roomBusy[st.slot] || []).includes(x.id))).sort((a, b) => a.cap - b.cap)[0]; if (rm) { st.room = rm.id; (roomBusy[st.slot] = roomBusy[st.slot] || []).push(rm.id); } }
+        st.syl = hsh(k.id + 'y') < 0.25 ? 'received' : 'requested'; }
+      seed[k.id] = st;
+    });
+    const supervision = Object.values(sup).map(x => Object.assign(x, { assigned: Math.round(x.n * (0.4 + 0.5 * hsh(x.title))) }));
+    return { term: T, slots, rooms, maxGroup, steps, classes, avail, seed, supervision, newcomers: feb };
+  })();
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign, planning,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),
