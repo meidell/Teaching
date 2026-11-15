@@ -222,3 +222,18 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,500);});
   else setTimeout(go,500);
 })();
+
+/* ---- The course menu on the left (16 Nov 2026) ------------------------
+   /shared/coursemenu.js draws it on every page of a course whose
+   courses.json entry has menu.on; it exits at once for other courses. */
+(function(){
+  function go(){
+    try{
+      var p=location.pathname||''; if(p.indexOf('/admin/')===0||p.indexOf('/shared/')===0||p.indexOf('/lms/')===0)return;
+      if(!document.body||!document.body.getAttribute('data-course'))return;
+      var s=document.createElement('script');s.src='/shared/coursemenu.js';s.defer=true;document.head.appendChild(s);
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(go,100);});
+  else setTimeout(go,100);
+})();

@@ -73,9 +73,9 @@
       live: 'Le cours a lieu maintenant, ' + when + ' (heure de Genève). Vous pouvez le suivre en ligne.',
       today: 'Le cours a lieu aujourd’hui, ' + when + ' (heure de Genève). Vous pouvez le suivre en ligne.',
       next: 'Vous pouvez suivre ce cours en ligne. Prochaine séance : ' + (next ? dl(next) : '') + (when ? ', ' + when : '') + ' (heure de Genève).',
-      cls: 'Rejoindre la salle du cours', team: 'Rejoindre la salle de votre équipe', pick: 'Choisir une équipe pour avoir sa salle', all: 'Salles des équipes',
+      cls: 'Rejoindre la salle du cours', team: 'Rejoindre la salle de votre équipe', pick: 'Choisir votre équipe', all: 'Salles des équipes',
       recClose: 'Fermer', rec: 'Enregistrements des séances', recT: 'Enregistrements des séances passées', recNone: 'Aucune séance n’est encore enregistrée. Une séance apparaît ici quelques minutes après la fin, si l’enseignant l’a enregistrée.', recMin: 'min', recSum: 'Résumé', recPts: 'Points principaux', recQ: 'Questions posées', recNext: 'À préparer pour la prochaine séance', recNote: 'Le résumé est écrit par une IA à partir de la transcription : vérifiez un point important dans la vidéo.', recErr: 'La liste n’a pas pu être lue',
-      cal: 'Ajouter les dates à mon agenda', calA: 'Apple Calendrier ou Outlook (abonnement)', calG: 'Google Agenda', calF: 'Télécharger le fichier (.ics)', calN: 'Un abonnement se met à jour tout seul quand une date change.',
+      cal: 'Ajouter à mon agenda', calA: 'Apple Calendrier ou Outlook (abonnement)', calG: 'Google Agenda', calF: 'Télécharger le fichier (.ics)', calN: 'Un abonnement se met à jour tout seul quand une date change.',
       tab: 'Ouvrir dans un nouvel onglet', close: 'Quitter l’appel', big: 'Plein écran', small: 'Réduire', clsT: 'Salle du cours', teamT: 'salle de l’équipe',
       lim: 'Si l’appel s’arrête après environ 5 minutes, ouvrez-le dans un nouvel onglet : c’est une limite du serveur gratuit Jitsi, et l’appel continue sans limite dans l’onglet.',
       mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.',
@@ -85,9 +85,9 @@
       live: 'The class is on now, ' + when + ' (Geneva time). You can follow it online.',
       today: 'The class is today, ' + when + ' (Geneva time). You can follow it online.',
       next: 'You can follow this class online. The next session is on ' + (next ? dl(next) : '') + (when ? ', ' + when : '') + ' (Geneva time).',
-      cls: 'Join the class room', team: 'Join your team room', pick: 'Pick a team to get a team room', all: 'Team rooms',
+      cls: 'Join the class room', team: 'Join your team room', pick: 'Pick your team', all: 'Team rooms',
       recClose: 'Close', rec: 'Recordings of past classes', recT: 'Recordings of past classes', recNone: 'No class has been recorded yet. A class appears here a few minutes after it ends, if the instructor recorded it.', recMin: 'min', recSum: 'Summary', recPts: 'Main points', recQ: 'Questions students asked', recNext: 'To prepare for the next class', recNote: 'An AI wrote the summary from the transcript: check an important point in the video.', recErr: 'The list could not be read',
-      cal: 'Add the class dates to my calendar', calA: 'Apple Calendar or Outlook (subscribe)', calG: 'Google Calendar', calF: 'Download the file (.ics)', calN: 'A subscription updates itself when a date moves.',
+      cal: 'Add to my calendar', calA: 'Apple Calendar or Outlook (subscribe)', calG: 'Google Calendar', calF: 'Download the file (.ics)', calN: 'A subscription updates itself when a date moves.',
       tab: 'Open in a new tab', close: 'Leave the call', big: 'Full screen', small: 'Make smaller', clsT: 'Class room', teamT: 'team room',
       lim: 'If the call stops after about 5 minutes, open it in a new tab. This is a limit of the free Jitsi server, and the call continues without a limit in the new tab.',
       mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.',
@@ -97,13 +97,20 @@
 
     /* ---- styles ---- */
     var css = document.createElement('style');
-    css.textContent = '.jem-meet{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center;padding:8px 16px;font:500 14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f5f8;color:#1a1a1a;border-bottom:1px solid #dde2e8;position:relative;z-index:50}' +
-      '.jem-meet.live{background:' + hot + ';color:' + hotInk + ';border-color:transparent;font-weight:650}' +
-      '.jem-meet a,.jem-meet button,.jem-mp button,.jem-mp a{font:700 13.5px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;display:inline-block;padding:7px 14px;border-radius:999px;background:' + accent + ';color:#fff;text-decoration:none;border:none;cursor:pointer;white-space:nowrap}' +
-      '.jem-meet .alt{background:transparent;color:inherit;border:1.5px solid currentColor}' +
-      '.jem-meet .n{opacity:.8;font-size:13px}' +
-      '.jem-meet .dot{width:9px;height:9px;border-radius:50%;background:#e02020;display:inline-block;margin-right:6px;animation:jemMeetP 1.6s infinite}' +
-      '.jem-meet select{font:600 13px system-ui,sans-serif;padding:6px 8px;border-radius:8px;border:1.5px solid currentColor;background:transparent;color:inherit}' +
+    /* 16 Nov 2026 (Jan Erik: "remove the text and add the buttons rather onto the blue bar"): no sentence;
+       compact buttons placed inside the course's own top bar (.topbar on session pages, nav.nav .navright on
+       course homes); a plain row at the top only where a page has neither. */
+    css.textContent = '.jem-meet{display:flex;flex-wrap:nowrap;gap:7px;align-items:center;font:600 13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;min-width:0}' +
+      '.jem-meet.row{justify-content:center;flex-wrap:wrap;padding:7px 16px;background:' + accent + ';position:relative;z-index:50}' +
+      '.jem-meet button,.jem-meet a.b,.jem-meet summary{font:700 12.5px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55);text-decoration:none;cursor:pointer;white-space:nowrap}' +
+      '.jem-meet button:hover,.jem-meet a.b:hover,.jem-meet summary:hover{border-color:#fff;background:rgba(255,255,255,.08)}' +
+      '.jem-meet .join{background:' + hot + ';color:' + hotInk + ';border-color:' + hot + '}.jem-meet .join:hover{background:' + hot + ';filter:brightness(1.08)}' +
+      '.jem-meet .dot{width:8px;height:8px;border-radius:50%;background:#e02020;display:inline-block;animation:jemMeetP 1.6s infinite}' +
+      '.jem-meet select{font:700 12.5px system-ui,sans-serif;padding:5px 8px;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:#fff;max-width:150px}.jem-meet select option{color:#111}' +
+      /* phones: the bar wraps and the buttons take a second line inside it */
+      '.jem-host{flex-wrap:wrap!important;row-gap:6px}' +
+      '@media(max-width:760px){.jem-host>.jem-meet{order:99;flex:1 1 100%;justify-content:center;padding:6px 0 2px}}' +
+      '.jem-meet .sh{display:none}@media(max-width:760px){.jem-meet .lg{display:none}.jem-meet .sh{display:inline}.jem-meet button,.jem-meet a.b,.jem-meet summary{padding:5px 9px;font-size:12px}.jem-meet{gap:5px}}' +
       '@keyframes jemMeetP{50%{opacity:.3}}@media(prefers-reduced-motion:reduce){.jem-meet .dot{animation:none}}' +
       '.jem-mp{position:fixed;top:0;right:0;bottom:0;width:min(46vw,760px);min-width:360px;background:#111820;z-index:2147483000;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.35)}' +
       '.jem-mp.big{width:100vw;min-width:0}' +
@@ -118,12 +125,11 @@
       '.jem-mp .rc video{width:100%;max-height:52vh;background:#000;border-radius:8px;margin:6px 0}.jem-mp .rc ul{margin:0 0 4px 18px;padding:0}.jem-mp .rc p{margin:0 0 4px}.jem-mp .rc small{color:#667}' +
       'body.jem-mp-on{margin-right:min(46vw,760px)}' +
       '@media(max-width:820px){.jem-mp{width:100vw;min-width:0}body.jem-mp-on{margin-right:0}}' +
-      '.jem-meet details.cal{position:relative}.jem-meet details.cal summary{cursor:pointer;list-style:none;font-weight:600;font-size:13px;text-decoration:underline;text-underline-offset:3px}.jem-meet details.cal summary::-webkit-details-marker{display:none}' +
-      '.jem-meet .calm{position:absolute;right:0;top:calc(100% + 6px);background:#fff;color:#14213d;border:1px solid #dde2e8;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:260px;z-index:60}' +
-      '.jem-meet .calm a{background:none;color:' + accent + ';border-radius:8px;padding:7px 10px;font-weight:600;text-decoration:none;white-space:normal}.jem-meet .calm a:hover{background:#f3f5f8}.jem-meet .calm small{color:#667;font-size:12px;padding:4px 10px}' +
-      '@media(max-width:600px){.jem-meet .calm{right:auto;left:50%;transform:translateX(-50%)}}' +
-      '@media print{.jem-meet,.jem-mp{display:none}}' +
-      '[data-theme="dark"] .jem-meet:not(.live){background:#1b2129;color:#e8ecf1;border-color:#2c3440}';
+      '.jem-meet details.cal{position:relative}.jem-meet details.cal summary{list-style:none}.jem-meet details.cal summary::-webkit-details-marker{display:none}' +
+      '.jem-meet .calm{position:absolute;right:0;top:calc(100% + 8px);background:#fff;color:#14213d;border:1px solid #dde2e8;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:260px;z-index:2147481000}' +
+      '.jem-meet .calm a{display:block;background:none;color:' + accent + ';border:0;border-radius:8px;padding:7px 10px;font:600 13.5px/1.3 system-ui,sans-serif;text-decoration:none;white-space:normal}.jem-meet .calm a:hover{background:#f3f5f8}.jem-meet .calm small{color:#667;font-size:12px;padding:4px 10px}' +
+      '@media(max-width:600px){.jem-meet .calm{position:fixed;left:12px;right:12px;top:64px;min-width:0}}' +
+      '@media print{.jem-meet,.jem-mp{display:none}}';
     document.head.appendChild(css);
 
     /* ---- the panel with the call ---- */
@@ -190,12 +196,14 @@
     }
 
     /* ---- the strip ---- */
-    var d = document.createElement('div'); d.className = 'jem-meet' + (live ? ' live' : ''); d.setAttribute('role', 'region'); d.setAttribute('aria-label', fr ? 'Cours en ligne' : 'Online class');
+    var d = document.createElement('div'); d.className = 'jem-meet'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', fr ? 'Cours en ligne' : 'Online class');
+    function lab(el, long, short) { el.innerHTML = '<span class="lg">' + escH(long) + '</span><span class="sh">' + escH(short) + '</span>'; return el; }
+    var S = fr ? { cls: 'Salle', team: 'Équipe', cal: 'Agenda', rec: 'Enregistrements', live: 'en direct' } : { cls: 'Join class', team: 'Team room', cal: 'Calendar', rec: 'Recordings', live: 'live' };
     function draw() {
       d.innerHTML = '';
-      var s = document.createElement('span'); if (live) { var dot = document.createElement('i'); dot.className = 'dot'; s.appendChild(dot); }
-      s.appendChild(document.createTextNode(live ? T.live : next === today ? T.today : T.next)); d.appendChild(s);
-      var bc = document.createElement('button'); bc.type = 'button'; bc.textContent = jitsi ? T.cls : 'Join the class on ' + (m.tool || 'the meeting');
+      var bc = lab(document.createElement('button'), jitsi ? T.cls : 'Join the class on ' + (m.tool || 'the meeting'), S.cls); bc.type = 'button'; bc.className = 'join';
+      bc.title = live ? T.live : next === today ? T.today : T.next;
+      if (live) { var dot = document.createElement('i'); dot.className = 'dot'; dot.title = S.live; bc.insertBefore(dot, bc.firstChild); }
       bc.onclick = function () { open('class', c.code ? c.code + ' · ' + T.clsT : T.clsT); }; d.appendChild(bc);
       if (jitsi && (m.teams || []).length) {
         if (instructor) {
@@ -204,27 +212,37 @@
           sel.onchange = function () { var t = sel.value; if (t) open('team-' + t.toLowerCase(), teamLabel(t) + ' · ' + T.teamT); sel.value = ''; }; d.appendChild(sel);
         } else {
           var t = myTeam();
-          if (t) { var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'alt'; bt.textContent = T.team + ' (' + teamLabel(t) + ')';
+          if (t) { var bt = lab(document.createElement('button'), T.team + ' (' + teamLabel(t) + ')', S.team); bt.type = 'button'; bt.title = T.team + ' (' + teamLabel(t) + ')';
             bt.onclick = function () { open('team-' + t.toLowerCase(), teamLabel(t) + ' · ' + T.teamT); }; d.appendChild(bt); }
-          else if (m.teamsHome) { var ap = document.createElement('a'); ap.className = 'alt'; ap.href = '/' + c.dir + '/' + m.teamsHome; ap.textContent = T.pick; d.appendChild(ap); }
+          else if (m.teamsHome) { var ap = lab(document.createElement('a'), T.pick, S.team); ap.className = 'b'; ap.href = '/' + c.dir + '/' + m.teamsHome; ap.title = T.pick; d.appendChild(ap); }
         }
       }
-      if (m.note) { var n = document.createElement('span'); n.className = 'n'; n.textContent = m.note; d.appendChild(n); }
-      /* calendar sync: the sender worker serves the course's class dates as a live feed (GET /ical/<id>.ics) */
+      if (jaas && RECS && (RECS.length || instructor)) {
+        var br = lab(document.createElement('button'), T.rec + (RECS.length ? ' (' + RECS.length + ')' : ''), S.rec); br.type = 'button'; br.title = T.rec;
+        br.onclick = openRecs; d.appendChild(br);
+      }
+      /* calendar sync: the sender worker serves the course's class dates as a live feed (GET /ical/<id>.ics);
+         the menu closes after a choice, on a click outside it and on Escape */
       if (calBase) {
         var feed = calBase + '/ical/' + c.id + '.ics', web = feed.replace(/^https?:/, 'webcal:');
         var dt = document.createElement('details'); dt.className = 'cal';
-        dt.innerHTML = '<summary>' + T.cal + '</summary><div class="calm"><a href="' + web + '">' + T.calA + '</a><a target="_blank" rel="noopener" href="https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(web) + '">' + T.calG + '</a><a href="' + feed + '" download>' + T.calF + '</a><small>' + T.calN + '</small></div>';
+        dt.innerHTML = '<summary title="' + escH(T.cal) + '"><span class="lg">' + escH(T.cal) + '</span><span class="sh">' + escH(S.cal) + '</span></summary><div class="calm"><a href="' + web + '">' + T.calA + '</a><a target="_blank" rel="noopener" href="https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(web) + '">' + T.calG + '</a><a href="' + feed + '" download>' + T.calF + '</a><small>' + T.calN + '</small></div>';
+        dt.querySelectorAll('.calm a').forEach(function (a) { a.addEventListener('click', function () { setTimeout(function () { dt.open = false; }, 60); }); });
         d.appendChild(dt);
       }
-      if (jaas && RECS && (RECS.length || instructor)) {
-        var br = document.createElement('button'); br.type = 'button'; br.className = 'alt'; br.textContent = T.rec + (RECS.length ? ' (' + RECS.length + ')' : '');
-        br.onclick = openRecs; d.appendChild(br);
-      }
+    }
+    document.addEventListener('click', function (e) { var o = d.querySelector('details.cal[open]'); if (o && !o.contains(e.target)) o.open = false; });
+    document.addEventListener('keydown', function (e) { var o = d.querySelector('details.cal[open]'); if (e.key === 'Escape' && o) o.open = false; });
+    /* where the buttons go: the course's own bar, else a row at the top */
+    function place() {
+      var tb = document.querySelector('.topbar'), nr = document.querySelector('nav.nav .navright'), nav = document.querySelector('nav.nav');
+      if (tb) { var who = tb.querySelector('.who, .home'); if (who) tb.insertBefore(d, who); else tb.appendChild(d); tb.classList.add('jem-host'); }
+      else if (nav) { if (nr) nav.insertBefore(d, nr); else nav.appendChild(d); nav.classList.add('jem-host'); }
+      else { d.classList.add('row'); b.insertBefore(d, b.firstChild); }
     }
     var calBase = null;
     draw();
-    b.insertBefore(d, b.firstChild);
+    place();
     (m.tokenUrl ? Promise.resolve(m.tokenUrl.replace(/\/jaas$/, '')) : fetch(DB + '/_site/push.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (x) { return x && x.url ? x.url.replace(/\/+$/, '') : null; }))
       .then(function (u) {
         if (u && (sch.dates || []).length) { calBase = u; draw(); }
