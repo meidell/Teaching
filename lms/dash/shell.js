@@ -147,5 +147,57 @@ window.Dash = (function () {
   }
   const KWORD = { crit: 'Critical', serious: 'Act', warn: 'Watch', good: 'On track', none: 'Passed' };
 
-  return { decisions, signals, windows, cdown, KWORD, courseIssues, courseRule, S, ROLES, PC, shell, chf, chfK, num, pct, date, dateLong, daysUntil, delta, tile, st, riskSt, progKey, esc };
+  /* =====================================================================
+     ABSENCES (16 Nov 2026) — one flow for three roles. The student sends a request (student.html), the
+     student office accepts or refuses it (admissions.html → Student office), and the professor sees a
+     notice (professor.html). The seed requests are S.absences; what is done in this browser lives in ONE
+     localStorage key, `dash_absences` = { added: [requests], decided: { id: {status, by, at, comment} } },
+     so an action on one page shows on the others. Nothing is sent anywhere.
+     Attendance figures in data.js are NOT recomputed: att() gives the overlay (missed, excused, and the
+     rate counted without the excused sessions) next to the recorded figure.
+     ===================================================================== */
+  const abs = (function () {
+    const KEY = 'dash_absences', AR = S.absenceRules, RN = {}; AR.reasons.forEach(r => RN[r.id] = r.name);
+    const load = () => { let o = null; try { o = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {} return o && typeof o === 'object' ? { added: o.added || [], decided: o.decided || {} } : { added: [], decided: {} }; };
+    const save = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+    function all() {
+      const o = load();
+      return S.absences.concat(o.added).map(r => { const d = o.decided[r.id]; return d ? Object.assign({}, r, d, { local: true }) : Object.assign({}, r); });
+    }
+    const nowStamp = () => S.school.today + 'T16:' + new Date().toTimeString().slice(3, 5);   /* the demo's "now" is 14 Nov 2026 at 16:00 */
+    const addWork = (d, n) => { let t = d; while (n > 0) { const x = new Date(t + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); t = x.toISOString().slice(0, 10); const wd = x.getUTCDay(); if (wd && wd !== 6) n--; } return t; };
+    function send(sid, sessions, reason, note, doc) {
+      const o = load(), s = S.util.byId(sid), n = S.absences.length + o.added.length + 1;
+      const r = { id: 'A' + String(n).padStart(3, '0') + 'w', sid, prog: s.prog, sessions, reason, note, doc: doc || null, sent: nowStamp(), answerBy: addWork(S.school.today, AR.target), status: 'pending', by: null, at: null, comment: '', mine: true };
+      o.added.push(r); save(o); return r;
+    }
+    function decide(id, status, by, comment) { const o = load(); o.decided[id] = { status, by, at: nowStamp(), comment: comment || '' }; save(o); }
+    function undo(id) { const o = load(); delete o.decided[id]; save(o); }
+    function reset() { try { localStorage.removeItem(KEY); } catch (e) {} }
+    const forStudent = sid => all().filter(r => r.sid === sid);
+    /* every session excused by an accepted request: [{sid, sec, date, n, reason, id}] */
+    const excused = () => all().filter(r => r.status === 'accepted').flatMap(r => r.sessions.map(z => ({ sid: r.sid, sec: z.sec, date: z.date, n: z.n, reason: r.reason, id: r.id })));
+    const excusedIn = secId => excused().filter(e => e.sec === secId);
+    /* the attendance overlay for one student in one course */
+    function att(sid, secId) {
+      const x = S.util.sec(secId), r = S.util.rec(sid, secId), taken = x.sessionList.filter(z => z.held && z.attTaken);
+      const present = Math.round(r.att * taken.length / 100), missed = taken.length - present;
+      const ex = excused().filter(e => e.sid === sid && e.sec === secId), past = ex.filter(e => e.date < S.school.today), coming = ex.filter(e => e.date >= S.school.today);
+      const exPast = Math.min(missed, past.filter(e => taken.some(z => z.date === e.date)).length);
+      const counted = taken.length - exPast;
+      return { recorded: r.att, taken: taken.length, present, missed, excused: exPast, absent: missed - exPast, coming: coming.length, adjusted: counted ? Math.round(100 * present / counted) : null, list: ex };
+    }
+    const reasonName = id => RN[id] || id;
+    const statusSt = r => r.status === 'pending' ? st('warn', 'Waiting') : r.status === 'accepted' ? st('good', 'Accepted') : st('serious', 'Refused');
+    /* the message the student receives after a decision (a demo: nothing is sent) */
+    function message(r) {
+      const s = S.util.byId(r.sid), list = r.sessions.map(z => `${S.util.sec(z.sec).title} on ${date(z.date)}`).join(', ');
+      return r.status === 'accepted'
+        ? `Hello ${s.name.split(' ')[0]}, your absence request is accepted for ${list}. ${r.sessions.length > 1 ? 'These sessions are' : 'This session is'} marked excused and ${r.sessions.length > 1 ? 'do' : 'does'} not count against the ${AR.attendance} % attendance rule.${r.comment ? ' ' + r.comment : ''} Your professors are told that you are excused. The student office`
+        : `Hello ${s.name.split(' ')[0]}, your absence request for ${list} is refused. ${r.comment || (r.sessions.length > 1 ? 'The sessions count as absent.' : 'The session counts as absent.')} The student office`;
+    }
+    return { all, send, decide, undo, reset, forStudent, excused, excusedIn, att, reasonName, statusSt, message, addWork, KEY, rules: AR };
+  })();
+
+  return { abs, decisions, signals, windows, cdown, KWORD, courseIssues, courseRule, S, ROLES, PC, shell, chf, chfK, num, pct, date, dateLong, daysUntil, delta, tile, st, riskSt, progKey, esc };
 })();

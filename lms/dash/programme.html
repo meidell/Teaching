@@ -311,6 +311,15 @@
      THE CASE VIEW — what a programme manager needs about one student (not the student's own page)
      ===================================================================== */
   const dlg = document.getElementById('dlg');
+  /* absence requests this term (16 Nov 2026): counts and the list, the reason CATEGORY only —
+     the student's note and document stay with the student office, which decides */
+  function absHtml(s) {
+    const AB = Dash.abs, L = AB.forStudent(s.id).sort((a, b) => b.sent.localeCompare(a.sent)); if (!L.length && s.status !== 'active') return '';
+    const n = k => L.filter(r => r.status === k).length, exN = L.filter(r => r.status === 'accepted').reduce((t, r) => t + r.sessions.length, 0);
+    return `<h4>Absence requests this term</h4>` + (L.length ? `<p class="lead" style="margin:0 0 6px">${L.length} request${L.length > 1 ? 's' : ''}: ${n('pending')} waiting, ${n('accepted')} accepted, ${n('refused')} refused. ${exN} session${exN === 1 ? ' is' : 's are'} excused and left out of the ${AB.rules.attendance} % rule. The student office decides; the note and the document stay with it.</p>
+      <div class="tw"><table class="t"><tr><th>Status</th><th>Sessions</th><th>Reason</th><th>Sent</th></tr>${L.map(r => `<tr><td>${AB.statusSt(r)}</td><td>${r.sessions.map(z => `${esc(U.sec(z.sec).code)} · ${esc(Dash.date(z.date))}`).join('<br>')}</td><td>${esc(AB.reasonName(r.reason))}</td><td class="nw">${esc(Dash.date(r.sent.slice(0, 10)))}${r.at ? `<div class="why">decided ${esc(Dash.date(r.at.slice(0, 10)))}</div>` : ''}</td></tr>`).join('')}</table></div>`
+      : '<p class="lead" style="margin:0">The student has sent no absence request this term.</p>');
+  }
   function openCase(sid) {
     const s = U.byId(sid), pr = S.P[s.prog], ad = U.prof(s.advisor), c = S.cases.find(x => x.sid === sid);
     const LVW = { high: ['crit', 'High academic risk'], medium: ['serious', 'At academic risk'], watch: ['warn', 'Watch'], none: ['good', 'No academic sign'] };
@@ -323,6 +332,7 @@
       <dt>Academic signs</dt><dd>${esc(s.riskReasons.join('; ') || 'none')}</dd><dt>Administrative</dt><dd>${esc(s.adminReasons.join('; ') || 'none')}</dd></dl>
       <h4>History</h4><ul class="log">${s.statusLog.slice().sort((a, b) => a.date.localeCompare(b.date)).map(e => `<li><span>${esc(Dash.date(e.date))} ${e.date.slice(0, 4)}</span><span><b>${esc(e.ev)}</b>${e.why ? ` · ${esc(e.why)}` : ''}</span></li>`).join('')}</ul>
       ${courses.length ? `<h4>This term</h4><div class="tw"><table class="t"><tr><th>Course</th><th class="n">Attendance</th><th class="n">Grade so far</th><th class="n">Handed in</th></tr>${courses.map(({ x, r }) => `<tr><td>${esc(x.code)} ${esc(x.title)}<div class="why">${esc(U.prof(x.prof).name)}</div></td><td class="n">${r.att < R.attendance ? st('crit', r.att + ' %') : r.att + ' %'}</td><td class="n">${r.grade < R.pass ? st('crit', r.grade.toFixed(1)) : r.grade.toFixed(1)}</td><td class="n">${r.subsDone} of ${r.subsTotal}</td></tr>`).join('')}</table></div>` : ''}
+      ${absHtml(s)}
       <h4>Case</h4>${c ? `<dl class="kv"><dt>Owner</dt><dd>${esc(ownerName(c.owner))}</dd><dt>Opened</dt><dd>${esc(Dash.dateLong(c.opened))}</dd><dt>Action taken</dt><dd>${esc(c.action)}, ${esc(Dash.date(c.actionDate))}</dd><dt>Next step</dt><dd>${esc(c.next)}</dd>
         <dt>Outcome so far</dt><dd>${st(...OUTW[c.outcome])}</dd><dt>Attendance when opened → now</dt><dd>${c.attBefore} % → ${c.attNow} %</dd></dl>`
         : s.status === 'active' && (s.risk === 'high' || s.risk === 'medium') ? `<p class="lead" style="margin:0">${st('serious', 'No case opened')} Nobody has recorded an action for this student yet.</p><button class="save" id="openC">Open a case, owner: ${esc(ad.name)}</button><span class="why" id="openM" style="margin-left:10px"></span>`

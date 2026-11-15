@@ -32,6 +32,15 @@
   .rf input{min-width:180px;}
   .rf label{font-size:12px;color:var(--muted);font-weight:600;}
   .morebtn{margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;}
+  /* absence requests (16 Nov 2026) */
+  #absT{min-width:860px;} #absT td{vertical-align:top;}
+  .absq{font-size:13.5px;background:var(--raised);border-radius:10px;padding:8px 10px;margin:6px 0 0;}
+  .absmsg{font-size:13px;background:color-mix(in srgb,var(--good) 12%,transparent);border-radius:10px;padding:8px 10px;margin-top:10px;}
+  .absd textarea{width:100%;min-height:60px;border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:6px 8px;font:inherit;color:inherit;}
+  .absd select{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:4px 8px;font:inherit;color:inherit;max-width:100%;}
+  .absd .acc{border:none;background:var(--good);color:#fff;border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:650;}
+  .absd .ref{border:none;background:var(--serious);color:#111;border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:650;}
+  .absd .und{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;}
   #fileT{min-width:980px;} #fnT{min-width:560px;} #permT,#reqT,#gradeT,#leaveT{min-width:460px;}
   /* the file view */
   dialog.cc{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--r);padding:20px;max-width:760px;width:calc(100% - 32px);max-height:90vh;}
@@ -131,6 +140,8 @@
 
   <section data-tab="office" hidden>
   <div class="g c4" id="oTiles"></div>
+  <div class="card" style="margin-bottom:14px" id="absCard"><div class="ch"><h2>Absence requests</h2><span class="note" id="absNote"></span></div>
+    <p class="lead" id="absLead"></p><div class="rf" id="absF"></div><div class="tw"><table class="t" id="absT"></table></div><div id="absMore"></div></div>
   <div class="g c21">
     <div class="card"><div class="ch"><h2>Today's work, by due date</h2><span class="note">most overdue first</span></div><ul class="acts" id="acts2"></ul></div>
     <div class="card"><div class="ch"><h2>Student requests open</h2><span class="note" id="reqNote"></span></div><p class="lead"><a href="transcript.html">Transcripts and study plans →</a> The student office prepares and issues every transcript; the academic direction signs it.</p><div class="tw"><table class="t" id="reqT"></table></div></div>
@@ -354,6 +365,9 @@
     if (R.clashes) acts.push({ due: Dash.daysUntil(nextMon), kind: 'warn', w: `${R.clashes} students are booked in two places at once next week`, d: `Move one session or give each student a written exception before ${Dash.dateLong(nextMon)}.` });
     renew.slice(0, 3).forEach(p => { const s = S.util.byId(p.sid), d = Dash.daysUntil(p.expires) - 30;
       acts.push({ due: d, kind: d < 0 ? 'crit' : 'warn', w: `${s.name}: residence permit expires ${Dash.date(p.expires)}`, d: `${p.status === 'renewal filed, waiting for OCPM' ? 'The renewal is filed; ask the cantonal office (OCPM) for the status.' : 'Issue an enrolment certificate so the student can file the renewal'}. The office wants it filed 30 days before expiry.` }); });
+    { const ab = Dash.abs.all().filter(r => r.status === 'pending'), od = ab.filter(r => TODAY > r.answerBy);
+      if (ab.length) { const old = ab.slice().sort((a, b) => a.answerBy.localeCompare(b.answerBy))[0];
+        acts.push({ due: Dash.daysUntil(old.answerBy), kind: od.length ? 'crit' : 'serious', w: `${plural(ab.length, 'absence request')} waiting for a decision${od.length ? `, ${od.length} past the target of ${Dash.abs.rules.target} working days` : ''}`, d: 'Accept or refuse each one in “Absence requests” above. An accepted request marks the sessions excused and tells the professors.' }); } }
     acts.sort((a, b) => a.due - b.due);
     document.getElementById('acts2').innerHTML = acts.map(a => `<li>${st(a.kind, a.due < 0 ? 'Late' : 'Due')}<div><div class="w">${esc(a.w)}</div><div class="d">${esc(a.d)}</div></div><span class="go flat">${esc(due(a.due))}</span></li>`).join('');
 
@@ -385,6 +399,80 @@
       gone.map(s => `<tr><td>${esc(s.name)}<div class="why">${esc(S.P[s.prog].short)} · year ${s.year}</div></td><td>${s.withdrawn ? st('serious', 'Withdrawn') : st('warn', 'On leave')}</td><td class="nw">${esc(Dash.dateLong(s.withdrawn ? s.withdrawn.date : s.leave.from))}</td><td>${esc(s.withdrawn ? s.withdrawn.reason : s.leave.reason)}${s.leave ? `<div class="why">back in ${esc(s.leave.back)}</div>` : ''}</td></tr>`).join('')
       : `<tr><td class="empty">No student is on leave or has withdrawn.</td></tr>`;
   })();
+
+  /* =====================================================================
+     ABSENCE REQUESTS (16 Nov 2026) — the student office decides; Accept marks the sessions excused
+     (Dash.abs, localStorage dash_absences), the student is told, the professor sees a notice.
+     ===================================================================== */
+  const AB = Dash.abs, AR = AB.rules, U = S.util;
+  const AF = { status: 'pending', prog: '', reason: '' }; let absAll = false;
+  const wdS = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  document.getElementById('absLead').textContent = `Students send these requests from their own page. ${AR.decides} ${AR.targetText} Accept marks the sessions excused: ${AR.excusedText.split(': ')[0].replace('An excused session does not count', 'they do not count')}, and the professors of those courses see a notice with the reason category only. Refuse leaves the attendance as it is. The student is told either way. ${AR.lateText}`;
+  document.getElementById('absF').innerHTML = `<label for="afS">Show</label><select id="afS"><option value="pending">Waiting for a decision</option><option value="accepted">Accepted</option><option value="refused">Refused</option><option value="">All requests</option></select>
+    <label for="afP">Programme</label><select id="afP"><option value="">All programmes</option>${progs.map(p => `<option value="${p.id}">${esc(p.short)}</option>`).join('')}</select>
+    <label for="afR">Reason</label><select id="afR"><option value="">All reasons</option>${AR.reasons.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select>
+    <button type="button" class="morebtn" id="afReset" style="margin:0" title="Remove the requests sent and the decisions taken in this browser">Reset the demo</button>`;
+  document.getElementById('afS').onchange = e => { AF.status = e.target.value; drawAbs(); };
+  document.getElementById('afP').onchange = e => { AF.prog = e.target.value; drawAbs(); };
+  document.getElementById('afR').onchange = e => { AF.reason = e.target.value; drawAbs(); };
+  document.getElementById('afReset').onclick = () => { if (confirm('Remove every absence request sent and every decision taken in this browser? The invented requests stay.')) { AB.reset(); drawAbs(); } };
+  const sesLine = r => { const ds = r.sessions.map(z => z.date).sort();
+    return `${plural(r.sessions.length, 'session')} · ${esc(wdS(ds[0]))}${ds[ds.length - 1] !== ds[0] ? ' to ' + esc(wdS(ds[ds.length - 1])) : ''}<div class="why">${esc([...new Set(r.sessions.map(z => U.sec(z.sec).code))].join(', '))}</div>`; };
+  function drawAbs() {
+    const all = AB.all(), wait = all.filter(r => r.status === 'pending'), od = wait.filter(r => TODAY > r.answerBy);
+    document.getElementById('absNote').textContent = `${wait.length} waiting${od.length ? `, ${od.length} past the target` : ''} · ${all.length} this term`;
+    const L = all.filter(r => (!AF.status || r.status === AF.status) && (!AF.prog || r.prog === AF.prog) && (!AF.reason || r.reason === AF.reason))
+      .sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || (a.status === 'pending' ? a.sent.localeCompare(b.sent) : (b.at || '').localeCompare(a.at || '')));
+    const LIM = 15, show = absAll ? L : L.slice(0, LIM);
+    document.getElementById('absT').innerHTML = L.length ? `<tr><th>Status</th><th>Student</th><th>Sessions</th><th>Reason</th><th>Sent</th><th>Answer by</th><th></th></tr>` + show.map(r => { const s = U.byId(r.sid), late = r.status === 'pending' && TODAY > r.answerBy;
+      return `<tr><td>${AB.statusSt(r)}</td><td><button class="linkbtn" data-abs="${esc(r.id)}">${esc(s.name)}</button><div class="why">${esc(S.P[s.prog].short)} year ${s.year} · ${esc(r.id)}</div></td><td>${sesLine(r)}</td><td>${esc(AB.reasonName(r.reason))}${r.doc ? '<div class="why">document attached</div>' : ''}</td>
+        <td class="nw">${esc(Dash.date(r.sent.slice(0, 10)))}<div class="why">${ago(r.sent.slice(0, 10)) ? plural(ago(r.sent.slice(0, 10)), 'day') + ' ago' : 'today'}</div></td>
+        <td class="nw">${r.status === 'pending' ? `${esc(Dash.date(r.answerBy))}<div class="why">${late ? st('crit', 'past the target') : esc(due(Dash.daysUntil(r.answerBy)))}</div>` : `<span class="why">decided ${esc(Dash.date(r.at.slice(0, 10)))}</span>`}</td>
+        <td><button class="morebtn" style="margin:0" data-abs="${esc(r.id)}">${r.status === 'pending' ? 'Decide' : 'Open'}</button></td></tr>`; }).join('')
+      : `<tr><td class="empty">No request matches these filters.</td></tr>`;
+    document.getElementById('absMore').innerHTML = L.length > LIM ? `<button class="morebtn" type="button" id="absMoreB">${absAll ? `Show the first ${LIM} only` : `Show all ${L.length} requests`}</button>` : '';
+    const mb = document.getElementById('absMoreB'); if (mb) mb.onclick = () => { absAll = !absAll; drawAbs(); };
+  }
+  function openAbs(id, done) {
+    const r = AB.all().find(x => x.id === id); if (!r) return;
+    const s = U.byId(r.sid), mine = AB.forStudent(r.sid), adv = U.prof(s.advisor);
+    const cnt = k => mine.filter(x => x.status === k).length;
+    const exSoFar = mine.filter(x => x.status === 'accepted').reduce((t, x) => t + x.sessions.length, 0);
+    const lateSes = r.sessions.filter(z => z.date < addDays(r.sent.slice(0, 10), -AR.lateDays));
+    const rows = r.sessions.slice().sort((a, b) => a.date.localeCompare(b.date)).map(z => { const x = U.sec(z.sec), ses = x.sessionList.find(q => q.n === z.n) || {}, o = AB.att(r.sid, z.sec);
+      return `<tr><td><b>${esc(x.code)}</b> ${esc(x.title)}<div class="why">${esc(U.prof(x.prof).name)}</div></td><td class="nw">${esc(wdS(z.date))}<div class="why">${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))} · session ${z.n} of ${x.sessions}</div></td><td>${esc(ses.topic || '')}<div class="why">${z.date < TODAY ? 'already held' : 'coming'}</div></td>
+        <td class="n">${o.recorded < AR.attendance ? st('crit', o.recorded + ' %') : o.recorded + ' %'}<div class="why">missed ${o.missed} of ${o.taken}: ${o.absent} absent, ${o.excused} excused</div></td></tr>`; }).join('');
+    const officers = AR.officers;
+    dlg.innerHTML = `<div class="absd"><button class="x" data-close>Close</button><h3>Absence request · ${esc(s.name)}</h3><div class="why" style="font-size:13px">${esc(S.P[s.prog].name)} · year ${s.year} · advisor ${esc(adv.name)} · request ${esc(r.id)}</div>
+      <h4>What the student asks</h4>
+      <dl class="kv"><dt>Status</dt><dd>${AB.statusSt(r)}</dd><dt>Reason</dt><dd>${esc(AB.reasonName(r.reason))}</dd><dt>Document</dt><dd>${r.doc ? esc(r.doc) + ' (name only in this demo)' : 'none attached'}</dd>
+        <dt>Sent</dt><dd>${esc(Dash.dateLong(r.sent.slice(0, 10)))}, ${esc(r.sent.slice(11, 16))}</dd>${r.status === 'pending' ? `<dt>Answer by</dt><dd>${esc(Dash.dateLong(r.answerBy))}${TODAY > r.answerBy ? ' · ' + st('crit', 'past the target') : ''}</dd>` : ''}
+        <dt>Requests this term</dt><dd>${mine.length}: ${cnt('pending')} waiting, ${cnt('accepted')} accepted, ${cnt('refused')} refused</dd><dt>Sessions excused this term</dt><dd>${exSoFar}</dd></dl>
+      <div class="absq">“${esc(r.note)}”</div>
+      ${lateSes.length ? `<p class="lead" style="margin:8px 0 0">${st('serious', 'Sent late')} ${plural(lateSes.length, 'session')} took place more than ${AR.lateDays} days before the request was sent.</p>` : ''}
+      <h4>The sessions, and the student's attendance in each course so far</h4>
+      <div class="tw"><table class="t" style="min-width:560px"><tr><th>Course and professor</th><th>Date</th><th>Session</th><th class="n">Attendance</th></tr>${rows}</table></div>
+      <p class="why" style="margin:6px 0 0">Attendance is the share of the sessions held, with attendance taken, that the student attended. The rule is ${AR.attendance} %; excused sessions are left out of the count.</p>
+      ${r.status === 'pending' ? `<h4>Your decision</h4>
+        <label class="why" for="adBy">Decided by</label> <select id="adBy">${officers.map(o => `<option>${esc(o)}</option>`).join('')}</select>
+        <div style="margin-top:8px"><label class="why" for="adC">A comment for the student (optional for an acceptance, needed for a refusal)</label><textarea id="adC" placeholder="Write why, for a refusal: which rule applies and what the student can do."></textarea></div>
+        <div class="fa"><button type="button" class="acc" id="adAcc">Accept: mark the sessions excused</button><button type="button" class="ref" id="adRef">Refuse: the sessions count as absent</button></div><p class="why" id="adM" style="margin:6px 0 0"></p>`
+      : `<h4>Decision</h4><dl class="kv"><dt>Decided by</dt><dd>${esc(r.by)}</dd><dt>On</dt><dd>${esc(Dash.dateLong(r.at.slice(0, 10)))}</dd>${r.comment ? `<dt>Comment</dt><dd style="text-align:left">${esc(r.comment)}</dd>` : ''}</dl>
+        <div class="absmsg"><b>The student receives:</b> ${esc(AB.message(r))}</div>
+        ${r.status === 'accepted' ? `<div class="absmsg"><b>Each professor sees, with nothing to do:</b> ${r.sessions.map(z => `Excused: ${esc(s.name)}, ${esc(Dash.date(z.date))} (${esc(AB.reasonName(r.reason))}) in ${esc(U.sec(z.sec).code)}`).join('; ')}.</div>` : ''}
+        ${r.local ? `<div class="fa"><button type="button" class="und" id="adUndo">Undo this decision (demo)</button></div>` : ''}`}
+      ${done ? `<p class="why" style="margin:10px 0 0">${st('good', 'Saved')} Demo: nothing is sent. The decision is kept in this browser, so the student's and the professor's pages show it.</p>` : ''}</div>`;
+    const go = status => { const c = dlg.querySelector('#adC').value.trim(), by = dlg.querySelector('#adBy').value;
+      if (status === 'refused' && c.length < 10) { dlg.querySelector('#adM').innerHTML = st('serious', 'Write a comment') + ' Say which rule applies and what the student can do.'; return; }
+      AB.decide(id, status, by, c); drawAbs(); openAbs(id, true); };
+    const a = dlg.querySelector('#adAcc'); if (a) a.onclick = () => go('accepted');
+    const f = dlg.querySelector('#adRef'); if (f) f.onclick = () => go('refused');
+    const u = dlg.querySelector('#adUndo'); if (u) u.onclick = () => { AB.undo(id); drawAbs(); openAbs(id); };
+    if (!dlg.open) dlg.showModal();
+  }
+  document.getElementById('absCard').addEventListener('click', e => { const b = e.target.closest('[data-abs]'); if (b) openAbs(b.dataset.abs); });
+  window.addEventListener('storage', e => { if (e.key === AB.KEY) drawAbs(); });
+  drawAbs();
 
   /* =====================================================================
      WHATSAPP — a demo of the WhatsApp Business Platform for applicants and students (15 Nov 2026)

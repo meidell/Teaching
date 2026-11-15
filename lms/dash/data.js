@@ -1585,10 +1585,97 @@
       officers: [...new Set(threads.map(t => t.owner))].sort() };
   })();
 
+  /* =====================================================================
+     ABSENCE REQUESTS (16 Nov 2026). Jan Erik: "When a student demands absence, they should send this
+     from their page, it should be sent to admin who accepts/rejects and the absence should be
+     automatically set based on that decision. then the teacher should just see a notice."
+     `absences` = the requests of the autumn 2026 term so far, one per student (a few students have two):
+     the sessions it covers (from the student's own sections and their sessionList), a reason category,
+     the student's note, a document NAME (nothing is stored), when it was sent, and the decision.
+     An ACCEPTED request marks those sessions excused. Built with hsh only (no random stream), so no other
+     dashboard moves. A held session is excused only where attendance was taken and the student's
+     attendance in that course is under 100 %, so an excused session is always a session the student missed.
+     The pages add what is done in the browser (Dash.abs in shell.js, localStorage `dash_absences`).
+     ===================================================================== */
+  const absenceRules = {
+    decides: 'The student office decides every absence request, in every programme.',
+    target: 2, targetUnit: 'working days',
+    targetText: 'The student office answers each request within 2 working days of receiving it.',
+    attendance: rules.attendance,
+    excusedText: `An excused session does not count against the ${rules.attendance} % attendance rule: it is taken out of the sessions counted. A session missed without an accepted request counts as absent.`,
+    lateText: 'A request for a session that has already taken place must be sent within 7 days of that session.',
+    docText: 'For an illness of more than 3 days, attach a doctor’s certificate.',
+    teacherText: 'The professor of the course is told who is excused and the reason category. The professor never sees the student’s note or document, and has nothing to do.',
+    lateDays: 7,
+    reasons: [
+      { id: 'illness', name: 'Illness' }, { id: 'family', name: 'Family' }, { id: 'work', name: 'Work (EMBA)' },
+      { id: 'visa', name: 'Visa or administration' }, { id: 'religious', name: 'Religious holiday' }, { id: 'other', name: 'Other' },
+    ],
+    officers: OFFICE,
+  };
+  const absences = (() => {
+    const addWork = (d, n) => { let t = d; while (n > 0) { t = addDays(t, 1); const wd = new Date(t + 'T12:00:00Z').getUTCDay(); if (wd !== 0 && wd !== 6) n--; } return t; };
+    const NOTES = {
+      illness: [{ t: 'I have the flu and a fever. My doctor told me to stay at home until Monday.', doc: 'Doctor’s certificate.pdf' }, { t: 'I had a stomach infection and could not come to class.', doc: null },
+        { t: 'I have an appointment at the hospital (HUG) that I could not move.', doc: 'Appointment letter HUG.pdf' }, { t: 'I sprained my ankle and cannot walk to the campus this week.', doc: 'Doctor’s certificate.pdf' }],
+      family: [{ t: 'My grandmother died and the funeral is in Lyon.', doc: null }, { t: 'My father is in hospital and I need to be with my family.', doc: null },
+        { t: 'My sister is getting married in Lisbon. The date was set a year ago.', doc: null, weak: 1 }],
+      work: [{ t: 'A board meeting in Zurich was moved to the day of the class and I must present at it.', doc: 'Letter from my employer.pdf' }, { t: 'My employer sends me to a client in Singapore that week.', doc: 'Letter from my employer.pdf' },
+        { t: 'It is the quarter-end closing at my company and my manager will not release me.', doc: null, weak: 1 }],
+      visa: [{ t: 'My appointment at the cantonal population office (OCPM) to renew my permit is at the time of the class.', doc: 'OCPM appointment letter.pdf' }, { t: 'I must go to my embassy in Bern to collect my passport.', doc: 'Embassy appointment.pdf' }],
+      religious: [{ t: 'It is a religious holiday for my family and I will be at home.', doc: null }, { t: 'I observe a religious holiday on this day.', doc: null }],
+      other: [{ t: 'I am called for jury duty at the Geneva court.', doc: 'Court summons.pdf' }, { t: 'I represent the school at a case competition in Barcelona.', doc: 'Invitation from the organisers.pdf' },
+        { t: 'I have my driving test that morning.', doc: null, weak: 1 }],
+    };
+    const ACC = ['', 'Get well soon. Ask your professor for the slides of the session.', 'Accepted. Ask a classmate for the notes of the session.', ''];
+    const REF = {
+      family: 'A wedding is a planned private event, which the rules do not accept as a reason. The session counts as absent.',
+      work: 'The quarter-end closing is part of your normal work. Plan it with your employer around the teaching weekends. The session counts as absent.',
+      other: 'A driving test can be booked on another day, so it is not a reason the rules accept. The session counts as absent.',
+      illness: 'The certificate you attached does not cover the date of the session. Send a certificate that covers it, and the office will look at the request again. Until then the session counts as absent.',
+    };
+    const pool = active.filter(s => s.sections.length).slice().sort((a, b) => hsh(a.id + 'abs') - hsh(b.id + 'abs'));
+    const who = pool.slice(0, 37).concat(pool.slice(0, 6)), out = [], used = {};
+    who.forEach((s, k) => {
+      const key = s.id + 'ab' + k, status = k < 15 ? 'pending' : hsh(key + 'st') < 0.76 ? 'accepted' : 'refused';
+      /* the day the request was sent: the last five days for a waiting one, earlier in the term otherwise */
+      const sent = status === 'pending' ? addDays(TODAY, -Math.floor(hsh(key + 'd') * 5)) : addDays('2026-09-07', Math.floor(hsh(key + 'd') * 62));
+      /* the reason first: an illness is reported after it or just before; everything else is planned ahead */
+      const isEmba = s.prog === 'emba', rr = hsh(key + 'r');
+      let reason = rr < 0.45 ? 'illness' : rr < 0.62 ? 'family' : rr < 0.74 ? (isEmba ? 'work' : 'illness') : rr < 0.83 ? (s.visa ? 'visa' : 'family') : rr < 0.91 ? 'religious' : 'other';
+      if (isEmba && hsh(key + 'w') < 0.5) reason = 'work';
+      let notes = NOTES[reason];
+      if (status === 'refused' && reason !== 'illness') { const weak = notes.filter(n => n.weak); if (weak.length) notes = weak; else { reason = isEmba ? 'work' : 'other'; notes = NOTES[reason].filter(n => n.weak); } }
+      else notes = notes.filter(n => !n.weak);
+      const note = notes[Math.floor(hsh(key + 'n') * notes.length)];
+      const after = reason === 'illness' || (reason === 'family' && !note.weak && hsh(key + 'fa') < 0.5);
+      const myS = s.sections.map(id => sections.find(x => x.id === id));
+      const ok = (x, z) => !used[s.id + z.date + x.id] && (z.date >= sent ? z.date <= addDays(sent, after ? 2 : 21) : after && z.date >= addDays(sent, -absenceRules.lateDays) && z.held && z.attTaken && records[s.id + '|' + x.id].att < 100);
+      const cand = myS.flatMap(x => x.sessionList.filter(z => ok(x, z)).map(z => ({ x, z }))).sort((a, b) => a.z.date.localeCompare(b.z.date) || a.x.start - b.x.start);
+      if (!cand.length) return;
+      const anchor = cand[Math.floor(hsh(key + 'a') * cand.length)];
+      /* an illness or a trip covers every session of the same day and, sometimes, of the next two days */
+      const span = hsh(key + 'sp') < 0.3 ? 2 : 0;
+      const items = cand.filter(c => c.z.date >= anchor.z.date && c.z.date <= addDays(anchor.z.date, span)).slice(0, 3);
+      items.forEach(c => used[s.id + c.z.date + c.x.id] = 1);
+      const hh = (sent === TODAY ? 8 : 8 + Math.floor(hsh(key + 'h2') * 4)) + Math.floor(hsh(key + 'h') * (sent === TODAY ? 7 : 8)), mm = Math.floor(hsh(key + 'm') * 60);
+      const r = { id: 'A' + String(out.length + 1).padStart(3, '0'), sid: s.id, prog: s.prog, sessions: items.map(c => ({ sec: c.x.id, date: c.z.date, n: c.z.n })),
+        reason, note: note.t, doc: note.doc, sent: sent + 'T' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'), answerBy: addWork(sent, absenceRules.target), status, by: null, at: null, comment: '' };
+      if (status !== 'pending') {
+        r.by = OFFICE[Math.floor(hsh(key + 'by') * 2)];
+        const at = addWork(sent, hsh(key + 'at') < 0.8 ? 1 : 2 + Math.floor(hsh(key + 'at2') * 2));
+        r.at = (at > TODAY ? TODAY : at) + 'T' + String(9 + Math.floor(hsh(key + 'ah') * 6)).padStart(2, '0') + ':' + String(Math.floor(hsh(key + 'am') * 60)).padStart(2, '0');
+        r.comment = status === 'accepted' ? ACC[Math.floor(hsh(key + 'c') * ACC.length)] : (REF[reason] || REF.other);
+      }
+      out.push(r);
+    });
+    return out;
+  })();
+
   window.SCHOOL = {
     school, programs, P, faculty, sections, students, records, assignments, regions: REGIONS,
     history: { years: YEARS, headcount, budgetHeadcount, retention, revenue, budgetRevenue, invoicedYTD, collectedYTD, satisfactionTrend, graduateOutcomes },
-    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign, planning, whatsapp, whatsappTemplates,
+    crm, registrar, finance, quality, calendar, rules, curriculum, thresholds, cases, pastCohorts, trends, decisionSupport, decisionLog, strategy, people, risks, lastWeek, programmeRules, programmeDesign, planning, whatsapp, whatsappTemplates, absences, absenceRules,
     /* helpers every page uses */
     util: {
       active, byId: id => students.find(s => s.id === id) || faculty.find(f => f.id === id) || sections.find(x => x.id === id),

@@ -73,6 +73,22 @@
   dialog.cc .slots button,dialog.cc .x{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;}
   dialog.cc .slots button.on{background:var(--good);color:#fff;border-color:var(--good);}
   dialog.cc .x{float:right;}
+  /* absences (16 Nov 2026) */
+  .absf{display:grid;gap:12px;}
+  .absf .stp{font-size:13px;font-weight:650;margin-bottom:4px;}
+  .absf .stp small{display:block;font-weight:500;color:var(--ink2);}
+  .absS{max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:4px 10px;background:var(--raised);}
+  .absS label{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:13px;cursor:pointer;align-items:start;}
+  .absS label:last-child{border-bottom:none;} .absS label.off{opacity:.55;cursor:default;}
+  .absS .dg{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px 0 2px;}
+  .absR{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;}
+  .absR input[type=date]{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:4px 6px;color:inherit;font:inherit;}
+  .absf select,.absf textarea,.absf input[type=file]{border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:6px 8px;font:inherit;color:inherit;max-width:100%;}
+  .absf textarea{width:100%;min-height:64px;resize:vertical;}
+  .absb{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);}
+  .absgo{justify-self:start;border:none;background:var(--pill);color:#fff;border-radius:999px;padding:8px 18px;cursor:pointer;font-weight:650;font-size:13.5px;}
+  .absmsg{font-size:13px;color:var(--ink2);} .absmsg.bad{color:var(--serious);}
+  .absq{font-size:12.5px;color:var(--ink2);background:var(--raised);border-radius:8px;padding:6px 8px;margin-top:4px;}
   @media(max-width:900px){.sims{grid-template-columns:minmax(0,1fr);}}
   @media(max-width:640px){.dmap{grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;} .tabs{width:auto;} .tabs button{padding:7px 12px;}}
   @media(max-width:640px){.acts li{grid-template-columns:1fr;gap:4px;} .acts .go{justify-self:start;} .days li{grid-template-columns:84px 1fr;} #crsT{min-width:720px;} #dueT{min-width:440px;}}
@@ -112,6 +128,13 @@
   <div class="g c2">
     <div class="card"><div class="ch"><h2>This week · Mon 16 – Sat 21 Nov</h2><span class="note">week 12 of 14</span></div><ul class="days" id="week"></ul></div>
     <div class="card"><div class="ch"><h2>Exams</h2><span class="note">autumn 2026 exam session</span></div><ul class="acts ex" id="exams"></ul></div>
+  </div>
+
+  <div class="section-t" id="absences">Absences</div>
+  <div class="g c2">
+    <div class="card"><div class="ch"><h2>Request an absence</h2><span class="note" id="absNote"></span></div>
+      <p class="lead" id="absLead"></p><div class="absf" id="absForm"></div></div>
+    <div class="card"><div class="ch"><h2>My absence requests</h2><span class="note">this term · newest first</span></div><ul class="acts" id="absList"></ul></div>
   </div>
 
   <div class="section-t">Money</div>
@@ -205,7 +228,7 @@
   /* ---- what to do now ---- */
   const todo = [];
   low.forEach(c => todo.push({ k: 'serious', w: 'Attend', t: `You attended ${c.r.att} % of ${c.x.title}. The rule is 80 %: below it you may not sit the exam.`,
-    d: c.left > 0 ? `${c.left} ${c.left > 1 ? 'sessions remain' : 'session remains'} this term. If you attend ${c.left > 1 ? 'all of them' : 'it'}, you finish at ${c.best} %. ${c.best < 80 ? 'That is still under 80 %, so write to the student office this week to explain your absences.' : 'Write to ' + c.prof.name + ' if an absence had a reason you can document.'}` : 'Write to the student office this week to explain your absences.',
+    d: c.left > 0 ? `${c.left} ${c.left > 1 ? 'sessions remain' : 'session remains'} this term. If you attend ${c.left > 1 ? 'all of them' : 'it'}, you finish at ${c.best} %. ${c.best < 80 ? 'That is still under 80 %, so write to the student office this week to explain your absences.' : 'If an absence had a reason you can document, send an absence request below.'}` : 'Write to the student office this week to explain your absences.',
     prof: c.prof.id, gl: c.prof.name }));
   if (missing.length) { const n = missing.reduce((a, c) => a + c.miss, 0);
     todo.push({ k: n >= 4 ? 'serious' : 'warn', w: 'Hand in', t: `You have ${n} ${n > 1 ? 'assignments' : 'assignment'} missing: ${missing.map(c => `${c.miss} in ${c.x.title}`).join(', ')}.`,
@@ -239,7 +262,7 @@
     const ok = c.r.att >= 80;
     return `<tr><td><i class="key" style="background:${c.color}"></i><b>${esc(c.x.code)}</b> · ${esc(c.x.title)}<div class="why">${c.x.ects} ECTS · ${esc(c.x.day)} ${esc(U.time(c.x.start))}, room ${esc(c.x.room)}</div></td>
       <td><button class="linkbtn" data-prof="${c.prof.id}">${esc(c.prof.name)}</button></td>
-      <td class="attc"><div class="row"><b>${c.r.att} %</b>${ok ? st('good', 'above 80 %') : st('serious', 'under 80 %')}</div><div class="rm" title="Your attendance ${c.r.att} %; the rule is 80 %"><i style="width:${c.r.att}%;background:${c.color}"></i><b style="left:80%"></b></div></td>
+      <td class="attc"><div class="row"><b>${c.r.att} %</b>${ok ? st('good', 'above 80 %') : st('serious', 'under 80 %')}</div><div class="rm" title="Your attendance ${c.r.att} %; the rule is 80 %"><i style="width:${c.r.att}%;background:${c.color}"></i><b style="left:80%"></b></div><div class="why" id="absAtt_${c.x.id}"></div></td>
       <td class="n"><b>${g1(c.r.grade)}</b><div class="why">${c.r.grade >= 4 ? 'pass mark 4.0' : st('warn', 'under 4.0')}</div>${c.miss ? `<div class="why">graded work only; ${c.miss} missing ${c.miss > 1 ? 'count' : 'counts'} as ${S.rules.missingCounts.toFixed(1)} in the final grade · <a href="#learning">see My learning</a></div>` : ''}${c.r.ungraded ? '<div class="why">1 submission waiting for a grade</div>' : ''}</td>
       <td class="n">${c.r.subsDone} / ${c.r.subsTotal}${c.miss ? `<div class="why">${st('warn', c.miss + ' missing')}</div>` : ''}</td>
       <td>${c.next ? `${esc(Dash.date(c.next.due))} · ${esc(c.next.title)}<div class="why">${c.next.weight} % of the grade · ${esc(daysWord(Dash.daysUntil(c.next.due)))}</div>` : '<span class="why">No deadline left</span>'}</td></tr>`; }).join('');
@@ -257,7 +280,7 @@
   const thisWeek = courses.filter(c => meetsWeek(c.x, 12));
   document.getElementById('week').innerHTML = WD.map(([d, n]) => {
     const ses = thisWeek.filter(c => c.x.day === d).sort((a, b) => a.x.start - b.x.start);
-    return `<li><div class="dn">${d} ${n} Nov${d === 'Mon' ? '<small>exam registration opens</small>' : ''}</div><div>${ses.length ? ses.map(c => `<div class="ses"><i class="key" style="background:${c.color}"></i><b>${esc(U.time(c.x.start))}–${esc(U.time(c.x.start + c.x.hours))}</b> · ${esc(c.x.title)} · ${c.x.room === 'Online' ? 'online' : 'room ' + esc(c.x.room)}</div>`).join('') : '<div class="free">You have no class on this day.</div>'}</div></li>`; }).join('') +
+    return `<li><div class="dn">${d} ${n} Nov${d === 'Mon' ? '<small>exam registration opens</small>' : ''}</div><div>${ses.length ? ses.map(c => `<div class="ses"><i class="key" style="background:${c.color}"></i><b>${esc(U.time(c.x.start))}–${esc(U.time(c.x.start + c.x.hours))}</b> · ${esc(c.x.title)} · ${c.x.room === 'Online' ? 'online' : 'room ' + esc(c.x.room)} <span id="absWk_${c.x.id}_${U.dayOf(12, d)}"></span></div>`).join('') : '<div class="free">You have no class on this day.</div>'}</div></li>`; }).join('') +
     (thisWeek.length < courses.length ? `<li style="grid-template-columns:1fr"><div class="free">${me.prog === 'emba' ? 'Your programme meets every other week. Your next teaching weekend is Fri 27 – Sat 28 Nov (week 13).' : me.prog === 'dba' ? 'Your programme meets every fourth week. Your next seminar Saturday is 28 Nov (week 13).' : ''}</div></li>` : '');
 
   /* ---- exams ---- */
@@ -266,7 +289,8 @@
     { k: 'none', w: 'Session', t: `The exam session starts on ${Dash.dateLong(S.registrar.examSessionStart)}.`, d: `That is in ${Dash.daysUntil(S.registrar.examSessionStart)} days. The timetable of each exam is published when registration closes.` },
   ];
   if (!blocked) exams.push({ k: 'good', w: 'Clear', t: 'Nothing blocks your registration today.', d: 'Your attendance is at 80 % or more in every course and you have no fees overdue more than 60 days.' });
-  low.forEach(c => exams.push({ k: 'serious', w: 'Blocked', t: `${c.x.title}: your attendance is ${c.r.att} %, under the 80 % rule.`, d: 'You may not register for this exam until the student office has seen your case. Check with the student office before 30 Nov.' }));
+  low.forEach(c => { const o = Dash.abs.att(me.id, c.x.id);
+    exams.push({ k: 'serious', w: 'Blocked', t: `${c.x.title}: your attendance is ${c.r.att} %, under the 80 % rule.`, d: 'You may not register for this exam until the student office has seen your case. Check with the student office before 30 Nov.' + (o.excused ? ` ${o.excused} of your absences ${o.excused > 1 ? 'are' : 'is'} excused and ${o.excused > 1 ? 'do' : 'does'} not count: counted without ${o.excused > 1 ? 'them' : 'it'}, your attendance is ${o.adjusted} %. The student office takes this into account.` : '') }); });
   if (blockedFees) exams.push({ k: 'serious', w: 'Blocked', t: `Your tuition has been overdue for ${me.overdueDays} days, more than 60.`, d: 'Fees overdue for more than 60 days block exam registration. Check with the student office and the finance office before 30 Nov.' });
   document.getElementById('exams').innerHTML = exams.map(a => `<li>${st(a.k, a.w)}<div><div class="w">${esc(a.t)}</div><div class="d">${esc(a.d)}</div></div></li>`).join('');
 
@@ -390,6 +414,74 @@
     if (t.dataset.exam) { o.exam = v; document.getElementById('exv_' + t.dataset.sec).textContent = v.toFixed(1); } else if (t.dataset.part) o.part = v; else o.pend[t.dataset.a] = v;
     paint(); });
   paint();
+
+  /* =====================================================================
+     ABSENCES (16 Nov 2026) — the student asks, the student office decides, the professor is told.
+     Requests and decisions are kept in this browser (Dash.abs, localStorage dash_absences).
+     ===================================================================== */
+  const AB = Dash.abs, AR = AB.rules, TODAY = S.school.today, wd = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const isoAdd = (iso, n) => { const t = new Date(iso + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  /* the sessions a request can cover: every coming session of the term, and those held in the last 7 days */
+  const reqable = courses.flatMap(c => c.x.sessionList.filter(z => z.date >= isoAdd(TODAY, -AR.lateDays)).map(z => ({ c, z }))).sort((a, b) => a.z.date.localeCompare(b.z.date) || a.c.x.start - b.c.x.start);
+  document.getElementById('absNote').textContent = `the student office answers within ${AR.target} ${AR.targetUnit}`;
+  document.getElementById('absLead').textContent = `If you cannot come to a session for a reason you can explain, ask the student office to excuse the absence. ${AR.excusedText} ${AR.decides} ${AR.lateText} If the office accepts, your professors are told that you are excused and the reason category, for example “Illness”. They never see what you write or the document you attach.`;
+  const ABF = { picked: new Set() };
+  let taken = {};
+  function drawAbs() {
+    const mine = AB.forStudent(me.id); taken = {};
+    mine.filter(r => r.status !== 'refused').forEach(r => r.sessions.forEach(z => taken[z.sec + '|' + z.date] = r.status));
+    /* the form */
+    let lastD = '';
+    const rows = reqable.map(({ c, z }) => { const k = c.x.id + '|' + z.date, t = taken[k], head = z.date !== lastD ? `<div class="dg">${esc(wd(z.date))}${z.date < TODAY ? ' · already held' : ''}</div>` : ''; lastD = z.date;
+      return head + `<label class="${t ? 'off' : ''}"><input type="checkbox" data-k="${k}" data-n="${z.n}" ${t ? 'disabled' : ''} ${ABF.picked.has(k) ? 'checked' : ''}><span><b>${esc(c.x.code)}</b> · ${esc(c.x.title)} · ${esc(U.time(c.x.start))}–${esc(U.time(c.x.start + c.x.hours))}${t ? ` · ${t === 'accepted' ? st('good', 'already excused') : st('warn', 'already requested')}` : ''}</span></label>`; }).join('');
+    const f = document.getElementById('absForm');
+    if (!f.dataset.built) {
+      f.innerHTML = `<div><div class="stp">1. Tick each session you will miss, or have missed in the last ${AR.lateDays} days.<small>Or type the first and the last day you are away, and press the button: the page ticks every session of yours in between.</small></div>
+        <div class="absR"><label for="absFrom">First day</label><input type="date" id="absFrom" min="${isoAdd(TODAY, -AR.lateDays)}"><label for="absTo">Last day</label><input type="date" id="absTo" min="${isoAdd(TODAY, -AR.lateDays)}"><button type="button" class="absb" id="absRange">Tick the sessions of these days</button></div>
+        <div class="absS" id="absS" style="margin-top:8px"></div></div>
+        <div><label class="stp" for="absWhy">2. Choose the reason.</label><br><select id="absWhy"><option value="">Choose a reason</option>${AR.reasons.filter(r => r.id !== 'work' || me.prog === 'emba').map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select></div>
+        <div><label class="stp" for="absNoteIn">3. Write in one or two sentences why you cannot come.<small>The student office reads this. Your professors never see it.</small></label><textarea id="absNoteIn" placeholder="Write what happened or will happen, for example: I have the flu and my doctor told me to stay at home until Monday."></textarea></div>
+        <div><label class="stp" for="absDoc">4. Attach a document if you have one. ${esc(AR.docText)}<small>This is a demo: only the name of the file is kept, the file itself is not uploaded.</small></label><input type="file" id="absDoc"></div>
+        <div><button type="button" class="absgo" id="absSend">Send the request to the student office</button> <span class="absmsg" id="absMsg" role="status"></span></div>`;
+      f.dataset.built = '1';
+      f.querySelector('#absRange').onclick = () => { const a = f.querySelector('#absFrom').value, b = f.querySelector('#absTo').value || a, m = f.querySelector('#absMsg');
+        if (!a) { m.className = 'absmsg bad'; m.textContent = 'Type the first day first.'; return; }
+        const hit = reqable.filter(o => o.z.date >= a && o.z.date <= (b < a ? a : b) && !taken[o.c.x.id + '|' + o.z.date]);
+        hit.forEach(o => ABF.picked.add(o.c.x.id + '|' + o.z.date)); m.className = 'absmsg'; m.textContent = hit.length ? `${hit.length} session${hit.length > 1 ? 's' : ''} ticked. Check the list, then choose the reason.` : 'You have no session on these days.'; drawAbs(); };
+      f.addEventListener('change', e => { const cb = e.target.closest('input[type=checkbox][data-k]'); if (cb) cb.checked ? ABF.picked.add(cb.dataset.k) : ABF.picked.delete(cb.dataset.k); });
+      f.querySelector('#absSend').onclick = () => { const m = f.querySelector('#absMsg'), why = f.querySelector('#absWhy').value, note = f.querySelector('#absNoteIn').value.trim(), file = f.querySelector('#absDoc').files[0];
+        const ses = [...ABF.picked].map(k => { const [sec, date] = k.split('|'), o = reqable.find(q => q.c.x.id === sec && q.z.date === date); return o ? { sec, date, n: o.z.n } : null; }).filter(Boolean);
+        m.className = 'absmsg bad';
+        if (!ses.length) { m.textContent = 'Tick at least one session.'; return; }
+        if (!why) { m.textContent = 'Choose a reason.'; return; }
+        if (note.length < 10) { m.textContent = 'Write at least one sentence that says why you cannot come.'; return; }
+        const r = AB.send(me.id, ses, why, note, file ? file.name : null);
+        ABF.picked.clear(); f.querySelector('#absWhy').value = ''; f.querySelector('#absNoteIn').value = ''; f.querySelector('#absDoc').value = '';
+        m.className = 'absmsg'; m.textContent = `Sent. The student office answers by ${Dash.dateLong(r.answerBy)}. You find the answer under “My absence requests”.`; drawAbs(); };
+    }
+    document.getElementById('absS').innerHTML = rows || '<p class="empty">You have no session left this term.</p>';
+    /* my requests */
+    const L = mine.slice().sort((a, b) => b.sent.localeCompare(a.sent));
+    document.getElementById('absList').innerHTML = L.length ? L.map(r => {
+      const what = r.sessions.map(z => `${U.sec(z.sec).code} ${U.sec(z.sec).title}, ${wd(z.date)}`).join('; ');
+      const late = r.status === 'pending' && TODAY > r.answerBy;
+      const d = r.status === 'pending' ? `The student office has not answered yet. It answers by ${Dash.dateLong(r.answerBy)}${late ? ', which has passed: write to the student office if you need the answer now' : ''}.`
+        : r.status === 'accepted' ? `Accepted by ${r.by} on ${Dash.date(r.at.slice(0, 10))}. These sessions are marked excused and do not count against the ${AR.attendance} % rule.` : `Refused by ${r.by} on ${Dash.date(r.at.slice(0, 10))}. These sessions count as absent.`;
+      return `<li>${AB.statusSt(r)}<div><div class="w">${esc(what)}</div><div class="d">You gave the reason “${esc(AB.reasonName(r.reason))}” and sent the request on ${esc(Dash.date(r.sent.slice(0, 10)))}${r.doc ? `, with the document “${esc(r.doc)}”` : ''}. ${esc(d)}</div>${r.comment && r.status !== 'pending' ? `<div class="absq">The student office wrote: “${esc(r.comment)}”</div>` : ''}</div></li>`; }).join('')
+      : '<li style="grid-template-columns:1fr"><span class="d">You have sent no absence request this term.</span></li>';
+    /* the excused sessions in the course table and in this week */
+    courses.forEach(c => { const o = AB.att(me.id, c.x.id), el = document.getElementById('absAtt_' + c.x.id); if (!el) return;
+      const wait = mine.filter(r => r.status === 'pending').reduce((t, r) => t + r.sessions.filter(z => z.sec === c.x.id).length, 0), parts = [];
+      if (o.missed) parts.push(`You missed ${o.missed} of ${o.taken} sessions: ${o.absent} absent, ${o.excused} excused.`);
+      if (o.excused) parts.push(`Counted without the excused ${o.excused > 1 ? 'sessions' : 'session'}: ${o.adjusted} %.`);
+      if (o.coming) parts.push(`${o.coming} coming ${o.coming > 1 ? 'sessions' : 'session'} excused.`);
+      if (wait) parts.push(`${wait} ${wait > 1 ? 'sessions wait' : 'session waits'} for an answer.`);
+      el.innerHTML = esc(parts.join(' ')); });
+    document.querySelectorAll('[id^="absWk_"]').forEach(el => { const [, sec, date] = el.id.split('_'), t = taken[sec + '|' + date];
+      el.innerHTML = t === 'accepted' ? st('good', 'excused') : t === 'pending' ? st('warn', 'absence requested') : ''; });
+  }
+  drawAbs();
+  window.addEventListener('storage', e => { if (e.key === AB.KEY) drawAbs(); });
 
   /* =====================================================================
      CONTACT CARD — a professor's e-mail, office, office hours, and a slot to book

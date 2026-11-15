@@ -71,6 +71,8 @@
   .kv dt{color:var(--ink2);} .kv dd{margin:0;text-align:right;font-weight:650;}
   @media(max-width:1250px) and (min-width:1101px){.wk{grid-template-columns:repeat(3,minmax(0,1fr));}}
   @media(max-width:900px){.wk{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  .exl{list-style:none;margin:0;padding:0;font-size:13px;} .exl li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:6px 0;border-bottom:1px solid var(--grid);align-items:baseline;} .exl li:last-child{border:none;}
+  .exc{font-size:12px;color:var(--ink2);margin-top:3px;}
   #watchT{min-width:860px;} #healthT{min-width:680px;} #healthT td:first-child{min-width:220px;} #dueT{min-width:460px;}
   @media(max-width:640px){.wk{grid-template-columns:minmax(0,1fr);}.wk .day{min-height:0;} .tabs{width:auto;} .tabs button{padding:7px 11px;}}
 </style>
@@ -94,6 +96,8 @@
     <div class="card"><div class="ch"><h2>Grading, by course</h2><span class="note" id="gradeNote"></span></div>
       <p class="lead" id="gradeLead"></p><ul class="acts" id="grading"></ul></div>
   </div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students excused in my courses</h2><span class="note">a notice only · nothing to do</span></div>
+      <p class="lead" id="exLead"></p><ul class="exl" id="exList"></ul><div id="exMore"></div></div>
   <div class="card" style="margin-bottom:14px"><div class="ch"><h2>Students to watch in my courses</h2><span class="note">most warning signs first · click a name to see the student in my courses</span></div>
       <p class="lead">A student is listed when they show at least one academic warning sign: attendance under 80 % in my course, a grade under 4.0, two or more assignments missing, no hand-in for 14 days, or no visit to the course pages for 14 days. The figures are for my courses only. Other courses are mentioned without figures, and personal matters handled by the student office are never shown here.</p>
       <div class="tw"><table class="t" id="watchT"></table></div><div id="watchMore"></div></div>
@@ -173,6 +177,9 @@
   }
 
   let F, SECS, COL, curCourse = null, openRows = new Set();
+  /* who is excused in a session: a notice on the week view (names and reason category, nothing to do) */
+  const exHtml = (secId, date) => { const l = Dash.abs.excusedIn(secId).filter(e => e.date === date);
+    return l.length ? `<div class="m">${l.map(e => `Excused: ${esc(U.byId(e.sid).name)} (${esc(Dash.abs.reasonName(e.reason))})`).join('<br>')}</div>` : ''; };
 
   function render(id) {
     const f = S.faculty.find(x => x.id === id) || dflt; pick.value = f.id; F = f;
@@ -216,13 +223,25 @@
       const today = secs.filter(x => x.day === d && sesIn(x, NEXT_WEEK)).sort((a, b) => a.start - b.start);
       return `<div class="day"><div class="dh">${DAYNAME[d]} <span>${dayMonth(U.dayOf(NEXT_WEEK, d))}</span></div>` +
         (today.length ? today.map(x => { const z = sesIn(x, NEXT_WEEK), unposted = z.materials.filter(m => !m.posted).length;
-          return `<div class="slot" style="border-left-color:${col[x.id]}"><b>${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))}</b>${esc(x.code)} ${esc(x.title)}<div class="m">Session ${z.n}: ${esc(z.topic)}</div><div class="m">Room ${esc(x.room)} · ${x.enrolled} students</div>${unposted ? `<div class="m">${st('warn', `${unposted} material${unposted > 1 ? 's' : ''} not posted`)}</div>` : ''}</div>`; }).join('') : '<div class="none">No teaching</div>') + '</div>';
+          return `<div class="slot" style="border-left-color:${col[x.id]}"><b>${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))}</b>${esc(x.code)} ${esc(x.title)}<div class="m">Session ${z.n}: ${esc(z.topic)}</div><div class="m">Room ${esc(x.room)} · ${x.enrolled} students</div>${exHtml(x.id, z.date)}${unposted ? `<div class="m">${st('warn', `${unposted} material${unposted > 1 ? 's' : ''} not posted`)}</div>` : ''}</div>`; }).join('') : '<div class="none">No teaching</div>') + '</div>';
     }).join('');
     document.getElementById('offwk').innerHTML = secs.filter(x => !sesIn(x, NEXT_WEEK)).map(x => {
       const nz = x.sessionList.find(z => !z.held);
       const how = x.prog === 'emba' ? 'meets on teaching weekends (every other week)' : x.prog === 'dba' ? 'meets in four residencies a term' : 'meets every week';
       return `<li><i class="sk" style="background:${col[x.id]}"></i><b>${esc(x.code)} ${esc(x.title)}</b> ${how}. ${nz ? `It does not meet next week; the next session is ${esc(Dash.dateLong(nz.date))}, ${esc(U.time(x.start))}–${esc(U.time(x.start + x.hours))} in room ${esc(x.room)}.` : 'All its sessions are held.'}</li>`;
     }).join('');
+
+    /* ---- absences excused by the student office: a notice, the reason CATEGORY only, no action ---- */
+    const AR = Dash.abs.rules, exAll = secs.flatMap(x => Dash.abs.excusedIn(x.id).map(e => ({ ...e, x })));
+    const coming = exAll.filter(e => e.date >= TODAY).sort((a, b) => a.date.localeCompare(b.date) || a.x.start - b.x.start), past = exAll.filter(e => e.date < TODAY).sort((a, b) => b.date.localeCompare(a.date));
+    document.getElementById('exLead').textContent = `The student office has excused these absences. You have nothing to do: an excused session does not count against the student's ${AR.attendance} % attendance rule, and you keep taking attendance as usual. You see the reason category only; the student's own words and documents stay with the student office. Requests that are still waiting are not shown.`;
+    const EXL = 10;
+    const exLi = e => `<li>${e.date >= TODAY ? st('none', 'Coming') : st('good', 'Held')}<div>Excused: <button class="linkbtn" data-stu="${esc(e.sid)}">${esc(U.byId(e.sid).name)}</button>, ${esc(Dash.dateLong(e.date))} (${esc(Dash.abs.reasonName(e.reason))})<div class="why"><i class="sk" style="background:${col[e.x.id]}"></i>${esc(e.x.code)} ${esc(e.x.title)} · session ${e.n}</div></div></li>`;
+    const drawEx = all => { const L = coming.concat(past), show = all ? L : L.slice(0, EXL);
+      document.getElementById('exList').innerHTML = L.length ? show.map(exLi).join('') : '<li style="grid-template-columns:1fr"><span class="why">Nobody is excused in your courses this term.</span></li>';
+      document.getElementById('exMore').innerHTML = L.length > EXL ? `<button class="morebtn" type="button" id="exMoreB">${all ? `Show the first ${EXL} only` : `Show all ${L.length}`}</button>` : '';
+      const b = document.getElementById('exMoreB'); if (b) b.onclick = () => drawEx(!all); };
+    drawEx(false);
 
     /* ---- grading summary per course; the queue itself is on the Grading tab ---- */
     const dl = S.registrar.gradeEntryDeadline, dd = Dash.daysUntil(dl);
@@ -343,7 +362,9 @@
       const work = z.due.map(aid => { const r = results(x, aid);
         if (!r.a.past) return `<div><b>${esc(r.a.title)}</b> · ${r.a.weight} %<div class="why">due ${esc(Dash.date(r.a.due))}</div></div>`;
         return `<div><b>${esc(r.a.title)}</b> · ${r.a.weight} %<div class="why">${r.handed} of ${r.n} handed in · ${r.graded} graded${r.waiting ? ` · ${st('warn', r.waiting + ' waiting')}` : ''}${r.mean != null ? ` · mean ${r.mean.toFixed(1)}${r.fails ? `, ${r.fails} under ${R.pass.toFixed(1)}` : ''}` : ''}</div></div>`; }).join('') || '<span class="why">—</span>';
-      return `<tr class="${cls}"><td class="n">${z.n}</td><td class="nw">${esc(dayMonth(z.date))}<div class="why">week ${z.week}</div></td><td><b>${esc(z.topic)}</b><div class="why">${esc(z.kind)} · ${esc(U.time(z.start))}–${esc(U.time(z.start + z.hours))}</div></td><td>${mats}</td><td class="n">${att}</td><td>${cov}</td><td class="res">${work}</td></tr>`;
+      const exl = Dash.abs.excusedIn(x.id).filter(e => e.date === z.date);
+      const exT = exl.length ? exl.map(e => `<div class="exc">Excused: ${esc(U.byId(e.sid).name)} (${esc(Dash.abs.reasonName(e.reason))})</div>`).join('') : '';
+      return `<tr class="${cls}"><td class="n">${z.n}</td><td class="nw">${esc(dayMonth(z.date))}<div class="why">week ${z.week}</div></td><td><b>${esc(z.topic)}</b><div class="why">${esc(z.kind)} · ${esc(U.time(z.start))}–${esc(U.time(z.start + z.hours))}</div></td><td>${mats}</td><td class="n">${att}${exT}</td><td>${cov}</td><td class="res">${work}</td></tr>`;
     }).join('');
   }
   document.getElementById('cpick').onclick = e => { const b = e.target.closest('button'); if (b) { curCourse = b.dataset.c; drawTimeline(); } };
@@ -415,7 +436,7 @@
       <div class="note2">You see this student in your own courses only: attendance, grades and hand-ins. ${a.others ? 'The student is <b>also flagged in other courses</b>. ' : ''}${a.office ? 'The student office is following this student. ' : ''}${a.others || a.office ? `If you are worried, write to the advisor, ${esc(adv.name)}.` : ''}</div>` +
       a.mine.map(m => { const A2 = U.asgOf(m.x.id), attended = m.x.held ? Math.round(m.r.att * m.x.held / 100) : 0;
         return `<h4><i class="sk" style="background:${COL[m.x.id]}"></i>${esc(m.x.code)} ${esc(m.x.title)}</h4>
-        <dl class="kv"><dt>Attendance</dt><dd>${m.r.att < R.attendance ? st('crit', m.r.att + ' %') : m.r.att + ' %'} · about ${attended} of ${m.x.held} sessions</dd><dt>Grade so far (graded work)</dt><dd>${g1(m.r.grade)}</dd><dt>Participation, your interim mark</dt><dd>${g1(m.r.part)}</dd><dt>Last hand-in</dt><dd>${m.r.lastSubmitDays === 0 ? 'today' : m.r.lastSubmitDays + ' days ago'}</dd></dl>
+        <dl class="kv"><dt>Attendance</dt><dd>${m.r.att < R.attendance ? st('crit', m.r.att + ' %') : m.r.att + ' %'} · about ${attended} of ${m.x.held} sessions</dd>${(() => { const o = Dash.abs.att(sid, m.x.id); return o.excused || o.coming ? `<dt>Excused by the student office</dt><dd>${o.excused} held${o.coming ? `, ${o.coming} coming` : ''}${o.excused ? ` · without ${o.excused > 1 ? 'them' : 'it'}: ${o.adjusted} %` : ''}</dd>` : ''; })()}<dt>Grade so far (graded work)</dt><dd>${g1(m.r.grade)}</dd><dt>Participation, your interim mark</dt><dd>${g1(m.r.part)}</dd><dt>Last hand-in</dt><dd>${m.r.lastSubmitDays === 0 ? 'today' : m.r.lastSubmitDays + ' days ago'}</dd></dl>
         <div class="tw" style="margin-top:6px"><table class="t"><tr><th>Assignment</th><th>Due</th><th>Status</th><th class="n">Grade</th></tr>${m.r.asg.map(z => { const as = A2.find(y => y.id === z.a);
           return `<tr><td>${esc(as.title)}${z.fb ? `<div class="why">“${esc(z.fb)}”</div>` : ''}</td><td class="nw">${esc(dayMonth(as.due))}</td><td>${st(...SW[z.st])}</td><td class="n">${z.st === 'graded' ? z.g.toFixed(1) : z.st === 'missing' ? R.missingCounts.toFixed(1) + '*' : '—'}</td></tr>`; }).join('')}</table></div>`; }).join('') +
       `<p class="mini" style="margin-top:10px">* A missing assignment counts as ${R.missingCounts.toFixed(1)} in the final course grade.</p>`;
@@ -438,6 +459,7 @@
 
   render(params.get('id') || dflt.id);
   show();
+  window.addEventListener('storage', e => { if (e.key === Dash.abs.KEY) render(F.id); });
 })();
 </script>
 </body>
