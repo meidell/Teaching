@@ -388,3 +388,4 @@ global `EscWall`; `courseprogress.js` a port).
   teams board), opened in a panel inside the page with *Open in a new tab* for when meet.jit.si cuts the
   embedded call after about 5 minutes. Jan Erik opens each room first (meet.jit.si sign-in) and has a menu
   of all six team rooms on his device. See the root CLAUDE.md, `meet.js`.
+  **Switched to JaaS the same day** (provider `jaas`, app `vpaas-magic-cookie-d385d91070b7474195943739154d47b9`, worker secrets set by Jan Erik, worker deployed): no 5-minute cut, Jan Erik enters as moderator.

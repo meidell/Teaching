@@ -23,7 +23,7 @@
   Promise.resolve(load).then(function (reg) {
     var list = reg && (reg.courses || reg); if (!list || !list.find) return;
     var c = list.find(function (x) { return x.id === id; }); if (!c || !c.meeting) return;
-    var m = c.meeting, jitsi = m.provider === 'jitsi' && m.room; if (!jitsi && !m.url) return;
+    var m = c.meeting, jaas = m.provider === 'jaas', jitsi = (m.provider === 'jitsi' || jaas) && m.room; if (!jitsi && !m.url) return;
     var fr = c.lang === 'fr', sch = c.schedule || {}, th = (reg.themes || {})[c.theme] || {}, KP = c.keyPrefix || c.id;
     var accent = th.accent || '#1d3a5f', hot = th.accentBright || accent, hotInk = th.accentBright ? '#111' : '#fff';
     function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -46,6 +46,23 @@
     function teamLabel(t) { var g = m.teamsGlobal && window[m.teamsGlobal]; try { if (g && g.label) return g.label(t); } catch (e) {} return (fr ? 'Équipe ' : 'Team ') + t; }
     var ROOM = function (slug) { return m.room + '-' + slug; };
     var URL0 = function (slug) { return 'https://meet.jit.si/' + encodeURIComponent(ROOM(slug)); };
+    var CFG = function (title) { return ['config.prejoinConfig.enabled=false', 'config.startWithAudioMuted=true', 'config.startWithVideoMuted=true',
+      'config.subject=' + encodeURIComponent(JSON.stringify(title))].join('&'); };
+    /* JaaS: a signed pass from the sender worker (Teaching App/sender, POST /jaas) — the student's course
+       sign-in (<key>_auth: sid + password, checked against the roster) or the instructor's Firebase token */
+    var DB = 'https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app';
+    function senderUrl() { return m.tokenUrl ? Promise.resolve(m.tokenUrl) : fetch(DB + '/_site/push.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (x) { if (!x || !x.url) throw new Error('no sender'); return x.url.replace(/\/+$/, '') + '/jaas'; }); }
+    function fbToken() {
+      if (window.FBAuth) return FBAuth.token();
+      return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = '/shared/fb-auth.js'; s.onload = function () { window.FBAuth ? FBAuth.token().then(ok, no) : no(new Error('no auth')); }; s.onerror = no; document.head.appendChild(s); });
+    }
+    function pass(slug) {
+      var body = { ns: c.ns, room: ROOM(slug) }, h = { 'Content-Type': 'application/json' };
+      var who = instructor ? fbToken().then(function (t) { h.Authorization = 'Bearer ' + t; })
+        : Promise.resolve().then(function () { var a = JSON.parse(ls(KP + '_auth') || 'null'); if (!a || !a.sid || !a.pass) throw new Error(T.signin); body.sid = a.sid; body.pass = a.pass; });
+      return who.then(senderUrl).then(function (u) { return fetch(u, { method: 'POST', headers: h, body: JSON.stringify(body) }); })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('error ' + r.status)); return j; }); });
+    }
     function embedUrl(slug, title) {
       var h = ['userInfo.displayName=' + encodeURIComponent(JSON.stringify(me() || (fr ? 'Étudiant' : 'Student'))),
         'config.prejoinConfig.enabled=false', 'config.startWithAudioMuted=true', 'config.startWithVideoMuted=true',
@@ -59,7 +76,9 @@
       cls: 'Rejoindre la salle du cours', team: 'Rejoindre la salle de votre équipe', pick: 'Choisir une équipe pour avoir sa salle', all: 'Salles des équipes',
       tab: 'Ouvrir dans un nouvel onglet', close: 'Quitter l’appel', big: 'Plein écran', small: 'Réduire', clsT: 'Salle du cours', teamT: 'salle de l’équipe',
       lim: 'Si l’appel s’arrête après environ 5 minutes, ouvrez-le dans un nouvel onglet : c’est une limite du serveur gratuit Jitsi, et l’appel continue sans limite dans l’onglet.',
-      mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.'
+      mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.',
+      opening: 'Ouverture de la salle…', signin: 'connectez-vous d’abord au cours', modOn: 'Vous êtes modérateur de cette salle : vous pouvez couper les micros, ouvrir des sous-salles et enregistrer.',
+      failed: 'La salle n’a pas pu s’ouvrir', fallback: 'Ouvrir la salle gratuite sur meet.jit.si à la place'
     } : {
       live: 'The class is on now, ' + when + ' (Geneva time). You can follow it online.',
       today: 'The class is today, ' + when + ' (Geneva time). You can follow it online.',
@@ -67,7 +86,9 @@
       cls: 'Join the class room', team: 'Join your team room', pick: 'Pick a team to get a team room', all: 'Team rooms',
       tab: 'Open in a new tab', close: 'Leave the call', big: 'Full screen', small: 'Make smaller', clsT: 'Class room', teamT: 'team room',
       lim: 'If the call stops after about 5 minutes, open it in a new tab. This is a limit of the free Jitsi server, and the call continues without a limit in the new tab.',
-      mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.'
+      mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.',
+      opening: 'Opening the room…', signin: 'sign in to the course first', modOn: 'You are the moderator of this room: you can mute everyone, open breakout rooms and record.',
+      failed: 'The room could not be opened', fallback: 'Open the free room on meet.jit.si instead'
     };
 
     /* ---- styles ---- */
@@ -96,26 +117,39 @@
 
     /* ---- the panel with the call ---- */
     var panel = null;
-    function open(slug, title) {
-      if (!jitsi) { window.open(m.url, '_blank', 'noopener'); return; }
-      if (!panel) {
-        panel = document.createElement('div'); panel.className = 'jem-mp'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', title);
-        document.body.appendChild(panel);
-      }
-      document.body.classList.add('jem-mp-on');
-      panel.innerHTML = '';
+    function shell(title) {
+      if (!panel) { panel = document.createElement('div'); panel.className = 'jem-mp'; panel.setAttribute('role', 'dialog'); document.body.appendChild(panel); }
+      panel.setAttribute('aria-label', title); document.body.classList.add('jem-mp-on'); panel.innerHTML = '';
       var hd = document.createElement('div'); hd.className = 'hd';
-      var h = document.createElement('b'); h.textContent = title; hd.appendChild(h);
-      var a = document.createElement('a'); a.href = URL0(slug); a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.tab;
+      var h = document.createElement('b'); h.textContent = title; hd.appendChild(h); panel.appendChild(hd); return hd;
+    }
+    function frame(hd, title, src, tabUrl, foot) {
+      var a = document.createElement('a'); a.href = tabUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.tab;
       a.onclick = function () { setTimeout(close, 300); }; hd.appendChild(a);
       var bg = document.createElement('button'); bg.type = 'button'; bg.className = 'ghost'; bg.textContent = T.big;
       bg.onclick = function () { var on = panel.classList.toggle('big'); bg.textContent = on ? T.small : T.big; }; hd.appendChild(bg);
       var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
-      panel.appendChild(hd);
-      var f = document.createElement('iframe'); f.src = embedUrl(slug, title); f.title = title;
+      var f = document.createElement('iframe'); f.src = src; f.title = title;
       f.allow = 'camera; microphone; display-capture; fullscreen; autoplay; clipboard-write'; f.setAttribute('allowfullscreen', '');
       panel.appendChild(f);
-      var ft = document.createElement('div'); ft.className = 'ft'; ft.textContent = T.lim + ' ' + T.mod; panel.appendChild(ft);
+      if (foot) { var ft = document.createElement('div'); ft.className = 'ft'; ft.textContent = foot; panel.appendChild(ft); }
+    }
+    function open(slug, title) {
+      if (!jitsi) { window.open(m.url, '_blank', 'noopener'); return; }
+      var hd = shell(title);
+      if (!jaas) { frame(hd, title, embedUrl(slug, title), URL0(slug), T.lim + ' ' + T.mod); return; }
+      var wait = document.createElement('div'); wait.className = 'ft'; wait.style.flex = '1'; wait.textContent = T.opening; panel.appendChild(wait);
+      pass(slug).then(function (p) {
+        if (!panel) return; wait.remove();
+        var base = 'https://8x8.vc/' + encodeURIComponent(p.appId) + '/' + encodeURIComponent(ROOM(slug)) + '?jwt=' + encodeURIComponent(p.token);
+        frame(hd, title, base + '#' + CFG(title), base, p.moderator ? T.modOn : '');
+      }).catch(function (e) {
+        if (!panel) return;
+        wait.textContent = T.failed + ' (' + (e && e.message || e) + ')';
+        var alt = document.createElement('a'); alt.href = URL0(slug); alt.target = '_blank'; alt.rel = 'noopener'; alt.textContent = T.fallback;
+        alt.style.cssText = 'margin:0 12px 12px;align-self:flex-start'; panel.appendChild(alt);
+        var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
+      });
     }
     function close() { if (panel) { panel.remove(); panel = null; } document.body.classList.remove('jem-mp-on'); }
 
