@@ -170,7 +170,10 @@
   /* 11 Nov 2026, Jan Erik: "push class on 18 to the week after", "no class on 16.12 but start again on
      6 january", "2nd class after x-mas 13. january". So Week 6 = Wed 25 Nov, W7 = 2 Dec, W8 = 9 Dec,
      W9 = Wed 6 Jan 2027, W10 = Wed 13 Jan 2027. GAPS = {after week n: weeks without a class}. */
-  var GAPS = [ {after:3, weeks:1}, {after:5, weeks:1}, {after:8, weeks:3} ];
+  /* 16 Nov 2026, Jan Erik: "push week 5 to 25 nov and add an extra week at wednesday 20 january".
+     So W5 = Wed 25 Nov, W6 = 2 Dec, W7 = 9 Dec, no class 16 Dec – 30 Dec, W8 = Wed 6 Jan 2027,
+     W9 = 13 Jan, W10 (revision + exam) = Wed 20 Jan 2027. Supersedes the 11 Nov line above. */
+  var GAPS = [ {after:3, weeks:1}, {after:4, weeks:2}, {after:7, weeks:3} ];
   function weekMonday(wk){ var g=0; GAPS.forEach(function(x){ if(wk>x.after) g+=x.weeks; }); var d=new Date(START+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+7*(wk-1+g)); return d; }
   function at(wk,day,time){
     var m=weekMonday(wk); m.setUTCDate(m.getUTCDate()+day);

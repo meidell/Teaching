@@ -211,6 +211,15 @@ in wind.* Everything the `SUMAS/wind` section says about the engine
   4–10 are still the online-course copies; continue the same pattern. Week 1's group hour is *form the team*; its
   deck `week1-slides.html` (16 slides, N = notes, P = print) and
   `_private/week1-runsheet.md` were regenerated for the organising session.
+- ⚠ **Week 5 moved, one week added (16 Nov 2026).** Jan Erik: "push week 5 to 25 nov and add an
+  extra week at wednesday 20 january". `GAPS = [{after:3,weeks:1},{after:4,weeks:2},{after:7,weeks:3}]`.
+  Sessions: W5 **Wed 25 Nov** · W6 2 Dec · W7 9 Dec · no class 16 Dec – 30 Dec · W8 **Wed 6 Jan 2027** ·
+  W9 13 Jan · W10 (revision + exam) **Wed 20 Jan 2027**. Derived: Forum 9 Mon 23 Nov, **Phase 1 Sun 29 Nov**
+  (was 15 Nov; the literal banners on index, report, week5, wednesday, phase1 and the W4/W5 decks say 29),
+  Phase 2 proposal Fri 4 Dec, Phase 2 Sun 10 Jan, Forum 15 Wed 13 Jan, Phase 3 Sun 17 Jan, exam
+  Mon 18 Jan 09:30 → Mon 25 Jan 09:30 2027. phase1.html's week plan is 23–29 Nov. Deck slide 1:
+  W5 25 November, W6 2 December; the four deck PDFs were reprinted (same page counts).
+  Supersedes the 11 Nov note below.
 - ⚠ **Two more breaks (11 Nov 2026).** Jan Erik: "push class on 18 to the week after",
   "no class on 16.12 but start again on 6 january", "2nd class after x-mas 13. january".
   `schedule.js` now has `GAPS = [{after:3,weeks:1},{after:5,weeks:1},{after:8,weeks:3}]`
