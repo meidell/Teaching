@@ -28,7 +28,7 @@
      grade". The MAM/MBA syllabus PDF is the authority — confirm. */
   var GRADES = [
     { pct: 10, name: 'Discussion forums',       d: 'posts and replies, on this site, every week' },
-    { pct: 10, name: 'Phase 1 + Phase 2 reports', d: 'system analysis (W5) · data analysis (W8) · on Moodle' },
+    { pct: 10, name: 'Phase 1 + Phase 2 reports', d: 'system analysis (W5) · data analysis (W8) · handed in on this site' },
     { pct: 55, name: 'Capstone report · Phase 3', d: '4,000–5,000 words · integrates all three phases · W9' },
     { pct: 25, name: 'Final exam',              d: '60 MCQ · closed book · 2 h · W10' }
   ];
@@ -89,7 +89,7 @@
       post:{min:400,max:500,day:2,time:'23:59'}, re:{n:2,min:200,day:4,time:'23:59'} }
   ];
 
-  /* ---- the hand-ins, all on Moodle --------------------------------- */
+  /* ---- the hand-ins, all on THIS SITE (handin.html?p=<id>); week pages said Moodle until 16 Nov 2026 */
   var PHASES = [
     { id:'p1', wk:5, day:6, time:'23:59', name:'Phase 1 · Strategic system analysis', words:'1,500–2,000 words', file:'LASTNAME_Phase1_Capstone2026.pdf' },
     { id:'p2p',wk:6, day:4, time:'23:59', name:'Phase 2 · Proposal', words:'≈ 600 words', file:'LASTNAME_Phase2proposal_Capstone2026.pdf' },
