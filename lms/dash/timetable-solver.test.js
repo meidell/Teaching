@@ -146,7 +146,7 @@ function demoInput(seed) {
     if (keep) fixedLoad[s.prof] = (fixedLoad[s.prof] || 0) + k.hours;
     return { id: k.id, name: k.title + (k.group ? ' ' + k.group : ''), mode: k.mode, size: k.size, lab: k.lab, hours: k.hours, students: k.students, retakers: k.retakeIds,
       teacher: keep ? s.prof : null, candidates: k.cand.filter(f => !(s.profStatus === 'declined' && f === s.prof)), pinned: {} }; });
-  const teachers = S.faculty.map(f => ({ id: f.id, name: f.name, avail: P.avail[f.id], maxPerDay: 2, maxHours: Math.max(f.contractHours, fixedLoad[f.id] || 0) }));
+  const teachers = S.faculty.concat(P.extraFaculty).map(f => ({ id: f.id, name: f.name, avail: P.avail[f.id], maxPerDay: 2, maxHours: Math.max(f.contractHours, fixedLoad[f.id] || 0) }));
   return { slots, rooms: P.rooms.map(r => ({ id: r.id, cap: r.cap, lab: !!r.lab })), teachers, classes, weights: {}, seed };
 }
 let demo;

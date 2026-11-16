@@ -1,7 +1,7 @@
 /* =====================================================================
    SCHOOL DATA — one fictitious Geneva business school, generated, static.
    14 Nov 2026, Jan Erik: "the world's best LMS, CRM and management system
-   for business schools (BBA, Master, MBA, DBA), 100–400 students, Geneva …
+   for business schools (BIM, Master, MBA, DBA), 100–400 students, Geneva …
    start with the perfect dashboards (static data) for the director, the
    programme managers, sales & marketing, the professor and the student."
 
@@ -32,8 +32,8 @@
   /* ---- the school and its programmes ---- */
   const school = { name: 'Lakeside School of Management', short: 'LSM', city: 'Geneva', term: 'Autumn 2026', today: TODAY, termWeek: TERM_WEEK, termWeeks: TERM_WEEKS, fictitious: true };
   const programs = [
-    { id: 'bba', name: 'Bachelor of Business Administration', short: 'BBA', level: 'Bachelor', years: 3, ects: 180, fee: 31500, feeUnit: 'per year', mode: 'Full time · weekdays', manager: 'Claire Dubois', intakes: ['Sep', 'Feb'], capacity: 200 },
-    { id: 'msc', name: 'MSc in International Management', short: 'MSc', level: 'Master', years: 1.5, ects: 90, fee: 36000, feeUnit: 'per year', mode: 'Full time · weekdays', manager: 'Marco Bernasconi', intakes: ['Sep', 'Feb'], capacity: 80 },
+    { id: 'bba', name: 'Bachelor in International Management', short: 'BIM', level: 'Bachelor', years: 3, ects: 180, fee: 31500, feeUnit: 'per year', mode: 'Full time · weekdays', manager: 'Claire Dubois', intakes: ['Sep', 'Feb'], capacity: 200 },
+    { id: 'msc', name: 'Master in International Management', short: 'MIM', level: 'Master', years: 1.5, ects: 90, fee: 36000, feeUnit: 'per year', mode: 'Full time · weekdays', manager: 'Marco Bernasconi', intakes: ['Sep', 'Feb'], capacity: 80 },
     { id: 'emba', name: 'Executive MBA', short: 'EMBA', level: 'MBA', years: 1.5, ects: 90, fee: 54000, feeUnit: 'programme', mode: 'Part time · Fri–Sat every other week', manager: 'Sophie Lambert', intakes: ['Sep', 'Feb'], capacity: 50 },
     { id: 'dba', name: 'Doctor of Business Administration', short: 'DBA', level: 'Doctorate', years: 3.5, ects: 180, fee: 62000, feeUnit: 'programme', mode: 'Part time · residencies + supervision', manager: 'Prof. Anil Mehta', intakes: ['Sep'], capacity: 30 },
   ];
@@ -315,7 +315,7 @@
   /* =====================================================================
      SESSIONS — one row per meeting of every section (professor v2, 14 Nov 2026):
      date, topic, kind, materials posted, attendance taken, what was covered.
-     Weekly courses (BBA, MSc) meet in each of the 14 weeks; the EMBA meets on
+     Weekly courses (BIM, MIM) meet in each of the 14 weeks; the EMBA meets on
      the teaching weekends of the odd weeks (7 times); the DBA meets in four
      residencies (weeks 1, 5, 9, 13). A session is held when its date is
      before today. Built after the records, so the first version's draws are
@@ -559,7 +559,7 @@
   }
   crm.openApps.sort((a, b) => b.daysWaiting - a.daysWaiting);
   crm.events = [
-    { date: '2026-11-21', what: 'Open day on campus (BBA, MSc)', registered: 64 },
+    { date: '2026-11-21', what: 'Open day on campus (BIM, MIM)', registered: 64 },
     { date: '2026-11-26', what: 'EMBA info evening, online', registered: 31 },
     { date: '2026-12-03', what: 'QS World MBA Tour, Zurich', registered: null },
     { date: '2027-01-15', what: 'Application deadline, February 2027 intake', registered: null },
@@ -674,7 +674,7 @@
     QS('9', 9, 'The higher education institution shall have an infrastructure planning strategy appropriate to its institutional type. It shall possess the infrastructure (including premises in Switzerland, access to libraries, and research infrastructure) and all other resources necessary to fulfil its mission.'),
   ];
   /* the people who own evidence (fictitious; the programme managers are those of data.js) */
-  const OWN = { quality: 'Dr. Nadia Haddad, head of quality', director: 'School director', office: 'Head of the student office', finance: 'Finance director', hr: 'HR manager', library: 'Librarian', research: 'Prof. Thomas Keller, research dean', comms: 'Communications manager', facilities: 'Facilities manager', bba: 'Claire Dubois, BBA manager', msc: 'Marco Bernasconi, MSc manager', careers: 'Head of career services' };
+  const OWN = { quality: 'Dr. Nadia Haddad, head of quality', director: 'School director', office: 'Head of the student office', finance: 'Finance director', hr: 'HR manager', library: 'Librarian', research: 'Prof. Thomas Keller, research dean', comms: 'Communications manager', facilities: 'Facilities manager', bba: 'Claire Dubois, BIM manager', msc: 'Marco Bernasconi, MIM manager', careers: 'Head of career services' };
   /* what we will show for each standard: our one-paragraph line of argument, and the drafting state */
   const QNARR = {
     '1': ['The board, the director and the academic council each have written duties; the organisation chart and the mission statement show how decisions reach the programmes.', 'reviewed', 'director'],
@@ -687,7 +687,7 @@
     '3.2': ['A responsibility matrix names who measures, who acts and who reports for every quality process.', 'first draft', 'quality'],
     '3.3': ['The quality committee reviews the system each June; the 2025 review changed the course evaluation and the assurance-of-learning cycle.', 'first draft', 'quality'],
     '4.1': ['Each programme has learning goals; assurance of learning measures them twice in a cycle and records the action taken in between.', 'first draft', 'quality'],
-    '4.2': ['The four programmes (BBA, MSc, EMBA, DBA) follow the Bologna levels; each publishes its learning outcomes and ECTS.', 'reviewed', 'bba'],
+    '4.2': ['The four programmes (BIM, MIM, EMBA, DBA) follow the Bologna levels; each publishes its learning outcomes and ECTS.', 'reviewed', 'bba'],
     '4.3': ['The study regulations cover admission, progression, retakes, recognition and graduation; the complaints and appeals procedure is published.', 'reviewed', 'office'],
     '4.4': ['Every course is evaluated each term; the results and the professor’s response go back to the class and to the programme committee.', 'first draft', 'quality'],
     '5.1': ['As a business school of the university type for continuing education, research focuses on applied management; core faculty have publication objectives.', 'first draft', 'research'],
@@ -759,8 +759,8 @@
   /* ACTIONS — closing the loop: one record per finding, with the second measurement and its result */
   const AC = (id, source, ref, finding, action, owner, opened, due, state, m1, m2, unit) => ({ id, source, ref, finding, action, owner, opened, due, state, m1, m2, unit });
   const actions = [
-    AC('A01', 'Learning goal', '4.1', 'BBA: only 68 % of students analysed the data case correctly (target 80 %).', 'Added two workshops on regression and a practice data case to Statistics for Business.', OWN.bba, '2025-07-10', '2026-06-30', 'done', { term: 'Spring 2025', v: 68 }, { term: 'Spring 2026', v: 74 }, '% meeting the goal'),
-    AC('A02', 'Learning goal', '4.1', 'BBA: ethical reasoning fell from 81 % to 79 % (target 80 %).', 'Add a graded ethics question to two core courses.', OWN.bba, '2026-07-10', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 79 }, null, '% meeting the goal'),
+    AC('A01', 'Learning goal', '4.1', 'BIM: only 68 % of students analysed the data case correctly (target 80 %).', 'Added two workshops on regression and a practice data case to Statistics for Business.', OWN.bba, '2025-07-10', '2026-06-30', 'done', { term: 'Spring 2025', v: 68 }, { term: 'Spring 2026', v: 74 }, '% meeting the goal'),
+    AC('A02', 'Learning goal', '4.1', 'BIM: ethical reasoning fell from 81 % to 79 % (target 80 %).', 'Add a graded ethics question to two core courses.', OWN.bba, '2026-07-10', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 79 }, null, '% meeting the goal'),
     AC('A03', 'Learning goal', '4.1', 'EMBA: 71 % made a sound investment decision (target 80 %).', 'Pre-reading and an online valuation module before Finance for Executives.', OWN.quality, '2025-02-01', '2025-09-30', 'done', { term: 'Autumn 2024', v: 71 }, { term: 'Autumn 2025', v: 77 }, '% meeting the goal'),
     AC('A04', 'Learning goal', '4.1', 'DBA: 70 % of proposals met the doctoral standard (target 80 %); one cycle only.', 'Proposal-writing workshop in residency 2 and a second measurement at the 2026 defences.', null, '2026-01-20', '2026-10-31', 'in progress', { term: 'Autumn 2025', v: 70 }, null, '% meeting the goal'),
     AC('A05', 'Course evaluation', '4.4', 'Course evaluations: the follow-up action is recorded for only half of the courses.', 'Every professor answers the evaluation in writing within two weeks; the template is in the LMS.', OWN.quality, '2026-07-15', '2026-11-06', 'in progress', { term: 'Spring 2026', v: 50 }, null, '% of courses with a recorded follow-up'),
@@ -1098,14 +1098,14 @@
   /* THE DECISION LOG: what was decided, what was expected, and what happened */
   const decisionLog = [
     { date: '2025-12-12', decision: 'EMBA fee', chose: 'Hold the EMBA fee at CHF 54,000 for 2026–27', owner: 'Director', expected: 'Keep the EMBA September intake at 26 or more', review: '2026-10-01', actual: 'September 2026 intake: 26', result: 'worked' },
-    { date: '2026-02-20', decision: 'Marketing mix', chose: 'Move CHF 30K from fairs to paid search', owner: 'Sales & marketing', expected: 'More MSc applications by June', review: '2026-06-30', actual: 'MSc applications 17 % above the cycle before', result: 'worked' },
+    { date: '2026-02-20', decision: 'Marketing mix', chose: 'Move CHF 30K from fairs to paid search', owner: 'Sales & marketing', expected: 'More MIM applications by June', review: '2026-06-30', actual: 'MIM applications 17 % above the cycle before', result: 'worked' },
     { date: '2026-03-15', decision: 'Grading delays', chose: 'Set a grade-entry deadline per assignment', owner: 'Programme managers', expected: 'Fewer complaints about late grades', review: '2026-12-18', actual: 'Measured again in December', result: 'open' },
     { date: '2026-05-08', decision: 'Agents', chose: 'Add a third agent for Asia (Campus Asia Partners)', owner: 'Director', expected: '6 deposits from Asia for September 2026', review: '2026-09-30', actual: '2 deposits from the new agent', result: 'did not work' },
   ];
   /* STRATEGY 2025–2030: the multi-year goals, each with its measure, target and the series so far */
   const strategy = [
     { goal: 'Grow to 330 students by 2028–29', measure: 'students enrolled', target: 330, unit: '', labels: YEARS, series: lastHC },
-    { goal: 'Raise the share of master and executive students to 45 %', measure: '% of students in the MSc, EMBA and DBA', target: 45, unit: ' %', labels: YEARS, series: YEARS.map((_, i) => Math.round(100 * (headcount.msc[i] + headcount.emba[i] + headcount.dba[i]) / lastHC[i])) },
+    { goal: 'Raise the share of master and executive students to 45 %', measure: '% of students in the MIM, EMBA and DBA', target: 45, unit: ' %', labels: YEARS, series: YEARS.map((_, i) => Math.round(100 * (headcount.msc[i] + headcount.emba[i] + headcount.dba[i]) / lastHC[i])) },
     { goal: 'Keep first-year retention at 90 % or more', measure: '% of a September intake still enrolled a year later', target: 90, unit: ' %', labels: YEARS.slice(0, 5), series: retSchool },
     { goal: 'Graduates employed six months after graduation: 90 %', measure: '% employed (survey)', target: 90, unit: ' %', labels: ['2021', '2022', '2023', '2024', '2025'], series: [82, 84, 85, 86, graduateOutcomes.employed6m] },
     { goal: 'Pass the institutional accreditation in May 2027', measure: '% of evidence in place', target: 100, unit: ' %', labels: ['Mar 26', 'Jun 26', 'Sep 26', 'Nov 26'], series: [32, 38, 43, Math.round(100 * evidence.filter(e => e.status === 'in place').length / evidence.length)] },
@@ -1231,7 +1231,7 @@
     adPool: {
       period: 'November 2024 to October 2026', region: 'Switzerland and the French border regions',
       bba: { ads: 2140, roles: 'first jobs of bachelor graduates: junior analyst, assistant manager, sales and marketing assistant' },
-      msc: { ads: 1240, roles: 'jobs MSc graduates take: consultant, project manager, business analyst' },
+      msc: { ads: 1240, roles: 'jobs MIM graduates take: consultant, project manager, business analyst' },
       emba: { ads: 610, roles: 'senior jobs: director, head of a business unit, general manager' },
       dba: { ads: 180, roles: 'senior and academic jobs held by doctoral graduates: research director, professor of practice, partner' },
     },
@@ -1341,58 +1341,84 @@
       { id: 'tell', name: 'Enrol the students and tell them', why: 'Students receive the time, the room, the teacher and the syllabus two weeks before the first class.', due: '2027-02-01' },
       { id: 'valid', name: 'Validate the class', why: 'A validated class appears on the dashboards, the timetable and the students’ calendars. Only validate when every step above is done.', due: '2027-02-08' },
     ];
-    /* electives: the placeholder becomes the options offered this term; a student keeps one track */
-    const EL = { 'Elective 1': ['Luxury Brand Management', 'Fintech Fundamentals', 'Family Business'], 'Elective 2': ['Sports Business', 'Hospitality Management', 'Sustainability Reporting'],
-      'Specialisation course 1': ['Specialisation: Finance · Valuation', 'Specialisation: Marketing · Brand Strategy'], 'Specialisation course 2': ['Specialisation: Finance · Risk', 'Specialisation: Marketing · Digital Analytics'] };
-    const EL_AREA = { 'Luxury Brand Management': 'Marketing', 'Fintech Fundamentals': 'Finance', 'Family Business': 'Strategy', 'Sports Business': 'Marketing', 'Hospitality Management': 'Operations', 'Sustainability Reporting': 'Accounting',
-      'Specialisation: Finance · Valuation': 'Finance', 'Specialisation: Marketing · Brand Strategy': 'Marketing', 'Specialisation: Finance · Risk': 'Finance', 'Specialisation: Marketing · Digital Analytics': 'Data & AI' };
-    const itemOf = (pid, title) => { for (const m of curriculum[pid]) for (const it of m.items) if (it.title === title) return it; return null; };
-    const need = {}, sup = {};
-    const add = (s, it, kind) => {
-      let title = it.title, area = (itemOf(s.prog, it.title) || {}).area; if (area === 'Practice') area = 'Strategy';
-      if (EL[title]) { const opts = EL[title]; title = opts[Math.floor(hsh(s.id + (s.prog === 'msc' ? 'track' : title)) * opts.length)]; area = EL_AREA[title]; }
-      if (!['course', 'elective'].includes(it.type)) { const k = s.prog + '|' + it.title; (sup[k] = sup[k] || { prog: s.prog, title: it.title, type: it.type, n: 0 }).n++; return; }
-      const k = s.prog + '|' + title, src = itemOf(s.prog, it.title) || {};
-      const c = need[k] = need[k] || { prog: s.prog, code: it.code, title, area: area || 'Strategy', ects: it.ects, type: it.type, sem: it.sem, hours: src.hours || Math.round(it.ects * 6), students: [], retakers: [], newcomers: 0 };
-      c.students.push(s.id); if (kind === 'retake') c.retakers.push(s.id);
+    /* 16 Nov 2026 (Jan Erik: "use the real GBS programmes", "BIM (bachelor), MIM"): the planner plans Geneva
+       Business School's BIM and MIM only, with the course titles and codes printed on the cards of GBS's
+       planning wall (photographed 16 Nov 2026), in the semester the card names (Core / S2, Core / S4, SP =
+       elective). Spring is the even semester. The teachers stay invented. Every course = 14 weekly 2-hour
+       sessions = 28 h. A few codes were hard to read on the photos and are as close as could be read.
+       [code, title, area, lab] */
+    const GBS = {
+      bba: { core: {
+          2: [['BIM-FM01', 'Fundamentals of Marketing', 'Marketing'], ['BIM-ASA01', 'A Strategic Approach to Sustainability', 'Strategy'], ['BIM-FSA01', 'Financial Statement Analysis I', 'Accounting'],
+              ['BIM-BF02', 'Business Finance II', 'Finance'], ['BIM-OP01', 'Organizational Psychology I', 'Leadership & HR'], ['BIM-BEP01', 'Basics for Economics – A practical approach', 'Economics']],
+          4: [['BIM-FSA02', 'Financial Statement Analysis Level II', 'Accounting'], ['BIM-GG01', 'Globalisation and Geopolitics', 'Economics'], ['BIM-CG01', 'Corporate Governance', 'Law & Ethics'],
+              ['BIM-CMSR01', 'Change Management as strategic response', 'Operations'], ['BIM-SMC01', 'Social Media Content Management', 'Digital Business', true], ['BIM-SML01', 'Strategic Management and Leadership', 'Strategy']] },
+        sp: [['BIM-GED01', 'GRC and ESG in the Digital Age', 'Law & Ethics'], ['BIM-MMC01', 'Multinational Companies', 'Strategy'], ['BIM-SF02', 'Strategic Foresight', 'Strategy'],
+             ['BIM-UXC01', 'UX and Conversion', 'Digital Business', true], ['BIM-GSP01', 'Geopolitics and scenario planning', 'Economics'], ['BIM-FSE01', 'Fundamentals of starting an e-commerce', 'Entrepreneurship'],
+             ['BIM-AIB02', 'AI Agents and Blockchain', 'Data & AI']],   /* Startup Contracts (BIM-SC01) is not offered this term */
+        spTake: { 4: 2 } },
+      msc: { core: { 2: [['MIM-ITT01', 'International Trading Techniques', 'Operations'], ['MIM-NMA01', 'Negotiation, Mediation and Arbitration', 'Law & Ethics'], ['MIM-SF01', 'Strategic Foresight and scenario planning', 'Strategy']] },
+        sp: [['MIM-BDM01', 'B2B Digital Marketing', 'Marketing'], ['MIM-EDTN01', 'Economic Diplomacy', 'Economics'], ['MIM-AID01', 'AI-Driven Growth', 'Data & AI'], ['MIM-FB01', 'The Future of Bitcoin', 'Finance']],
+        spTake: { 2: 1, 3: 2 } },
     };
-    students.filter(s => s.status === 'active' && s.plan).forEach(s => {
-      s.plan.terms.filter(t => t.label === T.label).forEach(t => t.items.forEach(it => add(s, it, 'plan')));
-      (s.plan.retakes || []).filter(r => r.retakeTerm === T.label).forEach(r => add(s, r, 'retake'));
+    const need = {}, sup = {};
+    const put = (prog, c, sem, type, sid, retake) => { const k = prog + '|' + c[0];
+      const x = need[k] = need[k] || { prog, code: c[0], title: c[1], area: c[2], lab: !!c[3], ects: 4, type, sem, hours: 28, students: [], retakers: [], newcomers: 0 };
+      if (!x.students.includes(sid)) x.students.push(sid); if (retake) x.retakers.push(sid); };
+    students.filter(s => s.status === 'active' && s.plan && GBS[s.prog]).forEach(s => {
+      const G = GBS[s.prog], t = s.plan.terms.find(x => x.label === T.label); if (!t) return;
+      t.items.filter(it => !['course', 'elective'].includes(it.type)).forEach(it => { const k = s.prog + '|' + it.title; (sup[k] = sup[k] || { prog: s.prog, title: it.title, type: it.type, n: 0 }).n++; });
+      const sem = t.items.length ? t.items[0].sem : t.sem;
+      (G.core[sem] || []).forEach(c => put(s.prog, c, sem, 'course', s.id));
+      const take = (G.spTake || {})[sem] || 0;
+      if (take) G.sp.map(c => [hsh(s.id + c[0]), c]).sort((x, y) => x[0] - y[0]).slice(0, take).forEach(([, c]) => put(s.prog, c, sem, 'elective', s.id));
+      /* a retake: the course of that semester that the student failed, read as the GBS course of the same semester */
+      (s.plan.retakes || []).filter(r => r.retakeTerm === T.label).forEach(r => { const pool = G.core[r.sem]; if (pool) put(s.prog, pool[Math.floor(hsh(s.id + r.title) * pool.length)], r.sem, 'course', s.id, true); });
     });
     /* February newcomers: deposits paid for 2027-02 take semester 2 */
     const feb = {}; registrar.files.filter(f => f.intake === '2027-02' && f.stage === 'deposit').forEach(f => feb[f.prog] = (feb[f.prog] || 0) + 1);
-    Object.values(need).forEach(c => { if (c.sem === 2 && feb[c.prog]) c.newcomers = Math.round(feb[c.prog] / (c.type === 'elective' ? 2 : 1)); });
+    Object.values(need).forEach(c => { if (c.sem === 2 && feb[c.prog]) c.newcomers = Math.round(feb[c.prog] / (c.type === 'elective' ? c.prog === 'msc' ? 4 : 2 : 1)); });
     /* groups: split by a stable hash of the student, so group A of one course is group A of the next */
     const classes = [];
     Object.values(need).sort((a, b) => a.prog.localeCompare(b.prog) || a.sem - b.sem || a.title.localeCompare(b.title)).forEach(c => {
       const total = c.students.length + c.newcomers, g = Math.max(1, Math.ceil(total / maxGroup));
       const mode = c.prog === 'emba' ? (/residency/i.test(c.title) ? 'block' : 'weekend') : c.prog === 'dba' ? 'block' : 'weekly';
+      /* even groups (16 Nov 2026): students ordered by a stable hash and dealt in turn, newcomers to the smallest groups */
+      const ordered = c.students.slice().sort((x, y) => hsh(x + 'grp') - hsh(y + 'grp')), nc = Array.from({ length: g }, (_, k) => 0);
+      for (let i = 0; i < c.newcomers; i++) { let m = 0; for (let k = 1; k < g; k++) if (ordered.filter((_, j) => j % g === k).length + nc[k] < ordered.filter((_, j) => j % g === m).length + nc[m]) m = k; nc[m]++; }
       for (let k = 0; k < (mode === 'weekly' ? g : 1); k++) {
-        const st = g > 1 && mode === 'weekly' ? c.students.filter(id => Math.floor(hsh(id + 'grp') * g) === k) : c.students;
+        const st = g > 1 && mode === 'weekly' ? ordered.filter((_, j) => j % g === k) : c.students;
         classes.push({ id: 'k' + (classes.length + 1), prog: c.prog, code: c.code, title: c.title, group: g > 1 && mode === 'weekly' ? 'ABCDEFGH'[k] : null, area: c.area, ects: c.ects, type: c.type, sem: c.sem, hours: c.hours, mode,
-          lab: /Data|Analytics|Statist|Quantitative|Fintech/.test(c.title), students: st, retakeIds: c.retakers.filter(id => st.includes(id)), retakers: c.retakers.filter(id => st.includes(id)).length, newcomers: g > 1 ? Math.round(c.newcomers / g) : c.newcomers });
+          lab: c.lab, students: st, retakeIds: c.retakers.filter(id => st.includes(id)), retakers: c.retakers.filter(id => st.includes(id)).length, newcomers: g > 1 ? nc[k] : c.newcomers });
       }
     });
     classes.forEach(k => { k.size = k.students.length + k.newcomers; });
+    /* 16 Nov 2026: GBS teaches with many adjuncts (about 45 names on its wall). The 18 teachers of the other
+       dashboards cannot carry 53 classes, so the planner adds ten INVENTED adjuncts recruited for the spring
+       term. They live only here (planning.extraFaculty): no other dashboard counts them. */
+    const extraFaculty = [['Dr. Amara Diallo', 'Law & Ethics', 84], ['Dr. Hannah Brandt', 'Law & Ethics', 56], ['Dr. Jonas Lindqvist', 'Strategy', 84], ['Dr. Leïla Benali', 'Strategy', 84],
+      ['Dr. Tomás Ortega', 'Leadership & HR', 84], ['Dr. Mei Lin', 'Accounting', 84], ['Dr. Kofi Mensah', 'Economics', 56], ['Dr. Sofia Marek', 'Finance', 56], ['Dr. Inês Carvalho', 'Marketing', 56], ['Dr. Rafael Soto', 'Digital Business', 56]]
+      .map(([name, area, h], i) => ({ id: 'a' + (i + 1), name, area, type: 'Adjunct', contractBasis: 'teaching hours for the spring 2027 term', contractHours: h, eval: Math.round((3.8 + hsh(name) * 0.9) * 10) / 10, spring: true }));
+    const FAC = faculty.concat(extraFaculty);
     /* teaching candidates: same subject area first, then the neighbours */
     const NEAR = { Accounting: ['Finance'], Finance: ['Accounting', 'Economics'], Economics: ['Finance', 'Statistics'], Statistics: ['Data & AI', 'Economics'], 'Data & AI': ['Statistics', 'Digital Business'], 'Digital Business': ['Data & AI', 'Marketing'], Marketing: ['Digital Business', 'Strategy'], Strategy: ['Leadership & HR', 'Entrepreneurship'], 'Leadership & HR': ['Strategy'], Operations: ['Strategy', 'Data & AI'], 'Law & Ethics': ['Strategy'], Entrepreneurship: ['Strategy', 'Marketing'] };
-    classes.forEach(k => { k.cand = faculty.filter(f => f.area === k.area).map(f => f.id).concat(faculty.filter(f => (NEAR[k.area] || []).includes(f.area)).map(f => f.id)); });
+    classes.forEach(k => { k.cand = FAC.filter(f => f.area === k.area).map(f => f.id).concat(FAC.filter(f => (NEAR[k.area] || []).includes(f.area)).map(f => f.id)); });
     /* availability of each teacher: core faculty mostly free on weekdays, adjuncts more often at the weekend */
     const avail = {};
-    faculty.forEach(f => { const a = avail[f.id] = {}; const core = f.type === 'Core faculty';
+    FAC.forEach(f => { const a = avail[f.id] = {}; const core = f.type === 'Core faculty';
       slots.weekly.forEach(s => { const r = hsh(f.id + s.id), eve = s.part === 'evening';   /* core faculty rarely teach the evening slot; adjuncts often prefer it */
         a[s.id] = eve ? (core ? (r < 0.2 ? 'y' : r < 0.45 ? 'm' : 'n') : (r < 0.6 ? 'y' : r < 0.8 ? 'm' : 'n')) : core ? (r < 0.72 ? 'y' : r < 0.86 ? 'm' : 'n') : (r < 0.38 ? 'y' : r < 0.6 ? 'm' : 'n'); });
       slots.weekend.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = core ? (r < 0.35 ? 'y' : r < 0.6 ? 'm' : 'n') : (r < 0.7 ? 'y' : r < 0.85 ? 'm' : 'n'); });
       slots.block.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = r < 0.6 ? 'y' : r < 0.8 ? 'm' : 'n'; }); });
     /* where preparation stands on 15 Nov 2026. Slots are dealt per cohort and group so a cohort has no clash
        with itself; retakers (who follow another cohort) are where clashes appear. */
-    const seed = {}, used = {}, profBusy = {}, roomBusy = {}, retakersOf = k => k.retakeIds || []; const ALLRK = new Set(classes.flatMap(k => k.retakeIds));
+    const seed = {}, used = {}, profBusy = {}, profHours = {}, roomBusy = {}, retakersOf = k => k.retakeIds || []; const ALLRK = new Set(classes.flatMap(k => k.retakeIds));
     const order = ['0915', '1415', '1130', '1630'].flatMap((t, i) => DAYS.map((d, j) => DAYS[(j + i) % 5] + '-' + t));   /* the evening slot is left for the solver */
     classes.forEach((k, i) => {
       const r = hsh(k.id + k.title), st = { size: r < 0.8, prof: null, profStatus: 'none', profAt: null, slot: null, room: null, syl: 'none', books: false, page: false, assess: false, tell: false, valid: false };
       if (r < 0.6) st.profStatus = 'accepted'; else if (r < 0.85) st.profStatus = 'invited'; else if (r < 0.9) st.profStatus = 'declined';
-      if (st.profStatus !== 'none') { const c = k.cand.filter(f => !(st.profStatus === 'accepted' && profBusy[f] >= 3)); st.prof = c[Math.floor(hsh(k.id + 'p') * Math.min(2, c.length))] || k.cand[0] || null; st.profAt = st.profStatus === 'invited' ? ['2026-11-02', '2026-11-05', '2026-11-11', '2026-11-13'][Math.floor(hsh(k.id + 'd') * 4)] : '2026-10-' + (20 + Math.floor(hsh(k.id + 'd') * 9)); }
+      if (st.profStatus !== 'none') { const c = k.cand.filter(f => !(st.profStatus === 'accepted' && profBusy[f] >= 3) && (profHours[f] || 0) + k.hours <= (FAC.find(x => x.id === f) || {}).contractHours); st.prof = c[Math.floor(hsh(k.id + 'p') * Math.min(2, c.length))] || null; if (!st.prof) st.profStatus = 'none'; st.profAt = st.profStatus === 'invited' ? ['2026-11-02', '2026-11-05', '2026-11-11', '2026-11-13'][Math.floor(hsh(k.id + 'd') * 4)] : '2026-10-' + (20 + Math.floor(hsh(k.id + 'd') * 9)); }
+      if (st.prof && st.profStatus !== 'declined') profHours[st.prof] = (profHours[st.prof] || 0) + k.hours;
       if (st.profStatus === 'accepted') { profBusy[st.prof] = (profBusy[st.prof] || 0) + 1;
         if (hsh(k.id + 's') < 0.8) {
           const base = k.mode === 'weekly' ? order : k.mode === 'weekend' ? slots.weekend.map(s => s.id) : slots.block.map(s => s.id), off = Math.floor(hsh(k.prog + k.sem) * base.length);
@@ -1406,7 +1432,7 @@
       seed[k.id] = st;
     });
     const supervision = Object.values(sup).map(x => Object.assign(x, { assigned: Math.round(x.n * (0.4 + 0.5 * hsh(x.title))) }));
-    return { term: T, slots, rooms, maxGroup, steps, classes, avail, seed, supervision, newcomers: feb };
+    return { term: T, slots, rooms, maxGroup, steps, classes, avail, seed, supervision, newcomers: feb, extraFaculty };
   })();
 
   /* =====================================================================
