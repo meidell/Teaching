@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/HEG/statistics/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Week 9 · Reading a regression printout · Applied Statistics · HEG</title>
+<meta name="description" content="Applied Statistics, Week 9 — Excel's regression output read cell by cell: the coefficients, the sums of squares, degrees of freedom and mean squares, the standard error, R Square, Multiple R and Adjusted R Square, F and Significance F, the t Stat and P-value of each coefficient, and the 95% intervals. Interactive widgets, two worked examples and an exercise per section.">
+<meta name="theme-color" content="#002C46">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="stylesheet" href="/shared/themes/heg.css">
+<script src="/shared/theme.js"></script>
+<link rel="stylesheet" href="stats.css">
+<style>
+/* Week 9 (rebuilt 16 Nov 2026): Excel's regression printout, cell by cell.
+   Light values are var() fallbacks; dark-only tokens at the end. */
+.xlwrap{overflow-x:auto;margin:10px 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);-webkit-overflow-scrolling:touch;}
+.xlp{border-collapse:collapse;font:13px/1.3 Calibri,Carlito,Arial,sans-serif;font-variant-numeric:tabular-nums;min-width:760px;width:100%;}
+.xlp td{border:1px solid var(--xl-grid,#E3E6E9);padding:3px 7px;white-space:nowrap;color:var(--ink);text-align:right;height:21px;}
+.xlp td.xlab{text-align:left;}
+.xlp td.xh{text-align:left;font-weight:700;}
+.xlp td.xsec{text-align:left;font-style:italic;border-bottom:1.5px solid var(--ink);}
+.xlp tr.xhd td{font-style:italic;text-align:center;border-bottom:1.5px solid var(--ink);}
+.xlp tr.xend td.u{border-bottom:1.5px solid var(--ink);}
+.xlp td.xc{cursor:pointer;}
+.xlp td.xc:hover{background:var(--accent-pale,#FFF0EF);}
+.xlp td.on{background:var(--accent-fill,#CC0000)!important;color:#fff;font-weight:700;}
+.xlp td.dep{background:var(--viz-hi,rgba(204,0,0,.26));}
+.xlp td.bl{background:var(--bl-wash,#FFF3B0);color:var(--bl-ink,#7A5B00);font-weight:800;text-align:center;}
+.xlp td.ok{background:rgba(47,133,90,.18);}
+.xlp td.no{background:rgba(232,163,60,.28);}
+.xcap{font-size:12.5px;color:var(--grey);margin:2px 0 10px;}
+.xinfo{border-left:4px solid var(--accent,#CC0000);background:var(--card,#fff);border-radius:0 12px 12px 0;padding:12px 16px;margin:8px 0 4px;font-size:14.5px;line-height:1.55;color:var(--ink-soft);min-height:60px;}
+.xinfo .nm{font-size:16px;font-weight:800;color:var(--ink);margin-bottom:4px;}
+.xinfo .calc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;background:var(--paper,#F6F7F7);border-radius:8px;padding:7px 10px;margin:8px 0 6px;white-space:normal;color:var(--ink);}
+.xinfo .go{font-size:13px;}
+.xinfo a{color:var(--accent-deep);font-weight:700;}
+.order{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+.order span{border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:12.5px;background:var(--card,#fff);color:var(--ink-soft);}
+.order span b{color:var(--accent);margin-right:4px;}
+.pl{display:block;width:100%;height:auto;background:var(--card,#fff);border:1px solid var(--line);border-radius:12px;touch-action:none;}
+.pl .ax{stroke:var(--viz-axis,rgba(36,39,42,.3));stroke-width:1;}
+.pl .gl{stroke:var(--viz-axis,rgba(36,39,42,.3));stroke-opacity:.35;}
+.pl text{fill:var(--grey,#5F6B76);font-size:11px;font-family:Helvetica,Arial,sans-serif;}
+.pl text.lb{fill:var(--ink,#24272A);font-weight:700;}
+.pl .pt{fill:var(--viz-navy,#002C46);}
+.pl .pt.sel{fill:var(--accent,#CC0000);}
+.pl .pt.drag{cursor:ns-resize;}
+.pl .ln{stroke:var(--accent,#CC0000);stroke-width:2.4;fill:none;}
+.pl .ln2{stroke:var(--viz-blue,#3E6E96);stroke-width:1.8;stroke-dasharray:6 4;fill:none;}
+.pl .mean{stroke:var(--grey,#5F6B76);stroke-dasharray:4 4;stroke-width:1.4;}
+.pl .sq{fill:var(--viz-red-fill,rgba(204,0,0,.14));stroke:var(--accent,#CC0000);stroke-opacity:.45;}
+.pl .band{fill:var(--viz-fill,rgba(0,44,70,.12));}
+.pl .segT{stroke:var(--viz-navy,#002C46);stroke-width:3.5;}
+.pl .segR{stroke:var(--teal,#0B7285);stroke-width:3.5;}
+.pl .segE{stroke:var(--accent,#CC0000);stroke-width:3.5;}
+.pl .cv{fill:none;stroke:var(--viz-navy,#002C46);stroke-width:2;}
+.pl .tail{fill:var(--viz-hi,rgba(204,0,0,.26));}
+.pl .bar{fill:var(--viz-blue,#3E6E96);}
+.pl .bar.hi{fill:var(--accent,#CC0000);}
+.pl .obs{stroke:var(--accent,#CC0000);stroke-width:2.2;}
+.pl .crit{stroke:var(--grey,#5F6B76);stroke-dasharray:3 3;}
+.pl .ci{stroke:var(--accent,#CC0000);stroke-width:6;stroke-linecap:round;}
+.pl .zero{stroke:var(--ink,#24272A);stroke-width:1.5;}
+.sw{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px;}
+.sw.t{background:var(--viz-navy,#002C46);} .sw.r{background:var(--teal,#0B7285);} .sw.e{background:var(--accent,#CC0000);} .sw.f{background:var(--viz-fill,rgba(0,44,70,.12));border:1px solid var(--line);} .sw.b{background:var(--viz-blue,#3E6E96);}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-soft);margin:6px 0;}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 16px;margin:10px 0;}
+.ctl label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:3px;}
+.ctl label .vv{color:var(--accent-deep);font-variant-numeric:tabular-nums;}
+.ctl input[type=range]{width:100%;accent-color:var(--accent);}
+.ctl select{width:100%;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--card,#fff);color:var(--ink);font:inherit;font-size:13.5px;}
+.readout{background:var(--card,#fff);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;line-height:1.55;color:var(--ink-soft);margin-top:10px;}
+.readout b{color:var(--ink);}
+.readout .big{font-size:22px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;}
+.stack{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:8px 0 4px;}
+.stack div{height:100%;transition:width .25s;}
+.stack .r{background:var(--teal,#0B7285);} .stack .e{background:var(--accent,#CC0000);}
+.dots{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;}
+.dots i{width:18px;height:18px;border-radius:50%;display:inline-block;border:2px solid var(--viz-navy,#002C46);}
+.dots i.used{background:var(--grey,#5F6B76);border-color:var(--grey,#5F6B76);}
+.dots i.free{background:var(--accent,#CC0000);border-color:var(--accent,#CC0000);}
+.mtab{border-collapse:collapse;font-size:13px;margin:8px 0;font-variant-numeric:tabular-nums;display:block;overflow-x:auto;max-width:100%;}
+.mtab th,.mtab td{border:1px solid var(--line);padding:4px 8px;text-align:right;}
+.mtab th{background:rgba(0,44,70,.08);color:var(--navy);font-weight:800;}
+.mtab td.l,.mtab th.l{text-align:left;}
+.mtab tr.sum td{font-weight:800;border-top:2px solid var(--ink);}
+.mtab tr.sel td{background:var(--accent-pale,#FFF0EF);}
+.dtab{border-collapse:collapse;font-size:13px;margin:8px 0;font-variant-numeric:tabular-nums;display:block;overflow-x:auto;max-width:100%;background:var(--card,#fff);}
+.dtab th,.dtab td{border:1px solid var(--line);padding:4px 9px;text-align:center;}
+.dtab th{background:rgba(204,0,0,.08);color:var(--navy);font-weight:800;}
+.dtab th.l{text-align:left;}
+.formula{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;line-height:1.7;color:var(--ink);overflow-x:auto;}
+.xsol{display:none;margin-top:10px;}
+.xsol.show{display:block;animation:fade .3s ease;}
+.xsol .step{margin:6px 0;font-size:14.5px;line-height:1.55;}
+.xres{margin:12px 0 2px;padding:10px 14px;border-radius:12px;background:var(--navy-surface,#002C46);color:#fff;font-size:15px;line-height:1.45;}
+.xres b{color:#fff;}
+.xres .xl{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.75;font-weight:800;margin-bottom:2px;}
+.turn{background:var(--card,#fff);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:10px;}
+.turn .trow{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap;}
+.turn .trow label{flex:1 1 260px;font-weight:700;font-size:14px;color:var(--ink);}
+.turn input[type=text]{width:140px;padding:7px 9px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;background:var(--card,#fff);color:var(--ink);}
+.turn input.ok{border-color:var(--ok,#2F855A);} .turn input.no{border-color:var(--no,#B42318);}
+.turn .mk{font-weight:800;min-width:16px;}
+.turn .ch{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}
+.turn .ch button{border:1.5px solid var(--line);background:var(--paper,#F6F7F7);color:var(--ink-soft);border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;cursor:pointer;text-align:left;}
+.turn .ch button.on{border-color:var(--accent);color:var(--ink);font-weight:700;}
+.turn .ch button.ok{border-color:var(--ok,#2F855A);} .turn .ch button.no{border-color:var(--no,#B42318);}
+.findq{font-size:15px;font-weight:700;color:var(--ink);margin:6px 0;}
+.findq .n{color:var(--accent);margin-right:6px;}
+.dlg{border:1px solid var(--line);border-radius:10px;background:var(--paper,#F6F7F7);padding:12px 14px;font:13px Calibri,Arial,sans-serif;color:var(--ink);max-width:460px;}
+.dlg .dt{font-weight:700;margin-bottom:8px;}
+.dlg .dr{display:flex;align-items:center;gap:8px;margin:5px 0;}
+.dlg .dr span.f{flex:0 0 110px;}
+.dlg .box{border:1px solid var(--line);background:var(--card,#fff);padding:2px 6px;border-radius:3px;font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+.dlg input[type=number]{width:60px;padding:2px 4px;border:1px solid var(--line);border-radius:3px;background:var(--card,#fff);color:var(--ink);}
+.chain{font-size:14px;line-height:1.6;}
+.chain div{padding:5px 0;border-bottom:1px dashed var(--line);}
+.chain b{color:var(--accent-deep);}
+.chain code{font-family:ui-monospace,Menlo,monospace;font-size:13px;}
+.casechip{display:inline-block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;color:var(--navy);background:var(--th-wash,#E9EEF3);border-radius:20px;padding:2px 10px;margin-right:6px;}
+@media(max-width:560px){.turn input[type=text]{width:120px;}.xinfo{font-size:14px;}.pl text{font-size:19px;}.pl text.lb{font-size:19px;}}
+:root[data-theme="dark"]{--xl-grid:#2A323B;--bl-wash:#4A3D0B;--bl-ink:#FFE08A;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="statistics">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="logo_heg-ge.svg" alt="HEG Genève">
+    <span class="course">APPLIED STATISTICS · WEEK 9</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">← Course</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">This week</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Week 9 · Applied Statistics · HEG Genève</div>
+    <h1>Reading Excel's regression printout, one cell at a time</h1>
+    <p class="sub">A regression finds the straight line that best predicts one number (y) from one or more other numbers (x). In practice you never compute it by hand: Excel computes it and prints a table of about thirty numbers. The exam gives you such a table with some cells left blank and asks you to fill them in and to say what they mean. This week explains every cell of that table: what it measures, how Excel computes it from the cells around it, and what it tells a business.</p>
+    <p class="sub" style="margin-top:12px;">The printout below is the one we read all week. It comes from a small made-up business: <b>Lina's online tea shop</b>. For eight weeks Lina changed what she spent on Instagram ads and counted the orders each week. y is the number of orders in a week; x is the ad spend that week, in hundreds of CHF (x = 2 means CHF 200).</p>
+    <div class="liveinfo">
+      <span class="li">🏫 In class: <b>3 h</b> · bring a calculator</span>
+      <span class="li">📖 Textbook: <b>Saylor, ch. 10</b> — the same ideas, by hand</span>
+      <span class="li">🧮 Each section: a widget, two examples, one exercise</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">The data</span>
+    <h3>Eight weeks of the tea shop</h3>
+    <table class="dtab"><tr><th class="l">Week</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td></tr><tr><th class="l">x · ad spend (CHF 100s)</th><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td></tr><tr><th class="l">y · orders that week</th><td>41</td><td>50</td><td>51</td><td>62</td><td>64</td><td>75</td><td>74</td><td>86</td></tr></table>
+    <span class="label play" style="margin-top:14px;">Widget · the printout map</span>
+    <h3>Click any cell of the printout to see what it is</h3>
+    <p class="mini">The panel under the table names the cell, says in one sentence what it measures, and shows how Excel computed it. The cells it is computed from light up in pale red. The table scrolls sideways on a phone.</p>
+    <div id="homeMap"></div>
+    <p class="mini" style="margin-top:12px;">We read the printout in the order Excel computes it, not from top to bottom, because most cells are computed from other cells:</p>
+    <div class="order"><span><b>9.2</b>Coefficients</span><span><b>9.3</b>SS</span><span><b>9.4</b>df · MS · Standard Error · Observations</span><span><b>9.5</b>R Square · Multiple R · Adjusted R Square</span><span><b>9.6</b>F · Significance F</span><span><b>9.7</b>Standard Error · t Stat · P-value of each coefficient</span><span><b>9.8</b>Lower 95% · Upper 95%</span></div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="objectives">
+    <h4>By the end of Week 9 you will be able to</h4>
+    <ul>
+      <li>Run a regression in Excel and find any number in its output.</li>
+      <li>Write the fitted equation from the Coefficients column and say what each coefficient means in the units of the business.</li>
+      <li>Compute SS, df, MS, the Standard Error, R Square, Multiple R and Adjusted R Square from each other.</li>
+      <li>Compute F from the two mean squares and read Significance F as the p-value of the whole regression.</li>
+      <li>Compute the t Stat of a coefficient, read its P-value, and build its 95% interval.</li>
+      <li>Fill in the blanks of an exam printout and say in one sentence what the regression shows.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Resources — tick them off as you go</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><a href="https://saylordotorg.github.io/text_introductory-statistics/s14-correlation-and-regression.html" target="_blank" rel="noopener">Saylor ch. 10 — Correlation and Regression ↗</a> — the same quantities computed by hand, for one x.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><a href="week9-book.html">The textbook's chapter 10, example by example</a> — the previous version of this page: all thirteen of the book's examples walked step by step. Optional.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><a href="exam-cards.html">Exam cards</a> — six regression questions from real exams (2020–2026), each with its printout and blanks.</span></div>
+    <div class="mi" data-read="r4"><span class="box">✓</span><span><a href="week9-homework.html">Week 9 homework</a> — thirteen exercises from chapter 10, by hand, with worked solutions.</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Course page</a>
+    <div style="margin-top:10px;color:var(--grey);">A reset link lives at the bottom of section 9.11.</div>
+  </div>
+</section>
+
+<!-- ============================ 9.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.1 · The printout as a whole</div><h2>Where the printout comes from, and what is in its three blocks</h2></div>
+
+  <div class="prose">
+    <p><b>Why this section:</b> before reading single numbers you need to know which block of the printout answers which question. The exam names cells by their row and column ("the P-value of Parking rates"), so you must find them quickly.</p>
+  </div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>How to get the printout in Excel</span><span class="tc-src">Data Analysis ToolPak</span></div>
+    <div class="tc-body">
+      <ol>
+        <li>Put the data in columns: one column for y, and one column for each x next to each other. Put a name in the first row of each column.</li>
+        <li>Open <b>Data → Data Analysis → Regression</b>. If you do not see "Data Analysis", switch the add-in on once: <b>File → Options → Add-ins → Manage: Excel Add-ins → Go → tick Analysis ToolPak</b> (on a Mac: <b>Tools → Excel Add-ins</b>).</li>
+        <li>In <b>Input Y Range</b>, select the y column with its name. In <b>Input X Range</b>, select all x columns with their names.</li>
+        <li>Tick <b>Labels</b>, so that Excel uses your column names in the output. Without it, Excel calls the x columns "X Variable 1", "X Variable 2", and so on.</li>
+        <li>Leave <b>Confidence Level</b> unticked (section 9.8 explains what it changes), choose an output cell, and press OK.</li>
+      </ol>
+      <p>The output has three blocks. <b>Regression Statistics</b> (top) says how well the line fits. <b>ANOVA</b> (middle) splits the variation of y into the part the line explains and the part it misses, and tests whether the line explains anything at all. The <b>coefficient table</b> (bottom) gives the line itself, one row per coefficient, with a test and an interval for each.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · find the cell</span>
+    <h3>Click the cell that answers each question about the tea shop</h3>
+    <p class="mini">Six questions, one at a time. A wrong click tells you what that cell is instead, so you learn something either way.</p>
+    <div class="findq" id="findQ"></div>
+    <div id="findMap"></div>
+    <div class="reveal" id="findFb"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias of Week 1</span></div>
+    <div class="xc-body">
+      <h3>Fourteen Geneva pizzerias: the price of a Margherita (CHF) against the distance from Rive (km)</h3>
+      <p class="stem">Read off the printout: (a) how many pizzerias were used, (b) how many x variables there are, (c) the change in price for each extra kilometre, (d) the share of the price differences that distance explains.</p>
+      <div id="mapPzA"></div>
+      <button class="btn small xshow" data-step="xa1">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>(a)</b> Observations = <b>14</b>, the last row of Regression Statistics.</p>
+        <p class="step"><b>(b)</b> The df of the Regression row is <b>1</b>: it always equals the number of x variables. The coefficient table also has one row besides the Intercept.</p>
+        <p class="step"><b>(c)</b> The Coefficient in the Distance row is <b>−2.2865</b>: each kilometre further from Rive goes with a price about CHF 2.29 lower.</p>
+        <p class="step"><b>(d)</b> R Square = <b>0.926</b>: distance explains about 93% of the differences in price between the fourteen pizzerias.</p>
+        <div class="xres"><span class="xl">Result</span>14 pizzerias · 1 x · <b>−CHF 2.29 per km</b> · R Square 0.93</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's</span><span class="xc-src">made-up data, Geneva flats</span></div>
+    <div class="xc-body">
+      <h3>Twelve flats in Geneva: monthly rent (CHF) against floor area (m²) and the walk to the nearest tram stop (minutes)</h3>
+      <table class="dtab"><tr><th class="l">Rent (CHF)</th><td>1670</td><td>1550</td><td>1650</td><td>1540</td><td>1750</td><td>2080</td><td>1990</td><td>2320</td><td>2450</td><td>2730</td><td>2380</td><td>3410</td></tr><tr><th class="l">Floor area (m²)</th><td>35</td><td>42</td><td>48</td><td>55</td><td>60</td><td>64</td><td>70</td><td>75</td><td>82</td><td>90</td><td>98</td><td>110</td></tr><tr><th class="l">Minutes to tram</th><td>3</td><td>12</td><td>6</td><td>15</td><td>4</td><td>9</td><td>14</td><td>2</td><td>10</td><td>7</td><td>16</td><td>5</td></tr></table>
+      <p class="stem">With two x columns, the printout has the same three blocks. Read off: (a) the number of x variables, (b) the df of the Residual row, (c) which rows of the coefficient table belong to each x.</p>
+      <div id="mapFlB"></div>
+      <button class="btn small xshow" data-step="xb1">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>(a)</b> The df of Regression is <b>2</b>: two x variables.</p>
+        <p class="step"><b>(b)</b> The df of Residual is <b>9</b> = 12 flats − 2 x's − 1 intercept. Section 9.4 explains why.</p>
+        <p class="step"><b>(c)</b> The coefficient table now has <b>three rows</b>: the Intercept, Floor area and Minutes to tram. Each row has its own coefficient, standard error, t Stat, P-value and interval. The top two blocks stay one block for the whole regression.</p>
+        <div class="xres"><span class="xl">Result</span>2 x's → <b>Regression df 2</b>, Residual df 9, three coefficient rows</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.1</span>
+    <h3>An Excel printout with four observations and two x columns</h3>
+    <p class="lead">The printout below is a real Excel output. We are not told what y is; the two x columns are labelled <b>House</b> and <b>Sq ft</b> (floor area in square feet). Every number in it can still be read and checked. We use it in the exercise of every section this week.</p>
+    <div id="mapHouse1"></div>
+    <div class="turn" data-step="e1">
+      <div class="trow"><label>Write how many observations the regression used.</label><input type="text" inputmode="decimal" data-v="4" data-tol="0"><span class="mk"></span></div>
+      <div class="trow"><label>Write how many x variables it has.</label><input type="text" inputmode="decimal" data-v="2" data-tol="0"><span class="mk"></span></div>
+      <div class="trow"><label>Write the df of the Residual row.</label><input type="text" inputmode="decimal" data-v="1" data-tol="0"><span class="mk"></span></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. Observations = 4; the Regression df is 2, so there are two x variables (House and Sq ft); the Residual df is 4 − 2 − 1 = 1. One degree of freedom is very little: keep it in mind, it explains most of what is strange in this printout." data-hint="Observations is the last line of Regression Statistics. The number of x variables is the df of the Regression row. The Residual df is in the row below it."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: the coefficients →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.2 · The Coefficients column</div><h2>The intercept and the slopes are the fitted line</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> the Coefficients column is the reason anyone runs a regression. It gives the equation that predicts y, and each slope says how much y changes when one x changes. Every other cell of the printout says how much these coefficients can be trusted.</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · the coefficients</span><span class="tc-src">Saylor §10.4</span></div>
+    <div class="tc-body">
+      <p>The <b>fitted line</b> is the equation ŷ = b<sub>0</sub> + b<sub>1</sub>x. ŷ ("y-hat") is the value of y the line predicts. The <b>intercept</b> b<sub>0</sub> is the predicted y when x = 0. The <b>slope</b> b<sub>1</sub> is how much the predicted y changes when x rises by one unit.</p>
+      <p>Excel chooses the line by <b>least squares</b>: of all possible lines, it takes the one for which the sum of the squared vertical distances between the points and the line is the smallest. A vertical distance y − ŷ is called a <b>residual</b>: what the line misses for that observation.</p>
+      <div class="formula">b<sub>1</sub> = SS<sub>xy</sub> ⁄ SS<sub>xx</sub>   and   b<sub>0</sub> = ȳ − b<sub>1</sub>·x̄<br>SS<sub>xx</sub> = Σ(x − x̄)²   SS<sub>xy</sub> = Σ(x − x̄)(y − ȳ)</div>
+      <p>Tea shop: x̄ = 5.5, ȳ = 62.875, SS<sub>xx</sub> = 42, SS<sub>xy</sub> = 254.5, so b<sub>1</sub> = 254.5 ⁄ 42 = 6.0595 and b<sub>0</sub> = 62.875 − 6.0595 × 5.5 = 29.5476. These are the two numbers in the Coefficients column: <b>ŷ = 29.55 + 6.06x</b>.</p>
+      <p><b>With several x's</b> the equation is ŷ = b<sub>0</sub> + b<sub>1</sub>x<sub>1</sub> + b<sub>2</sub>x<sub>2</sub> + …. Each slope is then the change in ŷ when <b>that</b> x rises by one unit <b>and the other x's stay the same</b>. Excel computes them with matrix algebra; you are not asked to compute them by hand.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · fit the line yourself</span>
+    <h3>Move the intercept and the slope until the red squares are as small as you can make them</h3>
+    <p class="mini">Each red square has the residual of one week as its side, so its area is that residual squared. The total area is the sum of squared residuals. Least squares means: the line with the smallest total area. Try to get within 10% of Excel's minimum, or press the button.</p>
+    <div class="ctl">
+      <div><label>Intercept b<sub>0</sub> = <span class="vv" id="fitB0v"></span></label><input type="range" id="fitB0" min="0" max="60" step="0.5" value="45"></div>
+      <div><label>Slope b<sub>1</sub> = <span class="vv" id="fitB1v"></span></label><input type="range" id="fitB1" min="0" max="12" step="0.05" value="3"></div>
+    </div>
+    <svg class="pl" id="fitSvg" viewBox="0 0 640 300" role="img" aria-label="The tea shop's eight weeks with a line you move and the squared residuals"></svg>
+    <div class="readout" id="fitOut"></div>
+    <div class="btn-row"><button class="btn small" id="fitBest" type="button">Show the least squares line</button></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · what a slope means when there are two x's</span>
+    <h3>Change one x of a flat and watch the predicted rent</h3>
+    <p class="mini">The equation comes from Example B below: ŷ = 798.07 + 23.23 × area − 32.21 × minutes. Move one slider at a time: the change in the predicted rent is exactly that x's coefficient, whatever the other x is.</p>
+    <div class="ctl">
+      <div><label>Floor area = <span class="vv" id="flAv"></span> m²</label><input type="range" id="flA" min="35" max="110" step="1" value="70"></div>
+      <div><label>Minutes to the tram = <span class="vv" id="flMv"></span></label><input type="range" id="flM" min="2" max="16" step="1" value="5"></div>
+    </div>
+    <div class="readout" id="flOut"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Write the pizzerias' line, say what its two coefficients mean, and predict the price 2 km from Rive</h3>
+      <p class="stem">The Coefficients column of the pizzeria printout reads: Intercept 23.8853, Distance −2.2865. The distances in the data run from 0.3 km to 4.2 km.</p>
+      <button class="btn small xshow" data-step="xa2">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>The line:</b> ŷ = 23.89 − 2.29x, with ŷ the predicted price in CHF and x the distance in km.</p>
+        <p class="step"><b>The slope −2.2865:</b> for each extra kilometre from Rive, the average Margherita price is CHF 2.29 lower. The minus sign means the price falls as the distance grows.</p>
+        <p class="step"><b>The intercept 23.8853:</b> the predicted price at x = 0, that is at Rive itself. The closest pizzeria in the data is 0.3 km away, so x = 0 is just outside the data but close: the number is a reasonable estimate of a price at Rive. When x = 0 is far from the data, the intercept only positions the line and means nothing on its own.</p>
+        <p class="step"><b>At 2 km:</b> ŷ = 23.8853 − 2.2865 × 2 = <b>CHF 19.31</b>, the average price of pizzerias 2 km out.</p>
+        <div class="xres"><span class="xl">Result</span>ŷ = 23.89 − 2.29x · <b>CHF 19.31</b> at 2 km</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>Write the flats' equation, say what each slope means, and predict the rent of a 70 m² flat 5 minutes from the tram</h3>
+      <p class="stem">The Coefficients column reads: Intercept 798.07, Floor area 23.2333, Minutes to tram −32.2063.</p>
+      <button class="btn small xshow" data-step="xb2">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>The equation:</b> ŷ = 798.07 + 23.23 × area − 32.21 × minutes, with ŷ the predicted monthly rent in CHF.</p>
+        <p class="step"><b>Floor area 23.23:</b> between two flats at the same walking distance from the tram, each extra square metre goes with CHF 23.23 more rent per month.</p>
+        <p class="step"><b>Minutes −32.21:</b> between two flats of the same size, each extra minute of walking goes with CHF 32.21 less rent per month.</p>
+        <p class="step"><b>The intercept 798.07</b> would be the rent of a flat of 0 m² right at a tram stop. No such flat exists, so this number only positions the equation.</p>
+        <p class="step"><b>The prediction:</b> 798.07 + 23.2333 × 70 − 32.2063 × 5 = 798.07 + 1626.33 − 161.03 = <b>CHF 2263</b> per month.</p>
+        <div class="xres"><span class="xl">Result</span>+CHF 23.23 per m² · −CHF 32.21 per minute · <b>CHF 2263</b> for 70 m², 5 min</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.2</span>
+    <h3>Compute the tea shop's slope from its sums, then predict a week</h3>
+    <p class="lead">Use SS<sub>xy</sub> = 254.5 and SS<sub>xx</sub> = 42 from the theory card, and the intercept 29.5476 from the printout.</p>
+    <div class="turn" data-step="e2">
+      <div class="trow"><label>Write the slope b<sub>1</sub>, two decimals.</label><input type="text" inputmode="decimal" data-v="6.0595" data-tol="0.01"><span class="mk"></span></div>
+      <div class="trow"><label>Write the predicted orders in a week with CHF 700 of ads (x = 7), one decimal.</label><input type="text" inputmode="decimal" data-v="71.96" data-tol="0.15"><span class="mk"></span></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. b₁ = 254.5 ⁄ 42 = 6.06 orders per CHF 100 of ads. At x = 7: ŷ = 29.5476 + 6.0595 × 7 = 72.0 orders, the average for weeks with CHF 700 of ads." data-hint="The slope is SSxy divided by SSxx. For the prediction, put x = 7 into ŷ = 29.5476 + b₁·x — x is in hundreds of CHF, so CHF 700 is x = 7, not 700."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: the sums of squares →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.3 · The SS column of ANOVA</div><h2>SS Total = SS Regression + SS Residual</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> R Square, the Standard Error and F are all computed from the three sums of squares. If you understand the SS column, half of the printout follows from it, and an exam blank in this column is a subtraction.</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · splitting the variation of y</span><span class="tc-src">ANOVA = analysis of variance</span></div>
+    <div class="tc-body">
+      <p>Take one week of the tea shop. Its distance from the average orders ȳ can be cut into two pieces at the line:</p>
+      <div class="formula">(y − ȳ)  =  (ŷ − ȳ)  +  (y − ŷ)<br>total distance = the part the line predicts + the part the line misses</div>
+      <p>Square each piece and add over all observations. The squares add up in the same way (this is a property of the least squares line):</p>
+      <div class="formula"><b>SS Total</b> = Σ(y − ȳ)²  — how much y varies around its average<br><b>SS Regression</b> = Σ(ŷ − ȳ)²  — the part of that variation the line explains<br><b>SS Residual</b> = Σ(y − ŷ)²  — the part it does not explain (the book calls it SSE)<br>SS Total = SS Regression + SS Residual</div>
+      <p>Tea shop: 1592.875 = 1542.149 + 50.726. A large SS Regression and a small SS Residual mean the points lie close to the line.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · split one week</span>
+    <h3>Click a week (a dot) to see its total distance cut into the two pieces</h3>
+    <div class="legend"><span><i class="sw t"></i>y − ȳ (total)</span><span><i class="sw r"></i>ŷ − ȳ (explained by the line)</span><span><i class="sw e"></i>y − ŷ (residual)</span></div>
+    <svg class="pl" id="splitSvg" viewBox="0 0 640 300" role="img" aria-label="Tea shop scatter with the mean line and the regression line"></svg>
+    <div class="readout" id="splitOut">Click one of the eight dots.</div>
+    <table class="mtab" id="splitTab"></table>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · move one week</span>
+    <h3>Drag week 4 up or down and watch the three sums change</h3>
+    <p class="mini">Week 4 had x = 5 and 62 orders. Drag its red dot (or use the slider). Excel refits the line each time. The bar shows SS Total split into SS Regression (teal) and SS Residual (red).</p>
+    <div class="ctl"><div><label>Orders in week 4 = <span class="vv" id="mvYv"></span></label><input type="range" id="mvY" min="20" max="110" step="1" value="62"></div></div>
+    <svg class="pl" id="moveSvg" viewBox="0 0 640 260" role="img" aria-label="Tea shop scatter where week 4 can be moved"></svg>
+    <div class="stack" id="mvBar"><div class="r"></div><div class="e"></div></div>
+    <div class="readout" id="mvOut"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Check that the pizzerias' sums of squares add up, and say what they measure</h3>
+      <p class="stem">The ANOVA block of the pizzeria printout reads: SS Regression 105.4732, SS Residual 8.3840, SS Total 113.8571. The average price is CHF 19.21.</p>
+      <button class="btn small xshow" data-step="xa3">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>The sum:</b> 105.4732 + 8.3840 = 113.8572, equal to SS Total up to rounding.</p>
+        <p class="step"><b>SS Total 113.86</b> is the sum of the squared distances of the fourteen prices from CHF 19.21, in CHF². It measures how different the prices are from each other.</p>
+        <p class="step"><b>SS Regression 105.47</b> is the part of those differences the line explains: pizzerias further out are cheaper. <b>SS Residual 8.38</b> is the part left over: pizzerias at the same distance still charge different prices.</p>
+        <div class="xres"><span class="xl">Result</span>113.86 = <b>105.47</b> explained + <b>8.38</b> not explained (CHF²)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's · exam style</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>The flats' SS Regression is blank. Fill it in.</h3>
+      <p class="stem">The ANOVA block reads: SS Regression <b>(blank)</b>, SS Residual 276 890.0, SS Total 3 492 266.7.</p>
+      <button class="btn small xshow" data-step="xb3">Show the solution</button>
+      <div class="xsol">
+        <p class="step">SS Regression = SS Total − SS Residual = 3 492 266.7 − 276 890.0 = <b>3 215 376.7</b>.</p>
+        <p class="step">With two x's nothing changes: SS Regression is the part of the variation in rents that floor area and walking time explain <b>together</b>. The numbers are large because rents are in CHF and SS is in CHF².</p>
+        <div class="xres"><span class="xl">Result</span>SS Regression = <b>3 215 376</b> (CHF²)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.3</span>
+    <h3>Two blanks in the SS column</h3>
+    <div class="turn" data-step="e3">
+      <div class="trow"><label>The four-observation printout of 9.1 has SS Total 0.75 and SS Residual 0.036585366. Write SS Regression, four decimals.</label><input type="text" inputmode="decimal" data-v="0.713415" data-tol="0.0002"><span class="mk"></span></div>
+      <div class="trow"><label>The 2022 exam (birds' height on length) has SS Total 711 and SS Residual 43.815. Write SS Regression, three decimals.</label><input type="text" inputmode="decimal" data-v="667.185" data-tol="0.002"><span class="mk"></span></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. 0.75 − 0.036585 = 0.7134 (the printout shows 0.713414634). 711 − 43.815 = 667.185, blank (a) of the 2022 exam." data-hint="SS Regression = SS Total − SS Residual."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: df, MS and the Standard Error →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.4 · Observations, df, MS and the Standard Error</div><h2>From sums of squares to the typical miss of the line</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> a sum of squares grows with every observation you add, so 50.7 on its own says little. Dividing it by its degrees of freedom gives an average square (MS), and the square root of the residual MS is the <b>Standard Error</b>: how far, in y's own units, a typical observation is from the line. That one number is what you quote when someone asks "how precise is the prediction?".</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · degrees of freedom and mean squares</span><span class="tc-src">n observations, k x variables</span></div>
+    <div class="tc-body">
+      <p><b>Observations</b> (n) is the number of rows of data Excel used. <b>Degrees of freedom</b> (df) count how many of those observations are still free to measure the scatter after the line has been placed. Placing the line uses up one observation per coefficient: k slopes and one intercept.</p>
+      <div class="formula">df Regression = k<br>df Residual = n − k − 1<br>df Total = n − 1   (= the sum of the two above)</div>
+      <p>A <b>mean square</b> (MS) is a sum of squares divided by its df. Excel prints two:</p>
+      <div class="formula">MS Regression = SS Regression ⁄ k<br>MS Residual = SS Residual ⁄ (n − k − 1)<br><b>Standard Error</b> (in Regression Statistics) = √MS Residual</div>
+      <p>Tea shop: n = 8, k = 1, so df = 1, 6, 7. MS Residual = 50.726 ⁄ 6 = 8.454 and the Standard Error is √8.454 = <b>2.91 orders</b>: a typical week is about 3 orders above or below the line.</p>
+      <p class="mini">Two cells are called "Standard Error". The one in <b>Regression Statistics</b> is the typical miss of the line, explained here. The <b>column</b> called Standard Error in the coefficient table is something else: how precise each coefficient is (section 9.7).</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · where the degrees of freedom go</span>
+    <h3>Choose the number of observations and of x variables</h3>
+    <p class="mini">Each circle is one observation. Grey circles are used up to place the line (one per coefficient); red circles are left to measure the scatter around it. The red count is df Residual.</p>
+    <div class="ctl">
+      <div><label>Observations n = <span class="vv" id="dfNv"></span></label><input type="range" id="dfN" min="2" max="30" step="1" value="8"></div>
+      <div><label>x variables k = <span class="vv" id="dfKv"></span></label><input type="range" id="dfK" min="1" max="5" step="1" value="1"></div>
+    </div>
+    <div class="dots" id="dfDots"></div>
+    <div class="readout" id="dfOut"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · the Standard Error as a band</span>
+    <h3>Draw a band one or two Standard Errors around the tea shop's line</h3>
+    <div class="toggle-row" id="bandT"><button data-v="1" class="on">± 1 Standard Error</button><button data-v="2">± 2 Standard Errors</button></div>
+    <svg class="pl" id="bandSvg" viewBox="0 0 640 280" role="img" aria-label="Tea shop line with a band of one or two standard errors"></svg>
+    <div class="readout" id="bandOut"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Compute the pizzerias' df, both mean squares and the Standard Error</h3>
+      <p class="stem">n = 14 pizzerias, k = 1. SS Regression 105.4732, SS Residual 8.3840.</p>
+      <button class="btn small xshow" data-step="xa4">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>df:</b> Regression 1, Residual 14 − 1 − 1 = 12, Total 13.</p>
+        <p class="step"><b>MS Regression</b> = 105.4732 ⁄ 1 = 105.4732. <b>MS Residual</b> = 8.3840 ⁄ 12 = 0.6987.</p>
+        <p class="step"><b>Standard Error</b> = √0.6987 = <b>0.836</b>. The unit is the unit of y, CHF: a pizzeria's price is typically about CHF 0.84 above or below the price the line predicts for its distance.</p>
+        <div class="xres"><span class="xl">Result</span>df 1 · 12 · 13 · MS Residual 0.699 · <b>Standard Error CHF 0.84</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>Compute the flats' df, both mean squares and the Standard Error</h3>
+      <p class="stem">n = 12 flats, k = 2. SS Regression 3 215 376.7, SS Residual 276 890.0.</p>
+      <button class="btn small xshow" data-step="xb4">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>df:</b> Regression 2, Residual 12 − 2 − 1 = 9, Total 11.</p>
+        <p class="step"><b>MS Regression</b> = 3 215 376.7 ⁄ 2 = 1 607 688.3. <b>MS Residual</b> = 276 890.0 ⁄ 9 = 30 765.6.</p>
+        <p class="step"><b>Standard Error</b> = √30 765.6 = <b>175.4</b>: a flat's rent is typically about CHF 175 a month above or below what its size and walking time predict.</p>
+        <div class="xres"><span class="xl">Result</span>df 2 · 9 · 11 · <b>Standard Error CHF 175</b> a month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.4</span>
+    <h3>Mean squares and Standard Error of the four-observation printout</h3>
+    <p class="lead">SS Regression 0.713414634, SS Residual 0.036585366, n = 4, k = 2.</p>
+    <div class="turn" data-step="e4">
+      <div class="trow"><label>Write MS Regression, four decimals.</label><input type="text" inputmode="decimal" data-v="0.356707" data-tol="0.0002"><span class="mk"></span></div>
+      <div class="trow"><label>Write MS Residual, four decimals.</label><input type="text" inputmode="decimal" data-v="0.036585" data-tol="0.0002"><span class="mk"></span></div>
+      <div class="trow"><label>Write the Standard Error of the regression, four decimals.</label><input type="text" inputmode="decimal" data-v="0.191273" data-tol="0.0005"><span class="mk"></span></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. MS Regression = 0.7134 ⁄ 2 = 0.3567. MS Residual = 0.0366 ⁄ 1 = 0.0366 (df Residual is 1, so MS equals SS). Standard Error = √0.036585 = 0.1913 — all three as in the printout." data-hint="Divide each SS by its df: Regression df = k = 2, Residual df = n − k − 1 = 1. The Standard Error is the square root of MS Residual."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: R Square →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.5 · R Square, Multiple R, Adjusted R Square</div><h2>How much of the variation in y the line explains</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> R Square is the number managers ask for first ("how good is the model?"). It is also the cell most often left blank in the exam, because it follows from the SS column in one division. Adjusted R Square exists because R Square can be made larger by adding x columns that mean nothing.</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · the three fit measures</span><span class="tc-src">Saylor §10.6 for one x</span></div>
+    <div class="tc-body">
+      <div class="formula"><b>R Square</b> = SS Regression ⁄ SS Total = 1 − SS Residual ⁄ SS Total<br><b>Multiple R</b> = √R Square<br><b>Adjusted R Square</b> = 1 − (1 − R Square) × (n − 1) ⁄ (n − k − 1)</div>
+      <p><b>R Square</b> is the share of the variation of y that the x's explain, from 0 (nothing) to 1 (every point on the line). Tea shop: 1542.149 ⁄ 1592.875 = <b>0.968</b>: the ad spend explains 96.8% of the week-to-week differences in orders.</p>
+      <p><b>Multiple R</b> is the correlation between the real y and the predicted ŷ. It is a square root, so Excel always prints it <b>positive</b>. With one x it equals the size of the correlation coefficient r, but the sign is lost: for a falling line, r is negative and Multiple R is not. Take the sign from the slope.</p>
+      <p><b>Adjusted R Square</b> corrects R Square for the number of x's. Adding any x column, even random numbers, never lowers R Square. Adjusted R Square goes up only when the new x explains more than a random column would. Use it to compare two regressions with different numbers of x's. Tea shop: 1 − (1 − 0.968154) × 7 ⁄ 6 = <b>0.963</b>.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · scatter and R Square</span>
+    <h3>Add noise to thirty points and watch R Square and Multiple R</h3>
+    <p class="mini">The points follow a line plus random noise. The noise slider sets how far they spread. The direction buttons turn the line downwards: R Square and Multiple R do not change sign.</p>
+    <div class="ctl">
+      <div><label>Spread of the noise = <span class="vv" id="nzSv"></span></label><input type="range" id="nzS" min="0" max="40" step="1" value="10"></div>
+      <div><label>Direction of the line</label><div class="toggle-row" id="nzD" style="margin:0"><button data-v="1" class="on">Rising</button><button data-v="-1">Falling</button></div></div>
+    </div>
+    <svg class="pl" id="nzSvg" viewBox="0 0 640 260" role="img" aria-label="Thirty simulated points with their least squares line"></svg>
+    <div class="readout" id="nzOut"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · add a column that means nothing</span>
+    <h3>Add dice rolls to the tea shop's regression as extra x variables</h3>
+    <p class="mini">Each extra column is one die thrown once per week: it has nothing to do with orders. Tick the columns to add them as x variables. "Roll new dice" throws new ones.</p>
+    <div class="toggle-row" id="jkT"><button data-v="1">+ dice column 1</button><button data-v="2">+ dice column 2</button><button data-v="3">+ dice column 3</button></div>
+    <div class="btn-row"><button class="btn small ghost" id="jkRoll" type="button">Roll new dice</button></div>
+    <table class="mtab" id="jkTab"></table>
+    <div class="readout" id="jkOut"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Compute R Square, Multiple R and Adjusted R Square for the pizzerias, and give the correlation coefficient r</h3>
+      <p class="stem">SS Regression 105.4732, SS Total 113.8571, n = 14, k = 1, slope −2.2865.</p>
+      <button class="btn small xshow" data-step="xa5">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>R Square</b> = 105.4732 ⁄ 113.8571 = <b>0.926</b>: distance explains 92.6% of the differences in price.</p>
+        <p class="step"><b>Multiple R</b> = √0.926 = <b>0.962</b>. The slope is negative, so the correlation coefficient is <b>r = −0.962</b>. The printout shows 0.962 because a square root is never negative.</p>
+        <p class="step"><b>Adjusted R Square</b> = 1 − (1 − 0.926364) × 13 ⁄ 12 = <b>0.920</b>.</p>
+        <div class="xres"><span class="xl">Result</span>R Square 0.926 · Multiple R 0.962 · <b>r = −0.962</b> · Adjusted 0.920</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · comparing two regressions</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>Is it worth adding the walking time to a regression of rent on floor area?</h3>
+      <p class="stem">Rent on floor area alone: R Square 0.8451, Adjusted R Square 0.8297 (n = 12, k = 1). Rent on floor area and minutes to tram: R Square 0.9207 (n = 12, k = 2).</p>
+      <button class="btn small xshow" data-step="xb5">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>Adjusted R Square with two x's</b> = 1 − (1 − 0.9207) × 11 ⁄ 9 = <b>0.903</b>.</p>
+        <p class="step">R Square rose from 0.845 to 0.921, but it would have risen with any extra column. The fair comparison is Adjusted R Square: it rose from 0.830 to 0.903. The walking time explains more than a random column would, so it is worth keeping.</p>
+        <div class="xres"><span class="xl">Result</span>Adjusted R Square <b>0.830 → 0.903</b>: keep minutes to tram</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.5</span>
+    <h3>The fit of the four-observation printout</h3>
+    <p class="lead">SS Regression 0.713414634, SS Total 0.75, n = 4, k = 2.</p>
+    <div class="turn" data-step="e5">
+      <div class="trow"><label>Write R Square, four decimals.</label><input type="text" inputmode="decimal" data-v="0.951220" data-tol="0.0005"><span class="mk"></span></div>
+      <div class="trow"><label>Write Multiple R, four decimals.</label><input type="text" inputmode="decimal" data-v="0.975305" data-tol="0.0005"><span class="mk"></span></div>
+      <div class="trow"><label>Write Adjusted R Square, four decimals.</label><input type="text" inputmode="decimal" data-v="0.853659" data-tol="0.001"><span class="mk"></span></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. R Square = 0.7134 ⁄ 0.75 = 0.9512; Multiple R = √0.9512 = 0.9753; Adjusted = 1 − 0.0488 × 3 ⁄ 1 = 0.8537. The adjustment is large because the factor (n − 1) ⁄ (n − k − 1) is 3 ⁄ 1 = 3: with four observations and three coefficients, a high R Square is easy to get by chance." data-hint="R Square = SS Regression ⁄ SS Total. Multiple R is its square root. For Adjusted R Square use (n − 1) ⁄ (n − k − 1) = 3 ⁄ 1."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: F and Significance F →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.6 · F and Significance F</div><h2>Does the regression explain anything at all?</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> eight points will always give some slope, even if ads did nothing. The F test asks whether the x's together explain more of y than chance alone would. Significance F is its p-value: the one cell that tells you whether to take the whole regression seriously.</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · the F test of the whole regression</span><span class="tc-src">the five steps of Week 7</span></div>
+    <div class="tc-body">
+      <p><b>Hypotheses.</b> H<sub>0</sub>: every slope is 0 (the x's explain nothing about y). H<sub>a</sub>: at least one slope is not 0.</p>
+      <div class="formula"><b>F</b> = MS Regression ⁄ MS Residual<br><b>Significance F</b> = P(an F-distribution with k and n − k − 1 df is larger than the observed F)</div>
+      <p>F compares the variation the line explains per x with the variation it leaves unexplained per free observation. If the x's explain nothing, F is usually around 1. A large F is evidence that they explain something.</p>
+      <p><b>Significance F is the p-value of this test.</b> If it is smaller than the level α (usually 0.05), reject H<sub>0</sub>: the regression explains a real part of y. Tea shop: F = 1542.149 ⁄ 8.454 = <b>182.4</b>, Significance F = 1.02E−05 = 0.0000102: far below 0.05.</p>
+      <p class="mini">Excel writes very small numbers in scientific notation: 1.02E−05 means 1.02 × 10<sup>−5</sup> = 0.0000102.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · the F-distribution</span>
+    <h3>See where a printout's F falls, and the tail area that Excel prints as Significance F</h3>
+    <div class="ctl">
+      <div><label>Printout</label><select id="fcSel"><option value="tea">Tea shop · F 182.4 · df 1, 6</option><option value="pz">Pizzerias · F 151.0 · df 1, 12</option><option value="fl">Flats · F 52.3 · df 2, 9</option><option value="hs" selected>Four observations · F 9.75 · df 2, 1</option><option value="own">Set my own</option></select></div>
+      <div><label>F = <span class="vv" id="fcFv"></span></label><input type="range" id="fcF" min="0.1" max="30" step="0.05" value="9.75"></div>
+      <div><label>df Regression = <span class="vv" id="fcD1v"></span></label><input type="range" id="fcD1" min="1" max="6" step="1" value="2"></div>
+      <div><label>df Residual = <span class="vv" id="fcD2v"></span></label><input type="range" id="fcD2" min="1" max="40" step="1" value="1"></div>
+    </div>
+    <svg class="pl" id="fcSvg" viewBox="0 0 640 250" role="img" aria-label="F distribution with the observed F and the tail area"></svg>
+    <div class="readout" id="fcOut"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · what F looks like when ads do nothing</span>
+    <h3>Shuffle the tea shop's orders among the weeks and compute F again</h3>
+    <p class="mini">Shuffling the eight order counts among the eight weeks breaks any link with the ad spend: in the shuffled data, ads cannot matter. Each shuffle gives an F. The chart shows the F's of all shuffles so far. Compare them with the real F of 182.4.</p>
+    <div class="btn-row"><button class="btn small" id="shOne" type="button">Shuffle once</button><button class="btn small" id="shMany" type="button">Shuffle 1000 times</button><button class="btn small ghost" id="shReset" type="button">Start again</button></div>
+    <svg class="pl" id="shSvg" viewBox="0 0 640 230" role="img" aria-label="Histogram of F from shuffled data"></svg>
+    <div class="readout" id="shOut">No shuffle yet.</div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Compute the pizzerias' F and state the conclusion of the test at the 5% level</h3>
+      <p class="stem">MS Regression 105.4732, MS Residual 0.6987, df 1 and 12. Significance F 3.72E−08.</p>
+      <button class="btn small xshow" data-step="xa6">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>F</b> = 105.4732 ⁄ 0.6987 = <b>150.96</b>.</p>
+        <p class="step"><b>Significance F</b> = 3.72E−08 = 0.0000000372. If distance had no link with price, an F this large would appear about 4 times in 100 million samples.</p>
+        <p class="step"><b>Conclusion:</b> 0.0000000372 &lt; 0.05, so reject H<sub>0</sub>. The data provide sufficient evidence, at the 5% level, that distance from Rive helps predict the price.</p>
+        <div class="xres"><span class="xl">Result</span>F = 150.96 · Significance F 3.7E−08 &lt; 0.05 → <b>the regression explains price</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>Compute the flats' F, say which hypotheses it tests, and conclude</h3>
+      <p class="stem">MS Regression 1 607 688.3, MS Residual 30 765.6, df 2 and 9. Significance F 1.11E−05.</p>
+      <button class="btn small xshow" data-step="xb6">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>F</b> = 1 607 688.3 ⁄ 30 765.6 = <b>52.26</b>.</p>
+        <p class="step"><b>Hypotheses:</b> H<sub>0</sub>: the slope of floor area and the slope of minutes are both 0. H<sub>a</sub>: at least one of them is not 0.</p>
+        <p class="step"><b>Conclusion:</b> Significance F = 0.0000111 &lt; 0.05: reject H<sub>0</sub>. Together, floor area and walking time explain part of the rent. The F test does not say <b>which</b> of the two matters: that is the job of the t Stat of each row (section 9.7).</p>
+        <div class="xres"><span class="xl">Result</span>F = 52.26 · Significance F 1.1E−05 → <b>at least one x matters</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.6</span>
+    <h3>The F test of the four-observation printout</h3>
+    <p class="lead">MS Regression 0.356707317, MS Residual 0.036585366, df 2 and 1. Its R Square was 0.95.</p>
+    <div class="turn" data-step="e6">
+      <div class="trow"><label>Write F, two decimals.</label><input type="text" inputmode="decimal" data-v="9.75" data-tol="0.01"><span class="mk"></span></div>
+      <div class="trow" style="display:block"><label>The printout gives Significance F = 0.2209. Choose the conclusion at the 5% level.</label>
+        <div class="ch"><button data-c="0">Reject H₀: with R Square 0.95, the x's clearly explain y.</button><button data-c="1" data-ok="1">Do not reject H₀: four observations are not enough to show that the x's explain anything.</button><button data-c="0">Reject H₀, because F is larger than 1.</button></div></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. F = 0.3567 ⁄ 0.0366 = 9.75. Significance F = 0.22 is larger than 0.05, so H₀ is not rejected. A high R Square with very few observations is not evidence: with one free observation, the F-distribution has a very long tail, and an F of 9.75 happens by chance 22% of the time. Widget 1 shows that tail." data-hint="F = MS Regression ⁄ MS Residual. Compare Significance F with 0.05, not R Square."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: t Stat and P-value →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.7 · Standard Error, t Stat and P-value of each coefficient</div><h2>Is this one coefficient different from zero?</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> the F test says whether the x's matter together. A manager needs to know which ones matter: is it worth paying for the ads, does the walk to the tram really lower the rent? Each row of the coefficient table answers that question for one coefficient, with the test of Week 7.</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · a t test on every row</span><span class="tc-src">Saylor §10.5 for one x</span></div>
+    <div class="tc-body">
+      <p>Another eight weeks would give a slightly different slope, because orders also move for reasons that have nothing to do with ads. The <b>Standard Error</b> column says how much a coefficient would vary from sample to sample. With one x, Excel computes the slope's standard error as:</p>
+      <div class="formula">SE(b<sub>1</sub>) = Standard Error of the regression ⁄ √SS<sub>xx</sub>   tea shop: 2.9076 ⁄ √42 = 0.4487</div>
+      <p><b>Hypotheses for one row.</b> H<sub>0</sub>: this coefficient is 0 in the population. H<sub>a</sub>: it is not 0 (two-tailed).</p>
+      <div class="formula"><b>t Stat</b> = Coefficient ⁄ Standard Error   (how many standard errors the coefficient is from 0)<br><b>P-value</b> = P(|T| ≥ |t Stat|) for Student's t with df = n − k − 1 (the df of Residual)</div>
+      <p>Tea shop, ad spend: t Stat = 6.0595 ⁄ 0.4487 = <b>13.51</b>, on 6 df. P-value 1.02E−05 &lt; 0.05: the ads' slope is not 0.</p>
+      <p><b>The Intercept row</b> tests whether the intercept is 0. That is rarely a business question; usually you skip that row.</p>
+      <p><b>With one x</b>, the t test of the slope and the F test are the same test: t Stat² = F (13.506² = 182.4) and the slope's P-value equals Significance F. With several x's they differ.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · the standard error is how much the slope varies</span>
+    <h3>Draw new samples of eight weeks and collect their slopes</h3>
+    <p class="mini">Each new sample keeps Lina's ad spends and draws new orders from the tea shop's line plus noise of the size of its Standard Error (2.91 orders). Excel never sees these samples; it estimates their spread from the one sample it has. Compare the two.</p>
+    <div class="btn-row"><button class="btn small" id="rsOne" type="button">One new sample</button><button class="btn small" id="rsMany" type="button">500 new samples</button><button class="btn small ghost" id="rsReset" type="button">Start again</button></div>
+    <svg class="pl" id="rsSvg" viewBox="0 0 640 230" role="img" aria-label="Histogram of slopes from new samples"></svg>
+    <div class="readout" id="rsOut">No new sample yet.</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · from t Stat to P-value</span>
+    <h3>Pick a row of a printout and see its two tails on the t-distribution</h3>
+    <div class="ctl"><div><label>Row</label><select id="tcSel"></select></div></div>
+    <svg class="pl" id="tcSvg" viewBox="0 0 640 240" role="img" aria-label="t distribution with the observed t Stat and two tails"></svg>
+    <div class="readout" id="tcOut"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Test the pizzerias' slope at the 5% level and check that t Stat² = F</h3>
+      <p class="stem">Distance row: Coefficient −2.2865, Standard Error 0.1861. n = 14. ANOVA F 150.96.</p>
+      <button class="btn small xshow" data-step="xa7">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>t Stat</b> = −2.2865 ⁄ 0.1861 = <b>−12.29</b>: the slope is more than 12 standard errors below 0.</p>
+        <p class="step"><b>df</b> = 14 − 1 − 1 = 12. The P-value printed is 3.72E−08, the same as Significance F.</p>
+        <p class="step"><b>Check:</b> (−12.29)² = 150.96 = F. With one x the two tests agree.</p>
+        <p class="step"><b>Conclusion:</b> P-value &lt; 0.05: the price really falls with the distance from Rive.</p>
+        <div class="xres"><span class="xl">Result</span>t Stat −12.29 on 12 df · P-value 3.7E−08 · <b>t² = F = 150.96</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>Does walking time matter once floor area is in the regression?</h3>
+      <p class="stem">Minutes to tram row: Coefficient −32.2063, Standard Error 10.9967. n = 12, k = 2.</p>
+      <button class="btn small xshow" data-step="xb7">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>t Stat</b> = −32.2063 ⁄ 10.9967 = <b>−2.93</b>, on 12 − 2 − 1 = 9 df.</p>
+        <p class="step"><b>P-value</b> = 0.0168 (printed). It is below 0.05, so reject H<sub>0</sub>: between flats of the same floor area, a longer walk goes with a lower rent.</p>
+        <p class="step">Floor area: t Stat = 23.2333 ⁄ 2.3150 = 10.04, P-value 3.5E−06: it matters too. Here, unlike with one x, the two P-values are not Significance F (1.1E−05).</p>
+        <div class="xres"><span class="xl">Result</span>Minutes: t −2.93 · <b>P-value 0.017 &lt; 0.05</b> → walking time matters</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.7</span>
+    <h3>The two slopes of the four-observation printout</h3>
+    <p class="lead">House row: Coefficient −0.646341463, Standard Error 0.362905921, P-value 0.325702. Sq ft row: Coefficient 0.024390244, Standard Error 0.009089707.</p>
+    <div class="turn" data-step="e7">
+      <div class="trow"><label>Write the t Stat of House, three decimals.</label><input type="text" inputmode="decimal" data-v="-1.78102" data-tol="0.002"><span class="mk"></span></div>
+      <div class="trow"><label>Write the t Stat of Sq ft, three decimals.</label><input type="text" inputmode="decimal" data-v="2.683282" data-tol="0.002"><span class="mk"></span></div>
+      <div class="trow" style="display:block"><label>Choose what the P-value of House tells you at the 5% level.</label>
+        <div class="ch"><button data-c="1" data-ok="1">0.3257 &gt; 0.05: the data do not show that House matters.</button><button data-c="0">0.3257 &gt; 0.05: House has no effect on y.</button><button data-c="0">The t Stat is negative, so House lowers y.</button></div></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. t = −0.6463 ⁄ 0.3629 = −1.781 and 0.02439 ⁄ 0.00909 = 2.683, as printed. With 1 df, even t = 2.68 has a P-value of 0.227. 'Not significant' means not enough evidence, never 'proved to have no effect'." data-hint="t Stat = Coefficient ⁄ Standard Error. A P-value above 0.05 means we cannot reject H₀ — which is not the same as showing H₀ is true."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <button class="btn" data-next="s8">Next: the 95% intervals →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.8 ============================ -->
+<section class="screen" id="s8">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.8 · Lower 95% and Upper 95%</div><h2>The range in which the true coefficient lies, with 95% confidence</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> a P-value says only whether a coefficient is 0 or not. A business needs a size: "each CHF 100 of ads brings between 5 and 7 more orders". The last columns of the printout give that range, and the exam often asks for them.</p></div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Theory · the confidence interval of a coefficient</span><span class="tc-src">the interval of Week 6</span></div>
+    <div class="tc-body">
+      <div class="formula">Lower 95% = Coefficient − t<sub>0.025</sub> × Standard Error<br>Upper 95% = Coefficient + t<sub>0.025</sub> × Standard Error<br>t<sub>0.025</sub> from the t table on the row df = n − k − 1</div>
+      <p>Tea shop, ad spend: df = 6, t<sub>0.025</sub> = 2.447. 6.0595 ± 2.447 × 0.4487 = <b>4.96 to 7.16</b> orders per CHF 100 of ads.</p>
+      <p><b>The link with the P-value:</b> the 95% interval contains 0 exactly when the P-value is above 0.05. Both say the same thing in two ways.</p>
+      <p><b>Why are there two pairs of columns?</b> The Regression dialog has a box <b>Confidence Level</b> with 95 in it. Excel always prints the 95% interval first. The second pair (Lower 95.0%, Upper 95.0%) is the level in that box. If you do not tick the box, it is 95 again, and the two pairs are identical. If you tick it and type 99, the second pair becomes Lower 99.0% and Upper 99.0%.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 1 · build an interval</span>
+    <h3>Pick a row and a confidence level and see the interval against 0</h3>
+    <div class="ctl">
+      <div><label>Row</label><select id="ciSel"></select></div>
+      <div><label>Confidence level</label><div class="toggle-row" id="ciL" style="margin:0"><button data-v="90">90%</button><button data-v="95" class="on">95%</button><button data-v="99">99%</button></div></div>
+    </div>
+    <svg class="pl" id="ciSvg" viewBox="0 0 640 130" role="img" aria-label="Confidence interval on a number line with zero marked"></svg>
+    <div class="readout" id="ciOut"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Widget 2 · the Confidence Level box</span>
+    <h3>Tick the box and change the level, and watch the last two columns</h3>
+    <div class="dlg">
+      <div class="dt">Regression</div>
+      <div class="dr"><span class="f">Input Y Range:</span><span class="box">$C$1:$C$9</span></div>
+      <div class="dr"><span class="f">Input X Range:</span><span class="box">$B$1:$B$9</span></div>
+      <div class="dr"><label><input type="checkbox" checked disabled> Labels</label></div>
+      <div class="dr"><label><input type="checkbox" id="dlgOn"> Confidence Level:</label> <input type="number" id="dlgLv" value="95" min="50" max="99.9" step="0.5"> %</div>
+    </div>
+    <div id="dlgMap"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · one x</span><span class="xc-src">the pizzerias</span></div>
+    <div class="xc-body">
+      <h3>Compute the 95% interval of the pizzerias' slope and say it in words</h3>
+      <p class="stem">Distance row: Coefficient −2.2865, Standard Error 0.1861, n = 14.</p>
+      <button class="btn small xshow" data-step="xa8">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>df</b> = 12, so t<sub>0.025</sub> = 2.179 (t table).</p>
+        <p class="step">−2.2865 ± 2.179 × 0.1861 = −2.2865 ± 0.4055 → <b>−2.692 to −1.881</b>.</p>
+        <p class="step"><b>In words:</b> with 95% confidence, each extra kilometre from Rive lowers the average price by between CHF 1.88 and CHF 2.69. The interval does not contain 0, which agrees with the P-value below 0.05.</p>
+        <div class="xres"><span class="xl">Result</span>Lower 95% <b>−2.69</b> · Upper 95% <b>−1.88</b> CHF per km</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · two x's</span><span class="xc-src">the flats</span></div>
+    <div class="xc-body">
+      <h3>Compute the 95% interval for the effect of one extra minute's walk</h3>
+      <p class="stem">Minutes to tram row: Coefficient −32.2063, Standard Error 10.9967, n = 12, k = 2.</p>
+      <button class="btn small xshow" data-step="xb8">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>df</b> = 9, so t<sub>0.025</sub> = 2.262.</p>
+        <p class="step">−32.2063 ± 2.262 × 10.9967 = −32.2063 ± 24.876 → <b>−57.08 to −7.33</b>.</p>
+        <p class="step"><b>In words:</b> for flats of the same size, each extra minute to the tram lowers the rent by between CHF 7 and CHF 57 a month. The interval excludes 0 (P-value 0.017), but it is wide: twelve flats pin down the direction, not the size.</p>
+        <div class="xres"><span class="xl">Result</span>Lower 95% <b>−57.08</b> · Upper 95% <b>−7.33</b> CHF per minute</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.8</span>
+    <h3>The 95% interval of Sq ft in the four-observation printout</h3>
+    <p class="lead">Sq ft row: Coefficient 0.024390244, Standard Error 0.009089707. df Residual = 1, so t<sub>0.025</sub> = 12.706.</p>
+    <div class="turn" data-step="e8">
+      <div class="trow"><label>Write Lower 95%, four decimals.</label><input type="text" inputmode="decimal" data-v="-0.091105" data-tol="0.0005"><span class="mk"></span></div>
+      <div class="trow"><label>Write Upper 95%, four decimals.</label><input type="text" inputmode="decimal" data-v="0.139886" data-tol="0.0005"><span class="mk"></span></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct. 0.02439 ± 12.706 × 0.00909 = 0.02439 ± 0.1155 → −0.0911 to 0.1399, as printed. The interval contains 0, which matches the P-value 0.227 > 0.05. With 1 df the t multiplier is 12.7 instead of about 2, which is why every interval in that printout is so wide." data-hint="Coefficient ± 12.706 × Standard Error."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Back</button>
+    <button class="btn" data-next="s9">Next: the whole printout →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.9 ============================ -->
+<section class="screen" id="s9">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.9 · The whole printout, exam style</div><h2>Fill in the blanks of a printout and say what it shows</h2></div>
+
+  <div class="prose"><p><b>Why this section:</b> the exam gives you a printout with four to six cells blank. Each blank follows from cells that are printed, through one of the formulas of 9.2–9.8. This section puts them all in one place and then lets you do a whole printout.</p></div>
+
+  <div class="card">
+    <span class="label play">Widget · rebuild a printout from four numbers</span>
+    <h3>Type n, k, SS Total and SS Residual: the page computes the top two blocks in the order Excel does</h3>
+    <p class="mini">It starts with the tea shop's numbers. Type the numbers of any printout to check your own work.</p>
+    <div class="ctl">
+      <div><label>Observations n</label><input type="text" inputmode="decimal" id="chN" value="8"></div>
+      <div><label>x variables k</label><input type="text" inputmode="decimal" id="chK" value="1"></div>
+      <div><label>SS Total</label><input type="text" inputmode="decimal" id="chT" value="1592.875"></div>
+      <div><label>SS Residual</label><input type="text" inputmode="decimal" id="chE" value="50.72619"></div>
+    </div>
+    <div class="chain readout" id="chOut"></div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example A · 2023 exam · one x</span><span class="xc-src">nightly price of a rental on how many people it accommodates</span></div>
+    <div class="xc-body">
+      <h3>Fill in the five blanks</h3>
+      <div class="xlwrap"><table class="xlp" style="min-width:640px"><tr><td class="xlab">Multiple R</td><td>0.99328</td><td colspan="5"></td></tr><tr><td class="xlab">R Square</td><td class="bl">(e)</td><td colspan="5"></td></tr><tr><td class="xlab">Adjusted R Square</td><td>0.98622</td><td colspan="5"></td></tr><tr><td class="xlab">Standard Error</td><td>31.606</td><td colspan="5"></td></tr><tr><td class="xlab">Observations</td><td>37</td><td colspan="5"></td></tr><tr class="xhd"><td></td><td>df</td><td>SS</td><td>MS</td><td>F</td><td>Significance F</td><td></td></tr><tr><td class="xlab">Regression</td><td>1</td><td class="bl">(a)</td><td>2 575 580.97</td><td>2578.27</td><td>2.24E−34</td><td></td></tr><tr><td class="xlab">Residual</td><td>35</td><td>34 963.52</td><td>998.96</td><td></td><td></td><td></td></tr><tr><td class="xlab">Total</td><td>36</td><td>2 610 544.49</td><td></td><td></td><td></td><td></td></tr><tr class="xhd"><td></td><td>Coefficients</td><td>Standard Error</td><td>t Stat</td><td>P-value</td><td>Lower 95%</td><td>Upper 95%</td></tr><tr><td class="xlab">Intercept</td><td>7.62098</td><td>11.06427</td><td>0.68879</td><td class="bl">(b)</td><td>−14.84068</td><td>30.08263</td></tr><tr><td class="xlab">Accommodates</td><td>102.52520</td><td>2.01914</td><td>50.77665</td><td>2.24E−34</td><td class="bl">(c)</td><td class="bl">(d)</td></tr></table></div>
+      <button class="btn small xshow" data-step="xa9">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>(a)</b> SS Regression = 2 610 544.49 − 34 963.52 = <b>2 575 580.97</b> (also = MS Regression × 1).</p>
+        <p class="step"><b>(e)</b> R Square = 2 575 580.97 ⁄ 2 610 544.49 = <b>0.9866</b> (also 0.99328² = 0.9866).</p>
+        <p class="step"><b>(b)</b> The P-value of t = 0.68879 on 35 df, two-tailed: <b>0.4955</b>. With the t table you can only say it is far above 0.05, since 0.689 is below every column of the table (the 0.10 column on row 35 is 1.306); in Excel, =T.DIST.2T(0.68879, 35).</p>
+        <p class="step"><b>(c), (d)</b> t<sub>0.025</sub> on 35 df = 2.030. 102.5252 ± 2.030 × 2.01914 = <b>98.43 to 106.62</b>.</p>
+        <div class="xres"><span class="xl">Result</span>(a) 2 575 580.97 · (b) 0.4955 · (c) 98.43 · (d) 106.62 · (e) 0.9866</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Example B · 2024 exam · four x's</span><span class="xc-src">weekly commuters on price, population, income, parking rates</span></div>
+    <div class="xc-body">
+      <h3>Fill in the five blanks, and say which x's matter</h3>
+      <div class="xlwrap"><table class="xlp" style="min-width:640px"><tr><td class="xlab">Multiple R</td><td>0.97</td><td colspan="5"></td></tr><tr><td class="xlab">R Square</td><td class="bl">(e)</td><td colspan="5"></td></tr><tr><td class="xlab">Adjusted R Square</td><td>0.94</td><td colspan="5"></td></tr><tr><td class="xlab">Standard Error</td><td>5406.37</td><td colspan="5"></td></tr><tr><td class="xlab">Observations</td><td>27</td><td colspan="5"></td></tr><tr class="xhd"><td></td><td>df</td><td>SS</td><td>MS</td><td>F</td><td>Significance F</td><td></td></tr><tr><td class="xlab">Regression</td><td>4</td><td class="bl">(a)</td><td>2 788 530 240</td><td>95.40</td><td>0.00</td><td></td></tr><tr><td class="xlab">Residual</td><td>22</td><td>643 034 445</td><td>29 228 838</td><td></td><td></td><td></td></tr><tr><td class="xlab">Total</td><td>26</td><td>11 797 155 404</td><td></td><td></td><td></td><td></td></tr><tr class="xhd"><td></td><td>Coefficients</td><td>Standard Error</td><td>t Stat</td><td>P-value</td><td>Lower 95%</td><td>Upper 95%</td></tr><tr><td class="xlab">Intercept</td><td>100 222.56</td><td>135 917.87</td><td>0.7374</td><td class="bl">(b)</td><td>−181 653.86</td><td>382 098.98</td></tr><tr><td class="xlab">Price per week</td><td>−689.52</td><td>95.40</td><td>−7.2275</td><td>0.0000</td><td>−887.38</td><td>−491.67</td></tr><tr><td class="xlab">City population</td><td>0.05</td><td>0.07</td><td>0.7595</td><td>0.4556</td><td>−0.10</td><td>0.21</td></tr><tr><td class="xlab">Monthly income</td><td>−1.30</td><td>1.63</td><td>−0.7996</td><td>0.4325</td><td>−4.68</td><td>2.07</td></tr><tr><td class="xlab">Parking rates</td><td>152.46</td><td>73.86</td><td>2.0640</td><td>0.0510</td><td class="bl">(c)</td><td class="bl">(d)</td></tr></table></div>
+      <button class="btn small xshow" data-step="xb9">Show the solution</button>
+      <div class="xsol">
+        <p class="step"><b>(a)</b> SS Regression = 11 797 155 404 − 643 034 445 = <b>11 154 120 959</b> (check: 4 × 2 788 530 240 = 11 154 120 960).</p>
+        <p class="step"><b>(e)</b> R Square = 11 154 120 959 ⁄ 11 797 155 404 = <b>0.9455</b>.</p>
+        <p class="step"><b>(b)</b> The P-value of t = 0.7374 on 22 df: <b>0.4687</b>.</p>
+        <p class="step"><b>(c), (d)</b> t<sub>0.025</sub> on 22 df = 2.074. 152.46 ± 2.074 × 73.86 = <b>−0.72 to 305.64</b>. The interval just contains 0, which matches the P-value 0.051, just above 0.05.</p>
+        <p class="step"><b>Which x's matter:</b> only Price per week has a P-value below 0.05. Population and income do not; parking rates are on the edge.</p>
+        <div class="xres"><span class="xl">Result</span>(a) 11 154 120 959 · (b) 0.4687 · (c) −0.72 · (d) 305.64 · (e) 0.9455</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label problem">Exercise 9.9 · the whole printout</span>
+    <h3>The four-observation printout with eight cells blank</h3>
+    <p class="lead">Fill in the yellow cells from the printed ones. Type each answer in the box with its letter; the cell turns green when it is right. Use four decimals.</p>
+    <div id="mapHouse9"></div>
+    <div class="turn" data-step="e9" id="e9turn">
+      <div class="trow"><label>(a) R Square</label><input type="text" inputmode="decimal" data-v="0.951220" data-tol="0.0005" data-cell="R2"><span class="mk"></span></div>
+      <div class="trow"><label>(b) Adjusted R Square</label><input type="text" inputmode="decimal" data-v="0.853659" data-tol="0.001" data-cell="adj"><span class="mk"></span></div>
+      <div class="trow"><label>(c) Standard Error of the regression</label><input type="text" inputmode="decimal" data-v="0.191273" data-tol="0.0005" data-cell="S"><span class="mk"></span></div>
+      <div class="trow"><label>(d) SS Regression</label><input type="text" inputmode="decimal" data-v="0.713415" data-tol="0.0002" data-cell="ssr"><span class="mk"></span></div>
+      <div class="trow"><label>(e) MS Residual</label><input type="text" inputmode="decimal" data-v="0.036585" data-tol="0.0002" data-cell="mse"><span class="mk"></span></div>
+      <div class="trow"><label>(f) F</label><input type="text" inputmode="decimal" data-v="9.75" data-tol="0.01" data-cell="F"><span class="mk"></span></div>
+      <div class="trow"><label>(g) t Stat of House</label><input type="text" inputmode="decimal" data-v="-1.78102" data-tol="0.002" data-cell="t1"><span class="mk"></span></div>
+      <div class="trow"><label>(h) Lower 95% of Sq ft</label><input type="text" inputmode="decimal" data-v="-0.091105" data-tol="0.0005" data-cell="lo2"><span class="mk"></span></div>
+      <div class="trow" style="display:block"><label>Choose the sentence you would write under this printout.</label>
+        <div class="ch"><button data-c="0">The model is excellent: it explains 95% of y.</button><button data-c="1" data-ok="1">R Square is 0.95, but with four observations neither the regression (Significance F 0.22) nor any coefficient is significant at 5%: more data are needed.</button><button data-c="0">Sq ft matters and House does not, because its t Stat is larger.</button></div></div>
+      <div class="btn-row"><button class="btn small tchk" type="button">Check</button></div>
+      <div class="reveal" data-ok="Correct, all eight cells and the verdict. This printout is a good warning: a high R Square tells you how close the points are to the plane, not whether the result would survive new data. Significance F and the P-values say that it might not." data-hint="(a) SSR ⁄ SST, but SSR is blank too: start with (d) = SST − SSE. (b) uses (n − 1) ⁄ (n − k − 1) = 3. (c) = √(e). (e) = SSE ⁄ 1. (f) = MS Regression ⁄ (e). (g) = Coefficient ⁄ Standard Error. (h) = Coefficient − 12.706 × Standard Error."></div>
+    </div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Back</button>
+    <button class="btn" data-next="ck">Next: the checkpoint →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.10 ============================ -->
+<section class="screen" id="ck">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.10 · Checkpoint</div><h2>Ten questions on the printout</h2></div>
+  <div class="card">
+    <span class="label play">Self-check · not graded</span>
+    <h3>One attempt per question, every answer explained</h3>
+    <p>Your score reaches your instructor's dashboard as a self-check. It does <strong>not</strong> count toward your grade.</p>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s9">← Back</button>
+    <button class="btn" data-next="wk">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 9.11 ============================ -->
+<section class="screen" id="wk">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 9.11 · Workshop</div><h2>The pizzeria file · instalment nine</h2></div>
+  <div class="card">
+    <span class="label idea">Why this instalment</span>
+    <h3>Run one regression the business plan depends on, and read its printout</h3>
+    <p>Every plan assumes that some y moves with some x: rent with footfall, price with distance, covers served with covers booked. Pick one pair, put the numbers in Excel (Week 1's fourteen pizzerias are fine if you have nothing better), run Data → Data Analysis → Regression, and answer the three questions below from the printout.</p>
+  </div>
+  <div class="card">
+    <span class="label play">Week 9 · the pizzeria file</span>
+    <h3>Three entries, in your own words</h3>
+    <p style="font-size:13px;color:var(--grey);">📎 Everything saves automatically and reaches your instructor's dashboard. This is the ninth instalment of the individual project.</p>
+    <div class="wb">
+      <div class="wq"><span class="qn">1.</span>Write which variable is y and which is x, where the numbers come from, and the sign you expect for the slope and why.</div>
+      <textarea data-work="w9_pair" data-worklabel="A two-variable relationship: x, y, expected sign of r, and the randomness" placeholder="e.g. y = price of a Margherita (CHF), x = distance from Rive (km), the fourteen pizzerias of Week 1. I expect a negative slope: rents are lower further out."></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">2.</span>Copy the fitted equation from the Coefficients column, say what the slope means in the units of the business, and give R Square, Significance F and the slope's P-value with your conclusion at 5%.</div>
+      <textarea data-work="w9_line" data-worklabel="The least squares line, its slope in words, r² and the slope test" placeholder="e.g. ŷ = 23.89 − 2.29x: each km further out goes with a price CHF 2.29 lower. R Square 0.926. Significance F 3.7E−08 and the slope's P-value 3.7E−08 are below 0.05: distance helps predict price."></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">3.</span>Give the 95% interval of the slope (Lower 95%, Upper 95%) in a sentence, the Standard Error of the regression in y's units, and the predicted y at the x of your own site (say whether that x is inside the data's range).</div>
+      <textarea data-work="w9_pred" data-worklabel="An interval at x_p: confidence or prediction, and the extrapolation check" placeholder="e.g. Each km lowers the average price by between CHF 1.88 and 2.69 (95%). A pizzeria is typically CHF 0.84 off the line. Our site, 2 km out (inside 0.3–4.2 km): ŷ = CHF 19.31."></textarea>
+    </div>
+    <div class="wb-save" id="wbSave"></div>
+  </div>
+  <div class="complete-bar"><div id="wbStatus" style="font-size:13.5px;font-weight:800;color:var(--accent-deep);">Fill in all three fields to complete this section.</div></div>
+  <div class="foot"><a href="#" id="resetLink" style="color:var(--grey);">reset my Week 9 progress and answers on this device</a></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="ck">← Back</button>
+    <a class="btn" href="week9-homework.html" style="text-decoration:none;display:inline-block;">Week 9 homework →</a>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   1 · STATISTICS — least squares for any k, t and F tails, quantiles.
+   Checked against Python (16 Nov 2026): the four-observation printout's
+   Significance F 0.220863 and P-values 0.156708 / 0.325702 / 0.227103.
+   ===================================================================== */
+function lgam(x){var c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];var y=x,t=x+5.5;t-=(x+0.5)*Math.log(t);var s=1.000000000190015;for(var j=0;j<6;j++)s+=c[j]/++y;return -t+Math.log(2.5066282746310005*s/x);}
+function betacf(a,b,x){var FP=1e-300,qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<FP)d=FP;d=1/d;var h=d;
+  for(var m=1;m<=300;m++){var m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<FP)d=FP;c=1+aa/c;if(Math.abs(c)<FP)c=FP;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<FP)d=FP;c=1+aa/c;if(Math.abs(c)<FP)c=FP;d=1/d;var de=d*c;h*=de;if(Math.abs(de-1)<3e-14)break;}return h;}
+function ibeta(a,b,x){if(x<=0)return 0;if(x>=1)return 1;var bt=Math.exp(lgam(a+b)-lgam(a)-lgam(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b;}
+function pT(t,df){return ibeta(df/2,0.5,df/(df+t*t));}               /* two-tailed */
+function pF(F,d1,d2){return F<=0?1:ibeta(d2/2,d1/2,d2/(d2+d1*F));}   /* upper tail */
+function tCrit(df,alpha){var lo=0,hi=1000;for(var i=0;i<200;i++){var m=(lo+hi)/2;if(pT(m,df)>alpha)lo=m;else hi=m;}return (lo+hi)/2;}
+function fCrit(d1,d2,alpha){var lo=0,hi=1e5;for(var i=0;i<200;i++){var m=(lo+hi)/2;if(pF(m,d1,d2)>alpha)lo=m;else hi=m;}return (lo+hi)/2;}
+function tpdf(t,df){return Math.exp(lgam((df+1)/2)-lgam(df/2)-0.5*Math.log(df*Math.PI)-(df+1)/2*Math.log(1+t*t/df));}
+function fpdf(x,d1,d2){if(x<=0)return 0;return Math.exp(lgam((d1+d2)/2)-lgam(d1/2)-lgam(d2/2)+(d1/2)*Math.log(d1/d2)+(d1/2-1)*Math.log(x)-((d1+d2)/2)*Math.log(1+d1*x/d2));}
+function inv(M){var n=M.length,A=M.map(function(r,i){return r.concat(r.map(function(_,j){return i===j?1:0;}));});
+  for(var c=0;c<n;c++){var p=c;for(var r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;var tmp=A[c];A[c]=A[p];A[p]=tmp;var v=A[c][c];if(Math.abs(v)<1e-12)throw new Error('singular');
+    for(var j=0;j<2*n;j++)A[c][j]/=v;for(r=0;r<n;r++)if(r!==c){var f=A[r][c];for(j=0;j<2*n;j++)A[r][j]-=f*A[c][j];}}
+  return A.map(function(r){return r.slice(n);});}
+/* cols: array of x columns; y: array; names: x names. Returns everything Excel prints. */
+function ols(cols,y,names,lv){
+  var n=y.length,k=cols.length,p=k+1,X=[],i,j,r;
+  for(i=0;i<n;i++){r=[1];for(j=0;j<k;j++)r.push(cols[j][i]);X.push(r);}
+  var XtX=[],Xty=[];for(i=0;i<p;i++){XtX.push([]);var s=0;for(r=0;r<n;r++)s+=X[r][i]*y[r];Xty.push(s);for(j=0;j<p;j++){var q=0;for(r=0;r<n;r++)q+=X[r][i]*X[r][j];XtX[i].push(q);}}
+  var Ai=inv(XtX),b=Ai.map(function(row){return row.reduce(function(a,v,j){return a+v*Xty[j];},0);});
+  var ybar=y.reduce(function(a,v){return a+v;},0)/n,sst=0,sse=0,yh=[];
+  for(i=0;i<n;i++){var f=0;for(j=0;j<p;j++)f+=b[j]*X[i][j];yh.push(f);sse+=(y[i]-f)*(y[i]-f);sst+=(y[i]-ybar)*(y[i]-ybar);}
+  var o={n:n,k:k,names:names,dfr:k,dfe:n-k-1,dft:n-1,sst:sst,sse:sse,ssr:sst-sse,ybar:ybar,yh:yh};
+  o.msr=o.ssr/k;o.mse=sse/o.dfe;o.F=o.msr/o.mse;o.sigF=pF(o.F,k,o.dfe);o.R2=o.ssr/sst;o.R=Math.sqrt(o.R2);o.adj=1-(1-o.R2)*(n-1)/o.dfe;o.S=Math.sqrt(o.mse);
+  o.tc=tCrit(o.dfe,0.05);o.coef=b.map(function(bi,j){var se=Math.sqrt(o.mse*Ai[j][j]),t=bi/se;return {b:bi,se:se,t:t,p:pT(Math.abs(t),o.dfe),lo:bi-o.tc*se,hi:bi+o.tc*se};});
+  if(k===1){var xb=cols[0].reduce(function(a,v){return a+v;},0)/n;o.xbar=xb;o.ssxx=cols[0].reduce(function(a,v){return a+(v-xb)*(v-xb);},0);}
+  setLevel(o,lv||95);return o;
+}
+function setLevel(o,lv){o.lv=lv;var t=tCrit(o.dfe,1-lv/100);o.tL=t;o.coef.forEach(function(c){c.L=c.b-t*c.se;c.H=c.b+t*c.se;});}
+
+/* =====================================================================
+   2 · THE FOUR PRINTOUTS
+   ===================================================================== */
+var TX=[2,3,4,5,6,7,8,9],TY=[41,50,51,62,64,75,74,86];
+var KM=[0.3,0.5,0.8,1.0,1.2,1.5,1.8,2.0,2.4,2.7,3.0,3.4,3.8,4.2],PR=[24.0,23.0,21.5,22.5,20.0,21.0,19.5,18.0,19.0,17.0,16.5,17.5,15.0,14.5];
+var FA=[35,42,48,55,60,64,70,75,82,90,98,110],FM=[3,12,6,15,4,9,14,2,10,7,16,5],FR=[1670,1550,1650,1540,1750,2080,1990,2320,2450,2730,2380,3410];
+var TEA=ols([TX],TY,['Ad spend']),PZ=ols([KM],PR,['Distance']),FL=ols([FA,FM],FR,['Floor area','Minutes to tram']);
+/* the four-observation printout: no raw data, so its printed values are taken as they are */
+var HS=(function(){var o={n:4,k:2,names:['House','Sq ft'],dfr:2,dfe:1,dft:3,sst:0.75,sse:0.036585366,ssr:0.713414634,msr:0.356707317,mse:0.036585366,F:9.75,sigF:0.220863052,R2:0.951219512,R:0.97530483,adj:0.853658537,S:0.191273014,tc:tCrit(1,0.05),
+  coef:[{b:3.146341463,se:0.790522384,t:3.980079,p:0.156708},{b:-0.646341463,se:0.362905921,t:-1.78102,p:0.325702},{b:0.024390244,se:0.009089707,t:2.683282,p:0.227104}]};
+  var LH=[[-6.898197794,13.19088072],[-5.257498391,3.964815464],[-0.091105437,0.139885925]];  /* as printed */
+  o.coef.forEach(function(c,i){c.lo=LH[i][0];c.hi=LH[i][1];});setLevel(o,95);o.coef.forEach(function(c,i){c.L=LH[i][0];c.H=LH[i][1];});return o;})();
+var PO={tea:TEA,pz:PZ,fl:FL,hs:HS};
+
+/* =====================================================================
+   3 · THE PRINTOUT: Excel's General format, the cell dictionary, the map
+   ===================================================================== */
+function xn(v){if(v===0)return '0';var a=Math.abs(v);if(a<1e-4||a>=1e11){var e=v.toExponential(5).replace(/\.?0+e/,'e').split('e');var ex=parseInt(e[1],10);return e[0]+'E'+(ex<0?'-':'+')+(Math.abs(ex)<10?'0':'')+Math.abs(ex);}
+  /* Excel's General format in a default-width column: at most 11 characters besides the sign (0.951219512, 3.146341463, 13.19088072) */
+  var ip=a<1?1:Math.floor(Math.log10(a))+1,s=v.toFixed(Math.max(0,10-ip));if(s.indexOf('.')>=0)s=s.replace(/0+$/,'').replace(/\.$/,'');return s;}
+function g(v,d){if(v===0)return '0';var a=Math.abs(v);if(a<1e-4)return xn(v).replace('-','−');var s=Number(v.toPrecision(d||6)).toString();if(s.indexOf('e')>=0)s=v.toFixed(2);return s.replace('-','−');}
+var SECNAME={s2:'9.2 · the coefficients',s3:'9.3 · the sums of squares',s4:'9.4 · df, MS and the Standard Error',s5:'9.5 · R Square, Multiple R, Adjusted R Square',s6:'9.6 · F and Significance F',s7:'9.7 · t Stat and P-value',s8:'9.8 · the 95% intervals'};
+function rowName(o,i){return i===0?'Intercept':o.names[i-1];}
+function INFO(o,key){
+  var m=key.match(/^(b|se|t|p|lo|hi|L|H)(\d)$/);
+  if(m){var i=+m[2],c=o.coef[i],nm=rowName(o,i),K=m[1];
+    if(K==='b')return i===0?{nm:'Coefficient of the Intercept',what:'The value of ŷ the equation gives when every x is 0. It positions the line; it has a meaning of its own only when x = 0 is inside or close to the data.',calc:o.k===1&&o.xbar!=null?'ȳ − b₁·x̄ = '+g(o.ybar)+' − '+g(o.coef[1].b)+' × '+g(o.xbar)+' = '+g(c.b):'Computed by Excel together with the slopes, by least squares.',deps:[],sec:'s2'}
+      :{nm:'Coefficient of '+nm,what:'The slope of '+nm+': the change in the predicted y when '+nm+' rises by one unit'+(o.k>1?' and the other x’s stay the same.':'.'),calc:o.k===1&&o.ssxx?'SSxy ⁄ SSxx = '+g(c.b*o.ssxx)+' ⁄ '+g(o.ssxx)+' = '+g(c.b):'Computed by Excel by least squares (matrix algebra), together with the other coefficients.',deps:[],sec:'s2'};
+    if(K==='se'){var cl=o.k===1&&o.ssxx?(i===1?'Standard Error of the regression ⁄ √SSxx = '+g(o.S)+' ⁄ √'+g(o.ssxx)+' = '+g(c.se):'S × √(1⁄n + x̄²⁄SSxx) = '+g(o.S)+' × √(1⁄'+o.n+' + '+g(o.xbar)+'²⁄'+g(o.ssxx)+') = '+g(c.se)):'Computed by Excel from the Standard Error of the regression and the spread of the x values.';
+      return {nm:'Standard Error of the '+(i===0?'Intercept':nm+' coefficient'),what:'How much this coefficient would vary from one sample to another. The smaller it is, the more precisely the coefficient is known.',calc:cl,deps:['S'],sec:'s7'};}
+    if(K==='t')return {nm:'t Stat of '+nm,what:'How many standard errors the coefficient is away from 0. It is the test statistic of H₀: this coefficient = 0.',calc:'Coefficient ⁄ Standard Error = '+g(c.b)+' ⁄ '+g(c.se)+' = '+g(c.t,5),deps:['b'+i,'se'+i],sec:'s7'};
+    if(K==='p')return {nm:'P-value of '+nm,what:'The probability of a t Stat at least this far from 0 if the true coefficient were 0 (two-tailed, df = n − k − 1). Below 0.05: the coefficient is significantly different from 0 at the 5% level.',calc:'P(|T| ≥ '+g(Math.abs(c.t),5)+') with '+o.dfe+' df = '+g(c.p,5),deps:['t'+i,'dfe'],sec:'s7'};
+    if(K==='lo'||K==='hi')return {nm:(K==='lo'?'Lower':'Upper')+' 95% of '+nm,what:'The '+(K==='lo'?'lower':'upper')+' end of the 95% confidence interval for this coefficient.',calc:g(c.b)+(K==='lo'?' − ':' + ')+g(o.tc,4)+' × '+g(c.se)+' = '+g(K==='lo'?c.lo:c.hi)+'   (t₀.₀₂₅ with '+o.dfe+' df = '+g(o.tc,4)+')',deps:['b'+i,'se'+i,'dfe'],sec:'s8'};
+    return {nm:(K==='L'?'Lower ':'Upper ')+o.lv.toFixed(1)+'% of '+nm,what:'The same interval at the level typed in the dialog box "Confidence Level". The box was left at '+o.lv+'%, so '+(o.lv===95?'this column repeats the 95% column.':'this is the '+o.lv+'% interval.'),calc:g(c.b)+(K==='L'?' − ':' + ')+g(o.tL,4)+' × '+g(c.se)+' = '+g(K==='L'?c.L:c.H),deps:['b'+i,'se'+i],sec:'s8'};
+  }
+  var D={
+    R:{nm:'Multiple R',what:'The correlation between the real y values and the predicted ŷ values. From 0 to 1, never negative. With one x it is the size of r, without its sign.',calc:'√R Square = √'+g(o.R2)+' = '+g(o.R),deps:['R2'],sec:'s5'},
+    R2:{nm:'R Square',what:'The share of the variation of y that the x’s explain, from 0 to 1.',calc:'SS Regression ⁄ SS Total = '+g(o.ssr)+' ⁄ '+g(o.sst)+' = '+g(o.R2),deps:['ssr','sst'],sec:'s5'},
+    adj:{nm:'Adjusted R Square',what:'R Square corrected for the number of x’s. Use it to compare regressions with different numbers of x’s.',calc:'1 − (1 − '+g(o.R2)+') × '+(o.n-1)+' ⁄ '+o.dfe+' = '+g(o.adj),deps:['R2','n','dfr'],sec:'s5'},
+    S:{nm:'Standard Error (of the regression)',what:'How far, in the units of y, a typical observation is from the line.',calc:'√MS Residual = √'+g(o.mse)+' = '+g(o.S),deps:['mse'],sec:'s4'},
+    n:{nm:'Observations',what:'The number of rows of data the regression used (n).',calc:'Counted from the data: n = '+o.n,deps:[],sec:'s4'},
+    dfr:{nm:'df of Regression',what:'The number of x variables (k).',calc:'k = '+o.k,deps:[],sec:'s4'},
+    dfe:{nm:'df of Residual',what:'The observations left to measure the scatter after one per coefficient was used to place the line.',calc:'n − k − 1 = '+o.n+' − '+o.k+' − 1 = '+o.dfe,deps:['n','dfr'],sec:'s4'},
+    dft:{nm:'df of Total',what:'n − 1, the sum of the two df above.',calc:o.n+' − 1 = '+o.dft,deps:['n'],sec:'s4'},
+    ssr:{nm:'SS Regression',what:'Σ(ŷ − ȳ)²: the part of the variation of y that the line explains.',calc:'SS Total − SS Residual = '+g(o.sst)+' − '+g(o.sse)+' = '+g(o.ssr),deps:['sst','sse'],sec:'s3'},
+    sse:{nm:'SS Residual',what:'Σ(y − ŷ)²: the part of the variation of y the line misses. Least squares makes this as small as possible.',calc:'Sum of the squared residuals = '+g(o.sse),deps:[],sec:'s3'},
+    sst:{nm:'SS Total',what:'Σ(y − ȳ)²: how much y varies around its average'+(o.ybar!=null?' ȳ = '+g(o.ybar):'')+'.',calc:'SS Regression + SS Residual = '+g(o.ssr)+' + '+g(o.sse)+' = '+g(o.sst),deps:[],sec:'s3'},
+    msr:{nm:'MS Regression',what:'SS Regression per x variable.',calc:'SS Regression ⁄ k = '+g(o.ssr)+' ⁄ '+o.k+' = '+g(o.msr),deps:['ssr','dfr'],sec:'s4'},
+    mse:{nm:'MS Residual',what:'SS Residual per free observation: the variance of the residuals.',calc:'SS Residual ⁄ (n − k − 1) = '+g(o.sse)+' ⁄ '+o.dfe+' = '+g(o.mse),deps:['sse','dfe'],sec:'s4'},
+    F:{nm:'F',what:'The test statistic of H₀: all slopes are 0. Large F = the x’s explain much more than chance would.',calc:'MS Regression ⁄ MS Residual = '+g(o.msr)+' ⁄ '+g(o.mse)+' = '+g(o.F,5),deps:['msr','mse'],sec:'s6'},
+    sigF:{nm:'Significance F',what:'The p-value of the F test. Below 0.05: the regression explains a real part of y.',calc:'P(F with '+o.k+' and '+o.dfe+' df > '+g(o.F,5)+') = '+g(o.sigF,5),deps:['F','dfr','dfe'],sec:'s6'}
+  };
+  return D[key];
+}
+function printoutHTML(o,opt){
+  opt=opt||{};var B=opt.blanks||{},cls=opt.click?' xc':'';
+  function td(k,v){if(B[k])return '<td class="bl" data-k="'+k+'">'+B[k]+'</td>';return '<td class="'+cls.trim()+'" data-k="'+k+'">'+xn(v)+'</td>';}
+  var lv=o.lv.toFixed(1),h='<div class="xlwrap"><table class="xlp"><tr><td class="xh" colspan="9">SUMMARY OUTPUT</td></tr><tr><td colspan="9" style="border-color:transparent"></td></tr>';
+  h+='<tr><td class="xsec" colspan="2">Regression Statistics</td><td colspan="7"></td></tr>';
+  [['Multiple R','R'],['R Square','R2'],['Adjusted R Square','adj'],['Standard Error','S'],['Observations','n']].forEach(function(r,i){h+='<tr'+(i===4?' class="xend"':'')+'><td class="xlab u">'+r[0]+'</td>'+td(r[1],o[r[1]]).replace('<td class="','<td class="u ')+'<td colspan="7"></td></tr>';});
+  h+='<tr><td colspan="9"></td></tr><tr><td class="xlab">ANOVA</td><td colspan="8"></td></tr>';
+  h+='<tr class="xhd"><td></td><td>df</td><td>SS</td><td>MS</td><td>F</td><td>Significance F</td><td colspan="3"></td></tr>';
+  h+='<tr><td class="xlab">Regression</td>'+td('dfr',o.dfr)+td('ssr',o.ssr)+td('msr',o.msr)+td('F',o.F)+td('sigF',o.sigF)+'<td colspan="3"></td></tr>';
+  h+='<tr><td class="xlab">Residual</td>'+td('dfe',o.dfe)+td('sse',o.sse)+td('mse',o.mse)+'<td></td><td></td><td colspan="3"></td></tr>';
+  h+='<tr class="xend"><td class="xlab u">Total</td>'+td('dft',o.dft).replace('<td class="','<td class="u ')+td('sst',o.sst).replace('<td class="','<td class="u ')+'<td class="u"></td><td class="u"></td><td class="u"></td><td colspan="3"></td></tr>';
+  h+='<tr><td colspan="9"></td></tr><tr class="xhd"><td></td><td>Coefficients</td><td>Standard Error</td><td>t Stat</td><td>P-value</td><td>Lower 95%</td><td>Upper 95%</td><td>Lower '+lv+'%</td><td>Upper '+lv+'%</td></tr>';
+  o.coef.forEach(function(c,i){h+='<tr'+(i===o.coef.length-1?' class="xend"':'')+'><td class="xlab'+(i===o.coef.length-1?' u':'')+'">'+rowName(o,i)+'</td>'+['b','se','t','p','lo','hi','L','H'].map(function(K){var v={b:c.b,se:c.se,t:c.t,p:c.p,lo:c.lo,hi:c.hi,L:c.L,H:c.H}[K];var x=td(K+i,v);return i===o.coef.length-1?x.replace('<td class="','<td class="u '):x;}).join('')+'</tr>';});
+  return h+'</table></div>';
+}
+/* mode 'info' (click → explanation), 'find' (click → callback), 'static' */
+function mountMap(el,o,opt){
+  opt=opt||{};el.innerHTML=printoutHTML(o,{click:opt.mode!=='static',blanks:opt.blanks})+(opt.caption?'<div class="xcap">'+opt.caption+'</div>':'')+(opt.mode==='info'?'<div class="xinfo">Click a number in the printout.</div>':'');
+  var info=el.querySelector('.xinfo');
+  el.addEventListener('click',function(e){
+    var c=e.target.closest('td.xc');if(!c)return;var k=c.dataset.k;
+    if(opt.mode==='find'){if(opt.onPick)opt.onPick(k,c);return;}
+    if(opt.mode!=='info')return;
+    el.querySelectorAll('td.on,td.dep').forEach(function(x){x.classList.remove('on','dep');});
+    c.classList.add('on');var I=INFO(o,k);if(!I)return;
+    I.deps.forEach(function(d){var t=el.querySelector('td[data-k="'+d+'"]');if(t)t.classList.add('dep');});
+    info.innerHTML='<div class="nm">'+I.nm+'</div><div>'+I.what+'</div><div class="calc">'+I.calc+'</div><div class="go">Explained in <a href="#" data-goto="'+I.sec+'">section '+SECNAME[I.sec]+' →</a></div>';
+    if(opt.onAny)opt.onAny(k);
+  });
+}
+document.addEventListener('click',function(e){var a=e.target.closest('[data-goto]');if(!a)return;e.preventDefault();show(a.dataset.goto);});
+
+/* =====================================================================
+   4 · PROGRESS — steps per section; a section is done when all its steps are
+   ===================================================================== */
+var SECTIONS=[
+  {id:'s1',num:'9.1',name:'The printout as a whole',tag:'Getting it from Excel · the three blocks · find the cell',badge:'Overview',part:1},
+  {id:'s2',num:'9.2',name:'The intercept and the slopes',tag:'Coefficients · least squares · a slope with two x’s',badge:'Coefficients',part:1},
+  {id:'s3',num:'9.3',name:'The sums of squares',tag:'SS Total = SS Regression + SS Residual',badge:'SS',part:1},
+  {id:'s4',num:'9.4',name:'df, MS and the Standard Error',tag:'Observations · degrees of freedom · mean squares · the typical miss',badge:'df · MS · S',part:1},
+  {id:'s5',num:'9.5',name:'R Square, Multiple R, Adjusted R Square',tag:'How much of y the line explains · why adjust',badge:'R²',part:1},
+  {id:'s6',num:'9.6',name:'F and Significance F',tag:'Does the regression explain anything at all?',badge:'F',part:1},
+  {id:'s7',num:'9.7',name:'t Stat and P-value of each coefficient',tag:'Standard Error of a coefficient · one t test per row',badge:'t · P',part:1},
+  {id:'s8',num:'9.8',name:'Lower 95% and Upper 95%',tag:'The interval of a coefficient · the Confidence Level box',badge:'95%',part:1},
+  {id:'s9',num:'9.9',name:'The whole printout, exam style',tag:'Two real exam printouts · eight blanks to fill',badge:'Exam',part:2},
+  {id:'ck',num:'9.10',name:'Checkpoint',tag:'Ten questions on the printout',badge:'Quiz',part:2},
+  {id:'wk',num:'9.11',name:'Workshop',tag:'Your own regression — the individual project, instalment nine',badge:'Project',part:2}
+];
+var STEPS={s1:['find','xa1','xb1','e1'],s2:['fit','flat','xa2','xb2','e2'],s3:['split','move','xa3','xb3','e3'],s4:['df','band','xa4','xb4','e4'],s5:['noise','junk','xa5','xb5','e5'],s6:['fcurve','shuffle','xa6','xb6','e6'],s7:['resample','tcurve','xa7','xb7','e7'],s8:['ci','dlg','xa8','xb8','e8'],s9:['chain','xa9','xb9','e9']};
+var ALLSTEPS=[];for(var _s in STEPS)ALLSTEPS=ALLSTEPS.concat(STEPS[_s]);
+var MOD='w9p',PRES='w9',KEY='stats_w9p_progress_v1',NQUIZ=10;
+var progress=load();
+function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};if(!p.inputs)p.inputs={};return p;}catch(e){return{done:{},steps:{},inputs:{}};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch(e){}}
+function totalSteps(){return ALLSTEPS.length+NQUIZ+document.querySelectorAll('[data-work]').length;}
+function doneSteps(){var n=0,s=progress.steps||{};for(var k in s)if(s[k])n++;return n;}
+function updateBar(){var t=totalSteps()||1,d=Math.min(doneSteps(),t),p=Math.round(d/t*100);var pf=document.getElementById('progFill'),pp=document.getElementById('progPct');if(pf)pf.style.width=p+'%';if(pp)pp.textContent=p+'%';}
+function markStep(id,on){if(!id)return;if(on===false){if(!progress.steps[id])return;delete progress.steps[id];}else{if(progress.steps[id])return;progress.steps[id]=true;}save();updateBar();secCheck();}
+function secCheck(){for(var s in STEPS){if(STEPS[s].every(function(x){return progress.steps[x];}))markSection(s);}}
+function markSection(id){if(!id||progress.done[id])return;progress.done[id]=true;save();updateBar();renderList();if(window.StatsTrack)StatsTrack.complete(id);if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});}
+function syncDoneSections(){if(!window.StatsTrack)return;var d=progress.done||{},sent=0;Object.keys(d).forEach(function(id){if(d[id]){StatsTrack.complete(id);sent++;}});if(sent&&window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});}
+function renderList(){
+  var list=document.getElementById('sectionList');if(!list)return;list.innerHTML='';var part=0;
+  SECTIONS.forEach(function(s){
+    if(s.part!==part){part=s.part;var h=document.createElement('div');h.className='part-head';h.innerHTML=part===1?'<span class="pt">Part 1 · the printout, block by block</span><span class="pd">each section: widgets, two examples, one exercise</span>':'<span class="pt">Part 2 · the whole printout</span><span class="pd">exam printouts, checkpoint, your own project</span>';list.appendChild(h);}
+    var done=!!progress.done[s.id],st=STEPS[s.id],cnt=st?' · '+st.filter(function(x){return progress.steps[x];}).length+'/'+st.length:'';
+    var c=document.createElement('div');c.className='section-card'+(done?' done':'')+(s.part===2?' part2':'');
+    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+'</div><div class="tag">'+s.tag+cnt+'</div><span class="badge">'+s.badge+'</span></div><div class="status">'+(done?'✓':'▸')+'</div>';
+    c.onclick=function(){show(s.id);};list.appendChild(c);
+  });
+}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var t=document.getElementById(id);if(t)t.classList.add('active');if(id==='home')renderList();window.scrollTo(0,0);if(SHOWN[id])SHOWN[id]();}
+var SHOWN={};
+document.addEventListener('click',function(e){var b=e.target.closest('[data-next],[data-prev],[data-home]');if(!b)return;if(b.hasAttribute('data-home'))return show('home');if(b.hasAttribute('data-prev'))return show(b.getAttribute('data-prev'));show(b.getAttribute('data-next'));});
+
+/* examples: "Show the solution" */
+document.querySelectorAll('.xshow').forEach(function(b){
+  var sol=b.nextElementSibling;
+  function open(){sol.classList.add('show');b.textContent='Hide the solution';}
+  b.addEventListener('click',function(){if(sol.classList.contains('show')){sol.classList.remove('show');b.textContent='Show the solution';}else{open();markStep(b.dataset.step);}});
+});
+/* exercises: number boxes (decimal comma accepted) and one-choice rows */
+function num(s){s=String(s||'').trim().replace(/[−–]/g,'-').replace(/[\s'’]/g,'').replace(',','.');if(s===''||isNaN(+s))return NaN;return +s;}
+document.querySelectorAll('.turn').forEach(function(T){
+  var step=T.dataset.step,ins=[].slice.call(T.querySelectorAll('input[type=text]')),chs=[].slice.call(T.querySelectorAll('.ch button')),fb=T.querySelector('.reveal');
+  chs.forEach(function(b){b.addEventListener('click',function(){b.parentNode.querySelectorAll('button').forEach(function(x){x.classList.remove('on','ok','no');});b.classList.add('on');});});
+  function check(quiet){
+    var all=true,vals=[];
+    ins.forEach(function(inp){var v=num(inp.value),tg=+inp.dataset.v,tol=+inp.dataset.tol,ok=!isNaN(v)&&Math.abs(v-tg)<=tol+1e-9;vals.push(inp.value);
+      inp.classList.toggle('ok',ok);inp.classList.toggle('no',!ok&&inp.value!=='');var mk=inp.parentNode.querySelector('.mk');if(mk)mk.textContent=ok?'✓':(inp.value!==''?'✗':'');if(!ok)all=false;
+      if(inp.dataset.cell){document.querySelectorAll('#mapHouse9 td[data-k="'+inp.dataset.cell+'"],#mapHouse9 td[data-k="'+(inp.dataset.cell==='lo2'?'L2':'_')+'"]').forEach(function(td){td.classList.toggle('ok',ok);td.classList.toggle('no',!ok&&inp.value!=='');if(ok)td.textContent=xn(+inp.dataset.v);});}});
+    var chosen=-1;chs.forEach(function(b,i){if(b.classList.contains('on')){chosen=i;var ok=!!b.dataset.ok;b.classList.toggle('ok',ok);b.classList.toggle('no',!ok);if(!ok)all=false;}});
+    if(chs.length&&chosen<0)all=false;
+    progress.inputs[step]={v:vals,c:chosen};save();
+    fb.innerHTML=all?'<b>✓</b> '+fb.dataset.ok:'<b>Not yet.</b> '+fb.dataset.hint;fb.classList.add('show');
+    if(all)markStep(step);
+  }
+  T.querySelector('.tchk').addEventListener('click',function(){check();});
+  var sv=progress.inputs[step];if(sv){ins.forEach(function(inp,i){if(sv.v&&sv.v[i]!=null)inp.value=sv.v[i];});if(sv.c>=0&&chs[sv.c])chs[sv.c].classList.add('on');if(progress.steps[step])setTimeout(check,0);}
+});
+
+/* =====================================================================
+   5 · SVG helper — colours come from CSS classes, so dark mode needs no repaint
+   ===================================================================== */
+var SVGNS='http://www.w3.org/2000/svg';
+function P(svg,o){
+  var vb=svg.viewBox.baseVal,W=vb.width,H=vb.height,L=o.l||52,R=o.r||16,T=o.t||14,B=o.b||38;svg.innerHTML='';
+  function sx(v){return L+(v-o.x0)/(o.x1-o.x0)*(W-L-R);}function sy(v){return H-B-(v-o.y0)/(o.y1-o.y0)*(H-T-B);}
+  function el(tag,a,txt,par){var e=document.createElementNS(SVGNS,tag);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;(par||svg).appendChild(e);return e;}
+  function axes(xt,yt,xl,yl){
+    (yt||[]).forEach(function(v){el('line',{x1:L,x2:W-R,y1:sy(v),y2:sy(v),'class':'gl'});el('text',{x:L-6,y:sy(v)+4,'text-anchor':'end'},String(v).replace('-','−'));});
+    (xt||[]).forEach(function(v){el('text',{x:sx(v),y:H-B+15,'text-anchor':'middle'},String(v).replace('-','−'));});
+    el('line',{x1:L,x2:W-R,y1:H-B,y2:H-B,'class':'ax'});el('line',{x1:L,x2:L,y1:T,y2:H-B,'class':'ax'});
+    if(xl)el('text',{x:(L+W-R)/2,y:H-4,'text-anchor':'middle','class':'lb'},xl);
+    if(yl)el('text',{x:12,y:(T+H-B)/2,'text-anchor':'middle','class':'lb',transform:'rotate(-90 12 '+((T+H-B)/2)+')'},yl);
+  }
+  return {sx:sx,sy:sy,el:el,axes:axes,W:W,H:H,L:L,R:R,T:T,B:B};
+}
+function rnorm(){var u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function hist(svg,vals,x0,x1,w,xl,mark,markLab){
+  var nb=Math.round((x1-x0)/w),cnt=new Array(nb).fill(0);vals.forEach(function(v){var i=Math.floor((v-x0)/w);if(i<0)i=0;if(i>=nb)i=nb-1;cnt[i]++;});
+  var mx=Math.max.apply(null,cnt.concat([1])),p=P(svg,{x0:x0,x1:x1,y0:0,y1:mx*1.1,l:44});
+  var xt=[];for(var t=x0;t<=x1+1e-9;t+=(x1-x0)/8)xt.push(Math.round(t*100)/100);p.axes(xt,[0,Math.round(mx/2),mx],xl,'count');
+  cnt.forEach(function(c,i){if(!c)return;p.el('rect',{x:p.sx(x0+i*w)+1,y:p.sy(c),width:Math.max(1,p.sx(x0+w)-p.sx(x0)-2),height:p.sy(0)-p.sy(c),'class':'bar'});});
+  if(mark!=null){var mxp=Math.min(p.sx(mark),p.W-p.R);p.el('line',{x1:mxp,x2:mxp,y1:p.T,y2:p.H-p.B,'class':'obs'});p.el('text',{x:mxp-4,y:p.T+12,'text-anchor':'end','class':'lb'},markLab);}
+  return p;
+}
+
+/* =====================================================================
+   6 · THE WIDGETS
+   ===================================================================== */
+/* home map + the maps of 9.1, 9.9 */
+mountMap(document.getElementById('homeMap'),TEA,{mode:'info'});
+mountMap(document.getElementById('mapPzA'),PZ,{mode:'info',caption:'The pizzerias: y = price (CHF), x = distance from Rive (km). Click any cell.'});
+mountMap(document.getElementById('mapFlB'),FL,{mode:'info',caption:'The flats: y = monthly rent (CHF). Click any cell.'});
+mountMap(document.getElementById('mapHouse1'),HS,{mode:'info',caption:'The four-observation printout (the numbers are Excel’s, as printed). Click any cell.'});
+mountMap(document.getElementById('mapHouse9'),HS,{mode:'static',blanks:{R2:'(a)',adj:'(b)',S:'(c)',ssr:'(d)',mse:'(e)',F:'(f)',t1:'(g)',lo2:'(h)',L2:'(h)',R:'—'},caption:'Multiple R is hidden too, or (a) would be one squaring away.'});
+
+/* 9.1 · find the cell */
+(function(){
+  var Q=[{q:'How many weeks of data did Lina use?',ok:['n'],w:'Observations = 8.'},
+    {q:'How many more orders, on average, does each extra CHF 100 of ads bring?',ok:['b1'],w:'The Coefficient of Ad spend: 6.06 orders per CHF 100.'},
+    {q:'What share of the week-to-week differences in orders does the ad spend explain?',ok:['R2'],w:'R Square = 0.968, so 96.8%.'},
+    {q:'By how many orders is a typical week above or below the line?',ok:['S'],w:'The Standard Error in Regression Statistics: 2.91 orders.'},
+    {q:'Which cell gives the probability of a slope this far from 0 if ads did nothing?',ok:['p1','sigF'],w:'The P-value of Ad spend (1.02E−05). With one x, Significance F is the same number, so it counts too.'},
+    {q:'Click one end of the range in which the true effect of CHF 100 of ads lies, with 95% confidence.',ok:['lo1','hi1','L1','H1'],w:'Lower 95% = 4.96 and Upper 95% = 7.16 orders per CHF 100.'}];
+  var i=0,qEl=document.getElementById('findQ'),fb=document.getElementById('findFb'),mapEl=document.getElementById('findMap');
+  function ask(){if(i>=Q.length){qEl.innerHTML='All six found.';fb.innerHTML='<b>✓ Done.</b> You can now find any cell. Sections 9.2–9.8 explain how each one is computed.';fb.classList.add('show');markStep('find');return;}qEl.innerHTML='<span class="n">'+(i+1)+' of '+Q.length+'</span>'+Q[i].q;}
+  mountMap(mapEl,TEA,{mode:'find',onPick:function(k,td){
+    if(i>=Q.length)return;mapEl.querySelectorAll('td.on,td.dep').forEach(function(x){x.classList.remove('on','dep');});
+    if(Q[i].ok.indexOf(k)>=0){td.classList.add('on');fb.innerHTML='<b>✓ Right.</b> '+Q[i].w;fb.classList.add('show');i++;setTimeout(ask,700);}
+    else{td.classList.add('dep');var I=INFO(TEA,k);fb.innerHTML='<b>Not this one.</b> You clicked <b>'+I.nm+'</b>: '+I.what+' Try again.';fb.classList.add('show');}
+  }});
+  if(progress.steps.find)i=Q.length;ask();
+})();
+
+/* 9.2 · fit the line yourself */
+(function(){
+  var b0=document.getElementById('fitB0'),b1=document.getElementById('fitB1'),svg=document.getElementById('fitSvg'),out=document.getElementById('fitOut');
+  function draw(){
+    var a=+b0.value,s=+b1.value;document.getElementById('fitB0v').textContent=a.toFixed(1);document.getElementById('fitB1v').textContent=s.toFixed(2);
+    var p=P(svg,{x0:1,x1:10,y0:20,y1:100});p.axes([1,2,3,4,5,6,7,8,9,10],[20,40,60,80,100],'Ad spend (CHF 100s)','Orders');
+    var sse=0;TX.forEach(function(x,i){var f=a+s*x,e=TY[i]-f;sse+=e*e;var y1=p.sy(TY[i]),y2=p.sy(f),hh=Math.abs(y1-y2),left=x>8;p.el('rect',{x:left?p.sx(x)-hh:p.sx(x),y:Math.min(y1,y2),width:hh,height:hh,'class':'sq'});});
+    p.el('line',{x1:p.sx(1),y1:p.sy(a+s),x2:p.sx(10),y2:p.sy(a+10*s),'class':'ln'});
+    TX.forEach(function(x,i){p.el('circle',{cx:p.sx(x),cy:p.sy(TY[i]),r:5,'class':'pt'});});
+    var ratio=sse/TEA.sse;out.innerHTML='Your line: ŷ = '+a.toFixed(1)+' + '+s.toFixed(2)+'x. Sum of squared residuals = <span class="big">'+sse.toFixed(1)+'</span><br>The smallest possible (Excel’s SS Residual) is <b>'+TEA.sse.toFixed(2)+'</b>, with ŷ = 29.55 + 6.06x. Yours is '+(ratio<1.0005?'<b>the least squares line</b>.':'<b>'+Math.round((ratio-1)*100)+'% larger</b>.');
+    if(ratio<=1.10)markStep('fit');
+  }
+  b0.addEventListener('input',draw);b1.addEventListener('input',draw);
+  document.getElementById('fitBest').addEventListener('click',function(){b0.value=29.5;b1.value=6.05;draw();markStep('fit');});
+  draw();
+})();
+
+/* 9.2 · two-x slopes */
+(function(){
+  var A=document.getElementById('flA'),M=document.getElementById('flM'),out=document.getElementById('flOut'),c=FL.coef,last={a:+A.value,m:+M.value},moved={};
+  function pr(a,m){return c[0].b+c[1].b*a+c[2].b*m;}
+  function draw(e){
+    var a=+A.value,m=+M.value;document.getElementById('flAv').textContent=a;document.getElementById('flMv').textContent=m;
+    var msg='';if(e){var da=a-last.a,dm=m-last.m,d=pr(a,m)-pr(last.a,last.m);
+      if(da)msg='You changed the area by '+(da>0?'+':'−')+Math.abs(da)+' m² with the minutes fixed: the rent changes by '+(d>=0?'+':'−')+'CHF '+Math.abs(d).toFixed(2)+' = '+da+' × 23.23.';
+      if(dm)msg='You changed the walk by '+(dm>0?'+':'−')+Math.abs(dm)+' min with the area fixed: the rent changes by '+(d>=0?'+':'−')+'CHF '+Math.abs(d).toFixed(2)+' = '+dm+' × (−32.21).';
+      last={a:a,m:m};moved[e.target.id]=1;if(moved.flA&&moved.flM)markStep('flat');}
+    out.innerHTML='Predicted rent: <span class="big">CHF '+Math.round(pr(a,m))+'</span> a month<br>= 798.07 + 23.23 × '+a+' − 32.21 × '+m+(msg?'<br>'+msg:'<br>Move one slider.');
+  }
+  A.addEventListener('input',draw);M.addEventListener('input',draw);draw();
+})();
+
+/* 9.3 · split one week */
+(function(){
+  var svg=document.getElementById('splitSvg'),out=document.getElementById('splitOut'),tab=document.getElementById('splitTab'),sel=-1,yb=TEA.ybar,yh=TEA.yh;
+  function table(){var h='<tr><th>Week</th><th>x</th><th>y</th><th>ŷ</th><th>y − ȳ</th><th>ŷ − ȳ</th><th>y − ŷ</th><th>(y − ȳ)²</th><th>(ŷ − ȳ)²</th><th>(y − ŷ)²</th></tr>',s=[0,0,0];
+    TX.forEach(function(x,i){var a=TY[i]-yb,b=yh[i]-yb,c=TY[i]-yh[i];s[0]+=a*a;s[1]+=b*b;s[2]+=c*c;h+='<tr'+(i===sel?' class="sel"':'')+'><td>'+(i+1)+'</td><td>'+x+'</td><td>'+TY[i]+'</td><td>'+yh[i].toFixed(2)+'</td><td>'+g(a,4)+'</td><td>'+g(b,4)+'</td><td>'+g(c,4)+'</td><td>'+(a*a).toFixed(2)+'</td><td>'+(b*b).toFixed(2)+'</td><td>'+(c*c).toFixed(2)+'</td></tr>';});
+    h+='<tr class="sum"><td class="l" colspan="7">Sums = the SS column of ANOVA</td><td>'+s[0].toFixed(2)+'<br><small>SS Total</small></td><td>'+s[1].toFixed(2)+'<br><small>SS Regression</small></td><td>'+s[2].toFixed(2)+'<br><small>SS Residual</small></td></tr>';tab.innerHTML=h;}
+  function draw(){
+    var p=P(svg,{x0:1,x1:10,y0:30,y1:95});p.axes([1,2,3,4,5,6,7,8,9,10],[30,50,70,90],'Ad spend (CHF 100s)','Orders');
+    p.el('line',{x1:p.sx(1),x2:p.sx(10),y1:p.sy(yb),y2:p.sy(yb),'class':'mean'});p.el('text',{x:p.sx(10)-2,y:p.sy(yb)-5,'text-anchor':'end'},'ȳ = 62.875');
+    var c=TEA.coef;p.el('line',{x1:p.sx(1),y1:p.sy(c[0].b+c[1].b),x2:p.sx(10),y2:p.sy(c[0].b+10*c[1].b),'class':'ln'});
+    if(sel>=0){var x=TX[sel],d=0.13;p.el('line',{x1:p.sx(x-d),x2:p.sx(x-d),y1:p.sy(yb),y2:p.sy(TY[sel]),'class':'segT'});p.el('line',{x1:p.sx(x),x2:p.sx(x),y1:p.sy(yb),y2:p.sy(yh[sel]),'class':'segR'});p.el('line',{x1:p.sx(x+d),x2:p.sx(x+d),y1:p.sy(yh[sel]),y2:p.sy(TY[sel]),'class':'segE'});}
+    TX.forEach(function(x,i){var cc=p.el('circle',{cx:p.sx(x),cy:p.sy(TY[i]),r:i===sel?8:7,'class':'pt'+(i===sel?' sel':''),style:'cursor:pointer'});cc.addEventListener('click',function(){sel=i;draw();table();markStep('split');
+      var a=TY[i]-yb,b=yh[i]-yb,e=TY[i]-yh[i];out.innerHTML='<b>Week '+(i+1)+'</b>: '+TY[i]+' orders, the line predicts '+yh[i].toFixed(2)+', the average is 62.875.<br>Total '+g(a,4)+' = explained '+g(b,4)+' + residual '+g(e,4)+'.';});});
+  }
+  draw();table();
+})();
+
+/* 9.3 · move week 4 */
+(function(){
+  var svg=document.getElementById('moveSvg'),sl=document.getElementById('mvY'),out=document.getElementById('mvOut'),bar=document.getElementById('mvBar'),dragging=false,p;
+  function draw(){
+    var Y=TY.slice();Y[3]=+sl.value;document.getElementById('mvYv').textContent=sl.value;var o=ols([TX],Y,['x']);
+    p=P(svg,{x0:1,x1:10,y0:20,y1:110});p.axes([1,2,3,4,5,6,7,8,9,10],[20,50,80,110],'Ad spend (CHF 100s)','Orders');
+    p.el('line',{x1:p.sx(1),x2:p.sx(10),y1:p.sy(o.ybar),y2:p.sy(o.ybar),'class':'mean'});
+    p.el('line',{x1:p.sx(1),y1:p.sy(o.coef[0].b+o.coef[1].b),x2:p.sx(10),y2:p.sy(o.coef[0].b+10*o.coef[1].b),'class':'ln'});
+    TX.forEach(function(x,i){p.el('circle',{cx:p.sx(x),cy:p.sy(Y[i]),r:i===3?9:6,'class':'pt'+(i===3?' sel drag':'')});});
+    bar.children[0].style.width=(o.R2*100)+'%';bar.children[1].style.width=((1-o.R2)*100)+'%';
+    out.innerHTML='SS Total <b>'+o.sst.toFixed(1)+'</b> = SS Regression <b>'+o.ssr.toFixed(1)+'</b> (teal) + SS Residual <b>'+o.sse.toFixed(1)+'</b> (red). Line: ŷ = '+o.coef[0].b.toFixed(2)+' + '+o.coef[1].b.toFixed(2)+'x.'+(Math.abs(+sl.value-62)>15?' Week 4 is now far from the line: SS Residual has grown, and the share of SS Total that the line explains has shrunk.':'');
+  }
+  function fromEvt(e){var pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;var q=pt.matrixTransform(svg.getScreenCTM().inverse());var v=20+(p.H-p.B-q.y)/(p.H-p.T-p.B)*90;sl.value=Math.max(20,Math.min(110,Math.round(v)));draw();markStep('move');}
+  svg.addEventListener('pointerdown',function(e){if(e.target.classList&&e.target.classList.contains('drag')){dragging=true;svg.setPointerCapture(e.pointerId);}});
+  svg.addEventListener('pointermove',function(e){if(dragging)fromEvt(e);});svg.addEventListener('pointerup',function(){dragging=false;});
+  sl.addEventListener('input',function(){draw();markStep('move');});draw();
+})();
+
+/* 9.4 · degrees of freedom */
+(function(){
+  var N=document.getElementById('dfN'),K=document.getElementById('dfK'),dots=document.getElementById('dfDots'),out=document.getElementById('dfOut');
+  function draw(e){var n=+N.value,k=+K.value,fr=n-k-1;document.getElementById('dfNv').textContent=n;document.getElementById('dfKv').textContent=k;
+    var h='';for(var i=0;i<n;i++)h+='<i class="'+(i<k+1?'used':'free')+'" title="observation '+(i+1)+'"></i>';dots.innerHTML=h;
+    out.innerHTML=fr>0?'<table class="mtab"><tr><th class="l"></th><th>df</th><th class="l">why</th></tr><tr><td class="l">Regression</td><td>'+k+'</td><td class="l">one per x variable</td></tr><tr><td class="l">Residual</td><td>'+fr+'</td><td class="l">'+n+' observations − '+(k+1)+' coefficients ('+k+' slope'+(k>1?'s':'')+' + 1 intercept)</td></tr><tr><td class="l">Total</td><td>'+(n-1)+'</td><td class="l">'+n+' − 1</td></tr></table>'+(fr<=3?'Only '+fr+' observation'+(fr>1?'s are':' is')+' left to measure the scatter: the Standard Error, the t tests and the intervals will be very imprecise.':'')
+      :'<b>df Residual = '+fr+'.</b> With '+n+' observations and '+(k+1)+' coefficients, the line passes through every point (or cannot be placed at all): nothing is left to measure the scatter, and Excel cannot compute the Standard Error, F or any P-value.';
+    if(e)markStep('df');}
+  N.addEventListener('input',draw);K.addEventListener('input',draw);draw();
+})();
+
+/* 9.4 · the Standard Error band */
+(function(){
+  var svg=document.getElementById('bandSvg'),out=document.getElementById('bandOut'),m=1;
+  function draw(){var p=P(svg,{x0:1,x1:10,y0:30,y1:95}),c=TEA.coef,S=TEA.S;p.axes([1,2,3,4,5,6,7,8,9,10],[30,50,70,90],'Ad spend (CHF 100s)','Orders');
+    var f=function(x){return c[0].b+c[1].b*x;};
+    p.el('polygon',{points:[[1,f(1)+m*S],[10,f(10)+m*S],[10,f(10)-m*S],[1,f(1)-m*S]].map(function(q){return p.sx(q[0])+','+p.sy(q[1]);}).join(' '),'class':'band'});
+    p.el('line',{x1:p.sx(1),y1:p.sy(f(1)),x2:p.sx(10),y2:p.sy(f(10)),'class':'ln'});
+    var inside=0;TX.forEach(function(x,i){var ins=Math.abs(TY[i]-f(x))<=m*S;if(ins)inside++;p.el('circle',{cx:p.sx(x),cy:p.sy(TY[i]),r:6,'class':'pt'+(ins?'':' sel')});});
+    out.innerHTML='The band is the line ± '+m+' × '+S.toFixed(2)+' = ± <b>'+(m*S).toFixed(2)+' orders</b>. <b>'+inside+' of 8</b> weeks are inside it (red dots are outside).'+(m===1?' For data scattered evenly around a line, about two thirds of the points fall within one Standard Error.':' Almost all points fall within two Standard Errors: a quick range for a single week.');}
+  document.querySelectorAll('#bandT button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#bandT button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');m=+b.dataset.v;draw();markStep('band');});});
+  draw();
+})();
+
+/* 9.5 · noise and R Square */
+(function(){
+  var S=document.getElementById('nzS'),svg=document.getElementById('nzSvg'),out=document.getElementById('nzOut'),d=1,Z=[],x=[];
+  var seed=11;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+  for(var i=0;i<30;i++){x.push(i+1);var u=rnd(),v=rnd();Z.push(Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v));}
+  function draw(e){var s=+S.value;document.getElementById('nzSv').textContent=s;var y=x.map(function(xi,i){return 50+d*2.2*(xi-15.5)+s*Z[i];});var o=ols([x],y,['x']);
+    var p=P(svg,{x0:0,x1:31,y0:-20,y1:120});p.axes([0,5,10,15,20,25,30],[-20,20,60,100],'x','y');
+    p.el('line',{x1:p.sx(0),y1:p.sy(o.coef[0].b),x2:p.sx(31),y2:p.sy(o.coef[0].b+31*o.coef[1].b),'class':'ln'});
+    x.forEach(function(xi,i){p.el('circle',{cx:p.sx(xi),cy:p.sy(Math.max(-20,Math.min(120,y[i]))),r:4.5,'class':'pt'});});
+    var r=(o.coef[1].b<0?-1:1)*o.R;out.innerHTML='R Square = <span class="big">'+o.R2.toFixed(3)+'</span>   Multiple R = <b>'+o.R.toFixed(3)+'</b>   correlation r = <b>'+r.toFixed(3).replace('-','−')+'</b><br>'+(d<0?'The line falls: r is negative, but Multiple R, a square root, stays positive.':'More noise → points further from the line → SS Residual grows → R Square falls.');
+    if(e)markStep('noise');}
+  S.addEventListener('input',draw);document.querySelectorAll('#nzD button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#nzD button').forEach(function(q){q.classList.remove('on');});b.classList.add('on');d=+b.dataset.v;draw(1);});});draw();
+})();
+
+/* 9.5 · dice columns. The first set is fixed (checked in Python: Adjusted R Square
+   falls 0.963 → 0.958 → 0.949 → 0.934 while R Square rises 0.968 → 0.972). */
+(function(){
+  var J=[[5,1,2,2,2,5,6,4],[1,1,2,3,4,3,2,1],[5,5,1,1,3,3,6,4]],cur=0,tab=document.getElementById('jkTab'),out=document.getElementById('jkOut'),btn=document.querySelectorAll('#jkT button');
+  function draw(){var rows=[],h='<tr><th class="l">x variables in the regression</th><th>k</th><th>R Square</th><th>Adjusted R Square</th><th>Significance F</th></tr>';
+    for(var m=0;m<4;m++){try{var o=ols([TX].concat(J.slice(0,m)),TY,[]);rows.push(o);h+='<tr'+(m===cur?' class="sel"':'')+'><td class="l">Ad spend'+(m?' + '+m+' dice column'+(m>1?'s':''):'')+'</td><td>'+(m+1)+'</td><td>'+o.R2.toFixed(4)+'</td><td>'+o.adj.toFixed(4)+'</td><td>'+g(o.sigF,3)+'</td></tr>';}catch(e){rows.push(null);h+='<tr><td class="l" colspan="5">These dice give two identical columns; roll again.</td></tr>';}}
+    tab.innerHTML=h;btn.forEach(function(b){b.classList.toggle('on',+b.dataset.v<=cur&&cur>0);});
+    var o0=rows[0],oc=rows[cur];out.innerHTML=cur===0?'Add a dice column to see what happens.':'With '+cur+' dice column'+(cur>1?'s':'')+': R Square went from '+o0.R2.toFixed(4)+' to <b>'+oc.R2.toFixed(4)+'</b> (it can only rise), while Adjusted R Square went from '+o0.adj.toFixed(4)+' to <b>'+oc.adj.toFixed(4)+'</b>'+(oc.adj<o0.adj?' — down: the page correctly sees that the dice add nothing.':' — up this time, by luck. Roll again: most rolls make it fall.')+' Significance F also gets worse, because every x costs a degree of freedom.';}
+  btn.forEach(function(b){b.addEventListener('click',function(){var v=+b.dataset.v;cur=(cur===v)?v-1:v;draw();markStep('junk');});});
+  document.getElementById('jkRoll').addEventListener('click',function(){J=J.map(function(){return TX.map(function(){return 1+Math.floor(Math.random()*6);});});if(!cur)cur=1;draw();markStep('junk');});
+  draw();
+})();
+
+/* 9.6 · the F-distribution */
+(function(){
+  var sel=document.getElementById('fcSel'),Fs=document.getElementById('fcF'),D1=document.getElementById('fcD1'),D2=document.getElementById('fcD2'),svg=document.getElementById('fcSvg'),out=document.getElementById('fcOut'),Fobs=9.75;
+  function setFrom(key){var o=PO[key];if(!o)return;Fobs=o.F;Fs.value=Math.min(30,o.F);D1.value=o.dfr;D2.value=o.dfe;}
+  function draw(){
+    var d1=+D1.value,d2=+D2.value;document.getElementById('fcFv').textContent=g(Fobs,4);document.getElementById('fcD1v').textContent=d1;document.getElementById('fcD2v').textContent=d2;
+    var fc=fCrit(d1,d2,0.05),xmax=Math.min(30,Math.max(6,Math.min(Fobs,fc)*1.6,Fobs<=30?Fobs*1.15:0)),pts=[],ymax=0,i,x;
+    for(i=1;i<=300;i++){x=xmax*i/300;var v=fpdf(x,d1,d2);pts.push([x,v]);if(x>0.15)ymax=Math.max(ymax,v);}ymax=Math.min(ymax*1.15,1.5);
+    var p=P(svg,{x0:0,x1:xmax,y0:0,y1:ymax});var xt=[];for(i=0;i<=6;i++)xt.push(Math.round(xmax*i/6*10)/10);p.axes(xt,[],'F','');
+    var clip=function(v){return p.sy(Math.min(v,ymax));};
+    if(Fobs<xmax){var tp=[[Fobs,0]].concat(pts.filter(function(q){return q[0]>=Fobs;})).concat([[xmax,0]]);p.el('polygon',{points:tp.map(function(q){return p.sx(q[0])+','+clip(q[1]);}).join(' '),'class':'tail'});}
+    p.el('polyline',{points:pts.map(function(q){return p.sx(q[0])+','+clip(q[1]);}).join(' '),'class':'cv'});
+    if(fc<xmax){p.el('line',{x1:p.sx(fc),x2:p.sx(fc),y1:p.T,y2:p.H-p.B,'class':'crit'});p.el('text',{x:p.sx(fc)+4,y:p.T+24},'5% critical value '+fc.toFixed(2));}
+    if(Fobs<xmax){p.el('line',{x1:p.sx(Fobs),x2:p.sx(Fobs),y1:p.T,y2:p.H-p.B,'class':'obs'});p.el('text',{x:p.sx(Fobs)+4,y:p.T+10,'class':'lb'},'F = '+g(Fobs,4));}
+    else p.el('text',{x:p.W-p.R-4,y:p.T+10,'text-anchor':'end','class':'lb'},'F = '+g(Fobs,4)+' is far off the chart →');
+    var sig=pF(Fobs,d1,d2);out.innerHTML='Significance F = P(F with '+d1+' and '+d2+' df &gt; '+g(Fobs,4)+') = <span class="big">'+g(sig,4)+'</span><br>This probability is the area under the curve to the right of the red line (shaded; when F is large the shaded strip is too thin to see). '+(sig<0.05?'It is below 0.05: <b>reject H₀</b>, the regression explains a real part of y.':'It is above 0.05: <b>do not reject H₀</b>; the data do not show that the x’s explain y.')+' At the 5% level, F must exceed '+fc.toFixed(2)+'.'+(d2<=2?' With so few residual df the curve has a very long tail, so even a large F is not rare.':'');
+  }
+  sel.addEventListener('change',function(){if(sel.value!=='own')setFrom(sel.value);draw();markStep('fcurve');});
+  [Fs,D1,D2].forEach(function(s){s.addEventListener('input',function(){if(s===Fs)Fobs=+Fs.value;sel.value='own';draw();markStep('fcurve');});});
+  setFrom('hs');draw();
+})();
+
+/* 9.6 · shuffle test */
+(function(){
+  var svg=document.getElementById('shSvg'),out=document.getElementById('shOut'),Fs=[],n=8,xb=5.5,sxx=42;
+  function oneF(){var y=TY.slice();for(var i=y.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=y[i];y[i]=y[j];y[j]=t;}var yb=62.875,sxy=0,syy=0;for(i=0;i<n;i++){sxy+=(TX[i]-xb)*(y[i]-yb);syy+=(y[i]-yb)*(y[i]-yb);}var r2=sxy*sxy/(sxx*syy);return r2*(n-2)/(1-r2);}
+  function draw(){hist(svg,Fs,0,20,0.5,'F of the shuffled data (the last bar collects every F of 20 or more)',20,'real F = 182.4 →');
+    if(!Fs.length){out.textContent='No shuffle yet.';return;}
+    var big=Fs.filter(function(f){return f>=TEA.F;}).length,c5=Fs.filter(function(f){return f>5.987;}).length,mx=Math.max.apply(null,Fs);
+    out.innerHTML='<b>'+Fs.length+'</b> shuffles. Largest F so far: <b>'+mx.toFixed(1)+'</b>. Shuffles with F ≥ 182.4: <b>'+big+'</b>. Shuffles with F above the 5% critical value 5.99: <b>'+c5+'</b> ('+(c5/Fs.length*100).toFixed(1)+'%, close to 5%, as the F-distribution predicts).<br>When ads cannot matter, F is mostly between 0 and 3. The real 182.4 is far beyond anything shuffling produces, which is what Significance F = 1.02E−05 says.';}
+  document.getElementById('shOne').addEventListener('click',function(){Fs.push(oneF());draw();});
+  document.getElementById('shMany').addEventListener('click',function(){for(var i=0;i<1000;i++)Fs.push(oneF());draw();markStep('shuffle');});
+  document.getElementById('shReset').addEventListener('click',function(){Fs=[];draw();});draw();
+})();
+
+/* 9.7 · new samples of slopes */
+(function(){
+  var svg=document.getElementById('rsSvg'),out=document.getElementById('rsOut'),B=[],c=TEA.coef;
+  function one(){var sxy=0,ys=TX.map(function(x){return c[0].b+c[1].b*x+TEA.S*rnorm();}),yb=ys.reduce(function(a,v){return a+v;},0)/8;TX.forEach(function(x,i){sxy+=(x-5.5)*(ys[i]-yb);});return sxy/42;}
+  function draw(){hist(svg,B,4,8,0.2,'Slope of a new sample of eight weeks (orders per CHF 100)',c[1].b,'Lina’s slope 6.06');
+    if(!B.length){out.textContent='No new sample yet.';return;}var m=B.reduce(function(a,v){return a+v;},0)/B.length,sd=Math.sqrt(B.reduce(function(a,v){return a+(v-m)*(v-m);},0)/Math.max(1,B.length-1));
+    out.innerHTML='<b>'+B.length+'</b> new samples. Their slopes average <b>'+m.toFixed(3)+'</b> and vary with a standard deviation of <span class="big">'+(B.length>1?sd.toFixed(3):'—')+'</span><br>Excel’s Standard Error of the slope, computed from Lina’s one sample, is <b>0.449</b>. With many samples the two agree: the Standard Error column is the sample-to-sample spread of a coefficient.';}
+  document.getElementById('rsOne').addEventListener('click',function(){B.push(one());draw();});
+  document.getElementById('rsMany').addEventListener('click',function(){for(var i=0;i<500;i++)B.push(one());draw();markStep('resample');});
+  document.getElementById('rsReset').addEventListener('click',function(){B=[];draw();});draw();
+})();
+
+/* rows used by the t and CI widgets */
+var ROWS=[['tea',1,'Tea shop · Ad spend'],['tea',0,'Tea shop · Intercept'],['pz',1,'Pizzerias · Distance'],['fl',1,'Flats · Floor area'],['fl',2,'Flats · Minutes to tram'],['hs',1,'Four observations · House'],['hs',2,'Four observations · Sq ft'],['hs',0,'Four observations · Intercept']];
+function rowOpts(id,def){var s=document.getElementById(id);s.innerHTML=ROWS.map(function(r,i){var c=PO[r[0]].coef[r[1]];return '<option value="'+i+'"'+(i===def?' selected':'')+'>'+r[2]+' · coefficient '+g(c.b,5)+', SE '+g(c.se,4)+'</option>';}).join('');return s;}
+
+/* 9.7 · t curve */
+(function(){
+  var s=rowOpts('tcSel',4),svg=document.getElementById('tcSvg'),out=document.getElementById('tcOut');
+  function draw(){var r=ROWS[+s.value],o=PO[r[0]],c=o.coef[r[1]],t=c.t,df=o.dfe,a=Math.abs(t),lim=Math.max(4.5,Math.min(a*1.25,9)),tc=tCrit(df,0.05);
+    var p=P(svg,{x0:-lim,x1:lim,y0:0,y1:0.42}),pts=[],i;for(i=0;i<=300;i++){var x=-lim+2*lim*i/300;pts.push([x,tpdf(x,df)]);}
+    var xt=[];for(i=-Math.floor(lim);i<=Math.floor(lim);i++)if(lim<6||i%2===0)xt.push(i);p.axes(xt,[],'t (standard errors from 0)','');
+    if(a<lim){[1,-1].forEach(function(sg){var tp=[[sg*a,0]].concat(pts.filter(function(q){return sg>0?q[0]>=a:q[0]<=-a;})).concat([[sg*lim,0]]);p.el('polygon',{points:tp.map(function(q){return p.sx(q[0])+','+p.sy(q[1]);}).join(' '),'class':'tail'});});}
+    p.el('polyline',{points:pts.map(function(q){return p.sx(q[0])+','+p.sy(q[1]);}).join(' '),'class':'cv'});
+    if(tc<lim)[tc,-tc].forEach(function(v){p.el('line',{x1:p.sx(v),x2:p.sx(v),y1:p.T,y2:p.H-p.B,'class':'crit'});});
+    if(a<lim){p.el('line',{x1:p.sx(t),x2:p.sx(t),y1:p.T,y2:p.H-p.B,'class':'obs'});p.el('text',{x:p.sx(t)+(t>0?4:-4),y:p.T+10,'text-anchor':t>0?'start':'end','class':'lb'},'t = '+g(t,4));}
+    else p.el('text',{x:t>0?p.W-p.R-4:p.L+4,y:p.T+10,'text-anchor':t>0?'end':'start','class':'lb'},t>0?'t = '+g(t,4)+' is off the chart →':'← t = '+g(t,4)+' is off the chart');
+    var pv=pT(a,df);out.innerHTML='t Stat = '+g(c.b,5)+' ⁄ '+g(c.se,5)+' = <b>'+g(t,4)+'</b> with '+df+' df. P-value = the area of both shaded tails, beyond −|t| and +|t| = <span class="big">'+g(pv,4)+'</span><br>The dashed lines are ±'+tc.toFixed(3)+', the 5% critical values (t table, row '+df+'). '+(pv<0.05?'The t Stat is beyond them: <b>the coefficient is significantly different from 0</b>.':'The t Stat is inside them: <b>the data do not show that this coefficient differs from 0</b>.');}
+  s.addEventListener('change',function(){draw();markStep('tcurve');});draw();
+})();
+
+/* 9.8 · interval builder */
+(function(){
+  var s=rowOpts('ciSel',4),svg=document.getElementById('ciSvg'),out=document.getElementById('ciOut'),lv=95;
+  function draw(){var r=ROWS[+s.value],o=PO[r[0]],c=o.coef[r[1]],df=o.dfe,t=tCrit(df,1-lv/100),lo=c.b-t*c.se,hi=c.b+t*c.se;
+    var a=Math.min(lo,0),b=Math.max(hi,0),pad=(b-a)*0.12||1,p=P(svg,{x0:a-pad,x1:b+pad,y0:0,y1:1,t:10,b:30,l:20,r:20});
+    var xt=[];for(var i=0;i<=6;i++)xt.push(Number((a-pad+(b-a+2*pad)*i/6).toPrecision(3)));p.axes(xt,[],'','');
+    p.el('line',{x1:p.sx(0),x2:p.sx(0),y1:p.T,y2:p.H-p.B,'class':'zero'});p.el('text',{x:p.sx(0)+4,y:p.T+10,'class':'lb'},'0');
+    p.el('line',{x1:p.sx(lo),x2:p.sx(hi),y1:p.sy(0.45),y2:p.sy(0.45),'class':'ci'});p.el('circle',{cx:p.sx(c.b),cy:p.sy(0.45),r:6,'class':'pt'});
+    p.el('text',{x:p.sx(lo),y:p.sy(0.45)-12,'text-anchor':'middle'},g(lo,4));p.el('text',{x:p.sx(hi),y:p.sy(0.45)-12,'text-anchor':'middle'},g(hi,4));
+    var has0=lo<=0&&hi>=0;out.innerHTML=g(c.b,5)+' ± '+t.toFixed(3)+' × '+g(c.se,5)+'   (t for '+lv+'% with '+df+' df = '+t.toFixed(3)+')<br>Lower '+lv+'% = <b>'+g(lo,5)+'</b>, Upper '+lv+'% = <b>'+g(hi,5)+'</b>. '+(has0?'The interval <b>contains 0</b>, so the P-value ('+g(c.p,3)+') is above '+((100-lv)/100).toFixed(2)+'.':'The interval <b>excludes 0</b>, so the P-value ('+g(c.p,3)+') is below '+((100-lv)/100).toFixed(2)+'.')+' A higher level gives a wider interval.';}
+  s.addEventListener('change',function(){draw();markStep('ci');});
+  document.querySelectorAll('#ciL button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#ciL button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');lv=+b.dataset.v;draw();markStep('ci');});});draw();
+})();
+
+/* 9.8 · the Confidence Level box */
+(function(){
+  var on=document.getElementById('dlgOn'),lv=document.getElementById('dlgLv'),el=document.getElementById('dlgMap'),o=ols([TX],TY,['Ad spend']);
+  function draw(){var v=on.checked?Math.max(50,Math.min(99.9,+lv.value||95)):95;setLevel(o,v);mountMap(el,o,{mode:'info',caption:on.checked?'The box is ticked at '+v+'%: the last two columns are now the '+v+'% interval; the first pair stays at 95%.':'The box is not ticked: Excel repeats the 95% interval in the last two columns.'});
+    if(on.checked&&v!==95)markStep('dlg');}
+  on.addEventListener('change',draw);lv.addEventListener('input',draw);draw();
+})();
+
+/* 9.9 · rebuild the top half */
+(function(){
+  var ids=['chN','chK','chT','chE'],out=document.getElementById('chOut');
+  function draw(e){var n=num(document.getElementById('chN').value),k=num(document.getElementById('chK').value),T=num(document.getElementById('chT').value),E=num(document.getElementById('chE').value);
+    if([n,k,T,E].some(isNaN)||n-k-1<1||E>T||T<=0){out.innerHTML='Type four numbers with n − k − 1 ≥ 1 and SS Residual ≤ SS Total.';return;}
+    var dr=k,de=n-k-1,R=T-E,msr=R/dr,mse=E/de,F=msr/mse,R2=R/T,adj=1-(1-R2)*(n-1)/de;
+    out.innerHTML=[['df','Regression '+dr+' · Residual '+n+' − '+k+' − 1 = '+de+' · Total '+(n-1)],['SS Regression','SS Total − SS Residual = '+g(T,7)+' − '+g(E,7)+' = <b>'+g(R,7)+'</b>'],['MS','Regression '+g(R,7)+' ⁄ '+dr+' = <b>'+g(msr,6)+'</b> · Residual '+g(E,7)+' ⁄ '+de+' = <b>'+g(mse,6)+'</b>'],['Standard Error','√MS Residual = <b>'+g(Math.sqrt(mse),6)+'</b>'],['R Square','SS Regression ⁄ SS Total = <b>'+g(R2,6)+'</b>'],['Multiple R','√R Square = <b>'+g(Math.sqrt(R2),6)+'</b>'],['Adjusted R Square','1 − (1 − R Square) × '+(n-1)+' ⁄ '+de+' = <b>'+g(adj,6)+'</b>'],['F','MS Regression ⁄ MS Residual = <b>'+g(F,6)+'</b>'],['Significance F','P(F with '+dr+' and '+de+' df &gt; '+g(F,5)+') = <b>'+g(pF(F,dr,de),4)+'</b>']].map(function(r,i){return '<div><code>'+(i+1)+'.</code> '+r[0]+': '+r[1]+'</div>';}).join('');
+    if(e)markStep('chain');}
+  ids.forEach(function(id){document.getElementById(id).addEventListener('input',draw);});draw();
+})();
+
+/* =====================================================================
+   7 · CHECKPOINT
+   ===================================================================== */
+(function quizWidget(){
+  var QUIZ=[
+    {q:'In Excel’s output, which cell says how much the predicted y changes when x rises by one unit?',opts:['R Square','The Coefficient in the row of x','The t Stat in the row of x','MS Regression'],a:1,w:'The slope is the Coefficient of x. The t Stat tests it; R Square measures the fit.'},
+    {q:'SS Total = 200 and SS Residual = 50. R Square =',opts:['0.25','0.75','4','150'],a:1,w:'SS Regression = 200 − 50 = 150, and R Square = 150 ⁄ 200 = 0.75.'},
+    {q:'A regression with one x has a negative slope and r = −0.8. Excel prints Multiple R =',opts:['−0.8','0.8','0.64','−0.64'],a:1,w:'Multiple R is the square root of R Square, so it is never negative. The sign comes from the slope.'},
+    {q:'n = 20 observations, two x variables. The df of Residual is',opts:['19','18','17','2'],a:2,w:'n − k − 1 = 20 − 2 − 1 = 17.'},
+    {q:'MS Residual = 16 (y in CHF). The Standard Error in Regression Statistics is',opts:['CHF 16','CHF 4','CHF 256','CHF 8'],a:1,w:'Standard Error = √MS Residual = √16 = 4, in the units of y.'},
+    {q:'You add an x column of random numbers to a regression. What happens for certain?',opts:['R Square does not fall','Adjusted R Square rises','Significance F falls','Every P-value falls'],a:0,w:'R Square can never fall when an x is added. Adjusted R Square usually falls for a useless x.'},
+    {q:'Significance F = 0.22. At the 5% level you conclude that',opts:['the x’s certainly have no effect','the data do not show that the x’s explain y','22% of y is explained','the regression is significant'],a:1,w:'0.22 > 0.05: H₀ is not rejected. That is not evidence of no effect; it is a lack of evidence.'},
+    {q:'The t Stat of a coefficient equals',opts:['Coefficient ⁄ its Standard Error','Coefficient × its Standard Error','MS Regression ⁄ MS Residual','Coefficient ⁄ Standard Error of the regression'],a:0,w:'t Stat = Coefficient ⁄ the Standard Error in the same row. MS Regression ⁄ MS Residual is F.'},
+    {q:'A slope has Lower 95% = −0.4 and Upper 95% = 1.2. Its P-value is',opts:['below 0.05','above 0.05','exactly 0.05','impossible to say'],a:1,w:'The 95% interval contains 0, which happens exactly when the P-value is above 0.05.'},
+    {q:'Why does Excel print "Lower 95.0%" next to "Lower 95%"?',opts:['It is a rounding check','The second pair is the level in the Confidence Level box, 95 unless you change it','It is the interval for the next observation','The second pair uses the normal distribution'],a:1,w:'If you tick Confidence Level and type 99, the second pair becomes the 99% interval.'}
+  ];
+  window.COURSE_QUIZ=QUIZ;
+  var box=document.getElementById('quizBox'),chip=document.getElementById('scoreChip'),res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
+  var answered=0,correct=0,replaying=false,replayQ=[];chip.textContent='0 / '+QUIZ.length+' answered';
+  QUIZ.forEach(function(item,i){
+    var q=document.createElement('div');q.className='q';
+    q.innerHTML='<div class="qt"><span class="qn">'+(i+1)+'.</span>'+item.q+'</div>'+item.opts.map(function(o,j){return '<button class="opt" data-j="'+j+'">'+o+'</button>';}).join('')+'<div class="why" id="qw'+i+'"></div>';
+    function apply(j){if(q.dataset.done)return;q.dataset.done='1';var ok=j===item.a;
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=+x.dataset.j;if(xj===item.a)x.classList.add('correct');else if(xj===j)x.classList.add('wrong');});
+      var w=document.getElementById('qw'+i);w.innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;w.classList.add('show');answered++;if(ok)correct++;
+      if(!replaying){if(window.StatsAns)StatsAns.set(progress,save,'q'+i,j);if(window.StatsTrack&&StatsTrack.quizAnswer)StatsTrack.quizAnswer(i,j,ok);}
+      markStep('q'+i);chip.textContent=answered+' / '+QUIZ.length+' answered';if(answered===QUIZ.length)finish();}
+    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){apply(+b.dataset.j);});});box.appendChild(q);
+    var saved=window.StatsAns?StatsAns.get(progress,'q'+i):null;if(saved!=null)replayQ.push(function(){apply(saved);});
+  });
+  replaying=true;replayQ.forEach(function(fn){fn();});replaying=false;
+  function finish(){scoreEl.textContent=correct+' / '+QUIZ.length;msgEl.textContent=correct>=9?'Excellent. Now run a regression on your own data in the workshop.':correct>=6?'Good. Reread the explanations you missed, then redo Exercise 9.9.':'Go back to the sections of the questions you missed: each one names the cell and its section.';res.classList.add('show');markSection('ck');if(!replaying&&window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
+})();
+
+/* =====================================================================
+   8 · RESET + BOOT
+   ===================================================================== */
+document.getElementById('resetLink').addEventListener('click',function(e){
+  e.preventDefault();if(!confirm('Reset your Week 9 progress and answers on this device?'))return;
+  try{['stats_done_w9p'].forEach(function(k){localStorage.removeItem(k);});localStorage.removeItem(KEY);Object.keys(localStorage).forEach(function(k){if(k.indexOf('stats_work_w9_')===0)localStorage.removeItem(k);});}catch(err){}
+  location.reload();
+});
+renderList();updateBar();secCheck();
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack){StatsTrack.init({module:MOD,title:'Week 9 · Reading a regression printout',total:SECTIONS.length});syncDoneSections();}
+  /* presence · the register's id is the WEEK (w9), not this page's module id */
+  if(window.StatsPresence)StatsPresence.mount({el:document.getElementById('presSlot'),mod:PRES,label:'Week 9 · Reading a regression printout'});
+  var ws=document.getElementById('wk');
+  if(ws){var fields=ws.querySelectorAll('[data-work]'),st=document.getElementById('wbStatus');
+    var check=function(){var n=0;fields.forEach(function(f){var filled=!!(f.value||'').trim();markStep('wb-'+f.getAttribute('data-work'),filled);if(filled)n++;});
+      if(st)st.textContent=(n>=fields.length)?'✓ Section complete — your regression is on file.':(n+' of '+fields.length+' fields filled · complete all three to finish this section.');
+      if(n>=fields.length)markSection('wk');};
+    fields.forEach(function(f){f.addEventListener('input',check);});setTimeout(check,900);}
+});
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

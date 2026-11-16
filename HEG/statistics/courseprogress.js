@@ -36,7 +36,7 @@ window.CourseProgress=(function(){
     {mod:'w7',    short:'W7', name:'Week 7 · Testing hypotheses',                    total:11,live:true, href:'week7.html'},
     {mod:'w8',    short:'W8', name:'Week 8 · Two-sample problems',                   total:10,live:true, href:'week8.html'},
     {mod:'w8-hw', short:'HW8',name:'Week 8 · Homework — thirteen exercises from the book', total:14,live:true,href:'week8-homework.html'},
-    {mod:'w9',    short:'W9', name:'Week 9 · Correlation and regression',            total:10,live:true, href:'week9.html'},
+    {mod:'w9p',   short:'W9', name:'Week 9 · Reading a regression printout',         total:11,live:true, href:'week9.html'},
     {mod:'w9-hw', short:'HW9',name:'Week 9 · Homework — thirteen exercises from the book', total:14,live:true,href:'week9-homework.html'},
     {mod:'w10',   short:'W10',name:'Week 10 · Chi-square tests and F-tests',         total:8,live:false},
     {mod:'w11',   short:'W11',name:'Week 11 · PCA and non-parametric tests',         total:6,live:false},
@@ -46,6 +46,7 @@ window.CourseProgress=(function(){
     {mod:'w15',   short:'W15',name:'Week 15 · The blank test',                       total:2,live:false},
     {mod:'w16',   short:'W16',name:'Week 16 · Final exam',                           total:1,live:false},
     /* tools: listed and ticked, never part of the percentage */
+    {mod:'w9',    short:'B9', name:'Week 9 · The textbook\'s chapter 10, example by example (optional)', total:10,live:true,opt:true,href:'week9-book.html'},
     {mod:'practice',     short:'PA', name:'Practice arena — endless randomised problems', total:8,live:true,opt:true,href:'practice.html'},
     {mod:'sampling-sim', short:'SIM',name:'Sampling-distribution simulator',              total:1,live:true,opt:true,href:'sampling-sim.html'},
     {mod:'exam',         short:'EX', name:'Exam cards — every question from five real exams', total:28,live:true,opt:true,href:'exam-cards.html'}
