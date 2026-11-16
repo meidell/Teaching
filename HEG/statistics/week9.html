@@ -122,6 +122,34 @@
 .casechip{display:inline-block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;color:var(--navy);background:var(--th-wash,#E9EEF3);border-radius:20px;padding:2px 10px;margin-right:6px;}
 @media(max-width:560px){.turn input[type=text]{width:120px;}.xinfo{font-size:14px;}.pl text{font-size:19px;}.pl text.lb{font-size:19px;}}
 :root[data-theme="dark"]{--xl-grid:#2A323B;--bl-wash:#4A3D0B;--bl-ink:#FFE08A;}
+/* the deck: slides are built from the page (buildDeck), widgets are moved in live */
+.lect-slide.wide .lect-body,.lect-slide.text .lect-body{max-width:none;}
+.lect-slide.text .lect-body{font-size:clamp(15px,1.45vw,21px);}
+.lect-slide.text h2{font-size:clamp(26px,3.4vw,44px);}
+.lect-body .formula{font-size:.78em;text-align:left;}
+.lect-body .xlwrap{font-size:15px;}
+.lect-body .xlp{font-size:clamp(11px,1.05vw,15px);}
+.lect-body .card,.lect-body .xcard{font-size:15px;max-width:1080px;margin:0 auto;box-shadow:none;text-align:left;}
+.lect-body .card li::before,.lect-body .tcard li::before{content:none;}
+.lect-body .card li{padding-left:0;}
+.lect-body ol{margin-left:1.3em;}
+.lect-body ol li{padding-left:.2em;}
+.lect-body ol li::before{content:none;}
+.lect-body .dtab{margin:8px 0;font-size:.62em;}
+.lect-body .lstep{margin:.9vh 0;}
+.lect-body .xres{font-size:.8em;}
+.lect-slide.dk .lect-body .xlwrap{background:#fff;}
+.lect-slide.dk .lect-body .xlp td{color:#24272A;border-color:#E3E6E9;}
+.lect-slide.dk .lect-body .xlp td.on{color:#fff;}
+.lect-stage.live .lect-zone{display:none;}
+.lect-body .stem{font-family:inherit;white-space:normal;background:transparent;border:0;padding:0;overflow:visible;font-size:1em;line-height:1.5;font-weight:600;color:var(--ink);margin:0 0 1.4vh;}
+.lect-slide.dk .lect-body .stem{color:#fff;}
+.lect-foot .navb{font-size:13px;padding:3px 12px;}
+.lect-site{display:inline-block;margin-left:12px;font-size:.75em;letter-spacing:1px;color:var(--grey);text-transform:none;font-weight:700;}
+.p-slide .card,.p-slide .xcard{font-size:12px;}
+.p-slide .xlp{font-size:9px;min-width:0;}
+@media print{.p-slide:last-child{page-break-after:auto;break-after:auto;}}
+
 </style>
 <script src="/shared/admin-gate.js"></script>
 <script src="answers.js"></script>
@@ -136,6 +164,7 @@
     <span class="who" id="topWho"></span>
     <span class="tb-spacer"></span>
     <a class="home" href="index.html">← Course</a>
+    <button class="lect-btn" id="lectOpen" title="Full-screen lecture deck — what your instructor presents in class">▶ Lecture</button>
   </div>
   <div class="topbar-bars">
     <div class="tbar"><span class="tbl">This week</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
@@ -1039,6 +1068,26 @@
 
 </div>
 
+<!-- ============================ LECTURE MODE ============================ -->
+<div id="lect" role="dialog" aria-label="Lecture deck">
+  <div class="lect-stage" id="lectStage">
+    <div class="lect-zone prev" title="Previous (←)"></div>
+    <div class="lect-zone next" title="Next (→ or space)"></div>
+  </div>
+  <div id="lectNotes"></div>
+  <div class="lect-foot">
+    <img src="logo_heg-ge.svg" alt="HEG Genève">
+    <span class="lf-t">Applied Statistics · Week 9 · Reading a regression printout · Jan Erik Meidell · HEG Genève</span>
+    <button class="navb" id="lectPrev" title="Previous slide (←)">‹</button>
+    <button class="navb" id="lectNext" title="Next slide (→)">›</button>
+    <button id="lectNotesBtn" title="Toggle speaker notes (N)">Notes</button>
+    <button onclick="window.print()" title="Print / save the deck as PDF">PDF</button>
+    <button id="lectClose" title="Exit (Esc)">✕ Exit</button>
+    <span class="lf-n" id="lectCount">1 / 1</span>
+  </div>
+</div>
+<div id="printDeck"></div>
+
 <script>
 /* =====================================================================
    1 · STATISTICS — least squares for any k, t and F tails, quantiles.
@@ -1197,7 +1246,7 @@ function renderList(){
     if(s.part!==part){part=s.part;var h=document.createElement('div');h.className='part-head';h.innerHTML=part===1?'<span class="pt">Part 1 · the printout, block by block</span><span class="pd">each section: widgets, two examples, one exercise</span>':'<span class="pt">Part 2 · the whole printout</span><span class="pd">exam printouts, checkpoint, your own project</span>';list.appendChild(h);}
     var done=!!progress.done[s.id],st=STEPS[s.id],cnt=st?' · '+st.filter(function(x){return progress.steps[x];}).length+'/'+st.length:'';
     var c=document.createElement('div');c.className='section-card'+(done?' done':'')+(s.part===2?' part2':'');
-    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+'</div><div class="tag">'+s.tag+cnt+'</div><span class="badge">'+s.badge+'</span></div><div class="status">'+(done?'✓':'▸')+'</div>';
+    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+(s.slides?'<span class="ref">'+s.slides+'</span>':'')+'</div><div class="tag">'+s.tag+cnt+'</div><span class="badge">'+s.badge+'</span></div><div class="status">'+(done?'✓':'▸')+'</div>';
     c.onclick=function(){show(s.id);};list.appendChild(c);
   });
 }
@@ -1535,6 +1584,137 @@ function rowOpts(id,def){var s=document.getElementById(id);s.innerHTML=ROWS.map(
   });
   replaying=true;replayQ.forEach(function(fn){fn();});replaying=false;
   function finish(){scoreEl.textContent=correct+' / '+QUIZ.length;msgEl.textContent=correct>=9?'Excellent. Now run a regression on your own data in the workshop.':correct>=6?'Good. Reread the explanations you missed, then redo Exercise 9.9.':'Go back to the sections of the questions you missed: each one names the cell and its section.';res.classList.add('show');markSection('ck');if(!replaying&&window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);}
+})();
+
+/* =====================================================================
+   7b · THE LECTURE DECK — built FROM the page, so the two cannot drift.
+   Per section: an opener (the section's "why" + the printout with its cells
+   lit), each theory card, each widget MOVED in live (put back on leaving),
+   each example as question then solution, the exercise (its answer is in
+   the speaker notes on the instructor's device only).
+   ===================================================================== */
+var SLIDES=[];
+(function buildDeck(){
+  var INSTR=!!(window.AdminGate&&AdminGate.isUnlocked());
+  var CELLS={s2:/^b\d$/,s3:/^ss[rte]$/,s4:/^(n|dfr|dfe|dft|msr|mse|S)$/,s5:/^(R|R2|adj)$/,s6:/^(F|sigF)$/,s7:/^(se|t|p)\d$/,s8:/^(lo|hi|L|H)\d$/};
+  var OPEN={s1:'Ask the room before anything: which block would you look at to know whether ads work? (the coefficient table: the P-value of Ad spend).',
+    s2:'The two lit cells are the whole fitted line. Ask: what does 6.06 mean for Lina, in words and units?',
+    s3:'The SS column. Point out that Total = Regression + Residual before showing why.',
+    s4:'Observations, the df column, the MS column and the Standard Error. Warn about the two cells called "Standard Error".',
+    s5:'Ask: what does R Square 0.968 mean? Expect "96.8% of orders". Correct to "of the variation in orders".',
+    s6:'F and Significance F. Ask: could eight weeks show a slope this steep if ads did nothing?',
+    s7:'Three columns, one test per row. Make them say which row matters and which does not (the Intercept rarely matters).',
+    s8:'The last four columns. Ask why Excel prints the 95% interval twice; let them guess before 9.8 explains the dialog box.',
+    s9:'Exam style. The exam leaves four to six cells blank; each one is one formula away from printed cells.'};
+  var DEMO={homeMap:'Click R Square: SS Regression and SS Total light up. Click the slope: the panel shows SSxy ⁄ SSxx.',
+    findMap:'Let the room call out the cell before you click. A wrong click is useful: the panel says what that cell is.',
+    fitSvg:'Ask a student for a b0 and a b1 and set them. Show that the total area never goes below 50.73. Then press the button.',
+    flA:'Move the area by 10 m² with the minutes fixed (+232), then the minutes by 1 (−32.21). The point: "the other x stays the same".',
+    splitSvg:'Click week 7 (x = 8): 11.13 = 15.15 + (−4.02). Then show that the column sums are the SS column of the printout.',
+    mvY:'Drag week 4 up to 100: SS Residual jumps and the teal share (R Square) shrinks.',
+    dfN:'n = 8, k = 1 gives 6. Then n = 4, k = 2 gives 1: the four-observation printout. Then n = 3, k = 2 gives 0: Excel cannot compute anything.',
+    bandSvg:'± 1: 6 of 8 weeks inside. ± 2: 8 of 8.',
+    nzS:'Noise 0 → R Square 1. Noise 40 → low. Press Falling: Multiple R stays positive, r turns negative.',
+    jkT:'Add the dice columns one at a time: R Square up, Adjusted down. Roll new dice once or twice.',
+    fcSel:'Start on four observations: F = 9.75, tail 0.22, critical value 199.5. Switch to the tea shop: 182.4 is off the chart.',
+    shOne:'Shuffle 1000 times: about 5% of shuffled F’s exceed 5.99, none comes near 182.4.',
+    rsOne:'Press 500: the spread of the slopes comes out near 0.45, Excel’s Standard Error of the slope.',
+    tcSel:'Flats · minutes: t −2.93, P 0.017. Then Four observations · House: t −1.78 with 1 df, P 0.33.',
+    ciSel:'Switch 90 / 95 / 99: wider each time. Pick Four observations · House: the interval contains 0.',
+    dlgOn:'Tick the box and type 99: the last two columns become Lower 99.0% / Upper 99.0%.',
+    chN:'Type the pizzerias: n 14, k 1, SS Total 113.857, SS Residual 8.384.'};
+  function strip(html){var d=document.createElement('div');d.innerHTML=html;return d;}
+  function litPrintout(id){var d=strip(printoutHTML(TEA,{}));var re=CELLS[id];if(re)d.querySelectorAll('td[data-k]').forEach(function(td){if(re.test(td.dataset.k))td.classList.add('on');});return d.innerHTML;}
+  function demoNote(card){var ids=[].map.call(card.querySelectorAll('[id]'),function(e){return e.id;});for(var i=0;i<ids.length;i++)if(DEMO[ids[i]])return DEMO[ids[i]];return 'Demonstrate the widget; the page holds the same one.';}
+  function widgetSlide(card,k,site){var h3=card.querySelector('h3');return {cls:'wide',k:k,t:'',mv:card,site:site,n:demoNote(card)+(h3?'<br><b>On the slide:</b> '+h3.textContent:'')};}
+  /* intro */
+  var hero=document.querySelector('#home .hero');
+  SLIDES.push({cls:'dk',logo:true,k:'Applied Statistics · Week 9 · HEG Genève',t:hero.querySelector('h1').innerHTML,b:'<p>'+hero.querySelectorAll('.sub')[0].innerHTML+'</p>',n:'The week in one sentence: every cell of the printout is either read from the data or computed from other cells, and the exam asks for those computed ones.'});
+  SLIDES.push({cls:'text',k:'The running case',t:'Lina’s tea shop: eight weeks of ad spend and orders',b:'<p>'+hero.querySelectorAll('.sub')[1].innerHTML+'</p>'+document.querySelector('#home .dtab').outerHTML,n:'Ask: before any statistics, do the ads seem to work? (yes, orders rise with spend). The question of the week: how sure can Lina be, and how much do they bring?'});
+  SLIDES.push(widgetSlide(document.getElementById('homeMap').closest('.card'),'The printout we read all week',null));
+  SLIDES.push({k:'The order of the week',t:'We read the printout in the order Excel computes it',b:'<ul>'+[].map.call(document.querySelectorAll('#home .order span'),function(x){return '<li>'+x.innerHTML.replace(/<b>(.*?)<\/b>/,'<b>$1</b> ')+'</li>';}).join('')+'</ul>',n:'Most cells are computed from other cells, so the order matters: the coefficients and the SS come first.'});
+  /* sections */
+  ['s1','s2','s3','s4','s5','s6','s7','s8','s9'].forEach(function(id){
+    var el=document.getElementById(id),num=SECTIONS.filter(function(x){return x.id===id;})[0].num,kick=el.querySelector('.kicker').textContent;
+    var why=el.querySelector('.prose');
+    SLIDES.push({cls:'dk wide',k:kick,t:el.querySelector('.sec-head h2').innerHTML,b:(why?why.innerHTML:'')+(id==='s9'?'':litPrintout(id)),site:id,n:OPEN[id]});
+    el.querySelectorAll('.tcard').forEach(function(tc){var bar=tc.querySelector('.tc-bar span').textContent;
+      SLIDES.push({cls:'text',k:'Section '+num+' · '+bar.split(' · ')[0],t:bar.split(' · ').slice(1).join(' · ')||bar,b:tc.querySelector('.tc-body').innerHTML,n:'Read the formulas with the tea shop’s numbers under them; the page shows the same card.'});});
+    el.querySelectorAll('.card').forEach(function(c){var lab=c.querySelector('.label');if(lab&&lab.classList.contains('play'))SLIDES.push(widgetSlide(c,'Section '+num+' · '+lab.textContent,null));});
+    el.querySelectorAll('.xcard').forEach(function(x){
+      var bar=[].map.call(x.querySelectorAll('.xc-bar span'),function(e){return e.textContent.trim();}).join(' · '),h3=x.querySelector('h3'),body=x.querySelector('.xc-body').cloneNode(true);
+      body.querySelectorAll('h3,.xshow,.xsol,.xinfo,.xcap').forEach(function(n){n.remove();});
+      body.querySelectorAll('td.xc').forEach(function(td){td.classList.remove('xc');});
+      var sol=x.querySelector('.xsol').cloneNode(true),res=sol.querySelector('.xres');
+      SLIDES.push({cls:'text',badge:'disc',k:'Section '+num+' · '+bar,t:h3.innerHTML,b:body.innerHTML,n:'Give the room a minute with a calculator before the next slide.'});
+      SLIDES.push({cls:'text',k:'Section '+num+' · '+bar+' · solution',t:h3.innerHTML,b:[].map.call(sol.querySelectorAll('.step'),function(p){return '<div class="lstep">'+p.innerHTML+'</div>';}).join('')+(res?res.outerHTML:''),n:res?res.textContent:''});
+    });
+    el.querySelectorAll('.card').forEach(function(c){var lab=c.querySelector('.label');if(!lab||!lab.classList.contains('problem'))return;
+      var b='',lead=c.querySelector('.lead');if(lead)b+='<p>'+lead.innerHTML+'</p>';
+      var map=c.querySelector('[id^=mapHouse]');if(map){var m=strip(map.innerHTML);m.querySelectorAll('.xinfo,.xcap').forEach(function(n){n.remove();});m.querySelectorAll('td.xc,td.on,td.dep,td.ok,td.no').forEach(function(td){td.classList.remove('xc','on','dep','ok','no');});
+        if(id==='s9'){var B={R2:'(a)',adj:'(b)',S:'(c)',ssr:'(d)',mse:'(e)',F:'(f)',t1:'(g)',lo2:'(h)',L2:'(h)',R:'—'};m.querySelectorAll('td[data-k]').forEach(function(td){if(B[td.dataset.k]){td.textContent=B[td.dataset.k];td.className='bl';}});}
+        b+=m.innerHTML;}
+      b+='<ul>'+[].map.call(c.querySelectorAll('.trow'),function(r){var l=r.querySelector('label').innerHTML,o=r.querySelectorAll('.ch button');return '<li>'+l+(o.length?'<br><small>'+[].map.call(o,function(x,i){return String.fromCharCode(65+i)+'. '+x.innerHTML;}).join('<br>')+'</small>':'')+'</li>';}).join('')+'</ul><div class="onproj"><b>On the site → section '+num+'</b>: type your answers and press Check.</div>';
+      var fb=c.querySelector('.reveal');
+      if(map&&c.querySelectorAll('.trow').length>4){var cut=b.indexOf('<ul>');
+        SLIDES.push({cls:'text wide',badge:'act',k:'Section '+num+' · '+lab.textContent,t:c.querySelector('h3').innerHTML,b:b.slice(0,cut),n:'Give the room time with the printout; the next slide lists what to fill in.'});
+        b=b.slice(cut);}
+      SLIDES.push({cls:'text',badge:'act',k:'Section '+num+' · '+lab.textContent,t:c.querySelector('h3').innerHTML,b:b,n:INSTR&&fb?'<b>Answer:</b> '+fb.dataset.ok:'The page checks the answers when the student presses Check.'});
+    });
+  });
+  /* close */
+  SLIDES.push({badge:'act',k:'Your turn',t:'Checkpoint: ten questions on the printout',b:'<p>Open the site → <b>Week 9 → section 9.10</b>.</p><ul><li>Ten questions, one attempt each, every answer explained.</li><li>Not graded. The questions are in the exam’s style.</li></ul>',site:'ck',n:'Expect misses on Q3 (Multiple R is never negative) and Q7 (not significant is not "no effect").'});
+  SLIDES.push({k:'The individual project · instalment nine',t:'Run one regression your business plan depends on',b:'<ul><li>Put one y and one or two x’s in Excel and run Data → Data Analysis → Regression.</li><li>Copy the equation and say what the slope means in francs or units.</li><li>Give R Square, Significance F, the slope’s P-value and its 95% interval, in sentences.</li></ul><div class="onproj"><b>On the site → section 9.11</b>: three fields, saved automatically.</div>',site:'wk',n:'Week 1’s fourteen pizzerias are fine for students without data of their own.'});
+  SLIDES.push({cls:'text',k:'Takeaways',t:'The printout in eight formulas',b:'<div class="formula">ŷ = b₀ + b₁x (Coefficients)<br>SS Total = SS Regression + SS Residual<br>df: k · n − k − 1 · n − 1    MS = SS ⁄ df    Standard Error = √MS Residual<br>R Square = SS Regression ⁄ SS Total    Multiple R = √R Square<br>Adjusted R Square = 1 − (1 − R Square)(n − 1) ⁄ (n − k − 1)<br>F = MS Regression ⁄ MS Residual    Significance F = its p-value<br>t Stat = Coefficient ⁄ Standard Error    P-value on n − k − 1 df<br>Lower, Upper 95% = Coefficient ∓ t₀.₀₂₅ × Standard Error</div><div class="onproj"><b>Homework:</b> the Week 9 homework (thirteen exercises, by hand) and the six regression cards of the exam cards. <b>Next → Week 10</b>: chi-square tests and F-tests.</div>',n:'A high R Square with very few observations is not evidence: the four-observation printout.'});
+})();
+
+/* slide ↔ section chips, computed from where each section's opener landed */
+(function wireSlides(){
+  var starts=[];SLIDES.forEach(function(s,i){if(s.site)starts.push({id:s.site,i:i});});
+  starts.forEach(function(a,j){var end=(j+1<starts.length?starts[j+1].i:SLIDES.length)-1;var sec=SECTIONS.filter(function(x){return x.id===a.id;})[0];if(!sec)return;sec.slide=a.i+1;sec.slides=end>a.i?'slides '+(a.i+1)+'–'+(end+1):'slide '+(a.i+1);});
+})();
+
+(function lecture(){
+  var idx=0,open=false,moved=null,lect=document.getElementById('lect'),stage=document.getElementById('lectStage'),count=document.getElementById('lectCount'),notes=document.getElementById('lectNotes'),cur=null;
+  function slideHTML(s,printing){
+    var badge=s.badge?'<span class="lect-badge '+s.badge+'">'+(s.badge==='disc'?'💬 Work it out':s.badge==='act'?'✋ Your turn':'Case')+'</span>':'';
+    var logo=s.logo?'<img class="lect-logo-big" src="logo_heg-ge.svg" alt="HEG Genève">':'',site='';
+    if(s.site){var sec=SECTIONS.filter(function(x){return x.id===s.site;})[0];if(sec)site='<span class="lect-site">On the site → '+sec.num+'</span>';}
+    var body=s.mv?(printing?s.mv.outerHTML:''):(s.b||'');
+    return logo+badge+'<div class="lect-kicker">'+s.k+site+'</div>'+(s.t?'<h2>'+s.t+'</h2>':'')+'<div class="lect-body">'+body+'</div>';
+  }
+  function restore(){if(moved){moved.ph.parentNode.insertBefore(moved.node,moved.ph);moved.ph.remove();moved=null;}}
+  function render(){
+    var s=SLIDES[idx];restore();if(cur)cur.remove();
+    cur=document.createElement('div');cur.className='lect-slide'+(s.cls?' '+s.cls:'');cur.innerHTML=slideHTML(s);stage.appendChild(cur);
+    if(s.mv){var ph=document.createComment('deck');s.mv.parentNode.insertBefore(ph,s.mv);cur.querySelector('.lect-body').appendChild(s.mv);moved={node:s.mv,ph:ph};}
+    stage.classList.toggle('live',!!s.mv);
+    cur.style.zoom='';var cs=getComputedStyle(stage),room=stage.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),z=1;
+    while(z>0.5&&cur.getBoundingClientRect().height>room){z=Math.round((z-0.04)*100)/100;cur.style.zoom=z;}
+    lect.classList.toggle('dkbg',/\bdk\b/.test(s.cls||''));count.textContent=(idx+1)+' / '+SLIDES.length;
+    notes.innerHTML='<span class="nt">Speaker notes · slide '+(idx+1)+'</span>'+(s.n||'—');
+  }
+  function go(d){idx=Math.max(0,Math.min(SLIDES.length-1,idx+d));render();}
+  function openLect(at){open=true;if(at!=null)idx=at;lect.classList.add('on');render();if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(function(){});}
+  function closeLect(){open=false;restore();if(cur){cur.remove();cur=null;}lect.classList.remove('on');if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});}
+  window.WeekDeck={open:openLect,close:closeLect,go:function(i){idx=i;render();},count:function(){return SLIDES.length;}};
+  document.getElementById('lectOpen').addEventListener('click',function(){openLect();});
+  document.getElementById('lectClose').addEventListener('click',closeLect);
+  document.getElementById('lectPrev').addEventListener('click',function(){go(-1);});
+  document.getElementById('lectNext').addEventListener('click',function(){go(1);});
+  document.getElementById('lectNotesBtn').addEventListener('click',function(){notes.classList.toggle('on');});
+  stage.querySelector('.lect-zone.next').addEventListener('click',function(){go(1);});
+  stage.querySelector('.lect-zone.prev').addEventListener('click',function(){go(-1);});
+  document.addEventListener('keydown',function(e){
+    if(!open)return;var tg=e.target.tagName;if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA')return;
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(-1);}
+    else if(e.key==='Escape')closeLect();else if(e.key==='n'||e.key==='N')notes.classList.toggle('on');
+    else if(e.key==='Home'){idx=0;render();}else if(e.key==='End'){idx=SLIDES.length-1;render();}
+  });
+  if(location.hash==='#lecture')setTimeout(function(){openLect();},150);
+  /* the PDF: built when printing, so each widget prints in its current state */
+  window.addEventListener('beforeprint',function(){document.getElementById('printDeck').innerHTML=SLIDES.map(function(s,i){return '<div class="p-slide'+(s.cls?' '+s.cls:'')+'">'+slideHTML(s,true)+'<span class="pnum">Applied Statistics · Week 9 · '+(i+1)+'/'+SLIDES.length+'</span></div>';}).join('');});
 })();
 
 /* =====================================================================
