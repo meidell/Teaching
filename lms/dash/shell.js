@@ -41,10 +41,10 @@ window.Dash = (function () {
   }
 
   function shell(role) {
-    if (!document.querySelector('link[rel=icon]')) { const l = document.createElement('link'); l.rel = 'icon'; l.href = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>"; document.head.appendChild(l); }
+    if (!document.querySelector('link[rel=icon]')) { const l = document.createElement('link'); l.rel = 'icon'; l.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%231c5cab'/%3E%3Cpath d='M10 37 L22 22 L29 29 L37 16 L54 37 Z' fill='white'/%3E%3Cpath d='M10 45 Q17 41 24 45 T38 45 T54 45' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E"; document.head.appendChild(l); }
     const top = document.createElement('div'); top.className = 'top';
     top.innerHTML = `<div class="top-in">
-      <a class="brand" href="index.html"><span class="mk">${esc(S.school.short)}</span><span>${esc(S.school.name)}</span></a>
+      <a class="brand" href="index.html" title="${esc(S.school.name)}"><svg class="lgo" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29.5" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M10 36 L22 22 L29 29 L37 17 L54 36 Z" fill="currentColor"/><path d="M9 42 Q16.5 38 24 42 T39 42 T54 42" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" opacity=".75"/><path d="M13 49 Q19.5 45.5 26 49 T39 49 T51 49" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" opacity=".5"/></svg><span>${esc(S.school.name)}</span></a>
       <nav class="roles">${ROLES.map(r => `<a href="${r.href}" class="${r.id === role ? 'on' : ''}">${esc(r.name)}</a>`).join('')}</nav>
       <span class="fict" title="Every name and number on these pages is invented">Fictitious data · ${esc(S.school.term)}, week ${S.school.termWeek}</span>
       <span class="me" id="meChip"></span>
