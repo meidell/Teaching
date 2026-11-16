@@ -97,6 +97,8 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
 .pk ul{list-style:none;margin:0 0 10px;padding:0;}
 .pk li{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13.5px;padding:6px 0;border-top:1px solid var(--line);}
 .pk li span{color:var(--muted);font-size:12px;}
+.pk li .pkt{color:var(--ink2);font-size:13.5px;line-height:1.5;}
+.pk li .pkt b{color:var(--ink);}
 .foot2{text-align:center;color:var(--muted);font-size:12px;padding:0 16px 22px;}
 .tbtn2{position:fixed;top:16px;right:16px;z-index:5;border:1px solid var(--line);background:var(--raised);color:var(--ink);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:14px;}
 [hidden]{display:none !important;}
@@ -150,12 +152,11 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
     <div class="brand2"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10 36 L22 22 L29 29 L37 17 L54 36 Z" fill="currentColor"/><path d="M9 42 Q16.5 38 24 42 T39 42 T54 42" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".75"/><path d="M13 49 Q19.5 45.5 26 49 T39 49 T51 49" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg><span class="nm">Lakeside<small>School of Management</small></span></div>
     <div class="card">
       <h1>Welcome back</h1>
-      <p class="lead">Sign in with the passkey on this device: you confirm with Face ID, your fingerprint or the device PIN. There is no password.</p>
+      <p class="lead" id="signLead">Sign in with the passkey on this device: you confirm with Face ID, your fingerprint or the device PIN. There is no password.</p>
       <button class="btn primary" id="pkBtn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 9.5-4.9"/><circle cx="17.5" cy="15.5" r="2.5"/><path d="M19.3 17.3 22 20l-1.5 1.5M20.7 18.7 19.5 20"/></svg>
         Sign in with a passkey</button>
-      <p class="hint" id="pkNone" hidden>This browser cannot use passkeys. Sign in with your email below.</p>
-      <div class="or">or sign in with your email</div>
+      <div class="or" id="orLine">or sign in with your email</div>
       <form id="fEmail" novalidate>
         <label class="f" for="email">Your email address</label>
         <input class="t" id="email" type="email" autocomplete="username webauthn" placeholder="name@school.ch" required>
@@ -253,6 +254,13 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
     enc(buf) { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
   };
   const hasPK = !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get);
+  /* 16 Nov 2026 (Jan Erik): the passkey is offered only on a device that has made or used one
+     (dash_pk_device), and "add a passkey" only where none already works: an Apple device is covered
+     by any passkey made on an Apple device (iCloud Keychain shares it). */
+  const DEV = 'dash_pk_device';
+  const isApple = /Macintosh|Mac OS X|iPhone|iPad/.test(navigator.userAgent);
+  const APPLE_NAME = /Mac|iPhone|iPad/;
+  const covered = (keys, uid) => !!ls.get('dash_pk_' + uid) || (isApple && keys.some(k => APPLE_NAME.test(k.name || '')));
   function reqOpts(o) {
     if (PublicKeyCredential.parseRequestOptionsFromJSON) return PublicKeyCredential.parseRequestOptionsFromJSON(o);
     return Object.assign({}, o, { challenge: b64u.dec(o.challenge), allowCredentials: (o.allowCredentials || []).map(c => Object.assign({}, c, { id: b64u.dec(c.id) })) });
@@ -282,7 +290,7 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
     if (!cred) throw new Error('No passkey was chosen.');
     const r = await call('POST', '/auth/passkey/login/verify', { id: o.id, response: credJSON(cred) });
     ls.set(SKEY, { t: r.token, user: r.user });
-    ls.set('dash_pk_' + r.user.id, 1);          /* this device has a passkey: no need to offer one */
+    ls.set('dash_pk_' + r.user.id, 1); ls.set(DEV, 1);   /* this device has a passkey: no need to offer one */
     await pick();
   }
   function stopConditional() { if (conditional) { try { conditional.abort(); } catch (e) {} conditional = null; } }
@@ -324,7 +332,9 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
       const r = await call('POST', '/auth/verify', { email: sentTo, code });
       ls.set(SKEY, { t: r.token, user: r.user });
       stopConditional(); say('msg', '');
-      if (hasPK && !ls.get('dash_pk_' + r.user.id) && !ls.get('dash_pk_skip_' + r.user.id)) show('vOffer'); else await pick();
+      let offer = hasPK && !ls.get('dash_pk_' + r.user.id) && !ls.get('dash_pk_skip_' + r.user.id);
+      if (offer) { try { const k = await call('GET', '/me/passkeys', null, true); if (covered(k.passkeys, r.user.id)) offer = false; } catch (e) {} }
+      if (offer) show('vOffer'); else await pick();
     } catch (e) { say('msg', e.message, 'err'); $('code').select(); }
     finally { $('codeBtn').disabled = false; }
   };
@@ -337,7 +347,7 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
     const cred = await navigator.credentials.create({ publicKey: createOpts(o.options) });
     const name = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone or iPad' : /Android/.test(navigator.userAgent) ? 'Android phone' : /Mac/.test(navigator.userAgent) ? 'Mac' : /Windows/.test(navigator.userAgent) ? 'Windows computer' : 'This device';
     await call('POST', '/auth/passkey/register/verify', { id: o.id, response: credJSON(cred), name }, true);
-    const s = ls.get(SKEY); if (s && s.user) ls.set('dash_pk_' + s.user.id, 1);
+    const s = ls.get(SKEY); if (s && s.user) ls.set('dash_pk_' + s.user.id, 1); ls.set(DEV, 1);
   }
   $('addBtn').onclick = async () => {
     $('addBtn').disabled = true;
@@ -396,10 +406,17 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
   async function listPasskeys() {
     try {
       const r = await call('GET', '/me/passkeys', null, true);
-      const n = r.passkeys.length;
-      $('pkSub').textContent = n ? `You have ${n} passkey${n > 1 ? 's' : ''}. One is enough on the devices that share it (a passkey made on a Mac is also on your iPhone and iPad through iCloud Keychain). Add another only for a device outside that family, such as a Windows computer or an Android phone. If you lose every device, your email code still signs you in.` : 'You have no passkey yet. Add one to sign in with Face ID, your fingerprint or the device PIN.';
-      $('pkList').innerHTML = r.passkeys.map(k => `<li><b>${esc(k.name || 'Passkey')}</b><span>added ${new Date(k.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${k.last_used ? ' · last used ' + new Date(k.last_used).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+      const n = r.passkeys.length, s0 = ls.get(SKEY) || {}, uid = (s0.user || {}).id, ok = covered(r.passkeys, uid);
+      const fmt = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      const where = k => APPLE_NAME.test(k.name || '') ? 'Through iCloud Keychain it also works on your other Apple devices (Mac, iPhone, iPad) signed in to the same Apple account.'
+        : /Android/.test(k.name || '') ? 'Through Google Password Manager it also works on your other Android devices signed in to the same Google account.'
+        : /Windows/.test(k.name || '') ? 'It works on that Windows computer only.' : 'It works on the device where it was made.';
+      $('pkSub').textContent = !n ? 'You have no passkey yet. Add one to sign in with Face ID, your fingerprint or the device PIN.'
+        : ok ? 'This device can already sign in with your passkey' + (n > 1 ? 's' : '') + '. You do not need another one here.'
+        : 'None of your passkeys works on this device. Add one here if you want to sign in on it without an email code.';
+      $('pkList').innerHTML = r.passkeys.map(k => `<li><span class="pkt"><b>Made on your ${esc(k.name || 'device')}</b>, ${fmt(k.created_at)}${k.last_used ? ', last used ' + fmt(k.last_used) : ''}. ${esc(where(k))}</span>
         <button class="link" type="button" data-del="${esc(k.id)}">Remove</button></li>`).join('');
+      $('addBtn2').hidden = ok;
       $('pkList').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
         if (!confirm('Remove this passkey? You can still sign in with your email.')) return;
         try { await call('DELETE', '/me/passkeys/' + encodeURIComponent(b.dataset.del), null, true); listPasskeys(); } catch (e) { say('msg3', e.message, 'err'); }
@@ -413,7 +430,11 @@ input.code{letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;
   };
 
   /* ---- start ---- */
-  if (!hasPK) { $('pkBtn').hidden = true; $('pkNone').hidden = false; }
+  if (!hasPK || !ls.get(DEV)) {
+    $('pkBtn').hidden = true; $('orLine').hidden = true;
+    $('signLead').textContent = 'Type your email address. We send you a 6-digit code, and you are signed in.';
+    $('sendBtn').classList.replace('ghost', 'primary');
+  }
   if (ls.get(SKEY) && ls.get(SKEY).t) pick();
   else { show('vSign'); startConditional(); }
 })();
