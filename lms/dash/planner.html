@@ -115,6 +115,34 @@
   .pubs{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:4px 0 14px;}
   @media(max-width:900px){.vt{grid-template-columns:repeat(2,minmax(0,1fr));}}
   @media(max-width:560px){.stepper li{font-size:0;} .stepper li b{font-size:11px;} .stepper .ic{width:38px;height:38px;} .stepper li::before{top:18px;}}
+  /* room board (16 Nov 2026) — the planning wall */
+  .wlay{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:12px;align-items:start;}
+  .wall{overflow-x:auto;min-width:0;}
+  .wband{display:grid;gap:5px;margin:0 0 16px;min-width:780px;}
+  .wday{background:#1b2537;color:#fff;font-weight:750;font-size:13px;border-radius:6px;padding:7px 10px;display:flex;align-items:center;}
+  .wroom{background:#1b2537;color:#f2c94c;font-weight:750;font-size:12.5px;border-radius:6px;padding:7px 8px;text-align:center;}
+  .wroom small{display:block;color:#c9d3e3;font-weight:600;font-size:10.5px;}
+  .wtime{white-space:pre-line;background:color-mix(in srgb,var(--s3) 14%,var(--raised));color:var(--ink2);font-size:11.5px;font-weight:650;border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;}
+  .wcell{min-height:74px;border-radius:7px;display:flex;flex-direction:column;gap:4px;padding:3px;}
+  .wcell.free{background:color-mix(in srgb,#f5d84a 26%,transparent);border:1px dashed color-mix(in srgb,#e9c62a 70%,transparent);align-items:center;justify-content:center;font-size:11px;color:var(--muted);cursor:default;}
+  :root:not([data-theme="light"]) .wcell.free{background:color-mix(in srgb,#f5d84a 9%,transparent);border-color:color-mix(in srgb,#e9c62a 38%,transparent);}
+  .wcell.free.target{cursor:pointer;outline:2px solid var(--s1);outline-offset:-2px;}
+  .wcell.over{outline:2px solid var(--s1);outline-offset:-2px;}
+  .wc{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--s1);border-radius:6px;font-size:11.5px;line-height:1.3;cursor:grab;overflow:hidden;}
+  .wc .tt{padding:5px 7px 3px;font-weight:700;color:var(--ink);}
+  .wc .mt{padding:0 7px 5px;color:var(--ink2);font-size:10.5px;}
+  .wc .tc{background:#1b2537;color:#fff;font-weight:750;font-size:10px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:3px 4px;}
+  .wc .tc.none{background:var(--warn);color:#111;}
+  .wc.bad{border-color:var(--crit);box-shadow:0 0 0 2px var(--crit);}
+  .wc.bad .mt b{color:var(--crit);}
+  .wc.sel{box-shadow:0 0 0 3px var(--s1);}
+  .wc.dim{opacity:.32;}
+  .wc[draggable="false"]{cursor:pointer;}
+  .park{position:sticky;top:96px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:10px;max-height:calc(100vh - 120px);overflow:auto;}
+  .park h3{margin:0 0 2px;font-size:13.5px;} .park .why{display:block;margin:0 0 8px;font-size:11.5px;}
+  .park .wc{margin-bottom:6px;}
+  .park.over{outline:2px dashed var(--s1);}
+  @media(max-width:900px){.wlay{grid-template-columns:minmax(0,1fr);} .park{position:static;max-height:none;}}
 </style>
 </head>
 <body>
@@ -125,7 +153,7 @@
   </div>
   <div class="bar">
     <nav class="tabs" id="views" aria-label="Choose a view" style="margin:0">
-      <button data-v="cls" class="on">Classes and next steps</button><button data-v="find">Find a time</button><button data-v="tt">Timetable</button><button data-v="dl">Deadlines</button><button data-v="auto">Automatic timetable</button>
+      <button data-v="cls" class="on">Classes and next steps</button><button data-v="find">Find a time</button><button data-v="tt">Timetable</button><button data-v="wall">Room board</button><button data-v="dl">Deadlines</button><button data-v="auto">Automatic timetable</button>
     </nav>
     <button class="btn" id="bReset" type="button">Start again from today’s state</button>
     <a class="btn" href="programme.html" style="text-decoration:none">Back to the programme</a>
@@ -165,6 +193,18 @@
       <div class="tw"><table class="t" id="dlT"></table></div></div>
   </section>
 
+  <section data-view="wall" hidden>
+    <!-- 16 Nov 2026 (Jan Erik, photos of Geneva Business School's planning wall): days as bands, rooms as
+         columns, half-days as rows, a card per class in its programme's colour with the teacher on a dark
+         strip, yellow = free, red = a problem; the parking column on the right holds what is not placed.
+         Source: the planner (cards can be moved) or the automatic proposal (read only, click = why). -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch"><h2>Room board</h2><span class="note" id="wNote"></span></div>
+      <div class="bar" id="wSrc" style="margin:0 0 10px"></div>
+      <div class="key2" id="wKey"></div>
+      <div class="wlay"><div class="wall" id="wall"></div><aside class="park" id="park"></aside></div>
+    </div>
+  </section>
   <section data-view="auto" hidden>
     <!-- 16 Nov 2026, second look (Jan Erik: "very visual and with much less text"): a stepper with one
          action under it, picture tiles, short reasons with the full text on a click. -->
@@ -179,6 +219,7 @@
       <div class="vt" id="aTiles" style="margin-bottom:14px"></div>
       <div class="card" style="margin-bottom:14px" id="aUnC"><div class="ch"><h2><span class="dotc crit"></span>Not placed</h2><span class="note">open one to place it by hand</span></div><div class="ucards" id="aUn"></div></div>
       <div class="card" style="margin-bottom:14px"><div class="ch"><h2>The week</h2><span class="note" id="aWN"></span></div>
+        <div class="bar" style="margin:0 0 8px"><button class="btn" id="aWall" type="button">See it on the room board →</button></div>
         <div class="key2"><span><i class="kp"></i>click a class: why it is there</span><span><i class="kpin">📌</i>pinned: stays when you solve again</span><span><i class="kmv"></i>moved in the last solve</span></div>
         <div id="aW"></div>
         <details class="more" id="aChgC"><summary id="aChgN"></summary><div class="tw"><table class="t" id="aChgT"></table></div></details></div>
@@ -253,10 +294,10 @@
     const V = VIS();
     document.getElementById('sub').textContent = `${P.term.label} · ${PROG === 'all' ? 'all programmes' : S.P[PROG].name} · ${pl(V.length, 'class')} · the term starts in ${days(P.term.start)} days`;
     document.getElementById('progs').innerHTML = `<button data-p="all" class="${PROG === 'all' ? 'on' : ''}">All</button>` + S.programs.map(p => `<button data-p="${p.id}" class="${p.id === PROG ? 'on' : ''}"><i class="key" style="background:${PC[p.id]}"></i>${esc(p.short)}</button>`).join('');
-    ({ cls: drawClasses, find: drawFinder, tt: drawTT, dl: drawDL, auto: drawAuto })[VIEW]();
+    ({ cls: drawClasses, find: drawFinder, tt: drawTT, wall: drawWall, dl: drawDL, auto: drawAuto })[VIEW]();
   }
   document.getElementById('progs').onclick = e => { const b = e.target.closest('button'); if (!b) return; PROG = b.dataset.p; history.replaceState(null, '', (PROG === 'all' ? location.pathname : '?p=' + PROG) + (VIEW === 'cls' ? '' : '#' + VIEW)); render(); };
-  let VIEW = ['cls', 'find', 'tt', 'dl', 'auto'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'cls';
+  let VIEW = ['cls', 'find', 'tt', 'wall', 'dl', 'auto'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'cls';
   function showView(v) { VIEW = v; document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('section[data-view]').forEach(x => x.hidden = x.dataset.view !== v);
     history.replaceState(null, '', location.search + (v === 'cls' ? '' : '#' + v)); render(); }
   document.getElementById('views').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.v); };
@@ -409,6 +450,77 @@
   }
 
   document.getElementById('bReset').onclick = () => { if (!confirm('Throw away the changes made in this browser and start again from the state of 15 November?')) return; ST = clone(P.seed); AUTO = freshAuto(); saveAuto(); render(); };
+  /* ================= ROOM BOARD (16 Nov 2026) ================= */
+  let WALLSRC = 'plan', WSEL = null;
+  function wallModel() {
+    const src = WALLSRC === 'prop' && AUTO.prop ? 'prop' : 'plan';
+    const get = k => { if (src === 'prop') return AUTO.prop.assignments[k.id] || null; const s = ST[k.id]; return s.slot ? { slot: s.slot, room: s.room, teacher: s.profStatus === 'declined' ? null : s.prof } : null; };
+    const cell = {}, stu = {}, tch = {};
+    P.classes.forEach(k => { const a = get(k); if (!a || !a.slot) return;
+      if (a.room) (cell[a.room + '|' + a.slot] = cell[a.room + '|' + a.slot] || []).push(k);
+      k.students.forEach(x => (stu[x + '|' + a.slot] = (stu[x + '|' + a.slot] || 0) + 1));
+      if (a.teacher) (tch[a.teacher + '|' + a.slot] = tch[a.teacher + '|' + a.slot] || []).push(k); });
+    const problems = k => { const a = get(k); if (!a || !a.slot || !a.room) return []; const r = P.rooms.find(x => x.id === a.room), out = [];
+      if ((cell[a.room + '|' + a.slot] || []).length > 1) out.push('two classes in this room at once');
+      if (r && r.cap < k.size) out.push(`${k.size} students, ${r.cap} seats`);
+      if (r && k.lab && !r.lab) out.push('needs a computer lab');
+      if (a.teacher && (tch[a.teacher + '|' + a.slot] || []).length > 1) out.push(`${nm(a.teacher)} teaches another class then`);
+      if (a.teacher && (P.avail[a.teacher] || {})[a.slot] === 'n') out.push(`${nm(a.teacher)} marked this time as not free`);
+      const c = k.students.filter(x => stu[x + '|' + a.slot] > 1).length; if (c) out.push(`${pl(c, 'student')} with two classes at once`);
+      return out; };
+    return { src, get, cell, problems };
+  }
+  function drawWall() {
+    const M = wallModel(), edit = M.src === 'plan';
+    document.getElementById('wSrc').innerHTML = `<nav class="tabs" style="margin:0"><button data-ws="plan" class="${edit ? 'on' : ''}">What the planner holds</button><button data-ws="prop" class="${!edit ? 'on' : ''}" ${AUTO.prop ? '' : 'disabled title="Propose a timetable first, in Automatic timetable"'}>The computer’s proposal</button></nav>` +
+      (!edit ? '<button class="btn" data-ws="back" type="button">← Automatic timetable</button>' : '');
+    document.getElementById('wKey').innerHTML = S.programs.map(p => `<span><i class="key" style="background:${PC[p.id]}"></i>${esc(p.short)}</span>`).join('') +
+      '<span><i style="width:14px;height:12px;border-radius:3px;background:color-mix(in srgb,#f5d84a 40%,transparent);border:1px dashed #e9c62a"></i>free</span><span><i style="width:14px;height:12px;border-radius:3px;box-shadow:0 0 0 2px var(--crit)"></i>a problem (hover it)</span>' +
+      (edit ? '<span>drag a card, or click it and then a free slot</span>' : '<span>click a class: why it is there</span>');
+    const card = (k, inPark) => { const a = M.get(k), pr = M.problems(k), s0 = ST[k.id], t = (a && a.teacher) || (s0.prof && s0.profStatus !== 'declined' ? s0.prof : null), dim = PROG !== 'all' && k.prog !== PROG;
+      const r = a && a.room && P.rooms.find(x => x.id === a.room);
+      return `<div class="wc ${pr.length ? 'bad' : ''} ${WSEL === k.id ? 'sel' : ''} ${dim ? 'dim' : ''}" draggable="${edit}" data-wc="${k.id}" style="border-top-color:${PC[k.prog]}" title="${esc(cname(k) + (pr.length ? ' — ' + pr.join('; ') : ''))}">
+        <div class="tt">${esc(cname(k))}</div><div class="mt">${esc(S.P[k.prog].short)} · ${k.size}${r ? '/' + r.cap : ''} students${inPark && a && a.slot ? ' · ' + esc(slotTxt(a.slot)) + ', no room' : ''}${pr.length ? ` · <b>${esc(pr[0])}</b>` : ''}</div>
+        <div class="tc ${t ? '' : 'none'}">${t ? esc(nm(t).split(' ').pop()) : 'no teacher'}</div></div>`; };
+    const rooms = P.rooms, D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const band = (title, rows, extraOff) => { const cols = rooms.map(r => ({ id: r.id, lab: `${r.id}<small>${r.cap} seats${r.lab ? ' · computers' : ''}</small>` }));
+      if (extraOff) cols.push({ id: SOLVER.OFF, lab: 'Off campus<small>abroad</small>' });
+      let h = `<div class="wband" style="grid-template-columns:120px repeat(${cols.length},minmax(118px,1fr))"><div class="wday">${esc(title)}</div>${cols.map(c => `<div class="wroom">${c.lab}</div>`).join('')}`;
+      rows.forEach(sl => { h += `<div class="wtime">${esc(sl.lab)}</div>` + cols.map(c => { const ks = M.cell[c.id + '|' + sl.id] || [];
+        return ks.length ? `<div class="wcell" data-cell="${esc(c.id)}|${sl.id}">${ks.map(k => card(k)).join('')}</div>` : `<div class="wcell free ${edit && WSEL ? 'target' : ''}" data-cell="${esc(c.id)}|${sl.id}">free</div>`; }).join(''); });
+      return h + '</div>'; };
+    let html = D.map(d => band(DAYN[d], ['am', 'pm'].map(pt => { const sl = SL(d + '-' + pt); return { id: sl.id, lab: `${pt === 'am' ? 'Morning' : 'Afternoon'}\n${hh(sl.from)}–${hh(sl.to)}` }; }))).join('');
+    html += band('Weekends · EMBA', P.slots.weekend.map(sl => ({ id: sl.id, lab: slotTxt(sl.id) })));
+    html += band('Block weeks', P.slots.block.map(sl => ({ id: sl.id, lab: sl.label })), true);
+    document.getElementById('wall').innerHTML = html;
+    const parked = P.classes.filter(k => { const a = M.get(k); return !a || !a.room; }).sort((a, b) => (PROG !== 'all' && a.prog === PROG ? 0 : 1) - (PROG !== 'all' && b.prog === PROG ? 0 : 1));
+    document.getElementById('park').innerHTML = `<h3>Not placed · ${parked.length}</h3><span class="why">${edit ? 'drop a card here to take it off the board' : 'the computer could not place these'}</span>` + (parked.map(k => card(k, true)).join('') || '<span class="why">every class has a time and a room</span>');
+    const placed = P.classes.length - parked.length, bad = P.classes.filter(k => M.problems(k).length).length;
+    document.getElementById('wNote').textContent = `${placed} of ${P.classes.length} placed · ${bad ? pl(bad, 'class') + ' with a problem' : 'no problem'} · every programme shares these ${rooms.length} rooms`;
+  }
+  function wallPlace(id, cellKey) {
+    const k = P.classes.find(x => x.id === id), s = ST[k.id];
+    if (!cellKey) { Object.assign(s, { slot: null, room: null, assess: false, tell: false, valid: false }); return true; }
+    const [room, slot] = cellKey.split('|'), mode = MODE_OF[slot];
+    if (mode !== k.mode) { alert(`${cname(k)} is taught ${k.mode === 'weekly' ? 'every week' : k.mode === 'weekend' ? 'on weekends' : 'in a block week'}: place it in the ${k.mode === 'weekly' ? 'Monday to Friday' : k.mode === 'weekend' ? 'Weekends' : 'Block weeks'} band.`); return false; }
+    if (room === SOLVER.OFF && k.mode !== 'block') { alert('Only a block week can be off campus.'); return false; }
+    if (s.slot !== slot) Object.assign(s, { assess: false, tell: false, valid: false });
+    s.slot = slot; s.room = room; s.tell = false; s.valid = false; return true;
+  }
+  const wallBox = document.querySelector('section[data-view="wall"]');
+  wallBox.addEventListener('click', e => {
+    const ws = e.target.closest('[data-ws]'); if (ws) { if (ws.dataset.ws === 'back') { showView('auto'); return; } if (ws.disabled) return; WALLSRC = ws.dataset.ws; WSEL = null; drawWall(); return; }
+    const M = wallModel(), c = e.target.closest('[data-wc]');
+    if (c) { if (M.src === 'prop') { openWhy(c.dataset.wc); return; } WSEL = WSEL === c.dataset.wc ? null : c.dataset.wc; drawWall(); return; }
+    const cell = e.target.closest('.wcell.free'); if (cell && WSEL && M.src === 'plan') { if (wallPlace(WSEL, cell.dataset.cell)) { WSEL = null; render(); } return; }
+    if (e.target.closest('#park') && WSEL && M.src === 'plan') { wallPlace(WSEL, null); WSEL = null; render(); }
+  });
+  wallBox.addEventListener('dragstart', e => { const c = e.target.closest('[data-wc]'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.wc); e.dataTransfer.effectAllowed = 'move'; });
+  wallBox.addEventListener('dragover', e => { const t = e.target.closest('.wcell.free, #park'); if (!t || wallModel().src !== 'plan') return; e.preventDefault(); t.classList.add('over'); });
+  wallBox.addEventListener('dragleave', e => { const t = e.target.closest('.wcell, #park'); if (t) t.classList.remove('over'); });
+  wallBox.addEventListener('drop', e => { const t = e.target.closest('.wcell.free, #park'); if (!t) return; e.preventDefault(); t.classList.remove('over');
+    const id = e.dataTransfer.getData('text/plain'); if (!id) return; if (wallPlace(id, t.id === 'park' ? null : t.dataset.cell)) { WSEL = null; render(); } });
+
   /* ================= AUTOMATIC TIMETABLE (16 Nov 2026) =================
      collect once → the computer proposes the whole timetable (timetable-solver.js) → the manager pins and
      solves again → apply → ONE round with the teachers (accept, or object with a reason) → re-solve with every
@@ -607,6 +719,7 @@
     const act = { aGo: () => runSolve(), aAgain: () => { AUTO.seed++; runSolve(); AUTO.applied = false; },
       aApply: () => { if (!confirm('Apply the proposal to the planner? Each class gets the proposed time and room. A teacher the computer chose is marked as invited. Classes the computer could not place lose any time they had.')) return false; applyProp(); },
       aReset: () => { if (!confirm('Throw away the proposals, the pins and the teachers’ answers? What was already applied to the planner stays; use “Start again from today’s state” to undo that too.')) return false; AUTO = freshAuto(); },
+      aWall: () => { WALLSRC = 'prop'; showView('wall'); return false; },
       aSend: () => sendDrafts(), aRes2: () => resolveObjections(), aPubB: () => { if (!confirm('Publish the timetable to every student and teacher?')) return false; publish(); } }[id];
     if (act) { if (act() === false) return; saveAuto(); render(); return; }
     const p = e.target.closest('[data-pin]'); if (p) { e.stopPropagation(); const k = p.dataset.pin; if (AUTO.pins[k]) delete AUTO.pins[k]; else AUTO.pins[k] = true; saveAuto(); render(); return; }
