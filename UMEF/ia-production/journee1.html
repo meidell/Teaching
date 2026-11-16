@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/ia-production/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Journée 1 · Du modèle au système en production · MIA 506 · Swiss UMEF</title>
+<meta name="description" content="MIA 506, journée 1 — pourquoi un bon modèle ne suffit pas, la dette technique cachée des systèmes d’IA, le cycle de vie et les quatre modes d’inférence, le calcul des serveurs nécessaires, le canevas de déploiement de chaque équipe, et un premier modèle sauvegardé, rechargé et interrogé dans Colab.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="mlops.css">
+<style>
+/* journée 1 only: Sculley et al.'s figure, drawn as boxes */
+.sculley{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 6px;}
+.sculley div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--ink-soft);}
+.sculley div.ml{background:var(--accent);color:#fff;font-weight:800;border-color:var(--accent);text-align:center;}
+@media(max-width:640px){.sculley{grid-template-columns:1fr 1fr;}}
+.cycle{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:12px 0;}
+.cycle div{background:var(--accent-pale);border:1px solid rgba(23,107,135,.25);border-radius:8px;padding:9px 10px;font-size:13px;line-height:1.4;}
+.cycle div b{display:block;color:var(--accent-deep);font-size:14px;margin-bottom:2px;}
+@media(max-width:760px){.cycle{grid-template-columns:1fr 1fr;}}
+.colab-btn{display:inline-flex;align-items:center;gap:8px;}
+/* every table on this page holds sentences, not figures */
+table.fx td,table.fx th{text-align:left;vertical-align:top;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="mia506">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">IA EN PRODUCTION · JOURNÉE 1</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">Cette journée</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Cours</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Journée 1 · vendredi 20 novembre 2026 · MIA 506</div>
+    <h1>Du modèle au système <em>en production</em></h1>
+    <p class="sub">Un modèle qui donne de bons scores dans un notebook ne sert encore à personne. Il sert le jour où un autre système l’appelle, pour de vraies décisions, sans que son auteur soit là. Cette journée montre ce qu’il faut construire autour du modèle pour y arriver : vous étudiez trois déploiements réels qui ont échoué, vous calculez combien de serveurs demande un service de détection de fraude, votre équipe dessine le système qu’elle va déployer pendant le cours, puis vous entraînez un premier modèle et vous en faites un fichier que l’on peut mettre en ligne.</p>
+    <div class="liveinfo">
+      <span class="li">🕘 <b>09h00–12h15 · 13h30–16h45</b> · quatre blocs de 90 minutes</span>
+      <span class="li">💻 ordinateur portable · compte Google pour Colab</span>
+      <span class="li">🎤 chaque bloc commence par un exposé court — <b>🛠 le reste du temps, vous travaillez</b></span>
+    </div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="objectives">
+    <h4>À la fin de la journée 1, vous saurez</h4>
+    <ul>
+      <li>Expliquer, avec un cas réel, pourquoi un projet d’IA échoue en production, et dire si la cause tient aux données, à la technique, à l’organisation ou à l’économie.</li>
+      <li>Nommer les six étapes du cycle de vie d’un système d’IA et les six formes de dette technique décrites par Sculley et al. (2015).</li>
+      <li>Choisir entre inférence par lots, en temps réel, en flux continu et embarquée, et calculer le nombre de serveurs et le coût mensuel d’un service de prédiction.</li>
+      <li>Remplir avec votre équipe le canevas de déploiement de votre projet : la décision servie, le mode d’inférence, les données, l’infrastructure, les contraintes, les risques et les indicateurs de succès.</li>
+      <li>Entraîner un modèle dans Colab, le sauvegarder avec sa fiche et ses versions, le recharger et l’interroger avec une fonction <code>predire()</code>.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Avant de commencer, cochez</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Connecté·e sur ce site</b> avec le bouton en bas à droite : ce que vous écrivez aujourd’hui reste enregistré d’un appareil à l’autre, et l’enseignant le voit.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>Un compte Google</b> qui ouvre <a href="https://colab.research.google.com" target="_blank" rel="noopener">Google Colab ↗</a> : il sert au bloc 4. Rien à installer sur votre ordinateur.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>Un compte GitHub et un compte Hugging Face</b>, gratuits. Le syllabus les demande avant la première journée ; ils servent à partir de la journée 2.</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Page du cours</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">réinitialiser ma progression de la journée 1 sur cet appareil</a></div>
+  </div>
+</section>
+
+<!-- ============================ 1.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.1 · Bloc 1</div><span class="mode m-ex">🎤 Exposé · 25 min</span><h2>Pourquoi un bon modèle ne suffit pas</h2></div>
+  <p class="ex-note">Exposé de l’enseignant. S’il n’a pas lieu, lisez cette section seul·e, puis faites le classement en bas de page.</p>
+
+  <div class="card">
+    <span class="label def">Ce que veut dire « en production »</span>
+    <h3>Un modèle est en production quand ses résultats servent à de vraies décisions, sans son auteur</h3>
+    <p>Dans ce cours, un système d’IA est <strong>en production</strong> quand quatre conditions sont réunies :</p>
+    <ul>
+      <li><strong>Ses résultats servent à de vraies décisions.</strong> Une opération de paiement est bloquée, un crédit est accordé, une réclamation part au bon service.</li>
+      <li><strong>Il tourne tout seul et en continu.</strong> Un autre programme l’appelle, de jour comme de nuit, sans que quelqu’un lance un notebook.</li>
+      <li><strong>Des personnes qui ne l’ont pas construit dépendent de lui.</strong> Un conseiller, un client, une autre équipe.</li>
+      <li><strong>Quelqu’un est responsable quand il tombe en panne</strong>, et ce responsable l’apprend avant les clients.</li>
+    </ul>
+    <p>Un notebook qui affiche une bonne précision ne remplit aucune de ces quatre conditions. Ce cours porte sur tout ce qu’il faut construire entre les deux.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Sculley et al., 2015</span>
+    <h3>Dans un système d’IA réel, le code du modèle n’est qu’une petite partie du code</h3>
+    <p>En 2015, une équipe de Google a publié « Hidden Technical Debt in Machine Learning Systems » à la conférence NeurIPS. Sa figure la plus citée montre un système d’apprentissage automatique réel comme un ensemble de boîtes. Le code qui entraîne et applique le modèle n’en occupe qu’une petite au milieu. Toutes les autres boîtes sont du code et de l’infrastructure dont le modèle a besoin pour servir :</p>
+    <div class="sculley">
+      <div>La configuration : seuils, listes de variables, chemins des fichiers</div>
+      <div>La collecte des données</div>
+      <div>L’extraction des variables (le calcul des entrées du modèle)</div>
+      <div>La vérification des données qui entrent</div>
+      <div class="ml">Le code du modèle</div>
+      <div>La gestion des machines : serveurs, mémoire, processeurs</div>
+      <div>Les outils d’analyse des résultats</div>
+      <div>La gestion des processus : lancer, relancer, planifier</div>
+      <div>L’infrastructure de service : l’API qui répond aux appels</div>
+      <div>La surveillance en production</div>
+    </div>
+    <p class="srcnote">D’après Sculley, D. et al. (2015). « Hidden Technical Debt in Machine Learning Systems ». <i>Advances in Neural Information Processing Systems 28</i>, figure 1. Les tailles réelles des boîtes varient selon les systèmes ; le message de la figure est le rapport entre la petite boîte et les autres.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">La dette technique cachée</span>
+    <h3>Six formes de dette que l’on paie plus tard, en production</h3>
+    <p>Une <strong>dette technique</strong> est un raccourci pris aujourd’hui qui coûte du travail plus tard, avec des intérêts : chaque modification devient plus lente et plus risquée. Sculley et al. décrivent six formes propres aux systèmes d’IA. Chaque exemple ci-dessous vient de Jàppo Pay, un opérateur de paiement mobile <b>fictif</b> au Sénégal qui sert de cas aux laboratoires des journées 1 à 4.</p>
+    <ul>
+      <li><strong>L’enchevêtrement.</strong> Un modèle mélange toutes ses entrées : changer une seule variable modifie le poids de toutes les autres. Les auteurs résument la règle en anglais : « Changing Anything Changes Everything ». <i>Jàppo Pay ajoute la variable « pays du bénéficiaire » : le modèle accorde ensuite moins de poids à l’heure de l’opération, et les fraudes de nuit passent davantage.</i></li>
+      <li><strong>La boucle de rétroaction cachée.</strong> Les décisions du modèle changent les données sur lesquelles il sera ré-entraîné. <i>Une opération bloquée n’a jamais lieu : personne ne saura si c’était une fraude, et le prochain modèle apprend sur un historique où ces opérations manquent.</i></li>
+      <li><strong>Les consommateurs non déclarés.</strong> D’autres équipes utilisent les résultats du modèle sans le dire. <i>Le service marketing lit le score de fraude pour exclure des clients d’une promotion ; quand l’équipe modifie le score, la campagne marketing change sans que personne l’ait décidé.</i></li>
+      <li><strong>La dépendance de données instable.</strong> Une entrée produite par un autre système change de sens sans prévenir. <i>Le système des agents passe le montant des retraits de francs CFA en milliers de francs CFA : le modèle voit soudain des retraits de 25 au lieu de 25 000.</i></li>
+      <li><strong>Le code de colle et la jungle de pipelines.</strong> Beaucoup de code sert seulement à déplacer et à reformater des données entre des outils, et ces scripts s’empilent jusqu’à ce que plus personne ne sache dans quel ordre ils tournent.</li>
+      <li><strong>La dette de configuration.</strong> Les réglages (seuils, listes de variables, dates de coupure) sont dispersés dans plusieurs fichiers et notebooks, sans version ni contrôle. <i>Le seuil de blocage vaut 0,9 dans le service et 0,5 dans le rapport mensuel.</i></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Ce que disent les chiffres</span>
+    <h3>Combien de projets d’IA n’atteignent pas la production ? Vérifiez la source de chaque chiffre</h3>
+    <p>Le chiffre le plus repris, « 87 % des projets de science des données n’atteignent jamais la production », vient d’un article de VentureBeat de juillet 2019 qui rapporte une phrase prononcée lors d’une conférence. Aucune étude publiée, avec une méthode et un échantillon, ne se trouve derrière. Ne le citez pas comme un fait.</p>
+    <p>Un chiffre dont la source est connue : dans un communiqué du 29 juillet 2024, le cabinet Gartner <em>prévoyait</em> qu’au moins 30 % des projets d’IA générative seraient abandonnés après la preuve de concept avant la fin de 2025. Il en donnait quatre causes : des données de mauvaise qualité, des contrôles des risques insuffisants, des coûts qui augmentent et une valeur pour l’entreprise mal définie. C’est une prévision d’un cabinet de conseil, pas une mesure : elle dit ce que Gartner attendait, pas ce qui s’est passé.</p>
+    <p>À retenir : les causes d’échec citées par toutes les sources sont rarement le modèle lui-même. Ce sont les données, l’infrastructure, l’organisation et le coût — les quatre familles que vous utiliserez en 1.2.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 5 min</span>
+    <h3>Quelle forme de dette technique ?</h3>
+    <p>Pour chaque incident, choisissez la forme de dette qui l’explique. Une erreur grise le bouton ; l’explication s’affiche quand la réponse est juste.</p>
+    <div class="lab">
+      <div class="lab-title">Enchevêtrement · boucle · consommateur non déclaré · dépendance instable · jungle de pipelines · configuration</div>
+      <div id="debtRows"></div>
+      <div class="caption" id="debtRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s1" data-need="Le classement termine cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Suite : l’atelier →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.2 · Bloc 1</div><span class="mode m-do">🛠 Atelier · 50 min</span><h2>Atelier « Autopsie de trois déploiements »</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi cet atelier</span>
+    <p>Les trois systèmes ci-dessous ont été construits par des équipes compétentes, avec des modèles qui marchaient bien en test. Ils ont échoué une fois en contact avec le terrain. Votre projet de groupe passera par les mêmes étapes : en identifiant ce qui a cassé chez les autres, vous saurez quoi surveiller chez vous. Les faits viennent des sources indiquées sous chaque cas.</p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Cas A · santé · Thaïlande, 2018–2019</span>
+    <h3>Un modèle qui lit les photos de la rétine, déployé dans onze cliniques</h3>
+    <p>Google Health a développé un modèle d’apprentissage profond qui détecte la <b>rétinopathie diabétique</b> (une atteinte de la rétine causée par le diabète, qui peut rendre aveugle) sur des photos du fond de l’œil. En laboratoire, ses résultats valaient ceux de spécialistes. De novembre 2018 à août 2019, avec le ministère thaïlandais de la Santé, le système a été utilisé dans onze cliniques des provinces de Pathum Thani et de Chiang Mai, où des infirmières prenaient les photos.</p>
+    <ul>
+      <li>Le système refusait les photos qu’il jugeait de qualité insuffisante. Dans des salles mal éclairées, beaucoup de photos étaient refusées, et les infirmières devaient recommencer ou renvoyer le patient.</li>
+      <li>Les photos partaient vers un serveur par internet. Dans certaines cliniques la connexion était lente, et l’envoi retardait les consultations.</li>
+      <li>Un patient dont la photo était refusée était orienté vers un spécialiste dans un autre hôpital, un déplacement que beaucoup ne pouvaient pas faire.</li>
+    </ul>
+    <p class="srcnote">Source : Beede, E. et al. (2020). « A Human-Centered Evaluation of a Deep Learning System Deployed in Clinics for the Detection of Diabetic Retinopathy ». <i>Proceedings of CHI 2020</i>, ACM. <a href="https://doi.org/10.1145/3313831.3376718" target="_blank" rel="noopener">doi.org/10.1145/3313831.3376718 ↗</a></p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Cas B · immobilier · États-Unis, 2021</span>
+    <h3>Un modèle de prix qui décidait quelles maisons acheter</h3>
+    <p>Avec son activité Zillow Offers, l’entreprise américaine Zillow achetait des maisons pour les revendre quelques mois plus tard. Le prix d’achat s’appuyait sur ses modèles d’estimation des prix. En 2021, les prix du marché ont évolué autrement que ce que les modèles prévoyaient, et Zillow avait acheté des milliers de maisons à grande échelle et en peu de temps.</p>
+    <ul>
+      <li>Le 2 novembre 2021, Zillow a décidé d’arrêter Zillow Offers. Son directeur général a déclaré que la prévision des prix des maisons s’était révélée bien moins prévisible que prévu.</li>
+      <li>Au troisième trimestre 2021, l’entreprise a déprécié ses stocks de maisons de 304 millions de dollars (environ 262 millions d’euros, à 1 € = 1,16 $ en novembre 2021), parce qu’elle avait payé des maisons plus cher que ce qu’elle pouvait en tirer.</li>
+      <li>Environ 25 % du personnel, soit environ 2 000 personnes, a perdu son emploi.</li>
+    </ul>
+    <p class="srcnote">Sources : Zillow Group, rapport trimestriel 10-Q du 3e trimestre 2021 et rapport annuel 10-K 2021 (SEC) ; CNN Business, 2 novembre 2021.</p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Cas C · recrutement · États-Unis, 2014–2017</span>
+    <h3>Un modèle qui notait les CV de une à cinq étoiles</h3>
+    <p>À partir de 2014, une équipe d’Amazon a construit un modèle qui notait les candidatures de une à cinq étoiles. Il apprenait sur les CV reçus par l’entreprise pendant dix ans, qui venaient surtout d’hommes, comme la plupart des employés techniques recrutés.</p>
+    <ul>
+      <li>Le modèle a appris à pénaliser les CV contenant le mot « women’s » (par exemple « capitaine du club d’échecs féminin ») et à déclasser les diplômées de deux universités pour femmes.</li>
+      <li>L’équipe a corrigé ces termes, mais ne pouvait pas garantir que le modèle ne trouverait pas d’autres façons de discriminer. Le projet a été abandonné début 2017. Amazon a déclaré que ses recruteurs n’avaient jamais décidé sur la seule base de ces notes.</li>
+    </ul>
+    <p class="srcnote">Source : Dastin, J. (10 octobre 2018). « Amazon scraps secret AI recruiting tool that showed bias against women ». Reuters.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">A · 25 min · à deux</span>
+    <h3>Faites l’autopsie d’un cas</h3>
+    <p>Mettez-vous à deux (ou à trois, pour que les onze personnes de la classe soient réparties). Chaque groupe choisit un cas ; les trois cas doivent être pris par au moins un groupe. Répondez aux cinq questions dans le champ ci-dessous ; chaque membre du groupe copie la réponse dans son propre champ.</p>
+    <div class="wb" data-board="Autopsies|w1_autopsie">
+      <div class="wq"><span class="qn">1.</span>Écrivez : (a) la lettre du cas ; (b) ce que le modèle faisait bien en test ; (c) ce qui a cassé une fois sur le terrain ; (d) la famille de la cause principale — données, technique, organisation ou économie — et pourquoi ; (e) une mesure ou une alerte qui aurait montré le problème plus tôt, avec ce qu’elle mesure.</div>
+      <textarea data-work="w1_autopsie" data-worklabel="Autopsie d’un déploiement — cas, ce qui marchait, ce qui a cassé, la cause, l’alerte qui l’aurait vu" style="min-height:150px" placeholder="p. ex. (a) Cas A. (b) En laboratoire, le modèle détectait la maladie aussi bien qu’un spécialiste. (c) … (d) Données, parce que les photos du terrain… (e) Suivre chaque jour la part des photos refusées par clinique, avec une alerte au-dessus de…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 10 min · seul·e</span>
+    <h3>Données, technique, organisation ou économie ?</h3>
+    <p>Classez chaque cause d’échec dans sa famille. Certaines viennent des trois cas, d’autres de projets comme le vôtre.</p>
+    <div class="lab">
+      <div class="lab-title">Classez chaque cause</div>
+      <div id="causeRows"></div>
+      <div class="caption" id="causeRowsCap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Mise en commun · 15 min</span>
+    <p>Chaque groupe lit sa réponse (e) en une minute : la mesure qui aurait montré le problème plus tôt. La classe vérifie, pour chaque mesure, qui la regarderait et à quelle fréquence. Les réponses de la salle s’affichent à l’écran, sans les noms.</p>
+    <div class="timer" data-min="1" data-label="Une réponse"></div>
+  </div>
+  <div class="sec-status" data-sec="s2" data-need="Le champ de l’autopsie et le classement terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Retour</button>
+    <button class="btn" data-next="s3">Suite : bloc 2 · le cycle de vie →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.3 · Bloc 2</div><span class="mode m-ex">🎤 Exposé · 25 min</span><h2>Le cycle de vie d’un système d’IA et les quatre modes d’inférence</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome.</p>
+
+  <div class="card">
+    <span class="label def">Le cycle de vie</span>
+    <h3>Six étapes, de la question posée au retrait du système</h3>
+    <div class="cycle">
+      <div><b>1 · Cadrage</b>Quelle décision le système sert, qui l’utilise, quelle mesure dira qu’il réussit, et ce qui se fait aujourd’hui sans lui.</div>
+      <div><b>2 · Données</b>D’où viennent les données, qui les possède, à quelle fréquence elles arrivent, comment on vérifie leur qualité.</div>
+      <div><b>3 · Modèle</b>Entraîner, évaluer sur des données que le modèle n’a pas vues, comparer à la solution d’aujourd’hui.</div>
+      <div><b>4 · Déploiement</b>Faire du modèle un service que d’autres systèmes appellent, avec une version et un retour arrière possible.</div>
+      <div><b>5 · Exploitation</b>Surveiller les données, les résultats, les temps de réponse et les coûts ; ré-entraîner quand il le faut.</div>
+      <div><b>6 · Retrait</b>Arrêter le système quand il ne sert plus ou coûte trop, et garder la trace de ce qu’il a décidé.</div>
+    </div>
+    <p>Ce n’est pas une ligne droite : l’exploitation renvoie aux données et au modèle à chaque ré-entraînement. Ce cours suit les étapes 4 et 5 en détail, et l’étape 1 avec votre canevas de déploiement cet après-midi.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">MLOps et niveaux de maturité</span>
+    <h3>MLOps : automatiser et surveiller le passage du modèle à la production</h3>
+    <p>Le <strong>MLOps</strong> (de <i>machine learning</i> et <i>operations</i>) désigne l’ensemble des pratiques et des outils qui automatisent le passage d’un modèle de l’entraînement à la production, puis le surveillent pendant qu’il sert (Kreuzberger, Kühl et Hirschl, 2023). Pour les applications à base de grands modèles de langage, on parle de <strong>LLMOps</strong> (journée 5).</p>
+    <p>Le guide d’architecture de Google Cloud, « MLOps: Continuous delivery and automation pipelines in machine learning », décrit trois niveaux de maturité :</p>
+    <ul>
+      <li><strong>Niveau 0 · manuel.</strong> Un data scientist entraîne le modèle dans un notebook et remet un fichier à une autre équipe, qui l’installe. Chaque nouvelle version refait ce chemin à la main, quelques fois par an.</li>
+      <li><strong>Niveau 1 · pipeline d’entraînement automatisé.</strong> L’entraînement est un programme qui se relance seul quand de nouvelles données arrivent ou quand la performance baisse, et le nouveau modèle est validé puis déployé sans intervention.</li>
+      <li><strong>Niveau 2 · intégration et déploiement continus du pipeline.</strong> Le code du pipeline lui-même est testé et déployé automatiquement à chaque modification (journée 3).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Les quatre modes d’inférence</span>
+    <h3>Quand la prédiction est-elle calculée, et où ?</h3>
+    <p>L’<span class="gloss" data-k="inference">inférence</span> est le moment où le modèle entraîné calcule une prédiction pour une nouvelle donnée. Le mode d’inférence se choisit d’après la décision servie, pas d’après la technologie à la mode.</p>
+    <div class="tblwrap"><table class="fx">
+      <tr><th>Mode</th><th>Quand la prédiction est calculée</th><th>Délai de réponse typique</th><th>Exemple</th></tr>
+      <tr><td><b>Par lots</b> (<i>batch</i>)</td><td>À heure fixe, pour toutes les données d’un coup ; les résultats sont stockés et lus ensuite</td><td>des minutes à des heures, sans gêne</td><td>Chaque nuit, la limite de crédit de chaque client est recalculée</td></tr>
+      <tr><td><b>En temps réel</b> (<i>en ligne</i>)</td><td>À la demande : un système envoie une requête et attend la réponse</td><td>de quelques millisecondes à une seconde</td><td>Avant de valider un paiement, le système demande s’il s’agit d’une fraude</td></tr>
+      <tr><td><b>En flux continu</b> (<i>streaming</i>)</td><td>Sur un flux d’événements qui ne s’arrête pas ; le modèle calcule sur des fenêtres de temps et déclenche une alerte</td><td>quelques secondes</td><td>Repérer une antenne d’un opérateur télécom dont le trafic s’effondre</td></tr>
+      <tr><td><b>Embarqué</b> (<i>edge</i>)</td><td>Sur l’appareil lui-même — téléphone, caméra, capteur — sans passer par un serveur</td><td>immédiat, même sans réseau</td><td>Une appli reconnaît une maladie du manioc sur la photo d’une feuille, dans un champ sans couverture réseau</td></tr>
+    </table></div>
+    <p>Cinq critères décident : la <span class="gloss" data-k="latence">latence</span> acceptable (combien de temps la décision peut attendre), le <strong>volume</strong> (combien de prédictions par seconde ou par jour), la <strong>connectivité</strong> (le réseau est-il toujours là ?), la <strong>fraîcheur</strong> des données (la prédiction doit-elle tenir compte de ce qui s’est passé il y a une seconde ?) et le <strong>coût</strong>. Le mode par lots est presque toujours le moins cher : choisissez un mode plus rapide seulement quand la décision l’exige.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 5 min</span>
+    <h3>Quel mode d’inférence ?</h3>
+    <div class="lab">
+      <div class="lab-title">Par lots · temps réel · flux continu · embarqué</div>
+      <div id="modeRows"></div>
+      <div class="caption" id="modeRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s3" data-need="Le classement termine cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Retour</button>
+    <button class="btn" data-next="s4">Suite : l’atelier « Combien de serveurs ? » →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.4 · Bloc 2</div><span class="mode m-do">🛠 Atelier · 40 min</span><h2>Atelier « Combien de serveurs ? »</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi ce calcul</span>
+    <p>Avant de déployer un modèle, il faut savoir combien de machines il demande et ce qu’elles coûtent par mois. Le directeur financier de la journée 2 vous posera exactement cette question pour votre projet. Ce calcul montre aussi pourquoi le mode d’inférence change le coût d’un facteur cinquante.</p>
+  </div>
+
+  <div class="card">
+    <span class="label case">Les données de l’exercice · Jàppo Pay (fictif)</span>
+    <h3>Deux services de prédiction pour le même opérateur</h3>
+    <div class="tblwrap"><table class="fx">
+      <tr><th></th><th>Service 1 · le contrôle de fraude</th><th>Service 2 · la limite de crédit</th></tr>
+      <tr><td>Ce que fait le modèle</td><td>Pour chaque opération, avant de la valider, il dit s’il faut la bloquer</td><td>Chaque nuit, il recalcule le montant qu’un client peut emprunter le lendemain</td></tr>
+      <tr><td>Volume</td><td>1 800 000 opérations par jour ; l’heure la plus chargée en porte 10 %</td><td>400 000 clients, une fois par nuit</td></tr>
+      <tr><td>Temps de calcul d’une prédiction</td><td>20 millisecondes sur un cœur de processeur, tout compris (lecture des variables, préparation, modèle)</td><td>5 millisecondes par client sur un cœur</td></tr>
+      <tr><td>Règle d’exploitation</td><td>Aucune machine ne doit être occupée plus de 50 % du temps à l’heure la plus chargée, pour que les temps de réponse restent stables</td><td>Le calcul doit être fini avant 6 h du matin</td></tr>
+      <tr><td>Prix d’une machine à un cœur</td><td colspan="2">0,05 € par heure, facturée par heure commencée</td></tr>
+    </table></div>
+    <div class="srcnote">⚠ <b>Hypothèses de l’exercice</b>, arrondies pour que les calculs se fassent à la main. Le prix de 0,05 € par heure est fictif : à la journée 2, vous comparerez de vraies grilles tarifaires. Une machine qui traite une requête à la fois en 20 millisecondes peut en traiter 1 ÷ 0,020 = 50 par seconde si elle est occupée à 100 %.</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">25 min · à la main ou au tableur</span>
+    <h3>Six calculs</h3>
+    <p>Entrez chaque résultat ; une erreur se corrige autant de fois qu’il faut. Prenez un mois de 30 jours.</p>
+    <div id="capNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">10 min · faites varier les hypothèses</span>
+    <h3>Le simulateur de capacité</h3>
+    <p>Avant de bouger un curseur, écrivez dans votre tête ce que vous attendez : si le temps de calcul d’une prédiction double, le nombre de machines double-t-il aussi ? Puis vérifiez.</p>
+    <div class="calc" id="capCtrl"></div>
+    <div class="toggle-row" id="capSpare"><button data-k="0" class="on">Sans machine de réserve</button><button data-k="1">Avec une machine de réserve</button></div>
+    <div class="kpi" id="capKpi"></div>
+    <p class="caption" id="capCap"></p>
+    <div class="wb">
+      <div class="wq"><span class="qn">✍</span>Écrivez en trois phrases : pourquoi le contrôle de fraude ne peut pas tourner par lots la nuit, pourquoi la limite de crédit n’a pas besoin du temps réel, et ce que coûterait chaque service si on choisissait le mauvais mode.</div>
+      <textarea data-work="w1_archi" data-worklabel="Jàppo Pay — le mode d’inférence de chaque service, et le coût d’un mauvais choix" placeholder="p. ex. La fraude doit être détectée avant que l’argent parte, donc… La limite de crédit change une fois par jour, donc… Faire tourner la limite de crédit en temps réel coûterait…"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Mise en commun · 5 min</span>
+    <p>La salle compare les réponses au calcul 4 et au calcul 6 : le même modèle, la même machine, et un coût mensuel qui va de 1,50 € à 72 € selon le mode d’inférence.</p>
+  </div>
+  <div class="sec-status" data-sec="s4" data-need="Les six calculs et le champ terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Retour</button>
+    <button class="btn" data-next="s5">Suite : le quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.5 · Bloc 2</div><span class="mode m-quiz">✅ Quiz · 10 min</span><h2>Quiz de fin de matinée</h2></div>
+
+  <div class="card">
+    <span class="label play">Quiz d’auto-évaluation · ne compte pas dans la note</span>
+    <h3>Huit questions, une tentative chacune, toutes expliquées</h3>
+    <p>Le quiz est <strong>lancé en classe</strong>, pour que tout le monde commence en même temps ; cette page se déverrouille toute seule. Il ne compte pas dans la note : il vous montre ce qui est acquis et ce qu’il faut relire avant l’examen final. Répondez seul·e, sans assistant d’IA, sinon il ne vous apprend rien.</p>
+    <div class="qlock" id="quizLock"></div>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Retour</button>
+    <button class="btn" data-next="s6">Suite : bloc 3 · les outils et le terrain →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.6 · Bloc 3</div><span class="mode m-ex">🎤 Exposé · 20 min</span><h2>Les outils, le terrain ouest-africain et la loi</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome.</p>
+
+  <div class="card">
+    <span class="label def">Les outils, étape par étape</span>
+    <h3>Les outils de ce cours, et l’étape du cycle de vie que chacun sert</h3>
+    <div class="tblwrap"><table class="fx">
+      <tr><th>Étape</th><th>Ce qu’il faut faire</th><th>Outils libres utilisés dans ce cours</th><th>Équivalents chez les grands clouds</th></tr>
+      <tr><td>Données</td><td>Stocker, versionner, vérifier les données qui entrent</td><td>pandas ; des tests de données (journée 3)</td><td colspan="1" rowspan="5">Amazon SageMaker, Google Vertex AI, Azure Machine Learning : chacun réunit ces étapes dans une seule plateforme payante</td></tr>
+      <tr><td>Entraînement et suivi</td><td>Entraîner, noter chaque essai et ses scores, garder les versions du modèle</td><td>scikit-learn ; MLflow (journée 2)</td></tr>
+      <tr><td>Empaquetage et service</td><td>Mettre le modèle dans un service qui répond aux appels</td><td>joblib, ONNX ; FastAPI ; Docker ; Hugging Face Spaces et Gradio (journée 2)</td></tr>
+      <tr><td>Automatisation</td><td>Tester et déployer à chaque modification, planifier les tâches</td><td>GitHub Actions ; Airflow ou Prefect (journée 3)</td></tr>
+      <tr><td>Surveillance et pilotage</td><td>Mesurer la dérive, les temps de réponse, les coûts, et les montrer à la direction</td><td>Evidently ; Streamlit ou Looker Studio (journée 4)</td></tr>
+    </table></div>
+    <p>Tous les outils de ce cours ont une version gratuite qui suffit aux ateliers. Le choix d’un outil compte moins que de savoir à quelle étape il sert : un tableau de bord sans données vérifiées en amont ne montre rien de fiable.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Le terrain</span>
+    <h3>Cinq contraintes d’un déploiement en Afrique de l’Ouest</h3>
+    <ul>
+      <li><strong>La connectivité.</strong> Le réseau mobile peut être lent ou coupé, et les données mobiles coûtent cher à l’utilisateur. Un système qui suppose une connexion permanente échoue chez une partie des clients : il faut prévoir un mode embarqué, une file d’attente qui envoie plus tard, ou un canal sans internet comme l’USSD (les menus en <code>*123#</code> du mobile money, qui marchent sur un téléphone simple).</li>
+      <li><strong>L’hébergement et sa distance.</strong> À notre connaissance au 16 novembre 2026, Amazon Web Services, Microsoft Azure et Google Cloud n’ont pas de région de cloud en Afrique de l’Ouest. Leurs régions africaines sont en Afrique du Sud (Le Cap pour AWS, Johannesburg pour Azure et Google). Un serveur à Paris ou à Francfort est souvent plus proche de Dakar, en temps de réseau, qu’un serveur en Afrique du Sud. Des centres de données locaux existent : par exemple le centre de données national du Sénégal à Diamniadio, ou des opérateurs privés à Lagos et à Abidjan.</li>
+      <li><strong>Le coût et la monnaie.</strong> Les grands clouds facturent en dollars ou en euros. Le franc CFA de l’UEMOA est lié à l’euro à un taux fixe (1 € = 655,957 FCFA), ce qui supprime le risque de change face à l’euro, pas face au dollar. Un coût de 72 € par mois, c’est environ 47 000 FCFA.</li>
+      <li><strong>La souveraineté des données.</strong> Envoyer des données personnelles de clients sénégalais vers un serveur à l’étranger est un transfert encadré par la loi (ci-dessous). Certaines administrations exigent que leurs données restent dans le pays.</li>
+      <li><strong>L’énergie et les langues.</strong> Des coupures de courant imposent des machines qui redémarrent seules et des tâches qui reprennent où elles se sont arrêtées. Beaucoup d’utilisateurs parlent wolof, pulaar ou bambara : un modèle de langue entraîné surtout en anglais et en français les sert mal (journée 5).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">La loi, en avance sur la journée 6</span>
+    <h3>Trois textes à connaître dès le cadrage, parce qu’ils changent l’architecture</h3>
+    <ul>
+      <li><strong>Le règlement (UE) 2024/1689 sur l’IA</strong> (l’« AI Act »), en vigueur depuis le 1er août 2024. Il classe les systèmes d’IA en quatre niveaux de risque : <b>inacceptable</b> (interdits depuis le 2 février 2025, par exemple la notation sociale des citoyens), <b>haut risque</b> (des obligations de documentation, de qualité des données, de contrôle humain et de surveillance), <b>risque limité</b> (une obligation de transparence : dire à l’utilisateur qu’il parle à une IA) et <b>risque minimal</b> (aucune obligation propre). La liste des usages à haut risque est à l’annexe III ; elle comprend l’<em>évaluation de la solvabilité des personnes</em> — mais exclut expressément les systèmes de <em>détection de la fraude financière</em> — et le <em>tri des patients</em> dans les services d’urgence. Le règlement (UE) 2026/1744 (le « Digital Omnibus », en vigueur depuis le 27 juillet 2026) a repoussé les obligations des systèmes à haut risque de l’annexe III au 2 décembre 2027. Il s’applique à une entreprise hors de l’UE dès que son système est mis sur le marché européen ou que ses résultats sont utilisés dans l’UE.</li>
+      <li><strong>La loi sénégalaise n° 2008-12 du 25 janvier 2008</strong> sur la protection des données à caractère personnel, appliquée par la Commission de protection des Données Personnelles (CDP). Elle s’applique à tout traitement de données personnelles au Sénégal et n’autorise le transfert de ces données vers un pays tiers que si ce pays assure un niveau de protection suffisant. Une réforme est en préparation depuis 2019 ; au 16 novembre 2026, aucune nouvelle loi n’a été adoptée et la loi de 2008 reste en vigueur.</li>
+      <li><strong>La Convention de l’Union africaine sur la cybersécurité et la protection des données à caractère personnel</strong> (Convention de Malabo, 2014), entrée en vigueur le 8 juin 2023, qui fixe des principes communs aux États qui l’ont ratifiée.</li>
+    </ul>
+    <p>Dans votre canevas, la case « risques » demande donc une première classe de risque au sens du règlement européen, et la liste des données personnelles que votre système utilise. La journée 6 reprend ces textes en détail.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Le canevas de déploiement</span>
+    <h3>Sept cases à remplir avant d’écrire une ligne de code</h3>
+    <div class="grille">
+      <div class="gc"><div class="gn">Case 1</div><div class="gt">Les utilisateurs et la décision servie</div><div class="gd">Qui reçoit le résultat, quelle décision il prend avec, et ce qu’il fait aujourd’hui sans le système.</div></div>
+      <div class="gc"><div class="gn">Case 2</div><div class="gt">Le mode d’inférence</div><div class="gd">Par lots, temps réel, flux continu ou embarqué, avec le délai de réponse visé et le volume attendu.</div></div>
+      <div class="gc"><div class="gn">Case 3</div><div class="gt">Les données en entrée</div><div class="gd">Quelles données, d’où elles viennent, à quelle fréquence, qui les possède, et lesquelles sont personnelles.</div></div>
+      <div class="gc"><div class="gn">Case 4</div><div class="gt">L’infrastructure cible</div><div class="gd">Où tourne le système : cloud (lequel, quelle région), serveur local, téléphone. Comment il est appelé.</div></div>
+      <div class="gc"><div class="gn">Case 5</div><div class="gt">Les contraintes</div><div class="gd">La connectivité, le budget mensuel en euros, la réglementation, l’énergie, les langues.</div></div>
+      <div class="gc"><div class="gn">Case 6</div><div class="gt">Les risques</div><div class="gd">Ce qui peut mal tourner, pour qui, et une première classe de risque au sens du règlement européen.</div></div>
+      <div class="gc"><div class="gn">Case 7</div><div class="gt">Les indicateurs de succès</div><div class="gd">Deux indicateurs techniques et deux indicateurs métier, chacun avec une valeur cible chiffrée.</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 6 min</span>
+    <h3>À quelle étape sert chaque outil ?</h3>
+    <div class="lab">
+      <div class="lab-title">Données · entraînement et suivi · empaquetage et service · automatisation · surveillance</div>
+      <div id="toolRows"></div>
+      <div class="caption" id="toolRowsCap"></div>
+    </div>
+    <h3 style="margin-top:16px;">Quelle classe de risque au sens du règlement européen ?</h3>
+    <div class="lab">
+      <div class="lab-title">Haut risque · transparence (risque limité) · risque minimal</div>
+      <div id="actRows"></div>
+      <div class="caption" id="actRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s6" data-need="Les deux classements terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Retour</button>
+    <button class="btn" data-next="s7">Suite : le canevas de votre équipe →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.7 · Bloc 3</div><span class="mode m-do">🛠 Atelier · 70 min</span><h2>Atelier « Canevas de déploiement » · le lancement du projet</h2></div>
+
+  <div class="card">
+    <span class="label idea">Le projet fil rouge · 40 % de la note</span>
+    <h3>Chaque équipe conçoit, déploie et pilote un système d’IA qui répond à un besoin réel</h3>
+    <p>Conformément au règlement, le projet de groupe remplace l’examen intermédiaire. Votre équipe choisit aujourd’hui un cas d’usage, et chaque journée y ajoute une pièce avec ce qui vient d’être appris : le chiffrage (journée 2), le contrat de données et le rapport d’incident (journée 3), le tableau de bord et la politique de ré-entraînement (journée 4), les garde-fous si votre système utilise un modèle de langage (journée 5), l’analyse de risque (journée 6).</p>
+    <p><strong>Le livrable</strong> : (a) le système déployé et accessible en ligne ; (b) un rapport de quinze pages au maximum (architecture, choix de déploiement et chiffrage, pipeline et tests, surveillance et tableau de bord, risques et conformité, plan d’exploitation) ; (c) le dépôt de code ; (d) une présentation de quinze minutes le vendredi 8 janvier 2027. La note est commune à l’équipe, pondérée le cas échéant par une évaluation individuelle de la contribution. La date de remise du rapport et du code est sur la <a href="index.html#project">page du cours</a>.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">A · 10 min · former les équipes et choisir un cas</span>
+    <h3>Trois équipes de trois ou quatre personnes</h3>
+    <p>La classe compte onze personnes : deux équipes de quatre et une de trois. Mélangez de préférence des personnes qui ne se connaissent pas encore. Inscrivez-vous sur le <a href="index.html#teams">tableau des équipes de la page du cours</a> : il donne à votre équipe un fil de messages entre ses membres.</p>
+    <p>Choisissez un cas d’usage réaliste. Exemples tirés du syllabus : un score de risque pour accorder un crédit par paiement mobile ; la détection de fraude sur des transactions ; le tri automatique des réclamations des clients d’un opérateur télécom ; la prévision de la demande d’électricité ; la détection de maladies des cultures sur des photos ; l’aide au tri des patients dans un centre de santé. Un cas de votre propre expérience vaut mieux qu’un exemple de cette liste, à une condition : vous devez pouvoir trouver ou simuler des données pour l’entraîner avant la journée 2. Deux équipes ne prennent pas le même cas.</p>
+    <div class="wb">
+      <div class="wq"><span class="qn">1.</span>Écrivez le nom de l’équipe, ses membres, le cas d’usage choisi en une phrase, et où vous trouverez les données (un jeu public avec son lien, ou des données que vous simulerez).</div>
+      <textarea data-work="w1_equipe" data-worklabel="Projet — équipe, membres, cas d’usage, source des données" placeholder="p. ex. Équipe Baobab · A., B., C. · Trier automatiquement les réclamations des clients d’un opérateur télécom en cinq services · données : jeu public de réclamations (lien) traduit en français, complété par 300 réclamations simulées"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">B · 35 min · le canevas, en équipe</span>
+    <h3>Les sept cases de votre canevas</h3>
+    <p>Répartissez-vous les cases, puis relisez-les ensemble : elles doivent se tenir (un mode « embarqué » ne va pas avec une infrastructure « serveur à Francfort »). Chaque membre copie le texte final de l’équipe dans ses propres champs : c’est votre premier livrable d’atelier, il compte dans les 10 % de participation.</p>
+    <div class="wb" data-board="Décisions servies|w1_c_decision">
+      <div class="wq"><span class="qn">2.</span>Case 1 · Écrivez qui reçoit le résultat, quelle décision il prend avec, et ce qu’il fait aujourd’hui sans le système.</div>
+      <textarea data-work="w1_c_decision" data-worklabel="Canevas 1 — les utilisateurs et la décision servie" placeholder="p. ex. Les conseillers du service client reçoivent chaque réclamation déjà classée dans l’un des cinq services. Aujourd’hui, un superviseur lit chaque réclamation et la transfère à la main, en 1 à 2 jours."></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">3.</span>Case 2 · Écrivez le mode d’inférence, le délai de réponse visé et le volume attendu (par seconde ou par jour), et pourquoi ce mode.</div>
+      <textarea data-work="w1_c_mode" data-worklabel="Canevas 2 — le mode d’inférence, le délai et le volume" placeholder="p. ex. Par lots toutes les 15 minutes : environ 4 000 réclamations par jour, une attente de 15 minutes ne gêne personne, et c’est moins cher qu’un service en temps réel."></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">4.</span>Case 3 · Écrivez les données en entrée : lesquelles, d’où elles viennent, à quelle fréquence, qui les possède, et lesquelles sont des données personnelles.</div>
+      <textarea data-work="w1_c_donnees" data-worklabel="Canevas 3 — les données en entrée" placeholder="p. ex. Le texte de la réclamation (formulaire web et SMS), le numéro du client, la date. Elles appartiennent à l’opérateur. Le numéro et le texte sont des données personnelles."></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">5.</span>Case 4 · Écrivez où tourne le système (quel cloud et quelle région, un serveur local, un téléphone) et comment il est appelé.</div>
+      <textarea data-work="w1_c_infra" data-worklabel="Canevas 4 — l’infrastructure cible" placeholder="p. ex. Un service sur Hugging Face Spaces pour le prototype ; en production, une machine virtuelle à Paris, appelée par l’outil du service client par une API."></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">6.</span>Case 5 · Écrivez les contraintes : la connectivité, le budget mensuel maximal en euros, la réglementation applicable, l’énergie, les langues.</div>
+      <textarea data-work="w1_c_contraintes" data-worklabel="Canevas 5 — les contraintes" placeholder="p. ex. Budget : 150 € par mois au plus. Réclamations en français et en wolof. Transfert de données hors du Sénégal : à vérifier avec la loi 2008-12…"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">7.</span>Case 6 · Écrivez trois risques (ce qui peut mal tourner, et pour qui), puis la classe de risque de votre système au sens du règlement européen, avec la raison.</div>
+      <textarea data-work="w1_c_risques" data-worklabel="Canevas 6 — les risques et la classe de risque" placeholder="p. ex. 1. Une réclamation urgente (coupure de service d’un hôpital) classée au mauvais service attend deux jours… Classe : risque minimal, parce que le tri des réclamations n’est pas dans l’annexe III…"></textarea>
+    </div>
+    <div class="wb" data-board="Indicateurs de succès|w1_c_kpi">
+      <div class="wq"><span class="qn">8.</span>Case 7 · Écrivez deux indicateurs techniques et deux indicateurs métier, chacun avec sa valeur cible chiffrée.</div>
+      <textarea data-work="w1_c_kpi" data-worklabel="Canevas 7 — les indicateurs de succès" placeholder="p. ex. Technique : 90 % des réclamations bien classées sur un échantillon relu chaque semaine ; le lot de 15 minutes traité en moins de 2 minutes. Métier : délai moyen de prise en charge ramené de 1,5 jour à 4 heures ; moins de 5 % de réclamations transférées une deuxième fois."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">C · 25 min · cinq minutes par équipe, puis la critique</span>
+    <h3>Chaque équipe présente son canevas ; les deux autres posent leurs trois questions</h3>
+    <div class="timer" data-min="5" data-label="Présentation"></div>
+    <p>Les équipes qui écoutent posent, dans l’ordre : <b>1.</b> La décision servie existe-t-elle vraiment aujourd’hui, et qui la prend ? <b>2.</b> Le mode d’inférence correspond-il au délai que la décision supporte, et le budget tient-il ? <b>3.</b> Qu’est-ce qui pourrait arrêter ce système en production (des données qui manquent, un réseau coupé, la loi) ?</p>
+    <div class="wb">
+      <div class="wq"><span class="qn">9.</span>Écrivez la critique reçue la plus utile, et ce que votre équipe change dans son canevas à cause d’elle.</div>
+      <textarea data-work="w1_critique" data-worklabel="Projet — la critique reçue sur le canevas, et ce qui change" placeholder="p. ex. On nous a demandé si les réclamations par SMS arrivent dans le même système que celles du site : non. Nous ajoutons une étape qui les réunit, et nous le notons comme dépendance de données."></textarea>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s7" data-need="Les neuf champs de l’équipe terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Retour</button>
+    <button class="btn" data-next="s8">Suite : bloc 4 · le fichier du modèle →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.8 ============================ -->
+<section class="screen" id="s8">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.8 · Bloc 4</div><span class="mode m-ex">🎤 Exposé · 15 min</span><h2>Ce que l’on met en production : le modèle et ce qui l’accompagne</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome.</p>
+
+  <div class="card">
+    <span class="label def">L’artefact du modèle</span>
+    <h3>Le fichier du modèle ne suffit pas : il faut aussi sa fiche et ses versions</h3>
+    <p>Un <span class="gloss" data-k="artefact">artefact</span> est un fichier produit par l’entraînement et destiné à la production. Pour qu’un autre système puisse utiliser le modèle sans son auteur, il faut quatre choses :</p>
+    <ul>
+      <li><strong>Le modèle entraîné et sa préparation des données, dans un seul objet.</strong> En scikit-learn, c’est un <span class="gloss" data-k="pipeline">pipeline</span> : la mise à l’échelle des variables, le codage des catégories et le modèle. Sauvegarder le modèle sans sa préparation oblige le service à la refaire à la main, avec les moyennes exactes de l’entraînement — c’est ainsi que naît le décalage entre entraînement et service.</li>
+      <li><strong>La fiche du modèle</strong> (<code>metadata.json</code>) : le nom, le numéro de version, la date, les données d’entraînement, les variables attendues et leur ordre, le seuil de décision, les scores sur les données de test.</li>
+      <li><strong>Les versions exactes des bibliothèques</strong> (<code>requirements.txt</code>) : un fichier créé avec une version de scikit-learn peut refuser de se charger avec une autre, ou donner d’autres résultats.</li>
+      <li><strong>Le contrat de prédiction</strong> : ce que le service reçoit (les champs, leur type, leur unité) et ce qu’il rend (la probabilité, la décision, la version du modèle). Le service vérifie l’entrée et refuse poliment une requête incomplète au lieu de planter.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label def">Deux formats de fichier</span>
+    <h3>joblib pour rester en Python, ONNX pour en sortir</h3>
+    <div class="tblwrap"><table class="fx">
+      <tr><th></th><th>joblib (ou pickle)</th><th>ONNX</th></tr>
+      <tr><td>Ce que c’est</td><td>L’objet Python tel qu’il est en mémoire, écrit dans un fichier</td><td>Un format ouvert qui décrit le calcul du modèle (Open Neural Network Exchange)</td></tr>
+      <tr><td>Pour le relancer</td><td>Python, avec les mêmes bibliothèques dans des versions compatibles</td><td>Le moteur <code>onnxruntime</code>, qui existe en C++, Java, C#, JavaScript, et sur Android et iOS</td></tr>
+      <tr><td>Quand le choisir</td><td>Le service est écrit en Python (FastAPI, Gradio) — le cas de la journée 2</td><td>Déploiement embarqué, service écrit dans un autre langage, besoin de vitesse</td></tr>
+      <tr><td>Sécurité</td><td>⚠ Charger un fichier joblib ou pickle <b>exécute du code</b> : ne chargez jamais un modèle venu d’une source que vous ne contrôlez pas</td><td>Le fichier ne contient que la description du calcul, pas de code Python</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez · 4 min</span>
+    <h3>Où se trouve chaque information ?</h3>
+    <div class="lab">
+      <div class="lab-title">Le fichier du modèle · la fiche metadata.json · requirements.txt · le code du service</div>
+      <div id="artRows"></div>
+      <div class="caption" id="artRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s8" data-need="Le classement termine cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Retour</button>
+    <button class="btn" data-next="s9">Suite : le notebook →</button>
+  </div>
+</section>
+
+<!-- ============================ 1.9 ============================ -->
+<section class="screen" id="s9">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 1.9 · Bloc 4</div><span class="mode m-do">🛠 Atelier · 65 min</span> <span class="mode">🔁 Mise en commun · 10 min</span><h2>Atelier Colab « Entraîner, sauvegarder, recharger, prédire »</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi ce notebook</span>
+    <p>À la journée 2, vous mettrez un modèle en ligne et un autre ordinateur l’appellera. Pour cela, il faut un fichier de modèle qui se recharge ailleurs et une fonction qui répond à une opération. Le notebook construit les deux avec les données de Jàppo Pay : 24 000 opérations simulées du mois d’octobre 2026, dont certaines sont des fraudes.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">50 min · seul·e, en vous aidant à deux</span>
+    <h3>Ouvrez le notebook, exécutez les dix étapes dans l’ordre, recopiez les nombres marqués ➜</h3>
+    <div class="btn-row">
+      <a class="btn colab-btn" href="https://colab.research.google.com/github/meidell/Teaching/blob/main/UMEF/ia-production/files/j1_modele.ipynb" target="_blank" rel="noopener">Ouvrir le notebook dans Colab ↗</a>
+      <a class="btn ghost small" href="files/j1_modele.ipynb" download>Télécharger le notebook (.ipynb)</a>
+      <a class="btn ghost small" href="files/jappo_transactions.csv" download>Télécharger les données (.csv, 1,5 Mo)</a>
+    </div>
+    <ol style="margin:12px 0 0 20px;">
+      <li>Cliquez sur « Ouvrir le notebook dans Colab », puis sur <b>Fichier → Enregistrer une copie dans Drive</b> : vous travaillez sur votre copie.</li>
+      <li>Exécutez chaque cellule avec <b>Maj + Entrée</b>, de haut en bas. Si une cellule affiche une erreur, relisez-la et exécutez à nouveau les cellules précédentes.</li>
+      <li>À chaque nombre marqué ➜, entrez la valeur dans la case correspondante ci-dessous.</li>
+      <li>La dernière cellule (ONNX) est facultative : faites-la si vous avez fini en avance.</li>
+    </ol>
+    <div id="nbNum" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">15 min · ce que les nombres veulent dire</span>
+    <div class="wb" data-board="Le seuil choisi|w1_seuil">
+      <div class="wq"><span class="qn">1.</span>Regardez le tableau de l’étape 5 bis. Écrivez le seuil que vous recommanderiez à Jàppo Pay, et pourquoi, en comparant ce que coûte une fraude qui passe et ce que coûte un client honnête bloqué. Donnez les deux nombres de la semaine de test pour votre seuil.</div>
+      <textarea data-work="w1_seuil" data-worklabel="Le seuil recommandé à Jàppo Pay, et pourquoi" placeholder="p. ex. Je recommande 0,9 : sur la semaine de test, le modèle bloque 19 fraudes et 80 clients honnêtes, au lieu de 938 au seuil de 0,5. Une fraude coûte en moyenne… ; un client bloqué coûte…"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">2.</span>La fonction <code>predire()</code> marche dans votre notebook. Écrivez trois choses qui manquent encore pour que le système de paiement de Jàppo Pay puisse l’appeler 50 fois par seconde, jour et nuit.</div>
+      <textarea data-work="w1_service" data-worklabel="Ce qui manque à predire() pour devenir un service" placeholder="p. ex. 1. Une adresse sur le réseau que le système de paiement peut appeler (une API)… 2. … 3. …"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Mise en commun · 10 min</span>
+    <p>La salle compare les seuils recommandés : les réponses s’affichent à l’écran, sans les noms. Puis on liste au tableau ce qui manque à <code>predire()</code> : c’est le programme de la journée 2.</p>
+  </div>
+
+  <div class="card">
+    <span class="label why">Avant la journée 2 · vendredi 27 novembre</span>
+    <ul>
+      <li>Gardez le fichier <code>paquet_j1.zip</code> téléchargé à l’étape 9 : vous le mettrez en ligne à la journée 2.</li>
+      <li>Vérifiez que vous pouvez vous connecter à <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face ↗</a> et à <a href="https://github.com" target="_blank" rel="noopener">GitHub ↗</a>.</li>
+      <li>Pour votre projet : trouvez ou simulez les données de votre cas d’usage, et entraînez un premier modèle simple avec le même notebook (remplacez les données et les variables). À la journée 2, chaque équipe met en ligne le modèle de son projet après celui de Jàppo Pay.</li>
+      <li>Corrigez votre canevas avec la critique reçue.</li>
+    </ul>
+  </div>
+  <div class="sec-status" data-sec="s9" data-need="Les sept nombres du notebook et les deux champs terminent cette section — et la journée."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Retour</button>
+    <button class="btn" data-home>Menu de la journée</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   JOURNÉE 1 — configuration + widgets. The engine is journee.js (a port
+   of UMEF/mfb545's). Every number on this page was recomputed before
+   shipping: the capacity exercise by hand (see the w strings), the
+   notebook values by running files/j1_modele.ipynb locally on
+   files/jappo_transactions.csv (_build/notebook.py --run, scikit-learn
+   1.9.1, 16 Nov 2026). Logistic regression is deterministic, so Colab's
+   scikit-learn gives the same values to the decimals asked for.
+   ⚠ num() reads "0,991" as 991 (three decimals = thousands): the
+   suspicious-operation probability is asked in % with one decimal.
+   ===================================================================== */
+var GLOSSARY={
+  inference:['inférence','Le moment où un modèle déjà entraîné calcule une prédiction pour une nouvelle donnée. L’entraînement a lieu une fois (ou de temps en temps) ; l’inférence a lieu à chaque appel, parfois des millions de fois par jour.'],
+  latence:['latence','Le temps entre le moment où l’on demande une prédiction et le moment où la réponse arrive, en millisecondes. Elle comprend le réseau, l’attente dans la file, la lecture des données et le calcul du modèle.'],
+  artefact:['artefact','Un fichier produit par l’entraînement et destiné à la production : le modèle sauvegardé, sa fiche, la liste des versions des bibliothèques. Il porte un numéro de version, comme un logiciel.'],
+  pipeline:['pipeline (scikit-learn)','Un objet qui enchaîne les étapes de préparation des données et le modèle. On l’entraîne et on le sauvegarde comme un tout, ce qui garantit que la même préparation est appliquée à l’entraînement et en production.']
+};
+var DAY={
+  mod:'w1', key:'mia506_w1_progress_v1', title:'Journée 1 · Du modèle au système en production',
+  blocks:[
+    {n:1,t:'09h00–10h30',name:'pourquoi un bon modèle ne suffit pas · trois autopsies',parts:[['ex',25],['do',50],['co',15]]},
+    {n:2,t:'10h45–12h15',name:'le cycle de vie, les modes d’inférence · combien de serveurs · le quiz',parts:[['ex',25],['do',40],['co',5],['quiz',10]]},
+    {n:3,t:'13h30–15h00',name:'les outils, le terrain, la loi · le canevas de votre équipe',parts:[['ex',20],['do',45],['co',25]]},
+    {n:4,t:'15h15–16h45',name:'le fichier du modèle · le notebook Colab',parts:[['ex',15],['do',65],['co',10]]}
+  ],
+  sections:[
+    {id:'s1',num:'1.1',name:'Pourquoi un bon modèle ne suffit pas',tag:'Ce que veut dire « en production » · la figure de Sculley et al. · six formes de dette technique · les chiffres et leurs sources',mode:'ex',min:25,block:1},
+    {id:'s2',num:'1.2',name:'Atelier « Autopsie de trois déploiements »',tag:'Google Health en Thaïlande, Zillow Offers, le tri des CV chez Amazon · quatre familles de causes',mode:'do',min:50,block:1},
+    {id:'s3',num:'1.3',name:'Le cycle de vie et les quatre modes d’inférence',tag:'Six étapes · MLOps et ses trois niveaux · par lots, temps réel, flux continu, embarqué',mode:'ex',min:25,block:2},
+    {id:'s4',num:'1.4',name:'Atelier « Combien de serveurs ? »',tag:'Six calculs de capacité et de coût · le simulateur',mode:'do',min:40,block:2},
+    {id:'s5',num:'1.5',name:'Quiz de fin de matinée',tag:'Huit questions · lancé en classe · auto-évaluation',mode:'quiz',min:10,block:2},
+    {id:'s6',num:'1.6',name:'Les outils, le terrain ouest-africain et la loi',tag:'Un outil par étape · cinq contraintes · AI Act, loi 2008-12, Malabo · les sept cases du canevas',mode:'ex',min:20,block:3},
+    {id:'s7',num:'1.7',name:'Atelier « Canevas de déploiement »',tag:'Trois équipes · un cas d’usage · sept cases · cinq minutes de présentation et la critique',mode:'do',min:70,block:3},
+    {id:'s8',num:'1.8',name:'Le modèle et ce qui l’accompagne',tag:'Pipeline, fiche, versions, contrat de prédiction · joblib ou ONNX',mode:'ex',min:15,block:4},
+    {id:'s9',num:'1.9',name:'Atelier Colab « Entraîner, sauvegarder, recharger, prédire »',tag:'Le modèle de fraude de Jàppo Pay · le seuil · ce qui manque pour en faire un service',mode:'do',min:65,block:4}
+  ],
+  secCheck:function(a){
+    if(a.cls.debtRows)a.mark('s1');
+    if(a.filled('w1_autopsie')&&a.cls.causeRows)a.mark('s2');
+    if(a.cls.modeRows)a.mark('s3');
+    if(['c1','c2','c3','c4','c5','c6'].every(function(k){return a.st[k];})&&a.filled('w1_archi'))a.mark('s4');
+    if(a.cls.toolRows&&a.cls.actRows)a.mark('s6');
+    if(a.all(['w1_equipe','w1_c_decision','w1_c_mode','w1_c_donnees','w1_c_infra','w1_c_contraintes','w1_c_risques','w1_c_kpi','w1_critique']))a.mark('s7');
+    if(a.cls.artRows)a.mark('s8');
+    if(['n1','n2','n3','n4','n5','n6','n7'].every(function(k){return a.st[k];})&&a.all(['w1_seuil','w1_service']))a.mark('s9');
+  }
+};
+</script>
+<script src="journee.js"></script>
+<script>
+/* ---- 1.1 technical debt ---- */
+buildClassify('debtRows','debtRowsCap',
+  [['E','Enchevêtrement'],['B','Boucle cachée'],['C','Consommateur non déclaré'],['D','Dépendance instable'],['J','Jungle de pipelines'],['K','Configuration']],
+  [
+    {s:'Un partenaire envoie désormais les dates au format mois/jour au lieu de jour/mois. Le modèle calcule des heures et des jours de la semaine faux.',a:'D',w:'Une entrée produite par un autre système a changé de sens sans prévenir.'},
+    {s:'Un modèle recommande des articles ; il est ré-entraîné sur les clics. Les articles qu’il ne montre jamais ne reçoivent plus de clics, et il les montre encore moins.',a:'B',w:'Les décisions du modèle fabriquent les données de son prochain entraînement.'},
+    {s:'L’équipe retire une variable qu’elle juge inutile. Le modèle change de comportement sur des clients qui n’avaient rien à voir avec cette variable.',a:'E',w:'Changer une entrée modifie le poids de toutes les autres : « Changing Anything Changes Everything ».'},
+    {s:'Le service de recouvrement lit les scores de risque du modèle de crédit pour choisir qui appeler. Personne dans l’équipe du modèle ne le sait.',a:'C',w:'Un utilisateur des résultats que personne n’a déclaré : la prochaine version du modèle changera son travail sans prévenir.'},
+    {s:'Il faut lancer onze scripts à la main, dans un ordre que seule une personne connaît, pour produire la table d’entraînement.',a:'J',w:'Le code de colle s’est empilé ; personne ne peut plus le relancer sans risque.'},
+    {s:'Le seuil de décision est écrit à la main dans trois fichiers différents, avec trois valeurs différentes.',a:'K',w:'Des réglages dispersés, sans version ni source unique.'},
+    {s:'Une banque filtre les demandes de crédit avec son modèle ; elle ne voit plus jamais le remboursement des personnes refusées, et ne peut plus vérifier si elle avait raison de les refuser.',a:'B',w:'Encore une boucle : les personnes refusées disparaissent des données qui serviront à juger le modèle.'}
+  ],
+  'aucune de ces pannes ne se voit dans le score du modèle sur les données de test.',null);
+
+/* ---- 1.2 failure causes ---- */
+buildClassify('causeRows','causeRowsCap',
+  [['D','Données'],['T','Technique'],['O','Organisation'],['€','Économie']],
+  [
+    {s:'Les photos prises sur le terrain sont plus sombres que celles qui ont servi à l’entraînement',a:'D',w:'Les données de production ne ressemblent pas aux données d’entraînement (cas A).'},
+    {s:'La connexion internet de la clinique met plusieurs minutes à envoyer chaque image au serveur',a:'T',w:'L’infrastructure ne tient pas les conditions du terrain (cas A).'},
+    {s:'Les CV d’entraînement venaient surtout d’hommes, parce que l’entreprise avait surtout recruté des hommes',a:'D',w:'Des données historiques qui reproduisent les décisions du passé (cas C).'},
+    {s:'Les infirmières doivent ajouter une étape à une journée déjà pleine, sans que leur travail ait été réorganisé',a:'O',w:'Le système a été posé sur un processus qui ne lui faisait pas de place (cas A).'},
+    {s:'L’entreprise achète des maisons par milliers sur la base d’une prévision de prix, et chaque erreur se paie au prix d’une maison',a:'€',w:'Le modèle était raisonnable ; c’est la taille du pari fait sur lui qui a coûté cher (cas B).'},
+    {s:'Les variables sont recalculées autrement dans le service que dans le notebook d’entraînement',a:'T',w:'Le décalage entre entraînement et service : une erreur de construction du système.'},
+    {s:'Personne n’est désigné pour recevoir les alertes du modèle la nuit et le week-end',a:'O',w:'Une alerte que personne ne lit ne protège de rien.'},
+    {s:'Le serveur à processeur graphique coûte plus par mois que ce que les prédictions font gagner',a:'€',w:'Le système marche, mais il ne paie pas ce qu’il coûte (journée 2).'}
+  ],
+  'quatre familles de causes ; dans chacun des trois cas, plusieurs se combinent.',null);
+
+/* ---- 1.3 inference modes ---- */
+buildClassify('modeRows','modeRowsCap',
+  [['L','Par lots'],['R','Temps réel'],['F','Flux continu'],['E','Embarqué']],
+  [
+    {s:'Chaque nuit, une banque recalcule la probabilité de défaut de tous ses prêts pour son rapport de risque du lendemain',a:'L',w:'Le résultat sert le lendemain : rien ne justifie de le calculer à la demande.'},
+    {s:'Avant de valider un paiement mobile, l’opérateur demande au modèle s’il s’agit d’une fraude',a:'R',w:'Une seule opération, une réponse attendue en une fraction de seconde, avant que l’argent parte.'},
+    {s:'Un opérateur télécom surveille le trafic de 4 000 antennes et veut être alerté en moins d’une minute si l’une d’elles décroche',a:'F',w:'Un flux d’événements qui ne s’arrête pas, analysé sur des fenêtres de temps.'},
+    {s:'Une appli identifie une maladie du manioc sur la photo d’une feuille, dans des champs sans couverture réseau',a:'E',w:'Pas de réseau : le modèle doit tourner sur le téléphone.'},
+    {s:'Une société d’électricité prévoit, chaque matin à 5 h, la demande de chaque heure du lendemain',a:'L',w:'Un calcul par jour, à heure fixe.'},
+    {s:'Un site de commerce propose des articles quand le client ouvre la page',a:'R',w:'La réponse doit arriver pendant le chargement de la page, pour ce client précis.'},
+    {s:'Une caméra de sécurité dans une agence compte les personnes dans la file d’attente, et les images ne doivent pas quitter l’agence',a:'E',w:'Les données ne quittent pas l’appareil : une contrainte de confidentialité autant que de réseau.'},
+    {s:'Une bourse cherche des ordres anormaux dans le flux de toutes les transactions, à mesure qu’elles arrivent',a:'F',w:'Des événements en continu, analysés en quelques secondes.'}
+  ],
+  'le mode se choisit d’après le délai que la décision supporte, le réseau et le coût.',null);
+
+/* ---- 1.4 capacity: 1 800 000 × 10 % = 180 000 per hour = 50 per second; one machine 1/0.020 = 50/s;
+   at 50 % max → 25/s → 2 machines; 2 × 24 × 30 × 0.05 = 72 €; batch 400 000 × 0.005 = 2 000 s = 33.3 min;
+   1 h started × 30 × 0.05 = 1.50 € ---- */
+buildNum('capNum',[
+  {id:'c1',q:'<b>1 · Le trafic à l’heure la plus chargée.</b> Combien d’opérations par seconde le contrôle de fraude reçoit-il à l’heure la plus chargée ?',a:50,unit:'par seconde',w:'1 800 000 × 10 % = 180 000 opérations dans l’heure ; 180 000 ÷ 3 600 secondes = 50 par seconde.',hint:'Prenez 10 % des opérations du jour, puis divisez par le nombre de secondes dans une heure.'},
+  {id:'c2',q:'<b>2 · La capacité d’une machine.</b> Combien de prédictions par seconde une machine à un cœur peut-elle faire, occupée à 100 % ?',a:50,unit:'par seconde',w:'1 seconde ÷ 0,020 seconde = 50 prédictions par seconde.',hint:'20 millisecondes = 0,020 seconde par prédiction.'},
+  {id:'c3',q:'<b>3 · Le nombre de machines.</b> Combien de machines faut-il pour respecter la règle des 50 % d’occupation au plus ?',a:2,unit:'machines',w:'À 50 % d’occupation, une machine traite 25 opérations par seconde ; 50 ÷ 25 = 2 machines.',hint:'Une machine occupée à 50 % au plus traite la moitié de sa capacité.'},
+  {id:'c4',q:'<b>4 · Le coût mensuel du contrôle de fraude.</b> Les machines tournent jour et nuit. Combien coûtent-elles par mois, en euros ?',a:72,unit:'€',w:'2 machines × 24 heures × 30 jours × 0,05 € = 72 € par mois.',hint:'Nombre de machines × heures par jour × jours par mois × prix par heure.'},
+  {id:'c5',q:'<b>5 · La durée du calcul de nuit.</b> Combien de minutes une seule machine met-elle pour calculer la limite de crédit des 400 000 clients ? (une décimale)',a:33.3,tol:0.01,unit:'minutes',w:'400 000 × 0,005 seconde = 2 000 secondes = 33,3 minutes, bien avant 6 h du matin.',hint:'Nombre de clients × 5 millisecondes, puis convertissez les secondes en minutes.'},
+  {id:'c6',q:'<b>6 · Le coût mensuel du calcul de nuit.</b> La machine est allumée pour le calcul puis éteinte, et facturée par heure commencée. Combien coûte-t-elle par mois, en euros ?',a:1.5,unit:'€',w:'33 minutes = une heure commencée ; 1 heure × 30 nuits × 0,05 € = 1,50 € par mois — 48 fois moins que le contrôle de fraude, avec la même machine.',hint:'Le calcul de 33 minutes est facturé comme une heure complète, une fois par nuit.'}
+]);
+(function capSim(){
+  var C=[['ops','Opérations par jour (millions)',0.2,10,0.1,1.8,''],['peak','Part du jour à l’heure la plus chargée',5,20,1,10,'%'],['ms','Temps de calcul d’une prédiction',2,100,1,20,'ms'],['util','Occupation maximale d’une machine',30,80,5,50,'%'],['price','Prix d’une machine par heure',0.01,0.5,0.01,0.05,'€']];
+  var v={},spare=0,ctrl=document.getElementById('capCtrl'),kpi=document.getElementById('capKpi'),cap=document.getElementById('capCap');
+  ctrl.innerHTML=C.map(function(c){v[c[0]]=c[5];return '<div class="ctrl"><label>'+c[1]+' <span class="val" id="cv_'+c[0]+'"></span></label><input type="range" min="'+c[2]+'" max="'+c[3]+'" step="'+c[4]+'" value="'+c[5]+'" data-k="'+c[0]+'"></div>';}).join('');
+  ctrl.querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){v[i.dataset.k]=parseFloat(i.value);paint();});});
+  document.getElementById('capSpare').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;spare=+b.dataset.k;document.querySelectorAll('#capSpare button').forEach(function(x){x.classList.toggle('on',x===b);});paint();});
+  function paint(){
+    C.forEach(function(c){document.getElementById('cv_'+c[0]).textContent=fmt(v[c[0]],c[4]<0.1?2:(c[4]<1?1:0))+(c[6]?' '+c[6]:'');});
+    var rps=v.ops*1e6*v.peak/100/3600, one=1000/v.ms, n=Math.ceil(rps/(one*v.util/100)-1e-9)+spare, eur=n*24*30*v.price;
+    kpi.innerHTML='<div class="k"><div class="v">'+fmt(rps,0)+'</div><div class="l">Opérations par seconde à la pointe</div></div>'+
+      '<div class="k"><div class="v">'+fmt(one,0)+'</div><div class="l">Capacité d’une machine, par seconde</div></div>'+
+      '<div class="k"><div class="v">'+n+'</div><div class="l">Machines nécessaires</div></div>'+
+      '<div class="k"><div class="v">'+fmt(eur,0)+' €</div><div class="l">Coût par mois · ≈ '+fmt(eur*655.957/1000,0)+' 000 FCFA</div></div>';
+    cap.textContent='Le nombre de machines est arrondi à l’entier supérieur : on ne loue pas un tiers de machine. '+(spare?'La machine de réserve garde le service en marche si une autre tombe en panne.':'Sans machine de réserve, une panne pendant l’heure la plus chargée fait dépasser la règle d’occupation.');
+  }
+  paint();
+})();
+
+/* ---- 1.5 quiz · answer positions: 1 3 0 2 2 0 3 1 ---- */
+buildQuiz([
+  {q:'Selon la définition de ce cours, un modèle est « en production » quand…',
+   opts:['son score sur les données de test dépasse 90 %','ses résultats servent à de vraies décisions, il tourne seul et en continu, d’autres en dépendent et quelqu’un répond des pannes','il a été entraîné sur plus d’un million de lignes','il est écrit en Python'],a:1,
+   w:'Le score ne dit rien de la production. Les quatre conditions décrivent un système que d’autres utilisent sans son auteur.'},
+  {q:'La figure de Sculley et al. (2015) montre que…',
+   opts:['les modèles profonds sont toujours meilleurs que les modèles simples','les données d’entraînement doivent dépasser un téraoctet','le cloud coûte plus cher qu’un serveur local','le code du modèle n’est qu’une petite partie du code et de l’infrastructure d’un système réel'],a:3,
+   w:'Collecte, vérification des données, configuration, service, surveillance : tout ce qui entoure la petite boîte du modèle.'},
+  {q:'Les opérations bloquées par un modèle de fraude n’ont jamais lieu, et le prochain modèle apprend sans elles. C’est…',
+   opts:['une boucle de rétroaction cachée','un enchevêtrement','une dette de configuration','un consommateur non déclaré'],a:0,
+   w:'Les décisions du modèle changent les données de son prochain entraînement.'},
+  {q:'Une société d’électricité prévoit chaque matin la demande de chaque heure du lendemain. Le mode d’inférence le plus adapté est…',
+   opts:['le temps réel','le flux continu','par lots','embarqué'],a:2,
+   w:'Un calcul par jour à heure fixe : le mode par lots, le moins cher.'},
+  {q:'Un service reçoit 100 requêtes par seconde à la pointe ; une machine en traite 40 par seconde à pleine charge ; la règle est 50 % d’occupation au plus. Combien de machines ?',
+   opts:['3','4','5','10'],a:2,
+   w:'À 50 %, une machine traite 20 requêtes par seconde ; 100 ÷ 20 = 5 machines.'},
+  {q:'Pourquoi sauvegarder un Pipeline scikit-learn entier, et pas seulement le modèle ?',
+   opts:['Pour que la même préparation des données soit appliquée à l’entraînement et en production','Parce que le fichier est plus petit','Parce que ONNX l’exige','Pour que le modèle s’entraîne plus vite'],a:0,
+   w:'Sans la préparation dans le même objet, le service doit la refaire à la main : c’est l’origine du décalage entre entraînement et service.'},
+  {q:'Charger un fichier joblib ou pickle reçu d’une source inconnue est dangereux parce que…',
+   opts:['il peut être trop gros pour la mémoire','il ne contient pas le seuil de décision','il ne marche qu’avec Python 2','le chargement peut exécuter du code caché dans le fichier'],a:3,
+   w:'Le format pickle reconstruit des objets Python et peut exécuter du code à l’ouverture. ONNX ne contient que la description du calcul.'},
+  {q:'Au sens du règlement européen sur l’IA, un système qui évalue la solvabilité d’une personne pour lui accorder un crédit est…',
+   opts:['interdit','à haut risque (annexe III)','à risque limité','à risque minimal'],a:1,
+   w:'L’évaluation de la solvabilité des personnes est dans l’annexe III. La détection de la fraude financière, elle, en est expressément exclue.'}
+],'s5',['Excellent — la matinée est acquise.','Bien. Relisez les explications des questions manquées avant le bloc 3.','Relisez les sections 1.1 et 1.3 : tout y est.']);
+
+/* ---- 1.6 tools and the AI Act ---- */
+buildClassify('toolRows','toolRowsCap',
+  [['D','Données'],['M','Entraînement et suivi'],['S','Empaquetage et service'],['A','Automatisation'],['V','Surveillance']],
+  [
+    {s:'<b>MLflow</b> — note chaque entraînement, ses réglages et ses scores, et garde les versions des modèles',a:'M',w:'Le suivi des expériences et le registre des modèles (journée 2).'},
+    {s:'<b>FastAPI</b> — écrit en quelques lignes un service web qui répond à des requêtes',a:'S',w:'Il expose la fonction predire() à d’autres programmes (journée 2).'},
+    {s:'<b>Docker</b> — met le service, Python et toutes ses bibliothèques dans un conteneur qui tourne pareil sur n’importe quelle machine',a:'S',w:'L’empaquetage : la fin du « chez moi ça marche ».'},
+    {s:'<b>GitHub Actions</b> — lance les tests et le déploiement à chaque modification du code',a:'A',w:'L’intégration et le déploiement continus (journée 3).'},
+    {s:'<b>Evidently</b> — compare les données de production aux données d’entraînement et signale une dérive',a:'V',w:'La surveillance de la dérive (journée 4).'},
+    {s:'<b>Airflow</b> — lance chaque nuit, dans l’ordre, les tâches qui préparent les données et ré-entraînent le modèle',a:'A',w:'L’orchestration des tâches planifiées (journée 3).'},
+    {s:'<b>Des tests de données</b> — refusent un fichier dont une colonne a des valeurs manquantes ou hors des plages prévues',a:'D',w:'La validation des données à l’entrée du système (journée 3).'}
+  ],
+  'chaque outil sert une étape ; aucun ne fait tout.',null);
+buildClassify('actRows','actRowsCap',
+  [['H','Haut risque'],['T','Transparence'],['M','Minimal']],
+  [
+    {s:'Un score qui décide si une personne obtient un microcrédit par paiement mobile',a:'H',w:'L’évaluation de la solvabilité des personnes physiques est à l’annexe III du règlement.'},
+    {s:'Un modèle qui détecte les transactions frauduleuses de paiement mobile',a:'M',w:'L’annexe III exclut expressément les systèmes utilisés pour détecter la fraude financière. D’autres lois s’appliquent quand même (protection des données, lutte contre le blanchiment).'},
+    {s:'Un assistant conversationnel qui répond aux clients d’un opérateur télécom',a:'T',w:'L’utilisateur doit savoir qu’il parle à une IA (article 50).'},
+    {s:'Un modèle qui trie les patients à l’arrivée aux urgences d’un hôpital',a:'H',w:'Les systèmes de tri des patients dans les services d’urgence sont à l’annexe III ; s’y ajoute souvent la réglementation des dispositifs médicaux.'},
+    {s:'Un modèle qui reconnaît les maladies du manioc sur la photo d’une feuille',a:'M',w:'Aucune catégorie de l’annexe III ; pas d’interaction présentée comme humaine.'},
+    {s:'Un modèle qui classe les CV des candidats à un emploi',a:'H',w:'Le recrutement et la sélection des candidats sont à l’annexe III — le cas C de ce matin.'}
+  ],
+  'la classe dépend de l’usage, pas de la technique : le même modèle de classification peut être à risque minimal ou à haut risque.',null);
+
+/* ---- 1.8 where each piece of information lives ---- */
+buildClassify('artRows','artRowsCap',
+  [['F','Le fichier du modèle'],['M','metadata.json'],['R','requirements.txt'],['S','Le code du service']],
+  [
+    {s:'Les coefficients appris par la régression logistique',a:'F',w:'Ils sont dans l’objet entraîné, donc dans le fichier joblib.'},
+    {s:'La moyenne de chaque variable, utilisée pour la mise à l’échelle',a:'F',w:'Elle est apprise par le StandardScaler, qui fait partie du pipeline sauvegardé.'},
+    {s:'Le numéro de version du modèle et la période des données d’entraînement',a:'M',w:'La fiche du modèle : ce qu’un humain (ou un audit) doit pouvoir lire sans Python.'},
+    {s:'« scikit-learn==1.9.1 »',a:'R',w:'Les versions exactes des bibliothèques à installer dans le service.'},
+    {s:'Le refus poli d’une requête à laquelle il manque un champ',a:'S',w:'La vérification de l’entrée fait partie du contrat de prédiction, écrit dans le service.'},
+    {s:'Les scores du modèle sur la semaine de test',a:'M',w:'On les garde dans la fiche pour comparer les versions entre elles.'},
+    {s:'L’adresse web à laquelle le système de paiement envoie chaque opération',a:'S',w:'C’est le service qui écoute sur le réseau (journée 2).'}
+  ],
+  'un modèle en production = le fichier, sa fiche, ses versions et le code qui le sert.',null);
+
+/* ---- 1.9 notebook values (run 16 Nov 2026, see the header) ---- */
+buildNum('nbNum',[
+  {id:'n1',q:'<b>Étape 1.</b> Le taux de fraude sur le mois, en % (deux décimales).',a:1.32,tol:0.005,unit:'%',w:'317 fraudes sur 24 000 opérations = 1,32 %. Un modèle qui dirait « jamais de fraude » aurait raison 98,68 % du temps — et ne servirait à rien.'},
+  {id:'n2',q:'<b>Étape 2.</b> Le nombre de fraudes dans la semaine de test (du 25 au 30 octobre).',a:57,tol:0,unit:'fraudes',w:'57 fraudes sur 4 844 opérations de test. C’est peu : un rappel de 0,79 représente 45 fraudes bloquées, et une fraude de plus ou de moins le fait bouger de 0,02.'},
+  {id:'n3',q:'<b>Étape 5.</b> Le rappel au seuil de 0,5 (deux décimales).',a:0.79,tol:0.013,unit:'',w:'45 fraudes bloquées sur 57 = 0,79.'},
+  {id:'n4',q:'<b>Étape 5.</b> Le nombre de clients honnêtes bloqués (faux positifs) au seuil de 0,5, sur la semaine de test.',a:938,tol:0.002,unit:'opérations',w:'938 clients honnêtes bloqués pour 45 fraudes : une précision de 0,05. Le seuil par défaut ne convient pas à ce métier.'},
+  {id:'n5',q:'<b>Étape 5 bis.</b> Le nombre de clients honnêtes bloqués au seuil de 0,9.',a:80,tol:0,unit:'opérations',w:'80 clients honnêtes et 19 fraudes bloqués : douze fois moins de clients gênés, mais 38 fraudes passent au lieu de 12.'},
+  {id:'n6',q:'<b>Étape 7.</b> La probabilité de fraude de l’opération suspecte, <b>en %</b> avec une décimale (0,991 = 99,1 %).',a:99.1,tol:0.002,unit:'%',w:'99,1 % : nouvel appareil, nouveau bénéficiaire, presque tout le solde, à 3 h du matin. L’opération ordinaire obtient 5,0 %.'},
+  {id:'n7',q:'<b>Étape 5.</b> L’AUC sur la semaine de test (deux décimales).',a:0.89,tol:0.012,unit:'',w:'0,89 (0,888 à trois décimales) : le modèle classe bien les opérations, une fraude reçoit presque toujours une probabilité plus haute qu’une opération honnête. L’AUC ne dépend pas du seuil ; le rappel et la précision, si. C’est pourquoi le choix du seuil reste une décision.'}
+]);
+
+bootDay();
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

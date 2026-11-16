@@ -142,6 +142,8 @@ window.CourseConfig = (function () {
                    label:"SWISS UMEF · GEN 110 Intelligence artificielle" },
     "mfb545":    { school:"UMEF", ns:"mfb545",    theme:"umef",  lang:"fr", login:true,
                    label:"SWISS UMEF · MFB 545 Fintech" },
+    "mia506":    { school:"UMEF", ns:"mia506",    theme:"umef",  lang:"fr", login:true,
+                   label:"SWISS UMEF · MIA 506 Déploiement et pilotage des systèmes d’IA en production" },
     "flc":       { school:"Kalaidos", ns:"flc", theme:"kalaidos", lang:"fr", login:true,
                    label:"Kalaidos · Financial Leadership & Controlling" },
     "fl3":       { school:"Kalaidos", ns:"fl3", theme:"kalaidos", lang:"fr", login:true,
