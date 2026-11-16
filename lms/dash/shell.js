@@ -3,6 +3,18 @@
    roles, light/dark), programme colours, stat tiles, status pills, and a
    few formatting helpers. A page calls Dash.shell('<role id>') first.
    ===================================================================== */
+/* ---- the sign-in (16 Nov 2026): no session → the Lakeside sign-in page, which brings the
+   reader back here afterwards. The session is the platform's (localStorage jem_lms = {t, user}).
+   The data on these pages is invented and public in data.js; the sign-in decides who uses the
+   tool, it does not hide the data. ---- */
+(function () {
+  let s = null; try { s = JSON.parse(localStorage.getItem('jem_lms') || 'null'); } catch (e) {}
+  if (!s || !s.t) {
+    const here = location.pathname.split('/').pop() || 'index.html';
+    location.replace('login.html?next=' + encodeURIComponent(here + location.search + location.hash));
+    document.documentElement.style.visibility = 'hidden';
+  }
+})();
 window.Dash = (function () {
   'use strict';
   const S = window.SCHOOL, esc = Charts.esc;
@@ -35,9 +47,25 @@ window.Dash = (function () {
       <a class="brand" href="index.html"><span class="mk">${esc(S.school.short)}</span><span>${esc(S.school.name)}</span></a>
       <nav class="roles">${ROLES.map(r => `<a href="${r.href}" class="${r.id === role ? 'on' : ''}">${esc(r.name)}</a>`).join('')}</nav>
       <span class="fict" title="Every name and number on these pages is invented">Fictitious data · ${esc(S.school.term)}, week ${S.school.termWeek}</span>
+      <span class="me" id="meChip"></span>
       <button class="tbtn" id="themeBtn" type="button" aria-label="Switch light or dark">◐</button></div>`;
     document.body.insertBefore(top, document.body.firstChild);
     document.getElementById('themeBtn').onclick = toggleTheme;
+    /* who is signed in, and the way to another profile or out */
+    let ses = null; try { ses = JSON.parse(localStorage.getItem('jem_lms') || 'null'); } catch (e) {}
+    const u = (ses && ses.user) || {};
+    if (ses && ses.t) {
+      try { localStorage.setItem('dash_role', role || 'overview'); } catch (e) {}
+      const ini = ((u.name || u.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('') || '?').toUpperCase();
+      document.getElementById('meChip').innerHTML = `<a href="login.html" class="av${u.is_superadmin ? ' adm' : ''}" title="Signed in as ${esc(u.name ? u.name + ' (' + u.email + ')' : u.email || '')}${u.is_superadmin ? ', main admin' : ''}. Choose another profile.">${esc(ini)}</a>
+        <button type="button" class="out" id="outBtn">Sign out</button>`;
+      document.getElementById('outBtn').onclick = async () => {
+        const api = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && localStorage.getItem('jem_lms_api')) || 'https://teaching-api-1t2r.onrender.com';
+        try { await fetch(api + '/auth/logout', { method: 'POST', headers: { authorization: 'Bearer ' + ses.t } }); } catch (e) {}
+        try { localStorage.removeItem('jem_lms'); localStorage.removeItem('dash_role'); } catch (e) {}
+        location.href = 'login.html';
+      };
+    }
     const r = ROLES.find(x => x.id === role); if (r) document.title = `${r.name} · ${S.school.name}`;
   }
 

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Sign in · Lakeside School of Management</title>
+<link rel="stylesheet" href="dash.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<!--
+  The Lakeside sign-in (16 Nov 2026). Jan Erik: "build a proper Lakeside Login page. me is the main
+  admin and should have access to all. after login (and for now) let the user choose any of the
+  profiles". No password anywhere:
+    1. a PASSKEY (Face ID, fingerprint, device PIN) — POST /auth/passkey/login/*; the email field also
+       offers the device's passkeys in its autofill list (conditional mediation);
+    2. else an EMAIL CODE — POST /auth/start + /auth/verify, the platform's existing sign-in;
+    3. after an email sign-in, the page offers to add a passkey for next time (/auth/passkey/register/*);
+    4. then the PROFILE PICKER: overview + the eight role dashboards. For now any signed-in person may
+       open any profile; the superadmin (ADMIN_EMAILS on the API) is shown as the main admin.
+  The session is the platform's own (localStorage jem_lms = {t, user}), so the same sign-in also opens
+  /lms/, me.html and planner.html. shell.js sends every other dashboard page here when there is none.
+-->
+<style>
+body{display:flex;flex-direction:column;}
+.wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 16px 48px;}
+.box{width:100%;max-width:440px;}
+.box.wide{max-width:1080px;}
+.brand2{display:flex;align-items:center;gap:12px;margin:0 0 22px;justify-content:center;}
+.brand2 .mk{width:46px;height:46px;font-size:13px !important;border-radius:50%;background:var(--pill);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;letter-spacing:.02em;}
+.brand2 .nm{font-weight:800;font-size:18px;letter-spacing:-.01em;line-height:1.2;}
+.brand2 .nm small{display:block;font-weight:600;font-size:12.5px;color:var(--muted);letter-spacing:0;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.card h1{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px;line-height:1.15;}
+.card .lead{color:var(--ink2);margin:0 0 22px;font-size:14.5px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:14px;padding:14px 16px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;}
+.btn.primary{background:var(--ink);color:var(--page);}
+.btn.primary:hover{filter:brightness(.92);}
+.btn.ghost{background:var(--raised);color:var(--ink);border:1px solid var(--line);}
+.btn.ghost:hover{border-color:var(--ink2);}
+.btn[disabled]{opacity:.55;cursor:progress;}
+.btn svg{width:22px;height:22px;flex:none;}
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12.5px;margin:20px 0;}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line);}
+label.f{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin:0 0 6px;}
+input.t{width:100%;border:1px solid var(--line);background:var(--raised);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;}
+input.t:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);}
+input.code{letter-spacing:.5em;text-align:center;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;}
+.gap{height:12px;}
+.msg{font-size:13.5px;margin:12px 0 0;min-height:1em;}
+.msg.err{color:var(--crit);} .msg.ok{color:var(--good-text);}
+.hint{font-size:12.5px;color:var(--muted);margin:14px 0 0;}
+.link{background:none;border:0;color:var(--accent);cursor:pointer;padding:0;font-size:13px;text-decoration:underline;}
+.who{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin:0 0 18px;}
+.who h1{font-size:clamp(24px,3.2vw,32px);font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15;}
+.who .sub{color:var(--ink2);font-size:14px;margin-top:4px;}
+.rb{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--accent-wash);color:var(--ink);border:1px solid var(--line);}
+.rb.admin{background:color-mix(in srgb,var(--s3) 22%,var(--card));}
+.acts{display:flex;gap:8px;flex-wrap:wrap;}
+.acts .btn{width:auto;padding:9px 14px;font-size:13px;border-radius:999px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+.pc{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;color:var(--ink);text-decoration:none;cursor:pointer;transition:border-color .15s,transform .15s;}
+.pc:hover,.pc:focus-visible{border-color:var(--ink2);transform:translateY(-2px);outline:none;}
+.pc .ic{width:36px;height:36px;border-radius:10px;background:var(--raised);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.pc h2{font-size:16.5px;margin:4px 0 0;letter-spacing:-.01em;}
+.pc p{margin:0;color:var(--ink2);font-size:13.5px;line-height:1.45;flex:1;}
+.pc .last{font-size:11.5px;font-weight:700;color:var(--good-text);}
+.pk{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;}
+.pk h3{margin:0 0 4px;font-size:15px;}
+.pk p{margin:0 0 10px;color:var(--ink2);font-size:13.5px;}
+.pk ul{list-style:none;margin:0 0 10px;padding:0;}
+.pk li{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13.5px;padding:6px 0;border-top:1px solid var(--line);}
+.pk li span{color:var(--muted);font-size:12px;}
+.foot2{text-align:center;color:var(--muted);font-size:12px;padding:0 16px 22px;}
+.tbtn2{position:fixed;top:14px;right:14px;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:6px 10px;cursor:pointer;font-size:13px;}
+[hidden]{display:none !important;}
+@media (max-width:520px){.card{padding:22px 18px;}.card h1{font-size:23px;}}
+</style>
+</head>
+<body>
+<button class="tbtn2" id="themeBtn" type="button" aria-label="Switch between light and dark">◐</button>
+<div class="wrap">
+
+  <!-- 1. sign in -->
+  <div class="box" id="vSign">
+    <div class="brand2"><span class="mk">LSM</span><span class="nm">Lakeside School of Management<small>School dashboards</small></span></div>
+    <div class="card">
+      <h1>Sign in</h1>
+      <p class="lead">Use the passkey on this phone or computer: you confirm with Face ID, your fingerprint or the device PIN. There is no password to remember.</p>
+      <button class="btn primary" id="pkBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 9.5-4.9"/><circle cx="17.5" cy="15.5" r="2.5"/><path d="M19.3 17.3 22 20l-1.5 1.5M20.7 18.7 19.5 20"/></svg>
+        Sign in with a passkey</button>
+      <p class="hint" id="pkNone" hidden>This browser cannot use passkeys. Sign in with your email below.</p>
+      <div class="or">or sign in with your email</div>
+      <form id="fEmail" novalidate>
+        <label class="f" for="email">Your email address</label>
+        <input class="t" id="email" type="email" autocomplete="username webauthn" placeholder="name@school.ch" required>
+        <div class="gap"></div>
+        <button class="btn ghost" id="sendBtn" type="submit">Email me a sign-in code</button>
+      </form>
+      <form id="fCode" hidden novalidate>
+        <label class="f" for="code">The 6-digit code we sent to <b id="sentTo"></b></label>
+        <input class="t code" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" required>
+        <div class="gap"></div>
+        <button class="btn primary" id="codeBtn" type="submit">Sign in</button>
+        <p class="hint">The code works for 10 minutes. Not in your inbox? Look in the spam folder, or <button class="link" type="button" id="again">use another address</button>.</p>
+      </form>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- 2. offer a passkey after an email sign-in -->
+  <div class="box" id="vOffer" hidden>
+    <div class="brand2"><span class="mk">LSM</span><span class="nm">Lakeside School of Management<small>School dashboards</small></span></div>
+    <div class="card">
+      <h1>Sign in faster next time</h1>
+      <p class="lead">Add a passkey to this device. Next time you press <b>Sign in with a passkey</b> and confirm with Face ID, your fingerprint or the device PIN, with no email and no code. The passkey stays on your device; the school keeps only a public key that cannot be used to sign in on its own.</p>
+      <button class="btn primary" id="addBtn" type="button">Add a passkey to this device</button>
+      <div class="gap"></div>
+      <button class="btn ghost" id="skipBtn" type="button">Not now</button>
+      <p class="msg" id="msg2" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- 3. choose a profile -->
+  <div class="box wide" id="vPick" hidden>
+    <div class="who">
+      <div>
+        <h1 id="hello">Choose a profile</h1>
+        <div class="sub" id="whoSub"></div>
+      </div>
+      <div class="acts">
+        <button class="btn ghost" id="outBtn" type="button">Sign out</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="pk" id="pkBox" hidden>
+      <h3>Your passkeys</h3>
+      <p id="pkSub"></p>
+      <ul id="pkList"></ul>
+      <button class="btn ghost" id="addBtn2" type="button" style="width:auto;padding:9px 14px;font-size:13px;border-radius:999px">Add a passkey to this device</button>
+      <p class="msg" id="msg3" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+<div class="foot2">All names and figures on the Lakeside dashboards are invented.</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const API = (function () { if (local) { try { const a = localStorage.getItem('jem_lms_api'); if (a) return a; } catch (e) {} } return 'https://teaching-api-1t2r.onrender.com'; })();
+  const SKEY = 'jem_lms';
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* theme: the dashboards' own switch (dark is the default) */
+  function applyTheme() { let t = null; try { t = localStorage.getItem('dash_theme'); } catch (e) {} if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); }
+  applyTheme();
+  $('themeBtn').onclick = () => { const cur = document.documentElement.getAttribute('data-theme') || 'dark'; try { localStorage.setItem('dash_theme', cur === 'dark' ? 'light' : 'dark'); } catch (e) {} applyTheme(); };
+
+  async function call(method, path, body, auth) {
+    const h = body ? { 'content-type': 'application/json' } : {};   /* the API refuses a JSON header with an empty body */
+    const s = ls.get(SKEY); if (auth && s && s.t) h.authorization = 'Bearer ' + s.t;
+    let r;
+    try { r = await fetch(API + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined }); }
+    catch (e) { throw new Error('The school server cannot be reached. Check your connection and try again.'); }
+    let j = null; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) { const e = new Error((j && j.error) || 'Something went wrong (' + r.status + ').'); e.status = r.status; throw e; }
+    return j;
+  }
+  function say(id, text, kind) { const m = $(id); m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); }
+  function show(v) { ['vSign', 'vOffer', 'vPick'].forEach(x => { $(x).hidden = x !== v; }); }
+
+  /* where to go after choosing: ?next= (a dashboard page in this folder only), else the profile page */
+  const nextParam = (function () { const n = new URLSearchParams(location.search).get('next') || ''; return /^[a-z]+\.html([?#][\w=&%#.-]*)?$/i.test(n) && !/^login\.html/i.test(n) ? n : ''; })();
+
+  /* ---- WebAuthn helpers: JSON ⇄ the browser's binary form ---- */
+  const b64u = {
+    dec(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; },
+    enc(buf) { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  };
+  const hasPK = !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get);
+  function reqOpts(o) {
+    if (PublicKeyCredential.parseRequestOptionsFromJSON) return PublicKeyCredential.parseRequestOptionsFromJSON(o);
+    return Object.assign({}, o, { challenge: b64u.dec(o.challenge), allowCredentials: (o.allowCredentials || []).map(c => Object.assign({}, c, { id: b64u.dec(c.id) })) });
+  }
+  function createOpts(o) {
+    if (PublicKeyCredential.parseCreationOptionsFromJSON) return PublicKeyCredential.parseCreationOptionsFromJSON(o);
+    return Object.assign({}, o, { challenge: b64u.dec(o.challenge), user: Object.assign({}, o.user, { id: b64u.dec(o.user.id) }),
+      excludeCredentials: (o.excludeCredentials || []).map(c => Object.assign({}, c, { id: b64u.dec(c.id) })) });
+  }
+  function credJSON(c) {
+    if (typeof c.toJSON === 'function') { try { return c.toJSON(); } catch (e) {} }
+    const r = c.response, o = { id: c.id, rawId: b64u.enc(c.rawId), type: c.type, clientExtensionResults: c.getClientExtensionResults ? c.getClientExtensionResults() : {}, authenticatorAttachment: c.authenticatorAttachment || undefined, response: { clientDataJSON: b64u.enc(r.clientDataJSON) } };
+    if (r.attestationObject) { o.response.attestationObject = b64u.enc(r.attestationObject); if (r.getTransports) o.response.transports = r.getTransports(); }
+    if (r.authenticatorData) { o.response.authenticatorData = b64u.enc(r.authenticatorData); o.response.signature = b64u.enc(r.signature); if (r.userHandle) o.response.userHandle = b64u.enc(r.userHandle); }
+    return o;
+  }
+  const pkWord = e => e && e.name === 'NotAllowedError' ? 'The passkey request was cancelled or timed out.' : e && e.name === 'InvalidStateError' ? 'This device already has a passkey for your account.' : (e && e.message) || 'The passkey did not work.';
+
+  /* ---- 1. sign in with a passkey ---- */
+  let conditional = null;          /* the autofill request running in the email field */
+  async function passkeySignIn(mode) {
+    const o = await call('POST', '/auth/passkey/login/options');
+    const pub = reqOpts(o.options);
+    const args = { publicKey: pub };
+    if (mode === 'conditional') { conditional = new AbortController(); args.mediation = 'conditional'; args.signal = conditional.signal; }
+    const cred = await navigator.credentials.get(args);
+    if (!cred) throw new Error('No passkey was chosen.');
+    const r = await call('POST', '/auth/passkey/login/verify', { id: o.id, response: credJSON(cred) });
+    ls.set(SKEY, { t: r.token, user: r.user });
+    ls.set('dash_pk_' + r.user.id, 1);          /* this device has a passkey: no need to offer one */
+    await pick();
+  }
+  function stopConditional() { if (conditional) { try { conditional.abort(); } catch (e) {} conditional = null; } }
+  async function startConditional() {
+    if (!hasPK || !PublicKeyCredential.isConditionalMediationAvailable) return;
+    try { if (!(await PublicKeyCredential.isConditionalMediationAvailable())) return; await passkeySignIn('conditional'); }
+    catch (e) { if (e && e.name !== 'AbortError' && e.name !== 'NotAllowedError') say('msg', pkWord(e), 'err'); }
+  }
+  $('pkBtn').onclick = async () => {
+    if (!hasPK) return;
+    stopConditional(); say('msg', 'Waiting for your passkey…'); $('pkBtn').disabled = true;
+    try { await passkeySignIn('modal'); }
+    catch (e) { say('msg', pkWord(e) + ' You can also sign in with your email below.', 'err'); startConditional(); }
+    finally { $('pkBtn').disabled = false; }
+  };
+
+  /* ---- 1b. sign in with an email code ---- */
+  let sentTo = '';
+  $('fEmail').onsubmit = async ev => {
+    ev.preventDefault();
+    const email = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say('msg', 'Type your full email address, for example name@school.ch.', 'err'); $('email').focus(); return; }
+    $('sendBtn').disabled = true; say('msg', 'Sending the code…');
+    try {
+      await call('POST', '/auth/start', { email });
+      sentTo = email; $('sentTo').textContent = email;
+      $('fEmail').hidden = true; $('fCode').hidden = false; $('code').value = ''; $('code').focus();
+      say('msg', 'We sent a 6-digit code to your inbox.', 'ok');
+    } catch (e) { say('msg', e.message, 'err'); }
+    finally { $('sendBtn').disabled = false; }
+  };
+  $('code').oninput = () => { $('code').value = $('code').value.replace(/\D/g, '').slice(0, 6); if ($('code').value.length === 6) $('fCode').requestSubmit(); };
+  $('fCode').onsubmit = async ev => {
+    ev.preventDefault();
+    const code = $('code').value;
+    if (code.length !== 6) { say('msg', 'Type all six digits from the email.', 'err'); return; }
+    $('codeBtn').disabled = true; say('msg', 'Checking the code…');
+    try {
+      const r = await call('POST', '/auth/verify', { email: sentTo, code });
+      ls.set(SKEY, { t: r.token, user: r.user });
+      stopConditional(); say('msg', '');
+      if (hasPK && !ls.get('dash_pk_' + r.user.id) && !ls.get('dash_pk_skip_' + r.user.id)) show('vOffer'); else await pick();
+    } catch (e) { say('msg', e.message, 'err'); $('code').select(); }
+    finally { $('codeBtn').disabled = false; }
+  };
+  $('again').onclick = () => { $('fCode').hidden = true; $('fEmail').hidden = false; $('email').focus(); say('msg', ''); };
+
+  /* ---- 2. add a passkey (after an email sign-in, or from the profile page) ---- */
+  async function addPasskey(msgId) {
+    say(msgId, 'Follow your device: confirm with Face ID, your fingerprint or the PIN…');
+    const o = await call('POST', '/auth/passkey/register/options', null, true);
+    const cred = await navigator.credentials.create({ publicKey: createOpts(o.options) });
+    const name = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone or iPad' : /Android/.test(navigator.userAgent) ? 'Android phone' : /Mac/.test(navigator.userAgent) ? 'Mac' : /Windows/.test(navigator.userAgent) ? 'Windows computer' : 'This device';
+    await call('POST', '/auth/passkey/register/verify', { id: o.id, response: credJSON(cred), name }, true);
+    const s = ls.get(SKEY); if (s && s.user) ls.set('dash_pk_' + s.user.id, 1);
+  }
+  $('addBtn').onclick = async () => {
+    $('addBtn').disabled = true;
+    try { await addPasskey('msg2'); say('msg2', 'Passkey added. Next time, press Sign in with a passkey.', 'ok'); setTimeout(pick, 900); }
+    catch (e) { say('msg2', pkWord(e), 'err'); }
+    finally { $('addBtn').disabled = false; }
+  };
+  $('skipBtn').onclick = () => { const s = ls.get(SKEY); if (s && s.user) ls.set('dash_pk_skip_' + s.user.id, Date.now()); pick(); };
+  $('addBtn2').onclick = async () => {
+    $('addBtn2').disabled = true;
+    try { await addPasskey('msg3'); say('msg3', 'Passkey added to this device.', 'ok'); listPasskeys(); }
+    catch (e) { say('msg3', pkWord(e), 'err'); }
+    finally { $('addBtn2').disabled = false; }
+  };
+
+  /* ---- 3. choose a profile ---- */
+  const ICON = { overview: '🏫', director: '🧭', programme: '🎓', marketing: '📣', admissions: '🗂️', finance: '💶', quality: '✅', professor: '👩‍🏫', student: '🧑‍🎓' };
+  const ROLES = [
+    { id: 'overview', href: 'index.html', name: 'Overview of the school', q: 'See all eight views on one page, with the decisions that are waiting.' },
+    { id: 'director', href: 'director.html', name: 'Director', q: 'Is the school on track this year, and what needs my decision?' },
+    { id: 'programme', href: 'programme.html', name: 'Programme manager', q: 'How is my programme doing, and which students and courses need help?' },
+    { id: 'marketing', href: 'marketing.html', name: 'Sales & marketing', q: 'Will we fill the next intakes, and which channels deliver?' },
+    { id: 'admissions', href: 'admissions.html', name: 'Admissions & student office', q: 'Which files, visas and requests are waiting, and for whom?' },
+    { id: 'finance', href: 'finance.html', name: 'Finance', q: 'Is the cash coming in, who owes what, and which programme pays?' },
+    { id: 'quality', href: 'quality.html', name: 'Quality & accreditation', q: 'Can we prove quality to the accreditors, and where is the evidence thin?' },
+    { id: 'professor', href: 'professor.html', name: 'Professor', q: 'What do I teach this week, what must I grade, and who is slipping?' },
+    { id: 'student', href: 'student.html', name: 'Student', q: 'Am I on track, what is due, and what do I owe?' },
+  ];
+  async function pick() {
+    const s = ls.get(SKEY);
+    if (!s || !s.t) { show('vSign'); return; }
+    const u = s.user || {};
+    const first = (u.name || '').split(/\s+/)[0];
+    $('hello').textContent = first ? `Welcome, ${first}. Choose a profile.` : 'Choose a profile';
+    $('whoSub').innerHTML = esc(u.email || '') + ' · ' + (u.is_superadmin
+      ? '<span class="rb admin">Main admin · you can open every profile</span>'
+      : '<span class="rb">For now, every signed-in person can open every profile</span>');
+    const last = ls.get('dash_role');
+    $('grid').innerHTML = ROLES.map(r => `<a class="pc" href="${r.href}" data-role="${r.id}">
+        <span class="ic" aria-hidden="true">${ICON[r.id]}</span><h2>${esc(r.name)}</h2><p>${esc(r.q)}</p>
+        ${r.id === last ? '<span class="last">You used this profile last time</span>' : ''}</a>`).join('');
+    $('grid').querySelectorAll('.pc').forEach(a => a.onclick = ev => {
+      ls.set('dash_role', a.dataset.role);
+      const r = ROLES.find(x => x.id === a.dataset.role);
+      if (nextParam && nextParam.split(/[?#]/)[0] === r.href) { ev.preventDefault(); location.href = nextParam; }
+    });
+    show('vPick');
+    document.title = 'Choose a profile · Lakeside School of Management';
+    if (hasPK) { $('pkBox').hidden = false; listPasskeys(); }
+    /* the session might have ended on the server: check it quietly */
+    call('GET', '/me', null, true).then(r => {
+      ls.set(SKEY, { t: s.t, user: r.user });
+      if (!!r.user.is_superadmin !== !!u.is_superadmin || r.user.name !== u.name) pick();
+    }).catch(e => { if (e.status === 401) { ls.del(SKEY); show('vSign'); say('msg', 'Your session has ended. Sign in again.', 'err'); } });
+  }
+  async function listPasskeys() {
+    try {
+      const r = await call('GET', '/me/passkeys', null, true);
+      const n = r.passkeys.length;
+      $('pkSub').textContent = n ? `You have ${n} passkey${n > 1 ? 's' : ''}. You can sign in with any of them.` : 'You have no passkey yet. Add one to sign in with Face ID, your fingerprint or the device PIN.';
+      $('pkList').innerHTML = r.passkeys.map(k => `<li><b>${esc(k.name || 'Passkey')}</b><span>added ${new Date(k.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${k.last_used ? ' · last used ' + new Date(k.last_used).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+        <button class="link" type="button" data-del="${esc(k.id)}">Remove</button></li>`).join('');
+      $('pkList').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+        if (!confirm('Remove this passkey? You can still sign in with your email.')) return;
+        try { await call('DELETE', '/me/passkeys/' + encodeURIComponent(b.dataset.del), null, true); listPasskeys(); } catch (e) { say('msg3', e.message, 'err'); }
+      });
+    } catch (e) { if (e.status !== 401) $('pkSub').textContent = 'Your passkeys cannot be listed right now.'; }
+  }
+  $('outBtn').onclick = async () => {
+    try { await call('POST', '/auth/logout', null, true); } catch (e) {}
+    ls.del(SKEY); ls.del('dash_role');
+    show('vSign'); say('msg', 'You are signed out.', 'ok'); startConditional();
+  };
+
+  /* ---- start ---- */
+  if (!hasPK) { $('pkBtn').hidden = true; $('pkNone').hidden = false; }
+  if (ls.get(SKEY) && ls.get(SKEY).t) pick();
+  else { show('vSign'); startConditional(); }
+})();
+</script>
+</body>
+</html>
