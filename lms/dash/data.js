@@ -146,7 +146,7 @@
     const day = pid === 'emba' ? pick(['Fri', 'Sat']) : pid === 'dba' ? 'Sat' : pick(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
     const start = pid === 'emba' || pid === 'dba' ? pick([9, 13.5]) : pick([8.5, 10.25, 13.5, 15.25]);
     sections.push({ id: 's' + secN, code: pid.toUpperCase().slice(0, 3) + (yr * 100 + secN % 50), title, prog: pid, year: yr, prof: prof.id, ects: ectsOf(pid, title),
-      day, start, hours: pid === 'emba' || pid === 'dba' ? 3.5 : 1.5 * 2, room: pick(['A101', 'A204', 'B12', 'B15', 'C3 (lab)', 'Aula', 'Online']), sessions: TERM_WEEKS, held: pid === 'emba' ? 6 : pid === 'dba' ? 3 : TERM_WEEK - 1,
+      day, start, hours: pid === 'emba' || pid === 'dba' ? 3.5 : 1.5 * 2, room: pick(['Auditorium', 'Paris', 'London', 'Bangkok', 'New York', 'Barcelona', 'Online']), sessions: TERM_WEEKS, held: pid === 'emba' ? 6 : pid === 'dba' ? 3 : TERM_WEEK - 1,
       quality: clamp(gauss(0, 1), -2.2, 2.2) /* hidden: how well this course is going */, students: [] });
   }));
 
@@ -592,7 +592,7 @@
     permitsExpiring: students.filter(s => s.visa === 'renewal pending').length + 6,
     examRegistrationOpen: '2026-11-16', examRegistrationClose: '2026-11-30', examSessionStart: '2026-12-14',
     clashes: 4,    /* students booked in two places at once next week */
-    roomUse: { A101: 78, A204: 64, B12: 71, B15: 52, 'C3 (lab)': 93, Aula: 38 },   /* % of teaching hours used */
+    roomUse: { Auditorium: 52, Paris: 78, London: 71, Bangkok: 64, 'New York': 74, Barcelona: 69, 'New Room 1': 41, 'Media Lab': 93, 'New Room 2': 58 },   /* GBS's rooms (16 Nov 2026) */   /* % of teaching hours used */
   };
 
   /* ---- FINANCE: cash by month, receivables, costs, margin per programme ---- */
@@ -766,7 +766,7 @@
     AC('A05', 'Course evaluation', '4.4', 'Course evaluations: the follow-up action is recorded for only half of the courses.', 'Every professor answers the evaluation in writing within two weeks; the template is in the LMS.', OWN.quality, '2026-07-15', '2026-11-06', 'in progress', { term: 'Spring 2026', v: 50 }, null, '% of courses with a recorded follow-up'),
     AC('A06', 'Course evaluation', '4.4', 'Response rate to course evaluations was 52 % in spring 2026 (target 60 %).', 'Ten minutes of class time for the evaluation in week 13.', OWN.quality, '2026-07-15', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 52 }, null, '% response'),
     AC('A07', 'Complaint', '4.3', 'Seven complaints in spring 2026, four about late grades.', 'Grade-entry deadline per assignment, with a reminder to professors after 7 days.', OWN.office, '2026-07-01', '2026-12-18', 'in progress', { term: 'Spring 2026', v: 4 }, null, 'complaints about late grades'),
-    AC('A08', 'Complaint', '9', 'Students complained about the room C3 lab being too small for 30.', 'Move the data courses to the Aula on lab days.', OWN.facilities, '2026-03-02', '2026-09-01', 'done', { term: 'Spring 2026', v: 3 }, { term: 'Autumn 2026', v: 0 }, 'complaints about the room'),
+    AC('A08', 'Complaint', '9', 'Students complained about the Media Lab being too small for 30.', 'Split the data courses into groups of 24 on lab days.', OWN.facilities, '2026-03-02', '2026-09-01', 'done', { term: 'Spring 2026', v: 3 }, { term: 'Autumn 2026', v: 0 }, 'complaints about the room'),
     AC('A09', 'Panel condition, 2021', '3.2', 'Condition of the 2021 accreditation: tasks and responsibilities in quality management are not assigned clearly.', 'Write the responsibility matrix and have it approved by the quality committee.', OWN.quality, '2021-06-15', '2026-11-27', 'in progress', null, null, null),
     AC('A10', 'Panel recommendation, 2021', '2.3', 'Recommendation of the 2021 accreditation: publish an annual quality report.', 'Publish the first annual quality report on the website.', null, '2021-06-15', '2026-11-13', 'in progress', null, null, null),
     AC('A11', 'Panel recommendation, 2021', '4.4', 'Recommendation of the 2021 accreditation: tell students what changed after the evaluations.', 'A "you said, we did" page per programme each term.', OWN.msc, '2021-06-15', '2025-12-31', 'done', null, null, null),
@@ -1317,12 +1317,18 @@
     const T = { label: 'Spring 2027', start: '2027-02-15', end: '2027-05-21', weeks: 14, examFrom: '2027-06-01' };
     const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     const slots = {
-      weekly: DAYS.flatMap(d => [{ id: d + '-am', day: d, from: 8.5, to: 11.75, part: 'morning' }, { id: d + '-pm', day: d, from: 13.5, to: 16.75, part: 'afternoon' }]),
-      weekend: [{ id: 'Fri-eve', day: 'Fri', from: 17, to: 21, part: 'evening' }, { id: 'Sat-am', day: 'Sat', from: 8.5, to: 12, part: 'morning' }, { id: 'Sat-pm', day: 'Sat', from: 13, to: 16.5, part: 'afternoon' }],
+      /* 16 Nov 2026 (Jan Erik: "use the real GBS rooms and time slots"): Geneva Business School's five
+         2-hour weekday slots, as on its planning wall. Ids are <day>-<start>. */
+      weekly: DAYS.flatMap(d => [[9.25, 11.25, 'morning'], [11.5, 13.5, 'late morning'], [14.25, 16.25, 'afternoon'], [16.5, 18.5, 'late afternoon'], [18.75, 20.75, 'evening']]
+        .map(([from, to, part]) => ({ id: d + '-' + String(Math.floor(from)).padStart(2, '0') + String(Math.round((from % 1) * 60)).padStart(2, '0'), day: d, from, to, part }))),
+      weekend: [{ id: 'Fri-eve', day: 'Fri', from: 17, to: 21, part: 'evening', overlaps: ['Fri-1630', 'Fri-1845'] }, { id: 'Sat-am', day: 'Sat', from: 8.5, to: 12, part: 'morning' }, { id: 'Sat-pm', day: 'Sat', from: 13, to: 16.5, part: 'afternoon' }],
       block: [{ id: 'wk-2027-03-08', day: 'week', label: 'Week of 8 March 2027' }, { id: 'wk-2027-04-12', day: 'week', label: 'Week of 12 April 2027' }, { id: 'wk-2027-05-10', day: 'week', label: 'Week of 10 May 2027' }],
     };
-    const rooms = [{ id: 'A101', cap: 60 }, { id: 'A204', cap: 40 }, { id: 'B12', cap: 35 }, { id: 'B15', cap: 80 }, { id: 'C3 (lab)', cap: 30, lab: true }, { id: 'Aula', cap: 150 }];
-    const maxGroup = 45;
+    /* GBS's rooms with their seats, as labelled on the wall (Media Lab = the computer room). The rooms are
+       small, so a group holds at most 24 students (the largest room after the Auditorium). */
+    const rooms = [{ id: 'Auditorium', cap: 80 }, { id: 'Paris', cap: 18 }, { id: 'London', cap: 22 }, { id: 'Bangkok', cap: 16 }, { id: 'New York', cap: 24 },
+      { id: 'Barcelona', cap: 20 }, { id: 'New Room 1', cap: 10 }, { id: 'Media Lab', cap: 24, lab: true }, { id: 'New Room 2', cap: 15 }];
+    const maxGroup = 24;
     const calDate = id => (calendar.find(c => c.id === id) || {}).date;
     const steps = [
       { id: 'size', name: 'Confirm who takes the class', why: 'The number of students decides the groups, the room and the cost. It comes from the study plans: continuing students, retakes and the February newcomers.', due: '2026-11-20' },
@@ -1364,7 +1370,7 @@
       const mode = c.prog === 'emba' ? (/residency/i.test(c.title) ? 'block' : 'weekend') : c.prog === 'dba' ? 'block' : 'weekly';
       for (let k = 0; k < (mode === 'weekly' ? g : 1); k++) {
         const st = g > 1 && mode === 'weekly' ? c.students.filter(id => Math.floor(hsh(id + 'grp') * g) === k) : c.students;
-        classes.push({ id: 'k' + (classes.length + 1), prog: c.prog, code: c.code, title: c.title, group: g > 1 && mode === 'weekly' ? 'ABCD'[k] : null, area: c.area, ects: c.ects, type: c.type, sem: c.sem, hours: c.hours, mode,
+        classes.push({ id: 'k' + (classes.length + 1), prog: c.prog, code: c.code, title: c.title, group: g > 1 && mode === 'weekly' ? 'ABCDEFGH'[k] : null, area: c.area, ects: c.ects, type: c.type, sem: c.sem, hours: c.hours, mode,
           lab: /Data|Analytics|Statist|Quantitative|Fintech/.test(c.title), students: st, retakeIds: c.retakers.filter(id => st.includes(id)), retakers: c.retakers.filter(id => st.includes(id)).length, newcomers: g > 1 ? Math.round(c.newcomers / g) : c.newcomers });
       }
     });
@@ -1375,13 +1381,14 @@
     /* availability of each teacher: core faculty mostly free on weekdays, adjuncts more often at the weekend */
     const avail = {};
     faculty.forEach(f => { const a = avail[f.id] = {}; const core = f.type === 'Core faculty';
-      slots.weekly.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = core ? (r < 0.72 ? 'y' : r < 0.86 ? 'm' : 'n') : (r < 0.38 ? 'y' : r < 0.6 ? 'm' : 'n'); });
+      slots.weekly.forEach(s => { const r = hsh(f.id + s.id), eve = s.part === 'evening';   /* core faculty rarely teach the evening slot; adjuncts often prefer it */
+        a[s.id] = eve ? (core ? (r < 0.2 ? 'y' : r < 0.45 ? 'm' : 'n') : (r < 0.6 ? 'y' : r < 0.8 ? 'm' : 'n')) : core ? (r < 0.72 ? 'y' : r < 0.86 ? 'm' : 'n') : (r < 0.38 ? 'y' : r < 0.6 ? 'm' : 'n'); });
       slots.weekend.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = core ? (r < 0.35 ? 'y' : r < 0.6 ? 'm' : 'n') : (r < 0.7 ? 'y' : r < 0.85 ? 'm' : 'n'); });
       slots.block.forEach(s => { const r = hsh(f.id + s.id); a[s.id] = r < 0.6 ? 'y' : r < 0.8 ? 'm' : 'n'; }); });
     /* where preparation stands on 15 Nov 2026. Slots are dealt per cohort and group so a cohort has no clash
        with itself; retakers (who follow another cohort) are where clashes appear. */
     const seed = {}, used = {}, profBusy = {}, roomBusy = {}, retakersOf = k => k.retakeIds || []; const ALLRK = new Set(classes.flatMap(k => k.retakeIds));
-    const order = ['Mon-am', 'Tue-pm', 'Wed-am', 'Thu-pm', 'Fri-am', 'Mon-pm', 'Tue-am', 'Wed-pm', 'Thu-am', 'Fri-pm'];
+    const order = ['0915', '1415', '1130', '1630'].flatMap((t, i) => DAYS.map((d, j) => DAYS[(j + i) % 5] + '-' + t));   /* the evening slot is left for the solver */
     classes.forEach((k, i) => {
       const r = hsh(k.id + k.title), st = { size: r < 0.8, prof: null, profStatus: 'none', profAt: null, slot: null, room: null, syl: 'none', books: false, page: false, assess: false, tell: false, valid: false };
       if (r < 0.6) st.profStatus = 'accepted'; else if (r < 0.85) st.profStatus = 'invited'; else if (r < 0.9) st.profStatus = 'declined';

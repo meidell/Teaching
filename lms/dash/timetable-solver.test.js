@@ -141,7 +141,7 @@ global.window = {}; require(path.join(__dirname, 'data.js'));
 const S = window.SCHOOL, P = S.planning;
 function demoInput(seed) {
   const fixedLoad = {};
-  const slots = [...P.slots.weekly.map(s => ({ id: s.id, mode: 'weekly', day: s.day, label: s.id })), ...P.slots.weekend.map(s => ({ id: s.id, mode: 'weekend', day: s.day, label: s.id })), ...P.slots.block.map(s => ({ id: s.id, mode: 'block', label: s.label, overlaps: P.slots.weekly.map(w => w.id) }))];
+  const slots = [...P.slots.weekly.map(s => ({ id: s.id, mode: 'weekly', day: s.day, label: s.id })), ...P.slots.weekend.map(s => ({ id: s.id, mode: 'weekend', day: s.day, label: s.id, overlaps: s.overlaps })), ...P.slots.block.map(s => ({ id: s.id, mode: 'block', label: s.label, overlaps: P.slots.weekly.map(w => w.id) }))];
   const classes = P.classes.map(k => { const s = P.seed[k.id], keep = s.prof && (s.profStatus === 'accepted' || s.profStatus === 'invited');
     if (keep) fixedLoad[s.prof] = (fixedLoad[s.prof] || 0) + k.hours;
     return { id: k.id, name: k.title + (k.group ? ' ' + k.group : ''), mode: k.mode, size: k.size, lab: k.lab, hours: k.hours, students: k.students, retakers: k.retakeIds,
@@ -160,7 +160,9 @@ test('demo data: zero hard violations, no regular student clash, under one secon
   /* a remaining clash may only involve a retaker */
   demo.clashes.forEach(c => assert.ok(c.classes.some(id => P.classes.find(k => k.id === id).retakeIds.includes(c.student)), 'regular student clash ' + JSON.stringify(c)));
   /* what cannot be placed is said in words: in the demo, teachers out of contract hours */
-  assert.ok(demo.unplaced.length <= 3, 'too many unplaced');
+  /* 16 Nov 2026: GBS's rooms (none above 24 seats but the Auditorium) split the courses into more groups of
+     at most 24, so the same teachers carry more classes: 4 of 43 run out of contract hours or overlap a residency */
+  assert.ok(demo.unplaced.length <= 4, 'too many unplaced');
   /* (16 Nov 2026: with block weeks overlapping their week's weekly slots, a teacher who has a
      residency and a weekly class cannot keep both, and the page says so) */
   demo.unplaced.forEach(u => assert.ok(u.reasons.length && /contract hours|every possible time of one overlaps/.test(u.reasons[0]), u.reasons.join(' ')));

@@ -123,7 +123,7 @@
   .wroom{background:#1b2537;color:#f2c94c;font-weight:750;font-size:12.5px;border-radius:6px;padding:7px 8px;text-align:center;}
   .wroom small{display:block;color:#c9d3e3;font-weight:600;font-size:10.5px;}
   .wtime{white-space:pre-line;background:color-mix(in srgb,var(--s3) 14%,var(--raised));color:var(--ink2);font-size:11.5px;font-weight:650;border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;}
-  .wcell{min-height:74px;border-radius:7px;display:flex;flex-direction:column;gap:4px;padding:3px;}
+  .wcell{min-height:58px;border-radius:7px;display:flex;flex-direction:column;gap:4px;padding:3px;}
   .wcell.free{background:color-mix(in srgb,#f5d84a 26%,transparent);border:1px dashed color-mix(in srgb,#e9c62a 70%,transparent);align-items:center;justify-content:center;font-size:11px;color:var(--muted);cursor:default;}
   :root:not([data-theme="light"]) .wcell.free{background:color-mix(in srgb,#f5d84a 9%,transparent);border-color:color-mix(in srgb,#e9c62a 38%,transparent);}
   .wcell.free.target{cursor:pointer;outline:2px solid var(--s1);outline-offset:-2px;}
@@ -260,6 +260,8 @@
   const SL = id => ALLSLOTS.find(s => s.id === id);
   const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
   const DAYN = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
+  /* the weekday time rows, from the data (GBS: five 2-hour slots, 16 Nov 2026) */
+  const TIMES = () => [...new Set(P.slots.weekly.map(x => x.id.split('-')[1]))], TROW = t => { const x = P.slots.weekly.find(y => y.id.endsWith('-' + t)); return `${hh(x.from)}–${hh(x.to)}`; };
   const slotTxt = id => { const s = SL(id); if (!s) return 'no time yet'; return s.label || `${DAYN[s.day]} ${hh(s.from)}–${hh(s.to)}`; };
   const slotsOf = k => P.slots[k.mode];
   const cname = k => `${k.title}${k.group ? ' · group ' + k.group : ''}`;
@@ -414,7 +416,7 @@
         ${cur ? '<b>The class is here now</b>' : `<button class="btn" data-move="${sl.id}" type="button">Move the class here</button>`}</div>`; };
     const box = document.getElementById('finder');
     if (k.mode === 'weekly') { const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-      box.innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + ['am', 'pm'].map(pt => `<span class="gh row">${pt === 'am' ? 'Morning<br>08:30–11:45' : 'Afternoon<br>13:30–16:45'}</span>` + D.map(d => { const sl = SL(d + '-' + pt); return `<div><span class="gh mob">${DAYN[d]}</span>${cell(sl)}</div>`; }).join('')).join('') + '</div>';
+      box.innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + TIMES().map(pt => `<span class="gh row">${TROW(pt)}</span>` + D.map(d => { const sl = SL(d + '-' + pt); return `<div><span class="gh mob">${DAYN[d]}</span>${cell(sl)}</div>`; }).join('')).join('') + '</div>';
     } else box.innerHTML = `<div class="grid7 we"><span class="gh blank"></span>${slotsOf(k).map(sl => `<span class="gh">${esc(slotTxt(sl.id))}</span>`).join('')}<span class="gh">${k.mode === 'weekend' ? 'Each teaching weekend' : 'Block week'}</span>${slotsOf(k).map(cell).join('')}</div>`;
   }
   document.getElementById('fCls').onchange = e => { FCLS = e.target.value; drawFinder(); };
@@ -428,7 +430,7 @@
     const V = VIS(), chip = k => { const s = ST[k.id], c = clashAt(k, s.slot).length; return `<span class="chip ${c ? 'bad' : ''}" data-open="${k.id}" style="border-left-color:${PC[k.prog]}">${esc(cname(k))}<span class="why"> · ${esc(s.room || 'no room')}${c ? ` · <b class="lt">${pl(c, 'student')} with a clash</b>` : ''}</span></span>`; };
     const at = id => V.filter(k => ST[k.id].slot === id);
     const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    document.getElementById('ttW').innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + ['am', 'pm'].map(pt => `<span class="gh row">${pt === 'am' ? 'Morning' : 'Afternoon'}</span>` + D.map(d => `<div class="cell"><span class="gh mob" style="padding:0">${DAYN[d]} ${pt === 'am' ? '08:30' : '13:30'}</span>${at(d + '-' + pt).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('')).join('') + '</div>';
+    document.getElementById('ttW').innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + TIMES().map(pt => `<span class="gh row">${TROW(pt)}</span>` + D.map(d => `<div class="cell"><span class="gh mob" style="padding:0">${DAYN[d]} ${TROW(pt)}</span>${at(d + '-' + pt).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('')).join('') + '</div>';
     document.getElementById('ttE').innerHTML = P.slots.weekend.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(slotTxt(sl.id))}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
     document.getElementById('ttB').innerHTML = P.slots.block.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(sl.label)}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
     const rows = [], seen = new Set();
@@ -489,7 +491,7 @@
       rows.forEach(sl => { h += `<div class="wtime">${esc(sl.lab)}</div>` + cols.map(c => { const ks = M.cell[c.id + '|' + sl.id] || [];
         return ks.length ? `<div class="wcell" data-cell="${esc(c.id)}|${sl.id}">${ks.map(k => card(k)).join('')}</div>` : `<div class="wcell free ${edit && WSEL ? 'target' : ''}" data-cell="${esc(c.id)}|${sl.id}">free</div>`; }).join(''); });
       return h + '</div>'; };
-    let html = D.map(d => band(DAYN[d], ['am', 'pm'].map(pt => { const sl = SL(d + '-' + pt); return { id: sl.id, lab: `${pt === 'am' ? 'Morning' : 'Afternoon'}\n${hh(sl.from)}–${hh(sl.to)}` }; }))).join('');
+    let html = D.map(d => band(DAYN[d], TIMES().map(pt => { const sl = SL(d + '-' + pt); return { id: sl.id, lab: `${hh(sl.from)}–${hh(sl.to)}` }; }))).join('');
     html += band('Weekends · EMBA', P.slots.weekend.map(sl => ({ id: sl.id, lab: slotTxt(sl.id) })));
     html += band('Block weeks', P.slots.block.map(sl => ({ id: sl.id, lab: sl.label })), true);
     document.getElementById('wall').innerHTML = html;
@@ -543,7 +545,7 @@
         pinned: pin && a ? { slot: a.slot, room: a.room, teacher: a.teacher } : {}, prefer: a ? { slot: a.slot, room: a.room, teacher: a.teacher } : null }; });
     const teachers = S.faculty.map(f => { const av = Object.assign({}, P.avail[f.id]); obj.filter(o => o.teacher === f.id).forEach(o => av[o.slot] = 'n');
       return { id: f.id, name: f.name, avail: av, maxPerDay: 2, maxHours: AUTO.over ? 1e9 : Math.max(f.contractHours, fixed[f.id] || 0) }; });
-    return { slots: ALLSLOTS.map(s => ({ id: s.id, mode: MODE_OF[s.id], day: s.day, label: slotTxt(s.id), overlaps: MODE_OF[s.id] === 'block' ? P.slots.weekly.map(w => w.id) : undefined })),   /* a block week takes in its week's weekly times (16 Nov 2026) */ rooms: P.rooms.map(r => ({ id: r.id, cap: r.cap, lab: !!r.lab, blocked: [] })),
+    return { slots: ALLSLOTS.map(s => ({ id: s.id, mode: MODE_OF[s.id], day: s.day, label: slotTxt(s.id), overlaps: MODE_OF[s.id] === 'block' ? P.slots.weekly.map(w => w.id) : s.overlaps })),   /* a block week takes in its week's weekly times (16 Nov 2026) */ rooms: P.rooms.map(r => ({ id: r.id, cap: r.cap, lab: !!r.lab, blocked: [] })),
       teachers, classes, weights: { ifNeeded: 3, retakerClash: 4, teacherSameDay: 1, spread: 1.5, roomFit: 0.4, teacherChoice: 0.6, keep: 1 }, seed: AUTO.seed };
   }
   function runSolve(pinIds) {
@@ -662,7 +664,7 @@
     const at = id => V.filter(k => R.assignments[k.id] && R.assignments[k.id].slot === id);
     const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     document.getElementById('aWN').textContent = `${PROG === 'all' ? 'all programmes' : S.P[PROG].name}${Object.keys(AUTO.pins).length ? ' · ' + Object.keys(AUTO.pins).length + ' pinned' : ''}`;
-    document.getElementById('aW').innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + ['am', 'pm'].map(pt => `<span class="gh row">${pt === 'am' ? 'Morning' : 'Afternoon'}</span>` + D.map(d => `<div class="cell"><span class="gh mob" style="padding:0">${DAYN[d]} ${pt === 'am' ? '08:30' : '13:30'}</span>${at(d + '-' + pt).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('')).join('') + '</div>';
+    document.getElementById('aW').innerHTML = `<div class="grid7"><span class="gh blank"></span>${D.map(d => `<span class="gh day">${DAYN[d]}</span>`).join('')}` + TIMES().map(pt => `<span class="gh row">${TROW(pt)}</span>` + D.map(d => `<div class="cell"><span class="gh mob" style="padding:0">${DAYN[d]} ${TROW(pt)}</span>${at(d + '-' + pt).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('')).join('') + '</div>';
     document.getElementById('aE').innerHTML = P.slots.weekend.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(slotTxt(sl.id))}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
     document.getElementById('aB').innerHTML = P.slots.block.map(sl => `<div class="cell" style="margin-bottom:6px"><b>${esc(sl.label)}</b>${at(sl.id).map(chip).join('') || '<span class="why">free</span>'}</div>`).join('');
     drawRound(ph); if (ph === 5) drawPublished();
