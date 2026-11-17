@@ -18,6 +18,20 @@
     var list = reg && (reg.courses || reg); if (!list || !list.find) return;
     var c = list.find(function (x) { return x.id === ID; }); if (!c || !c.menu || !c.menu.on) return;
     var fr = c.lang === 'fr', th = (reg.themes || {})[c.theme] || {}, ink = th.accent || '#14213d', hot = th.accentBright || '#c9a961';
+    /* the highlight must read on the menu's own colour: a theme whose bright
+       accent is close to its accent (Kalaidos: #0096C7 on #007A87) gets it
+       mixed toward white until the contrast is at least 4.5 : 1 */
+    (function () {
+      var rgb = function (h) { h = String(h).replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&'); return [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16); }); };
+      var lum = function (c) { c = c.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+      try {
+        var a = rgb(ink), b = rgb(hot), la = lum(a);
+        for (var k = 0; k <= 10; k++) {
+          var m = b.map(function (v) { return Math.round(v + (255 - v) * k / 10); }), lm = lum(m);
+          if ((Math.max(la, lm) + 0.05) / (Math.min(la, lm) + 0.05) >= 4.5) { hot = '#' + m.map(function (v) { return (v < 16 ? '0' : '') + v.toString(16); }).join(''); break; }
+        }
+      } catch (e) {}
+    })();
     var base = '/' + c.dir + '/', here = decodeURI(location.pathname).replace(/\/$/, '/index.html');
     var today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(new Date());
     var T = fr ? { course: 'Cours', home: 'Accueil du cours', sess: 'Séances', tools: 'Outils et références', next: 'prochaine', soon: 'pas encore en ligne', exam: 'examen', extra: 'Séance en plus', fold: 'Réduire le menu', unfold: 'Ouvrir le menu', menu: 'Cours', close: 'Fermer', tutor: 'Poser une question au tuteur', msg: 'Écrire à l’enseignant', room: 'Rejoindre en ligne', cal: 'Ajouter les séances à mon agenda', calA: 'Apple Calendrier ou Outlook (abonnement)', calG: 'Google Agenda', calF: 'Télécharger le fichier (.ics)', calN: 'Un abonnement se met à jour tout seul quand une date change.', s: 'S' }
@@ -76,7 +90,17 @@
     /* the ☰ button in the course's blue bar (narrow screens) */
     var ob = document.createElement('button'); ob.type = 'button'; ob.className = 'jcm-open'; ob.textContent = '☰ ' + T.menu; ob.onclick = function () { show(true); };
     var host = document.querySelector('.topbar') || document.querySelector('nav.nav');
-    if (host) host.insertBefore(ob, host.firstChild); else { ob.style.cssText = 'position:fixed;top:10px;left:10px;z-index:898;background:' + ink; B.appendChild(ob); }
+    /* a light bar (Kalaidos' white .topbar) gets the button in the course colour,
+       and the button goes into the bar's inner row where it has one */
+    if (host) {
+      try {
+        var bg = getComputedStyle(host).backgroundColor.match(/[\d.]+/g);
+        if (bg && (bg[3] === undefined || +bg[3] > 0.3) && (0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]) > 160) ob.style.cssText = 'color:' + ink + ';border-color:' + ink;
+      } catch (e) {}
+      var row = host.querySelector('.topbar-inner') || host;
+      row.insertBefore(ob, row.firstChild);
+    }
+    if (!host) { ob.style.cssText = 'position:fixed;top:10px;left:10px;z-index:898;background:' + ink; B.appendChild(ob); }
     /* shortcuts to what the page offers (the tutor, the messages, the class room), filled when they appear */
     function shortcuts() {
       var ft = M.querySelector('.ft'), h = '';
