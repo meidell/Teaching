@@ -63,7 +63,7 @@
     document.head.appendChild(css);
 
     var item = function (href, n, label, sub, extra) {
-      var cur = href && here === base + href, cls = 'it' + (cur ? ' cur' : '') + (href ? '' : ' off');
+      var cur = href && (here === base + href || here + location.search === base + href), cls = 'it' + (cur ? ' cur' : '') + (href ? '' : ' off');
       var inner = (n != null ? '<span class="n">' + esc(n) + '</span>' : '') + '<span class="l">' + esc(label) + (extra || '') + (sub ? '<em>' + esc(sub) + '</em>' : '') + '</span>';
       return href ? '<a class="' + cls + '" href="' + esc(base + href) + '"' + (cur ? ' aria-current="page"' : '') + '>' + inner + '</a>' : '<div class="' + cls + '">' + inner + '</div>';
     };
@@ -100,6 +100,15 @@
       var orig = window.show; window.show = function (id) { var r = orig.apply(this, arguments); mark(); return r; };
       box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; window.show(b.getAttribute('data-id')); if (!wide()) show(false); };
       mark();
+    })();
+    /* two menu links to one page that differ by their query (fl3's two Jeopardy sets):
+       keep the highlight only on the one whose query matches the address */
+    (function () {
+      var cs = M.querySelectorAll('a.it.cur'); if (cs.length < 2) return;
+      var full = here + location.search, keep = null;
+      cs.forEach(function (a) { if (decodeURI(a.getAttribute('href')) === full) keep = a; });
+      if (!keep) cs.forEach(function (a) { if (!keep && a.getAttribute('href').indexOf('?') < 0) keep = a; });
+      cs.forEach(function (a) { if (a !== keep) { a.classList.remove('cur'); a.removeAttribute('aria-current'); } });
     })();
     /* the cur item scrolled into view */
     var cur = M.querySelector('.cur'); if (cur) setTimeout(function () { try { cur.scrollIntoView({ block: 'center' }); } catch (e) {} }, 50);
