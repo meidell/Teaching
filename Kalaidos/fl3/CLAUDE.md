@@ -109,6 +109,17 @@ timers, `window.FLC_ITEMS` for the probe), `fl3.css`, `presence.js`
 page's SECTIONS.length, set when the page ships), `jeopardy.html` (`?set=sam`,
 `?set=rev` — rewrite the sets for this course's ten séances), `admin.html`.
 Hub `index.html` renders the ten séances from its `SEANCES` array.
+**T-accounts under a journal (17 Nov 2026)** — Jan Erik: "show the actual
+accounts and their amounts/transactions". `buildJournal(box, ACCOUNTS, ITEMS,
+TA)` takes an optional fourth argument `{open:{acc:n}, side:{acc:'A'}, lead,
+bilan, bilanTitle}` (side defaults to passif): one T-account per dropdown
+account (all of them, so no hint) with the opening balance, each entry once
+RIGHT with its letter, the entry being composed in dashed grey (not
+counted), the closing balance on the smaller side; `bilan:true` adds the
+balance sheet after the right entries. This bloc.js is fl3's own copy (flc
+does not have it). Used so far in séance 2 (`trJournal` — its dropdown now
+holds every account of the Charpente Muller balance sheet so the bilan
+balances — and `btJournal`).
 Probe: `node probe.js fl3/seance1 [shots]` from the scratchpad probe folder,
 with `python3 -m http.server 8765` running from the repo root.
 

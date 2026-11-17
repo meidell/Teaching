@@ -220,7 +220,15 @@ function buildNum(boxId,ITEMS){
    page's chart of accounts (the dropdown). Each entry is a counted step.
    A wrong account or amount says which part is wrong and lets the student
    retry; the answer is saved and replayed like a numeric check. ---- */
-function buildJournal(boxId,ACCOUNTS,ITEMS){
+/* TA (optional, 17 Nov 2026 — Jan Erik: "show the actual accounts and
+   their amounts/transactions") = {open:{acc:amount}, side:{acc:'A'|'P'},
+   lead, bilan}. Draws one T-account per account of ACCOUNTS under the
+   entries: the opening balance on its side, every entry once it is RIGHT
+   (with its letter), the entry the student is still composing in dashed
+   grey, and the closing balance; then, with bilan, the balance sheet
+   after the right entries. Every account of the dropdown is drawn, so the
+   T-accounts give no hint about which account is the answer. */
+function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
   var box=document.getElementById(boxId);if(!box)return;
   if(ITEMS.some(function(it){return ACCOUNTS.indexOf(it.d)<0||ACCOUNTS.indexOf(it.c)<0;}))console.error('buildJournal '+boxId+': an answer account is not in the list');
   (window.FLC_ITEMS=window.FLC_ITEMS||[]).push({t:'j',box:boxId,items:ITEMS});
@@ -241,8 +249,59 @@ function buildJournal(boxId,ACCOUNTS,ITEMS){
       fb.className='tfb show no';fb.innerHTML='<b>Pas encore.</b> À revoir : '+m.join(', ')+'.'+(it.hint?' '+it.hint:'');
     });
     box.appendChild(d);
+    if(TA){[sd,sc].forEach(function(x){x.addEventListener('change',function(){tDraw();});});inp.addEventListener('input',function(){tDraw();});}
+    it._ui={sd:sd,sc:sc,inp:inp,el:d};
     if(progress.steps[it.id]){var sv=window.StatsAns?StatsAns.get(progress,'j_'+it.id):null;sd.value=it.d;sc.value=it.c;inp.value=String(sv&&sv[2]!=null?sv[2]:it.a).replace('.',',');good(true);}
   });
+  if(!TA)return;
+  var tw=document.createElement('div');tw.className='tacc-wrap';box.appendChild(tw);
+  function tDraw(){
+    var op=TA.open||{},sd0=TA.side||{},L={};
+    ACCOUNTS.forEach(function(a){L[a]={D:[],C:[]};var o=op[a]||0;if(o)L[a][sd0[a]==='A'?'D':'C'].push({k:'o',a:o});});
+    ITEMS.forEach(function(it,i){
+      var u=it._ui;if(!u)return;var n=it.n||(i+1);
+      if(u.el.classList.contains('ok')){L[it.d].D.push({k:'e',n:n,a:it.a});L[it.c].C.push({k:'e',n:n,a:it.a});return;}
+      var v=num(u.inp.value);v=isNaN(v)?null:v;
+      if(u.sd.value&&L[u.sd.value])L[u.sd.value].D.push({k:'p',n:n,a:v});
+      if(u.sc.value&&L[u.sc.value])L[u.sc.value].C.push({k:'p',n:n,a:v});
+    });
+    function sum(r,pend){return r.reduce(function(t,x){return t+((x.k!=='p'||pend)&&x.a?x.a:0);},0);}
+    function cell(x){
+      if(!x)return '<td></td><td></td>';
+      if(x.k==='o')return '<td class="tl">Solde initial</td><td class="ta">'+fmt(x.a)+'</td>';
+      if(x.k==='p')return '<td class="tl tp">'+esc(x.n)+' · à vérifier</td><td class="ta tp">'+(x.a==null?'…':fmt(x.a))+'</td>';
+      return '<td class="tl">Écriture '+esc(x.n)+'</td><td class="ta">'+fmt(x.a)+'</td>';
+    }
+    var BA={A:0,P:0},rowsA=[],rowsP=[];
+    var h=ACCOUNTS.map(function(a){
+      var r=L[a],d=sum(r.D),c=sum(r.C),bal=d-c,isA=(sd0[a]||'P')==='A';
+      var D=r.D.slice(),C=r.C.slice(),moved=r.D.concat(r.C).some(function(x){return x.k!=='o';});
+      /* the closing balance sits on the smaller side, so both sides total the same */
+      if(bal>0)C.push({k:'s',a:bal});else if(bal<0)D.push({k:'s',a:-bal});
+      var n=Math.max(D.length,C.length,1),body='';
+      for(var i=0;i<n;i++){
+        body+='<tr>'+[D[i],C[i]].map(function(x){return x&&x.k==='s'?'<td class="tl ts">Solde final</td><td class="ta ts">'+fmt(x.a)+'</td>':cell(x);}).join('')+'</tr>';
+      }
+      var tot=Math.max(d,c);
+      var bS=isA?bal:-bal;BA[isA?'A':'P']+=bS;if(bS)(isA?rowsA:rowsP).push([a,bS]);
+      return '<div class="tacc'+(moved?' mv':'')+'"><div class="tn">'+esc(a)+'<span>'+(isA?'actif':'passif')+'</span></div>'+
+        '<table><tr><th colspan="2">Débit</th><th colspan="2">Crédit</th></tr>'+body+
+        '<tr class="tt"><td></td><td class="ta">'+fmt(tot)+'</td><td></td><td class="ta">'+fmt(tot)+'</td></tr></table></div>';
+    }).join('');
+    var lead=TA.lead||'Les comptes en T : chaque compte montre son solde initial, puis chaque écriture dès qu’elle est juste (avec sa lettre), puis le solde final. Une écriture que vous préparez encore apparaît en gris pointillé, avant d’être vérifiée.';
+    var bil='';
+    if(TA.bilan){
+      var m=Math.max(rowsA.length,rowsP.length),rr='';
+      for(var j=0;j<m;j++){var x=rowsA[j],y=rowsP[j];rr+='<tr><td>'+(x?esc(x[0]):'')+'</td><td class="n">'+(x?fmt(x[1]):'')+'</td><td>'+(y?esc(y[0]):'')+'</td><td class="n">'+(y?fmt(y[1]):'')+'</td></tr>';}
+      bil='<div class="tacc-bil"><div class="tn">'+esc(TA.bilanTitle||'Le bilan après les écritures justes')+'</div><div class="tblwrap"><table class="bil"><tr><th>Actif</th><th></th><th>Passif</th><th></th></tr>'+rr+
+        '<tr class="tot"><td>Total</td><td class="n">'+fmt(BA.A)+'</td><td>Total</td><td class="n">'+fmt(BA.P)+'</td></tr></table></div>'+
+        (Math.abs(BA.A-BA.P)>0.5?'<p class="tacc-w">L’actif et le passif ne sont pas égaux : une écriture en cours ne touche peut-être qu’un côté.</p>':'')+'</div>';
+    }
+    tw.innerHTML='<div class="tacc-h">Les comptes et leurs mouvements</div><p class="tacc-l">'+lead+'</p><div class="tacc-g">'+h+'</div>'+bil;
+  }
+  /* good() marks .ok synchronously; redraw after each Vérifier click */
+  box.addEventListener('click',function(e){if(e.target.closest('button'))setTimeout(tDraw,0);});
+  tDraw();
 }
 
 /* ---- the consolidation worksheet (bloc 4) ----
