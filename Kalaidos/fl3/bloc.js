@@ -258,7 +258,7 @@ function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
   var tw=document.createElement('div');tw.className='tacc-wrap';box.appendChild(tw);
   function tDraw(){
     var op=TA.open||{},sd0=TA.side||{},L={};
-    ACCOUNTS.forEach(function(a){L[a]={D:[],C:[]};var o=op[a]||0;if(o)L[a][sd0[a]==='A'?'D':'C'].push({k:'o',a:o});});
+    ACCOUNTS.forEach(function(a){L[a]={D:[],C:[]};var o=op[a]||0;if(o)L[a][(sd0[a]==='A'||sd0[a]==='C')?'D':'C'].push({k:'o',a:o});});
     ITEMS.forEach(function(it,i){
       var u=it._ui;if(!u)return;var n=it.n||(i+1);
       if(u.el.classList.contains('ok')){L[it.d].D.push({k:'e',n:n,a:it.a});L[it.c].C.push({k:'e',n:n,a:it.a});return;}
