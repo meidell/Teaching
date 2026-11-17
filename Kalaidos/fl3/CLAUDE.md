@@ -123,9 +123,10 @@ account of the Charpente Muller balance sheet so the bilan balances — and
 `btJournal`), séance 3 `fuJournal`, séance 4 `scJournal` (with bilan) and
 `tpJournal`, séance 5 `asJournal` and `vaJournal`, séance 6 `coJournal`.
 `bilan` is left OFF where a later numeric question asks for the balance
-sheet (bfNum, asNum, vaNum, coRes). ⚠ NOT on séance 6 `liqJournal`: it
-books only the gains and losses (no cash receipts, no vehicle entry), so
-its T-accounts would never close. Verified 17 Nov 2026 by solving every
+sheet (bfNum, asNum, vaNum, coRes, liqNum). Séance 6 `liqJournal` booked
+only the gains and losses; on 17 Nov 2026 it got the missing entries (the
+three cash receipts, the vehicle loss: ids lj6–lj9, letters a–i, the old
+ids kept so saved progress stays) and then its T-accounts. Verified 17 Nov 2026 by solving every
 entry headlessly: each closing balance equals the page's own answers.
 Probe: `node probe.js fl3/seance1 [shots]` from the scratchpad probe folder,
 with `python3 -m http.server 8765` running from the repo root.
