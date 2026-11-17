@@ -3,7 +3,7 @@
    `menu: {on, sessions:[{n, date, title, href?, exam?}], tools:[{href, label}]}` in courses.json (first:
    escwa — its sessions MIRROR the hub's TERM array: change a date or a title there and here). /track.js
    loads this file on every page with <body data-course>; it exits at once for other courses.
-   ≥ 1100 px: a fixed column on the left (the page moves right; « folds it to a rail, remembered per device
+   ≥ 900 px: a fixed column on the left (the page moves right; « folds it to a rail, remembered per device
    in `jem_cmenu`). Narrower: a "☰ Course" button in the course's blue bar (.topbar / nav.nav) opens it
    over the page. Contents: the course home; every session with its date (published ones are links, the
    next one is marked, the current page is highlighted); the tool pages; and shortcuts to the tutor, the
@@ -49,15 +49,16 @@
       '#jcm .bd{flex:1;overflow:auto;padding:8px 8px 12px}#jcm h6{margin:12px 8px 4px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(233,238,245,.6);font-weight:800}' +
       '#jcm .it{display:flex;gap:8px;align-items:baseline;padding:6px 8px;border-radius:8px;font-size:13px}#jcm a.it:hover{background:rgba(255,255,255,.08)}' +
       '#jcm .it .n{flex:none;min-width:24px;font-weight:800;color:' + hot + ';font-size:12px}#jcm .it .l{flex:1;min-width:0}#jcm .it em{display:block;font-style:normal;font-size:11.5px;color:rgba(233,238,245,.62)}' +
+      '#jcm .pt{margin:2px 0 6px 22px;border-left:1px solid rgba(255,255,255,.22);padding-left:6px}#jcm .pt button{display:flex;gap:8px;width:100%;background:none;border:0;color:inherit;text-align:left;padding:5px 8px;border-radius:7px;font:13px/1.35 system-ui,sans-serif;cursor:pointer}#jcm .pt button:hover{background:rgba(255,255,255,.08)}#jcm .pt button.on{background:rgba(255,255,255,.14);font-weight:700}#jcm .pt b{flex:none;min-width:24px;color:' + hot + ';font-size:12px}' +
       '#jcm .it.cur{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 0 ' + hot + '}#jcm .it.off{opacity:.55}#jcm .tag{font-size:10.5px;font-weight:800;border-radius:20px;padding:0 7px;margin-left:4px;background:' + hot + ';color:#111}' +
       '#jcm .cal{margin:10px 6px 2px}#jcm .cal details summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.08);font:600 13px system-ui,sans-serif}#jcm .cal summary::-webkit-details-marker{display:none}#jcm .cal summary:hover{background:rgba(255,255,255,.16)}' +
       '#jcm .cal .m{display:flex;flex-direction:column;gap:2px;margin-top:4px;padding:4px;background:rgba(0,0,0,.18);border-radius:8px}#jcm .cal .m a{padding:7px 10px;border-radius:6px;font-size:13px}#jcm .cal .m a:hover{background:rgba(255,255,255,.1)}#jcm .cal .m small{font-size:11.5px;color:rgba(233,238,245,.62);padding:2px 10px 4px}' +
       '#jcm .ft{border-top:1px solid rgba(255,255,255,.12);padding:8px;display:flex;flex-direction:column;gap:4px}#jcm .ft button{background:rgba(255,255,255,.08);border:0;color:#fff;border-radius:8px;padding:8px 10px;text-align:left;font:600 13px system-ui,sans-serif;cursor:pointer}#jcm .ft button:hover{background:rgba(255,255,255,.16)}' +
-      '@media(min-width:1100px){body.jcm-on .topbar>.home,body.jcm-rail .topbar>.home{display:none}}' +
+      '@media(min-width:900px){body.jcm-on .topbar>.home,body.jcm-rail .topbar>.home{display:none}}' +
       'body.jcm-on{padding-left:250px}body.jcm-on #jt-btn,body.jcm-on #pw-btn{left:264px}' +
-      'body.jcm-rail #jcm{width:46px}body.jcm-rail #jcm .t,body.jcm-rail #jcm .bd,body.jcm-rail #jcm .ft{display:none}body.jcm-rail{padding-left:46px}body.jcm-rail #jt-btn,body.jcm-rail #pw-btn{left:60px}' +
+      'body.jcm-rail #jcm{width:46px}body.jcm-rail #jcm .hd{padding:14px 0 10px;justify-content:center}body.jcm-rail #jcm .t,body.jcm-rail #jcm .bd,body.jcm-rail #jcm .ft{display:none}body.jcm-rail{padding-left:46px}body.jcm-rail #jt-btn,body.jcm-rail #pw-btn{left:60px}' +
       '.jcm-open{display:none;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55);border-radius:999px;padding:5px 11px;font:700 12.5px system-ui,sans-serif;cursor:pointer;white-space:nowrap}' +
-      '@media(max-width:1099px){#jcm{transform:translateX(-105%);width:min(300px,86vw)}#jcm.show{transform:none}body.jcm-on,body.jcm-rail{padding-left:0}body.jcm-on #jt-btn,body.jcm-on #pw-btn,body.jcm-rail #jt-btn,body.jcm-rail #pw-btn{left:14px}body.jcm-rail #jcm .t,body.jcm-rail #jcm .bd,body.jcm-rail #jcm .ft{display:flex}body.jcm-rail #jcm .bd{display:block}.jcm-open{display:inline-flex}#jcm-dim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:899;display:none}#jcm-dim.show{display:block}}' +
+      '@media(max-width:899px){#jcm{transform:translateX(-105%);width:min(300px,86vw)}#jcm.show{transform:none}body.jcm-on,body.jcm-rail{padding-left:0}body.jcm-on #jt-btn,body.jcm-on #pw-btn,body.jcm-rail #jt-btn,body.jcm-rail #pw-btn{left:14px}body.jcm-rail #jcm .t,body.jcm-rail #jcm .bd,body.jcm-rail #jcm .ft{display:flex}body.jcm-rail #jcm .bd{display:block}.jcm-open{display:inline-flex}#jcm-dim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:899;display:none}#jcm-dim.show{display:block}}' +
       '@media print{#jcm,.jcm-open,#jcm-dim{display:none!important}body.jcm-on,body.jcm-rail{padding-left:0!important}}';
     document.head.appendChild(css);
 
@@ -78,13 +79,28 @@
       '<div class="ft"></div>';
     B.appendChild(M);
     var dim = document.createElement('div'); dim.id = 'jcm-dim'; B.appendChild(dim);
-    var wide = function () { return window.matchMedia('(min-width:1100px)').matches; };
+    var wide = function () { return window.matchMedia('(min-width:900px)').matches; };
     function setRail(on) { B.classList.toggle('jcm-rail', on); B.classList.toggle('jcm-on', !on); var x = M.querySelector('.x'); x.textContent = on ? '»' : '«'; x.title = on ? T.unfold : T.fold; ls('jem_cmenu', on ? 'rail' : 'open'); }
     function show(on) { M.classList.toggle('show', on); dim.classList.toggle('show', on); }
     setRail(ls('jem_cmenu') === 'rail');
     M.querySelector('.x').onclick = function () { if (wide()) setRail(!B.classList.contains('jcm-rail')); else show(false); };
     dim.onclick = function () { show(false); };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') show(false); });
+    /* the parts of THIS session, under its menu entry: a page built on the
+       screen engines (bloc.js, journee.js…) exposes SECTIONS [{id,num,name}]
+       and show(id); a click opens that part, the open one is highlighted */
+    (function () {
+      var SEC = window.SECTIONS, cu = M.querySelector('.cur');
+      if (!cu || !Array.isArray(SEC) || !SEC.length || typeof window.show !== 'function' || !document.getElementById('home')) return;
+      var box = document.createElement('div'); box.className = 'pt';
+      box.innerHTML = '<button type="button" data-id="home"><b>≡</b><span>' + (fr ? 'Plan de la séance' : 'Session plan') + '</span></button>' +
+        SEC.map(function (x) { return '<button type="button" data-id="' + esc(x.id) + '"><b>' + esc(x.num || '') + '</b><span>' + esc(x.name || x.id) + '</span></button>'; }).join('');
+      cu.parentNode.insertBefore(box, cu.nextSibling);
+      var mark = function () { var a = document.querySelector('.screen.active'), id = a ? a.id : ''; box.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-id') === id); }); };
+      var orig = window.show; window.show = function (id) { var r = orig.apply(this, arguments); mark(); return r; };
+      box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; window.show(b.getAttribute('data-id')); if (!wide()) show(false); };
+      mark();
+    })();
     /* the cur item scrolled into view */
     var cur = M.querySelector('.cur'); if (cur) setTimeout(function () { try { cur.scrollIntoView({ block: 'center' }); } catch (e) {} }, 50);
     /* the ☰ button in the course's blue bar (narrow screens) */
