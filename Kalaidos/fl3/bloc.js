@@ -29,6 +29,9 @@ var T=window.T||function(fr){return fr;};
 var MOD=DAY.mod, KEY=DAY.key, SECTIONS=DAY.sections;
 var EXTRA=[];                       /* step ids that count, registered by widgets */
 function need(id){if(EXTRA.indexOf(id)<0)EXTRA.push(id);}
+/* what each widget stores, so one section can be reset (17 Nov 2026) */
+var RESETS=[];
+function regReset(box,steps,picks,cls){RESETS.push({box:box,steps:steps||[],picks:picks||[],cls:cls});}
 var progress=load();
 var clsDone={};
 function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};return p;}catch(e){return{done:{},steps:{}};}}
@@ -139,6 +142,7 @@ document.addEventListener('click',function(e){
 /* ---- shared classify builder (secId may be null → secCheck decides) ---- */
 function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
   var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;if(!box)return;
+  regReset(rowsId,[],VARS.map(function(v,i){return rowsId+'-'+i;}),rowsId);
   function capText(n,full){if(cap)cap.textContent=n+T(' sur ',' of ')+VARS.length+T(' classé'+(n>1?'s':''),' sorted')+(full?' — '+doneMsg:'');}
   capText(0,false);
   var replaying=false;
@@ -177,7 +181,7 @@ function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
 /* ---- a walked procedure, one step per press; replayed on reload ---- */
 function buildSteps(boxId,btnId,steps,stepKey,onDone){
   var box=document.getElementById(boxId),btn=document.getElementById(btnId);if(!box||!btn)return;
-  need(stepKey);
+  need(stepKey);regReset(boxId,[stepKey]);
   steps.forEach(function(s){var d=document.createElement('div');d.className='step-row';d.innerHTML=s;box.appendChild(d);});
   var rows=box.querySelectorAll('.step-row'),i=0;
   function showN(n){
@@ -197,6 +201,7 @@ function num(s){s=String(s||'').trim().replace(/[\s'’ ]/g,'');if(/,\d{1,2}$/.t
 function buildNum(boxId,ITEMS){
   var box=document.getElementById(boxId);if(!box)return;
   (window.FLC_ITEMS=window.FLC_ITEMS||[]).push({t:'n',box:boxId,items:ITEMS});   /* read by the headless probe (_private) */
+  regReset(boxId,ITEMS.map(function(it){return it.id;}),ITEMS.map(function(it){return 'n_'+it.id;}));
   ITEMS.forEach(function(it){
     need(it.id);
     var d=document.createElement('div');d.className='nq';
@@ -233,6 +238,7 @@ function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
   var box=document.getElementById(boxId);if(!box)return;
   if(ITEMS.some(function(it){return ACCOUNTS.indexOf(it.d)<0||ACCOUNTS.indexOf(it.c)<0;}))console.error('buildJournal '+boxId+': an answer account is not in the list');
   (window.FLC_ITEMS=window.FLC_ITEMS||[]).push({t:'j',box:boxId,items:ITEMS});
+  regReset(boxId,ITEMS.map(function(it){return it.id;}),ITEMS.map(function(it){return 'j_'+it.id;}));
   var opts='<option value="">— compte —</option>'+ACCOUNTS.map(function(a){return '<option>'+esc(a)+'</option>';}).join('');
   ITEMS.forEach(function(it,i){
     need(it.id);
@@ -319,7 +325,7 @@ function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
    counted step (cfg.id), done when every line matches. Entries are kept
    in progress.picks so a reload keeps the work. */
 function buildWorksheet(boxId,cfg){
-  var box=document.getElementById(boxId);if(!box)return;need(cfg.id);
+  var box=document.getElementById(boxId);if(!box)return;need(cfg.id);regReset(boxId,[cfg.id],['ws_'+cfg.id]);
   var R={};cfg.rows.forEach(function(r){R[r.k]=r;});
   var ent=(window.StatsAns&&StatsAns.get(progress,'ws_'+cfg.id))||[];
   function up(k){return R[k].side==='A'||R[k].side==='C';}
@@ -381,6 +387,7 @@ function buildWorksheet(boxId,cfg){
    [{id,s,opts:[[val,label,feedback]]}] — each row is a counted step. ---- */
 function buildPick(boxId,capId,ROWS,doneMsg){
   var box=document.getElementById(boxId),cap=document.getElementById(capId),n=0;if(!box)return;
+  regReset(boxId,ROWS.map(function(r){return r.id;}),ROWS.map(function(r){return r.id;}));
   function paint(){if(cap)cap.textContent=n+T(' sur ',' of ')+ROWS.length+(n===ROWS.length&&doneMsg?' — '+doneMsg:'');}
   ROWS.forEach(function(r){
     need(r.id);
@@ -452,7 +459,7 @@ function buildQuiz(QUIZ,secId,msgs){
   var box=document.getElementById('quizBox'),chip=document.getElementById('scoreChip'),
       res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
   if(!box)return;
-  window.COURSE_QUIZ=QUIZ;
+  window.COURSE_QUIZ=QUIZ;regReset('quizBox',[],QUIZ.map(function(q,i){return 'q'+i;}));
   var answered=0,correct=0;chip.textContent='0 / '+QUIZ.length+T(' répondues',' answered');
   var replaying=false,replayQ=[];
   QUIZ.forEach(function(item,i){
@@ -525,6 +532,46 @@ var GLOSSARY=window.GLOSSARY||{};
   });
 })();
 
+/* ---- "↺ Recommencer cette section" (17 Nov 2026, Jan Erik: "add a button
+   to reset the values/filled in fields on a section — so that they can do
+   it again"). Every widget registers what it stores (regReset); the button
+   clears, for the widgets INSIDE that section only: their counted steps,
+   their saved answers (progress.picks), the section's done mark and the
+   text of its [data-work] fields, on this device. Then the page reloads on
+   the same section, and every widget is built empty. The database keeps
+   what was already sent (the dashboard still shows it). ---- */
+function resetSection(secId){
+  var sec=document.getElementById(secId);if(!sec)return;
+  if(!confirm(T('Effacer vos réponses de cette section sur cet appareil, pour la refaire ?','Clear your answers in this section on this device, to do it again?')))return;
+  var st=progress.steps||{},pk=progress.picks||{};
+  RESETS.forEach(function(r){
+    var b=document.getElementById(r.box);if(!b||!sec.contains(b))return;
+    r.steps.forEach(function(k){delete st[k];});
+    r.picks.forEach(function(k){delete pk[k];});
+    if(r.cls)delete clsDone[r.cls];
+  });
+  sec.querySelectorAll('[data-work]').forEach(function(el){
+    el.value='';try{el.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}
+  });
+  delete progress.done[secId];save();
+  try{sessionStorage.setItem('fl3_reopen_'+MOD,secId);}catch(e){}
+  location.reload();
+}
+function mountResets(){
+  SECTIONS.forEach(function(s){
+    var sec=document.getElementById(s.id);if(!sec)return;
+    var has=RESETS.some(function(r){var b=document.getElementById(r.box);return b&&sec.contains(b);})||sec.querySelector('[data-work]');
+    if(!has)return;
+    var d=document.createElement('div');d.className='sec-reset';
+    d.innerHTML='<button class="btn ghost small" type="button">'+T('↺ Recommencer cette section','↺ Start this section again')+'</button>'+
+      '<span>'+T('Efface vos réponses de cette section sur cet appareil, pour la refaire.','Clears your answers in this section on this device, so you can do it again.')+'</span>';
+    d.querySelector('button').addEventListener('click',function(){resetSection(s.id);});
+    var foot=sec.querySelector('.nav-foot');
+    if(foot)foot.parentNode.insertBefore(d,foot);else sec.appendChild(d);
+  });
+  var re=null;try{re=sessionStorage.getItem('fl3_reopen_'+MOD);sessionStorage.removeItem('fl3_reopen_'+MOD);}catch(e){}
+  if(re&&document.getElementById(re))show(re);
+}
 function bootDay(){
   /* before-you-start ticks */
   var RK=KEY.replace('_progress_v1','_reads'),rs={};try{rs=JSON.parse(localStorage.getItem(RK))||{};}catch(e){}
@@ -549,7 +596,7 @@ function bootDay(){
     document.querySelectorAll('[data-work]').forEach(function(el){el.value='';});
     progress={done:{},steps:{}};save();location.reload();
   });
-  initTimers();renderTimeline();renderList();updateBar();secCheck();
+  initTimers();renderTimeline();renderList();updateBar();secCheck();mountResets();
   window.addEventListener('DOMContentLoaded',function(){
     if(window.StatsTrack){StatsTrack.init({module:MOD,title:DAY.title,total:SECTIONS.length});syncDoneSections();}
     if(window.StatsPresence)StatsPresence.mount({el:document.getElementById('presSlot'),mod:MOD,label:DAY.title});
@@ -587,6 +634,7 @@ function renderEeaCal(boxId,cur){
 /* counted tick boxes: each one is a step of the page's progress */
 function buildTicks(boxId,items){
   var box=document.getElementById(boxId);if(!box)return;
+  regReset(boxId,items.map(function(it){return it[0];}));
   items.forEach(function(it){
     need(it[0]);
     var on=!!(progress.steps&&progress.steps[it[0]]),d=document.createElement('label');d.className='ck'+(on?' on':'');
