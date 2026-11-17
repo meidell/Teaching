@@ -277,19 +277,21 @@ function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
     var h=ACCOUNTS.map(function(a){
       var r=L[a],d=sum(r.D),c=sum(r.C),bal=d-c,sk=sd0[a]||'P',isA=sk==='A'||sk==='C';
       var D=r.D.slice(),C=r.C.slice(),moved=r.D.concat(r.C).some(function(x){return x.k!=='o';});
-      /* the closing balance sits on the smaller side, so both sides total the same */
-      if(bal>0)C.push({k:'s',a:bal});else if(bal<0)D.push({k:'s',a:-bal});
+      /* the closing balance is written ONCE, as a line under the account —
+         not on the smaller side to make both columns equal (Jan Erik,
+         17 Nov 2026: "why do you have the same amounts on both sides?") —
+         and the column totals appear only once an entry has moved it */
+      var posted=r.D.concat(r.C).some(function(x){return x.k==='e';});
       var n=Math.max(D.length,C.length,1),body='';
-      for(var i=0;i<n;i++){
-        body+='<tr>'+[D[i],C[i]].map(function(x){return x&&x.k==='s'?'<td class="tl ts">Solde final</td><td class="ta ts">'+fmt(x.a)+'</td>':cell(x);}).join('')+'</tr>';
-      }
-      var tot=Math.max(d,c);
+      for(var i=0;i<n;i++)body+='<tr>'+cell(D[i])+cell(C[i])+'</tr>';
+      if(posted)body+='<tr class="tt"><td class="tl">Total</td><td class="ta">'+fmt(d)+'</td><td class="tl">Total</td><td class="ta">'+fmt(c)+'</td></tr>';
+      var sol=Math.abs(bal)<0.005?'<b>0</b>, le compte est soldé':'<b>'+fmt(Math.abs(bal))+'</b> '+(bal>0?'au débit':'au crédit');
       var bS=isA?bal:-bal;if(sk==='A'||sk==='P'||sk==='X'){BA[isA?'A':'P']+=bS;if(bS)(isA?rowsA:rowsP).push([a,bS]);}
       return '<div class="tacc'+(moved?' mv':'')+'"><div class="tn">'+esc(a)+'<span>'+({A:'actif',P:'passif',C:'charge',R:'produit',X:'compte de passage'}[sk])+'</span></div>'+
-        '<table><tr><th colspan="2">Débit</th><th colspan="2">Crédit</th></tr>'+body+
-        '<tr class="tt"><td></td><td class="ta">'+fmt(tot)+'</td><td></td><td class="ta">'+fmt(tot)+'</td></tr></table></div>';
+        '<table><tr><th colspan="2">Débit</th><th colspan="2">Crédit</th></tr>'+body+'</table>'+
+        '<div class="tsf">Solde final : '+sol+'</div></div>';
     }).join('');
-    var lead=TA.lead||'Les comptes en T : chaque compte montre son solde initial, puis chaque écriture dès qu’elle est juste (avec sa lettre), puis le solde final. Une écriture que vous préparez encore apparaît en gris pointillé, avant d’être vérifiée.';
+    var lead=TA.lead||'Les comptes en T : chaque compte montre son solde initial, puis chaque écriture dès qu’elle est juste (avec sa lettre) ; sous le compte, le solde final. Une écriture que vous préparez encore apparaît en gris pointillé, avant d’être vérifiée.';
     var bil='';
     if(TA.bilan){
       var m=Math.max(rowsA.length,rowsP.length),rr='';
