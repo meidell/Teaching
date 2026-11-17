@@ -222,7 +222,8 @@ function buildNum(boxId,ITEMS){
    retry; the answer is saved and replayed like a numeric check. ---- */
 /* TA (optional, 17 Nov 2026 — Jan Erik: "show the actual accounts and
    their amounts/transactions") = {open:{acc:amount}, side:{acc:'A'|'P'},
-   lead, bilan}. Draws one T-account per account of ACCOUNTS under the
+   lead, bilan}; side A actif · P passif (default) · C charge · R produit ·
+   X compte de passage (Fusion, Scission, Assainissement…). Draws one T-account per account of ACCOUNTS under the
    entries: the opening balance on its side, every entry once it is RIGHT
    (with its letter), the entry the student is still composing in dashed
    grey, and the closing balance; then, with bilan, the balance sheet
@@ -274,7 +275,7 @@ function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
     }
     var BA={A:0,P:0},rowsA=[],rowsP=[];
     var h=ACCOUNTS.map(function(a){
-      var r=L[a],d=sum(r.D),c=sum(r.C),bal=d-c,isA=(sd0[a]||'P')==='A';
+      var r=L[a],d=sum(r.D),c=sum(r.C),bal=d-c,sk=sd0[a]||'P',isA=sk==='A'||sk==='C';
       var D=r.D.slice(),C=r.C.slice(),moved=r.D.concat(r.C).some(function(x){return x.k!=='o';});
       /* the closing balance sits on the smaller side, so both sides total the same */
       if(bal>0)C.push({k:'s',a:bal});else if(bal<0)D.push({k:'s',a:-bal});
@@ -283,8 +284,8 @@ function buildJournal(boxId,ACCOUNTS,ITEMS,TA){
         body+='<tr>'+[D[i],C[i]].map(function(x){return x&&x.k==='s'?'<td class="tl ts">Solde final</td><td class="ta ts">'+fmt(x.a)+'</td>':cell(x);}).join('')+'</tr>';
       }
       var tot=Math.max(d,c);
-      var bS=isA?bal:-bal;BA[isA?'A':'P']+=bS;if(bS)(isA?rowsA:rowsP).push([a,bS]);
-      return '<div class="tacc'+(moved?' mv':'')+'"><div class="tn">'+esc(a)+'<span>'+(isA?'actif':'passif')+'</span></div>'+
+      var bS=isA?bal:-bal;if(sk==='A'||sk==='P'||sk==='X'){BA[isA?'A':'P']+=bS;if(bS)(isA?rowsA:rowsP).push([a,bS]);}
+      return '<div class="tacc'+(moved?' mv':'')+'"><div class="tn">'+esc(a)+'<span>'+({A:'actif',P:'passif',C:'charge',R:'produit',X:'compte de passage'}[sk])+'</span></div>'+
         '<table><tr><th colspan="2">Débit</th><th colspan="2">Crédit</th></tr>'+body+
         '<tr class="tt"><td></td><td class="ta">'+fmt(tot)+'</td><td></td><td class="ta">'+fmt(tot)+'</td></tr></table></div>';
     }).join('');

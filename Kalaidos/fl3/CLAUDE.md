@@ -117,9 +117,16 @@ account (all of them, so no hint) with the opening balance, each entry once
 RIGHT with its letter, the entry being composed in dashed grey (not
 counted), the closing balance on the smaller side; `bilan:true` adds the
 balance sheet after the right entries. This bloc.js is fl3's own copy (flc
-does not have it). Used so far in séance 2 (`trJournal` — its dropdown now
-holds every account of the Charpente Muller balance sheet so the bilan
-balances — and `btJournal`).
+does not have it). Sides: A actif, P passif, C charge, R produit, X compte
+de passage. Used in séance 2 (`trJournal` — its dropdown now holds every
+account of the Charpente Muller balance sheet so the bilan balances — and
+`btJournal`), séance 3 `fuJournal`, séance 4 `scJournal` (with bilan) and
+`tpJournal`, séance 5 `asJournal` and `vaJournal`, séance 6 `coJournal`.
+`bilan` is left OFF where a later numeric question asks for the balance
+sheet (bfNum, asNum, vaNum, coRes). ⚠ NOT on séance 6 `liqJournal`: it
+books only the gains and losses (no cash receipts, no vehicle entry), so
+its T-accounts would never close. Verified 17 Nov 2026 by solving every
+entry headlessly: each closing balance equals the page's own answers.
 Probe: `node probe.js fl3/seance1 [shots]` from the scratchpad probe folder,
 with `python3 -m http.server 8765` running from the repo root.
 
