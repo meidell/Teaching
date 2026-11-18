@@ -181,6 +181,36 @@ listed; shared login, no class password.
   terrace 600 m² (30 × 20, CHF 2 400); bean EOQ 1 000 kg, 12 orders,
   CHF 1 200 against 2 738.46 weekly. Assembled once from week7.html's
   engine blocks; no generator — edit directly.
+  Week 10 (18 Nov 2026): taught from the EXPLAINED deck
+  (`QuantitativeMethods_I_W10_explained.pdf`, 54 pages = the printed
+  41 + builds; `quantitativemethods_I_I_W10.pdf` is the same deck without
+  the boxes). The instructor's boxes are kept on their slides as `.ann`
+  (yellow, explanations), `.ann.hint` (blue, on question slides) and
+  `.ann.fix` (red, corrections), plus `.pbox` for the printed theorem
+  boxes. `week10.html`'s deck is the 41 plus eleven question-then-answer
+  builds (15, 16, 20, 28, 31, 34, 35, 36, 38, 39, 41), then Part 2 (63 in
+  all); the builds of 5 and 25 ask nothing and are one slide. ⚠ **Three
+  printed slips, each corrected by the explained deck itself**: slide 9's
+  sub-interval size (a − b) ⁄ n → (b − a) ⁄ n, slide 28's CS 1 619.88 →
+  1 618.88, slide 29's producers' groups (0–2 CHF, 250 → 0–1 CHF: 350,
+  250, 150, 50 = 800). Slide 25's third group prints 184 for 183.33
+  (total 1 767 right) — notes only. Sections 10.1 area/Riemann, 10.2 FTC,
+  10.3 between curves, 10.4 surpluses, 10.5 chain rule backwards, 10.6
+  exercises, 10.7 quiz. **No printed quiz this week**: all twelve are the
+  site's (positions 1,2,4,1,2,0,2,0,1,3,0,4). Homework 10.1–10.15 from
+  `quantitativemethods_I_I_W10_hw.pdf`, no answer sheet; an indefinite
+  integral is marked by the coefficient in front (k) or by F(1) − F(0),
+  since a form cannot mark a function and the + C cancels; Figure 10.11
+  (Lorenz) is redrawn from its equation. Running numbers: barrels 282.01
+  Mio (vs 292 flat); parabola S8 9.25 / S16 9.3125 / S32 9.328125 / 28 ⁄ 3;
+  stadium q₀ 400, p₀ 4, CS 1 618.88, PS 800; café p = 9 − 0.01q at CHF 5:
+  CS 800, PS 1 600, at 6: 450 / 1 500; museum CS 1 000 ln 2 − 500 =
+  193.15, PS 250; recovered cost c = 1 800 (not the fixed 2 000).
+  Page-local additions: mkPlot `fills` (area between f and g or a
+  constant), `.lim` (stacked integral limits), `COLS()` puts a figure in
+  the SECOND column whatever the argument order, walker/formula lines
+  wrap on phones. Assembled from week8.html's engine blocks; no generator.
+  Week 9 (midterm + introduction to integration) is still a scaffold.
   It was cut back on 21 Sep 2026. **`week1.html` still predates this** — 76
   slides against a 42-slide PDF — so trim it the same way before it is taught,
   or knowingly leave it.
