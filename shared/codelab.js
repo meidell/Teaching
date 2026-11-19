@@ -23,6 +23,15 @@
              A setup runs once per page (CREATE OR REPLACE TABLE is wise).
      Python: Python text, or the id of a <script type="text/python">,
              run in the block's own namespace before the student's code.
+   data-ns (Python, 19 Nov 2026)
+     Blocks with the same data-ns share ONE namespace, like the cells of a
+     notebook: a variable made in one block exists in the next. The setup
+     runs once. Running a block first runs, silently, every earlier block
+     of that name that has not run during this visit (so a reload loses
+     nothing); data-step names a block in the message shown when an
+     earlier block fails. CodeLab.get(ns, name) reads a variable.
+     numpy, pandas, matplotlib, scikit-learn (import sklearn), scipy and
+     joblib are loaded when the code imports them.
    data-check (JSON, optional)
      SQL:    {"rows":[[…],…], "ordered":false, "tol":0.01}
              column names are ignored; numbers match within tol; text matches
@@ -63,7 +72,8 @@
     loadPy: 'Chargement du moteur Python (environ 6 Mo, une fois par visite)…',
     loadPk: 'Chargement de {p} (une fois par visite)…', loadData: 'Chargement des tables…',
     rows: '{n} ligne(s)', shown: ', {n} affichées', sec: '{s} s', noRows: 'La requête a réussi et ne renvoie aucune ligne.',
-    ok: 'Correct :', notYet: 'Pas encore.', err: 'Erreur', noOut: 'Le code a tourné et n’a rien affiché. Utilisez print(…) pour voir un résultat.',
+    ok: 'Correct :', notYet: 'Pas encore.', err: 'Erreur', prior: 'Exécution des étapes précédentes de cette page…', priorErr: 'L’étape précédente ({n}) contient une erreur. Corrigez-la et exécutez-la d’abord.',
+    noOut: 'Le code a tourné et n’a rien affiché. Utilisez print(…) pour voir un résultat.',
     nrows: 'Votre résultat a {a} ligne(s) ; la réponse en a {e}.', ncols: 'Votre résultat a {a} colonne(s) ; la réponse en a {e}.',
     cell: 'La ligne {r}, colonne {c} vaut {a} ; attendu autre chose.', order: 'Les bonnes lignes sont là, mais pas dans l’ordre demandé.',
     rowMiss: 'Une ligne attendue manque, par exemple : {r}.',
@@ -78,7 +88,8 @@
     loadPy: 'Loading the Python engine (about 6 MB, once per visit)…',
     loadPk: 'Loading {p} (once per visit)…', loadData: 'Loading the tables…',
     rows: '{n} row(s)', shown: ', the first {n} shown', sec: '{s} s', noRows: 'The query ran and returned no rows.',
-    ok: 'Correct:', notYet: 'Not yet.', err: 'Error', noOut: 'The code ran and printed nothing. Use print(…) to see a result.',
+    ok: 'Correct:', notYet: 'Not yet.', err: 'Error', prior: 'Running the earlier steps of this page…', priorErr: 'The earlier step ({n}) has an error. Fix it and run it first.',
+    noOut: 'The code ran and printed nothing. Use print(…) to see a result.',
     nrows: 'Your result has {a} row(s); the answer has {e}.', ncols: 'Your result has {a} column(s); the answer has {e}.',
     cell: 'Row {r}, column {c} is {a}, which is not the expected value.', order: 'The right rows are there, but not in the order the task asks for.',
     rowMiss: 'An expected row is missing, for example: {r}.',
@@ -287,6 +298,7 @@
     if (i >= 0) s = 'Traceback (most recent call last):\n  ' + s.slice(i);
     return s.replace(/\n\s*$/, '');
   }
+  var shared = {};
   function runPython(block, code, ui) {
     var out = [], err = [];
     return pyEngine(ui.status).then(function (py) {
@@ -294,21 +306,52 @@
       var spec = parseCheck(block);
       var all = setup + '\n' + code + '\n' + (spec && spec.py ? textOf(spec.py) : '');
       var mods = [];
-      if (/^\s*(import|from)\s+(numpy|pandas|matplotlib)/m.test(all)) {
-        all.replace(/^\s*(?:import|from)\s+(numpy|pandas|matplotlib)/gm, function (_, m) { if (mods.indexOf(m) < 0) mods.push(m); });
+      /* a shared namespace (data-ns): the earlier blocks of the same name run first, once per visit */
+      var nsName = block.getAttribute('data-ns') || '';
+      var sh = nsName ? (shared[nsName] || (shared[nsName] = { ns: null, ran: {}, setup: false })) : null;
+      var prior = [];
+      if (sh) {
+        for (var bi = 0; bi < blocks.length && blocks[bi] !== block; bi++) {
+          if (blocks[bi].getAttribute('data-ns') === nsName && !sh.ran[blocks[bi].id]) prior.push(blocks[bi]);
+        }
+        prior.forEach(function (b) { all += '\n' + b.__ta.value; });
+        /* the setup of a shared namespace may sit on any of its blocks (usually the first) */
+        if (!sh.setup) blocks.forEach(function (b) {
+          if (b === block || b.getAttribute('data-ns') !== nsName) return;
+          var st = textOf(b.getAttribute('data-setup'));
+          if (st && setup.indexOf(st) < 0) setup = st + '\n' + setup;
+        });
+        all = setup + '\n' + all;
       }
+      var PK = /^\s*(?:import|from)\s+(numpy|pandas|matplotlib|sklearn|scipy|joblib)/gm;
+      all.replace(PK, function (_, m) { if (mods.indexOf(m) < 0) mods.push(m); });
       var pre = mods.length ? (ui.status(f(T.loadPk, { p: mods.join(', ') })), py.loadPackagesFromImports(all)) : Promise.resolve();
       return pre.then(function () {
         if (mods.indexOf('matplotlib') >= 0 && !mplAgg) { py.runPython("import matplotlib\nmatplotlib.use('Agg')"); mplAgg = true; }
         py.setStdout({ batched: function (s) { out.push(s); } });
         py.setStderr({ batched: function (s) { err.push(s); } });
-        var ns = py.globals.get('dict')();
-        ns.set('__name__', '__main__');
-        var t0 = performance.now(), ret, failed = null;
+        var ns;
+        if (sh) { if (!sh.ns) { sh.ns = py.globals.get('dict')(); sh.ns.set('__name__', '__main__'); } ns = sh.ns; }
+        else { ns = py.globals.get('dict')(); ns.set('__name__', '__main__'); }
+        var t0 = performance.now(), ret, failed = null, priorFail = null;
         var p = Promise.resolve();
-        if (setup) p = p.then(function () { return py.runPythonAsync(setup, { globals: ns }); });
-        p = p.then(function () { ui.status(T.running); return py.runPythonAsync(code, { globals: ns }); })
-          .then(function (r) { ret = r; }, function (e) { failed = e; });
+        if (setup && !(sh && sh.setup)) p = p.then(function () { return py.runPythonAsync(setup, { globals: ns }); }).then(function () { if (sh) sh.setup = true; });
+        if (prior.length) {
+          p = p.then(function () { ui.status(T.prior); });
+          prior.forEach(function (b) {
+            p = p.then(function () {
+              if (priorFail) return;
+              return py.runPythonAsync(b.__ta.value, { globals: ns }).then(function (r) { if (r && r.destroy) r.destroy(); sh.ran[b.id] = true; },
+                function (e) { priorFail = { block: b, e: e }; });
+            });
+          });
+          p = p.then(function () { out.length = 0; err.length = 0; });
+        }
+        p = p.then(function () {
+          if (priorFail) { failed = new Error(f(T.priorErr, { n: priorFail.block.getAttribute('data-step') || priorFail.block.id }) + '\n' + cleanTrace(priorFail.e.message).split('\n').pop()); return; }
+          t0 = performance.now(); ui.status(T.running);
+          return py.runPythonAsync(code, { globals: ns }).then(function (r) { ret = r; if (sh) sh.ran[block.id] = true; }, function (e) { failed = e; });
+        });
         return p.then(function () {
           var secs = (performance.now() - t0) / 1000, h = '', last = '';
           if (!failed && ret !== undefined && ret !== null) {
@@ -334,7 +377,7 @@
           if (!h) h = '<div class="cl-msg">' + T.noOut + '</div>';
           h = '<div class="cl-msg">' + f(T.sec, { s: secs.toFixed(secs < 1 ? 3 : 2) }) + '</div>' + h;
           ui.show(h);
-          ns.destroy && ns.destroy();
+          if (!sh) ns.destroy && ns.destroy();
           if (failed) return { failed: true };
           return { verdict: verdict };
         });
@@ -503,6 +546,8 @@
     block.__run = go;
     block.__ta = ta;
     paint();
+    /* a block mounted inside a hidden screen measures 0 px: size it again when it comes into view */
+    if (window.IntersectionObserver) new IntersectionObserver(function (en) { if (en[0] && en[0].isIntersecting) paint(); }).observe(block);
     blocks.push(block);
   }
   function mountAll(root) {
@@ -521,6 +566,14 @@
     mountAll: mountAll,
     solved: function () { return blocks.filter(function (b) { return !!lsGet(okKey(b)); }).map(function (b) { return b.id; }); },
     blocks: function () { return blocks.slice(); },
+    /* read one variable of a shared namespace (data-ns) as a JS value; undefined when absent */
+    get: function (nsName, name) {
+      var sh = shared[nsName]; if (!sh || !sh.ns || !sh.ns.has(name)) return undefined;
+      var v = sh.ns.get(name), j = v && v.toJs ? v.toJs({ create_proxies: false, dict_converter: Object.fromEntries }) : v;
+      if (v && v.destroy) v.destroy(); return j;
+    },
+    /* the current text of a block's editor */
+    code: function (id) { var b = document.getElementById(id); return b && b.__ta ? b.__ta.value : ''; },
     /* for tests: put code in a block and run it; resolves when done */
     run: function (id, code) { var b = document.getElementById(id); if (code != null) { b.__ta.value = code; b.__ta.dispatchEvent(new Event('input')); } return b.__run(); },
     /* a direct query, for a page's own widgets */

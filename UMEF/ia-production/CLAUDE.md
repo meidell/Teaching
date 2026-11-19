@@ -53,6 +53,48 @@ Pipeline(StandardScaler + OneHotEncoder, LogisticRegression balanced): at 0.5 re
 6. Hand-in place not yet decided (UMEF platform per syllabus, or this site as in
    mfb545) — the hub says "indiqué avant la journée 5".
 
+## ⚠ Day 1 rebuilt as a DOING day (19 Nov 2026) — the model for journées 2–6
+
+Jan Erik, the evening before day 1: "I can not give this course in its current form. The
+course must be learning by doing", "build the Python editing windows into the site. This
+MUST be a DO class. We DO and USE THE TOOLS and then they learn." **No exposé opens a
+block any more** (this replaces the "🎤 exposé + 🛠 atelier" rule above for this course):
+students do the thing with the real tool, and a short mise en commun names what they met.
+The first version (four exposés, Colab notebook, canevas) is `_private/journee1-v1-exposes.html`
+and git history; `files/j1_modele.ipynb` is no longer linked.
+
+- **Morning, in the page** (`/shared/codelab.js`, Pyodide, shared namespace `data-ns="j1"`,
+  blocks `e1…e10`, checks = `<script type="text/python" id="chk2…chk9">`): load the CSV
+  (the setup `j1setup` writes it into Pyodide's file system so `pd.read_csv("jappo_transactions.csv")`
+  is real code), count frauds, explore, split by date, write `preparer()` (≥ 5 numeric
+  variables; the check refuses the `fraude` column, non-finite values, and a function that
+  fails or returns other columns on ONE raw operation — the `pd.get_dummies` trap), train any
+  classifier, count blocked/missed/honest at 0.5, the class challenge (≤ 100 honest blocked;
+  chk8 leaves `_score`, the page writes it to `w1_score`, shown with data-board), `predire()`
+  + asserts. Pyodide 314.0.7 ships scikit-learn 1.8.0 / pandas 3.0.2; first run ≈ 32 MB.
+- **Afternoon, a real server**: the page zips the student's own code as `modele.py` with
+  `files/service/{app.py,Dockerfile,requirements.txt,README.md}` + the CSV (a stored zip built
+  in JS) for a **Hugging Face Docker Space** (FastAPI on 7860, one request at a time on
+  purpose, CORS open, a crash in `predire()` returned as 500 JSON). `requirements.txt` pins
+  the Pyodide versions — change both together. The service RETRAINS at start-up; the page
+  says it is a shortcut and day 2 replaces it with a versioned model file. Widgets: who-are-you,
+  two test operations, four malformed operations, a load test (60 operations at 1/5/20/50 in
+  parallel; text/plain POST so there is no preflight), whole class on one address. Then
+  batch vs one-at-a-time (e10), the six capacity calculations (c1–c6, unchanged), incident
+  report, teams, quiz (8 new questions, positions 1 3 0 2 2 0 3 1).
+- Sections s1…s7, `courseprogress.js` total 7. Fields: w1_signes, w1_score, w1_pourquoi,
+  w1_manque, w1_url, w1_ecart, w1_charge, w1_entrees, w1_incident, w1_equipe.
+- Reference results (≤ 100 honest): logistic + the 9 variables of `_private/j1_solution.py`
+  at 0.9 → 14 of 57 frauds, 77 honest; random forest (100 trees) at 0.4 → 15, 77.
+- Tested 19 Nov 2026 headless (Playwright): every step right and wrong, reload (earlier steps
+  re-run by themselves), the zip, the service started from that zip (same probability as the
+  browser), all widgets against a local uvicorn, 390 px. **NOT tested: creating the Space on
+  Hugging Face** (needs an account) — Jan Erik deploys his own once; guide in
+  `_private/journee1-guide.html`.
+- Consequences for later days: day 2 no longer "puts the model online" (done on day 1) — it
+  starts from the students' Spaces (artefact + version, MLflow, real prices). The deployment
+  canvas, the three failure cases and the law left day 1: place them in days 2 and 6.
+
 ## Senegal and West Africa toned down (19 Nov 2026)
 
 Jan Erik: "just tone down senegal, ouest-africaine". Jàppo Pay is now "un opérateur de

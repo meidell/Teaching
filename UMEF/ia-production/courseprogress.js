@@ -25,7 +25,7 @@ window.CourseProgress=(function(){
   var NS="mia506", K="mia506";
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
-    {mod:'w1', short:'J1', name:'Journée 1 · Du modèle au système en production', total:9, live:true,  href:'journee1.html'},
+    {mod:'w1', short:'J1', name:'Journée 1 · Construire un modèle, le mettre sur un serveur, le casser', total:7, live:true,  href:'journee1.html'},
     {mod:'w2', short:'J2', name:'Journée 2 · Empaqueter et servir un modèle', total:9, live:false, href:'journee2.html'},
     {mod:'w3', short:'J3', name:'Journée 3 · Pipelines de données et automatisation (CI/CD)', total:9, live:false, href:'journee3.html'},
     {mod:'w4', short:'J4', name:'Journée 4 · Surveiller et piloter un modèle en production', total:9, live:false, href:'journee4.html'},
