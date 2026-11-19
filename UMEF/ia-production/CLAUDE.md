@@ -53,6 +53,16 @@ Pipeline(StandardScaler + OneHotEncoder, LogisticRegression balanced): at 0.5 re
 6. Hand-in place not yet decided (UMEF platform per syllabus, or this site as in
    mfb545) — the hub says "indiqué avant la journée 5".
 
+## Senegal and West Africa toned down (19 Nov 2026)
+
+Jan Erik: "just tone down senegal, ouest-africaine". Jàppo Pay is now "un opérateur de
+paiement mobile fictif" with no country (hub, journée 1, notebook, courses.json); amounts
+stay in FCFA (the CSV columns are `*_fcfa`). Section 1.6 is "Les outils, les contraintes du
+terrain et la loi": the five constraints are general, West Africa is one example (cloud
+regions); the laws are the AI Act, "the data-protection law of the country concerned"
+(RGPD, Swiss LPD, loi 2008-12 as three examples) and conventions (108, Malabo). Keep this
+level in journées 2–6: a general statement first, a West African fact only as an example.
+
 ## Facts verified 16 Nov 2026 (re-check before Day 6)
 
 - AI Act: Reg. (EU) 2024/1689 in force 1 Aug 2024; prohibitions 2 Feb 2025; the
