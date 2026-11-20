@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/ia-production/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comprendre la régression logistique · MIA 506 · Swiss UMEF</title>
+<meta name="description" content="MIA 506 : un outil pour comprendre la régression logistique avec deux exemples simples, la réussite à un examen et la fraude sur un paiement. Cinq widgets : la courbe, le calcul pour une personne, la recherche des meilleurs réglages, la lecture des poids, le seuil de décision.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="mlops.css">
+<style>
+/* this page only */
+.rl-step{display:flex;align-items:center;gap:10px;margin:34px 0 12px;}
+.rl-step .n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.rl-step h2{font-size:22px;line-height:1.25;color:var(--navy);margin:0;}
+.rl-chart{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:8px;margin:12px 0;}
+.rl-chart svg{display:block;width:100%;height:auto;}
+.rl-chart text{font:12px "Helvetica Neue",Helvetica,Arial,sans-serif;fill:var(--ink-soft);}
+.rl-chart .ax{stroke:var(--grey);stroke-width:1;}
+.rl-chart .grid{stroke:var(--line);stroke-width:1;}
+.rl-chart .curve{fill:none;stroke:var(--accent);stroke-width:3;}
+.rl-chart .line{fill:none;stroke:#C2571A;stroke-width:2;stroke-dasharray:6 5;}
+.rl-chart .half{stroke:var(--grey);stroke-width:1.2;stroke-dasharray:3 4;}
+.rl-chart .yes{fill:var(--accent);stroke:var(--accent-deep);stroke-width:1;}
+.rl-chart .no{fill:var(--white);stroke:#C2571A;stroke-width:2.2;}
+.rl-chart .me{fill:#C2571A;stroke:#fff;stroke-width:2;}
+.rl-chart .thr{stroke:var(--ink);stroke-width:2;}
+.rl-chart .zone{fill:#C2571A;opacity:.09;}
+.rl-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);margin:4px 2px 0;}
+.rl-leg span{display:inline-flex;align-items:center;gap:6px;}
+.rl-leg i{display:inline-block;width:12px;height:12px;border-radius:50%;}
+.rl-leg i.yes{background:var(--accent);} .rl-leg i.no{border:2.2px solid #C2571A;background:var(--white);}
+.rl-leg i.cv{width:22px;height:0;border-radius:0;border-top:3px solid var(--accent);} .rl-leg i.ln{width:22px;height:0;border-radius:0;border-top:2px dashed #C2571A;}
+.rl-ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 22px;margin:12px 0;}
+.rl-ctrls input[type=range]{width:100%;}
+.rl-calc{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:15px;}
+.rl-calc .r{display:flex;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap;}
+.rl-calc .r:last-child{border-bottom:0;}
+.rl-calc .k{flex:none;width:158px;font-weight:800;color:var(--navy);font-size:13px;}
+.rl-calc .f{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;color:var(--ink);}
+.rl-calc .f b{color:var(--accent);}
+.rl-bars{margin:12px 0;}
+.rl-bar{display:grid;grid-template-columns:190px 1fr 62px;gap:8px;align-items:center;font-size:13.5px;margin:6px 0;}
+.rl-bar .tr{position:relative;height:18px;background:var(--white);border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+.rl-bar .tr::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1.5px solid var(--grey);}
+.rl-bar .tr i{position:absolute;top:0;bottom:0;}
+.rl-bar .tr i.p{left:50%;background:#C2571A;} .rl-bar .tr i.m{right:50%;background:var(--accent);}
+.rl-bar .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--navy);}
+.rl-chk{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:14.5px;}
+.rl-chk label{display:inline-flex;gap:7px;align-items:center;cursor:pointer;}
+.rl-q{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:10px 0;}
+.rl-q .t{font-size:15px;color:var(--ink);margin-bottom:8px;}
+.rl-q .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.rl-q input{width:110px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font:inherit;font-size:15px;background:var(--white);color:var(--ink);}
+.rl-q .fb{font-size:14px;margin-top:8px;display:none;}
+.rl-q .fb.ok{display:block;color:#1F7A4D;} .rl-q .fb.no{display:block;color:#9B2335;}
+.rl-q.done{border-color:#1F7A4D;}
+table.rl-t{border-collapse:collapse;font-size:14px;margin:8px 0;width:100%;}
+table.rl-t td,table.rl-t th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+table.rl-t th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);}
+@media (max-width:560px){.rl-bar{grid-template-columns:118px 1fr 52px;font-size:12.5px;}.rl-calc .k{width:100%;}}
+</style>
+</head>
+<body data-course="mia506">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">IA EN PRODUCTION · OUTIL</span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="journee1.html">← Journée 1</a>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">MIA 506 · outil de la journée 1</div>
+    <h1>Comprendre la <em>régression logistique</em></h1>
+    <p class="sub">La régression logistique est un modèle qui répond par une probabilité à une question à deux réponses possibles : oui ou non, fraude ou pas fraude. C’est le premier modèle que vous entraînez aujourd’hui. Cette page montre ce qu’il calcule, avec deux exemples simples et cinq widgets à manipuler.</p>
+  </div>
+
+  <div class="card">
+    <span class="label why">Pourquoi cette page</span>
+    <p>Dans la journée 1, vous écrivez <code>LogisticRegression()</code>, puis <code>.fit()</code>, et le modèle rend un nombre entre 0 et 1 pour chaque opération de paiement. Pour décider d’un seuil, pour expliquer une décision à un client ou pour comprendre pourquoi une donnée fausse change la réponse, vous devez savoir d’où vient ce nombre.</p>
+    <p><b>Ce que vous faites sur cette page :</b> vous suivez les cinq étapes dans l’ordre. Dans chaque étape, vous bougez les curseurs, vous lisez ce qui change, puis vous répondez à la question de contrôle. La page dit tout de suite si votre réponse est juste.</p>
+  </div>
+
+  <!-- ============ 1 ============ -->
+  <div class="rl-step"><span class="n">1</span><h2>Une droite ne peut pas donner une probabilité, une courbe en S le peut</h2></div>
+  <div class="card">
+    <span class="label case">L’exemple · 20 étudiants, un examen</span>
+    <p>Vingt étudiants ont révisé entre 1 heure et 9 heures pour un examen. Onze ont réussi, neuf ont échoué. Chaque rond du graphique est un étudiant : sa position horizontale est son nombre d’heures de révision ; il est en haut (à 1) s’il a réussi, en bas (à 0) s’il a échoué. La question : <b>quelle est la probabilité de réussir quand on a révisé un certain nombre d’heures ?</b></p>
+    <p>Une <b>probabilité</b> est un nombre entre 0 et 1 : 0 veut dire « jamais », 1 veut dire « toujours », 0,5 veut dire « une fois sur deux ».</p>
+    <div class="rl-chart"><svg id="ch1" viewBox="0 0 680 320" role="img" aria-label="Réussite à l’examen selon les heures de révision, avec la courbe du modèle"></svg>
+      <div class="rl-leg"><span><i class="yes"></i>a réussi</span><span><i class="no"></i>a échoué</span><span><i class="cv"></i>la courbe en S du modèle</span><span id="legLine" style="display:none"><i class="ln"></i>une droite</span></div>
+    </div>
+    <div class="rl-chk"><label><input type="checkbox" id="showLine"> Afficher aussi une droite ajustée sur les mêmes points</label></div>
+    <p>Cochez la case. La droite descend sous 0 pour les étudiants qui révisent peu et monte au-dessus de 1 pour ceux qui révisent beaucoup : elle annonce des probabilités négatives ou supérieures à 100 %, ce qui n’existe pas. La courbe en S, elle, reste toujours entre 0 et 1. Cette courbe s’appelle la <b>sigmoïde</b>.</p>
+    <div class="lab">
+      <div class="lab-title">Bougez les deux réglages de la courbe</div>
+      <div class="rl-ctrls">
+        <div class="ctrl"><label><span>Le poids <i>w</i> : la raideur de la courbe</span> <span class="val" id="wVal"></span></label><input type="range" id="wS" min="0" max="3" step="0.05" value="0.6"></div>
+        <div class="ctrl"><label><span>Le biais <i>b</i> : il déplace la courbe vers la gauche ou la droite</span> <span class="val" id="bVal"></span></label><input type="range" id="bS" min="-12" max="2" step="0.1" value="-1.5"></div>
+      </div>
+      <div class="kpi" id="kpi1"></div>
+      <div class="caption" id="cap1"></div>
+    </div>
+    <p>Le <b>poids</b> <i>w</i> dit de combien une heure de révision en plus fait monter la réponse. Le <b>biais</b> <i>b</i> est la valeur de départ, celle d’un étudiant qui a révisé 0 heure. Ces deux nombres sont les <b>paramètres</b> du modèle : entraîner le modèle, c’est les choisir.</p>
+  </div>
+
+  <!-- ============ 2 ============ -->
+  <div class="rl-step"><span class="n">2</span><h2>Le calcul pour une personne : un score, puis une probabilité</h2></div>
+  <div class="card">
+    <span class="label def">Deux opérations, toujours les mêmes</span>
+    <p>Pour une personne, le modèle fait deux calculs. D’abord un <b>score</b> : le biais plus le poids multiplié par la valeur de la personne. Le score peut être n’importe quel nombre, négatif ou positif. Ensuite la sigmoïde transforme ce score en probabilité : un score de 0 donne 50 %, un score très positif donne presque 100 %, un score très négatif donne presque 0 %.</p>
+    <div class="lab">
+      <div class="lab-title">Choisissez un nombre d’heures de révision</div>
+      <div class="rl-ctrls">
+        <div class="ctrl"><label><span>Heures de révision de cette personne</span> <span class="val" id="hVal"></span></label><input type="range" id="hS" min="0" max="10" step="0.5" value="5"></div>
+      </div>
+      <div class="rl-calc" id="calc2"></div>
+      <div class="caption">Le calcul utilise le poids et le biais que vous avez réglés à l’étape 1. Le point orange du graphique de l’étape 1 montre cette personne sur la courbe.</div>
+    </div>
+    <p>La <b>cote</b> compare la probabilité que l’événement arrive à la probabilité qu’il n’arrive pas : une probabilité de 80 % est une cote de 4 contre 1. La régression logistique a une propriété simple à retenir : <b>chaque heure de plus multiplie la cote par le même nombre</b>, e<sup><i>w</i></sup> (le nombre e, environ 2,718, élevé à la puissance <i>w</i>).</p>
+    <div class="rl-q" data-a="50" data-tol="0.6">
+      <div class="t"><b>Question 1.</b> Un modèle a un biais <i>b</i> = −4 et un poids <i>w</i> = 1. Quelle probabilité de réussite donne-t-il à une personne qui a révisé 4 heures (en %) ?</div>
+      <div class="row"><input inputmode="decimal" placeholder="…"><span>%</span><button class="btn small">Vérifier</button></div>
+      <div class="fb" data-ok="Juste. Le score est −4 + 1 × 4 = 0, et un score de 0 donne toujours 50 %." data-no="Pas encore. Calculez d’abord le score : b + w × heures. Réglez l’étape 1 sur b = −4 et w = 1 pour le voir."></div>
+    </div>
+    <div class="rl-q" data-a="2" data-tol="0.06">
+      <div class="t"><b>Question 2.</b> Un autre modèle a un poids <i>w</i> = 0,7. Par combien une heure de révision en plus multiplie-t-elle la cote de réussite ? Donnez un nombre arrondi à l’unité.</div>
+      <div class="row"><input inputmode="decimal" placeholder="…"><span>fois</span><button class="btn small">Vérifier</button></div>
+      <div class="fb" data-ok="Juste. e^0,7 = 2,01 : chaque heure de plus double la cote, quelle que soit la personne." data-no="Pas encore. Réglez w sur 0,70 à l’étape 1 et lisez la dernière ligne du calcul ci-dessus."></div>
+    </div>
+  </div>
+
+  <!-- ============ 3 ============ -->
+  <div class="rl-step"><span class="n">3</span><h2>Entraîner le modèle : chercher le poids et le biais qui se trompent le moins</h2></div>
+  <div class="card">
+    <span class="label def">Ce que fait <code>.fit()</code></span>
+    <p>Pour comparer deux réglages, il faut une mesure de l’erreur. La régression logistique utilise la <b>perte logistique</b> : pour chaque étudiant, on regarde la probabilité que le modèle donnait à ce qui s’est vraiment passé. Si le modèle donnait 90 % de chances de réussir à un étudiant qui a réussi, l’erreur est petite. S’il lui donnait 5 %, l’erreur est très grande. La perte est la moyenne de ces erreurs sur les vingt étudiants : <b>plus elle est basse, mieux le modèle décrit les données</b>.</p>
+    <div class="lab">
+      <div class="lab-title">Essayez de faire mieux que l’ordinateur</div>
+      <p style="font-size:14.5px;">Retournez aux deux curseurs de l’étape 1 et cherchez la perte la plus basse possible. Elle s’affiche sous les curseurs et ici. Cliquez ensuite sur le bouton : l’ordinateur cherche les meilleurs réglages, comme le fait <code>.fit()</code>.</p>
+      <div class="kpi" id="kpi3"></div>
+      <div class="btn-row"><button class="btn" id="fitBtn">Laisser l’ordinateur chercher les meilleurs réglages</button><button class="btn ghost" id="rstBtn">Remettre les réglages de départ</button></div>
+      <div class="caption" id="cap3"></div>
+    </div>
+    <p>L’ordinateur ne teste pas toutes les combinaisons. Il part d’un réglage, calcule dans quelle direction la perte baisse, fait un pas dans cette direction, et recommence jusqu’à ce que la perte ne baisse plus. Sur 20 étudiants, cela prend quelques millièmes de seconde ; sur les 19 156 opérations de votre jeu d’entraînement, moins d’une seconde.</p>
+    <p>Même avec les meilleurs réglages, la perte n’est pas nulle : un étudiant a réussi avec 3 heures de révision et un autre a échoué avec 5 heures. Aucune courbe ne peut classer tout le monde juste, parce que les heures de révision n’expliquent pas tout.</p>
+  </div>
+
+  <!-- ============ 4 ============ -->
+  <div class="rl-step"><span class="n">4</span><h2>Plusieurs variables : chaque poids ajoute ou retire quelque chose au score</h2></div>
+  <div class="card">
+    <span class="label case">L’exemple · une opération de paiement mobile</span>
+    <p>Votre modèle de fraude utilise plusieurs variables à la fois. Le principe ne change pas : le score est le biais, plus chaque variable multipliée par son poids. Un <b>poids positif</b> fait monter la probabilité de fraude, un <b>poids négatif</b> la fait baisser. Les poids ci-dessous sont <b>inventés pour cet exemple</b> ; ceux de votre modèle seront différents.</p>
+    <table class="rl-t">
+      <tr><th>Variable</th><th>Poids</th><th>Ce que le poids veut dire</th></tr>
+      <tr><td>Biais</td><td>−4,0</td><td>le score de départ : sans aucun signe, la probabilité de fraude est de 1,8 %</td></tr>
+      <tr><td>Montant, par tranche de 100 000 FCFA</td><td>+0,8</td><td>100 000 FCFA de plus multiplient la cote de fraude par 2,2</td></tr>
+      <tr><td>Nouvel appareil (oui = 1, non = 0)</td><td>+1,6</td><td>un téléphone jamais vu sur ce compte multiplie la cote par 5,0</td></tr>
+      <tr><td>Nouveau bénéficiaire (oui = 1, non = 0)</td><td>+1,2</td><td>un destinataire jamais payé par ce compte multiplie la cote par 3,3</td></tr>
+      <tr><td>Opération de nuit, entre 0 h et 5 h (oui = 1)</td><td>+0,9</td><td>la nuit multiplie la cote par 2,5</td></tr>
+      <tr><td>Ancienneté du compte, par année</td><td>−0,5</td><td>chaque année d’ancienneté multiplie la cote par 0,6 : elle baisse</td></tr>
+    </table>
+    <div class="lab">
+      <div class="lab-title">Composez une opération</div>
+      <div class="rl-ctrls">
+        <div class="ctrl"><label><span>Montant de l’opération</span> <span class="val" id="mVal"></span></label><input type="range" id="mS" min="0" max="500000" step="5000" value="25000"></div>
+        <div class="ctrl"><label><span>Ancienneté du compte</span> <span class="val" id="aVal"></span></label><input type="range" id="aS" min="0" max="5" step="0.5" value="2"></div>
+      </div>
+      <div class="rl-chk">
+        <label><input type="checkbox" id="xApp"> Nouvel appareil</label>
+        <label><input type="checkbox" id="xBen"> Nouveau bénéficiaire</label>
+        <label><input type="checkbox" id="xNuit"> Opération de nuit</label>
+      </div>
+      <div class="rl-bars" id="bars4"></div>
+      <div class="kpi" id="kpi4"></div>
+      <div class="caption">Une barre orange vers la droite pousse le score vers « fraude » ; une barre bleue vers la gauche le pousse vers « pas fraude ». La ligne du milieu est zéro.</div>
+    </div>
+    <p><b>L’unité change le poids, pas la réponse.</b> Si le montant est compté en francs et non en tranches de 100 000 FCFA, le poids devient 0,000008 au lieu de 0,8 : le produit poids × montant reste le même. C’est pour cela qu’on ne peut pas comparer deux poids sans connaître leurs unités, et c’est pour cela que vous mettez un <code>StandardScaler</code> avant la régression logistique : il ramène toutes les variables à la même échelle. C’est aussi ce qui explique l’expérience de cet après-midi : un système qui envoie le montant en milliers au lieu de francs envoie un nombre mille fois trop petit, et la probabilité change.</p>
+    <div class="rl-q" data-a="59.9" data-tol="0.6">
+      <div class="t"><b>Question 3.</b> Composez cette opération : 150 000 FCFA, compte ouvert depuis 1 an, nouvel appareil, nouveau bénéficiaire, opération de nuit. Quelle probabilité de fraude le modèle donne-t-il (en %) ?</div>
+      <div class="row"><input inputmode="decimal" placeholder="…"><span>%</span><button class="btn small">Vérifier</button></div>
+      <div class="fb" data-ok="Juste. Score = −4,0 + 0,8 × 1,5 + 1,6 + 1,2 + 0,9 − 0,5 × 1 = 0,4 ; et 1 ÷ (1 + e^−0,4) = 59,9 %." data-no="Pas encore. Réglez les deux curseurs et cochez les trois cases, puis lisez la probabilité sous les barres."></div>
+    </div>
+  </div>
+
+  <!-- ============ 5 ============ -->
+  <div class="rl-step"><span class="n">5</span><h2>De la probabilité à la décision : le seuil</h2></div>
+  <div class="card">
+    <span class="label case">L’exemple · 40 opérations, dont 8 fraudes</span>
+    <p>Le modèle rend une probabilité ; il ne décide rien. C’est vous qui fixez un <b>seuil</b> : l’opération est bloquée si sa probabilité de fraude est égale ou supérieure au seuil, acceptée sinon. Le graphique montre 40 opérations rangées selon la probabilité que le modèle leur donne. La ligne du haut contient les 8 vraies fraudes, la ligne du bas les 32 opérations honnêtes.</p>
+    <div class="rl-chart"><svg id="ch5" viewBox="0 0 680 210" role="img" aria-label="Quarante opérations rangées par probabilité de fraude, avec le seuil"></svg>
+      <div class="rl-leg"><span><i class="yes"></i>fraude</span><span><i class="no"></i>opération honnête</span><span>zone orange : opérations bloquées</span></div>
+    </div>
+    <div class="lab">
+      <div class="lab-title">Déplacez le seuil</div>
+      <div class="rl-ctrls"><div class="ctrl"><label><span>Seuil : on bloque à partir de</span> <span class="val" id="tVal"></span></label><input type="range" id="tS" min="0.05" max="0.95" step="0.01" value="0.5"></div></div>
+      <div class="kpi" id="kpi5"></div>
+      <div class="caption" id="cap5"></div>
+    </div>
+    <p>Aucun seuil ne supprime les deux erreurs à la fois. Un seuil bas attrape presque toutes les fraudes, mais bloque beaucoup de clients honnêtes, qui appellent le service clientèle. Un seuil haut laisse les clients tranquilles, mais laisse passer des fraudes. Dans la journée 1, la règle du défi est une réponse à ce choix : pas plus de 100 clients honnêtes bloqués, et le plus de fraudes arrêtées possible.</p>
+    <p>Deux mesures résument un seuil. Le <b>rappel</b> est la part des vraies fraudes que le modèle a bloquées. La <b>précision</b> est la part des opérations bloquées qui étaient vraiment des fraudes.</p>
+    <div class="rl-q" data-a="7" data-tol="0.01">
+      <div class="t"><b>Question 4.</b> Avec un seuil de 0,50, combien de clients honnêtes sont bloqués ?</div>
+      <div class="row"><input inputmode="decimal" placeholder="…"><span>clients</span><button class="btn small">Vérifier</button></div>
+      <div class="fb" data-ok="Juste : 7 opérations honnêtes ont une probabilité de 0,50 ou plus. Le même seuil laisse passer 2 fraudes sur 8." data-no="Pas encore. Mettez le curseur sur 0,50 et lisez la case « clients honnêtes bloqués »."></div>
+    </div>
+    <div class="rl-q" data-a="0.80" data-tol="0.004">
+      <div class="t"><b>Question 5.</b> La banque accepte au plus 2 clients honnêtes bloqués. Quel est le seuil le plus bas qui respecte cette règle ? Donnez-le avec deux décimales.</div>
+      <div class="row"><input inputmode="decimal" placeholder="…"><button class="btn small">Vérifier</button></div>
+      <div class="fb" data-ok="Juste : avec un seuil de 0,80, il reste 2 clients honnêtes bloqués (ceux à 0,85 et 0,91), et le modèle arrête 4 fraudes sur 8. À 0,79, un troisième client honnête est bloqué." data-no="Pas encore. Descendez le seuil depuis 0,95 et arrêtez-vous juste avant que la case « clients honnêtes bloqués » passe à 3."></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Le lien avec votre code de la journée 1</span>
+    <table class="rl-t">
+      <tr><th>Sur cette page</th><th>Dans votre code</th></tr>
+      <tr><td>Le poids de chaque variable et le biais</td><td><code>modele.coef_</code> et <code>modele.intercept_</code>, après <code>.fit()</code></td></tr>
+      <tr><td>Chercher les réglages qui donnent la perte la plus basse</td><td><code>modele.fit(X_train, y_train)</code></td></tr>
+      <tr><td>La probabilité de fraude d’une opération</td><td><code>modele.predict_proba(X)[:, 1]</code></td></tr>
+      <tr><td>Bloquer à partir d’un seuil</td><td><code>proba &gt;= seuil</code></td></tr>
+      <tr><td>Ramener les variables à la même échelle</td><td><code>StandardScaler()</code> dans le <code>Pipeline</code></td></tr>
+    </table>
+    <div class="btn-row"><a class="btn" href="journee1.html">Retourner à la journée 1 →</a></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+function $(id){return document.getElementById(id);}
+function sig(z){return 1/(1+Math.exp(-z));}
+function fr(n,d){return n.toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).replace(/ | /g,' ');}
+var NS='http://www.w3.org/2000/svg';
+function el(tag,at,txt){var e=document.createElementNS(NS,tag);for(var k in at)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;return e;}
+
+/* ---------- the exam data: hours revised, passed (1) or failed (0) ---------- */
+var X=[1,1.5,2,2,2.5,3,3,3.5,4,4,4.5,5,5,5.5,6,6.5,7,8,8.5,9];
+var Y=[0,0,0,0,0,0,1,0,0,1,1,0,1,1,1,1,1,1,1,1];
+var START={b:-1.5,w:0.6}, b=START.b, w=START.w;
+function loss(b,w){var s=0;for(var i=0;i<X.length;i++){var p=Math.min(1-1e-12,Math.max(1e-12,sig(b+w*X[i])));s-=Y[i]?Math.log(p):Math.log(1-p);}return s/X.length;}
+function right(b,w){var n=0;for(var i=0;i<X.length;i++)if((sig(b+w*X[i])>=0.5)===!!Y[i])n++;return n;}
+/* the best settings, by Newton's method (what .fit() finds) */
+var BEST=(function(){var b=0,w=0;for(var it=0;it<40;it++){var g0=0,g1=0,h00=0,h01=0,h11=0;for(var i=0;i<X.length;i++){var p=sig(b+w*X[i]),s=p*(1-p);g0+=p-Y[i];g1+=(p-Y[i])*X[i];h00+=s;h01+=s*X[i];h11+=s*X[i]*X[i];}
+  var det=h00*h11-h01*h01;b-=(h11*g0-h01*g1)/det;w-=(-h01*g0+h00*g1)/det;}return {b:b,w:w,l:loss(b,w)};})();
+/* a least-squares straight line through the same points */
+var LINE=(function(){var n=X.length,mx=0,my=0,sxy=0,sxx=0;X.forEach(function(x,i){mx+=x;my+=Y[i];});mx/=n;my/=n;X.forEach(function(x,i){sxy+=(x-mx)*(Y[i]-my);sxx+=(x-mx)*(x-mx);});var a=sxy/sxx;return {a:a,c:my-a*mx};})();
+
+/* ---------- chart 1 ---------- */
+var W=680,H=320,ML=58,MR=16,MT=28,MB=44;
+function px(x){return ML+(x/10)*(W-ML-MR);}
+function py(p){return MT+(1.25-p)/1.5*(H-MT-MB);}          /* y axis from −0.25 to 1.25 so the straight line can leave [0,1] */
+function draw1(){
+  var s=$('ch1');while(s.firstChild)s.removeChild(s.firstChild);
+  [0,0.5,1].forEach(function(p){s.appendChild(el('line',{x1:ML,x2:W-MR,y1:py(p),y2:py(p),'class':p===0.5?'half':'grid'}));
+    s.appendChild(el('text',{x:ML-8,y:py(p)+4,'text-anchor':'end'},p===0?'0':p===1?'1':'0,5'));});
+  s.appendChild(el('text',{x:ML-46,y:MT-12},'Probabilité de réussir'));
+  for(var x=0;x<=10;x+=1){s.appendChild(el('line',{x1:px(x),x2:px(x),y1:py(-0.25),y2:py(-0.25)+5,'class':'ax'}));s.appendChild(el('text',{x:px(x),y:py(-0.25)+19,'text-anchor':'middle'},String(x)));}
+  s.appendChild(el('line',{x1:ML,x2:W-MR,y1:py(-0.25),y2:py(-0.25),'class':'ax'}));
+  s.appendChild(el('text',{x:(ML+W-MR)/2,y:H-6,'text-anchor':'middle'},'Heures de révision'));
+  if($('showLine').checked){s.appendChild(el('line',{x1:px(0),y1:py(Math.max(-0.25,LINE.c)),x2:px(10),y2:py(Math.min(1.25,LINE.c+LINE.a*10)),'class':'line'}));}
+  var d='';for(var i=0;i<=200;i++){var xx=i/20;d+=(i?'L':'M')+px(xx).toFixed(1)+' '+py(sig(b+w*xx)).toFixed(1);}
+  s.appendChild(el('path',{d:d,'class':'curve'}));
+  /* stack identical points so both stay visible */
+  var seen={};X.forEach(function(x,i){var k=x+'_'+Y[i],n=seen[k]||0;seen[k]=n+1;
+    s.appendChild(el('circle',{cx:px(x),cy:py(Y[i])+(Y[i]?-1:1)*n*13,r:6,'class':Y[i]?'yes':'no'}));});
+  var h=parseFloat($('hS').value);s.appendChild(el('circle',{cx:px(h),cy:py(sig(b+w*h)),r:7,'class':'me'}));
+}
+function paint1(){
+  $('wVal').textContent=fr(w,2);$('bVal').textContent=fr(b,1);
+  var l=loss(b,w),r=right(b,w),half=w>0?-b/w:null;
+  var k='<div class="k"><div class="v">'+(half==null||half<0||half>10?'hors du graphique':fr(half,1)+' h')+'</div><div class="l">Heures pour avoir 50 %</div></div>'+
+    '<div class="k"><div class="v">'+r+' sur 20</div><div class="l">Étudiants classés juste</div></div>'+
+    '<div class="k '+(l<BEST.l+0.005?'good':'')+'"><div class="v">'+fr(l,3)+'</div><div class="l">Perte (étape 3)</div></div>';
+  $('kpi1').innerHTML=k;
+  $('cap1').textContent=w===0?'Avec un poids de 0, la courbe est plate : les heures de révision ne changent rien à la réponse.':'« Classé juste » : le modèle donne 50 % ou plus à un étudiant qui a réussi, ou moins de 50 % à un étudiant qui a échoué.';
+  $('kpi3').innerHTML='<div class="k '+(l<BEST.l+0.005?'good':'')+'"><div class="v">'+fr(l,3)+'</div><div class="l">Votre perte</div></div>'+
+    '<div class="k"><div class="v">'+(fitted?fr(BEST.l,3):'?')+'</div><div class="l">La perte la plus basse possible</div></div>'+
+    '<div class="k"><div class="v">'+fr(w,2)+' · '+fr(b,1)+'</div><div class="l">Vos réglages : w · b</div></div>';
+  draw1();paint2();
+}
+var fitted=false;
+function paint2(){
+  var h=parseFloat($('hS').value),z=b+w*h,p=sig(z),od=p/(1-p);
+  $('hVal').textContent=fr(h,1)+' h';
+  function cote(o){return o>=1?fr(o,o>=10?0:1)+' contre 1':'1 contre '+fr(1/o,(1/o)>=10?0:1);}
+  $('calc2').innerHTML=
+    '<div class="r"><span class="k">1 · Le score</span><span class="f">b + w × heures = '+fr(b,1)+' + '+fr(w,2)+' × '+fr(h,1)+' = <b>'+fr(z,2)+'</b></span></div>'+
+    '<div class="r"><span class="k">2 · La probabilité</span><span class="f">1 ÷ (1 + e<sup>−score</sup>) = 1 ÷ (1 + '+fr(Math.exp(-z),3)+') = <b>'+fr(p*100,1)+' %</b></span></div>'+
+    '<div class="r"><span class="k">La cote</span><span class="f">'+fr(p*100,1)+' % contre '+fr((1-p)*100,1)+' %, soit <b>'+cote(od)+'</b></span></div>'+
+    '<div class="r"><span class="k">Une heure de plus</span><span class="f">multiplie la cote par e<sup>w</sup> = e<sup>'+fr(w,2)+'</sup> = <b>'+fr(Math.exp(w),2)+'</b></span></div>';
+}
+$('wS').addEventListener('input',function(){w=parseFloat(this.value);paint1();});
+$('bS').addEventListener('input',function(){b=parseFloat(this.value);paint1();});
+$('hS').addEventListener('input',function(){paint2();draw1();});
+$('showLine').addEventListener('change',function(){$('legLine').style.display=this.checked?'':'none';draw1();});
+function setBW(nb,nw){b=nb;w=nw;$('bS').value=b;$('wS').value=w;paint1();}
+$('fitBtn').addEventListener('click',function(){
+  fitted=true;var b0=b,w0=w,t0=null,still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function done(){setBW(BEST.b,BEST.w);$('cap3').textContent='Les meilleurs réglages : poids w = '+fr(BEST.w,2)+', biais b = '+fr(BEST.b,2)+'. La perte la plus basse possible est '+fr(BEST.l,3)+' ; la courbe passe par 50 % à '+fr(-BEST.b/BEST.w,1)+' heures de révision, et '+right(BEST.b,BEST.w)+' étudiants sur 20 sont classés juste.';}
+  if(still)return done();
+  function step(t){if(t0==null)t0=t;var u=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-u,3);b=b0+(BEST.b-b0)*e;w=w0+(BEST.w-w0)*e;paint1();if(u<1)requestAnimationFrame(step);else done();}
+  requestAnimationFrame(step);
+});
+$('rstBtn').addEventListener('click',function(){setBW(START.b,START.w);$('cap3').textContent='';});
+
+/* ---------- 4 · reading the weights of a fraud model (weights invented for the example) ---------- */
+var WT={b:-4.0,m:0.8,app:1.6,ben:1.2,nuit:0.9,anc:-0.5};
+function paint4(){
+  var m=parseFloat($('mS').value),a=parseFloat($('aS').value);
+  $('mVal').textContent=fr(m,0)+' FCFA';$('aVal').textContent=fr(a,1)+(a>1?' ans':' an');
+  var parts=[['Biais',WT.b],['Montant',WT.m*m/100000],['Nouvel appareil',$('xApp').checked?WT.app:0],['Nouveau bénéficiaire',$('xBen').checked?WT.ben:0],['Opération de nuit',$('xNuit').checked?WT.nuit:0],['Ancienneté du compte',WT.anc*a]];
+  var z=0,MAX=5;
+  $('bars4').innerHTML=parts.map(function(p){z+=p[1];var wd=Math.min(50,Math.abs(p[1])/MAX*50);
+    return '<div class="rl-bar"><span>'+p[0]+'</span><span class="tr"><i class="'+(p[1]>=0?'p':'m')+'" style="width:'+wd+'%"></i></span><span class="v">'+(p[1]>0?'+':'')+fr(p[1],2).replace('-','−')+'</span></div>';}).join('');
+  var p=sig(z);
+  $('kpi4').innerHTML='<div class="k"><div class="v">'+fr(z,2).replace('-','−')+'</div><div class="l">Score : la somme des barres</div></div>'+
+    '<div class="k '+(p>=0.5?'bad':'good')+'"><div class="v">'+fr(p*100,1)+' %</div><div class="l">Probabilité de fraude</div></div>'+
+    '<div class="k"><div class="v">'+(p>=0.5?'bloquée':'acceptée')+'</div><div class="l">Décision avec un seuil de 50 %</div></div>';
+}
+['mS','aS'].forEach(function(i){$(i).addEventListener('input',paint4);});['xApp','xBen','xNuit'].forEach(function(i){$(i).addEventListener('change',paint4);});
+
+/* ---------- 5 · the threshold: 40 operations with the probability a model gave them ---------- */
+var FR=[0.97,0.93,0.88,0.81,0.66,0.52,0.31,0.12];
+var HO=[0.02,0.03,0.03,0.04,0.05,0.05,0.06,0.07,0.08,0.09,0.10,0.11,0.12,0.14,0.15,0.17,0.19,0.21,0.24,0.27,0.30,0.34,0.38,0.42,0.47,0.55,0.61,0.68,0.74,0.79,0.85,0.91];
+function paint5(){
+  var t=parseFloat($('tS').value),s=$('ch5');while(s.firstChild)s.removeChild(s.firstChild);
+  var L=92,R=664,x=function(p){return L+p*(R-L);};
+  s.appendChild(el('rect',{x:x(t),y:18,width:R-x(t)+8,height:150,'class':'zone'}));
+  s.appendChild(el('text',{x:8,y:66},'Fraudes'));s.appendChild(el('text',{x:8,y:132},'Honnêtes'));
+  s.appendChild(el('line',{x1:L,x2:R,y1:168,y2:168,'class':'ax'}));
+  for(var i=0;i<=10;i++){s.appendChild(el('line',{x1:x(i/10),x2:x(i/10),y1:168,y2:173,'class':'ax'}));s.appendChild(el('text',{x:x(i/10),y:188,'text-anchor':'middle'},fr(i/10,1)));}
+  s.appendChild(el('text',{x:(L+R)/2,y:205,'text-anchor':'middle'},'Probabilité de fraude donnée par le modèle'));
+  FR.forEach(function(p){s.appendChild(el('circle',{cx:x(p),cy:62,r:7,'class':'yes'}));});
+  var last=-1,row=0;HO.forEach(function(p){row=(x(p)-last<15)?row+1:0;if(row>2)row=0;last=x(p);s.appendChild(el('circle',{cx:x(p),cy:128-row*15+15,r:6,'class':'no'}));});
+  s.appendChild(el('line',{x1:x(t),x2:x(t),y1:12,y2:172,'class':'thr'}));
+  s.appendChild(el('text',{x:x(t)+(t>0.8?-6:6),y:12,'text-anchor':t>0.8?'end':'start'},'seuil '+fr(t,2)));
+  var tp=FR.filter(function(p){return p>=t-1e-9;}).length,fp=HO.filter(function(p){return p>=t-1e-9;}).length,fn=FR.length-tp;
+  $('tVal').textContent=fr(t,2);
+  $('kpi5').innerHTML='<div class="k good"><div class="v">'+tp+' sur 8</div><div class="l">Fraudes bloquées</div></div>'+
+    '<div class="k '+(fn?'bad':'')+'"><div class="v">'+fn+'</div><div class="l">Fraudes manquées</div></div>'+
+    '<div class="k '+(fp?'bad':'')+'"><div class="v">'+fp+' sur 32</div><div class="l">Clients honnêtes bloqués</div></div>'+
+    '<div class="k"><div class="v">'+fr(tp/8*100,0)+' %</div><div class="l">Rappel</div></div>'+
+    '<div class="k"><div class="v">'+(tp+fp?fr(tp/(tp+fp)*100,0)+' %':'—')+'</div><div class="l">Précision</div></div>';
+  $('cap5').textContent='Avec ce seuil, le modèle bloque '+(tp+fp)+' opérations : '+tp+' fraude'+(tp>1?'s':'')+' et '+fp+' opération'+(fp>1?'s':'')+' honnête'+(fp>1?'s':'')+'.';
+}
+$('tS').addEventListener('input',paint5);
+
+/* ---------- the control questions ---------- */
+function num(s){s=String(s||'').trim().replace(/[\s'’%]/g,'').replace(',','.');return parseFloat(s);}
+document.querySelectorAll('.rl-q').forEach(function(q,i){
+  var inp=q.querySelector('input'),bt=q.querySelector('button'),fb=q.querySelector('.fb'),a=parseFloat(q.dataset.a),tol=parseFloat(q.dataset.tol);
+  function check(){var v=num(inp.value);if(isNaN(v)){fb.className='fb no';fb.textContent='Entrez un nombre.';return;}
+    var ok=Math.abs(v-a)<=tol+1e-9;
+    fb.className='fb '+(ok?'ok':'no');fb.textContent=(ok?'✓ ':'')+fb.getAttribute(ok?'data-ok':'data-no');q.classList.toggle('done',ok);}
+  bt.addEventListener('click',check);inp.addEventListener('keydown',function(e){if(e.key==='Enter')check();});
+});
+
+paint1();paint4();paint5();
+document.addEventListener('course-theme',function(){draw1();paint5();});
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

@@ -145,3 +145,17 @@ level in journées 2–6: a general statement first, a West African fact only as
 - Push, so the Colab link and the CSV URL resolve; open the notebook once in Colab.
 - Day 5 needs an LLM for the RAG atelier: decide (free Gemini API key from Google AI
   Studio, or a small open model on Colab's GPU).
+
+## Tool: `regression-logistique.html` (20 Nov 2026)
+
+Jan Erik, during day 1: "a tool for understanding logistic regression using easy examples and
+widgets". One scrolling page, no engine, no progress tracking, own inline JS and SVG (styles
+`rl-*` in the page). Five steps: (1) 20 students, hours revised → passed or failed; the S curve
+with sliders for weight w and bias b, a least-squares straight line to show why it fails;
+(2) the calculation for one person (score, probability, odds, e^w); (3) the log-loss and a button
+that animates to the fitted values (Newton in the page: w 1.42, b −5.71, loss 0.319, 17 of 20);
+(4) a payment operation with six weights INVENTED for the example and labelled so (contribution
+bars; the unit changes the weight, hence StandardScaler); (5) the threshold on 40 fixed operations
+(8 frauds): blocked, missed, honest blocked, recall, precision. Five control questions (answers
+50 · 2 · 59.9 · 7 · 0.80, absolute tolerances). Linked from journée 1's top bar and its
+"train a model" step, and from the hub's top bar. Tested headless at 1280 and 390 px.
