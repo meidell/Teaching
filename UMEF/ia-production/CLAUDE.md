@@ -53,6 +53,22 @@ Pipeline(StandardScaler + OneHotEncoder, LogisticRegression balanced): at 0.5 re
 6. Hand-in place not yet decided (UMEF platform per syllabus, or this site as in
    mfb545) — the hub says "indiqué avant la journée 5".
 
+## ⚠ INDIVIDUAL projects, no teams (20 Nov 2026)
+
+Jan Erik, during day 1: "no group project. individual projects". The 40 % project is done
+ALONE and graded individually; this overrides every "team" line in this file (Teams: three
+teams of 3–4; deviation 3). The teams board left the hub (`teams.js` is no longer loaded),
+day 1's field is `w1_projet` (was `w1_equipe`), `courses.json → project` lists day 1's ten
+real fields. ⚠ Open: the 8 Jan presentation length (the hub says "indiquée avant la journée
+5" — 11 individual talks of 15 + 10 min do not fit one afternoon) and the 15-page report
+limit (kept). Day 5's red-teaming and day 6's risk audit are done on ANOTHER STUDENT's
+system. Same day: "Ce cours en bref" panel (`#enbref`) added to the hub, the "Le déroulement
+d’une journée" block removed, a "▶ Diapositives" button in the top bar of the day page and
+the hub. Slides: `journee1-slides.html` (85 slides, no solutions, public, linked) and
+`journee1-slides-enseignant.html` (101 slides with solutions, public but UNLINKED — the day
+page's button switches to it on an unlocked instructor device); both generated, source deck
+in `_private/journee1-slides.html`. Teacher solution PDFs for 1.1, 1.2, 1.4, 1.5 in `_private/`.
+
 ## ⚠ Day 1 rebuilt as a DOING day (19 Nov 2026) — the model for journées 2–6
 
 Jan Erik, the evening before day 1: "I can not give this course in its current form. The
