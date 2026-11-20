@@ -56,7 +56,7 @@ function renderList(){
     if(s.block!==blk){
       blk=s.block;var b=DAY.blocks[blk-1];
       var h=document.createElement('div');h.className='part-head';
-      h.innerHTML='<span class="pt">Partie '+b.n+' · '+b.t+'</span><span class="pd">'+b.name+'</span>';
+      h.innerHTML='<span class="pt">'+(b.label||('Partie '+b.n))+' · '+b.t+'</span><span class="pd">'+b.name+'</span>';
       list.appendChild(h);
     }
     var done=!!progress.done[s.id];

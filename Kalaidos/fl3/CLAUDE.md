@@ -301,3 +301,22 @@ includes what we do on Saturday and what we've done so far — maybe not using t
 - Tested headless 20 Nov 2026 (1280 and 390 px): every amount and entry solved, the four
   drawn balance sheets balance, the passage accounts end at zero, four sections complete,
   no page error, no sideways scroll.
+
+### ⚠ The four cases moved INTO séances 4 and 5 (20 Nov 2026, evening)
+
+Jan Erik, on seeing the separate page: "integrate the cases into the planning of séance 4 and 5 —
+not on separate pages". `samedi.html` is now a redirect (to seance4.html; `#s3`/`#s4` → seance5.html);
+module `ws` left courses.json and courseprogress.js. The section ORDER of both pages changed, the
+section IDS did not (saved marks hold):
+- **Séance 4** — Partie 1: 4.1 scission (s1), 4.2 transfert (s4), both exposés · Partie 2: 4.3 cas 1
+  (s9, field `w4_cas1`), 4.4 cas 2 (s10, `w4_cas2`) · « Après la séance · ou en classe s’il reste du
+  temps »: 4.5 (s2), 4.6 (s3), 4.7 (s5), 4.8 quiz (s6), 4.9 Jeopardy (s7), 4.10 EEA (s8). Total 10.
+- **Séance 5** — Partie 1: 5.1 (s1), 5.2 agio/conversion/postposition (s3) · Partie 2: 5.3 cas 3
+  (s8, `w5_cas3`), 5.4 cas 4 (s9, `w5_cas4`), 5.5 fin du samedi (s6) · après: 5.6 (s2), 5.7 (s4),
+  5.8 quiz (s5), 5.9 EEA (s7). Total 9.
+- bloc.js: a block may carry `label` (replaces « Partie n » in the menu). No minutes on these two
+  pages' chips (`min:0`). Every nav-foot was rewritten to follow the new order (the old Back/Next
+  targets were wrong in several sections). Widget ids of the cases are unchanged (ca/cj/ci, cb/ja/jb/
+  cy/ct, cd/jc/cp, ck, `dosRows`), so `_private/check_samedi.py` and the corrigé PDF still apply.
+- Tested headless (1280 and 390 px): all four cases solved inside the séance pages, sections mark,
+  Next chain = menu order, no page error, no sideways scroll.
