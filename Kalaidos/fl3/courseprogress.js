@@ -25,6 +25,7 @@ window.CourseProgress=(function(){
     {mod:'w3', short:'S3', name:'Séance 3 · Fusion', total:7, live:true, href:'seance3.html'},
     {mod:'w4', short:'S4', name:'Séance 4 · Scission et transfert de patrimoine', total:8, live:true, href:'seance4.html'},
     {mod:'w5', short:'S5', name:'Séance 5 · Assainissement', total:7, live:true, href:'seance5.html'},
+    {mod:'ws', short:'Cas', name:'Samedi 21 novembre · quatre cas', total:4, live:true, opt:true, href:'samedi.html'},
     {mod:'w6', short:'S6', name:'Séance 6 · Liquidation', total:7, live:true, href:'seance6.html'},
     {mod:'w7', short:'S7', name:'Séance 7 · Évaluation d’entreprise', total:7, live:true, href:'seance7.html'},
     {mod:'w8', short:'S8', name:'Séance 8 · Comptes consolidés : fondements, BC 1 → BC 2', total:8, live:true, href:'seance8.html'},

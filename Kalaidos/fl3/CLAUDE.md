@@ -273,3 +273,31 @@ Jan Erik: "create a pdf for session 2 as for session 1. add a button to reset th
 - `seance2-slides.html` (25 slides, séance 1's engine) → `files/seance2-slides.pdf` via `_build/slides_pdf.py`; 🖥️ / ⬇ PDF in seance2's topbar. The workshop slides give the data, the questions and the entry patterns WITHOUT amounts: the PDF goes to students, the answers are on the page (and in the private key `_private/seance2-corrige.pdf`).
 - ⚠ Fixed in both decks: the download button's `.dl` rule also hit the calendar's highlighted row `li.dl` (fixed on screen, hidden in print), so séance 1's PDF had lost its "dernière heure" row. The button rules are now `a.dl`.
 - bloc.js: every builder registers what it stores (`regReset(box, steps, picks, cls)`); `mountResets()` puts "↺ Recommencer cette section" above `.nav-foot` in every section holding a widget or a `[data-work]` field. `resetSection(id)` clears, on this device, the steps and `progress.picks` of the widgets INSIDE that section, its `done` mark and its text fields, then reloads on the same section (`sessionStorage fl3_reopen_<mod>`). The database keeps what was already sent. Probed headlessly on seance2: 2.2 emptied, 2.4 kept, reopened on 2.2.
+
+## Samedi 21 Nov 2026 — `samedi.html`, two exposés and four cases (built 20 Nov 2026)
+
+Séance 3 (fusion, Thu 19 Nov) was CANCELLED; no replacement date yet (the hub note and
+samedi.html say it will be announced). Jan Erik for the Saturday: "I can only explain max
+2 x 1.5 hours. the rest needs to be cases where they solve this individually and or in chat
+rooms and then come back and show their results … at least 4 full hours of 3-4 cases that
+includes what we do on Saturday and what we've done so far — maybe not using the same example".
+- `samedi.html`, module **`ws`** (courses.json modules + project section `sam`, fields
+  `ws_cas1…4`; `courseprogress.js` chapter `opt:true`, so it does not lower anyone's course %;
+  menu tool; a note on the hub; a card on seance4/seance5 home). No presence slot: presence
+  stays on seance4 (w4) and seance5 (w5). The exposés are 4.1 + 4.4 and 5.1 + 5.3.
+- ONE new fictional firm, **Cafés Cuendet** (Hélène Cuendet 75 %, Marc Tissot 25 %), every
+  figure asserted in `_private/check_samedi.py`. Cas 1 (S1+S2, CHF): entreprise individuelle
+  → SA, capital propre de transformation 375'000, 3'000 actions, investor in at the valeur
+  intrinsèque 125 (at par Hélène loses 18'750), opening bilan 662'000. Cas 2 (S4, KCHF):
+  scission par SÉPARATION booked in BOTH companies (actif net 300, agio 200, bilan après
+  1'540), asymmetric at REAL values (Tissot 375, soulte max 30, 75 of cash reattributed),
+  transfert de patrimoine for 380 (gain 80). Cas 3 (S5, KCHF): Boutiques Cuendet SA, fonds
+  propres 140 < seuil 180, −60 after value corrections (surendettement), 725c would give 40
+  against a seuil of 230; twelve entries, bilan après 1'245, fonds propres 385. Cas 4:
+  twelve points of a file to check (9 wrong, 3 right) + seven corrected amounts, S1/S2/S4/S5.
+- Each case ends on a `.montre` card "Retour en classe · ce que vous montrez" (what to
+  share, what to say, one text field, `data-board` for the anonymous screen). No minute
+  timings on the page. No fusion in any case.
+- Tested headless 20 Nov 2026 (1280 and 390 px): every amount and entry solved, the four
+  drawn balance sheets balance, the passage accounts end at zero, four sections complete,
+  no page error, no sideways scroll.

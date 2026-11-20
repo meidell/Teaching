@@ -116,7 +116,7 @@
     '.codelab .cl-sp{flex:1;}' +
     '.codelab .cl-reset{background:none;border:0;color:var(--cl-soft);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px;padding:0;}' +
     '.codelab .cl-ed{display:flex;background:var(--cl-ed);position:relative;}' +
-    '.codelab .cl-gut{flex:0 0 auto;padding:10px 6px 10px 8px;text-align:right;background:var(--cl-gut);color:var(--cl-gutx);user-select:none;-webkit-user-select:none;}' +
+    '.codelab .cl-gut{flex:0 0 auto;min-width:2.2em;max-width:3.6em;box-sizing:content-box;white-space:pre;overflow:hidden;padding:10px 6px 10px 8px;text-align:right;background:var(--cl-gut);color:var(--cl-gutx);user-select:none;-webkit-user-select:none;}' +
     '.codelab .cl-gut,.codelab textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;line-height:1.5;}' +
     '.codelab textarea{flex:1 1 auto;min-width:0;border:0;outline:0;resize:none;background:transparent;color:var(--cl-ink);padding:10px 10px;white-space:pre;overflow-x:auto;overflow-y:hidden;tab-size:4;-moz-tab-size:4;margin:0;box-sizing:border-box;}' +
     '.codelab textarea:focus{box-shadow:inset 0 0 0 2px #4A78C2;}' +
