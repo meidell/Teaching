@@ -422,3 +422,17 @@ global `EscWall`; `courseprogress.js` a port).
   "The scale") and the hub's Course reference. Tested headless at 1320 and 390 px: no errors, hover,
   click, search, country filter, slider, Arvane preset, drag, wheel, buttons, tap, two-finger pinch,
   `#arvane` deep link, scrollWidth = viewport width.
+
+- **week5 step 7 — an OPTIONAL real case in groups (20 Nov 2026).** Jan Erik: "add a real case study at the
+  end of session 5 to solve in groups of 3–5 and if time permits — and for the answers to be written on the
+  course screen (tv)". `#s7`, NOT in `SECTIONS` (progress stays 6 steps; its button only marks the step on the
+  device, `escwa_w5_case_ready`). The Matsu Islands, 2 and 8 Feb 2023: two cables cut, ~14,000 people, a
+  2.2 Gbps microwave backup against 8–9 Gbps of normal use, 27 cuts in five years, no evidence of intent,
+  one cable back after ~50 days; the reveal (a `<details>`): the link enlarged, and in Jan 2025 both cables
+  failed again while the microwave link carried 12.6 Gbps against a 9.5 Gbps peak. Three group answers
+  (`w5_case_first`, `w5_case_evid`, `w5_case_buy`), one writer per group, each starting with the team
+  letter; `data-board` gives the three panels on `/shared/board.html`. Facts checked by web search on
+  20 Nov 2026 from search summaries (AP 8 Mar 2023, Taipei Times 17 Feb 2023 and 22 Jan 2025, The Diplomat
+  Apr 2023, Taiwan News) — the articles themselves were not opened. Same day: step 5's question on the
+  ships' satellite provider was rewritten (situation + what each of the two sentences must say), and the
+  four "What breaks it" lines of the Viasat chain became full sentences.
