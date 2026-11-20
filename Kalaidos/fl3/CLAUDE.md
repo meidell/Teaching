@@ -320,3 +320,20 @@ section IDS did not (saved marks hold):
   cy/ct, cd/jc/cp, ck, `dosRows`), so `_private/check_samedi.py` and the corrigé PDF still apply.
 - Tested headless (1280 and 390 px): all four cases solved inside the séance pages, sections mark,
   Next chain = menu order, no page error, no sideways scroll.
+
+### Decks for séances 4 and 5 (20 Nov 2026) — GENERATED, light, with a "where on the site" band
+
+Jan Erik: "slides for both session 4 and 5 for the part where I teach … make it very clear on the
+slides where they are in the sessions, so that they can look at the site instead of the slides …
+very easy to read for me". `_build/slides_s45.py` writes `seance4-slides.html` (25 slides) and
+`seance5-slides.html` (21); then `python3 _build/slides_pdf.py seance4 seance5`. **Edit the
+generator, never the two HTML files.** Unlike the dark decks of séances 1–2: white background,
+very large type that scales with the screen's width AND height (`fit()`), and on every content
+slide a dark band naming the section and the CARD of the séance page with the same text, plus a
+strip of the séance's steps (4.1 · 4.2 · Cas 1 · Cas 2) with the current one highlighted. Only the
+taught sections (4.1, 4.2, 5.1, 5.2) are covered; the cases get one "open section 4.3 / do this"
+slide each and a "retour en classe" slide — no case data, no answers. The three worked examples
+(agio de scission 500/300/200, transfer gain 450/520/70, 725a threshold 250 vs 180) are INVENTED
+for the slides and labelled so; they are not the cases' figures. `S` shows the "à dire" notes.
+Linked 🖥️ / ⬇ PDF in both topbars. Measured headless at 1280×720, 1440×900, 1024×768: no slide
+overflows.
