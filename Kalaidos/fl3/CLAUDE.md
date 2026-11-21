@@ -337,3 +337,21 @@ slide each and a "retour en classe" slide — no case data, no answers. The thre
 for the slides and labelled so; they are not the cases' figures. `S` shows the "à dire" notes.
 Linked 🖥️ / ⬇ PDF in both topbars. Measured headless at 1280×720, 1440×900, 1024×768: no slide
 overflows.
+
+### 21 Nov 2026 (morning of the Saturday) — 4.6 and 4.7 back in class, widgets, tables
+
+- Jan Erik, after teaching 4.1 and 4.2: "add in again 4.6 and 4.7 (with the exercises) into this
+  morning's exercise and slides". Séance 4's Partie 2 is now 4.6 Alpibois Design SA (s3) → 4.7 parc de
+  véhicules (s5), both "avec la classe", THEN 4.3 cas 1 (s9) → 4.4 cas 2 (s10). After: 4.5, 4.8–4.10.
+  The deck (`_build/slides_s45.py`) has six slides for them (data, inventory, tasks, asymmetric variant,
+  the transfer, Léman Fleet's side) — data and questions only, no answers. "It does not matter if I
+  cannot keep the time plan" (Jan Erik): the plan is an order, not a clock.
+- `viz45.js` (loaded deferred by seance4/5): one or more VISUAL widgets per taught card, drawn into
+  `<div class="vz" data-vz="NAME">`. 4.1 restruct (six operations before/after), scission (division/
+  séparation × symétrique/asymétrique), procedure (six steps; the creditors' step moves for a fusion),
+  agio4 (sliders); 4.2 transfert (sliders, art. 71 al. 2 check, the passage account); 5.1 diag (seuil
+  250), reeval (725c raises the threshold too), assain (tick measures until the Assainissement account
+  balances); 5.2 emission, conversion, postpo. Invented KCHF examples, labelled. They count NOTHING
+  (no .q/.cl-row/[data-work]/need()) — checked: totalSteps unchanged (126 / 120).
+- Text tables: `table.fx.txt` (left-aligned) and `.law` (the article column never wraps) — Jan Erik:
+  the LFus column of the 4.1 table was too narrow.

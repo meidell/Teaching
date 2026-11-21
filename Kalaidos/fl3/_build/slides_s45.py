@@ -189,7 +189,7 @@ class Deck:
 # =====================================================================
 #  SÉANCE 4
 # =====================================================================
-d = Deck(4, [('4.1', '4.1 Scission'), ('4.2', '4.2 Transfert'), ('4.3', '4.3 Cas 1'), ('4.4', '4.4 Cas 2')])
+d = Deck(4, [('4.1', '4.1 Scission'), ('4.2', '4.2 Transfert'), ('4.6', '4.6 Atelier'), ('4.7', '4.7 Atelier'), ('4.3', '4.3 Cas 1'), ('4.4', '4.4 Cas 2')])
 
 d.raw('title', """<div class="eyebrow">Financial Leadership III · séance 4 · samedi 21 novembre 2026 · 09h30–13h00</div>
 <h1>La scission et le transfert de patrimoine</h1>
@@ -201,9 +201,9 @@ d.slide(None, None, 'Ce matin : j’explique deux opérations, puis vous résolv
 <table class="t">
 <tr><th>Quand</th><th>Qui travaille</th><th>Où sur la page de la séance 4</th></tr>
 <tr><td class="k">Partie 1<br>09h30–11h05</td><td>L’enseignant explique la scission, puis le transfert de patrimoine.</td><td><b>Sections 4.1 et 4.2</b></td></tr>
-<tr><td class="k">Partie 2<br>11h20–13h00</td><td>Vous résolvez deux cas sur l’entreprise fictive Cafés Cuendet, puis vous montrez votre résultat à la classe.</td><td><b>Section 4.3</b> (cas 1)<br><b>Section 4.4</b> (cas 2)</td></tr>
+<tr><td class="k">Partie 2<br>11h20–13h00</td><td>Deux ateliers sur Alpibois, que nous faisons avec toute la classe. Puis deux cas sur l’entreprise fictive Cafés Cuendet, que vous résolvez et que vous montrez.</td><td><b>Sections 4.6 et 4.7</b> (ateliers)<br><b>Section 4.3</b> (cas 1)<br><b>Section 4.4</b> (cas 2)</td></tr>
 </table>
-<p class="small" style="margin-top:.8em">Les sections 4.5 à 4.10 sont des exercices à faire après la séance.</p>""",
+<p class="small" style="margin-top:.8em">Les sections 4.5, 4.8, 4.9 et 4.10 se font après la séance.</p>""",
         'Lire le tableau. Dire : pendant la partie 1 vous pouvez suivre sur le site au lieu de regarder les diapositives, le texte est le même, en plus complet.')
 
 d.slide(None, None, 'La séance 3 sur la fusion a été annulée : aucun cas d’aujourd’hui ne demande la fusion', """
@@ -359,6 +359,82 @@ d.slide('4.2', 'Vérifiez · Scission ou transfert de patrimoine ?', 'À vous : 
 <p class="small">La section 4.2 est terminée quand toutes les affirmations sont classées. La pause suit.</p>""",
         'Fin de la partie 1. Pause, puis les cas.', 'todo')
 
+d.raw('part', '<div class="num">Partie 2 · sections 4.6 et 4.7 de la page</div><h2>Deux ateliers avec la classe : une scission, puis un transfert de patrimoine</h2><p>L’enseignant pose les questions. Vous répondez, puis vous entrez la réponse sur la page, qui la vérifie.</p>',
+      'Faire ouvrir la section 4.6 dans le menu de la séance. Tout le monde entre les réponses sur sa propre page.')
+
+d.slide('4.6', 'Les données · bilan au 31.12.2027', 'Alpibois Design SA se scinde par division en deux sociétés nouvelles', """
+<div class="two">
+<div>
+<table class="t">
+<tr><th>Actif, en milliers de CHF</th><th></th></tr>
+<tr><td>Liquidités</td><td class="n">180</td></tr><tr><td>Créances</td><td class="n">240</td></tr><tr><td>Stocks</td><td class="n">300</td></tr><tr><td>Immobilisations corporelles</td><td class="n">560</td></tr><tr><td>Participation</td><td class="n">220</td></tr>
+<tr class="tot"><td>Total</td><td class="n">1 500</td></tr></table>
+</div><div>
+<table class="t">
+<tr><th>Passif, en milliers de CHF</th><th></th></tr>
+<tr><td>Fournisseurs</td><td class="n">350</td></tr><tr><td>Prêt bancaire</td><td class="n">450</td></tr><tr><td>Capital-actions</td><td class="n">310</td></tr><tr><td>Réserve légale issue du capital</td><td class="n">60</td></tr><tr><td>Réserves facultatives</td><td class="n">330</td></tr>
+<tr class="tot"><td>Total</td><td class="n">1 500</td></tr></table>
+</div></div>
+<p class="small" style="margin-top:.6em">Trois actionnaires : Nadia Berthoud 40 %, Marc Jaquier 35 %, Sofia Pereira 25 %. Deux sociétés nouvelles, Design Mobilier SA et Design Bureaux SA. Alpibois Design SA disparaît.</p>""",
+        'Demander : quelle forme de scission ? Division, parce que la société disparaît. Combien valent les fonds propres ? 310 + 60 + 330 = 700.')
+
+d.slide('4.6', 'Les données · l’inventaire du contrat de scission', 'L’inventaire du contrat attribue chaque actif et chaque dette à l’une des deux sociétés', """
+<table class="t">
+<tr><th>En milliers de CHF</th><th style="text-align:right">Design Mobilier SA</th><th style="text-align:right">Design Bureaux SA</th></tr>
+<tr><td>Liquidités</td><td class="n">100</td><td class="n">80</td></tr>
+<tr><td>Créances</td><td class="n">150</td><td class="n">90</td></tr>
+<tr><td>Stocks</td><td class="n">220</td><td class="n">80</td></tr>
+<tr><td>Immobilisations corporelles</td><td class="n">400</td><td class="n">160</td></tr>
+<tr><td>Participation</td><td class="n">—</td><td class="n">220</td></tr>
+<tr><td>Fournisseurs</td><td class="n">250</td><td class="n">100</td></tr>
+<tr><td>Prêt bancaire</td><td class="n">300</td><td class="n">150</td></tr>
+</table>
+<p class="small" style="margin-top:.6em">Chaque société nouvelle émet 1 550 actions de CHF 100 : un capital-actions de 155, en échange de l’actif net qui lui est attribué.</p>""",
+        'Laisser cette diapositive affichée pendant les calculs.')
+
+d.slide('4.6', 'Rôles · Les écritures chez Design Mobilier SA', 'À vous : quatre calculs, puis les écritures de reprise dans chaque société', """
+<ol class="steps">
+<li><b>L’actif net attribué</b> à Design Mobilier SA, puis à Design Bureaux SA : les actifs attribués moins les dettes attribuées.</li>
+<li><b>L’agio de scission</b> de chaque société : l’actif net attribué moins le capital-actions de 155.</li>
+<li><b>Le contrôle :</b> les deux actifs nets additionnés doivent donner les fonds propres d’Alpibois Design SA.</li>
+<li><b>Les écritures de reprise</b> chez Design Mobilier SA, puis chez Design Bureaux SA, par le compte de passage « Scission ».</li>
+</ol>
+<p class="small">Entrez chaque montant et chaque écriture dans la section 4.6. La page dessine le bilan d’ouverture quand les écritures sont justes.</p>""",
+        'Interroger un étudiant par calcul. Les réponses sont sur la page, pas sur la diapositive.', 'todo')
+
+d.slide('4.6', 'Et si la scission était asymétrique ?', 'Variante : la scission devient asymétrique, et les deux parts n’ont pas la même valeur', """
+<ul class="pts">
+<li>Nadia Berthoud (40 %) prend toute Design Mobilier SA. Marc Jaquier et Sofia Pereira (60 %) prennent Design Bureaux SA.</li>
+<li>Sa part de l’actif net total est de 40 % × 700 = <b>280</b>. La société qu’elle reçoit vaut <b>320</b>.</li>
+<li><b>Question 1 :</b> comment rééquilibrer ? Par une soulte (un paiement en argent, limité par l’art. 7 al. 2 LFus), ou en attribuant d’autres actifs à l’autre société ?</li>
+<li><b>Question 2 :</b> quelle majorité l’assemblée générale doit-elle réunir (art. 43 al. 3 LFus) ?</li>
+</ul>
+<p class="small">Écrivez votre réponse dans le champ de la section 4.6, puis faites le calcul « Réattribuer des liquidités » plus bas dans la même section.</p>""",
+        'La soulte nécessaire dépasse la limite légale : la page le montre dans la dernière carte de la section.', 'todo')
+
+d.slide('4.7', 'Les données · en milliers de CHF', 'Alpibois SA transfère son parc de véhicules à Léman Fleet SA en un seul acte', """
+<table class="t">
+<tr><th>L’inventaire du transfert, en milliers de CHF</th><th></th></tr>
+<tr><td>Véhicules, à la valeur comptable</td><td class="n">420</td></tr>
+<tr><td>Stock de pièces</td><td class="n">30</td></tr>
+<tr><td>Dettes de leasing qui financent les véhicules</td><td class="n">180</td></tr>
+<tr class="tot"><td>Contrepartie convenue, versée en banque par Léman Fleet SA</td><td class="n">310</td></tr>
+</table>
+<ol class="steps" style="margin-top:.7em">
+<li>Calculez <b>l’excédent d’actifs</b> de l’inventaire : la condition de l’art. 71 al. 2 LFus est-elle remplie ?</li>
+<li>Calculez <b>le résultat du transfert</b> pour Alpibois SA : est-ce un gain ou une perte ?</li>
+<li>Passez <b>les écritures</b> par le compte de passage « Transfert de patrimoine », dans la section 4.7.</li>
+</ol>""", 'Les deux chauffeurs passent chez Léman Fleet avec leur contrat de travail (art. 76 LFus). Question du champ : et si les dettes de leasing étaient de 500 ?', 'todo')
+
+d.slide('4.7', 'Le même transfert dans les livres de Léman Fleet SA', 'L’acheteur inscrit ce qu’il reçoit à la valeur réelle, et la différence avec le prix est un goodwill', """
+<ul class="pts">
+<li><b>Alpibois SA</b> sort les véhicules à leur valeur comptable : 420.</li>
+<li><b>Léman Fleet SA</b> les achète : elle les inscrit à leur valeur réelle. Un expert les estime à <b>440</b>. Le stock de pièces vaut 30 et les dettes de leasing 180.</li>
+<li>Léman Fleet SA paie 310. Si ce prix dépasse l’actif net à la valeur réelle, la différence est un <b>goodwill</b> : ce que l’acheteur paie en plus pour la clientèle, l’organisation ou les chauffeurs formés.</li>
+</ul>
+<p class="small">Calculez l’actif net à la valeur réelle et le goodwill, puis passez les écritures de Léman Fleet SA, plus bas dans la section 4.7.</p>""",
+        'Même acte, deux comptabilités : valeur comptable chez le vendeur, valeur réelle chez l’acheteur.', 'todo')
+
 d.slide('4.3', 'Les données · Retour en classe', 'Cas 1 : vous transformez une entreprise individuelle en SA et vous faites entrer un investisseur', """
 <div class="go">Ouvrez la section 4.3 · vous travaillez seul·e</div>
 <ol class="steps">
@@ -460,7 +536,7 @@ d.slide('5.1', 'Trois signaux d’alarme · ligne « Surendettement »', 'Art. 7
 <li><b>Deux exceptions :</b> des créanciers acceptent de passer après tous les autres pour un montant égal au découvert (postposition), ou il existe une chance concrète d’assainir la société dans les 90 jours.</li>
 </ul>""", 'Valeurs d’exploitation : la société continue. Valeurs de liquidation : tout est vendu rapidement. Le découvert est le montant dont les dettes dépassent les actifs.')
 
-d.slide('5.1', 'Réévaluation (art. 725c CO)', 'Art. 725c CO : la société peut réévaluer ses immeubles et ses participations pour supprimer une perte de capital', """
+d.slide('5.1', 'Trois signaux d’alarme · le paragraphe « Réévaluation (art. 725c CO) »', 'Art. 725c CO : la société peut réévaluer ses immeubles et ses participations pour supprimer une perte de capital', """
 <ul class="pts">
 <li><b>Ce qui peut être réévalué :</b> les immeubles et les participations, au-dessus de leur coût d’acquisition et au maximum jusqu’à leur valeur réelle.</li>
 <li><b>Où va le montant :</b> dans la <b>réserve de réévaluation</b>, inscrite séparément dans la réserve légale issue du bénéfice. Il ne passe pas par le compte Assainissement.</li>
