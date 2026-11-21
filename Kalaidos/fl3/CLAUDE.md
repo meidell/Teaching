@@ -355,3 +355,10 @@ overflows.
   (no .q/.cl-row/[data-work]/need()) — checked: totalSteps unchanged (126 / 120).
 - Text tables: `table.fx.txt` (left-aligned) and `.law` (the article column never wraps) — Jan Erik:
   the LFus column of the 4.1 table was too narrow.
+- ⚠ **Séance 4 renumbered top to bottom (21 Nov 2026)** — Jan Erik: "make the numbering right … numbers
+  from top to bottom". Plan order = number order: 4.1 scission (s1) · 4.2 transfert (s4) · 4.3 Alpibois
+  Design (s3) · 4.4 parc de véhicules (s5) · 4.5 cas 1 (s9) · 4.6 cas 2 (s10) · 4.7 classement (s2) ·
+  4.8 quiz (s6) · 4.9 Jeopardy (s7) · 4.10 EEA (s8). IDs unchanged. The lines above that name 4.x
+  numbers from 20 Nov use the OLD numbering. Séance 5 was already in order.
+- Teacher key for both séances and the four cases: `_private/build_s45_corrige.py <k45.json>` →
+  `_private/seances4-5-corrige.pdf` (25 pages; k45.json = the pages' own answers, dumped headlessly).

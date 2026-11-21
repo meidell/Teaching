@@ -189,7 +189,7 @@ class Deck:
 # =====================================================================
 #  SÉANCE 4
 # =====================================================================
-d = Deck(4, [('4.1', '4.1 Scission'), ('4.2', '4.2 Transfert'), ('4.6', '4.6 Atelier'), ('4.7', '4.7 Atelier'), ('4.3', '4.3 Cas 1'), ('4.4', '4.4 Cas 2')])
+d = Deck(4, [('4.1', '4.1 Scission'), ('4.2', '4.2 Transfert'), ('4.3', '4.3 Atelier'), ('4.4', '4.4 Atelier'), ('4.5', '4.5 Cas 1'), ('4.6', '4.6 Cas 2')])
 
 d.raw('title', """<div class="eyebrow">Financial Leadership III · séance 4 · samedi 21 novembre 2026 · 09h30–13h00</div>
 <h1>La scission et le transfert de patrimoine</h1>
@@ -201,9 +201,9 @@ d.slide(None, None, 'Ce matin : j’explique deux opérations, puis vous résolv
 <table class="t">
 <tr><th>Quand</th><th>Qui travaille</th><th>Où sur la page de la séance 4</th></tr>
 <tr><td class="k">Partie 1<br>09h30–11h05</td><td>L’enseignant explique la scission, puis le transfert de patrimoine.</td><td><b>Sections 4.1 et 4.2</b></td></tr>
-<tr><td class="k">Partie 2<br>11h20–13h00</td><td>Deux ateliers sur Alpibois, que nous faisons avec toute la classe. Puis deux cas sur l’entreprise fictive Cafés Cuendet, que vous résolvez et que vous montrez.</td><td><b>Sections 4.6 et 4.7</b> (ateliers)<br><b>Section 4.3</b> (cas 1)<br><b>Section 4.4</b> (cas 2)</td></tr>
+<tr><td class="k">Partie 2<br>11h20–13h00</td><td>Deux ateliers sur Alpibois, que nous faisons avec toute la classe. Puis deux cas sur l’entreprise fictive Cafés Cuendet, que vous résolvez et que vous montrez.</td><td><b>Sections 4.3 et 4.4</b> (ateliers)<br><b>Section 4.5</b> (cas 1)<br><b>Section 4.6</b> (cas 2)</td></tr>
 </table>
-<p class="small" style="margin-top:.8em">Les sections 4.5, 4.8, 4.9 et 4.10 se font après la séance.</p>""",
+<p class="small" style="margin-top:.8em">Les sections 4.7, 4.8, 4.9 et 4.10 se font après la séance.</p>""",
         'Lire le tableau. Dire : pendant la partie 1 vous pouvez suivre sur le site au lieu de regarder les diapositives, le texte est le même, en plus complet.')
 
 d.slide(None, None, 'La séance 3 sur la fusion a été annulée : aucun cas d’aujourd’hui ne demande la fusion', """
@@ -359,10 +359,10 @@ d.slide('4.2', 'Vérifiez · Scission ou transfert de patrimoine ?', 'À vous : 
 <p class="small">La section 4.2 est terminée quand toutes les affirmations sont classées. La pause suit.</p>""",
         'Fin de la partie 1. Pause, puis les cas.', 'todo')
 
-d.raw('part', '<div class="num">Partie 2 · sections 4.6 et 4.7 de la page</div><h2>Deux ateliers avec la classe : une scission, puis un transfert de patrimoine</h2><p>L’enseignant pose les questions. Vous répondez, puis vous entrez la réponse sur la page, qui la vérifie.</p>',
-      'Faire ouvrir la section 4.6 dans le menu de la séance. Tout le monde entre les réponses sur sa propre page.')
+d.raw('part', '<div class="num">Partie 2 · sections 4.3 et 4.4 de la page</div><h2>Deux ateliers avec la classe : une scission, puis un transfert de patrimoine</h2><p>L’enseignant pose les questions. Vous répondez, puis vous entrez la réponse sur la page, qui la vérifie.</p>',
+      'Faire ouvrir la section 4.3 dans le menu de la séance. Tout le monde entre les réponses sur sa propre page.')
 
-d.slide('4.6', 'Les données · bilan au 31.12.2027', 'Alpibois Design SA se scinde par division en deux sociétés nouvelles', """
+d.slide('4.3', 'Les données · bilan au 31.12.2027', 'Alpibois Design SA se scinde par division en deux sociétés nouvelles', """
 <div class="two">
 <div>
 <table class="t">
@@ -378,7 +378,7 @@ d.slide('4.6', 'Les données · bilan au 31.12.2027', 'Alpibois Design SA se sci
 <p class="small" style="margin-top:.6em">Trois actionnaires : Nadia Berthoud 40 %, Marc Jaquier 35 %, Sofia Pereira 25 %. Deux sociétés nouvelles, Design Mobilier SA et Design Bureaux SA. Alpibois Design SA disparaît.</p>""",
         'Demander : quelle forme de scission ? Division, parce que la société disparaît. Combien valent les fonds propres ? 310 + 60 + 330 = 700.')
 
-d.slide('4.6', 'Les données · l’inventaire du contrat de scission', 'L’inventaire du contrat attribue chaque actif et chaque dette à l’une des deux sociétés', """
+d.slide('4.3', 'Les données · l’inventaire du contrat de scission', 'L’inventaire du contrat attribue chaque actif et chaque dette à l’une des deux sociétés', """
 <table class="t">
 <tr><th>En milliers de CHF</th><th style="text-align:right">Design Mobilier SA</th><th style="text-align:right">Design Bureaux SA</th></tr>
 <tr><td>Liquidités</td><td class="n">100</td><td class="n">80</td></tr>
@@ -392,27 +392,27 @@ d.slide('4.6', 'Les données · l’inventaire du contrat de scission', 'L’inv
 <p class="small" style="margin-top:.6em">Chaque société nouvelle émet 1 550 actions de CHF 100 : un capital-actions de 155, en échange de l’actif net qui lui est attribué.</p>""",
         'Laisser cette diapositive affichée pendant les calculs.')
 
-d.slide('4.6', 'Rôles · Les écritures chez Design Mobilier SA', 'À vous : quatre calculs, puis les écritures de reprise dans chaque société', """
+d.slide('4.3', 'Rôles · Les écritures chez Design Mobilier SA', 'À vous : quatre calculs, puis les écritures de reprise dans chaque société', """
 <ol class="steps">
 <li><b>L’actif net attribué</b> à Design Mobilier SA, puis à Design Bureaux SA : les actifs attribués moins les dettes attribuées.</li>
 <li><b>L’agio de scission</b> de chaque société : l’actif net attribué moins le capital-actions de 155.</li>
 <li><b>Le contrôle :</b> les deux actifs nets additionnés doivent donner les fonds propres d’Alpibois Design SA.</li>
 <li><b>Les écritures de reprise</b> chez Design Mobilier SA, puis chez Design Bureaux SA, par le compte de passage « Scission ».</li>
 </ol>
-<p class="small">Entrez chaque montant et chaque écriture dans la section 4.6. La page dessine le bilan d’ouverture quand les écritures sont justes.</p>""",
+<p class="small">Entrez chaque montant et chaque écriture dans la section 4.3. La page dessine le bilan d’ouverture quand les écritures sont justes.</p>""",
         'Interroger un étudiant par calcul. Les réponses sont sur la page, pas sur la diapositive.', 'todo')
 
-d.slide('4.6', 'Et si la scission était asymétrique ?', 'Variante : la scission devient asymétrique, et les deux parts n’ont pas la même valeur', """
+d.slide('4.3', 'Et si la scission était asymétrique ?', 'Variante : la scission devient asymétrique, et les deux parts n’ont pas la même valeur', """
 <ul class="pts">
 <li>Nadia Berthoud (40 %) prend toute Design Mobilier SA. Marc Jaquier et Sofia Pereira (60 %) prennent Design Bureaux SA.</li>
 <li>Sa part de l’actif net total est de 40 % × 700 = <b>280</b>. La société qu’elle reçoit vaut <b>320</b>.</li>
 <li><b>Question 1 :</b> comment rééquilibrer ? Par une soulte (un paiement en argent, limité par l’art. 7 al. 2 LFus), ou en attribuant d’autres actifs à l’autre société ?</li>
 <li><b>Question 2 :</b> quelle majorité l’assemblée générale doit-elle réunir (art. 43 al. 3 LFus) ?</li>
 </ul>
-<p class="small">Écrivez votre réponse dans le champ de la section 4.6, puis faites le calcul « Réattribuer des liquidités » plus bas dans la même section.</p>""",
+<p class="small">Écrivez votre réponse dans le champ de la section 4.3, puis faites le calcul « Réattribuer des liquidités » plus bas dans la même section.</p>""",
         'La soulte nécessaire dépasse la limite légale : la page le montre dans la dernière carte de la section.', 'todo')
 
-d.slide('4.7', 'Les données · en milliers de CHF', 'Alpibois SA transfère son parc de véhicules à Léman Fleet SA en un seul acte', """
+d.slide('4.4', 'Les données · en milliers de CHF', 'Alpibois SA transfère son parc de véhicules à Léman Fleet SA en un seul acte', """
 <table class="t">
 <tr><th>L’inventaire du transfert, en milliers de CHF</th><th></th></tr>
 <tr><td>Véhicules, à la valeur comptable</td><td class="n">420</td></tr>
@@ -423,20 +423,20 @@ d.slide('4.7', 'Les données · en milliers de CHF', 'Alpibois SA transfère son
 <ol class="steps" style="margin-top:.7em">
 <li>Calculez <b>l’excédent d’actifs</b> de l’inventaire : la condition de l’art. 71 al. 2 LFus est-elle remplie ?</li>
 <li>Calculez <b>le résultat du transfert</b> pour Alpibois SA : est-ce un gain ou une perte ?</li>
-<li>Passez <b>les écritures</b> par le compte de passage « Transfert de patrimoine », dans la section 4.7.</li>
+<li>Passez <b>les écritures</b> par le compte de passage « Transfert de patrimoine », dans la section 4.4.</li>
 </ol>""", 'Les deux chauffeurs passent chez Léman Fleet avec leur contrat de travail (art. 76 LFus). Question du champ : et si les dettes de leasing étaient de 500 ?', 'todo')
 
-d.slide('4.7', 'Le même transfert dans les livres de Léman Fleet SA', 'L’acheteur inscrit ce qu’il reçoit à la valeur réelle, et la différence avec le prix est un goodwill', """
+d.slide('4.4', 'Le même transfert dans les livres de Léman Fleet SA', 'L’acheteur inscrit ce qu’il reçoit à la valeur réelle, et la différence avec le prix est un goodwill', """
 <ul class="pts">
 <li><b>Alpibois SA</b> sort les véhicules à leur valeur comptable : 420.</li>
 <li><b>Léman Fleet SA</b> les achète : elle les inscrit à leur valeur réelle. Un expert les estime à <b>440</b>. Le stock de pièces vaut 30 et les dettes de leasing 180.</li>
 <li>Léman Fleet SA paie 310. Si ce prix dépasse l’actif net à la valeur réelle, la différence est un <b>goodwill</b> : ce que l’acheteur paie en plus pour la clientèle, l’organisation ou les chauffeurs formés.</li>
 </ul>
-<p class="small">Calculez l’actif net à la valeur réelle et le goodwill, puis passez les écritures de Léman Fleet SA, plus bas dans la section 4.7.</p>""",
+<p class="small">Calculez l’actif net à la valeur réelle et le goodwill, puis passez les écritures de Léman Fleet SA, plus bas dans la section 4.4.</p>""",
         'Même acte, deux comptabilités : valeur comptable chez le vendeur, valeur réelle chez l’acheteur.', 'todo')
 
-d.slide('4.3', 'Les données · Retour en classe', 'Cas 1 : vous transformez une entreprise individuelle en SA et vous faites entrer un investisseur', """
-<div class="go">Ouvrez la section 4.3 · vous travaillez seul·e</div>
+d.slide('4.5', 'Les données · Retour en classe', 'Cas 1 : vous transformez une entreprise individuelle en SA et vous faites entrer un investisseur', """
+<div class="go">Ouvrez la section 4.5 · vous travaillez seul·e</div>
 <ol class="steps">
 <li>Lisez les données en entier : le bilan de l’entreprise, puis les décisions.</li>
 <li>Entrez chaque montant et chaque écriture sur la page. Elle dit tout de suite si la réponse est juste.</li>
@@ -446,8 +446,8 @@ d.slide('4.3', 'Les données · Retour en classe', 'Cas 1 : vous transformez une
 <p class="small">Ce cas demande seulement les séances 1 et 2.</p>""",
         'Dire l’heure du retour en classe. Rester disponible dans la salle principale.', 'todo')
 
-d.slide('4.4', 'Les données · Retour en classe', 'Cas 2 : vous séparez les boutiques de Cafés Cuendet SA, par une scission puis par un transfert de patrimoine', """
-<div class="go">Ouvrez la section 4.4 · vous travaillez à deux ou trois</div>
+d.slide('4.6', 'Les données · Retour en classe', 'Cas 2 : vous séparez les boutiques de Cafés Cuendet SA, par une scission puis par un transfert de patrimoine', """
+<div class="go">Ouvrez la section 4.6 · vous travaillez à deux ou trois</div>
 <ol class="steps">
 <li>Sur Zoom, l’enseignant ouvre une salle par groupe. À Lausanne, vous vous asseyez à la même table.</li>
 <li>Une personne partage son écran et entre les réponses. Les autres calculent et contrôlent.</li>
@@ -455,13 +455,13 @@ d.slide('4.4', 'Les données · Retour en classe', 'Cas 2 : vous séparez les bo
 <li>Vous écrivez votre recommandation aux deux actionnaires dans la carte « Retour en classe ».</li>
 </ol>""", 'Former les groupes. Dire l’heure du retour.', 'todo')
 
-d.slide('4.4', 'Retour en classe · ce que vous montrez', 'Retour en classe : chaque groupe montre son résultat', """
+d.slide('4.6', 'Retour en classe · ce que vous montrez', 'Retour en classe : chaque groupe montre son résultat', """
 <ol class="steps">
 <li><b>Cas 1 :</b> vous partagez votre écran sur le bilan d’ouverture de Cafés Cuendet SA, que la page a dessiné sous vos écritures. Vous dites d’où vient chaque montant du capital propre, puis vous lisez votre réponse aux deux questions.</li>
 <li><b>Cas 2 :</b> vous montrez le bilan de Cafés Cuendet SA après la scission et vous dites quels postes ont changé.</li>
 <li><b>Cas 2, suite :</b> vous lisez votre recommandation. Chaque groupe défend une seule des trois voies : la scission symétrique, la scission asymétrique ou le transfert de patrimoine.</li>
 </ol>
-<p class="small">La carte « Retour en classe · ce que vous montrez » se trouve à la fin de chaque cas, sections 4.3 et 4.4.</p>
+<p class="small">La carte « Retour en classe · ce que vous montrez » se trouve à la fin de chaque cas, sections 4.5 et 4.6.</p>
 <p class="small">Cet après-midi à 14h00 : la séance 5, l’assainissement, avec les cas 3 et 4.</p>""",
         'Un groupe par cas si le temps manque. Le bouton « Sur l’écran » affiche les réponses de la classe sans les noms.', 'todo')
 
