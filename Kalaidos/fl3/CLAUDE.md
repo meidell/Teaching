@@ -359,6 +359,15 @@ overflows.
   from top to bottom". Plan order = number order: 4.1 scission (s1) · 4.2 transfert (s4) · 4.3 Alpibois
   Design (s3) · 4.4 parc de véhicules (s5) · 4.5 cas 1 (s9) · 4.6 cas 2 (s10) · 4.7 classement (s2) ·
   4.8 quiz (s6) · 4.9 Jeopardy (s7) · 4.10 EEA (s8). IDs unchanged. The lines above that name 4.x
-  numbers from 20 Nov use the OLD numbering. Séance 5 was already in order.
+  numbers from 20 Nov use the OLD numbering.
+- ⚠ **Séance 5 done the same way (21 Nov 2026)** — Jan Erik: "re-introduce exercises to each block just
+  as in section 4. they really liked session 4". The two ateliers moved from "Après la séance" into
+  Partie 2, before the cases: 5.1 diagnostic (s1) · 5.2 mesures (s3) · 5.3 Alpibois Design, avec la
+  classe (s2) · 5.4 Menuiserie Vallotton, avec la classe (s4) · 5.5 cas 3 (s8) · 5.6 cas 4 (s9) · 5.7
+  fin du samedi (s6) · 5.8 quiz (s5) · 5.9 EEA (s7). IDs unchanged, totalSteps still 120. The deck got
+  nine atelier slides (data, the four steps of each atelier, answers in the speaker notes); 31 slides.
+  The step labels of séance 5 lost their "· N min" (WRITING.md rule 7). The deck's 820 px one-column
+  rule is now `screen` only: the PDF printer's narrow window had stacked every two-column slide.
+  Part headers (`.part-head`) wrap at ≤640 px (the long "Après la séance" label scrolled sideways).
 - Teacher key for both séances and the four cases: `_private/build_s45_corrige.py <k45.json>` →
   `_private/seances4-5-corrige.pdf` (25 pages; k45.json = the pages' own answers, dumped headlessly).

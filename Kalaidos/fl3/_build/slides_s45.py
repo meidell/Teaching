@@ -79,7 +79,7 @@ table.t tr.tot td{border-top:3px solid var(--deep);font-weight:800;}
 .note{position:fixed;left:0;right:0;bottom:0;background:#10262B;border-top:4px solid var(--amber);color:#fff;padding:16px 6vw;font-size:19px;line-height:1.45;display:none;z-index:9;}
 .note.on{display:block;} .note b{color:var(--amber);}
 a.dl{position:fixed;bottom:40px;right:22px;z-index:7;font-size:13px;font-weight:800;color:#fff;background:var(--teal);padding:7px 12px;text-decoration:none;border-radius:6px;}
-@media(max-width:820px){.two,.three{grid-template-columns:1fr;gap:12px;} .loc{flex-wrap:wrap;} .loc .strip{flex-wrap:wrap;} .inner{justify-content:flex-start;overflow:auto;}}
+@media screen and (max-width:820px){.two,.three{grid-template-columns:1fr;gap:12px;} .loc{flex-wrap:wrap;} .loc .strip{flex-wrap:wrap;} .inner{justify-content:flex-start;overflow:auto;}}
 /* print = one slide per 16:9 page (files/seanceN-slides.pdf, _build/slides_pdf.py) */
 @page{size:1280px 720px;margin:0;}
 @media print{html,body{height:auto;overflow:visible;} .deck{position:static;} .slide{display:flex !important;position:relative;inset:auto;width:1280px;height:720px;break-after:page;page-break-after:always;overflow:hidden;} .count,.pbar,.help,.note,a.dl{display:none !important;} *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
@@ -473,7 +473,7 @@ n4 = len(d.out)
 # =====================================================================
 #  SÉANCE 5
 # =====================================================================
-d = Deck(5, [('5.1', '5.1 Diagnostic'), ('5.2', '5.2 Mesures'), ('5.3', '5.3 Cas 3'), ('5.4', '5.4 Cas 4'), ('5.5', '5.5 Fin')])
+d = Deck(5, [('5.1', '5.1 Diagnostic'), ('5.2', '5.2 Mesures'), ('5.3', '5.3 Atelier'), ('5.4', '5.4 Atelier'), ('5.5', '5.5 Cas 3'), ('5.6', '5.6 Cas 4'), ('5.7', '5.7 Fin')])
 
 d.raw('title', """<div class="eyebrow">Financial Leadership III · séance 5 · samedi 21 novembre 2026 · 14h00–17h30</div>
 <h1>L’assainissement d’une société en perte</h1>
@@ -481,13 +481,13 @@ d.raw('title', """<div class="eyebrow">Financial Leadership III · séance 5 · 
 <div class="url">janerikmeidell.com/Kalaidos/fl3/seance5.html</div>""",
       'Reprise après la pause de midi. Faire ouvrir la page de la séance 5.')
 
-d.slide(None, None, 'Cet après-midi : j’explique le diagnostic et les mesures, puis vous résolvez deux cas', """
+d.slide(None, None, 'Cet après-midi : j’explique le diagnostic et les mesures, nous faisons deux ateliers ensemble, puis vous résolvez deux cas', """
 <table class="t">
 <tr><th>Quand</th><th>Qui travaille</th><th>Où sur la page de la séance 5</th></tr>
 <tr><td class="k">Partie 1<br>14h00–15h30</td><td>L’enseignant explique comment reconnaître une société en difficulté, puis les mesures qui la redressent.</td><td><b>Sections 5.1 et 5.2</b></td></tr>
-<tr><td class="k">Partie 2<br>15h45–17h30</td><td>Vous résolvez deux cas sur Cafés Cuendet, puis vous montrez votre résultat à la classe.</td><td><b>Section 5.3</b> (cas 3)<br><b>Section 5.4</b> (cas 4)<br><b>Section 5.5</b> (fin du samedi)</td></tr>
+<tr><td class="k">Partie 2<br>15h45–17h30</td><td>Deux ateliers sur Alpibois Design et Menuiserie Vallotton, que nous faisons avec toute la classe. Puis deux cas sur Cafés Cuendet, que vous résolvez et que vous montrez à la classe.</td><td><b>Sections 5.3 et 5.4</b> (ateliers)<br><b>Section 5.5</b> (cas 3)<br><b>Section 5.6</b> (cas 4)<br><b>Section 5.7</b> (fin du samedi)</td></tr>
 </table>
-<p class="small" style="margin-top:.8em">Les sections 5.6 à 5.9 sont des exercices à faire après la séance.</p>""",
+<p class="small" style="margin-top:.8em">Le quiz (section 5.8) et le point d’étape EEA (section 5.9) se font après la séance.</p>""",
         'Lire le tableau.')
 
 d.raw('part', '<div class="num">Partie 1 · section 5.1 de la page</div><h2>Quand le bilan est malade</h2><p>L’assainissement : l’ensemble des mesures qui rétablissent le bilan d’une société en perte, pour qu’elle puisse continuer son activité.</p>',
@@ -616,10 +616,112 @@ d.slide('5.2', 'Vérifiez · Où va chaque montant ?', 'À vous : classez chaque
 <li>Pour chaque montant, cliquez sur sa destination : <b>compte Assainissement</b>, <b>réserve légale issue du capital</b>, <b>capital-actions</b> ou <b>nulle part</b>.</li>
 <li>La page dit tout de suite si la réponse est juste.</li>
 </ol>
-<p class="small">La section 5.2 est terminée quand tous les montants sont classés. La pause suit.</p>""", 'Fin de la partie 1. Pause, puis les cas 3 et 4.', 'todo')
+<p class="small">La section 5.2 est terminée quand tous les montants sont classés. La pause suit.</p>""", 'Fin de la partie 1. Pause, puis les deux ateliers.', 'todo')
 
-d.slide('5.3', 'Les données · Retour en classe', 'Cas 3 : vous diagnostiquez et vous assainissez Boutiques Cuendet SA, qui est surendettée', """
-<div class="go">Ouvrez la section 5.3 · vous travaillez à deux ou trois</div>
+d.raw('part', '<div class="num">Partie 2 · sections 5.3 et 5.4 de la page</div><h2>Deux ateliers avec la classe : assainir Alpibois Design SA, puis Menuiserie Vallotton SA</h2><p>L’enseignant pose les questions. Vous répondez, puis vous entrez la réponse sur la page, qui la vérifie.</p>',
+      'Faire ouvrir la section 5.3 dans le menu de la séance. Tout le monde entre les réponses sur sa propre page.')
+
+d.slide('5.3', 'Les données · bilan au 31.12.2026', 'Alpibois Design SA a perdu 300 en trois exercices : faut-il assainir ?', """
+<div class="two">
+<div>
+<table class="t">
+<tr><th>Actif, en milliers de CHF</th><th></th></tr>
+<tr><td>Liquidités</td><td class="n">60</td></tr><tr><td>Créances</td><td class="n">240</td></tr><tr><td>Stocks</td><td class="n">380</td></tr><tr><td>Immobilisations corporelles</td><td class="n">520</td></tr><tr><td>Participation</td><td class="n">120</td></tr>
+<tr class="tot"><td>Total</td><td class="n">1 320</td></tr></table>
+<p class="small" style="margin-top:.6em">Un inventaire montre que les stocks valent 90 de moins et que 40 de créances ne seront jamais payées. La participation vaut en réalité 220.</p>
+</div><div>
+<table class="t">
+<tr><th>Passif, en milliers de CHF</th><th></th></tr>
+<tr><td>Fournisseurs</td><td class="n">400</td></tr><tr><td>Prêt bancaire</td><td class="n">600</td></tr><tr><td>Prêt d’actionnaire</td><td class="n">150</td></tr><tr><td>Capital-actions (400 actions de 1 000)</td><td class="n">400</td></tr><tr><td>Réserve légale issue du capital</td><td class="n">40</td></tr><tr><td>Réserve légale issue du bénéfice</td><td class="n">30</td></tr><tr><td>Pertes reportées</td><td class="n">−300</td></tr>
+<tr class="tot"><td>Total</td><td class="n">1 320</td></tr></table>
+</div></div>""",
+        'Carte « Les données » en haut de la section 5.3.')
+
+d.slide('5.3', 'Étape 1 · le diagnostic', 'À vous : trois calculs disent s’il y a perte de capital ou surendettement', """
+<ol class="steps">
+<li><b>Les fonds propres</b> au bilan : capital-actions + réserves légales − pertes reportées.</li>
+<li><b>Le seuil de l’art. 725a CO</b> : la moitié du capital-actions et des réserves légales. Les fonds propres sont-ils en dessous ? Alors il y a perte de capital.</li>
+<li><b>Les fonds propres après les corrections de valeur</b> (stocks −90, créances −40). Sont-ils encore positifs ? Sinon, il y a surendettement.</li>
+</ol>
+<p class="small">Entrez les trois montants dans la carte « Étape 1 » de la section 5.3.</p>""",
+        'Réponses : 170 ; seuil 235, donc perte de capital ; 40, donc pas de surendettement.', 'todo')
+
+d.slide('5.3', 'Étape 2 · la négociation', 'Le conseil d’administration et la banque doivent se mettre d’accord sur qui fait quel effort', """
+<div class="two">
+<div><h3>Le conseil d’administration</h3>
+<p>Il représente les actionnaires. Il veut réduire le capital le moins possible, parce que la réduction détruit leur mise. Il veut que la banque renonce à une partie de son prêt. Les actionnaires peuvent apporter au plus 200 d’argent frais.</p></div>
+<div><h3>La banque</h3>
+<p>Elle a prêté 600. Elle renonce au plus à 25 % de son prêt. Elle exige que les actionnaires réduisent le capital d’au moins 50 % et apportent de l’argent frais. Elle veut que toute la perte reportée disparaisse.</p></div>
+</div>
+<p class="small" style="margin-top:.6em">Une moitié de la salle joue le conseil, l’autre la banque. Réglez les curseurs du simulateur de la carte « Étape 2 » jusqu’à un accord, puis écrivez-le dans le champ de la même carte.</p>""",
+        'Partager le simulateur à l’écran. Demander à chaque camp quel argument a fait céder l’autre.', 'todo')
+
+d.slide('5.3', 'Étape 3 · le paquet adopté par l’assemblée générale', 'À vous : comptabilisez les mesures votées par le compte Assainissement', """
+<ul class="pts">
+<li>Le capital-actions est réduit de 60 % : la valeur nominale passe de 1 000 à 400 par action.</li>
+<li>En même temps, 375 actions nouvelles de 400 sont émises au pair et payées en espèces.</li>
+<li>Les deux réserves légales sont compensées avec la perte reportée.</li>
+<li>La banque renonce à 20 % de son prêt.</li>
+<li>Les corrections de valeur sont comptabilisées : stocks −90, créances −40.</li>
+<li>La participation est réévaluée à sa valeur réelle (art. 725c CO).</li>
+<li>Le solde du compte Assainissement élimine la perte reportée qui reste.</li>
+</ul>
+<p class="small">Passez les écritures dans la carte « Étape 3 ». La page dessine les comptes en T et le bilan après l’assainissement.</p>""",
+        'Contrôle : total du bilan après 1 440, fonds propres 410, plus de perte de capital.', 'todo')
+
+d.slide('5.3', 'Étape 4 · deux variantes', 'Si une partie refuse sa part de l’effort, les autres mesures doivent changer', """
+<ul class="pts">
+<li><b>Variante A :</b> la banque refuse tout abandon de créance. De combien faut-il alors réduire le capital-actions pour que la perte reportée disparaisse entièrement ?</li>
+<li><b>Variante B :</b> l’actionnaire qui a prêté 150 ne verse pas d’argent frais. Il paie les 375 actions nouvelles en renonçant à son prêt (libération par compensation, art. 634a CO). Que deviennent le total du bilan et les fonds propres ?</li>
+</ul>
+<p class="small">Entrez les montants dans la carte « Étape 4 » de la section 5.3.</p>""",
+        'Réponses : A, réduction de 90 %, valeur nominale 100. B, total 1 140, fonds propres toujours 410, mais 150 de liquidités en moins.', 'todo')
+
+d.slide('5.4', 'Les données · bilan au 31.12.2026', 'Menuiserie Vallotton SA : le bilan avant, les mesures votées, puis le bilan après', """
+<div class="two">
+<div>
+<table class="t">
+<tr><th>Actif, en milliers de CHF</th><th></th></tr>
+<tr><td>Capitaux circulants</td><td class="n">870</td></tr><tr><td>Immobilisations corporelles</td><td class="n">1 300</td></tr><tr><td>Participation</td><td class="n">400</td></tr><tr><td>Perte au bilan</td><td class="n">480</td></tr>
+<tr class="tot"><td>Total</td><td class="n">3 050</td></tr></table>
+</div><div>
+<table class="t">
+<tr><th>Passif, en milliers de CHF</th><th></th></tr>
+<tr><td>Dettes bancaires</td><td class="n">1 200</td></tr><tr><td>Dettes fournisseurs</td><td class="n">600</td></tr><tr><td>Emprunt</td><td class="n">300</td></tr><tr><td>Provisions</td><td class="n">200</td></tr><tr><td>Capital-actions</td><td class="n">600</td></tr><tr><td>Réserve de réévaluation (sur la participation)</td><td class="n">150</td></tr>
+<tr class="tot"><td>Total</td><td class="n">3 050</td></tr></table>
+</div></div>
+<p class="small" style="margin-top:.6em">La perte au bilan est présentée à l’actif, comme dans le manuel. Étape 1 : calculez les fonds propres et le seuil de l’art. 725a CO.</p>""",
+        'Réponses de l’étape 1 : fonds propres 270, seuil 300 (sans la réserve de réévaluation), donc perte de capital, pas de surendettement.', 'todo')
+
+d.slide('5.4', 'Étape 2 · les écritures des mesures', 'À vous : sept écritures pour les quatre mesures votées par l’assemblée générale', """
+<ol class="steps">
+<li>Un tiers des dettes fournisseurs devient un emprunt à cinq ans.</li>
+<li>Le capital-actions est réduit de 80 % pour éliminer la perte au bilan.</li>
+<li>Le capital-actions augmente de 500 de nominal, au prix d’émission de 120 % : la banque souscrit 300 et paie en renonçant à sa créance ; les actionnaires souscrivent 200 et paient en espèces.</li>
+<li>La réserve de réévaluation est dissoute par un amortissement supplémentaire sur la participation.</li>
+</ol>
+<p class="small">Tenez en même temps la colonne « Mesures » sur papier : le total du débit et celui du crédit doivent être égaux, 1 430. Passez les écritures dans la carte « Étape 2 » de la section 5.4.</p>""",
+        'Demander chaque écriture à la classe. Le piège : l’agio va à la réserve légale issue du capital, jamais au compte Assainissement.', 'todo')
+
+d.slide('5.4', 'Étape 3 · le bilan après assainissement', 'À vous : le bilan après, ligne par ligne, comme à l’examen', """
+<ul class="pts">
+<li>À l’examen, chaque ligne juste du bilan après vaut un point. La colonne des mesures sert seulement à trouver les montants.</li>
+<li>Entrez les onze montants de la carte « Étape 3 » : chaque poste du bilan après, le total, puis le seuil de l’art. 725a CO.</li>
+<li>Question : la perte de capital est-elle supprimée ?</li>
+</ul>""",
+        'Contrôle : total 2 660, capital-actions 620, réserve légale issue du capital 100, seuil 360, fonds propres 720 : plus de perte de capital.', 'todo')
+
+d.slide('5.4', 'Étape 4 · le test du surendettement', 'Avant les mesures, Vallotton était-elle surendettée au sens de l’art. 725b CO ?', """
+<ul class="pts">
+<li>Le conseil d’administration fait établir deux bilans intermédiaires : aux <b>valeurs d’exploitation</b> (la société continue son activité) et aux <b>valeurs de liquidation</b> (ce qu’elle obtiendrait en vendant tout rapidement).</li>
+<li>Aux valeurs de liquidation, un expert estime : capitaux circulants 700, immobilisations corporelles 900, participation 250. Les dettes et les provisions restent les mêmes.</li>
+<li>Il y a surendettement seulement si les dettes ne sont couvertes <b>ni</b> aux valeurs d’exploitation <b>ni</b> aux valeurs de liquidation.</li>
+<li>Après les mesures, quelle part du capital-actions la banque détient-elle ?</li>
+</ul>""",
+        'Réponses : actifs de liquidation 1 850, découvert 450 ; aux valeurs d’exploitation excédent 270, donc pas de surendettement. La banque détient 48,39 % du capital.', 'todo')
+
+d.slide('5.5', 'Les données · Retour en classe', 'Cas 3 : vous diagnostiquez et vous assainissez Boutiques Cuendet SA, qui est surendettée', """
+<div class="go">Ouvrez la section 5.5 · vous travaillez à deux ou trois</div>
 <ol class="steps">
 <li>Lisez le bilan, puis la liste des mesures décidées.</li>
 <li>Faites le diagnostic : perte de capital, surendettement, effet d’une réévaluation.</li>
@@ -629,8 +731,8 @@ d.slide('5.3', 'Les données · Retour en classe', 'Cas 3 : vous diagnostiquez e
 <p class="small">Si vous êtes bloqué·e plus de cinq minutes, écrivez à l’enseignant dans « Messages », en bas à droite de la page.</p>""",
         'Former les groupes, dire l’heure du retour.', 'todo')
 
-d.slide('5.4', 'Les données · Retour en classe', 'Cas 4 : vous contrôlez douze points d’un dossier et vous corrigez ceux qui sont faux', """
-<div class="go">Ouvrez la section 5.4 · vous travaillez seul·e ou à deux</div>
+d.slide('5.6', 'Les données · Retour en classe', 'Cas 4 : vous contrôlez douze points d’un dossier et vous corrigez ceux qui sont faux', """
+<div class="go">Ouvrez la section 5.6 · vous travaillez seul·e ou à deux</div>
 <ol class="steps">
 <li>Pour chacun des douze points, cliquez sur <b>« Juste »</b> ou <b>« Faux »</b>.</li>
 <li>Calculez les sept montants corrigés et entrez-les sur la page.</li>
@@ -639,11 +741,11 @@ d.slide('5.4', 'Les données · Retour en classe', 'Cas 4 : vous contrôlez douz
 <p class="small">Ce cas reprend la création, la transformation, la scission, le transfert de patrimoine et l’assainissement.</p>""",
         'Ce cas ressemble à une relecture avant l’examen.', 'todo')
 
-d.slide('5.5', 'Fin du samedi', 'Retour en classe, puis la fin du samedi dans la section 5.5', """
+d.slide('5.7', 'Fin du samedi', 'Retour en classe, puis la fin du samedi dans la section 5.7', """
 <ol class="steps">
 <li><b>Cas 3 :</b> vous partagez votre écran sur le compte Assainissement et vous expliquez chaque ligne. Vous montrez ensuite le bilan après l’assainissement et vous dites qui a fait quel effort.</li>
 <li><b>Cas 4 :</b> l’enseignant appelle les douze points un par un. La personne désignée dit « juste » ou « faux », cite la règle et donne le montant corrigé.</li>
-<li><b>Section 5.5 :</b> vous écrivez ce qui reste flou. L’enseignant lit ce champ avant mardi.</li>
+<li><b>Section 5.7 :</b> vous écrivez ce qui reste flou. L’enseignant lit ce champ avant mardi.</li>
 </ol>
 <p class="small">Travail de groupe pour l’exercice d’étude autonome (EEA) : les sections 3 et 4 sont faisables dès ce soir. Le point d’étape se note dans la section 5.9.</p>
 <p class="small">Prochaine séance : mardi 24 novembre 2026, 17h30, sur Zoom, la liquidation.</p>""",
