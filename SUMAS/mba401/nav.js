@@ -56,7 +56,12 @@
                ['s4', '4B.4', 'Paired samples'], ['s5', '4B.5', 'Two proportions'], ['s6', '4B.6', 'How many in each group?'],
                ['s7', '4B.7', 'Independent or paired?'], ['ex', '4B.8', 'Exercises — worked together'], ['s8', '4B.9', 'Checkpoint'], ['s9', '4B.10', 'Workshop']] } ] },
     { n: 5, title: 'Correlation and regression', parts: [
-      { mod: 'w5', k: '', t: 'Correlation and regression', href: 'week5.html', hw: 'week5-homework.html',
+      { mod: 'w5p', k: '', t: 'Reading a regression printout', href: 'week5.html', hw: 'week5-homework.html',
+        secs: [['s1', '5.1', 'The printout as a whole'], ['s2', '5.2', 'The intercept and the slopes'], ['s3', '5.3', 'The sums of squares'],
+               ['s4', '5.4', 'df, MS and the Standard Error'], ['s5', '5.5', 'R Square, Multiple R, Adjusted R Square'], ['s6', '5.6', 'F and Significance F'],
+               ['s7', '5.7', 't Stat and P-value of each coefficient'], ['s8', '5.8', 'Lower 95% and Upper 95%'], ['s9', '5.9', 'The whole printout, exam style'],
+               ['ex', '5.10', 'Exercises — worked together'], ['ck', '5.11', 'Checkpoint'], ['wk', '5.12', 'Workshop']] },
+      { mod: 'w5', k: 'Book', t: 'The textbook\'s chapter 10, example by example (optional)', href: 'week5-book.html',
         secs: [['s1', '5.1', 'Fourteen pizzerias, one line'], ['s2', '5.2', 'How strong, and which way'], ['s3', '5.3', 'The line that misses least'],
                ['s4', '5.4', 'Is the slope real?'], ['s5', '5.5', 'How much of y does x explain?'], ['s6', '5.6', 'The average one — or the next one?'],
                ['s7', '5.7', 'A complete example'], ['ex', '5.8', 'Exercises — worked together'], ['s8', '5.9', 'Checkpoint'], ['s9', '5.10', 'Workshop']] } ] },
