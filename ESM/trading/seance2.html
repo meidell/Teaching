@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/ESM/trading/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Séance 2 · Gestion du risque et money management · Trading · Jan Erik Meidell</title>
+<meta name="description" content="Trading, séance 2 — le drawdown et le gain qui l’efface ; la taille de position calculée depuis le stop ; rendement/risque et le taux de réussite nécessaire ; les séries de pertes et le risque de ruine ; vos règles de risque pour le compte simulé.">
+<meta name="theme-color" content="#DF5727">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="/ESM/assets/esm-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/shared/themes/esm-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="trading.css">
+<style>
+/* séance 2 only */
+.ddtab{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;margin-top:8px;}
+.ddtab th{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);font-weight:800;}
+.ddtab td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);}
+.ddtab th:first-child,.ddtab td:first-child{text-align:left;}
+.ddtab tr.hot td{background:var(--accent-pale);font-weight:700;}
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;margin:10px 0;}
+.calc-grid label{display:block;font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--grey);text-transform:uppercase;}
+.calc-grid input{width:100%;margin-top:4px;font:15px 'Helvetica Neue',Arial,sans-serif;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);}
+.sim-stage{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+@media(max-width:640px){.sim-stage{grid-template-columns:1fr;}}
+.sim-stage .obout{margin-top:0;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="trading">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="/ESM/assets/esm-logo.svg" alt="ESM">
+    <span class="course">TRADING · SÉANCE 2</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="outils.html">🧮 Outils</a>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">Cette séance</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Cours</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Séance 2 · Risque et mise en pratique · 3 heures</div>
+    <h1>Le risque d’abord : <em>combien je peux perdre</em>, avant combien je peux gagner</h1>
+    <p class="sub">La séance 1 a montré qu’un avantage connu ne protège pas de la ruine si la mise est trop grande. Cette séance remplace la mise par un calcul que vous ferez avant chaque trade : <b>combien je risque</b> (une part fixe du capital), <b>où est mon stop</b>, donc <b>quelle taille</b>. Puis elle montre combien de fois il faut avoir raison pour gagner, ce qu’une série de pertes fait au capital, et vous fait écrire vos propres règles — celles que le compte simulé appliquera dès la séance 3.</p>
+    <div class="liveinfo">
+      <span class="li">🎤 <b>trois exposés courts</b>, écrits en entier sur cette page</span>
+      <span class="li">🛠 <b>deux ateliers</b> : un simulateur, puis vos règles de risque, à deux</span>
+      <span class="li">✅ <b>un quiz</b> de huit questions, lancé ensemble</span>
+    </div>
+  </div>
+
+  <div id="presSlot"></div>
+
+  <div class="objectives">
+    <h4>À la fin de la séance 2, vous saurez</h4>
+    <ul>
+      <li>Calculer le gain nécessaire pour effacer une perte, et dire pourquoi une perte de 50 % est si difficile à rattraper.</li>
+      <li>Calculer la taille d’une position depuis le capital, le risque par trade et la distance au stop, en actions, en contrats et en devises, et dire ce que le levier change et ne change pas.</li>
+      <li>Calculer le taux de trades gagnants qui met une stratégie à zéro, selon son rapport rendement/risque et ses coûts.</li>
+      <li>Calculer la probabilité d’une série de pertes et la perte qu’elle inflige au capital selon le risque par trade.</li>
+      <li>Écrire vos règles de risque pour le compte simulé : risque par trade, perte maximale par jour et par semaine, nombre de positions, levier.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Avant la séance, à la maison — cochez</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Refait</b> le jeu de la pièce (séance 1, section 1.4) à 20 % et à 50 %, et relu pourquoi le capital fond à 50 %.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>Essayé</b> la calculatrice de taille de position dans <a href="outils.html">les outils</a>, avec CHF 10 000 et 1 % de risque.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>Noté</b> la plus grosse perte que vous avez déjà faite sur un placement ou un pari, en pour-cent de ce que vous aviez. La section 2.1 commence par elle.</span></div>
+  </div>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Page du cours</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">réinitialiser ma progression de la séance 2 sur cet appareil</a></div>
+  </div>
+</section>
+
+<!-- ============================ 2.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.1 · Partie 1</div><span class="mode m-ex">🎤 Exposé</span><h2>Une perte de 50 % demande un gain de 100 %</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome. Les deux calculs sont en bas de page.</p>
+
+  <div class="card">
+    <span class="label why">Pourquoi la perte compte plus que le gain</span>
+    <p>Un gain et une perte de même pourcentage ne s’annulent pas. Perdre 50 % puis gagner 50 % ne ramène pas à zéro : 100 → 50 → 75. Pour revenir de 50 à 100, il faut gagner 100 %. Plus la perte est profonde, plus le gain qui l’efface est démesuré. C’est pourquoi le trading commence par la question « combien je peux perdre », et non par « combien je peux gagner ».</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Les mots</span>
+    <h3>Le drawdown et le gain de récupération</h3>
+    <p>Le <b>drawdown</b> est la baisse du capital depuis son plus haut, en pour-cent. Si le compte est monté à CHF 12 000 puis redescendu à CHF 9 000, le drawdown est de 25 %. Le <b>drawdown maximal</b> est la plus grande de ces baisses sur toute la période : c’est le chiffre qu’un trader professionnel regarde en premier, avant le gain.</p>
+    <p>Le <b>gain de récupération</b> est ce qu’il faut gagner, depuis le creux, pour revenir au plus haut :</p>
+    <div class="formula">gain nécessaire = perte ÷ (1 − perte) &nbsp;&nbsp;&nbsp; une perte de 25 % demande 0,25 ÷ 0,75 = 33,3 %</div>
+    <div class="viz">
+      <div class="vz-h">Faites glisser la perte</div>
+      <div class="vz-ctl">
+        <label>Perte depuis le plus haut <span class="vv" id="ddV">25 %</span><input type="range" id="ddR" min="5" max="95" step="5" value="25"></label>
+      </div>
+      <div class="vz-read" id="ddRead"></div>
+      <table class="ddtab" id="ddTab"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez</span>
+    <h3>Deux calculs</h3>
+    <div id="ddNum"></div>
+  </div>
+  <div class="sec-status" data-sec="s1" data-need="Les deux calculs terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>← Menu</button>
+    <button class="btn" data-next="s2">Suite : la taille de position →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.2 · Partie 1</div><span class="mode m-ex">🎤 Exposé</span><h2>La taille de position : le risque par trade et la distance au stop</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome. Les trois calculs sont en bas de page.</p>
+
+  <div class="card">
+    <span class="label why">Pourquoi la taille se calcule, et ne se choisit pas</span>
+    <p>Dans le jeu de la pièce, la mise décidait de tout. En trading, la mise s’appelle la <b>taille de position</b>, et elle ne se choisit pas « au feeling » : elle se calcule depuis deux décisions prises avant d’entrer. Première décision : <b>combien je suis prêt à perdre sur ce trade</b>, en francs, une part fixe du capital (1 % est la règle la plus courante). Deuxième décision : <b>à quel prix j’ai tort</b> — c’est le stop. La taille est ce qui fait que, si le stop est touché, la perte est exactement le montant décidé.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">La formule</span>
+    <h3>Trois nombres, une taille</h3>
+    <ul>
+      <li>Le <b>risque par trade</b> : la part du capital que vous acceptez de perdre si le stop est touché. 1 % de CHF 20 000 = CHF 200.</li>
+      <li>Le <b>stop-loss</b> (ou stop) : l’ordre stop qui ferme la position au prix où votre idée est fausse. Un achat à 48.00 avec un stop à 46.00 dit : « si ça descend à 46, j’avais tort, je sors ».</li>
+      <li>La <b>distance au stop</b> : entrée − stop, par titre. Ici 2.00.</li>
+    </ul>
+    <div class="formula">taille = risque en francs ÷ distance au stop &nbsp;&nbsp;&nbsp; 200 ÷ 2.00 = <b>100 actions</b></div>
+    <p>Avec 100 actions, si le prix tombe de 48 à 46, vous perdez 100 × 2 = CHF 200 : exactement 1 % du capital. Si le stop était plus loin (à 44, distance 4.00), la taille serait de 50 actions ; plus près (à 47, distance 1.00), de 200 actions. <b>Le stop décide de la taille, pas l’inverse.</b></p>
+    <p>L’<b>exposition</b> est la valeur de la position : 100 × 48 = CHF 4 800. Avec un produit à <b>levier</b> (un CFD à levier 10, par exemple), vous n’immobilisez qu’un dixième de cette somme, la <b>marge</b> : CHF 480. Le levier change l’argent immobilisé ; il ne change ni la taille calculée depuis le stop, ni la perte au stop (toujours CHF 200). Ce qu’il change, c’est ce qui arrive si vous ignorez le stop : avec CHF 480 de marge, une baisse de 10 % efface toute la marge. La séance 3 montre l’appel de marge sur la plateforme.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Manipulez</span>
+    <h3>La calculatrice</h3>
+    <div class="calc-grid">
+      <label>Capital (CHF)<input type="number" id="psCap" value="20000" step="1000"></label>
+      <label>Risque par trade (%)<input type="number" id="psRisk" value="1" step="0.25" min="0.1"></label>
+      <label>Prix d’entrée<input type="number" id="psIn" value="48" step="0.01"></label>
+      <label>Stop<input type="number" id="psStop" value="46" step="0.01"></label>
+      <label>Levier<input type="number" id="psLev" value="1" step="1" min="1"></label>
+    </div>
+    <div class="obout" id="psOut"></div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Trois marchés, la même formule</span>
+    <h3>Actions, contrats, devises</h3>
+    <div class="tblwrap"><table class="fx">
+      <tr><th>Marché</th><th>La « distance » se compte en</th><th>La taille se compte en</th><th>Exemple</th></tr>
+      <tr><td>Actions, ETF</td><td>francs par titre</td><td>titres</td><td>risque 200, distance 2.00 → 100 titres</td></tr>
+      <tr><td>Indices, matières premières (CFD, futures)</td><td>points, × la valeur d’un point par contrat</td><td>contrats, arrondis <b>en dessous</b></td><td>risque 250, stop à 60 points, CHF 1 par point → 4,17 → 4 contrats</td></tr>
+      <tr><td>Devises</td><td>pips (0.0001 sur EUR/USD), × la valeur d’un pip par unité</td><td>unités (un lot = 100 000 unités)</td><td>risque 50 USD, stop à 30 pips (0.0030) → 16 667 unités ≈ 0,17 lot</td></tr>
+    </table></div>
+    <p>Un contrat ne se coupe pas : on arrondit toujours <b>en dessous</b>, sinon le risque dépasse la limite. Si la formule donne 0,8 contrat, on ne prend pas le trade, ou on rapproche le stop.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez</span>
+    <h3>Trois calculs</h3>
+    <div id="psNum"></div>
+  </div>
+  <div class="sec-status" data-sec="s2" data-need="Les trois calculs terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Retour</button>
+    <button class="btn" data-next="s3">Suite : combien de fois faut-il avoir raison ? →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.3 · Partie 1</div><span class="mode m-ex">🎤 Exposé</span><h2>Rendement/risque : combien de fois faut-il avoir raison ?</h2></div>
+  <p class="ex-note">Exposé de l’enseignant, ou lecture autonome. Les trois calculs et le classement sont en bas de page.</p>
+
+  <div class="card">
+    <span class="label why">Pourquoi le taux de réussite ne suffit pas</span>
+    <p>« J’ai raison 7 fois sur 10 » ne dit rien tant qu’on ne sait pas ce que rapportent les 7 et ce que coûtent les 3. Une stratégie qui gagne 7 fois CHF 50 et perd 3 fois CHF 200 perd de l’argent. À l’inverse, une stratégie qui a raison 4 fois sur 10 gagne si chaque gain vaut deux pertes. Ce qui compte est le couple <b>taux de réussite</b> et <b>rendement/risque</b>.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Les mots</span>
+    <h3>Le R, et le taux de réussite qui met à zéro</h3>
+    <p>Le <b>R</b> d’un trade est le risque décidé avant d’entrer : la distance au stop × la taille (section 2.2), en francs. Un trade qui perd au stop perd <b>1 R</b>. Un trade dont l’objectif est deux fois plus loin que le stop gagne <b>2 R</b> s’il touche l’objectif. Le <b>rendement/risque</b> d’un setup est donc R<sub>gain</sub> ÷ R<sub>perte</sub> : objectif à 6.00 du prix, stop à 2.00, c’est un rendement/risque de 3.</p>
+    <p>Le <b>taux de réussite nécessaire</b> est la part de trades gagnants qui met l’espérance (séance 1) à zéro, en comptant les coûts <b>c</b> en fraction du risque (un coût de 0,1 R signifie que l’aller-retour coûte un dixième de ce que vous risquez) :</p>
+    <div class="formula">p* = (1 + c) ÷ (1 + R) &nbsp;&nbsp;&nbsp; R = 2, c = 0 : p* = 1 ÷ 3 = 33,3 % &nbsp;·&nbsp; R = 2, c = 0,1 : p* = 1,1 ÷ 3 = 36,7 %</div>
+    <div class="viz">
+      <div class="vz-h">Le tableau du trader</div>
+      <div class="vz-s">Pour chaque rendement/risque, le taux de réussite à partir duquel la stratégie gagne — sans coûts, puis avec un coût de 0,1 R et de 0,2 R.</div>
+      <table class="ddtab" id="rrTab"></table>
+      <div class="vz-read">Lisez la ligne R = 0,5 : un trade dont l’objectif est à la moitié de la distance du stop doit gagner <b>deux fois sur trois</b> pour seulement être à zéro. C’est le piège du « petit gain sûr, grand stop lointain » : il gagne souvent, et il perd.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez</span>
+    <h3>Trois calculs</h3>
+    <div id="rrNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Classez</span>
+    <h3>Cette stratégie gagne-t-elle ?</h3>
+    <p>Pour chaque stratégie, dites si elle <b>gagne</b> (son taux de réussite dépasse p*) ou si elle <b>perd</b>, coûts compris. Calculez p* d’abord.</p>
+    <div class="lab">
+      <div class="lab-title">Six stratégies</div>
+      <div id="rrRows"></div>
+      <div class="caption" id="rrRowsCap"></div>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s3" data-need="Les trois calculs et le classement terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Retour</button>
+    <button class="btn" data-next="s4">Suite (après la pause) : la série de pertes →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.4 · Partie 2</div><span class="mode m-do">🛠 Atelier</span><h2>La série de pertes et le risque de ruine</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi 1 % et pas 10 %</span>
+    <p>Une stratégie gagnante perd quand même : 45 % de trades perdants, c’est presque un trade sur deux, et ils arrivent parfois d’affilée. Cinq, huit, dix pertes de suite ne sont pas un accident, ce sont des événements certains sur quelques centaines de trades. Ce que la série fait au capital dépend entièrement du <b>risque par trade</b>. À 1 %, dix pertes de suite coûtent 9,6 % : désagréable, récupérable. À 10 %, elles coûtent 65 % : il faut ensuite gagner 186 % pour revenir.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Deux calculs à savoir faire</span>
+    <h3>La probabilité d’une série, et ce qu’elle coûte</h3>
+    <p>Si la part de trades perdants est q (= 1 − p) et que les trades sont indépendants, la probabilité de <b>k pertes d’affilée</b> à partir d’un trade donné est q<sup>k</sup>. Avec q = 55 % : cinq pertes de suite, 0,55<sup>5</sup> = 5,0 % ; huit, 0,55<sup>8</sup> = 0,8 %. Sur 200 trades, une série de huit a toutes les chances d’arriver au moins une fois.</p>
+    <p>Ce que la série coûte : chaque perte retire la fraction f du capital du moment, donc après k pertes il reste (1 − f)<sup>k</sup> :</p>
+    <div class="formula">perte après k pertes de suite = 1 − (1 − f)<sup>k</sup> &nbsp;&nbsp;&nbsp; f = 2 %, k = 8 : 1 − 0,98<sup>8</sup> = 14,9 % &nbsp;·&nbsp; f = 10 % : 1 − 0,90<sup>8</sup> = 57 %</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Simulez</span>
+    <h3>500 traders, 200 trades chacun</h3>
+    <p>Tous jouent la même stratégie : taux de réussite p, rendement/risque R, et risquent la même part f du capital à chaque trade. Un trader est <b>ruiné</b> quand son capital passe sous la moitié du départ. Faites varier f et regardez la part des ruinés ; puis changez p et R.</p>
+    <div class="viz">
+      <div class="vz-ctl">
+        <label>Trades gagnants p <span class="vv" id="smP">45 %</span><input type="range" id="smPr" min="30" max="65" value="45"></label>
+        <label>Rendement/risque R <span class="vv" id="smR">2</span><input type="range" id="smRr" min="0.5" max="4" step="0.5" value="2"></label>
+        <label>Risque par trade f <span class="vv" id="smF">2 %</span><input type="range" id="smFr" min="0.5" max="15" step="0.5" value="2"></label>
+      </div>
+      <div class="btn-row"><button class="btn" id="smGo">Lancer les 500 traders</button></div>
+      <div class="sim-stage">
+        <div><svg id="smSvg" viewBox="0 0 420 220" style="width:100%;height:auto;background:var(--white);border:1px solid var(--line);border-radius:10px;"></svg></div>
+        <div class="obout" id="smOut">Réglez p, R et f, puis lancez. Vingt courbes sont dessinées ; les chiffres portent sur les 500.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Vérifiez</span>
+    <h3>Trois calculs</h3>
+    <div id="smNum"></div>
+  </div>
+  <div class="sec-status" data-sec="s4" data-need="Une simulation lancée et les trois calculs terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Retour</button>
+    <button class="btn" data-next="s5">Suite : mes règles de risque →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.5 · Partie 2</div><span class="mode m-do">🛠 Atelier · à deux</span><h2>Mes règles de risque pour le compte simulé</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi écrire les règles maintenant</span>
+    <p>La séance 3 ouvre le compte simulé. Un compte sans règles écrites est un compte où l’on décide la taille sous le coup de l’émotion, c’est-à-dire après une perte, en plus gros, pour « se refaire ». Les règles ci-dessous sont les vôtres : vous les choisissez, vous les écrivez, et à partir de la séance 3 le journal dit, trade par trade, si vous les avez respectées. C’est ce respect qui est noté, pas le gain.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Choisissez</span>
+    <h3>Cinq règles, une réponse chacune</h3>
+    <p>Il n’y a pas de réponse juste : il y a la vôtre, et ce qu’elle implique, dit sous chaque choix. Discutez chaque règle avec votre voisin·e avant de cliquer.</p>
+    <div id="ruleRows"></div>
+    <div class="caption" id="ruleRowsCap"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Calculez · à deux</span>
+    <h3>Trois positions, avec un compte de CHF 25 000 et 1 % de risque</h3>
+    <div id="caseNum"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Écrivez · pour la classe</span>
+    <h3>Vos règles, en phrases</h3>
+    <div class="wb" data-board="Mes règles de risque|w2_regles">
+      <div class="wq"><span class="qn">✍</span>Recopiez vos cinq règles en phrases complètes, avec les chiffres : « Je risque au plus … % du compte par trade. Si je perds … % dans la journée, j’arrête de trader jusqu’au lendemain. … » Ce texte sera la première page de votre plan de trading.</div>
+      <textarea data-work="w2_regles" data-worklabel="Mes règles de risque pour le compte simulé" placeholder="Je risque au plus 1 % du compte par trade, calculé depuis le stop. Si je perds 3 % dans la journée, j’arrête jusqu’au lendemain. Si je perds … dans la semaine, … Je n’ai jamais plus de … positions ouvertes. Je n’utilise pas de levier supérieur à …"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">✍</span>Vous venez de perdre cinq trades de suite en respectant vos règles. Qu’est-ce que vous faites au sixième, concrètement, et pourquoi ?</div>
+      <textarea data-work="w2_serie" data-worklabel="La série de pertes — ce que je ferai au 5e trade perdant" placeholder="p. ex. Rien ne change : même risque de 1 %, même méthode, parce que cinq pertes à 45 % de réussite arrivent une fois sur vingt et que la série ne dit rien sur la stratégie. Je vérifie seulement que …"></textarea>
+    </div>
+  </div>
+  <div class="sec-status" data-sec="s5" data-need="Les cinq règles, les trois calculs et les deux champs terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Retour</button>
+    <button class="btn" data-next="s6">Suite : le quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.6 · Partie 2</div><span class="mode m-quiz">✅ Quiz</span><h2>Quiz de la séance 2</h2></div>
+  <div class="card">
+    <p>Huit questions sur la séance, à choix unique. Le quiz démarre en même temps pour tout le monde.</p>
+    <div class="ex-inst" id="quizLock" style="display:none"></div>
+    <span class="scorechip" id="scoreChip"></span>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore"></div><p id="quizMsg"></p></div>
+  </div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Retour</button>
+    <button class="btn" data-next="s7">Suite : après la séance →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Menu de la séance</button>
+  <div class="sec-head"><div class="kicker">Section 2.7 · Après la séance</div><span class="mode m-eea">📓 Après la séance</span><h2>Ce que la séance laisse, et la suite</h2></div>
+  <div class="card">
+    <span class="label why">Le cours, séance par séance</span>
+    <div id="planCal"></div>
+  </div>
+  <div class="card">
+    <span class="label play">Trois cases</span>
+    <div class="chk" id="afterTicks"></div>
+  </div>
+  <div class="card">
+    <span class="label why">Pour la suite</span>
+    <p><b>La séance 3</b> ouvre le compte simulé sur la plateforme, avec un·e intervenant·e de Swissquote : passer un ordre, poser un stop, lire la marge et l’appel de marge, voir les frais réels. Apportez vos règles de la section 2.5 : ce sont les règles du compte. Le <a href="journal.html">journal de trading</a> commence ce jour-là ; ouvrez-le une fois avant pour voir ses colonnes.</p>
+    <div class="btn-row"><a class="btn" href="journal.html">Le journal →</a><a class="btn ghost" href="outils.html">Les outils →</a></div>
+  </div>
+  <div class="sec-status" data-sec="s7" data-need="Les trois cases terminent cette section."></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Retour</button>
+    <button class="btn" data-home>Menu de la séance</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   SÉANCE 2 — configuration + widgets. The engine is bloc.js. Figures
+   checked in _private/check_s2.py (not tracked): recovery gains, the
+   three position sizes, p* with costs, the loss streaks.
+   ===================================================================== */
+var DAY={
+  mod:'w2', key:'trading_w2_progress_v1', title:'Séance 2 · Gestion du risque et money management',
+  blocks:[
+    {n:1,t:'le drawdown, la taille de position, le rendement/risque',name:'trois exposés écrits en entier, une calculatrice, des calculs vérifiés',parts:[['ex',75],['do',15]]},
+    {n:2,t:'la série de pertes, vos règles, le quiz',name:'un simulateur, vos cinq règles à deux, huit questions',parts:[['do',70],['quiz',10]]}
+  ],
+  sections:[
+    {id:'s1',num:'2.1',name:'Une perte de 50 % demande un gain de 100 %',tag:'Le drawdown · le gain de récupération · pourquoi la perte compte plus que le gain',mode:'ex',block:1},
+    {id:'s2',num:'2.2',name:'La taille de position',tag:'Risque par trade · stop · distance · taille = risque ÷ distance · levier et marge · actions, contrats, devises',mode:'ex',block:1},
+    {id:'s3',num:'2.3',name:'Combien de fois faut-il avoir raison ?',tag:'Le R · rendement/risque · p* = (1 + c) ÷ (1 + R) · six stratégies à juger',mode:'ex',block:1},
+    {id:'s4',num:'2.4',name:'La série de pertes et le risque de ruine',tag:'q puissance k · ce qu’une série coûte selon f · 500 traders simulés',mode:'do',block:2},
+    {id:'s5',num:'2.5',name:'Mes règles de risque pour le compte simulé',tag:'Cinq règles à choisir · trois positions à calculer · vos règles en phrases, pour la classe',mode:'do',block:2},
+    {id:'s6',num:'2.6',name:'Quiz de la séance 2',tag:'Huit questions · lancé en classe',mode:'quiz',block:2},
+    {id:'s7',num:'2.7',name:'Après la séance',tag:'Le cours séance par séance · trois cases · avant la séance 3',mode:'eea',block:2}
+  ],
+  secCheck:function(a){
+    function all(ks){return ks.every(function(k){return a.st[k];});}
+    if(all(['d1','d2']))a.mark('s1');
+    if(all(['t1','t2','t3']))a.mark('s2');
+    if(all(['r1','r2','r3'])&&a.cls.rrRows)a.mark('s3');
+    if(a.st.sim&&all(['s1','s2','s3']))a.mark('s4');
+    if(all(['ru1','ru2','ru3','ru4','ru5','cs1','cs2','cs3'])&&a.filled('w2_regles')&&a.filled('w2_serie'))a.mark('s5');
+    if(all(['p1','p2','p3']))a.mark('s7');
+  }
+};
+</script>
+<script src="bloc.js"></script>
+<script>
+/* ---- 2.1 ---- */
+function ddPaint(){
+  var L=+document.getElementById('ddR').value;document.getElementById('ddV').textContent=L+' %';
+  var g=L/(100-L)*100;
+  document.getElementById('ddRead').innerHTML='<span class="hero">− '+L+' % demande + '+g.toFixed(1)+' %</span>De 100 à '+(100-L)+', puis il faut remonter de '+(100-L)+' à 100 : '+L+' ÷ '+(100-L)+' = '+(g/100).toFixed(3)+'.';
+  var h='<tr><th>Perte</th><th>Gain nécessaire</th><th>Capital 100 → creux → retour</th></tr>';
+  [10,20,30,40,50,60,70,80,90].forEach(function(x){h+='<tr'+(x===L?' class="hot"':'')+'><td>− '+x+' %</td><td>+ '+(x/(100-x)*100).toFixed(1)+' %</td><td>100 → '+(100-x)+' → 100</td></tr>';});
+  document.getElementById('ddTab').innerHTML=h;
+}
+document.getElementById('ddR').addEventListener('input',ddPaint);ddPaint();
+buildNum('ddNum',[
+  {id:'d1',q:'Un compte est monté à CHF 14 000 puis redescendu à CHF 9 800. Le <b>gain nécessaire</b> pour revenir à 14 000 (%, une décimale).',a:42.9,unit:'%',w:'La perte est de 4 200 ÷ 14 000 = 30 %. Gain nécessaire : 0,30 ÷ 0,70 = 42,9 %. Ou directement : 4 200 ÷ 9 800.',hint:'Calculez d’abord la perte en %, puis perte ÷ (1 − perte).'},
+  {id:'d2',q:'Après une perte de <b>80 %</b>, le gain nécessaire pour revenir au plus haut (%).',a:400,unit:'%',w:'0,80 ÷ 0,20 = 4, soit + 400 % : il faut quintupler. C’est ce qui arrive à un compte à levier sans stop.',hint:'0,8 ÷ 0,2.'}
+]);
+
+/* ---- 2.2 ---- */
+function psPaint(){
+  var cap=+document.getElementById('psCap').value,r=+document.getElementById('psRisk').value,i=+document.getElementById('psIn').value,s=+document.getElementById('psStop').value,lev=Math.max(1,+document.getElementById('psLev').value||1);
+  var risk=cap*r/100,dist=Math.abs(i-s),out=document.getElementById('psOut');
+  if(!(cap>0)||!(r>0)||!(dist>0)){out.innerHTML='Entrez un capital, un risque et un stop différent de l’entrée.';return;}
+  var n=Math.floor(risk/dist),expo=n*i,marg=expo/lev;
+  out.innerHTML='<span class="big">'+n+' titres</span>Risque accepté : '+r+' % de '+cap.toLocaleString('fr-CH')+' = <b>CHF '+risk.toFixed(0)+'</b>. Distance au stop : |'+i+' − '+s+'| = <b>'+dist.toFixed(2)+'</b> par titre. Taille : '+risk.toFixed(0)+' ÷ '+dist.toFixed(2)+' = '+(risk/dist).toFixed(1)+', arrondi en dessous à <b>'+n+'</b>.<br>Exposition : '+n+' × '+i+' = <b>CHF '+expo.toLocaleString('fr-CH',{maximumFractionDigits:0})+'</b>'+(lev>1?' · marge immobilisée au levier '+lev+' : <b>CHF '+marg.toLocaleString('fr-CH',{maximumFractionDigits:0})+'</b>':'')+'. Si le stop est touché, la perte est de '+n+' × '+dist.toFixed(2)+' = <b>CHF '+(n*dist).toFixed(0)+'</b>'+(s>i?' (position vendeuse : le stop est au-dessus de l’entrée)':'')+'.';
+}
+['psCap','psRisk','psIn','psStop','psLev'].forEach(function(id){document.getElementById(id).addEventListener('input',psPaint);});psPaint();
+buildNum('psNum',[
+  {id:'t1',q:'Capital CHF 20 000, risque 1 %, achat à 48.00, stop à 46.00. La <b>taille</b> (titres).',a:100,unit:'titres',w:'200 ÷ 2.00 = 100 titres. Au stop, la perte est 100 × 2 = CHF 200 = 1 %.',hint:'Risque en francs ÷ distance au stop.'},
+  {id:'t2',q:'La même position, mais le stop est à <b>44.00</b>. La taille (titres).',a:50,unit:'titres',w:'200 ÷ 4.00 = 50 titres. Un stop deux fois plus loin, une taille deux fois plus petite : la perte au stop reste CHF 200.',hint:'La distance a doublé.'},
+  {id:'t3',q:'Compte de <b>10 000 USD</b>, risque <b>0,5 %</b>, achat EUR/USD à 1.0850, stop à 1.0820 (30 pips). La taille en <b>unités</b> (1 pip = 0.0001 USD par unité).',a:16667,unit:'unités',tol:0.01,w:'Risque 50 USD ÷ 0.0030 = 16 667 unités, soit 0,17 lot. Avec un lot entier (100 000), le même stop coûterait 300 USD : 3 % du compte, six fois la règle.',hint:'50 USD ÷ (30 pips × 0.0001).'}
+]);
+
+/* ---- 2.3 ---- */
+(function(){
+  var h='<tr><th>Rendement/risque R</th><th>p* sans coûts</th><th>p* avec c = 0,1 R</th><th>p* avec c = 0,2 R</th></tr>';
+  [0.5,1,1.5,2,3,4].forEach(function(R){h+='<tr'+(R===2?' class="hot"':'')+'><td>'+String(R).replace('.',',')+'</td><td>'+(100/(1+R)).toFixed(1)+' %</td><td>'+(110/(1+R)).toFixed(1)+' %</td><td>'+(120/(1+R)).toFixed(1)+' %</td></tr>';});
+  document.getElementById('rrTab').innerHTML=h;
+})();
+buildNum('rrNum',[
+  {id:'r1',q:'Objectif à 4.00 du prix d’entrée, stop à 2.00. Sans coûts, le <b>taux de réussite</b> qui met l’espérance à zéro (%, une décimale).',a:33.3,unit:'%',w:'R = 2 ; p* = 1 ÷ 3 = 33,3 %. Il suffit d’avoir raison une fois sur trois.',hint:'p* = 1 ÷ (1 + R).'},
+  {id:'r2',q:'Objectif à 1.00, stop à 2.00 (R = 0,5). Sans coûts, p* (%, une décimale).',a:66.7,unit:'%',w:'p* = 1 ÷ 1,5 = 66,7 %. Deux fois sur trois, juste pour être à zéro.',hint:'p* = 1 ÷ (1 + 0,5).'},
+  {id:'r3',q:'R = 2, et l’aller-retour coûte <b>un dixième du risque</b> (c = 0,1). p* (%, une décimale).',a:36.7,unit:'%',w:'p* = 1,1 ÷ 3 = 36,7 %. Les coûts ajoutent 3,4 points au taux de réussite nécessaire.',hint:'p* = (1 + c) ÷ (1 + R).'}
+]);
+buildClassify('rrRows','rrRowsCap',[['G','Gagne'],['P','Perd']],[
+  {s:'Raison 40 % du temps, R = 2, coûts nuls',a:'G',w:'p* = 33,3 % ; 40 % > 33,3 %. E = 0,4 × 2 − 0,6 = + 0,2 R par trade.'},
+  {s:'Raison 70 % du temps, R = 0,25 (objectif à un quart du stop), coûts nuls',a:'P',w:'p* = 1 ÷ 1,25 = 80 % ; 70 % < 80 %. Elle gagne sept fois sur dix et perd de l’argent : E = 0,7 × 0,25 − 0,3 = − 0,125 R.'},
+  {s:'Raison 50 % du temps, R = 1, coûts c = 0,1 R',a:'P',w:'p* = 1,1 ÷ 2 = 55 % ; 50 % < 55 %. À R = 1, pile ou face, les coûts décident : elle perd 0,1 R par trade.'},
+  {s:'Raison 35 % du temps, R = 3, coûts c = 0,2 R',a:'G',w:'p* = 1,2 ÷ 4 = 30 % ; 35 % > 30 %. Une stratégie de tendance typique : elle a tort souvent et gagne quand même.'},
+  {s:'Raison 60 % du temps, R = 0,5, coûts c = 0,1 R',a:'P',w:'p* = 1,1 ÷ 1,5 = 73,3 % ; 60 % < 73,3 %. Le scalping « petit objectif, gros stop » sans avantage sur les coûts (séance 12).'},
+  {s:'Raison 55 % du temps, R = 1,5, coûts c = 0,2 R',a:'G',w:'p* = 1,2 ÷ 2,5 = 48 % ; 55 % > 48 %. E = 0,55 × 1,5 − 0,45 − 0,2 = + 0,175 R.'}
+],'le taux de réussite seul ne dit rien ; avec R et c, il dit tout.',null);
+
+/* ---- 2.4 · the streak simulator ---- */
+function smPaint(){document.getElementById('smP').textContent=document.getElementById('smPr').value+' %';document.getElementById('smR').textContent=String(document.getElementById('smRr').value).replace('.',',');document.getElementById('smF').textContent=String(document.getElementById('smFr').value).replace('.',',')+' %';}
+['smPr','smRr','smFr'].forEach(function(id){document.getElementById(id).addEventListener('input',smPaint);});smPaint();
+function runTrader(p,R,f,N){var c=1,hi=1,dd=0,ruin=false,path=[1];for(var i=0;i<N;i++){c*=Math.random()<p?(1+f*R):(1-f);if(c>hi)hi=c;var d=1-c/hi;if(d>dd)dd=d;if(c<0.5)ruin=true;path.push(c);}return {fin:c,dd:dd,ruin:ruin,path:path};}
+function drawCurves(paths,N){
+  var svg=document.getElementById('smSvg'),W=420,H=220,pl=38,pr=10,pt=12,pb=24;
+  var mx=1;paths.forEach(function(p){p.forEach(function(v){if(v>mx)mx=v;});});mx=Math.min(mx,6);
+  function x(i){return pl+i/N*(W-pl-pr);} function y(v){return pt+(1-Math.min(v,mx)/mx)*(H-pt-pb);}
+  var g='';[0,0.5,1,2,Math.round(mx*10)/10].forEach(function(v){if(v>mx)return;g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="'+(v===0.5?'#B42318':'#DDD')+'" stroke-dasharray="3 3"/><text x="'+(pl-4)+'" y="'+(y(v)+4)+'" font-size="10" text-anchor="end" fill="#888">× '+v+'</text>';});
+  var d=paths.map(function(p){return '<path d="'+p.map(function(v,i){return (i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1);}).join(' ')+'" fill="none" stroke="#DF5727" stroke-opacity=".45" stroke-width="1.3"/>';}).join('');
+  svg.innerHTML=g+'<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(1)+'" y2="'+y(1)+'" stroke="#999"/>'+d+'<text x="'+(W-pr)+'" y="'+(H-6)+'" font-size="10" text-anchor="end" fill="#888">'+N+' trades</text><text x="'+pl+'" y="'+(H-6)+'" font-size="10" fill="#888">ruine sous × 0,5</text>';
+}
+document.getElementById('smGo').addEventListener('click',function(){
+  var p=+document.getElementById('smPr').value/100,R=+document.getElementById('smRr').value,f=+document.getElementById('smFr').value/100,N=200,T=500;
+  var fins=[],dds=[],ruin=0,paths=[];
+  for(var k=0;k<T;k++){var r=runTrader(p,R,f,N);fins.push(r.fin);dds.push(r.dd);if(r.ruin)ruin++;if(k<20)paths.push(r.path);}
+  fins.sort(function(a,b){return a-b;});dds.sort(function(a,b){return a-b;});
+  var E=p*R-(1-p);
+  drawCurves(paths,N);
+  document.getElementById('smOut').innerHTML='<span class="big">'+(ruin/T*100).toFixed(1)+' % ruinés</span>Espérance de la stratégie : '+(E>=0?'+ ':'− ')+Math.abs(E).toFixed(2)+' R par trade ('+(E>=0?'gagnante':'perdante')+'). Capital final médian <b>× '+fins[250].toFixed(2)+'</b> ; un quart des traders finit sous × '+fins[125].toFixed(2)+'. Drawdown maximal médian <b>'+(dds[250]*100).toFixed(0)+' %</b>, pire cas sur 500 : '+(dds[T-1]*100).toFixed(0)+' %.'+
+    (E>0&&ruin/T>0.2?' <b>La stratégie gagne et un trader sur cinq est ruiné</b> : le risque par trade est trop grand pour les séries de pertes qu’elle produit.':'')+(E>0&&ruin===0?' Personne n’est ruiné : avec ce f, les séries de pertes restent supportables.':'');
+  markStep('sim');
+});
+buildNum('smNum',[
+  {id:'s1',q:'Une stratégie a 45 % de trades gagnants. La probabilité de <b>cinq pertes de suite</b> à partir d’un trade donné (%, une décimale).',a:5,unit:'%',tol:0.03,w:'0,55<sup>5</sup> = 0,0503 = 5,0 %. Une fois sur vingt : sur 200 trades, c’est certain.',hint:'q = 0,55 ; q puissance 5.'},
+  {id:'s2',q:'<b>Huit pertes de suite</b> en risquant <b>2 %</b> du capital à chaque trade. La perte sur le capital (%, une décimale).',a:14.9,unit:'%',w:'1 − 0,98<sup>8</sup> = 1 − 0,851 = 14,9 %. Moins que 8 × 2 = 16 %, parce que chaque perte porte sur un capital déjà réduit.',hint:'1 − (1 − 0,02) puissance 8.'},
+  {id:'s3',q:'Les mêmes huit pertes en risquant <b>10 %</b> par trade. La perte sur le capital (%, sans décimale).',a:57,unit:'%',tol:0.01,w:'1 − 0,90<sup>8</sup> = 1 − 0,430 = 57 %. Il faut ensuite gagner 133 % pour revenir. Même stratégie, même série : seule la part risquée a changé.',hint:'1 − 0,9 puissance 8.'}
+]);
+
+/* ---- 2.5 · the rules ---- */
+buildPick('ruleRows','ruleRowsCap',[
+  {id:'ru1',s:'<b>Règle 1 · Le risque par trade</b>, calculé depuis le stop.',opts:[['a','0,5 % du compte','Prudent : dix pertes de suite coûtent 4,9 %. Les gains sont lents, le compte survit à tout.'],['b','1 % du compte','La règle la plus répandue chez les traders professionnels : dix pertes de suite coûtent 9,6 %.'],['c','2 % du compte','Dix pertes de suite coûtent 18 %. Acceptable avec une stratégie testée et un taux de réussite stable ; dangereux en apprenant.'],['d','5 % du compte','Dix pertes de suite coûtent 40 %, et il faut ensuite + 67 % pour revenir. À ce niveau, la simulation de 2.4 ruine une grande part des traders même avec une stratégie gagnante.']]},
+  {id:'ru2',s:'<b>Règle 2 · La perte maximale par jour</b> : atteinte, vous fermez tout et vous arrêtez jusqu’au lendemain.',opts:[['a','2 % du compte','Deux pertes à 1 % et la journée est finie. Ferme ; c’est aussi ce qui empêche le « je me refais ».'],['b','3 % du compte','Trois pertes à 1 %. La limite la plus courante.'],['c','5 % du compte','Cinq pertes de suite dans la journée, c’est déjà une journée où quelque chose ne va pas : le marché, ou vous.']]},
+  {id:'ru3',s:'<b>Règle 3 · La perte maximale par semaine</b> : atteinte, vous ne tradez plus avant le lundi suivant.',opts:[['a','5 % du compte','Avec 1 % par trade et 3 % par jour, deux mauvaises journées suffisent. Strict.'],['b','8 % du compte','Trois mauvaises journées. Le drawdown reste sous 10 %, récupérable avec + 9 %.'],['c','10 % du compte','La limite au-delà de laquelle la récupération demande plus de 11 % : c’est le dernier chiffre raisonnable.']]},
+  {id:'ru4',s:'<b>Règle 4 · Le nombre maximal de positions ouvertes en même temps.</b>',opts:[['a','1 position','Une seule chose à surveiller : pour apprendre, c’est le bon chiffre.'],['b','2 positions','Deux positions à 1 % de risque chacune : le risque total ouvert est de 2 %. Attention aux positions qui bougent ensemble (deux actions du même secteur, c’est une seule position).'],['c','3 positions ou plus','Le risque total ouvert dépasse 3 % : une mauvaise annonce peut toucher les trois stops le même jour. Pour un débutant, c’est trop.']]},
+  {id:'ru5',s:'<b>Règle 5 · Le levier maximal</b> sur un produit à levier (CFD, futures).',opts:[['a','Pas de levier (1×)','L’exposition ne dépasse jamais le compte. Le plus sûr ; certains marchés (indices, devises) deviennent inaccessibles avec un petit compte.'],['b','Jusqu’à 5×','Assez pour les indices et les devises avec un stop raisonnable ; la marge reste une fraction du compte.'],['c','Jusqu’à 10×','Le levier ne change pas la taille calculée depuis le stop, mais à 10× une baisse de 10 % efface toute la marge si le stop n’a pas été posé. Exige un stop sur chaque position, sans exception.'],['d','Jusqu’à 20× ou plus','À ce levier, un mouvement de 5 % vide la marge. La séance 3 montre l’appel de marge ; la séance 6, ce que cela coûte en financement. Rien ne justifie ce choix pour apprendre.']]}
+],'vos cinq règles sont choisies : recopiez-les en phrases plus bas.');
+buildNum('caseNum',[
+  {id:'cs1',q:'<b>Action</b> : achat à 120.00, stop à 115.00. Compte CHF 25 000, risque 1 %. La taille (titres).',a:50,unit:'titres',w:'250 ÷ 5.00 = 50 titres ; exposition CHF 6 000.',hint:'Risque en francs ÷ distance au stop.'},
+  {id:'cs2',q:'<b>CFD sur un indice</b> : achat à 17 850, stop à 17 790 (60 points), CHF 1 par point et par contrat. Même compte, même risque. Le nombre de <b>contrats</b> (entier).',a:4,unit:'contrats',tol:0.001,w:'250 ÷ (60 × 1) = 4,17, arrondi en dessous : 4 contrats. Risque réel au stop : 4 × 60 = CHF 240, sous la limite de 250.',hint:'Un contrat ne se coupe pas : arrondissez en dessous.'},
+  {id:'cs3',q:'<b>Devises</b> : compte de 25 000 USD, risque 1 %, vente EUR/USD à 1.0850, stop à 1.0900 (50 pips au-dessus). La taille en <b>unités</b>.',a:50000,unit:'unités',tol:0.001,w:'250 USD ÷ (50 × 0.0001) = 50 000 unités, soit un demi-lot. Le stop d’une position vendeuse est au-dessus de l’entrée ; la formule ne change pas.',hint:'250 ÷ 0.0050.'}
+]);
+
+/* ---- 2.6 quiz ---- */
+buildQuiz([
+  {q:'Un compte perd 20 %. Pour revenir au niveau de départ, il doit gagner…',
+   opts:['+ 20 %','+ 25 %','+ 40 %','+ 50 %'],a:1,
+   w:'0,20 ÷ 0,80 = 25 %. Un gain et une perte de même pourcentage ne s’annulent pas.'},
+  {q:'Capital CHF 10 000, risque 1 % par trade, achat à 50.00, stop à 48.00. La taille est…',
+   opts:['200 titres','100 titres','50 titres','20 titres'],a:2,
+   w:'Risque CHF 100 ÷ distance 2.00 = 50 titres. Au stop, la perte est exactement CHF 100.'},
+  {q:'Vous passez d’un achat d’actions à un CFD à levier 10 sur la même action, avec le même stop. Le levier change…',
+   opts:['la taille calculée depuis le stop','l’argent immobilisé (la marge), pas la taille ni la perte au stop','la distance au stop','le risque par trade décidé'],a:1,
+   w:'La taille vient du risque et du stop. Le levier divise seulement la marge immobilisée ; sans stop, il fait tout perdre plus vite.'},
+  {q:'Un setup a un objectif trois fois plus loin que son stop (R = 3). Sans coûts, il est à zéro avec un taux de réussite de…',
+   opts:['25 %','33 %','50 %','75 %'],a:0,
+   w:'p* = 1 ÷ (1 + 3) = 25 %. Une stratégie de tendance a souvent tort et gagne quand même.'},
+  {q:'Pile ou face : 50 % de trades perdants. La probabilité de quatre pertes de suite à partir d’un trade donné est…',
+   opts:['25 %','12,5 %','6,25 %','50 %'],a:2,
+   w:'0,5<sup>4</sup> = 6,25 %. Sur 200 trades, cela arrive plusieurs fois.'},
+  {q:'Huit pertes de suite en risquant 2 % du capital à chaque trade coûtent…',
+   opts:['− 2 %','environ − 15 %','exactement − 16 %','environ − 30 %'],a:1,
+   w:'1 − 0,98<sup>8</sup> = 14,9 %. Un peu moins que 8 × 2 %, parce que chaque perte porte sur un capital déjà réduit.'},
+  {q:'Votre perte maximale par jour est atteinte à 11h00. La règle dit…',
+   opts:['de réduire la taille de moitié pour le reste de la journée','de ne trader que des setups « sûrs » jusqu’au soir','de doubler la taille pour récupérer plus vite','de fermer tout et de ne plus trader avant le lendemain'],a:3,
+   w:'La limite journalière existe précisément pour le moment où l’on voudrait « se refaire ». On s’arrête.'},
+  {q:'Le drawdown, c’est…',
+   opts:['la baisse du capital depuis son plus haut, en pour-cent','la perte d’un seul trade','la commission payée sur la journée','la différence entre l’objectif et le stop'],a:0,
+   w:'Le drawdown maximal est le premier chiffre qu’un professionnel regarde dans un historique, avant le gain.'}
+],'s6',['Excellent — le risque est acquis.','Bien. Relisez les explications des questions manquées avant la séance 3.','Reprenez les sections 2.2 et 2.4 : tout y est.']);
+
+/* ---- 2.7 ---- */
+renderPlan('planCal',2);
+buildTicks('afterTicks',[["p1","Mes cinq règles de risque sont écrites en phrases dans la section 2.5 ; je les apporte à la séance 3."],["p2","J’ai lancé le simulateur de la section 2.4 avec mon risque par trade et une stratégie gagnante (p = 45 %, R = 2), et noté la part de ruinés."],["p3","J’ai ouvert le journal de trading et lu ses colonnes."]]);
+
+bootDay();
+</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

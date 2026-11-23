@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/ESM/trading/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Les outils du trader · Trading · Jan Erik Meidell</title>
+<meta name="description" content="Trading, ESM — cinq calculatrices : la taille de position depuis le stop, le seuil de rentabilité d’une stratégie (coûts compris, et la version scalping en ticks), l’espérance par trade, le gain qui efface un drawdown, et un simulateur de séries de pertes.">
+<meta name="theme-color" content="#DF5727">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="/ESM/assets/esm-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/shared/themes/esm-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="trading.css">
+<style>
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;margin:10px 0;}
+.calc-grid label{display:block;font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--grey);text-transform:uppercase;}
+.calc-grid input{width:100%;margin-top:4px;font:15px 'Helvetica Neue',Arial,sans-serif;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);}
+.tools-nav{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px;}
+.tools-nav a{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--accent-deep);background:var(--white);border:1px solid var(--line);border-radius:20px;padding:6px 12px;}
+.tools-nav a:hover{border-color:var(--accent);}
+.ddtab{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;margin-top:8px;}
+.ddtab th{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);font-weight:800;}
+.ddtab td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);}
+.ddtab th:first-child,.ddtab td:first-child{text-align:left;}
+.sim-stage{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+@media(max-width:640px){.sim-stage{grid-template-columns:1fr;}}
+.sim-stage .obout{margin-top:0;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+</head>
+<body data-course="trading">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="/ESM/assets/esm-logo.svg" alt="ESM">
+    <span class="course">TRADING · OUTILS</span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="journal.html">📓 Journal</a>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+</div>
+
+<div class="wrap">
+<section class="screen active">
+  <div class="hero">
+    <div class="eyebrow">Les outils du trader</div>
+    <h1>Cinq calculs à faire <em>avant</em> chaque trade</h1>
+    <p class="sub">Les mêmes calculs que dans les séances 1 et 2, sur une page à garder ouverte pendant les ateliers. Rien n’est enregistré ici : la page calcule, c’est tout.</p>
+  </div>
+  <div class="tools-nav">
+    <a href="#taille">1 · Taille de position</a><a href="#seuil">2 · Seuil de rentabilité</a><a href="#esperance">3 · Espérance</a><a href="#drawdown">4 · Drawdown</a><a href="#series">5 · Séries de pertes</a>
+  </div>
+
+  <div class="card" id="taille">
+    <span class="label def">1 · La taille de position</span>
+    <h3>Combien d’unités, depuis le risque et le stop</h3>
+    <p>Décidez d’abord le <b>risque</b> (la part du compte perdue si le stop est touché) et le <b>stop</b> (le prix où vous avez tort). La taille suit : risque en francs ÷ (distance au stop × valeur d’un point par unité). Pour des actions, la valeur d’un point est 1 ; pour un CFD sur indice à CHF 1 le point, 1 ; pour EUR/USD par unité, 0.0001 par pip, donc entrez la distance en prix (0.0030 pour 30 pips) et une valeur de 1. Les contrats sont arrondis en dessous.</p>
+    <div class="calc-grid">
+      <label>Capital<input type="number" id="aCap" value="20000" step="500"></label>
+      <label>Risque par trade (%)<input type="number" id="aRisk" value="1" step="0.25" min="0.1"></label>
+      <label>Prix d’entrée<input type="number" id="aIn" value="48" step="0.01"></label>
+      <label>Stop<input type="number" id="aStop" value="46" step="0.01"></label>
+      <label>Valeur d’un point par unité<input type="number" id="aPt" value="1" step="0.01" min="0.0001"></label>
+      <label>Levier<input type="number" id="aLev" value="1" step="1" min="1"></label>
+    </div>
+    <div class="obout" id="aOut"></div>
+  </div>
+
+  <div class="card" id="seuil">
+    <span class="label def">2 · Le seuil de rentabilité</span>
+    <h3>Le taux de réussite qui met la stratégie à zéro</h3>
+    <p>Avec un rendement/risque <b>R</b> (objectif ÷ stop, en distance) et un coût <b>c</b> par aller-retour exprimé en fraction du risque, la stratégie est à zéro quand p* = (1 + c) ÷ (1 + R). En dessous de p*, elle perd, quel que soit son air.</p>
+    <div class="calc-grid">
+      <label>Rendement/risque R<input type="number" id="bR" value="2" step="0.1" min="0.05"></label>
+      <label>Coût c (en fraction du risque)<input type="number" id="bC" value="0.1" step="0.05" min="0"></label>
+    </div>
+    <div class="obout" id="bOut"></div>
+    <h3 style="margin-top:18px;">La version scalping, en ticks</h3>
+    <p>Un <b>tick</b> est le plus petit mouvement de prix d’un contrat. Objectif à <b>o</b> ticks, stop à <b>s</b> ticks, coût de l’aller-retour <b>k</b> ticks (spread + commissions ramenés en ticks) : p* = (s + k) ÷ (o + s). Objectif 5, stop 5, coût 1 : 6 ÷ 10 = 60 % de trades gagnants pour être à zéro.</p>
+    <div class="calc-grid">
+      <label>Objectif (ticks)<input type="number" id="cO" value="5" step="1" min="1"></label>
+      <label>Stop (ticks)<input type="number" id="cS" value="5" step="1" min="1"></label>
+      <label>Coût aller-retour (ticks)<input type="number" id="cK" value="1" step="0.5" min="0"></label>
+    </div>
+    <div class="obout" id="cOut"></div>
+  </div>
+
+  <div class="card" id="esperance">
+    <span class="label def">3 · L’espérance de gain</span>
+    <h3>Ce qu’un trade rapporte en moyenne, après coûts</h3>
+    <p>E = p × G − (1 − p) × P − C, avec p la part de trades gagnants, G le gain moyen d’un gagnant, P la perte moyenne d’un perdant, C le coût d’un aller-retour. Puis sur N trades.</p>
+    <div class="calc-grid">
+      <label>Trades gagnants p (%)<input type="number" id="dP" value="55" step="1" min="0" max="100"></label>
+      <label>Gain moyen G<input type="number" id="dG" value="150" step="10"></label>
+      <label>Perte moyenne P<input type="number" id="dL" value="100" step="10"></label>
+      <label>Coût C par aller-retour<input type="number" id="dC" value="38" step="1" min="0"></label>
+      <label>Nombre de trades N<input type="number" id="dN" value="200" step="10" min="1"></label>
+    </div>
+    <div class="obout" id="dOut"></div>
+  </div>
+
+  <div class="card" id="drawdown">
+    <span class="label def">4 · Le drawdown et le gain de récupération</span>
+    <h3>Ce qu’il faut gagner pour revenir au plus haut</h3>
+    <p>Entrez le plus haut du compte et sa valeur actuelle, ou directement la perte en pour-cent. Gain nécessaire = perte ÷ (1 − perte).</p>
+    <div class="calc-grid">
+      <label>Plus haut du compte<input type="number" id="eHi" value="14000" step="100"></label>
+      <label>Valeur actuelle<input type="number" id="eNow" value="9800" step="100"></label>
+    </div>
+    <div class="obout" id="eOut"></div>
+    <table class="ddtab" id="eTab"></table>
+  </div>
+
+  <div class="card" id="series">
+    <span class="label def">5 · Les séries de pertes</span>
+    <h3>500 traders, N trades, la même stratégie</h3>
+    <p>Taux de réussite p, rendement/risque R, part du capital risquée f à chaque trade. Un trader est ruiné quand son capital passe sous la moitié du départ. La probabilité de k pertes de suite est (1 − p)<sup>k</sup> ; elles coûtent 1 − (1 − f)<sup>k</sup>.</p>
+    <div class="calc-grid">
+      <label>Trades gagnants p (%)<input type="number" id="fP" value="45" step="1" min="1" max="99"></label>
+      <label>Rendement/risque R<input type="number" id="fR" value="2" step="0.1" min="0.1"></label>
+      <label>Risque par trade f (%)<input type="number" id="fF" value="2" step="0.5" min="0.1" max="50"></label>
+      <label>Trades par trader N<input type="number" id="fN" value="200" step="50" min="10" max="2000"></label>
+      <label>Série de k pertes<input type="number" id="fK" value="8" step="1" min="1" max="50"></label>
+    </div>
+    <div class="btn-row"><button class="btn" id="fGo">Lancer les 500 traders</button></div>
+    <div class="sim-stage">
+      <div><svg id="fSvg" viewBox="0 0 420 220" style="width:100%;height:auto;background:var(--white);border:1px solid var(--line);border-radius:10px;"></svg></div>
+      <div class="obout" id="fOut"></div>
+    </div>
+  </div>
+
+  <div class="foot"><a class="backlink" href="index.html">← Page du cours</a></div>
+</section>
+</div>
+
+<script>
+function $(id){return document.getElementById(id);}
+function v(id){return +$(id).value;}
+function fmt(n,d){return (Math.round(n*Math.pow(10,d||0))/Math.pow(10,d||0)).toLocaleString('fr-CH',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+function wire(ids,fn){ids.forEach(function(id){$(id).addEventListener('input',fn);});fn();}
+
+/* 1 · position size */
+wire(['aCap','aRisk','aIn','aStop','aPt','aLev'],function(){
+  var cap=v('aCap'),r=v('aRisk'),i=v('aIn'),s=v('aStop'),pt=v('aPt')||1,lev=Math.max(1,v('aLev')||1),risk=cap*r/100,dist=Math.abs(i-s);
+  if(!(cap>0)||!(r>0)||!(dist>0)){$('aOut').innerHTML='Entrez un capital, un risque et un stop différent de l’entrée.';return;}
+  var raw=risk/(dist*pt),n=Math.floor(raw),expo=n*i*pt,marg=expo/lev;
+  $('aOut').innerHTML='<span class="big">'+n.toLocaleString('fr-CH')+' unités</span>Risque : '+r+' % de '+fmt(cap)+' = <b>'+fmt(risk,0)+'</b>. Distance au stop : <b>'+dist+'</b>'+(pt!==1?' × '+pt+' par unité':'')+'. Taille : '+fmt(risk,0)+' ÷ '+(dist*pt)+' = '+fmt(raw,2)+', arrondi en dessous.<br>Exposition : <b>'+fmt(expo,0)+'</b>'+(lev>1?' · marge au levier '+lev+' : <b>'+fmt(marg,0)+'</b>':'')+'. Perte si le stop est touché : <b>'+fmt(n*dist*pt,0)+'</b>'+(n===0?'. <b>Zéro unité</b> : le stop est trop loin pour ce compte, ou le risque trop petit. Ne prenez pas le trade.':'.');
+});
+/* 2 · breakeven */
+wire(['bR','bC'],function(){var R=v('bR'),c=v('bC');if(!(R>0)){$('bOut').textContent='R doit être positif.';return;}var p=(1+c)/(1+R)*100;$('bOut').innerHTML='<span class="big">p* = '+fmt(p,1)+' %</span>(1 + '+c+') ÷ (1 + '+R+')'+(p>=100?' — <b>impossible</b> : avec ces coûts et ce R, la stratégie perd même en ayant toujours raison.':'. En dessous de ce taux de réussite, la stratégie perd.');});
+wire(['cO','cS','cK'],function(){var o=v('cO'),s=v('cS'),k=v('cK');if(!(o>0)||!(s>0)){$('cOut').textContent='Objectif et stop doivent être positifs.';return;}var p=(s+k)/(o+s)*100;$('cOut').innerHTML='<span class="big">p* = '+fmt(p,1)+' %</span>('+s+' + '+k+') ÷ ('+o+' + '+s+'). Sans le coût, ce serait '+fmt(s/(o+s)*100,1)+' % : le coût de '+k+' tick'+(k>1?'s':'')+' ajoute '+fmt(k/(o+s)*100,1)+' points. Au scalping, le coût décide.';});
+/* 3 · expectancy */
+wire(['dP','dG','dL','dC','dN'],function(){var p=v('dP')/100,G=v('dG'),L=v('dL'),C=v('dC'),N=v('dN'),e=p*G-(1-p)*L-C;$('dOut').innerHTML='<span class="big">E = '+(e>=0?'+ ':'− ')+fmt(Math.abs(e),1)+' par trade</span>'+fmt(p*100,0)+' % × '+G+' − '+fmt((1-p)*100,0)+' % × '+L+' − '+C+'. Avant coûts : '+(e+C>=0?'+ ':'− ')+fmt(Math.abs(e+C),1)+'. Sur '+N+' trades : <b>'+(e*N>=0?'+ ':'− ')+fmt(Math.abs(e*N),0)+'</b>, dont '+fmt(C*N,0)+' de coûts payés.'+(G+L>0?' Taux de réussite à zéro : '+fmt((L+C)/(G+L)*100,1)+' %.':'');});
+/* 4 · drawdown */
+wire(['eHi','eNow'],function(){
+  var hi=v('eHi'),now=v('eNow');if(!(hi>0)||!(now>0)||now>hi){$('eOut').textContent='La valeur actuelle doit être positive et au plus égale au plus haut.';return;}
+  var L=1-now/hi,g=L/(1-L);
+  $('eOut').innerHTML='<span class="big">− '+fmt(L*100,1)+' % demande + '+fmt(g*100,1)+' %</span>De '+fmt(hi)+' à '+fmt(now)+', puis '+fmt(hi-now)+' ÷ '+fmt(now)+' pour revenir.';
+  var h='<tr><th>Perte</th><th>Gain nécessaire</th></tr>';[5,10,20,30,40,50,60,70,80,90].forEach(function(x){h+='<tr><td>− '+x+' %</td><td>+ '+fmt(x/(100-x)*100,1)+' %</td></tr>';});$('eTab').innerHTML=h;
+});
+/* 5 · streaks */
+function runTrader(p,R,f,N){var c=1,hi=1,dd=0,ruin=false,path=[1];for(var i=0;i<N;i++){c*=Math.random()<p?(1+f*R):(1-f);if(c>hi)hi=c;var d=1-c/hi;if(d>dd)dd=d;if(c<0.5)ruin=true;path.push(c);}return {fin:c,dd:dd,ruin:ruin,path:path};}
+function drawCurves(paths,N){
+  var svg=$('fSvg'),W=420,H=220,pl=38,pr=10,pt=12,pb=24,mx=1;
+  paths.forEach(function(p){p.forEach(function(x){if(x>mx)mx=x;});});mx=Math.min(mx,6);
+  function x(i){return pl+i/N*(W-pl-pr);} function y(val){return pt+(1-Math.min(val,mx)/mx)*(H-pt-pb);}
+  var g='';[0,0.5,1,2,Math.round(mx*10)/10].forEach(function(val){if(val>mx)return;g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(val)+'" y2="'+y(val)+'" stroke="'+(val===0.5?'#B42318':'#DDD')+'" stroke-dasharray="3 3"/><text x="'+(pl-4)+'" y="'+(y(val)+4)+'" font-size="10" text-anchor="end" fill="#888">× '+val+'</text>';});
+  svg.innerHTML=g+'<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(1)+'" y2="'+y(1)+'" stroke="#999"/>'+paths.map(function(p){return '<path d="'+p.map(function(val,i){return (i?'L':'M')+x(i).toFixed(1)+','+y(val).toFixed(1);}).join(' ')+'" fill="none" stroke="#DF5727" stroke-opacity=".45" stroke-width="1.3"/>';}).join('')+'<text x="'+(W-pr)+'" y="'+(H-6)+'" font-size="10" text-anchor="end" fill="#888">'+N+' trades</text>';
+}
+function fRun(){
+  var p=v('fP')/100,R=v('fR'),f=v('fF')/100,N=Math.max(10,Math.min(2000,v('fN')||200)),k=Math.max(1,v('fK')||8),T=500,fins=[],dds=[],ruin=0,paths=[];
+  for(var t=0;t<T;t++){var r=runTrader(p,R,f,N);fins.push(r.fin);dds.push(r.dd);if(r.ruin)ruin++;if(t<20)paths.push(r.path);}
+  fins.sort(function(a,b){return a-b;});dds.sort(function(a,b){return a-b;});
+  var E=p*R-(1-p),pk=Math.pow(1-p,k),lk=1-Math.pow(1-f,k);
+  drawCurves(paths,N);
+  $('fOut').innerHTML='<span class="big">'+fmt(ruin/T*100,1)+' % ruinés</span>Espérance : '+(E>=0?'+ ':'− ')+fmt(Math.abs(E),2)+' R par trade. Capital final médian × '+fmt(fins[250],2)+' ; drawdown maximal médian '+fmt(dds[250]*100,0)+' %, pire cas '+fmt(dds[T-1]*100,0)+' %.<br>Une série de <b>'+k+' pertes</b> a une probabilité de '+fmt(pk*100,2)+' % à chaque trade'+(N*pk>=1?' — attendue environ '+fmt(N*pk,1)+' fois sur '+N+' trades':'')+', et coûte <b>'+fmt(lk*100,1)+' %</b> du capital à '+(f*100)+' % par trade.';
+}
+$('fGo').addEventListener('click',fRun);fRun();
+</script>
+<script src="/shared/config.js"></script>
+<script>if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.StatsTrack&&StatsTrack.attach)StatsTrack.attach();});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/ESM/trading/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Le journal de trading · Trading · Jan Erik Meidell</title>
+<meta name="description" content="Trading, ESM — le journal de trading : un trade par ligne (date, actif, sens, taille, entrée, stop, objectif, sortie, résultat, plan respecté), les statistiques calculées par la page, la courbe du capital, l’export CSV. Tenu de la séance 3 au dernier atelier.">
+<meta name="theme-color" content="#DF5727">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="/ESM/assets/esm-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/shared/themes/esm-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="trading.css">
+<style>
+.hidden-work{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+/* the journal page is wider than a séance page: twelve columns must fit on a laptop without scrolling inside the card */
+.wrap{max-width:1180px;}
+.jt input.n{width:72px;min-width:60px;} .jt input.d{width:118px;} .jt input.a{width:86px;min-width:70px;} .jt input.note{min-width:150px;}
+.jt select{width:auto;min-width:72px;}
+.jhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.jhead .cnt{font-size:13px;color:var(--grey);}
+.save-note{font-size:12px;color:var(--grey);margin-top:6px;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+</head>
+<body data-course="trading">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="/ESM/assets/esm-logo.svg" alt="ESM">
+    <span class="course">TRADING · JOURNAL</span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="outils.html">🧮 Outils</a>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+</div>
+
+<div class="wrap">
+<section class="screen active">
+  <div class="hero">
+    <div class="eyebrow">Le journal de trading · de la séance 3 au dernier atelier</div>
+    <h1>Un trade par ligne, <em>avant</em> de le prendre</h1>
+    <p class="sub">Écrivez la ligne au moment où vous entrez : l’actif, le sens, la taille, l’entrée, le stop et l’objectif. Complétez la sortie et le résultat quand le trade est fermé, et dites si le plan a été respecté. La page calcule le reste. Le journal est enregistré sur cet appareil et, si vous êtes connecté·e, envoyé à l’enseignant : c’est lui qui est évalué, pas le gain.</p>
+  </div>
+
+  <div class="card">
+    <span class="label def">Ce que chaque colonne veut dire</span>
+    <ul>
+      <li><b>Sens</b> : achat (vous gagnez si le prix monte) ou vente (vous gagnez s’il baisse).</li>
+      <li><b>Taille</b> : le nombre d’unités (titres, contrats, unités de devise), calculé depuis le stop avec <a href="outils.html#taille">l’outil 1</a>.</li>
+      <li><b>Entrée · Stop · Objectif</b> : les trois prix décidés <b>avant</b> d’entrer. Le stop dit où vous avez tort ; l’objectif, où vous sortez si vous avez raison.</li>
+      <li><b>Sortie</b> et <b>Résultat</b> : le prix de sortie réel et le gain ou la perte en francs, coûts compris, négatif pour une perte.</li>
+      <li><b>R</b> (calculé) : le résultat divisé par le risque décidé (|entrée − stop| × taille). − 1 R = perdu au stop ; + 2 R = gagné deux fois le risque.</li>
+      <li><b>Plan</b> : oui si le trade respecte vos règles (séance 2, section 2.5) et votre plan ; non sinon. Soyez honnête : c’est cette colonne qui est notée.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="jhead"><h3>Les trades</h3><span class="cnt" id="jCnt"></span><div class="btn-row" style="margin:0;"><button class="btn small" id="jAdd">+ Ajouter un trade</button><button class="btn small ghost" id="jCsv">⬇ CSV</button></div></div>
+    <div class="jwrap"><table class="jt" id="jTab">
+      <thead><tr><th>Date</th><th>Actif</th><th>Sens</th><th>Taille</th><th>Entrée</th><th>Stop</th><th>Objectif</th><th>Sortie</th><th>Résultat</th><th>R</th><th>Plan</th><th>Note</th><th></th></tr></thead>
+      <tbody id="jBody"></tbody>
+    </table></div>
+    <div class="save-note" id="jSave">Enregistré sur cet appareil.</div>
+  </div>
+
+  <div class="card">
+    <span class="label def">Les statistiques</span>
+    <h3>Ce que le journal dit de vous</h3>
+    <div class="kpis" id="jKpi"></div>
+    <div class="viz"><div class="vz-h">La courbe du capital, trade après trade</div><svg id="jSvg" viewBox="0 0 640 220" style="width:100%;height:auto;"></svg></div>
+    <p class="caption">Seuls les trades fermés (avec un résultat) entrent dans les statistiques. L’espérance est le résultat moyen par trade ; le profit factor, la somme des gains divisée par la somme des pertes ; le drawdown maximal, la plus grande baisse du résultat cumulé depuis son plus haut.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Écrivez</span>
+    <h3>L’erreur que vous répétez, et la règle qui l’empêche</h3>
+    <div class="wb">
+      <div class="wq"><span class="qn">✍</span>Relisez les lignes « plan : non ». Qu’ont-elles en commun ? Quelle règle, écrite en une phrase, les aurait empêchées ? Mettez cette phrase à jour au fil des séances.</div>
+      <textarea data-work="journal_lecon" data-worklabel="Journal — l’erreur que je répète et la règle qui l’empêche" placeholder="p. ex. Trois fois sur quatre, le trade « plan : non » est un trade pris dans l’heure qui suit une perte, en plus gros. Règle : après une perte, pas de nouveau trade avant trente minutes, et jamais plus gros que le précédent."></textarea>
+    </div>
+    <textarea class="hidden-work" data-work="journal_trades" data-worklabel="Journal — les trades (JSON, écrit par la page)" tabindex="-1" aria-hidden="true"></textarea>
+    <textarea class="hidden-work" data-work="journal_bilan" data-worklabel="Journal — le bilan chiffré (écrit par la page)" tabindex="-1" aria-hidden="true"></textarea>
+  </div>
+
+  <div class="foot"><a class="backlink" href="index.html">← Page du cours</a></div>
+</section>
+</div>
+
+<script>
+/* =====================================================================
+   The trading journal (23 Nov 2026). Rows live in localStorage
+   `trading_journal_v1` and are mirrored, on every change, into two hidden
+   [data-work] fields that /shared/progress.js saves under the student's
+   node (work/journal_trades as JSON, work/journal_bilan as a readable
+   summary), so the dashboard's workbook reader shows the summary and the
+   raw rows. On another device, the JSON comes back through the workbook
+   merge of login.js; the page reads it when its own store is empty.
+   ===================================================================== */
+(function(){
+  var K='trading_journal_v1',rows=[];
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function num(x){var s=String(x==null?'':x).trim().replace(/[\s'’]/g,'');if(/,\d+$/.test(s)&&s.indexOf('.')<0)s=s.replace(',','.');else s=s.replace(/,/g,'');var v=parseFloat(s);return isNaN(v)?null:v;}
+  function fmt(n,d){return (Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toLocaleString('fr-CH',{minimumFractionDigits:d,maximumFractionDigits:d});}
+  function load(){
+    try{var a=JSON.parse(localStorage.getItem(K)||'null');if(a&&a.length)return a;}catch(e){}
+    /* nothing here yet: maybe the workbook field holds the rows from another device */
+    try{var w=localStorage.getItem('trading_work_journal_trades');if(w){var b=JSON.parse(w);if(b&&b.length)return b;}}catch(e){}
+    return [];
+  }
+  function blank(){var d=new Date();return {d:d.toISOString().slice(0,10),a:'',s:'achat',q:'',e:'',st:'',o:'',x:'',r:'',p:'',n:''};}
+  function R(t){var e=num(t.e),st=num(t.st),q=num(t.q),r=num(t.r);if(e==null||st==null||q==null||r==null||!q||e===st)return null;return r/(Math.abs(e-st)*q);}
+  function closed(t){return num(t.r)!=null;}
+  function stats(){
+    var c=rows.filter(closed),n=c.length,res=c.map(function(t){return num(t.r);});
+    var wins=res.filter(function(x){return x>0;}),loss=res.filter(function(x){return x<0;});
+    var sw=wins.reduce(function(a,b){return a+b;},0),sl=loss.reduce(function(a,b){return a+b;},0),tot=sw+sl;
+    var cum=0,hi=0,dd=0;res.forEach(function(x){cum+=x;if(cum>hi)hi=cum;if(hi-cum>dd)dd=hi-cum;});
+    var pl=c.filter(function(t){return t.p==='oui';}).length,pn=c.filter(function(t){return t.p==='non';}).length;
+    var Rs=c.map(R).filter(function(x){return x!=null;});
+    return {n:n,open:rows.length-n,win:n?wins.length/n:null,g:wins.length?sw/wins.length:null,l:loss.length?sl/loss.length:null,e:n?tot/n:null,pf:sl<0?sw/-sl:(sw>0?Infinity:null),tot:tot,dd:dd,plan:(pl+pn)?pl/(pl+pn):null,pn:pn,rm:Rs.length?Rs.reduce(function(a,b){return a+b;},0)/Rs.length:null};
+  }
+  function kpi(v,l,d,cls){return '<div class="k"><div class="v'+(cls||'')+'">'+v+'</div><div class="l">'+l+'</div>'+(d?'<div class="d">'+d+'</div>':'')+'</div>';}
+  function paintStats(){
+    var s=stats(),h='';
+    h+=kpi(s.n+(s.open?' <span style="font-size:13px;color:var(--grey)">+ '+s.open+' ouvert'+(s.open>1?'s':'')+'</span>':''),'trades fermés','');
+    h+=kpi(s.win==null?'—':fmt(s.win*100,0)+' %','taux de réussite',s.n?'trades gagnants sur fermés':'');
+    h+=kpi(s.e==null?'—':(s.e>=0?'+ ':'− ')+fmt(Math.abs(s.e),0),'espérance par trade','résultat moyen, coûts compris',s.e==null?'':(s.e>=0?' pos':' neg'));
+    h+=kpi(s.g==null?'—':'+ '+fmt(s.g,0),'gain moyen','sur les trades gagnants');
+    h+=kpi(s.l==null?'—':'− '+fmt(-s.l,0),'perte moyenne','sur les trades perdants');
+    h+=kpi(s.pf==null?'—':(s.pf===Infinity?'∞':fmt(s.pf,2)),'profit factor','gains ÷ pertes ; sous 1, le journal perd');
+    h+=kpi(s.n?'− '+fmt(s.dd,0):'—','drawdown maximal','la plus grande baisse du cumul');
+    h+=kpi(s.plan==null?'—':fmt(s.plan*100,0)+' %','plan respecté',s.pn?s.pn+' trade'+(s.pn>1?'s':'')+' hors plan':'',s.plan==null?'':(s.plan>=0.9?' pos':(s.plan<0.7?' neg':'')));
+    h+=kpi(s.rm==null?'—':(s.rm>=0?'+ ':'− ')+fmt(Math.abs(s.rm),2)+' R','R moyen','résultat ÷ risque décidé');
+    h+=kpi(s.n?(s.tot>=0?'+ ':'− ')+fmt(Math.abs(s.tot),0):'—','résultat cumulé','ne compte pas dans la note',s.n?(s.tot>=0?' pos':' neg'):'');
+    $('jKpi').innerHTML=h;
+    drawCurve();
+    return s;
+  }
+  function drawCurve(){
+    var svg=$('jSvg'),c=rows.filter(closed),W=640,H=220,pl=46,pr=10,pt=12,pb=24;
+    if(!c.length){svg.innerHTML='<text x="'+(W/2)+'" y="'+(H/2)+'" font-size="13" text-anchor="middle" fill="#888">La courbe apparaît dès le premier trade fermé.</text>';return;}
+    var cum=[0],v=0;c.forEach(function(t){v+=num(t.r);cum.push(v);});
+    var mx=Math.max.apply(null,cum.concat([1])),mn=Math.min.apply(null,cum.concat([0])),n=cum.length-1;
+    function x(i){return pl+i/Math.max(1,n)*(W-pl-pr);} function y(val){return pt+(1-(val-mn)/(mx-mn||1))*(H-pt-pb);}
+    var g='';[mn,0,mx].forEach(function(val){g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(val)+'" y2="'+y(val)+'" stroke="'+(val===0?'#999':'#DDD')+'" stroke-dasharray="'+(val===0?'0':'3 3')+'"/><text x="'+(pl-4)+'" y="'+(y(val)+4)+'" font-size="10" text-anchor="end" fill="#888">'+Math.round(val)+'</text>';});
+    svg.innerHTML=g+'<path d="'+cum.map(function(val,i){return (i?'L':'M')+x(i).toFixed(1)+','+y(val).toFixed(1);}).join(' ')+'" fill="none" stroke="#DF5727" stroke-width="2.2"/>'+cum.map(function(val,i){return i?'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(val).toFixed(1)+'" r="2.5" fill="'+(val>=cum[i-1]?'#1F7A3E':'#B42318')+'"/>':'';}).join('')+'<text x="'+(W-pr)+'" y="'+(H-6)+'" font-size="10" text-anchor="end" fill="#888">'+n+' trade'+(n>1?'s':'')+' fermé'+(n>1?'s':'')+'</text>';
+  }
+  function bilan(s){
+    if(!s.n)return rows.length?rows.length+' trade(s) ouvert(s), aucun fermé.':'Aucun trade.';
+    return s.n+' trades fermés'+(s.open?' ('+s.open+' ouverts)':'')+' · réussite '+fmt(s.win*100,0)+' % · espérance '+fmt(s.e,0)+' par trade · gain moyen '+(s.g==null?'—':fmt(s.g,0))+' · perte moyenne '+(s.l==null?'—':fmt(s.l,0))+' · profit factor '+(s.pf==null?'—':(s.pf===Infinity?'∞':fmt(s.pf,2)))+' · drawdown max '+fmt(s.dd,0)+' · plan respecté '+(s.plan==null?'—':fmt(s.plan*100,0)+' % ('+s.pn+' hors plan)')+' · R moyen '+(s.rm==null?'—':fmt(s.rm,2))+' · cumul '+fmt(s.tot,0)+' · dernier trade '+(rows[rows.length-1].d||'—');
+  }
+  function mirror(s){
+    function setW(id,val){var el=document.querySelector('[data-work="'+id+'"]');if(!el||el.value===val)return;el.value=val;try{el.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}}
+    setW('journal_trades',JSON.stringify(rows));
+    setW('journal_bilan',bilan(s));
+  }
+  var saveT;
+  function save(){
+    try{localStorage.setItem(K,JSON.stringify(rows));}catch(e){}
+    var s=paintStats();mirror(s);
+    $('jCnt').textContent=rows.length+' ligne'+(rows.length>1?'s':'');
+    $('jSave').textContent='Enregistré sur cet appareil'+(auth()?' et envoyé à l’enseignant.':'. Connectez-vous (bouton en bas à droite) pour qu’il parvienne à l’enseignant.');
+  }
+  function auth(){try{return !!(JSON.parse(localStorage.getItem('trading_auth')||'null')||{}).sid;}catch(e){return false;}}
+  function cell(i,k,cls,ph,type){return '<td><input class="'+cls+'" data-i="'+i+'" data-k="'+k+'" type="'+(type||'text')+'" value="'+esc(rows[i][k])+'" placeholder="'+(ph||'')+'"'+(cls==='n'?' inputmode="decimal"':'')+'></td>';}
+  function render(){
+    var b=$('jBody'),h='';
+    rows.forEach(function(t,i){
+      var r=R(t),rc=r==null?'':(r>=0?' pos':' neg');
+      h+='<tr>'+cell(i,'d','d','','date')+cell(i,'a','a','p. ex. NESN')+
+        '<td><select data-i="'+i+'" data-k="s"><option value="achat"'+(t.s==='achat'?' selected':'')+'>achat</option><option value="vente"'+(t.s==='vente'?' selected':'')+'>vente</option></select></td>'+
+        cell(i,'q','n','100')+cell(i,'e','n','48.00')+cell(i,'st','n','46.00')+cell(i,'o','n','52.00')+cell(i,'x','n','')+cell(i,'r','n','− 200')+
+        '<td class="calc'+rc+'">'+(r==null?'—':(r>=0?'+ ':'− ')+fmt(Math.abs(r),2)+' R')+'</td>'+
+        '<td><select data-i="'+i+'" data-k="p"><option value=""'+(!t.p?' selected':'')+'>—</option><option value="oui"'+(t.p==='oui'?' selected':'')+'>oui</option><option value="non"'+(t.p==='non'?' selected':'')+'>non</option></select></td>'+
+        cell(i,'n','note','pourquoi ce trade, ce qui s’est passé')+
+        '<td><button class="del" data-i="'+i+'" title="Supprimer cette ligne">✕</button></td></tr>';
+    });
+    b.innerHTML=h||'<tr><td colspan="13" style="color:var(--grey);padding:14px 6px;">Aucun trade. Cliquez « + Ajouter un trade » et écrivez la ligne avant d’entrer.</td></tr>';
+    b.querySelectorAll('input,select').forEach(function(el){el.addEventListener('input',function(){rows[+el.dataset.i][el.dataset.k]=el.value;if(el.dataset.k==='r'||el.dataset.k==='e'||el.dataset.k==='st'||el.dataset.k==='q'){var tr=el.closest('tr'),t=rows[+el.dataset.i],r=R(t),td=tr.querySelector('td.calc');td.className='calc'+(r==null?'':(r>=0?' pos':' neg'));td.textContent=r==null?'—':(r>=0?'+ ':'− ')+fmt(Math.abs(r),2)+' R';}clearTimeout(saveT);saveT=setTimeout(save,400);});});
+    b.querySelectorAll('.del').forEach(function(bt){bt.addEventListener('click',function(){if(!confirm('Supprimer cette ligne du journal ?'))return;rows.splice(+bt.dataset.i,1);render();save();});});
+  }
+  $('jAdd').addEventListener('click',function(){rows.push(blank());render();save();var last=$('jBody').querySelector('tr:last-child input.a');if(last)last.focus();});
+  $('jCsv').addEventListener('click',function(){
+    var head=['date','actif','sens','taille','entree','stop','objectif','sortie','resultat','R','plan','note'];
+    var lines=[head.join(';')].concat(rows.map(function(t){var r=R(t);return [t.d,t.a,t.s,t.q,t.e,t.st,t.o,t.x,t.r,r==null?'':r.toFixed(2),t.p,t.n].map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(';');}));
+    var blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='journal-de-trading.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+  });
+  rows=load();render();save();
+  /* progress.js wires the hidden fields at DOMContentLoaded and may put an
+     older saved value back into them: mirror the live rows once more */
+  window.addEventListener('DOMContentLoaded',function(){setTimeout(function(){mirror(stats());},300);});
+  /* the sign-in merge may bring rows from another device after boot */
+  window.addEventListener('statstrack:named',function(){if(rows.length)return;setTimeout(function(){var b=load();if(b.length){rows=b;render();save();}},1500);});
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script>if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.StatsTrack&&StatsTrack.attach)StatsTrack.attach();});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

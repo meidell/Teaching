@@ -99,7 +99,9 @@ window.CourseConfig = (function () {
     kalaidos: { deep:"#0B5862", bar:"#007A87", main:"#007A87", glow:"#00B4E0",
              pale:"#DFF1F3", surface:"#F4F6F5", ink:"#232A31", grey:"#6E7672" },
     iig:   { deep:"#0a2540", bar:"#0a2540", main:"#305875", glow:"#c9a961",
-             pale:"#f6f0e3", surface:"#faf9f7", ink:"#0d1b3e", grey:"#6b7080" }
+             pale:"#f6f0e3", surface:"#faf9f7", ink:"#0d1b3e", grey:"#6b7080" },
+    esm:   { deep:"#11317F", bar:"#DF5727", main:"#DF5727", glow:"#F19DF6",
+             pale:"#FBEAE3", surface:"#F3F2EE", ink:"#05170A", grey:"#4B5A4F" }
   };
 
   /* key = the data-course value on the page.
@@ -148,6 +150,8 @@ window.CourseConfig = (function () {
                    label:"Kalaidos · Financial Leadership & Controlling" },
     "fl3":       { school:"Kalaidos", ns:"fl3", theme:"kalaidos", lang:"fr", login:true,
                    label:"Kalaidos · Financial Leadership III" },
+    "trading":   { school:"ESM", ns:"trading", theme:"esm", lang:"fr", login:true,
+                   label:"ESM · Trading" },
     "qm1":       { school:"HEG", ns:"qm1",       theme:"heg",   lang:"en", login:true,
                    label:"HEG · Quantitative Methods I" },
     "creator":   { school:"GBS", ns:"creator",   theme:"gbs",   lang:"en", login:true,
