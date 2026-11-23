@@ -17,7 +17,7 @@ secrets, WRITING.md) stay in the root `CLAUDE.md`; read that first.
 | id / ns / keyPrefix | `trading` · `trading` · `trading_` · joinCode `TRAD` · theme `esm` |
 | Évaluation (proposed) | the **journal de trading** and the **respect of the plan de trading**, plus a test de connaissances at séance 16 and the soutenance at atelier 6; the gain realised on the simulator does NOT count ("noter le gain récompense la prise de risque") |
 | Dates | séance dates **unknown**; ateliers Thu 15/22/29 Apr 2027 and Fri 14/21/28 May 2027 (the school planning said « mardi » — raised with Vivian). No `schedule`, `period` or `menu` in courses.json until the dates exist |
-| Level | `Bachelor` in the registry is a GUESS — confirm |
+| Level | none: a standalone course, not part of a Bachelor or MBA programme (Jan Erik, 23 Nov 2026); `level` is null in the registry |
 
 ⚠ **The programme is a proposal, not an agreed plan** (email to Vivian, 23
 Nov 2026): risk moved from séance 13 to 2; the Swissquote platform séance
