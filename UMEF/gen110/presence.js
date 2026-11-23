@@ -212,9 +212,9 @@ window.StatsPresence = (function () {
     {mod:'w3', n:3, name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),     pages:['w3']},
     {mod:'w4', n:4, name:T('Séance 4 · Des agents qui travaillent ensemble','Session 4 · Agents working together'),                  pages:['w4']},
     {mod:'w5', n:5, name:T('Séance 5 · Un agent qui cherche chaque jour','Session 5 · An agent that searches every day'),         pages:['w5']},
-    {mod:'w6', n:6, name:T('Séance 6 · Postuler : CV, message, envoi','Session 6 · Applying: CV, message, sending'),    pages:['w6']},
+    {mod:'w6', n:6, name:T('Séance 6 · Construire : un jeu, une appli, une page','Session 6 · Building: a game, an app, a page'), pages:['w6']},
     {mod:'w7', n:7, name:T('Séance 7 · Automatiser — un agent qui travaille seul','Session 7 · Automating — an agent that works alone'),                pages:['w7']},
-    {mod:'w8', n:8, name:T('Séance 8 · Programmer — un site, une appli, un jeu','Session 8 · Programming — a site, an app, a game'),            pages:['w8']},
+    {mod:'w8', n:8, name:T('Séance 8 · Postuler — CV, message, envoi','Session 8 · Applying — CV, message, sending'),            pages:['w8']},
     {mod:'w9', n:9, name:T('Séance 9 · Contrats et données','Session 9 · Contracts and data'),                 pages:['w9']},
     {mod:'w10',n:10,name:T('Séance 10 · Présentations et préparation de l’examen','Session 10 · Presentations and exam preparation'),           pages:['w10']}
   ];

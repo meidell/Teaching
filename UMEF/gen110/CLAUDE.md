@@ -536,6 +536,84 @@ define their project and who participates."* Everything below follows from it.
   errors, every non-quiz section complete (31/39 and 27/35 with the quiz
   locked), the seeded contact card at 5/5 form and 0/3 🔐, no horizontal
   scroll at 390 px.
+- ⚠⚠ **23 Nov 2026 — séance 6 REPLACED by a BUILD-A-THON; the CV séance moved
+  to séance 8 (15 Dec), not yet rebuilt.** Jan Erik, the day before: "feel
+  free to change the topic for tomorrow as long as I can keep them occupied
+  for 3 hours" (the class is unruly; the CV séance was the "how do I apply"
+  material he had turned away from on 10 Nov, and its 6.0/6.3 read `w5_choix`
+  / `w5_contact`, which the rebuilt séance 5 no longer writes). The class's
+  priority n° 5 (programming + interactive games) was pulled forward from
+  séance 8. The CV template is kept as **`_build/seance8-postuler.tpl.html`**
+  (not in `PAGES`, not built; its ids are still `w6`/`6.x` — rename to
+  `w8`/`8.x` and repair 6.0/6.3 to stand alone before 15 Dec). Hub `SEANCES`
+  6 ↔ 8 swapped (8 `live:false`, href `seance8.html`), `WISHES` (CV → séance
+  8, programming → séance 6), `projet.tpl.html` `WEEKS` 6 and 8, `nav.js`,
+  `courseprogress.js` (S6 total 8; S8 label), `presence.js`, `courses.json`
+  (module label + project section "6" = eight new `w6_*` fields; the seven CV
+  fields are gone from the registry).
+  **`seance6.tpl.html` — *Construire — un jeu, une appli, une page, en une
+  après-midi*** (module `w6`, progress key `gen110_w6_progress_v2`, v1 = the
+  CV séance). Teams of two build ONE program in a single `index.html` by
+  describing it to an AI; the page is the judge. **THE SANDBOX** (`#sb`, one
+  DOM node moved by `show()` → `sbMove()` into the open section's `.sb-slot`,
+  used by 6.1–6.3): a textarea (`gen110_w6_code`, Tab inserts two spaces) +
+  a sandboxed iframe (`allow-scripts allow-same-origin allow-modals
+  allow-forms` — same-origin so the students' `localStorage` upgrade works;
+  their code can therefore read the site's localStorage, accepted). `sbRun()`
+  injects `PRELUDE` on the SAME LINE as `<head>` (line numbers stay true):
+  `error`/`unhandledrejection` → `{t:'err',m,l}`, `load` → `ready`, every
+  click → `click`, all via postMessage (checked `e.source===frame.contentWindow`).
+  ⚠ The planted error of the starting program (`SEED`, "Clique vite",
+  `getElementByld` at line 20) is reported as a page error by headless
+  probes — expected, it comes from the iframe. "Copier l'erreur pour l'IA"
+  copies message + line + the whole code with a fixed instruction. Seven
+  `CHECKS` (interactive · `<title>` · viewport · a `<script>` with content ·
+  offline = no `<script src=http`, `<link href=http`, `@import url(http`,
+  `fetch(`/`XMLHttpRequest` · made-up data = no e-mail, no +41/+33/+221…
+  phone, no `0X XX XX XX XX` · no error = `SB.ran===code && ready && !err`);
+  `v1ok` = all seven green and code ≠ SEED; `fix` = a run of the current
+  code with no error, code ≠ SEED, a `<button>`; `loops` = ≥ 3 runs
+  (`gen110_w6_runs`). Nine `UPS` detected by regex (score · set(Interval|
+  Timeout) · localStorage · Math.random · niveau|level · audio/AudioContext/
+  .play() · canvas|svg · required|checkValidity|.value.trim(|isNaN(|
+  Number.isFinite · @media); `v2ok` = ≥ 3 + the seven still green. Download
+  = a Blob `index.html` (step `dl`). ⚠ `sbErr` is CSS-hidden: show it with
+  `display='block'`, an empty string falls back to `display:none` (bug met
+  23 Nov). ⚠ `paintUps` is a hoisted function called by the brief picker
+  before the sandbox variables exist — it returns when `window.sbCode` is
+  undefined. Sections: 6.0 what a program is (HTML/CSS/JS grid), six
+  `BRIEFS` (+ "votre projet"; `gen110_w6_brief`; each with who · the screen
+  shows · what happens · it works when · three ★ upgrades), the rules (one
+  file · made-up data 🔐 · the AI writes, you judge · the jury's five 0–2
+  criteria), `w6_brief` · 6.1 the sandbox on SEED + classify "qui fait
+  quoi" `whoRows` (6 levels h/c/j/n/i/v, answers `h c j n i v n c`) · 6.2
+  the five-box description `PQ` (`gen110_w6_pq`, `lintPQ` 5 checks — "quand"
+  and a named element are regexes per language — + `CONSTRAINTS` appended;
+  copy at 5/5 = `prompt`), the sandbox, seven "Si ça bloque" `details.fx`
+  (no code · cut code · blank preview · a library · not defined / null ·
+  the AI rewrote everything · tiny on the phone), `w6_v1`, `w6_test1` · 6.3
+  the sandbox + `UPS` badges, `w6_v2` · 6.4 download, Netlify Drop (needs
+  an account — the materials box asks for one; an anonymous drop is
+  deleted after an hour), `w6_url` checked `^https://host.tld(/…)?$` not
+  localhost (step `pub`, un-marked when invalid), 🔐 "anyone can read the
+  whole file", three fx cards, `w6_phone` · 6.5 the jury: `data-board`
+  "Les programmes de la classe|w6_url;Le vote|w6_vote" on the card
+  (boardlink.js loaded), self-score `buildGrid` one column × 5 criteria
+  (`gen110_w6_jury`, step `jury`, Comparisons tab histogram, why =
+  `w6_vote`), `w6_vote` · 6.6 quiz on `_release/w6/quiz`, positions
+  `2 0 3 1 0 3 1 2` · 6.7 `w6_projet` (the project's screen = v1 for remise
+  4 on 8 Dec) + three ticks. Denominator `EXTRA_STEPS (13) + .cl-row (8) +
+  .q (8) + [data-work] (8) = 37`; `total:8`. Timetable 6.0 13h30 · 6.1
+  13h45 · 6.2 14h10 (50) · break 15h00 · 6.3 15h15 (40) · 6.4 15h55 · 6.5
+  16h10 · quiz 16h25 · 6.7 16h35. CSS at the end of `ia.css` (`.sb*`,
+  `.brief*`, `.pq*`, `.ups/.up*`, `.grid-scores`). Probed headlessly in
+  both editions and at 390 px (Firebase, track.js and boardlink aborted):
+  the seed error reported at line 20, fix detected, 5/5 description (FR
+  and EN texts), 7/7 checks and 6/9 upgrades on a test program, a bad
+  address refused, the jury grid, the quiz refusing clicks while locked,
+  21/37 with the quiz locked, every non-quiz section complete, no sideways
+  scroll. NOT verified: Netlify Drop's current account rule and folder
+  upload (checked from memory, 23 Nov 2026) — test a drop before 13h30.
 - **The CV séance as first built (1 Nov 2026, then numbered 5)**, the class's priority n° 2, on
   séance 4's engine (blocks copied, `w4`→`w5`; séance 4's agent-card
   builder `AF`/`lintAgent`/`cardText`/`buildAgents` copied verbatim).
@@ -585,7 +663,7 @@ define their project and who participates."* Everything below follows from it.
   run the build, flip the chapter `live:true` in `courseprogress.js`, add the
   module and its carnet fields to `courses.json`, and set `live:true` on the
   hub's `SEANCES` entry (in the template). Run the headless probe on both
-  editions before pushing. Séances 1–6 exist; 7–10 are `live:false`.
+  editions before pushing. Séances 1–6 exist (6 = the build-a-thon); 7–10 are `live:false`; 8 will be the CV séance.
 - **Own namespace `gen110`, prefix `gen110_`**; the rules block in
   `firebase-database-rules.json` must be deployed before the link goes to
   students. Unlisted; in `robots.txt`; the mirror entry in `/shared/config.js`

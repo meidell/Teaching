@@ -374,4 +374,37 @@ Geneva. Public and listed; shared login only, **no class password** by decision.
   plain words). The new widgets are deliberately NOT counted (no `.cl-row`, `.q`,
   `data-work`). Probed: no errors, 390 px fits.
 
+- **Week 10 BUILT on 22 Nov 2026 in Week 9's grammar** (Jan Erik: "the students love the way
+  I did week 9 … they say I explained the theory directly and how to compute it and why — follow
+  that logic and do week 10"). `week10.html` (module `w10`, key `stats_w10_progress_v1`) is
+  assembled from Week 9's page CSS, engine (SECTIONS/STEPS/progress/show/xshow/.turn), SVG
+  helper, `wireSlides` + `lecture` blocks and reset/boot — spliced by a one-off script from
+  week9.html — plus its own numerics (`lgamma`, `gammaP`, `chi2sf`, `chi2pdf`, `ibeta`, `fsf`,
+  `fpdf`, `bisect`, `chi2critX`, `fcritX`: the SUMAS Week 6 engine), so every critical value and
+  P-value is computed. Eight sections: 10.1 the χ² statistic (three design choices: squared,
+  ÷E, summed) and its distribution (curve widget with the table row, the one-term widget) ·
+  10.2 independence (E = row × column ⁄ n, df = (r − 1)(c − 1), the five steps the exam marks;
+  a self-computing 3 × 2 table with the free cells in green) · 10.3 goodness of fit (claimed
+  shares table; the fair-die false-alarm counter) · 10.4 the F distribution (curve with the
+  reciprocal left tail) and two variances (one- and two-tailed widget) · 10.5 one-way ANOVA
+  (between vs within, the shift/spread widget on the deliveries, Excel's Anova: Single Factor
+  printout cell by cell) · 10.6 the decision table + "which test?" (8 situations) + the exam
+  answer as marked · ck (10) · wk (`w10_table`, `w10_anova`, `w10_claim`, project section 10).
+  **Examples are the real exam questions** of the exam cards — 2026 field × plan (χ² 16.593,
+  E 39.30), 2023 handedness (1.381), 2024 family (2.347, α 1%, exercise), 2022 poker (2.834) —
+  plus made-up sets: the kiosk (3.30), the bakery (5.80), two baristas (F 2.78 on (12, 9), crit
+  3.07), two filling machines (2.56 on (15, 24), crit 2.44 at α⁄2), three delivery services
+  (F 8.06 on (2, 12)), four cafés (full Excel printout, F 25.61, P 4.71E−07), three suppliers
+  (printout with four blanks, F 12.06), two tram lines (2 × 2, χ² 6.45). ⚠ Every number is
+  recomputed in `_private/check_w10.py` (gitignored, own numerics, no scipy). ⚠ The 2020 exam's
+  self-checkout question (card y20e3) says the equal-variance assumption is "reasonable"; F =
+  33²⁄26² = 1.61 against F(0.025; 174, 174) = 1.35 says the variances DIFFER — not used on the
+  page; fix the card's part (a) some day. Denominator `STEPS (27) + 10 quiz + 3 fields = 40`;
+  deck 60 slides built from the page (`OPEN`/`DEMO` notes; openers show the why + the section's
+  first formula box). `week10-homework.html` (`w10-hw`, total 14) = SUMAS `week6-homework.html`
+  (Saylor ch. 11, thirteen exercises) in HEG chrome, the same scripted transform as Week 9's
+  homework. Registered in `courseprogress.js`, the hub, `courses.json` (modules + section 10)
+  and `teaching-plan.html`. Probed headless at 1280 and 390 px: no errors, 40/40, all six
+  exercises accept the computed answers, 10/10, every slide fits the stage, no sideways scroll;
+  the homework loads with 13 problems.
 - **Week 9 REBUILT on 16 Nov 2026 around Excel's regression printout** (Jan Erik: "explain a regression from EACH of the fields in the excel regression printout … in sections; for each 1–3 interactive widgets, then 2 examples, then a short exercise"). The previous page (Saylor ch. 10 walked) is kept unchanged as **`week9-book.html`**, module `w9`, now `opt:true` in `courseprogress.js` ("B9") and labelled optional in `courses.json`; a banner points to the new page. The new `week9.html` is module **`w9p`** (a new id on purpose: reusing `w9` with new section ids would have counted old done-sections in the new total); presence still mounts with the WEEK id `w9` (`PRES`). Eleven sections: 9.1 overview (find the cell) · 9.2 Coefficients · 9.3 SS · 9.4 Observations/df/MS/Standard Error · 9.5 R Square/Multiple R/Adjusted · 9.6 F/Significance F · 9.7 coefficient SE/t Stat/P-value · 9.8 Lower/Upper 95% and the repeated "95.0%" columns (the Confidence Level box) · 9.9 whole printout (2023 + 2024 exam printouts walked, eight blanks on the four-observation printout) · 9.10 checkpoint · 9.11 workshop (same `w9_pair`/`w9_line`/`w9_pred` fields). Order = the order Excel computes the cells, not top to bottom. Cases: running = the tea shop (8 weeks, ads → orders); Example A = the 14 pizzerias (one x); Example B = 12 made-up Geneva flats (rent on floor area + minutes to tram, k = 2); every exercise = the four-observation printout Jan Erik sent (House, Sq ft; n = 4, df Residual 1 — R² 0.95 yet nothing significant, the point of 9.6–9.9; its values are hard-coded as printed). The page carries its OWN least-squares engine (`ols()`, any k, matrix inverse) and t/F tails (`pT`, `pF`, incomplete beta) — checked against Python to every printed digit of that printout; `xn()` reproduces Excel's General format (11 characters). `printoutHTML`/`mountMap`/`INFO(o,key)` render any printout as a clickable Excel grid: a click names the cell, gives its formula with that printout's numbers, lights the cells it depends on, and links its section. Progress: `STEPS` per section (43) + 10 quiz + 3 fields; a section is done when all its steps are. Widgets are coloured by CSS classes (`.pl .pt/.ln/...` with viz tokens), so dark mode needs no repaint. Dice columns of 9.5's first set are fixed so Adjusted R² falls at every step (0.963 → 0.958 → 0.949 → 0.934). **The deck (16 Nov 2026, 86 slides) is BUILT FROM THE PAGE** by `buildDeck()`: per section an opener (dark; the section's "why" + the tea printout with that section's cells lit, `CELLS`), each `.tcard` as a text slide, each widget card (`.label.play`) MOVED into the slide live and put back on leaving (`restore()`; the click zones are off on those slides, use ← → or the ‹ › buttons), each example as question then solution, each exercise (`.label.problem`; answer in the notes only when `AdminGate.isUnlocked()`; a printout exercise with > 4 rows splits in two). Edit the page and the deck follows; speaker notes for openers and widgets are in `OPEN` and `DEMO`. The PDF is built on `beforeprint`, so widgets print as they stand. Probed headless: no errors, 43/43 steps, 390 px fits, light and dark.

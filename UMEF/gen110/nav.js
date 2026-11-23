@@ -45,12 +45,12 @@
       secs: [['s0', '5.0', T('Le plan de la machine', 'The machine’s blueprint')], ['s1', '5.1', T('Sources et mots-clés', 'Sources and keywords')], ['s2', '5.2', T('Le programme qui cherche', 'The program that searches')],
              ['s3', '5.3', T('L’e-mail du matin', 'The morning e-mail')], ['s4', '5.4', T('Les deux clics', 'The two clicks')],
              ['s5', '5.5', T('Le quiz de la séance 5', 'The Session 5 quiz')], ['s6', '5.6', T('Ce que vous gardez', 'What you keep')]] },
-    { n: 6, mod: 'w6', href: 'seance6.html', t: T('Postuler : CV, message, envoi', 'Applying: CV, message, sending'),
-      secs: [['s0', '6.0', T('Votre CV et l’offre', 'Your CV and the offer')], ['s1', '6.1', T('Lire l’offre comme un recruteur', 'Read the offer like a recruiter')], ['s2', '6.2', T('Le CV adapté, sans invention', 'The tailored CV, nothing invented')],
-             ['s3', '6.3', T('Le message de candidature', 'The application message')], ['s4', '6.4', T('L’entretien simulé', 'The mock interview')],
-             ['sa', '6.5', T('Envoyer, puis suivre', 'Send, then follow up')], ['s5', '6.6', T('Le quiz de la séance 6', 'The Session 6 quiz')], ['s6', '6.7', T('Ce que vous gardez', 'What you keep')]] },
+    { n: 6, mod: 'w6', href: 'seance6.html', t: T('Construire : un jeu, une appli, une page', 'Building: a game, an app, a page'),
+      secs: [['s0', '6.0', T('Le défi, les règles, l’équipe', 'The challenge, the rules, the team')], ['s1', '6.1', T('Le bac à sable', 'The sandbox')], ['s2', '6.2', T('Sprint 1 — ça marche', 'Sprint 1 — it works')],
+             ['s3', '6.3', T('Sprint 2 — c’est bon', 'Sprint 2 — it is good')], ['s4', '6.4', T('Publier', 'Publish')], ['sj', '6.5', T('Le jury', 'The jury')],
+             ['s5', '6.6', T('Le quiz de la séance 6', 'The Session 6 quiz')], ['s6', '6.7', T('Ce que vous gardez', 'What you keep')]] },
     { n: 7, mod: 'w7', t: T('Automatiser — un agent qui travaille seul', 'Automating — an agent that works alone'), locked: true },
-    { n: 8, mod: 'w8', t: T('Programmer — un site, une appli, un jeu', 'Programming — a site, an app, a game'), locked: true },
+    { n: 8, mod: 'w8', t: T('Postuler — CV, message, envoi', 'Applying — CV, message, sending'), locked: true },
     { n: 9, mod: 'w9', t: T('Contrats et données', 'Contracts and data'), locked: true },
     { n: 10, mod: 'w10', t: T('Présentations et préparation de l’examen', 'Presentations and exam preparation'), locked: true }
   ];
