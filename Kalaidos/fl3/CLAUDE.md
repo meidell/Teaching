@@ -425,3 +425,33 @@ outside the repo. The hub cards' "EEA § n réalisable" lines and séance 10's
 10.5 "Vos questions sur l'EEA" are unchanged. Probed headlessly: ten pages,
 SECTIONS.length = the new totals, no dead `data-next`, no `m-eea`, no
 errors, no sideways scroll at 1280 and 390 px; the hub serves the PDF.
+
+## 24 Nov 2026 — séance 6: the deck and the transcript
+
+Jan Erik, the afternoon before the séance: "faites-moi un transcript et
+faites aussi des diapositives".
+- **`_build/deck.py`** now holds the light deck engine (CSS, keyboard/click/
+  swipe JS, `fit()`, `esc()`, `Deck`) that `slides_s45.py` used to carry;
+  `slides_s45.py` imports it and regenerates séances 4–5 byte-identically.
+  `Deck(n, strip, gen='slides_s45.py')` — `gen` names the generator in the
+  HTML comment. ⚠ Edit the generators, never the generated decks: this
+  morning's EEA edit made on `seance5-slides.html` was lost at the next
+  regeneration and had to be re-done in `slides_s45.py`.
+- **`_build/slides_s6.py` → `seance6-slides.html`** (32 slides) →
+  `files/seance6-slides.pdf`. 6.1 in full (six steps; dissolution; the
+  one FOSC publication and the two art. 745 delays; the realisation
+  table; one account vs two; the excédent and the 35 %; the Sàrl; the
+  classify); each atelier = data, the operations, the ENTRY PATTERNS
+  without amounts, an « À vous » slide; the amounts live in the speaker
+  notes (S). Measured headless at 1280×720, 1440×900 and 1024×768: no
+  slide overflows (slides 7, 9 and 25 were shortened for the tall ratios).
+- **`seance6-transcript.html`** — the words to say for each of the 32
+  slides, in spoken French, with the answers of every atelier in yellow
+  boxes (the entries and amounts of 6.2, 6.3, 6.4, 6.5, the quiz key) and
+  cues (timing, the pause, "if Duboux is skipped go from slide 25 to 31").
+  About 6 400 words. `noindex`. Linked from seance6's topbar as
+  **📄 Transcript, visible only on a device holding `jem_fb_session` (or
+  `jem_instructor`)** — ⚠ `jem_instructor` alone is NOT enough on a bloc
+  page: `admin-gate.js` clears it when no session is held, so the probe
+  must set `jem_fb_session`. The three topbar links (🖥️ Diapositives, ⬇
+  PDF, 📄 Transcript) hide under 700 px like séance 5's.
