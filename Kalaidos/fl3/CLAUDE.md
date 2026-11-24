@@ -455,3 +455,113 @@ faites aussi des diapositives".
   page: `admin-gate.js` clears it when no session is held, so the probe
   must set `jem_fb_session`. The three topbar links (🖥️ Diapositives, ⬇
   PDF, 📄 Transcript) hide under 700 px like séance 5's.
+
+- **Teacher key for séance 6 (24 Nov 2026)**: `_private/build_s6_corrige.py` (reads
+  `_private/k6.json` = the page's own widgets dumped headlessly by wrapping
+  `buildNum`/`buildJournal`/`buildClassify`/`buildQuiz` in bloc.js, plus the data cards and the
+  written questions) → `_private/seance6-corrige.html` → headless Chrome →
+  `_private/seance6-corrige.pdf` (14 pages; a copy went to Jan Erik's Desktop as
+  `FL3-seance6-corrige.pdf`). The T-accounts and the "soldes après" tables are COMPUTED by the
+  builder from the opening balances and the entries (`EXTRA_OPEN` adds the opening accounts a
+  journal does not list — Corboz's perte reportée, Duboux's two reserves — so the tables balance:
+  108, 348'000, 711'000). A model answer for `w6_repartition` (no excess → no withholding tax;
+  a private capital loss is not deductible, a business one is). Re-run both steps after editing
+  the page's figures.
+
+- **La révision · the Kahoot-style game (24 Nov 2026)** — Jan Erik, after séance 6: "a new game
+  where they click individually on 4 buttons (a,b,c,d) on timed questions (10 sec) to do revision
+  on 1,2,4,5,6 from easy to difficult … a leader à la kahoot", "on the landing page, to be played for
+  approx 20 mins". `revision.js` = the bank (30 questions, three tiers of ten: lvl 1–2 at 10 s,
+  lvl 3 at 20 s because they compute; `REV_TIME`, `REV_POINTS` = 500 + 500 × time left ÷ time,
+  0 if wrong). `revision-tv.html` (instructor's screen, needs the account like board.html): *Nouvelle
+  partie* writes `fl3/_release/revision/state` = {g, q, phase lobby|q|rev|end, started, ts};
+  *Lancer* → phase q, the screen counts down, polls every player's `<sid>/kahoot/<g>.json` each
+  second (sids from a shallow read), at zero waits 1.2 s for slow phones, reads once more and
+  writes phase rev: the A–D split with the right one framed, the explanation, the top ten (↑ in
+  green when a player climbed); *Suivante*; after question 30, phase end and the podium. Space or
+  → = the next action. `revision.html` (players, course sign-in required, `fl3_auth`): polls the
+  state every second; on a question, four buttons and a bar that empties from the moment THAT phone
+  saw the question (so a phone's lag does not cost it time); one click PUTs {a, t, n, ts} at
+  `<sid>/kahoot/<g>/<q>` (own node); after the reveal: right/wrong, the points, the running total
+  (kept in `fl3_rev_<g>`). Names are shown on the screen (a leaderboard). Hub card `#revision`
+  with the player link and, on an instructor device (`jem_fb_session`), the screen link. Tested
+  headlessly with a stubbed database (screen 1280, phones 390 and 1024): lobby, question, two
+  answers counted live, reveal, points 981 / 0, the 10 s timeout with no answer, no errors, no
+  sideways scroll. ⚠ Needs the `fl3/_release` rules (already deployed for the quizzes).
+
+## ⚠ Séances 7, 8, 9 and 3 REBUILT — more theory, harder cases, solved alone (24 Nov 2026)
+
+Jan Erik, after séance 6: "the course is too easy and has too little theory for the
+students — they stopped me in tonight's lecture and wanted to do the exercises
+themselves instead", then "rebuild seance 7,8,9 and 3. more weight on theory and
+difficulty." The grammar of the four pages, to keep for any further rebuild:
+
+- **Theory sections written in full** (`mode:'ex'`, one or two per séance), numbered
+  paragraphs with the formulas, the articles, the edge cases and a `.trap` box of exam
+  pitfalls; each ends with CONTROLS that count (a classify and/or a `buildNum` of
+  theory-only calculations, ids `t1…`/`j1…`). No "reading" sections marked by a click.
+- **Cases solved alone** (`mode:'do'`, a `.seul` banner): every datum up front, nothing
+  pre-computed; journal `op` texts state the EVENT, never the account nor the computed
+  amount (the engine's dropdowns make the student choose debit and credit); hints only
+  after a wrong answer. A second, harder case per séance, at the level of the Inspera
+  exam (Examen FLIII 2027 was read to calibrate: CAPM/WACC, apurement with latent
+  reserves, goodwill RPC 30 and ROE, éliminations with minorities). Case ids of the
+  kept cases are UNCHANGED, so a figure verified before still is.
+- **No section timings** (`min` dropped, WRITING.md rule 7); the block hours stay.
+- Progress keys bumped to `_v2` (fl3_w3/w7/w8/w9_progress_v2); every `wN_*` field is in
+  `courses.json → project` (séance 3: w3_ajust, w3_forme, w3_flou · 7: w7_valeur,
+  w7_ormonts, w7_rapport, w7_flou · 8: w8_apur, w8_rpc, w8_flou · 9: w9_bi, w9_flou);
+  `courseprogress.js` totals 8 / 7 / 7 / 6; hub `SEANCES[].do` rewritten.
+- **Séance 7** (`_private/check_s7b.py`): 7.1 theory I (VS with impôts latents, bénéfice
+  durable corrigé, taux build-up, praticiens = circulaire 28 CSI, FCF, CAPM, WACC, VT,
+  entity/equity) · 7.2 cas 1 Alpibois/Jorat, the CAPM now derives Jorat's 12 % (1,5 + 1,4 ×
+  7,5) and Alpibois' 10 %; 18 numbers incl. the exchange ratio · 7.3 cas 2 **Fromagerie des
+  Ormonts SA** (1'000 actions, impôt 20 %): RL 910'000, IL 182'000, VS 2'398'000, bénéfice
+  durable 300'000 (274/324/302), taux 10 %, VR 3'000'000, praticiens 2'799'333, goodwill
+  401'333; ke 12 % (1,5 + 1,5 × 7), WACC 10 % (75/25, kd 5 %), FCF 318/354/380, VT 4'264'444,
+  VE 4'071'093, equity 3'351'093 → 3'351/action (WACC 11 % → 2'938); VE/EBITDA 6 × 560'000 −
+  720'000 → 2'640/action, PER 10 → 3'000; offer 3'200 → goodwill payé 802'000, multiple
+  implicite 7,0, PER 10,67; EVA 95'000 · 7.4 theory II (EVA/MVA, multiples table, prime de
+  contrôle/décote, the report's structure, what it never does) · 7.5 cas 3 the expert's
+  ten statements (five errors) + the five-line report · 7.6 quiz (CAPM, VS, WACC, VT, FCF,
+  EVA, salary correction, circulaire 28) · 7.7. Denominator 94.
+- **Séance 8** (`_private/check_s8b.py`): 8.1 theory I (963/963a incl. sous-groupe and
+  the 10 % demand, 963b, périmètre table, four steps) · 8.2 cas 1 the thresholds over
+  2024–2027 (obligation from 2026; 2027 exceeds one; exemption again from 2028 if 2028 stays
+  under — "lecture usuelle, par analogie avec l'art. 727") + the nine-company périmètre ·
+  8.3 theory II (apurement rule, four cases, impôts différés, acquisition method, goodwill
+  RPC 30 options / IFRS impairment / badwill, ROE) · 8.4 cas 2 Vuilleumier (figures of
+  check_s8.py, journal events restated) · 8.5 cas 3 **Ferblanterie Chevalley SA, 75 % for
+  1'050**: RL 340 (terrain 100, bâtiment 200/20 y, machines 40/4 y), impôts différés 68,
+  FP BC 2 1'172, goodwill 171 (34,2 a year), PMC 293, bénéfice BC 2 2027 104 (120 − 20 + 4),
+  PMB 26, PMC fin 2027 319, twelve entries incl. Impôts différés and its 4 reversal; ROE 14,0
+  vs 15,86 %; badwill variant −29; dividend 40 → 30 eliminated · 8.6 quiz · 8.7. Charpente
+  Muller's 80 % case LEFT séance 8 (Chevalley replaces it); séance 9 restates Muller's
+  acquisition facts itself. Denominator 84.
+- **Séance 9** (`_private/check_s9b.py`): 9.1 theory (four families with "does the result
+  change", bénéfice intermédiaire pas à pas, downstream/upstream rule, the machine, dividends,
+  consolidation subséquente, the worksheet order and its three controls) with three controls ·
+  9.2 cas 1 Muller livre à sa mère (stock + machine, 80/20) · 9.3 cas 2 the 2028 worksheet
+  (unchanged `buildWorksheet` rows) + seven readings incl. the dividend · 9.4 cas 3 **Chevalley
+  2028**: upstream stock 30 % (15 → 24; 11,25/3,75 and 6,75/2,25), DOWNSTREAM machine 120 vs
+  80 over 4 y (−40 + 10 = −30, all to the group), loan 150 at 4 % from 1 July (intérêts courus
+  3), dividend 40 (30 eliminated), goodwill 34,2; effet total −100,95; PMC fin 2028 331,5
+  (319 − 10 + 26,25 − 3,75); ten entries · 9.5 quiz · 9.6. Denominator 78.
+- **Séance 3** (`_private/check_s3b.py`): 3.1 theory I (forms, succession universelle,
+  soulte/dédommagement, fusion simplifiée 23–24, art. 6, procedure with PME waivers, art. 25
+  after the fusion, rapport d'échange/agio/compte Fusion, participation déjà détenue, neutralité
+  61 LIFD) · 3.2 cas 1 Jorat in three versions (A, B soulte, C participation; ids unchanged) ·
+  3.3 theory II (three levers + regroupement, E and DPS formulas, the control, the « 1 pour 5 »
+  trap) with four controls · 3.4 cas 2 Clos des Roches (unchanged ids) · 3.5 cas 3 **Alpibois
+  absorbe Charpenterie Gillièron SA**: 500 actions de 1'000, FP 250'000 (pertes reportées
+  300'000), seuil 275'000 → découvert 25'000 (art. 6: Alpibois' 800'000 free reserves), RL
+  250'000 → VI 500'000 = 1'000/action = 1 : 1; Alpibois holds 100 shares at 130'000 → 400
+  new shares, nominal 200'000, agio 200'000, PERTE de fusion 30'000, frais 15'000 en charge;
+  bilan 8'005'000 (actifs 7'000'000 − 130'000 + 1'150'000 − 15'000 = dettes 4'350'000 +
+  capital 2'700'000 + RLC 200'000 + réserves 755'000); soulte max 40'000 · 3.6 cas 4 Bois
+  Romand (unchanged) · 3.7 quiz (art. 6 and a perte de fusion added) · 3.8. Its date is still
+  "à confirmer" (the 19 Nov séance was cancelled). Denominator 109.
+- All four probed headlessly (scratchpad `fl3-probe.mjs`: wraps the builders to read their
+  answers, solves every numeric, classify and journal item through the UI, fills the fields):
+  every item accepts its answer, every section except the quiz (and 9.3's worksheet, not
+  driven by the probe) completes, no errors, no sideways scroll at 390 px.
