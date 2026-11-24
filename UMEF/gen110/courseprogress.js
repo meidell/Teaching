@@ -35,7 +35,7 @@ window.CourseProgress=(function(){
     {mod:'w3', short:'S3', name:T('Séance 3 · Bien demander II — son, image, vidéo','Session 3 · Asking well II — sound, image, video'),         total:8, live:true, href:T('seance3.html','seance3-en.html')},
     {mod:'w4', short:'S4', name:T('Séance 4 · Des agents qui travaillent ensemble','Session 4 · Agents working together'),                total:8, live:true, href:T('seance4.html','seance4-en.html')},
     {mod:'w5', short:'S5', name:T('Séance 5 · Un agent qui cherche chaque jour','Session 5 · An agent that searches every day'),      total:7, live:true, href:T('seance5.html','seance5-en.html')},
-    {mod:'w6', short:'S6', name:T('Séance 6 · Construire : un jeu, une appli, une page','Session 6 · Building: a game, an app, a page'),  total:8, live:true, href:T('seance6.html','seance6-en.html')},
+    {mod:'w6', short:'S6', name:T('Séance 6 · Construire : un jeu, une appli, une page','Session 6 · Building: a game, an app, a page'),  total:7, live:true, href:T('seance6.html','seance6-en.html')},
     {mod:'w7', short:'S7', name:T('Séance 7 · Automatiser — un agent qui travaille seul','Session 7 · Automating — an agent that works alone'),                              total:8, live:false},
     {mod:'w8', short:'S8', name:T('Séance 8 · Postuler — CV, message, envoi','Session 8 · Applying — CV, message, sending'),                                       total:8, live:false},
     {mod:'w9', short:'S9', name:T('Séance 9 · Contrats et données','Session 9 · Contracts and data'), total:8, live:false},

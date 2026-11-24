@@ -48,7 +48,7 @@
     { n: 6, mod: 'w6', href: 'seance6.html', t: T('Construire : un jeu, une appli, une page', 'Building: a game, an app, a page'),
       secs: [['s0', '6.0', T('Le défi, les règles, l’équipe', 'The challenge, the rules, the team')], ['s1', '6.1', T('Le bac à sable', 'The sandbox')], ['s2', '6.2', T('Sprint 1 — ça marche', 'Sprint 1 — it works')],
              ['s3', '6.3', T('Sprint 2 — c’est bon', 'Sprint 2 — it is good')], ['s4', '6.4', T('Publier', 'Publish')], ['sj', '6.5', T('Le jury', 'The jury')],
-             ['s5', '6.6', T('Le quiz de la séance 6', 'The Session 6 quiz')], ['s6', '6.7', T('Ce que vous gardez', 'What you keep')]] },
+             ['s6', '6.6', T('Ce que vous gardez', 'What you keep')]] },
     { n: 7, mod: 'w7', t: T('Automatiser — un agent qui travaille seul', 'Automating — an agent that works alone'), locked: true },
     { n: 8, mod: 'w8', t: T('Postuler — CV, message, envoi', 'Applying — CV, message, sending'), locked: true },
     { n: 9, mod: 'w9', t: T('Contrats et données', 'Contracts and data'), locked: true },

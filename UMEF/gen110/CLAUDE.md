@@ -814,3 +814,14 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
     Votre agent (the team's own trigger/sources/filter/action/click); the
     back link follows the set. Not linked from a student page.
   - The séance timetable was NOT changed: 5.5 quiz 16h15, 5.6 16h25–16h45.
+
+- **24 Nov 2026 — séance 6 has no quiz.** Jan Erik, the morning of the
+  séance: "remove the small quizz everywhere - useless for today." Section
+  6.6 (the eight-question synchronised quiz, its `_release/w6/quiz` lock,
+  `quizOpen`/`launchQuiz`/`paintQuizLock` and the `quizWidget`) is gone from
+  `seance6.tpl.html`; *Ce que vous gardez* is now **6.6** (id `s6` kept; the
+  jury's next button, the reset line and the `out0–2` labels say 6.6); the
+  liveinfo line and the Bloc 2 part-head no longer name a quiz; `nav.js` and
+  `courseprogress.js` (S6 total 7) follow. The "quiz" that remains on the
+  page is the BRIEF `quiz` (a program the students may build) and the vote
+  placeholder — not a quiz they take. Both editions rebuilt and probed.
