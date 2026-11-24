@@ -565,3 +565,7 @@ difficulty." The grammar of the four pages, to keep for any further rebuild:
   answers, solves every numeric, classify and journal item through the UI, fills the fields):
   every item accepts its answer, every section except the quiz (and 9.3's worksheet, not
   driven by the probe) completes, no errors, no sideways scroll at 390 px.
+
+## 24 Nov 2026 — exam coverage check, two gaps closed
+
+Jan Erik: "do my course actually cover the difficulty level of the exams?" Every question of the 2027 exam (variantes A/B) was mapped to its séance: all covered, séances 3, 7, 8, 9 above exam level. Two gaps closed the same night: séance 1 §1.2 got a paragraph on the founders' liability for an overvalued apport en nature (art. 753 CO, the réviseur art. 755 CO); séance 7's theory control got a fifth item `t5` (the exam's one-flow constant-growth DCF: FCF of next year ÷ (WACC − g), minus net financial debt — 900'000, 1,5 %, 7,5 %, 4'000'000 → 11'000'000) and a fourth exam trap on the same point. Denominator of séance 7: 95. Never copy the exam's cases or figures.
