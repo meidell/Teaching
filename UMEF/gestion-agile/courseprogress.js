@@ -27,10 +27,10 @@ window.CourseProgress=(function(){
   var CHAPTERS=[
     {mod:'w1', short:'J1', name:'Journée 1 · Pourquoi agile ? Scrum en pratique', total:8, live:true, href:'journee1.html'},
     {mod:'w2', short:'J2', name:'Journée 2 · Backlog, estimation et flux', total:9, live:true, href:'journee2.html'},
-    {mod:'w3', short:'J3', name:'Journée 3 · Les méthodes prédictives et leur gouvernance', total:9, live:false, href:'journee3.html'},
-    {mod:'w4', short:'J4', name:'Journée 4 · Concevoir et piloter un modèle hybride', total:9, live:false, href:'journee4.html'},
-    {mod:'w5', short:'J5', name:'Journée 5 · Mise à l’échelle, organisation et conduite du changement', total:9, live:false, href:'journee5.html'},
-    {mod:'w6', short:'J6', name:'Journée 6 · Présentations, bilan et révision', total:6, live:false, href:'journee6.html'}
+    {mod:'w3', short:'J3', name:'Journée 3 · Les méthodes prédictives et leur gouvernance', total:6, live:true, href:'journee3.html'},
+    {mod:'w4', short:'J4', name:'Journée 4 · Concevoir et piloter un modèle hybride', total:7, live:true, href:'journee4.html'},
+    {mod:'w5', short:'J5', name:'Journée 5 · Mise à l’échelle, organisation et conduite du changement', total:6, live:true, href:'journee5.html'},
+    {mod:'w6', short:'J6', name:'Journée 6 · Présentations, bilan et révision', total:6, live:true, href:'journee6.html'}
   ];
 
 

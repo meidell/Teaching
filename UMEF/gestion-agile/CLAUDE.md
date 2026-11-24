@@ -123,18 +123,105 @@ Tested headlessly 24 Nov 2026 (Playwright, Firebase and track.js aborted,
 sections, 48/56), no page errors, no sideways scroll (the rounds and Kanban
 tables scroll inside `.tblwrap`).
 
+- **`journee3.html` · *Les méthodes prédictives et leur gouvernance*** (w3, 6
+  sections, denominator 63; built 24 Nov 2026): 3.1 the sprint-1 review as a
+  STEERING COMMITTEE (`w3_revue` `data-board`, `w3_prevision`, `w3_retro1`),
+  `buildNum` v1–v3 on a fixed case (34 pts, velocity 11: 4 sprints; 23 left: 3;
+  minus 8: 2), `buildPick` d1 (did the daily happen) · 3.2 charte, registre des
+  parties prenantes (pouvoir × intérêt), WBS (règle des 100 %), jalons and the
+  CRITICAL PATH on an SVG network A3→{B4,C6}→D2 (`cpNum` c1–c4: 11, 2, 13, 13),
+  classify `docRows` 8 · 3.3 the team frames ITS project predictively: `w3_charte`,
+  `w3_parties`, `w3_wbs` with a linter (`wbs` = ≥ 2 level-2 lines, ≥ 8 level-3
+  lots each with « (n h) »), `w3_jalons`, `w3_compare` (`data-board`) · 3.4 PRINCE2
+  7th ed. (7 principes/pratiques/processus, gestion par exception, séquences),
+  PMBOK 7 (12 principes, 8 domaines), HERMES 2022 (phases, jalons de décision,
+  scénarios, modules, three approaches); classify `refRows` = the TWENTY
+  SITUATIONS · 3.5 quiz (positions `2 1 0 3 1 2 0 1`) · 3.6 sprint-2 planning under
+  an IMPOSED CONTRACTUAL MILESTONE: `w3_jalon`, `w3_objectif2` (`data-board`),
+  `w3_selection2`, `buildPick` p1–p5, `w3_tension` (`data-board`), `w3_retro`;
+  "avant la journée 4" = Cooper & Sommer 2016, Conforto & Amaral 2016 (DOIs).
+- **`journee4.html` · *Concevoir et piloter un modèle hybride*** (w4, 7 sections,
+  denominator 55): 4.1 sprint-2 review (`w4_revue2` `data-board`, `w4_retro2`) ·
+  4.2 the definition (Agile–Stage-Gate), the SIX DECISIONS of the canvas (phases,
+  jalons et portes, instances et rythme, rôles, contrat et budget, reporting);
+  classify `phRows` 8 (P/I/M) and `instRows` 6 (comité/PO/équipe) · 4.3 THE CANVAS
+  (`#cv`: seven phases, renamable, mode P/I/M/–, a reason; state `mpm503_w4_cv`;
+  « Copier le canevas dans le carnet » → hidden `w4_canevas`, step `cv` at ≥ 5
+  modes), `w4_portes`, `w4_instances`, `w4_justif` (`data-board`, linter `just` ≥ 120
+  words) · 4.4 five contract forms (table), money for nothing / change for free
+  (Sutherland), budget par incréments, the fixed-price supplier via interface
+  milestones; `ctNum` k1–k4 (24'000 € a sprint, 192'000, early exit after 5 at
+  20 % = 134'400, 150'000 envelope = 6 sprints); the ROLE PLAY client vs
+  prestataire: `w4_contrat` (`data-board`), `w4_negociation` · 4.5 burndown /
+  burnup / CFD / velocity; the BURN SIMULATOR (`#bScope`, `#bDone`, `#bAdd` →
+  SVG burnup + burndown, step `burn`); AgileEVM (Sulaiman, Barton, Blackburn
+  2006): `evNum` e1–e6 (1'200 €/pt, PV 96'000, EV 76'800, SPI 0,8, CPI 0,77 —
+  TWO decimals: the engine's `num()` reads « 0,768 » as 768, a comma followed by
+  three digits is a thousands separator — EAC 250'000 tol 1 %); the dashboard
+  `w4_tableau` (`data-board`) presented in three minutes, `buildPick` f1–f3 ·
+  4.6 quiz (`1 2 0 3 1 0 2 1`) · 4.7 the CRISIS (scope + 25 % cut + a leaver,
+  the one `.timer` 45 min = the exercise's rule): `crNum` x1–x3 (8,4; 6; 4
+  sprints → 34 of 50 points), `w4_arbitrage`, `w4_prevision`, `w4_communication`
+  (`data-board`, the five-line note), sprint 3 `w4_sprint3` (`data-board`),
+  `w4_retro`; "avant la journée 5" = SAFe, LeSS, Spotify (2012).
+- **`journee5.html` · *Mise à l’échelle, organisation et conduite du changement***
+  (w5, 6 sections, denominator 69): 5.1 sprint-3 review (`w5_revue3`
+  `data-board`, `w5_retro3`), the THREE-SPRINT TABLE (`#spTable` 9 inputs → KPIs:
+  mean velocity, sd ÷ mean, acceptance, h/point, min–max; hidden `w5_sprints`,
+  step `sprints`; state `mpm503_w5_sp`), `spNum` sp1–sp4 on a fixed case (12;
+  85,7 %; 2,39 h; 2 sprints), `w5_enseignements` (`data-board`) · 5.2 SAFe, LeSS,
+  Scrum@Scale, Nexus, Spotify (table: idée, ajoute, coûte), « descale first »,
+  when not to scale; classify `scRows` 10 and `whRows` 6 · 5.3 THE PI BOARD
+  (`#piTable`: two teams A Paiement / B Comptabilité, ten features with points
+  and dependencies, five iterations, capacity 20, B4 due by it. 4; « Vérifier le
+  plan » lists every conflict in words, rows turn red; zero conflicts → hidden
+  `w5_pi`, step `pi`; state `mpm503_w5_pi`; a valid plan: A1:1 B1:1 A2:2 B2:2
+  A3:3 A5:3 B3:3 A4:4 B4:4 B5:5), `w5_objectifs_pi` (`data-board`), `w5_roam` ·
+  5.4 the CFO (budget par incrément, capitalisation IAS 38 / art. 959a CO,
+  retour par version, SPI/CPI/EAC), the compliance officer (trace, séparation des
+  rôles, backlog = registre des changements, nLPD and art. 958f CO as stories),
+  the PMO in hybrid mode (kanban de portefeuille, three measures); `cfoNum` f1–f3
+  (7'200 €, 7'200 €/an, 12 months payback); classify `obRows` 8 (objection ↔
+  argument); the ROLE PLAY: `w5_cfo` (`data-board`), `w5_conformite`, `w5_pmo` ·
+  5.5 quiz (`1 3 0 2 1 0 2 1`) · 5.6 the AI demonstration: four prompts
+  (compte rendu, risques, récits, synthèse des rétrospectives), classify
+  `iaRows` 8 (juste / inventé / lissé / vague), `w5_ia_verif` (`data-board`); the
+  dossier plan (7 parts, due Fri 22 Jan 2027 23h59 on the UMEF platform),
+  `buildPick` d1–d7 (fait / brouillon / rien), `w5_repartition`, `w5_retro`.
+- **`journee6.html` · *Présentations, bilan et révision*** (w6, 6 sections,
+  denominator 29): 6.1 the presentation (what the committee grades; the one
+  `.timer` 20 min = the presentation's rule), `w6_plan_presentation`,
+  `w6_questions` (`data-board`), `buildPick` au1–au4 · 6.2 PRÉVU CONTRE LIVRÉ
+  (`#ecTable` 8 inputs → deltas in points, hours, budget, milestones, h/point;
+  hidden `w6_ecart`, step `ecart`; state `mpm503_w6_ec`), `w6_ecart_expl`
+  (`data-board`), classify `rcRows` 8 (which day taught it), `w6_retro_cours`
+  (`data-board`) · 6.3 THE TRAINER: twenty PSM I / PMI-ACP-style questions in
+  the page's own widget (not `buildQuiz`: no release needed), immediate
+  commented correction, score line, « Refaire les questions manquées » (clears
+  only the wrong ones), state `mpm503_w6_tr`, step `trainer` when all twenty are
+  answered (right or wrong) · 6.4 the exam's form (6 Feb 2027 13h30, 2 h: définitions,
+  calculs, cas à argumenter) and FIVE EXAMPLE QUESTIONS with model answers in
+  `<details class="ex">` (invented for the page, labelled so — never the exam's
+  questions), `w6_examen_prep` · 6.5 the JEOPARDY (`jeopardy.html?set=syn`,
+  gen110's engine copied: six columns = journées 1–5 + « Votre projet », scores
+  in this browser `mpm503_jeo_syn`), `w6_bilan` (`data-board`) · 6.6 the hand-in
+  list `buildPick` rm1–rm6, `w6_remise`, `w6_questions_examen`.
+- Registry: `courses.json` modules w1–w6, project sections 1–6 (every
+  `data-work` field with its `data-worklabel`); `courseprogress.js` totals
+  8 / 9 / 6 / 7 / 6 / 6, all live; hub `DAYS` all live.
+
+Tested headlessly 24 Nov 2026 (scratchpad `agile-test2.mjs`, Firebase and
+track.js aborted, 1280 and 390 px): J3 5/5 non-quiz sections (55/63), J4 6/6
+(47/55), J5 5/5 (61/69), J6 6/6 (29/29) — every numeric control accepts its
+answer, the WBS and justification linters count, the canvas copies, the burn
+chart draws, the PI board refuses a bad plan and accepts the valid one, the
+trainer scores and redoes, replay after reload; hub seven cards, Jeopardy 30
+cells; no page errors, no sideways scroll.
+
 ## Not built
 
-Journées 3–6 (locked cards on the hub; the syllabus's blocks are in `DAYS`).
-J3 needs: the sprint-1 review as a steering committee, the predictive framing
-(charter, stakeholders, WBS, milestone plan with critical path), the PRINCE2 /
-PMBOK 7 / HERMES "twenty situations" classify, sprint-2 planning with an
-imposed milestone. J4 needs the hybrid canvas, the agile-contract role play,
-the AgileEVM simulator, the crisis simulation. J5 the PI-planning simulation,
-the CFO/compliance role play, the AI-for-PMs demonstration. J6 the
-presentations, the PSM I / PMI-ACP trainer and a Jeopardy (copy gen110's
-`jeopardy.html`). No slides/PDF yet.
-
-⚠ The `mpm503` rules block must be DEPLOYED before the link goes to students
-(Jan Erik publishes it); until then sign-in, presence, quiz release and
-messages are refused.
+Slides and PDFs for the six days; a corrigé of the fixed-case controls. The
+`mpm503` rules block must be DEPLOYED before the link goes to students (Jan
+Erik publishes it); until then sign-in, presence, quiz release and messages
+are refused. The Jira menu names in J1 §1.6 and the free-tier limits are
+still unverified.
