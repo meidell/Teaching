@@ -379,3 +379,23 @@ overflows.
   "Les erreurs les plus fréquentes…", "Pour vérifier que vous avez compris…", "Une bonne réponse." The
   data cards are stripped (they are on the page above). On ≤640 px the tables become stacked cards
   with the column name before each value. Counts nothing (totalSteps 126). Cases 3 and 4 stay private.
+
+## 23 Nov 2026 — séance 6: a third case, and a fixed footer
+
+Jan Erik: "add one extra case at the end (a bit more difficult and if time
+allows)". **Section 6.5 · Scierie Duboux SA** (id `s8`, placed between 6.4
+and the quiz, which became 6.6; fin 6.7, EEA 6.8; `total` 8 in
+courseprogress.js): a liquidation that ends ABOVE the nominal — immeuble sold
+720'000 with the hypothèque 300'000 taken over by the buyer, a participation,
+a provisioned lawsuit settled by transaction (19'000, 6'000 dissolved), a
+contested claim of 14'000 CONSIGNED (art. 744 CO, booked as a loss), then
+the closing with the withholding tax booked: `dxJournal` (11 entries, with
+T-accounts), `dxNum` (6: transaction 6'000, losses 42'000, result 155'000,
+bank 537'000, excédent 192'000 = 537 − 300 nominal − 45 RLC confirmed by
+the AFC, net 1'566 per share), `dkJournal` (10 closing entries: Actionnaires
+537'000, Impôt anticipé dû 67'200, net 469'800; every account ends at 0 —
+verified headlessly). Figures in `_private/check_s6b.py`. The case counts in
+the bar like any section (bloc.js counts every registered step), so a class
+that skips it stays under 100 % for séance 6 — accepted. Also fixed: 6.2's
+footer went to s5/s7 (a leftover of the Saturday splice); it now goes to
+6.1 and 6.3.
