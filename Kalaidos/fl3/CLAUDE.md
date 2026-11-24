@@ -471,8 +471,8 @@ faites aussi des diapositives".
 - **La révision · the Kahoot-style game (24 Nov 2026)** — Jan Erik, after séance 6: "a new game
   where they click individually on 4 buttons (a,b,c,d) on timed questions (10 sec) to do revision
   on 1,2,4,5,6 from easy to difficult … a leader à la kahoot", "on the landing page, to be played for
-  approx 20 mins". `revision.js` = the bank (30 questions, three tiers of ten: lvl 1–2 at 10 s,
-  lvl 3 at 20 s because they compute; `REV_TIME`, `REV_POINTS` = 500 + 500 × time left ÷ time,
+  approx 20 mins". `revision.js` = the bank (30 questions, three tiers of ten: lvl 1–2 at 20 s,
+  lvl 3 at 30 s because they compute (10 / 20 until Jan Erik asked for ten more seconds the same night); `REV_TIME`, `REV_POINTS` = 500 + 500 × time left ÷ time,
   0 if wrong). `revision-tv.html` (instructor's screen, needs the account like board.html): *Nouvelle
   partie* writes `fl3/_release/revision/state` = {g, q, phase lobby|q|rev|end, started, ts};
   *Lancer* → phase q, the screen counts down, polls every player's `<sid>/kahoot/<g>.json` each
