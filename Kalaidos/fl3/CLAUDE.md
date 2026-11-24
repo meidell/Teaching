@@ -399,3 +399,29 @@ the bar like any section (bloc.js counts every registered step), so a class
 that skips it stays under 100 % for séance 6 — accepted. Also fixed: 6.2's
 footer went to s5/s7 (a leftover of the Saturday splice); it now goes to
 6.1 and 6.3.
+
+## 24 Nov 2026 — the EEA leaves the séances; the énoncé is on the hub
+
+Jan Erik: "remove the EEA exercise from the courses and attach instead the
+EEA pdf on the landing page with the instructions to sign up and hand this in
+on Open Olat". The nine **« Après la séance — Projet EEA »** sections of
+10 Nov 2026 are GONE (ticks `ea1–ea3`, notebook `wN_eea`, `renderEeaCal`):
+their *Exercices suggérés* and *Pour la suite* cards moved to the end of the
+preceding section (before its `.sec-status`), whose "Suite : le projet EEA →"
+button is "Menu de la séance" again. Engine: `MODES.eea`, `EEA_PLAN`,
+`renderEeaCal` and `buildTicks` removed from `bloc.js`, the `.eeacal`/`m-eea`
+rules from `fl3.css`; courseprogress totals −1 for w1–w9; the `wN_eea` fields
+(w1–w9) left courses.json's `project.sections` (`w10_eea`, the questions
+field of 10.5, stays). Séance 4's and 5's "Après la séance" lines and
+`seance5-slides.html` / `seance1-slides.html` no longer name a section 4.10
+or 5.9 (both PDFs re-printed). The hub's `#eea` panel now holds
+**`files/EEA_FLIII_2027.pdf`** (the énoncé, 14 pages, a `.dlbtn`) and four
+numbered steps: download and read it, form the group and **sign up on
+OpenOLAT** (grille there, hand-in there), write in the answer column with
+every name on the cover, every member uploads before Mon 14 Dec 2026 23:59.
+⚠ The énoncé is therefore PUBLIC on the web root — the rule "never put EEA
+content on a page" now means the SOLUTIONS and the grille, which stay
+outside the repo. The hub cards' "EEA § n réalisable" lines and séance 10's
+10.5 "Vos questions sur l'EEA" are unchanged. Probed headlessly: ten pages,
+SECTIONS.length = the new totals, no dead `data-next`, no `m-eea`, no
+errors, no sideways scroll at 1280 and 390 px; the hub serves the PDF.
