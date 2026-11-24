@@ -309,6 +309,7 @@ Each course's history, decisions and traps now live next to its pages (split 23 
 - `UMEF/ideas-e1410/CLAUDE.md` — UMEF · E1410
 - `UMEF/seminaire-ia/CLAUDE.md` — UMEF · Séminaire « Programmer avec une IA » (27 Oct 2026, one-off)
 - `UMEF/ia-production/CLAUDE.md` — UMEF · MIA 506 Déploiement et pilotage des systèmes d’IA en production (from 20 Nov 2026)
+- `UMEF/gestion-agile/CLAUDE.md` — UMEF · MPM 503 Gestion de projet agile et méthodes hybrides (from 28 Nov 2026)
 - Courses without a file (OMBA401, OMBAFR455, UMEF407, MFB 545, the open hubs) are documented in the memory notes and in comments at the top of their pages.
 
 ## 5. Data model
