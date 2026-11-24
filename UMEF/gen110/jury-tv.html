@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le jury · GEN 110 · séance 6</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<script src="/shared/adminui.js"></script>
+<style>
+/* =====================================================================
+   GEN 110 · séance 6 · THE JURY ON THE ROOM'S SCREEN (24 Nov 2026).
+   Jan Erik: "display the page urls on that tv, but in addition, when I
+   click on a link it opens in the page and underneath it we see the live
+   summary of the judgments (of all users). the users [have] the
+   possibility to judge on the page that is shown on that tv."
+
+   Instructor's device only (the reads need the signed-in account, as
+   /shared/board.html). It reads gen110.json?shallow=true for the sids,
+   then each student's own work.json (w6_url, w6_brief) and jury.json
+   (their judgments). Programs are deduped by address; the label is the
+   team's own words (w6_brief up to the first " · "), never a student's
+   name. Clicking a program (or ← →) embeds it below and WRITES
+   gen110/_release/w6/jury = {cur, list, ts} with the ID token — the
+   only instructor-writable, world-readable node — so every student
+   page's section 6.5 follows the screen and offers the five criteria for
+   THAT program. Each judgment lands in <sid>/jury/<k> = {u, s[5], ts};
+   this page re-reads every 5 s and draws, per criterion, the mean out of
+   2 and the 0/1/2 split, plus the mean total out of 10 and the number of
+   jurors. Jurors are counted, never named.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0E1A33;--card:#17264A;--line:rgba(255,255,255,.14);--ink:#fff;--soft:rgba(255,255,255,.78);--dim:rgba(255,255,255,.5);--acc:#F39229;--ok:#5CC98A;--mid:#F2C14E;--no:#E86A6A;}
+html,body{height:100%;}
+body{font-family:"Avenir Next","Avenir","Nunito Sans","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;background:rgba(14,26,51,.96);border-bottom:1px solid var(--line);}
+.bar .crs{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:var(--dim);margin-right:6px;}
+.bar h1{font-size:17px;font-weight:800;}
+.sp{flex:1;}
+.ctl{display:inline-flex;align-items:center;gap:6px;font:700 13px inherit;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;text-decoration:none;}
+.ctl .ic{width:15px;height:15px;}
+.ctl:hover{border-color:var(--acc);color:#fff;}
+.ctl.on{background:var(--acc);border-color:var(--acc);color:#0E1A33;}
+.lay{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0;}
+@media(max-width:860px){.lay{grid-template-columns:1fr;}}
+.list{border-right:1px solid var(--line);overflow:auto;padding:12px;}
+.pg{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;color:var(--ink);font:inherit;}
+.pg:hover{border-color:var(--acc);}
+.pg.on{border-color:var(--acc);box-shadow:0 0 0 2px rgba(243,146,41,.35);}
+.pg .n{font-size:11px;color:var(--dim);font-weight:800;letter-spacing:1px;}
+.pg .t{font-weight:800;font-size:15px;margin:2px 0;}
+.pg .u{font-size:11.5px;color:var(--dim);word-break:break-all;}
+.pg .s{font-size:12.5px;color:var(--soft);margin-top:4px;}
+.pg .s b{color:var(--acc);}
+.main{display:flex;flex-direction:column;min-height:0;overflow:auto;}
+.frame{flex:none;height:58vh;background:#fff;border-bottom:1px solid var(--line);position:relative;}
+.frame iframe{width:100%;height:100%;border:0;display:block;background:#fff;}
+.frame .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#0E1A33;font-size:20px;text-align:center;padding:30px;}
+.sum{padding:16px 22px 30px;}
+.sum h2{font-size:22px;font-weight:800;margin-bottom:2px;}
+.sum .ul{font-size:13px;color:var(--dim);margin-bottom:12px;word-break:break-all;}
+.sum .ul a{color:var(--soft);}
+.tot{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+.tot .big{font-size:44px;font-weight:800;color:var(--acc);line-height:1;font-variant-numeric:tabular-nums;}
+.tot .lab{font-size:14px;color:var(--soft);}
+.crit{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+.cr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+.cr .ct{font-weight:800;font-size:14px;margin-bottom:6px;min-height:36px;}
+.cr .mean{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.cr .mean small{font-size:13px;color:var(--dim);font-weight:700;}
+.cr .track{display:flex;height:10px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.1);margin:8px 0 6px;gap:2px;}
+.cr .track i{display:block;height:100%;}
+.cr .track .z0{background:var(--no);} .cr .track .z1{background:var(--mid);} .cr .track .z2{background:var(--ok);}
+.cr .split{font-size:12px;color:var(--soft);display:flex;gap:10px;}
+.cr .split b{color:#fff;}
+.rank{padding:16px 22px 30px;}
+.rank table{width:100%;border-collapse:collapse;font-size:15px;}
+.rank th,.rank td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+.rank th{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);}
+.rank td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;}
+.rank tr.top td{color:var(--acc);}
+.note{margin:40px auto;max-width:560px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;}
+.note h2{font-size:20px;margin-bottom:8px;}
+.note p{color:var(--soft);font-size:14px;line-height:1.5;}
+.empty{padding:40px;text-align:center;color:var(--dim);}
+body.tv .bar{position:fixed;top:0;left:0;right:0;z-index:9;opacity:0;transition:.2s;}
+body.tv .bar:hover{opacity:1;}
+body.tv .lay{padding-top:0;}
+</style>
+</head>
+<body>
+<div class="bar" id="bar" style="display:none">
+  <span class="crs">GEN 110 · séance 6</span>
+  <h1>Le jury · les programmes de la classe</h1>
+  <span class="sp"></span>
+  <span id="cnt" style="font-size:13px;color:var(--dim);"></span>
+  <button class="ctl" id="bRank" title="Le classement de tous les programmes"><i data-ic="list"></i>Classement</button>
+  <button class="ctl on" id="bAuto" title="Relire toutes les 5 secondes"><i data-ic="refresh"></i>En direct</button>
+  <button class="ctl" id="bTv" title="Plein écran ; la barre se cache"><i data-ic="fullscreen"></i>TV</button>
+</div>
+<div class="lay" id="lay" style="display:none">
+  <div class="list" id="list"></div>
+  <div class="main" id="main"></div>
+</div>
+<div id="gate"></div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+(function(){
+var DB=CourseConfig.DB, NS='gen110', MOD='w6';
+var CRIT=['Ça marche sans erreur','On comprend sans explication','Ça fait ce que le défi demande','Ça tient sur un téléphone','Une chose que personne n’a demandée'];
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function hash(s){var h=2166136261;s=String(s);for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).slice(0,8);}
+function normUrl(u){u=String(u||'').trim().split(/\s/)[0];if(!/^https?:\/\//i.test(u))return '';return u.replace(/\/+$/,'').toLowerCase();}
+function label(brief,i){var b=String(brief||'').split(/\s[·•|–—-]\s/)[0].trim();if(b.length>60)b=b.slice(0,57)+'…';return b||('Programme '+(i+1));}
+
+var PROGS=[], JUDG={}, CUR=null, AUTO=true, TIMER=null, VIEW='prog', TOKEN='';
+async function tok(){try{TOKEN=await FBAuth.token();}catch(e){TOKEN='';}return TOKEN?'?auth='+encodeURIComponent(TOKEN):'';}
+
+async function load(){
+  var a=await tok();
+  var r=await fetch(DB+'/'+NS+'.json'+(a?a+'&':'?')+'shallow=true');
+  if(!r.ok){needAuth();return false;}
+  var keys=Object.keys((await r.json())||{}).filter(function(k){return k.charAt(0)!=='_';});
+  var rows=await Promise.all(keys.map(function(sid){
+    return Promise.all([
+      fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/work.json'+a).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;}),
+      fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/jury.json'+a).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;})
+    ]).then(function(p){return {sid:sid,w:p[0]||{},j:p[1]||{}};});
+  }));
+  /* programs: one per distinct address, in a stable order (hash of the address) */
+  var by={};
+  rows.forEach(function(r){
+    var u=normUrl(r.w.w6_url&&r.w.w6_url.v);if(!u)return;
+    var k=hash(u);
+    if(!by[k])by[k]={k:k,u:u,briefs:[],ts:0};
+    var b=r.w.w6_brief&&r.w.w6_brief.v;if(b)by[k].briefs.push(b);
+    var t=(r.w.w6_url&&r.w.w6_url.ts)||0;if(t>by[k].ts)by[k].ts=t;
+  });
+  PROGS=Object.keys(by).map(function(k){return by[k];}).sort(function(x,y){return x.k<y.k?-1:1;});
+  PROGS.forEach(function(p,i){p.t=label(p.briefs[0],i);});
+  /* judgments: <sid>/jury/<k> = {u, s:[5], ts} — one per juror per program */
+  JUDG={};
+  rows.forEach(function(r){
+    Object.keys(r.j||{}).forEach(function(k){
+      var o=r.j[k];if(!o||!Array.isArray(o.s)||o.s.length!==5)return;
+      if(!JUDG[k])JUDG[k]=[];JUDG[k].push(o.s.map(function(v){return Math.max(0,Math.min(2,parseInt(v,10)||0));}));
+    });
+  });
+  if(CUR&&!PROGS.some(function(p){return p.k===CUR;}))CUR=null;
+  $('gate').innerHTML='';$('bar').style.display='flex';$('lay').style.display='grid';
+  render();
+  return true;
+}
+function stats(k){
+  var J=JUDG[k]||[],n=J.length,mean=[],split=[],tot=0;
+  for(var c=0;c<5;c++){var s=0,sp=[0,0,0];J.forEach(function(j){s+=j[c];sp[j[c]]++;});mean.push(n?s/n:null);split.push(sp);tot+=n?s/n:0;}
+  return {n:n,mean:mean,split:split,tot:n?tot:null};
+}
+function render(){
+  $('cnt').textContent=PROGS.length+' programme'+(PROGS.length>1?'s':'')+' · '+Object.keys(JUDG).reduce(function(a,k){return a+JUDG[k].length;},0)+' jugement'+(Object.keys(JUDG).reduce(function(a,k){return a+JUDG[k].length;},0)>1?'s':'');
+  var list=$('list');
+  if(!PROGS.length){list.innerHTML='<div class="empty">Aucune adresse encore. Les adresses collées en 6.4 apparaissent ici.</div>';}
+  else list.innerHTML=PROGS.map(function(p,i){var s=stats(p.k);
+    return '<button class="pg'+(p.k===CUR?' on':'')+'" data-k="'+p.k+'"><div class="n">'+(i+1)+' / '+PROGS.length+'</div><div class="t">'+esc(p.t)+'</div><div class="u">'+esc(p.u.replace(/^https?:\/\//,''))+'</div><div class="s">'+(s.n?'<b>'+s.tot.toFixed(1)+' / 10</b> · '+s.n+' juré'+(s.n>1?'s':''):'pas encore jugé')+'</div></button>';}).join('');
+  list.querySelectorAll('.pg').forEach(function(b){b.addEventListener('click',function(){pick(b.getAttribute('data-k'));});});
+  var main=$('main');
+  if(VIEW==='rank'){main.innerHTML=rankHTML();return;}
+  var p=PROGS.filter(function(x){return x.k===CUR;})[0];
+  if(!p){main.innerHTML='<div class="frame"><div class="ph">Cliquez un programme à gauche : il s’ouvre ici, et la classe peut le noter sur son téléphone.<br>Flèches ← → pour passer au suivant.</div></div><div class="sum"></div>';return;}
+  var s=stats(p.k);
+  var fr=main.querySelector('.frame iframe');
+  if(!fr||fr.getAttribute('data-k')!==p.k){
+    main.innerHTML='<div class="frame"><iframe data-k="'+p.k+'" src="'+esc(p.u)+'" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" referrerpolicy="no-referrer"></iframe></div><div class="sum" id="sum"></div>';
+  }
+  $('sum').innerHTML='<h2>'+esc(p.t)+'</h2><div class="ul"><a href="'+esc(p.u)+'" target="_blank" rel="noopener">'+esc(p.u)+' ↗</a> — si le site refuse de s’afficher ici, ouvrez-le dans un nouvel onglet.</div>'+
+    '<div class="tot"><span class="big">'+(s.n?s.tot.toFixed(1):'–')+'</span><span class="lab">sur 10 · moyenne de <b>'+s.n+'</b> juré'+(s.n>1?'s':'')+(s.n?'':' — la classe note ce programme sur sa page, section 6.5')+'</span></div>'+
+    '<div class="crit">'+CRIT.map(function(c,i){var m=s.mean[i],sp=s.split[i],n=s.n||1;
+      return '<div class="cr"><div class="ct">'+esc(c)+'</div><div class="mean">'+(m==null?'–':m.toFixed(1))+' <small>/ 2</small></div>'+
+        '<div class="track"><i class="z0" style="flex:'+sp[0]+'"></i><i class="z1" style="flex:'+sp[1]+'"></i><i class="z2" style="flex:'+sp[2]+'"></i></div>'+
+        '<div class="split"><span>0 · <b>'+sp[0]+'</b></span><span>1 · <b>'+sp[1]+'</b></span><span>2 · <b>'+sp[2]+'</b></span></div></div>';}).join('')+'</div>';
+}
+function rankHTML(){
+  var rows=PROGS.map(function(p){var s=stats(p.k);return {p:p,s:s};}).sort(function(a,b){return (b.s.tot||0)-(a.s.tot||0)||(b.s.n-a.s.n);});
+  return '<div class="rank"><h2 style="font-size:22px;margin-bottom:10px;">Le classement · moyenne sur 10, par programme</h2><table><tr><th>#</th><th>Programme</th>'+CRIT.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'<th>Jurés</th><th>Total</th></tr>'+
+    rows.map(function(r,i){return '<tr'+(i===0&&r.s.n?' class="top"':'')+'><td>'+(i+1)+'</td><td>'+esc(r.p.t)+'</td>'+r.s.mean.map(function(m){return '<td class="num">'+(m==null?'–':m.toFixed(1))+'</td>';}).join('')+'<td class="num">'+r.s.n+'</td><td class="num">'+(r.s.tot==null?'–':r.s.tot.toFixed(1))+'</td></tr>';}).join('')+
+    '</table></div>';
+}
+/* the screen tells every student page which program to judge */
+async function publish(){
+  var a=await tok();if(!a)return;
+  var body={cur:CUR,list:PROGS.map(function(p){return {k:p.k,t:p.t,u:p.u};}),ts:Date.now()};
+  fetch(DB+'/'+NS+'/_release/'+MOD+'/jury.json'+a,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){if(!r.ok)$('cnt').textContent='⚠ la base a refusé l’écriture ('+r.status+') — les pages des étudiants ne suivront pas l’écran';}).catch(function(){});
+}
+function pick(k){CUR=k;VIEW='prog';$('bRank').classList.remove('on');render();publish();}
+function start(){stop();if(AUTO)TIMER=setInterval(function(){if(!document.hidden)load().catch(function(){});},5000);}
+function stop(){if(TIMER)clearInterval(TIMER);TIMER=null;}
+function needAuth(){
+  stop();$('bar').style.display='none';$('lay').style.display='none';
+  $('gate').innerHTML='<div class="note"><h2>Connectez-vous pour lire les programmes</h2><p style="margin-bottom:14px">Les adresses et les notes sont dans le dossier de chaque étudiant, que seul le compte enseignant peut lire.</p><div id="auth"></div></div>';
+  FBAuth.form($('auth'),function(){load().then(function(ok){if(ok)start();});},NS);
+}
+$('bAuto').addEventListener('click',function(){AUTO=!AUTO;this.classList.toggle('on',AUTO);start();});
+$('bRank').addEventListener('click',function(){VIEW=VIEW==='rank'?'prog':'rank';this.classList.toggle('on',VIEW==='rank');render();});
+$('bTv').addEventListener('click',function(){document.body.classList.toggle('tv');if(document.body.classList.contains('tv')&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(function(){});});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){document.body.classList.remove('tv');return;}
+  if(!PROGS.length)return;
+  var i=PROGS.findIndex(function(p){return p.k===CUR;});
+  if(e.key==='ArrowRight'){pick(PROGS[Math.min(PROGS.length-1,i+1)].k);}
+  else if(e.key==='ArrowLeft'){pick(PROGS[Math.max(0,i-1)].k);}
+  else if(/^[1-9]$/.test(e.key)&&PROGS[+e.key-1]){pick(PROGS[+e.key-1].k);}
+});
+document.title='Le jury · GEN 110 · séance 6';
+$('gate').innerHTML='<div class="empty">Lecture des programmes…</div>';
+FBAuth.restore(function(u){load().then(function(ok){if(ok)start();}).catch(function(){needAuth();});});
+if(window.AdminUI&&AdminUI.icons)AdminUI.icons(document);
+})();
+</script>
+<script src="/shared/adminnav.js" defer></script>
+</body>
+</html>

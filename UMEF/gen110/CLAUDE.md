@@ -825,3 +825,40 @@ https://www.jobup.ch/en/ — this is just a landing page and will not return job
   `courseprogress.js` (S6 total 7) follow. The "quiz" that remains on the
   page is the BRIEF `quiz` (a program the students may build) and the vote
   placeholder — not a quiz they take. Both editions rebuilt and probed.
+
+- **24 Nov 2026 — the jury on the room's screen, and the class judging
+  what is on it.** Jan Erik: "display the page urls on that tv, but in
+  addition, when I click on a link it opens in the page and underneath it
+  we see the live summary of the judgments (of all users). the users [have]
+  the possibility to judge on the page that is shown on that tv."
+  **`jury-tv.html`** (instructor's device; the reads need the signed-in
+  account, as board.html): left, every distinct address pasted in 6.4
+  (`w6_url`, deduped and keyed by a hash of the normalised address, labelled
+  with the team's own words from `w6_brief` up to the first " · ", never a
+  name); click (or ← →, 1–9) → the program in a sandboxed iframe (sandbox
+  `allow-scripts allow-same-origin allow-forms allow-popups`; a "open in a
+  new tab" link if the site refuses to be framed) and, under it, the live
+  summary: mean total / 10, number of jurors, and per criterion the mean / 2
+  and the 0 · 1 · 2 split; *Classement* = every program sorted by mean;
+  *En direct* re-reads every 5 s; *TV* = full screen. Choosing a program
+  **writes `gen110/_release/w6/jury` = {cur, list:[{k,t,u}], ts}** with the
+  ID token (the one instructor-writable, world-readable node). **Section 6.5
+  gained a second card** (`#tvCard`, `tvJudge()` in the template): it polls
+  that node every 6 s, shows the program on the screen with an "open on my
+  phone" link and the five criteria as 0/1/2 buttons; five cells filled →
+  **PUT `<sid>/jury/<k>` = {u, s[5], ts}** (the student's own node, `$sid`
+  rule; refusals and no-network are shown, and re-sent on the next click);
+  a student never scores their own address (the card says so, and follows
+  the 6.4 box live); a signed-out student is told to sign in. Step **`juge`**
+  (at least one program scored) joins `EXTRA_STEPS` and the `sj` done-when;
+  `gen110_w6_juge` is reset with the day. Denominator now `EXTRA_STEPS (14)
+  + .cl-row (8) + .q (0) + [data-work] (8) = 30`. The card carries a
+  "📺 Le jury sur l'écran de la salle (enseignant)" button, shown only where
+  `AdminGate.isUnlocked()`. Jurors are counted, never named, anywhere.
+  Probed headlessly with a stubbed database (both editions, 1280 and 390 px):
+  two teams deduped from four addresses, the write to `_release`, the PUT
+  with the five scores, replay after reload, the own-program rule, the
+  summary on the screen, the ranking, no errors, no sideways scroll. ⚠ Not
+  verified: whether every Netlify site allows framing (Netlify sets no
+  X-Frame-Options by default; a student's own `<meta>` could refuse it —
+  hence the new-tab link), and the real `_release` write from the room.

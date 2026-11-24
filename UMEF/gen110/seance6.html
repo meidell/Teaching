@@ -335,6 +335,18 @@
     <div class="caption" id="juryCap"></div>
   </div>
 
+  <div class="card" id="tvCard">
+    <span class="label try">Essayez ici · 2 · notez le programme à l’écran</span>
+    <div class="cardsteps"><ol>
+      <li><b>Le prof ouvre un programme sur l’écran de la salle.</b> Cette page le suit toute seule : son nom apparaît ci-dessous, avec un lien pour l’ouvrir sur votre téléphone.</li>
+      <li><b>Essayez-le, puis cliquez 0, 1 ou 2 sur chacun des cinq critères.</b> Dès que les cinq cases sont remplies, votre note part, et l’écran de la salle montre la moyenne de la classe sous le programme. Vous ne notez pas votre propre programme.</li>
+      <li><b>Quand le prof passe au programme suivant, la grille change.</b> Vous pouvez corriger une note tant que le programme est à l’écran.</li>
+    </ol></div>
+    <div id="tvJudge"></div>
+    <div class="caption" id="tvCap"></div>
+    <a id="juryTvLink" class="btn" href="jury-tv.html" target="_blank" rel="noopener" style="display:none;margin-top:10px;">📺 Le jury sur l’écran de la salle (enseignant)</a>
+  </div>
+
   <div class="card">
     <span class="label case">Votre carnet · le vote</span>
     <div class="wb">
@@ -447,14 +459,14 @@ var SECTIONS=[
 var MOD='w6';
 var KEY='gen110_w6_progress_v2';   /* v1 = the CV séance, now planned for séance 8 */
 /* widget interactions that count beyond classify rows and workbook */
-var EXTRA_STEPS=['brief','run','fix','prompt','v1ok','loops','v2ok','dl','pub','jury','out0','out1','out2'];
+var EXTRA_STEPS=['brief','run','fix','prompt','v1ok','loops','v2ok','dl','pub','jury','juge','out0','out1','out2'];
 var EXERCISES=[];   /* no exercise set this séance */
 /* every EXTRA_STEP is written once to <sid>/mod/w6/steps/<key> = {t, ts}
    for the dashboard's Activity tab (labels in English, as the dashboard is) */
 var STEP_T={brief:'6.0 · chose a challenge',run:'6.1 · ran the starting program',fix:'6.1 · fixed the planted error (no runtime error, code changed)',
   prompt:'6.2 · copied a 5/5 description',v1ok:'6.2 · sprint 1: all seven checks green',loops:'6.2 · ran the sandbox three times or more',
   v2ok:'6.3 · sprint 2: three upgrades detected, checks still green',dl:'6.4 · downloaded index.html',pub:'6.4 · pasted a valid https address',
-  jury:'6.5 · scored their own program on the five criteria',
+  jury:'6.5 · scored their own program on the five criteria',juge:'6.5 · scored a program shown on the room screen',
   out0:'6.6 · final file kept in the project folder',out1:'6.6 · plan line written on the Project page',out2:'6.6 · address sent to the partner'};
 var STEP_DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app';
 function stepSid(){var a=null;try{a=JSON.parse(localStorage.getItem('gen110_auth')||'null');}catch(e){}return (a&&a.sid)?a.sid:null;}
@@ -548,6 +560,7 @@ var REQ={
       ['step:pub','Une adresse https valable collée'],
       ['wb:w6_phone','Le carnet : le test sur le téléphone']],
   sj:[['step:jury','Votre programme noté sur les cinq critères'],
+      ['step:juge','Au moins un programme de l’écran noté sur les cinq critères'],
       ['wb:w6_vote','Le carnet : votre vote, avec les raisons']],
   s6:[['wb:w6_projet','Le carnet : l’écran de votre projet, la version 1'],
       ['step:out0','Le fichier final gardé dans le dossier du projet'],
@@ -587,7 +600,7 @@ document.getElementById('resetLink').addEventListener('click',function(e){
   e.preventDefault();
   if(!confirm('Réinitialiser votre progression et vos réponses de la séance 6 sur cet appareil ? Le code du bac à sable est effacé aussi.'))return;
   try{localStorage.removeItem(KEY);
-    ['gen110_w6_reads','gen110_done_w6','gen110_ex_w6','gen110_w6_code','gen110_w6_runs','gen110_w6_brief','gen110_w6_pq','gen110_w6_jury'].forEach(function(k){localStorage.removeItem(k);});
+    ['gen110_w6_reads','gen110_done_w6','gen110_ex_w6','gen110_w6_code','gen110_w6_runs','gen110_w6_brief','gen110_w6_pq','gen110_w6_jury','gen110_w6_juge'].forEach(function(k){localStorage.removeItem(k);});
     Object.keys(localStorage).forEach(function(k){if(k.indexOf('gen110_work_w6_')===0)localStorage.removeItem(k);});
   }catch(err){}
   document.querySelectorAll('[data-work]').forEach(function(el){el.value='';});
@@ -902,6 +915,60 @@ buildGrid('juryGrid','juryCap','gen110_w6_jury',[
   ['Ça tient sur un téléphone','0 : illisible · 1 : ça déborde un peu · 2 : parfait'],
   ['Une chose que personne n’a demandée','0 : rien · 1 : une petite touche · 2 : une vraie idée']
 ],['Notre programme'],'jury','votre note est sur le tableau de bord.','Jury · séance 6','w6_vote');
+
+/* ---- 6.5 the program on the room's screen (24 Nov 2026). jury-tv.html (the
+   instructor's screen) writes _release/w6/jury = {cur, list, ts}; this page
+   polls it every 6 s, draws the five criteria for the program `cur`, and
+   writes the student's score to <sid>/jury/<cur> = {u, s[5], ts} — the
+   student's own node, which the $sid rule lets a device write. The screen
+   aggregates every <sid>/jury. A student never scores their own address. ---- */
+(function tvJudge(){
+  var box=document.getElementById('tvJudge'),cap=document.getElementById('tvCap');if(!box)return;
+  var CRIT=[['Ça marche sans erreur','0 : ça plante · 1 : une fois sur deux · 2 : toujours'],
+    ['On comprend sans explication','0 : il faut qu’on explique · 2 : on a joué tout seul'],
+    ['Ça fait ce que le défi demande','0 : autre chose · 1 : en partie · 2 : tout'],
+    ['Ça tient sur un téléphone','0 : illisible · 1 : ça déborde un peu · 2 : parfait'],
+    ['Une chose que personne n’a demandée','0 : rien · 1 : une petite touche · 2 : une vraie idée']];
+  var K='gen110_w6_juge',st=lsGet(K,{}),cur=null,curItem=null,lastSig='';
+  function norm(u){u=String(u||'').trim().split(/\s/)[0];if(!/^https?:\/\//i.test(u))return '';return u.replace(/\/+$/,'').toLowerCase();}
+  function mine(){var el=document.querySelector('[data-work="w6_url"]');return norm(el&&el.value);}
+  function sent(){return Object.keys(st).filter(function(k){return st[k]&&st[k].ok;}).length;}
+  function paintCap(){var n=sent();cap.textContent=n?n+' programme'+(n>1?'s':'')+' noté'+(n>1?'s':'')+' depuis cet appareil':'';if(n)markStep('juge');}
+  function push(k){
+    var sid=stepSid(),r=st[k];if(!r)return;
+    if(!sid){r.ok=false;cap.textContent='⚠ Connectez-vous (le bouton en bas à droite) pour que votre note compte.';return;}
+    fetch(STEP_DB+'/gen110/'+encodeURIComponent(sid)+'/jury/'+encodeURIComponent(k)+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({u:r.u,s:r.s,ts:Date.now()})})
+      .then(function(x){r.ok=x.ok;lsSet(K,st);if(!x.ok)cap.textContent='⚠ La base a refusé la note ('+x.status+'). Réessayez dans un instant.';else paintCap();})
+      .catch(function(){r.ok=false;lsSet(K,st);cap.textContent='⚠ Pas de réseau : la note sera renvoyée au prochain clic.';});
+  }
+  function paint(){
+    if(!curItem){box.innerHTML='<p style="color:var(--grey);font-size:14px;margin:0;">Aucun programme à l’écran pour l’instant. Cette ligne change toute seule quand le prof en ouvre un.</p>';return;}
+    if(curItem.u===mine()){box.innerHTML='<p style="color:var(--grey);font-size:14px;margin:0;"><b>'+esc(curItem.t)+'</b> est à l’écran — c’est le vôtre. Vous ne le notez pas ici (vous l’avez noté au-dessus).</p>';return;}
+    var r=st[cur]||{u:curItem.u,s:[null,null,null,null,null]};
+    var html='<p style="margin:0 0 8px;font-size:15px;"><b>À l’écran : '+esc(curItem.t)+'</b> · <a href="'+esc(curItem.u)+'" target="_blank" rel="noopener">ouvrir sur mon téléphone ↗</a></p>'+
+      '<div class="grid-scores"><table><thead><tr><th>Critère</th><th>Ma note</th></tr></thead><tbody>'+
+      CRIT.map(function(c,i){var v=r.s[i];return '<tr><td class="cr"><b>'+c[0]+'</b><small>'+c[1]+'</small></td><td><div style="display:flex;gap:6px;">'+[0,1,2].map(function(n){return '<button class="cell v'+(v===n?n:'')+'" data-i="'+i+'" data-v="'+n+'">'+n+'</button>';}).join('')+'</div></td></tr>';}).join('')+
+      '<tr class="tot"><td>Total / 10</td><td>'+(r.s.every(function(v){return v!=null;})?r.s.reduce(function(a,b){return a+b;},0):'–')+'</td></tr></tbody></table></div>';
+    box.innerHTML=html;
+    box.querySelectorAll('button.cell').forEach(function(b){b.addEventListener('click',function(){
+      var r=st[cur]||(st[cur]={u:curItem.u,s:[null,null,null,null,null]});r.s[+b.dataset.i]=+b.dataset.v;r.ok=false;lsSet(K,st);paint();
+      if(r.s.every(function(v){return v!=null;}))push(cur);
+    });});
+  }
+  function poll(){
+    if(document.hidden)return;
+    fetch(STEP_DB+'/gen110/_release/w6/jury.json').then(function(x){return x.ok?x.json():null;}).then(function(j){
+      var sig=JSON.stringify(j&&j.cur)+'|'+(j&&j.list?j.list.length:0);
+      if(sig===lastSig)return;lastSig=sig;
+      cur=j&&j.cur||null;curItem=null;
+      if(j&&j.list)j.list.forEach(function(it){if(it&&it.k===cur)curItem=it;});
+      paint();
+    }).catch(function(){});
+  }
+  paint();paintCap();poll();setInterval(poll,6000);
+  var ue=document.querySelector('[data-work="w6_url"]');if(ue)ue.addEventListener('input',paint);   /* the own-program rule follows the address box */
+  try{if(window.AdminGate&&AdminGate.isUnlocked()){var a=document.getElementById('juryTvLink');if(a)a.style.display='inline-block';}}catch(e){}
+})();
 
 
 /* ---- 6.6 what you keep ---- */
