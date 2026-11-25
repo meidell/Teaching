@@ -417,3 +417,37 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   runs (notes say when to press Deal) · Steps 3–5 · debrief: deal.html tab 2, then the numbers each
   side held (shown only at the end), four question slides with what to draw out in the notes ·
   close. No overflow at 1280×720 or 1440×900. A gold "▶ Slides" button in week5.html's top bar.
+
+- **Session 6 — *How to read a campaign report and find the content creator
+  with bought followers* (`week6.html`, built 25 Nov 2026; the hub dated it
+  Thu 19 Nov, already past — the page names no date), six steps, `total:6`.**
+  Step 1 = the experiment's weekly check (`w6_gsc`, `w6_quoted`). Step 2, four
+  mechanisms: A reach / impressions / views / frequency (platform-counted,
+  the brand sees screenshots); B engagement rate by followers vs by reach,
+  with an off-case bakery toy (228 actions: 1.9 % vs 15.2 %); C earned media
+  value and why finance rejects it, a toy (EMV CHF 1,200 vs margin CHF 480);
+  D clicks, UTM, attribution window, code, attributed sales, CPA;
+  `w6_least`. Step 3: how followers/likes are bought (farms, scripts, pods,
+  follow-unfollow, platform purges), the six signs each with its innocent
+  explanation, an eight-row sort (`w6_sortdone`). Step 4: the agency's report
+  on the FICTIONAL Sonnaz Audio November campaign, five content creators of
+  the Session 4 pool (`CR`: followers, reach, impressions, likes, comments,
+  shares, saves, clicks, sales, fee, countries, 12 weeks of followers and
+  median views, five comments). **@objets.zurich (a14) bought followers and
+  likes** (+8,800 in week 8, views flat; 1,450 likes from 2,100 reached; India
+  22 % / Switzerland 18 % against its S4 card's 60 %; 9 clicks, 0 sales).
+  Decoys: @genevadaily (reach 5.6 %, old real account), @techbro.ch (+31,000
+  in week 5 = a 1.2-million-view video; international tech audience),
+  @zug.commute (ER 26 % by followers on TikTok; 16.5 % by reach, 19 sales).
+  Agency EMV = imp × 30/1000 + likes × 0.8 + comments × 5 + shares × 8 +
+  saves × 2 = CHF 13,809 for CHF 7,800 fees; 37 sales, CPA CHF 211 — all
+  checked in Python. Ticks per card `w6_ticks`; verdict `w6_verdict`,
+  `w6_evidence` (≤ 120), `w6_decoy` → `_wall/w6verdict` (src `V:<id>`); the
+  answer and the class's verdicts open only after the team posted. Step 5:
+  keep / context / drop for 11 numbers (`METRICS`, model answer in `m[3]`),
+  a finance table drawn from the choices, `w6_rule`, `w6_std` → `_wall/w6std`
+  (src `S:fol=d,imp=c,…`). Step 6: the class tally (Keep when > half keep),
+  the model paragraph, `w6_standard`. The verdict is also written to
+  `creator_work_w6_verdict` by the page itself (the gate reads it before
+  progress.js may have). Tested headless with a stubbed wall: all six steps,
+  reload keeps the answer open, no errors, no sideways scroll at 1280/420.
