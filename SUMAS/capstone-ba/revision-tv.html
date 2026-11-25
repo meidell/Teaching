@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The wind quiz · the screen · Capstone</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<script src="/shared/adminui.js"></script>
+<script src="revision.js"></script>
+<style>
+/* =====================================================================
+   CAPSTONE · THE WIND QUIZ — the room's screen (25 Nov 2026), a copy of
+   HEG/statistics/revision-tv.html; instructor's device.
+   Drives the game: "New game" writes capstone-ba/_release/revision/state
+   = {g, q:-1, phase:'lobby'} with the ID token; "Lancer" writes phase 'q'
+   with `started`, counts down REV_TIME seconds on the screen, polls every
+   player's capstone-ba/<sid>/kahoot/<g>.json (sids from a shallow read of the
+   namespace, as board.html) and shows how many have answered; at zero
+   writes phase 'rev', draws the A–D split with the right answer, the
+   explanation and the top ten; "Suivante" moves on; after the last
+   question, phase 'end' and the podium. Points as in revision.js.
+   Keys: space = the next action, ← → nothing else. Names are shown: it is
+   a leaderboard.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#1E3B22;--card:#2C5530;--line:rgba(255,255,255,.16);--ink:#fff;--soft:rgba(255,255,255,.8);--dim:rgba(255,255,255,.55);--acc:#F2C14E;--ok:#5CC98A;--no:#E86A6A;}
+html,body{height:100%;}
+body{font-family:"Avenir Next","Avenir","Nunito Sans","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;background:rgba(30,59,34,.96);border-bottom:1px solid var(--line);}
+.bar .crs{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:var(--dim);}
+.bar h1{font-size:17px;font-weight:800;}
+.sp{flex:1;}
+.ctl{display:inline-flex;align-items:center;gap:6px;font:700 13px inherit;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;}
+.ctl .ic{width:15px;height:15px;}
+.ctl:hover{border-color:var(--acc);color:#fff;}
+.ctl.pri{background:var(--acc);border-color:var(--acc);color:#1E3B22;font-size:15px;padding:9px 18px;}
+.ctl:disabled{opacity:.4;cursor:default;}
+.main{flex:1;padding:22px 34px 30px;overflow:auto;}
+.meta{font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);font-weight:800;margin-bottom:8px;display:flex;gap:18px;flex-wrap:wrap;}
+.q{font-size:clamp(24px,3.6vw,42px);font-weight:800;line-height:1.25;margin:4px 0 18px;max-width:28ch;}
+.tbar{height:14px;background:rgba(255,255,255,.12);border-radius:7px;overflow:hidden;margin:0 0 18px;}
+.tbar i{display:block;height:100%;background:var(--acc);transition:width .25s linear;}
+.ans{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.ans .o{border:2px solid var(--line);border-radius:16px;padding:16px 18px;font-size:clamp(16px,2vw,24px);font-weight:700;display:flex;gap:14px;align-items:center;background:var(--card);position:relative;overflow:hidden;}
+.ans .o b{flex:none;width:44px;height:44px;border-radius:11px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.ans .o:nth-child(1) b{background:#C0392B;} .ans .o:nth-child(2) b{background:#1F6FB2;} .ans .o:nth-child(3) b{background:#C98A12;} .ans .o:nth-child(4) b{background:#2F855A;}
+.ans .o.ok{border-color:var(--ok);box-shadow:0 0 0 3px rgba(92,201,138,.35);} .ans .o.dim{opacity:.45;}
+.ans .o .cnt{margin-left:auto;font-size:clamp(18px,2.4vw,30px);font-variant-numeric:tabular-nums;color:var(--acc);}
+.ans .o .fill{position:absolute;left:0;bottom:0;height:5px;background:var(--acc);}
+.big{font-size:clamp(60px,10vw,120px);font-weight:800;line-height:1;color:var(--acc);font-variant-numeric:tabular-nums;}
+.row{display:flex;gap:30px;align-items:center;flex-wrap:wrap;margin:10px 0 16px;}
+.row .k{font-size:14px;color:var(--dim);}
+.row .k b{display:block;font-size:34px;color:#fff;font-variant-numeric:tabular-nums;}
+.wrong{margin:16px 0 0;font-size:clamp(17px,2.2vw,26px);color:var(--soft);}
+.wrong b{font-size:clamp(28px,3.6vw,44px);color:var(--no);font-variant-numeric:tabular-nums;margin-right:6px;}
+.why{background:var(--card);border-left:5px solid var(--ok);border-radius:10px;padding:12px 16px;font-size:clamp(15px,1.8vw,21px);margin:16px 0;max-width:70ch;}
+.lb{margin-top:10px;}
+.lb h2{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.lb table{border-collapse:collapse;width:100%;max-width:720px;font-size:clamp(15px,1.8vw,22px);}
+.lb td{padding:6px 10px;border-bottom:1px solid var(--line);}
+.lb td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--acc);}
+.lb td.n{color:var(--dim);width:40px;}
+.lb tr.up td{color:var(--ok);}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin:10px 0 24px;align-items:end;}
+.podium .p{background:var(--card);border-radius:16px;padding:18px;text-align:center;border:2px solid var(--line);}
+.podium .p.g{border-color:var(--acc);padding-top:34px;} .podium .p .m{font-size:40px;} .podium .p .nm{font-size:clamp(16px,2vw,24px);font-weight:800;margin:6px 0;} .podium .p .pt{font-size:clamp(20px,2.6vw,34px);color:var(--acc);font-weight:800;font-variant-numeric:tabular-nums;}
+.list{columns:2;column-gap:30px;max-width:900px;font-size:15px;color:var(--soft);}
+.list div{break-inside:avoid;padding:3px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;}
+.note{margin:40px auto;max-width:560px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;}
+.note h2{font-size:20px;margin-bottom:8px;} .note p{color:var(--soft);font-size:14px;line-height:1.5;}
+.lobby{text-align:center;padding:30px 0;}
+.lobby .url{font:800 clamp(22px,4vw,46px) ui-monospace,Menlo,monospace;color:var(--acc);margin:10px 0;}
+.lobby p{color:var(--soft);font-size:clamp(15px,1.8vw,22px);max-width:60ch;margin:8px auto;}
+.lobby .cnt{font-size:16px;color:var(--dim);margin-top:14px;}
+.warn{color:var(--acc);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="bar" id="bar" style="display:none">
+  <span class="crs">Capstone</span><h1>The wind quiz</h1>
+  <span class="sp"></span>
+  <span class="warn" id="msg"></span>
+  <button class="ctl" id="bNew"><i data-ic="refresh"></i>New game</button>
+  <button class="ctl pri" id="bGo">Start the game</button>
+  <button class="ctl" id="bTv" title="Full screen"><i data-ic="fullscreen"></i>TV</button>
+</div>
+<div class="main" id="main"></div>
+<div id="gate"></div>
+
+<script src="/shared/config.js"></script>
+<script src="/shared/admin-gate.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script>
+(function(){
+var DB=CourseConfig.DB,NS='capstone-ba',BANK=window.REV_BANK;
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','"':'&quot;','>':'&gt;'}[c];});}
+var TOKEN='';
+async function tok(){try{TOKEN=await FBAuth.token();}catch(e){TOKEN='';}return TOKEN?'?auth='+encodeURIComponent(TOKEN):'';}
+var S=null,SIDS=null,ANS={},TIMER=null,POLL=null,startedAt=0,prevRank={};
+function points(){var tot={};Object.keys(ANS).forEach(function(sid){var o=ANS[sid]||{},t=0,n='';Object.keys(o).forEach(function(q){var m=o[q],it=BANK[+q];if(!m||!it)return;if(m.n)n=m.n;t+=REV_POINTS(it,m.a===it.a,m.t);});if(n)tot[sid]={n:n,p:t};});return tot;}
+function ranking(upTo){var tot={};Object.keys(ANS).forEach(function(sid){var o=ANS[sid]||{},t=0,n='';Object.keys(o).forEach(function(q){if(upTo!=null&&+q>upTo)return;var m=o[q],it=BANK[+q];if(!m||!it)return;if(m.n)n=m.n;t+=REV_POINTS(it,m.a===it.a,m.t);});if(n)tot[sid]={n:n,p:t};});
+  return Object.keys(tot).map(function(s){return {sid:s,n:tot[s].n,p:tot[s].p};}).sort(function(a,b){return b.p-a.p||a.n.localeCompare(b.n);});}
+async function write(st){
+  var a=await tok();if(!a){$('msg').textContent='⚠ sign in with the instructor account';return false;}
+  st.ts=Date.now();
+  var r=await fetch(DB+'/'+NS+'/_release/revision/state.json'+a,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(st)}).catch(function(){return {ok:false,status:0};});
+  if(!r.ok){$('msg').textContent='⚠ the database refused the write ('+r.status+'): check the capstone-ba rules';return false;}
+  $('msg').textContent='';S=st;return true;
+}
+async function sids(){
+  var a=await tok();var r=await fetch(DB+'/'+NS+'.json'+(a?a+'&':'?')+'shallow=true');if(!r.ok){needAuth();return null;}
+  var keys=Object.keys((await r.json())||{}).filter(function(k){return k.charAt(0)!=='_';});SIDS=keys;return keys;
+}
+async function readAnswers(){
+  if(!S||!S.g)return;if(!SIDS)await sids();if(!SIDS)return;
+  var a=await tok();
+  var rows=await Promise.all(SIDS.map(function(sid){return fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/kahoot/'+encodeURIComponent(S.g)+'.json'+a).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;}).then(function(o){return [sid,o];});}));
+  ANS={};rows.forEach(function(r){if(r[1])ANS[r[0]]=r[1];});
+  render();
+}
+function answered(q){var n=0,c=[0,0,0,0];Object.keys(ANS).forEach(function(sid){var m=ANS[sid]&&ANS[sid][q];if(m&&m.a>=0&&m.a<4){n++;c[m.a]++;}});return {n:n,c:c};}
+function render(){
+  var main=$('main');
+  if(!S||!S.g){main.innerHTML='<div class="lobby"><p>No game yet. Click <b>New game</b>, then tell the students to open the page on their phones.</p></div>';$('bGo').textContent='Start the game';$('bGo').disabled=true;return;}
+  $('bGo').disabled=false;
+  if(S.phase==='lobby'){
+    var tot=points();
+    main.innerHTML='<div class="lobby"><div class="meta" style="justify-content:center">The wind quiz · forty-five questions on wind energy and the capstone</div><p>Open this page on your phone, signed in to your course account:</p><div class="url">janerikmeidell.com/SUMAS/capstone-ba/revision.html</div><p>Each question has four answers and '+REV_TIME(BANK[0])+' seconds. A right answer earns 500 points, plus up to 500 points for speed. The ranking appears here after every question.</p><div class="cnt">The game starts when your instructor launches question 1.</div></div>';
+    $('bGo').textContent='Launch question 1';return;
+  }
+  var q=BANK[S.q];
+  if(S.phase==='end'){
+    var rk=ranking(null);
+    main.innerHTML='<div class="meta"><span>The game is over · '+BANK.length+' questions</span></div><h2 class="q">The final ranking</h2>'+
+      '<div class="podium">'+[1,0,2].map(function(i){var r=rk[i];return '<div class="p'+(i===0?' g':'')+'"><div class="m">'+['🥇','🥈','🥉'][i]+'</div><div class="nm">'+(r?esc(r.n):'—')+'</div><div class="pt">'+(r?r.p:'')+'</div></div>';}).join('')+'</div>'+
+      '<div class="list">'+rk.slice(3).map(function(r,i){return '<div><span>'+(i+4)+'. '+esc(r.n)+'</span><span>'+r.p+'</span></div>';}).join('')+'</div>';
+    $('bGo').textContent='Finished';$('bGo').disabled=true;return;
+  }
+  var A=answered(S.q),T=REV_TIME(q)*1000,left=Math.max(0,T-(Date.now()-startedAt));
+  var head='<div class="meta"><span>Question '+(S.q+1)+' / '+BANK.length+'</span><span>'+(q.s?'Week '+q.s:'wind basics')+'</span><span>'+(q.lvl===1?'easy':q.lvl===2?'medium':'difficult')+' · '+REV_TIME(q)+' s</span><span>'+A.n+' answer'+(A.n===1?'':'s')+'</span></div><div class="q">'+q.q+'</div>';
+  if(S.phase==='q'){
+    main.innerHTML=head+'<div class="tbar"><i id="tf" style="width:'+(left/T*100)+'%"></i></div><div class="ans">'+q.opts.map(function(o,j){return '<div class="o"><b>'+'ABCD'[j]+'</b><span>'+o+'</span></div>';}).join('')+'</div>';
+    $('bGo').textContent='Reveal now';
+  }else{
+    var mx=Math.max(1,A.c[0],A.c[1],A.c[2],A.c[3]),rk=ranking(S.q),prev=ranking(S.q-1),pp={};prev.forEach(function(r,i){pp[r.sid]=i;});
+    main.innerHTML=head+'<div class="ans">'+q.opts.map(function(o,j){return '<div class="o '+(j===q.a?'ok':'dim')+'"><b>'+'ABCD'[j]+'</b><span>'+o+'</span><span class="cnt">'+A.c[j]+'</span><i class="fill" style="width:'+(A.c[j]/mx*100)+'%"></i></div>';}).join('')+'</div>'+
+      (A.n?'<div class="wrong"><b>'+Math.round(100*(A.n-A.c[q.a])/A.n)+' %</b> answered incorrectly · '+(A.n-A.c[q.a])+' of '+A.n+' answer'+(A.n===1?'':'s')+'</div>':'<div class="wrong">Nobody answered this question.</div>')+'<div class="why">'+q.w+'</div><div class="lb"><h2>Ranking after '+(S.q+1)+' question'+(S.q?'s':'')+'</h2><table>'+rk.slice(0,10).map(function(r,i){var was=pp[r.sid];return '<tr'+(was!=null&&was>i?' class="up"':'')+'><td class="n">'+(i+1)+'</td><td>'+esc(r.n)+'</td><td class="r">'+r.p+'</td></tr>';}).join('')+'</table></div>';
+    $('bGo').textContent=S.q+1<BANK.length?'Next question ('+(S.q+2)+')':'Final ranking';
+  }
+}
+function stopTimers(){if(TIMER){clearInterval(TIMER);TIMER=null;}if(POLL){clearInterval(POLL);POLL=null;}}
+async function go(){
+  if(!S||!S.g)return;
+  if(S.phase==='lobby'||(S.phase==='rev'&&S.q+1<BANK.length)){
+    var q=S.phase==='lobby'?0:S.q+1;
+    if(!await write({g:S.g,q:q,phase:'q',started:Date.now()}))return;
+    startedAt=Date.now();stopTimers();render();
+    var T=REV_TIME(BANK[q])*1000;
+    TIMER=setInterval(function(){var f=$('tf');var left=Math.max(0,T-(Date.now()-startedAt));if(f)f.style.width=(left/T*100)+'%';if(left<=0)reveal();},200);
+    POLL=setInterval(readAnswers,1000);readAnswers();
+  }else if(S.phase==='q'){reveal();}
+  else if(S.phase==='rev'){if(await write({g:S.g,q:S.q,phase:'end'})){stopTimers();await readAnswers();render();}}
+}
+async function reveal(){
+  if(!S||S.phase!=='q')return;stopTimers();
+  await new Promise(function(r){setTimeout(r,1200);});   /* the slow phones' last answers */
+  await readAnswers();
+  if(await write({g:S.g,q:S.q,phase:'rev',started:S.started}))render();
+}
+$('bNew').addEventListener('click',async function(){
+  if(S&&S.g&&S.phase!=='end'&&!confirm('Abandon the game in progress and open a new one?'))return;
+  stopTimers();ANS={};SIDS=null;
+  if(await write({g:'g'+Date.now().toString(36),q:-1,phase:'lobby'}))render();
+});
+$('bGo').addEventListener('click',go);
+$('bTv').addEventListener('click',function(){if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(function(){});});
+document.addEventListener('keydown',function(e){if(e.key===' '||e.key==='ArrowRight'){e.preventDefault();go();}});
+function needAuth(){$('bar').style.display='none';$('main').innerHTML='';$('gate').innerHTML='<div class="note"><h2>Sign in to run the wind quiz</h2><p style="margin-bottom:14px">The screen writes the state of the game and reads every student’s answers, so it needs the instructor account.</p><div id="auth"></div></div>';FBAuth.form($('auth'),function(){boot();},NS);}
+async function boot(){
+  $('gate').innerHTML='';$('bar').style.display='flex';
+  var r=await fetch(DB+'/'+NS+'/_release/revision/state.json').then(function(x){return x.ok?x.json():null;}).catch(function(){return null;});
+  S=r&&r.g?r:null;if(S&&S.phase==='q'){S.phase='rev';}   /* a reload during a question: show it revealed */
+  if(S&&S.g)await readAnswers();render();
+  if(window.AdminUI&&AdminUI.icons)AdminUI.icons(document);
+}
+$('gate').innerHTML='<div class="note"><p>Loading…</p></div>';
+FBAuth.restore(function(u){if(!u){needAuth();return;}boot();});
+})();
+</script>
+</body>
+</html>
