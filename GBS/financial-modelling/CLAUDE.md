@@ -260,3 +260,40 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   Correct, starter code and wrong answers give the intended message, the chart renders, 390 px fits,
   no page errors.
 
+- **Session 5 — *Free cash flow, honestly* (`week6.html`, `w6`, built 25 Nov 2026 for Thu 26 Nov), `total:7`,
+  a self-run MANDATE on Session 4's pattern, HOMEWORK after a lecture deck (as Session 4), handed in on the
+  page, due before Session 6 (Thu 3 Dec, 18:45).** ⚠ The hub's TERM still dates w6 to week 06 (Thu 19 Nov);
+  it was taught 26 Nov. Boreal asks for Meridia's stand-alone value (no synergies). **FCFF** = EBIT × (1 − 24 %)
+  + D&A − capex − ΔNWC, from week5.html's `model()` unchanged (base, average interest, payout 50 %):
+  **9.19 · 10.09 · 10.69 · 11.34 · 12.04**; FY2026 EBIT 20.21, NOPAT 15.36, FCFF − NI −3.78; lender FY2026
+  3.38. Reconciled two ways on the page (CFO − capex + interest × 0.76; lenders + dividend + Δcash), green
+  every year; FCFF does not depend on payout or interest method. **WACC from REAL, dated market data**
+  (the first in the course): Bund 10y 2.85 % on 31 Dec 2025 (BMF Monatsbericht Jan 2026); Damodaran 1 Jan
+  2026 ERPs mature 4.23, Spain 5.78, France 5.01, Italy 6.69 (rating-based totals; downloaded ctryprem.xlsx);
+  Damodaran Western Europe betas 5 Jan 2026, Transportation (56): βu corrected for cash 0.535 → 0.54, D/E
+  77.1 % → 0.77; Europe EV/EBITDA 5 Jan 2026 Transportation 12.6, Trucking 9.1, Restaurant/Dining 11.5.
+  **Case figures introduced here**: revenue split Spain 60 / France 25 / Italy 15 %; Boreal's size/unlisted
+  premium 3.0 points on the cost of equity; Kd 4.6 % (Session 4). Results: ERP 5.72, βL 0.856, Ke 7.75 + 3.0
+  = 10.75, D/V 43.5 %, Kd after tax 3.50, **WACC 7.59 %** (5.90 % without the premium). DCF at 7.59 / g 2 %
+  (end-of-year discounting to 31 Dec 2025, net debt 60.0, 40.0 m shares): Σ PV 42.66, TV 219.69, EV
+  **195.04**, **78.1 % in TV**, **€3.38**; exit 9.1× → TV 365.68, EV 296.31, €5.91 (85.6 %). Four tests:
+  TV share · implied multiple 5.47× · implied g of the exit multiple 4.16 % · normalised FY2031 (capex =
+  FA × (1/12 + g), ΔNWC = NWC × g) FCFF 17.39 vs 12.28 → EV 258.45, €4.96. Range rows: lender case €2.27,
+  Session 1's 8.5 % €2.68, no premium €5.53. ⚠ **The value moved from Session 1–2's €2.48**: different
+  forecast (5 years, balance-sheet D&A and NWC) and a sourced WACC; Session 6 (sensitivity, football field)
+  should start from these figures. Steps: request + guess (`w6_team`, `w6_pred`, answer band 75–85 %) ·
+  FCFF + 5 checks (`w6_fcf`) · WACC data pack + calculator + 5 checks (`w6_wacc`) · DCF two ways + 5 checks
+  (`w6_tv`) · four tests + 5 checks, reply parts 3–4 (`w6_value`, `w6_rests`) · reply → `w6_memo` · quiz
+  **`jeopardy.html?set=s5`** (added). No workbook (as Session 4); "In Excel" drawers. Python (scratch
+  final.py) = the page's JS under node, 25 Nov 2026; NOT recalculated in Excel. Probed headlessly: 7/7, no
+  page errors, 1280 and 420 px no sideways scroll, state survives reload.
+- **`week6-slides.html` — the lecture deck for Session 5 (25 Nov 2026), 26 slides, week5-slides' engine.**
+  Parts 1–4 teach Steps 2–5 on **Forno Lumen** continued (€ thousand): FY2026 FCFF −254.0 vs NI 129.6, three
+  routes (222.0 − 500.0 + 24.0; lenders −242.9 + dividend 38.9 − cash 50.0); tax on EBIT 38.4 vs paid 32.4;
+  WACC 7.69 % (restaurants βu 0.59, D/E 0.39 → βL 0.774; Bund 2.85; Switzerland ERP 4.23; premium 3.0; Kd 5 %
+  × 0.8; 5.53 % without premium); FY2027–28 FCFF 133.8 / 138.7 (5 shops, +2 % per shop, capex 150); Σ PV
+  −9.4; Gordon TV 2,486.0 → EV 1,981.2, **100.5 % in TV**; exit 11.5× → 3,733.0, EV 2,979.6, implied g
+  3.83 %; implied multiple 7.66×; normalised FY2029 105.9 (capex 187.8 > 150) → EV 1,480.9 (the test goes
+  DOWN for the bakery, UP for Meridia); EV − net debt 450.0 = 1,531.2. Part 5 = the Session 4 homework
+  answers. Meridia only with FY2025 (FCF 9.28) and the method. "▶ Slides" in week6.html's top bar; hub card
+  has `slides` and `bring`.

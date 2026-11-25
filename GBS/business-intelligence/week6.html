@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 5 · Describe ÒRBITA's churn honestly: split it by city, by start month and by plan · GBS</title>
+<meta name="description" content="Session 5 of Business Intelligence (MIM). Descriptive statistics for a BI analyst: the distribution, the median and the percentiles instead of the mean alone, churn split by city, by the month a subscriber joined (cohorts) and by plan. Each team finds that ÒRBITA's flat company churn of 2.62 % hides Barcelona rising and Madrid falling, explains each movement, names the group of subscribers someone can act on, and publishes a one-page data profile as profile.html on its Netlify site.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="bi.css">
+<style>
+/* Session 5 — the distribution, the city split, the cohorts, the segment, the profile */
+.rt{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+.rt th,.rt td{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top;}
+.rt th{background:var(--surface);color:var(--navy);font-size:11.5px;}
+.rt td.r,.rt th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rt tr.tot td{font-weight:800;background:#F7F8FB;}
+.rt tr.hi td{background:#FFF4E3;}
+.rt td.up{color:#B00020;font-weight:700;} .rt td.dn{color:#1B7A3E;font-weight:700;}
+.tw{overflow-x:auto;margin:8px 0 14px;border-radius:10px;}
+.xt{border:1px solid var(--line);border-radius:12px;background:#fff;margin:10px 0;}
+.xt>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+.xt>div{padding:0 14px 12px;}
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0;}
+.dash div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
+.dash small{display:block;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);}
+.dash b{font-size:18px;color:var(--navy);font-variant-numeric:tabular-nums;}
+.dash .hl{border-color:var(--accent);background:#FFF8EC;}
+.chart{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 10px 6px;margin:10px 0;overflow-x:auto;}
+.chart svg{display:block;width:100%;min-width:520px;height:auto;}
+.chart .cc{font-size:12px;color:var(--grey);margin:4px 4px 2px;line-height:1.5;}
+.tog{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:13px;}
+.tog label{display:flex;gap:6px;align-items:center;cursor:pointer;}
+.qz{border:1px solid var(--line);border-radius:12px;background:#fff;padding:11px 13px;margin:10px 0;}
+.qz .qq{font-weight:800;color:var(--navy);font-size:13.5px;margin-bottom:6px;}
+.qz .qo{display:flex;flex-wrap:wrap;gap:7px;}
+.qz .qo button{font:700 12.5px inherit;color:var(--navy);background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;text-align:left;}
+.qz .qo button.ok{background:#EAF5EC;border-color:#1B7A3E;color:#1B7A3E;}
+.qz .qo button.no{background:#FDECEC;border-color:#E8A0AA;color:#B00020;text-decoration:line-through;}
+.qz .qw{font-size:12.5px;color:var(--ink-soft);margin-top:7px;line-height:1.5;display:none;}
+.qz .qw.show{display:block;}
+.qz.done{border-color:#9CCBA4;}
+.num{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+.num input{font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;padding:6px 9px;width:120px;}
+.num.ok input{border-color:#1B7A3E;background:#EAF5EC;} .num.no input{border-color:#B00020;background:#FDECEC;}
+.num .m{font-size:12.5px;color:var(--ink-soft);}
+.memo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13px;line-height:1.55;}
+.memo h4{font-size:13.5px;color:var(--navy);margin:12px 0 4px;} .memo h4:first-child{margin-top:0;}
+.memo .miss{color:#B00020;font-weight:700;}
+.memo table{border-collapse:collapse;width:100%;font-size:12px;} .memo td,.memo th{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left;}
+.memowrap{overflow-x:auto;}
+.memo svg{max-width:100%;height:auto;}
+</style>
+</head>
+<body data-course="bi" data-module="w6">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Week 06 · Session 5 · Thu 26 Nov</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="week6-slides.html" target="_blank" rel="noopener" style="background:var(--accent-bright);border-color:var(--accent-bright);color:var(--navy);">▶ Slides</a>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Week 06 · Session 5 · Thursday 26 November 2026 · 16:30–18:30</div>
+    <h1>Describe ÒRBITA's churn honestly: split it by city, by start month and by plan, and show the spread, not only the average</h1>
+    <div class="when">Your team works through this page on its own, and the instructor walks around and helps. Bring one laptop per team, signed in to this site. Same teams as Session 4.</div>
+    <p class="lead"><b>What the client asks for.</b> ÒRBITA's chief financial officer (CFO) writes: <i>"Thank you for the load reports. IT has now loaded the whole company for October with your rules. Our monthly churn is 2.62 %, the same as in May, and the board is pleased. Before I tell the board that nothing has changed, describe October for me on one page: what a typical subscriber does, which cities move, which subscribers leave, and which average I should stop quoting."</i></p>
+    <div class="doit"><div class="dh">What your team hands in on this page by 18:10 (Step 6)</div>
+      <p>Your team hands in a <b>one-page data profile</b> to ÒRBITA's CFO. The page builds it from what your team writes in Steps 2 to 6. The bar just below this box shows what your team has done and what is left.</p>
+      <ol class="doli">
+        <li><b>Describe the rides of a typical subscriber (Step 2)</b> in one sentence that uses the median and the spread, not the mean alone.</li>
+        <li><b>Split churn by city (Step 3)</b> and write which two cities move in opposite directions.</li>
+        <li><b>Split churn by the month each subscriber joined (Step 4)</b> and write why Barcelona rises and why Madrid falls.</li>
+        <li><b>Name the group of subscribers someone can act on (Step 5)</b>, who acts, and what they do.</li>
+        <li><b>Write the average your team refuses to report on its own, and why (Step 6a).</b></li>
+        <li><b>Publish (Step 6b).</b> One member downloads the profile as <b>profile.html</b> and adds it to your team's Netlify site, next to index.html, schema.html and etl.html, then pastes its address on the page.</li>
+        <li><b>Hand in (Step 6c).</b> One member presses <b>Hand in the data profile</b>.</li>
+        <li><b>Play the quiz (Step 7)</b> in the last 20 minutes: questions on today's work and on your own profile.</li>
+      </ol></div>
+    <p class="lead" style="font-size:13.5px"><b>Why today matters.</b> Your team has built the warehouse (Session 3) and loaded it (Session 4). Today is the first time anyone reads it. The first reading decides what the board believes, and a single company-wide number is the easiest thing to read and the easiest thing to get wrong: ÒRBITA's churn has stayed at about 2.6 % since May while two of its six cities moved by more than one percentage point, in opposite directions. Describing data honestly means showing how the numbers are spread and how they differ between groups, before anyone draws a conclusion from them.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 7</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <div class="plan">
+    <h2>How to work</h2>
+    <div class="ps">Do the steps in order, as a team, on one laptop or several. Each step says what to do in numbered actions and ends with a button. When one member types in a team field, it appears on every member's page. The questions in each step are answered by each member on their own laptop. If you are stuck, read the step again, then raise a hand. The hand-in closes at <b>18:10</b>, before the quiz.</div>
+    <ol>
+      <li><span class="t">1</span><span class="n"><b>Learn the words of descriptive statistics</b>: mean, median, percentile, distribution, segment, cohort, mix. Sort six questions.</span></li>
+      <li><span class="t">2</span><span class="n"><b>Describe the rides of 44,600 paying accounts</b> with a chart of how they are spread, and answer three questions.</span></li>
+      <li><span class="t">3</span><span class="n"><b>Split October's churn by city</b> and find the two cities that move in opposite directions. See last week's guess.</span></li>
+      <li><span class="t">—</span><span class="n">Take a break when your team is ready.</span></li>
+      <li><span class="t">4</span><span class="n"><b>Split churn by the month each subscriber joined</b> and find out why Barcelona rises and why Madrid falls.</span></li>
+      <li><span class="t">5</span><span class="n"><b>Split churn by plan and by rides in the first 14 days</b>, and name the group someone can act on.</span></li>
+      <li><span class="t">6</span><span class="n"><b>Publish the data profile and hand it in:</b> profile.html on your Netlify site.</span></li>
+      <li><span class="t">7</span><span class="n"><b>Play the team quiz</b> on the screen.</span></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="Why an average can hide a problem|w6_why">
+    <span class="tick">✅</span>
+    <span class="clock">Step 1 · reading</span>
+    <h2>Learn the words a BI analyst uses to describe data</h2>
+    <div id="teamsBox" class="teams"></div>
+    <ol><li>Check that your team is the right one on the board above. Join it if you are not in it.</li><li>Each member reads the two parts below and sorts the six questions at the end.</li><li>The team writes one sentence in the box: why can a company-wide average hide a problem? Then press <b>Done</b>.</li></ol>
+    <h3>Describing one number: the mean, the median and the percentiles</h3>
+    <p><b>Descriptive statistics</b> are the numbers that summarise data as it is, before anyone tests a cause or makes a forecast. Three of them describe how a number such as "rides per subscriber in October" is spread over the subscribers:</p>
+    <ul>
+      <li>The <b>mean</b> (the average) adds up all the values and divides by how many there are. Five subscribers who ride 0, 2, 7, 15 and 120 times have a mean of 144 ÷ 5 = 28.8 rides. One heavy rider pulls the mean far above what four of the five did.</li>
+      <li>The <b>median</b> is the middle value once the values are sorted: half of the subscribers are below it and half above. For the same five subscribers it is 7 rides. One heavy rider does not move it.</li>
+      <li>A <b>percentile</b> says how many values lie below a point. The 90th percentile (P90) is the value that 90 % of the subscribers do not exceed. The 25th and 75th percentiles (P25 and P75) mark where the middle half of the subscribers lies.</li>
+    </ul>
+    <p>The <b>distribution</b> is the whole picture: how many subscribers rode 0 times, 1 to 4 times, 5 to 9 times, and so on. A distribution is <b>skewed</b> when a long tail of large values sits on one side, as it does for rides and for money. When a distribution is skewed, the mean and the median differ, and the median describes the typical case better.</p>
+    <h3>Describing a rate: segments, cohorts and the mix</h3>
+    <p>A <b>rate</b> such as churn (cancellations ÷ paying accounts on the 1st of the month) can be split in two ways:</p>
+    <ul>
+      <li>A <b>segment</b> is a group of accounts that share a property: a city, a plan, a sales channel. Splitting by segment answers "where is churn high?".</li>
+      <li>A <b>cohort</b> is a group of accounts that joined in the same month: the July 2026 cohort is every account that signed up in July. Splitting by cohort answers "do the subscribers we win now stay as long as those we won before?". The <b>tenure</b> of an account is how many months it has been subscribed.</li>
+    </ul>
+    <p>The <b>mix</b> is the share of each group in the total. A company rate is an average of its groups' rates, weighted by the mix. So a company rate can change because the groups' rates change, or only because the mix changes: if a city wins many new subscribers, who always leave more often than old ones, the city's churn rises even if no subscriber behaves differently. When the split and the total point in opposite directions, statisticians call it <b>Simpson's paradox</b>.</p>
+    <div class="callout"><span class="ct">The one rule for today</span>Never report a company-wide number without having looked at how it is spread and how it splits by the groups someone can act on. A number that is the same as last month can hide two movements that cancel out.</div>
+    <h3>Sort: which view answers the question?</h3>
+    <div id="descRows"></div><div class="savenote" id="descCap"></div>
+    <div class="cap">
+      <label for="f_why">Write, as a team, one sentence: why can a company-wide average hide a problem?</label>
+      <input type="text" id="f_why" data-work="w6_why" data-worklabel="W6 · why an average can hide a problem" autocomplete="off" placeholder="Example: Because a city that gets worse and a city that gets better can cancel out in the total, so the average stays the same while both cities need a decision.">
+    </div>
+    <div class="btn-row"><button class="btn" id="s1Btn">Done</button><span class="savenote" id="s1Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2" data-board="A typical subscriber's month|w6_dist">
+    <span class="tick">✅</span>
+    <span class="clock">Step 2 · each member · part 1 of the profile</span>
+    <h2>Describe how many times ÒRBITA's 44,600 paying accounts rode in October</h2>
+    <p><b>Why this step exists.</b> The board pack says "12.5 rides per subscriber in October". That is the mean. Before your team reports churn, it checks whether the mean describes a typical subscriber, because the KPI card from Session 3 uses rides as its secondary KPI. The chart counts every account that was paying on 1 October as the KPI card defines it (active and paused, 44,600 accounts, the number from Session 4's bridge) and every counted ride in October, loaded with your rules: 555,552 rides.</p>
+    <ol><li>Read the chart. Each bar counts the accounts that rode 0 to 4 times, 5 to 9 times, and so on. The dark part of the first bar is the paused accounts, which cannot ride.</li><li>Switch the two boxes on and off, and watch the mean and the median.</li><li>Answer the three questions. A wrong answer is crossed out; try again.</li><li>The team writes one sentence that describes a typical subscriber's October. Then press <b>Done</b>.</li></ol>
+    <div class="tog"><label><input type="checkbox" id="tPaused" checked> Count the 4,532 paused accounts</label><label><input type="checkbox" id="tTop"> Leave out the 1 % of accounts with the most rides</label></div>
+    <div class="dash" id="distDash"></div>
+    <div class="chart"><div id="histSvg"></div><div class="cc">Accounts by number of counted rides in October 2026, in steps of 5 rides; the last bar holds every account with 60 rides or more (the most was 157). The gold line is the mean, the navy line the median.</div></div>
+    <details class="xt"><summary>Show the numbers behind the chart</summary><div><div class="tw" id="distTab"></div></div></details>
+    <div id="q2"></div>
+    <div class="cap">
+      <label for="f_dist">Write, as a team, one sentence for the CFO: what did a typical paying account do in October, and how are the rides spread?</label>
+      <textarea id="f_dist" data-work="w6_dist" data-worklabel="W6 · team · a typical subscriber's October" placeholder="Example: Half of our 44,600 paying accounts rode 7 times or fewer in October, 7,884 (18 %) did not ride at all, and the 10 % who rode most made 39 % of the rides; the mean of 12.5 rides describes nobody."></textarea>
+    </div>
+    <div class="btn-row"><button class="btn" id="s2Btn">Done</button><span class="savenote" id="s2Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3" data-board="The two cities that move apart|w6_city">
+    <span class="tick">✅</span>
+    <span class="clock">Step 3 · team · part 2 of the profile</span>
+    <h2>Split October's churn by city, and find the two cities that move in opposite directions</h2>
+    <p><b>Why this step exists.</b> The CFO's 2.62 % is the KPI card's churn for the whole company: cancellations in the month (without those undone within 30 days) ÷ accounts paying on the 1st (active and paused). The KPI card asks for it <b>by city</b>, because a city manager is the person who can act. The table and the chart below split it for the six months from May to October 2026. A <b>percentage point</b> is the difference between two percentages: from 2.5 % to 3.5 % is one percentage point.</p>
+    <div id="guess"></div>
+    <ol><li>Read the table and the chart. Click a city's name under the chart to draw it in colour.</li><li>Answer the three questions.</li><li>The team writes one sentence about the two cities. Then press <b>Done</b>.</li></ol>
+    <div class="tw" id="cityTab"></div>
+    <div class="chart"><div id="citySvg"></div><div class="cc" id="cityPick"></div></div>
+    <div id="q3"></div>
+    <div class="cap">
+      <label for="f_city">Write, as a team, one sentence: which two cities move in opposite directions, from what to what, and what happens to the company's churn?</label>
+      <textarea id="f_city" data-work="w6_city" data-worklabel="W6 · team · the two cities that move apart" placeholder="Example: From May to October Barcelona's churn rose from 2.5 % to 3.7 % and Madrid's fell from 3.2 % to 1.7 %, so the company's churn stayed at 2.6 % although our two largest cities moved by more than a point each."></textarea>
+    </div>
+    <div class="btn-row"><button class="btn" id="s3Btn">Done</button><span class="savenote" id="s3Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="Why Barcelona rises and Madrid falls|w6_cohort">
+    <span class="tick">✅</span>
+    <span class="clock">Step 4 · team · part 3 of the profile</span>
+    <h2>Split churn by the month each subscriber joined, and find out why Barcelona rises and Madrid falls</h2>
+    <p><b>Why this step exists.</b> A city's churn can rise for two different reasons, and they need two different decisions. Either the city's subscribers leave more often than before, or the city has more new subscribers, who always leave more often than old ones (a change in the mix, Step 1). Marketing tells you one fact: <b>from July to September 2026, Barcelona sold the city-flex plan with the first month for 1 euro</b> (normally 49 euros a month), advertised on Instagram and TikTok. No other city ran a promotion.</p>
+    <ol><li>Read the chart of the cohorts. Each line is the subscribers who joined in one month of 2026, and shows the share still subscribed at the end of each month after they joined. Switch between Barcelona and Madrid.</li><li>Read the second table: October's churn and May's churn in three groups of tenure. "Months 1–3" in October means the account joined in July, August or September.</li><li>Answer the three questions. The first asks you to calculate one rate.</li><li>The team writes one or two sentences: why Barcelona rises and why Madrid falls. Then press <b>Done</b>.</li></ol>
+    <div class="tog" id="cohPick"></div>
+    <div class="chart"><div id="cohSvg"></div><div class="cc" id="cohCap"></div></div>
+    <div class="tw" id="cohTab"></div>
+    <div class="tw" id="bandTab"></div>
+    <details class="xt"><summary>Show the same split for the other four cities</summary><div><div class="tw" id="bandOther"></div></div></details>
+    <div id="q4"></div>
+    <div class="cap">
+      <label for="f_cohort">Write, as a team, one or two sentences: why does Barcelona's churn rise, and why does Madrid's fall?</label>
+      <textarea id="f_cohort" data-work="w6_cohort" data-worklabel="W6 · team · why Barcelona rises and Madrid falls" placeholder="Example: Barcelona's rise comes from the 1,841 subscribers of the 1-euro summer promotion, who left at 12.8 % in October; without them Barcelona is at 2.3 %, as in May. Madrid's churn fell in every group of tenure, so Madrid's subscribers really do leave less often."></textarea>
+    </div>
+    <div class="btn-row"><button class="btn" id="s4Btn">Done</button><span class="savenote" id="s4Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="The group someone can act on|w6_seg">
+    <span class="tick">✅</span>
+    <span class="clock">Step 5 · team · part 4 of the profile</span>
+    <h2>Split churn by plan and by rides in the first 14 days, and name the group someone can act on</h2>
+    <p><b>Why this step exists.</b> A finding is <b>actionable</b> when a named person can find the accounts it describes, in the warehouse, this week, and do something to them before they leave. "Barcelona's churn is high" is true, but it describes 14,200 accounts and nobody can call 14,200 people. The two tables below split the October churn further: by plan in every city, and, for the 4,540 accounts in their first three months, by how they joined and by how many times they rode in their first 14 days (the secondary KPI on the KPI card from Session 3).</p>
+    <ol><li>Read both tables.</li><li>Answer the two questions. The second asks which group is the most useful to act on; read the explanation under each answer.</li><li>The team writes who acts on that group and what they do. Then press <b>Done</b>.</li></ol>
+    <div class="tw" id="planTab"></div>
+    <div class="tw" id="r14Tab"></div>
+    <div class="callout"><span class="ct">What this table does not show</span>The table shows that subscribers who ride little in their first 14 days leave more often. It does not show that more rides would make them stay: some of them may ride little because they never meant to keep the subscription after the 1-euro month. Session 6 shows how to test whether an action changes churn. Today, describe; do not promise an effect.</div>
+    <div id="q5"></div>
+    <div class="cap">
+      <label for="f_who">Write, as a team, who acts on this group: a role at ÒRBITA, and how they find the accounts in the warehouse.</label>
+      <input type="text" id="f_who" data-work="w6_who" data-worklabel="W6 · team · who acts on the group" autocomplete="off" placeholder="Example: The head of growth, who lists every account whose first billing row shows mrr_eur = 1 (the promotion) and that has fewer than 3 rides in fact_ride in its first 14 days.">
+    </div>
+    <div class="cap">
+      <label for="f_do">Write, as a team, what that person does with these accounts, and when.</label>
+      <textarea id="f_do" data-work="w6_do" data-worklabel="W6 · team · what they do and when" placeholder="Example: On day 10 of each new subscription, the growth team sends these accounts a free 30-minute ride and a map of the nearest parking spots, and reports in the 2nd-working-day KPI meeting how many of them are still paying a month later."></textarea>
+    </div>
+    <div class="btn-row"><button class="btn" id="s5Btn">Done</button><span class="savenote" id="s5Note"></span></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6" data-board="Next week: did the price change lower churn|w6_next">
+    <span class="tick">✅</span>
+    <span class="clock">Step 6 · publish and hand in</span>
+    <h2>Write the average your team refuses to report, then publish the data profile and hand it in</h2>
+    <h3>6a · The average your team refuses to report on its own</h3>
+    <p>The session's deliverable ends with one sentence: the average your team will not let the CFO quote without its split, and why. Choose it from what you found today: the mean rides per subscriber, the company's churn, Barcelona's churn, or another one.</p>
+    <div class="cap">
+      <label for="f_refuse">Write, as a team: which average do you refuse to report on its own, and what does it hide? Write one or two sentences.</label>
+      <textarea id="f_refuse" data-work="w6_refuse" data-worklabel="W6 · team · the average we refuse to report" placeholder="Example: We refuse to report October's company churn of 2.62 % on its own, because it hides that Barcelona rose by more than a point because of the summer promotion and that Madrid fell by more than a point in every group of subscribers."></textarea>
+    </div>
+    <p>The page has built the profile from Steps 2 to 6a. Read it below. Anything marked <b>missing</b> still has to be done.</p>
+    <div class="memo" id="memo"></div>
+    <input type="hidden" id="f_doc" data-work="w6_doc" data-worklabel="W6 · data profile (handed in)">
+    <h3>6b · Add the profile to your Netlify site · one team member</h3>
+    <ol><li>Find the <b>orbita-memo</b> folder, the folder that contains <b>index.html</b>, <b>schema.html</b> and <b>etl.html</b>. If the member who has it is absent, download it from Netlify: open the project, then <b>Deploys</b>, then the latest deploy, then <b>Download</b>.</li>
+      <li>Press <b>Download the data profile</b> below. A file called <b>profile.html</b> appears in your Downloads folder. Move it into the <b>orbita-memo</b> folder. Do not rename it.</li>
+      <li>Double-click <b>profile.html</b> and check that the five parts and the chart are there.</li>
+      <li>Sign in at <a href="https://app.netlify.com" target="_blank" rel="noopener">app.netlify.com</a>, open your team's project, then <b>Deploys</b>, and drag the <b>whole orbita-memo folder</b> onto the upload box at the bottom. The new page is at your site's address followed by <b>/profile.html</b>.</li>
+      <li>Open the new page in a private browser window to check it, then paste its full address in the box below.</li></ol>
+    <div class="btn-row"><button class="btn ghost" id="docDl" type="button">Download the data profile</button><button class="btn ghost" id="docCopy" type="button">Copy the profile as text</button></div>
+    <div class="cap">
+      <label for="f_site">Paste the full address of your team's data profile</label>
+      <div class="hint" id="siteHint">The address starts with https:// and ends with .netlify.app/profile.html.</div>
+      <input type="text" id="f_site" maxlength="200" data-work="w6_site" data-worklabel="W6 · team · data profile on Netlify" placeholder="https://orbita-kpi-team-a-rates.netlify.app/profile.html" autocomplete="off">
+    </div>
+    <h3>6c · Hand in the profile</h3>
+    <ol><li>One member presses <b>Hand in the data profile</b>. The page saves the profile, its address and the time in every team member's record, and adds the address to the class list.</li><li>Then each member answers the question at the bottom of this step and locks the answer.</li></ol>
+    <div class="btn-row"><button class="btn" id="docBtn">Hand in the data profile</button><span id="docNote" class="savenote"></span></div>
+    <div class="wall" id="siteWall" style="margin-top:12px"><div class="wh">The class's data profiles <span class="st" id="siteStat">not loaded yet</span></div><div class="empty">Press Refresh to see every team's profile.</div></div>
+    <button class="btn ghost" id="siteWallBtn" type="button">Refresh</button>
+    <h3>Seven terms from today</h3>
+    <ul>
+      <li><b>Mean and median.</b> The mean adds the values and divides by their number; the median is the middle value once they are sorted. When the data is skewed, the median describes the typical case.</li>
+      <li><b>Percentile.</b> The value that a given share of the data does not exceed: 90 % of the accounts rode 33 times or fewer, so P90 is 33 rides.</li>
+      <li><b>Distribution.</b> How many cases take each value: the whole shape, not one summary.</li>
+      <li><b>Segment.</b> A group of accounts that share a property, such as a city or a plan.</li>
+      <li><b>Cohort and tenure.</b> A cohort is the accounts that joined in the same month; tenure is how many months an account has been subscribed.</li>
+      <li><b>Mix.</b> The share of each group in a total. A total rate can move only because the mix moves.</li>
+      <li><b>Actionable.</b> A finding that names a group someone can find in the data and act on before the outcome happens.</li>
+    </ul>
+    <div class="cap">
+      <label>Each member guesses next week's result today, and locks the guess</label>
+      <div class="hint">In Session 6, ÒRBITA asks whether a price change in one city lowered its churn. Before you see the data: what do you expect the test to say?</div>
+      <div class="opts" id="pNext"></div>
+      <input type="hidden" id="f_next" data-work="w6_next" data-worklabel="W6 · prediction for session 6">
+    </div>
+    <button class="btn" id="nextBtn">Lock my guess</button>
+    <div class="savenote" id="nextNote"></div>
+    <div class="quiet"><b>After today you can explain</b> why the mean of a skewed number such as rides describes nobody, and what the median and the percentiles say instead; how to split a rate by segment and by cohort; how a change in the mix moves a total rate when no group's rate has moved; how to tell a mix effect from a change in every group; and what makes a finding actionable.</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s7">
+    <span class="tick">✅</span>
+    <span class="clock">Step 7 · team quiz</span>
+    <h2>Play the team quiz on the screen</h2>
+    <p>In the last 20 minutes the teams play against each other on the screen at the front. The quiz has six categories on today's session, with questions worth 100 to 500 points. The last category asks your team about its own profile.</p>
+    <ol><li>Close the laptops, except the one that shows your team's profile.</li>
+      <li>The teams take turns choosing a category and a value. The team that chose answers first. Each team gives one answer, agreed within 10 seconds.</li>
+      <li>A right answer wins the points. A wrong answer loses them, and the next team may try.</li>
+      <li>When the quiz is over, press the button below.</li></ol>
+    <button class="btn" id="quizBtn">We played the quiz: we are done for today</button>
+    <div class="savenote" id="quizNote"></div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Week 06 · Session 5 of 11 · Geneva Business School
+    <div style="margin-top:8px;font-size:11.5px;line-height:1.6;">ÒRBITA, its subscribers and its October figures are fictional, invented for the course. They agree with Sessions 1 to 4: 44,600 accounts paying on 1 October (Session 4's bridge), about 14 counted rides per active subscriber (Session 3), and an October churn of 2.62 %, the figure finance reports. The 1-euro summer promotion is part of the case. The SQL lab's 500-account sample is a different invented sample, so its city figures differ from today's. "Simpson's paradox" is named after E. H. Simpson, "The interpretation of interaction in contingency tables", <i>Journal of the Royal Statistical Society, Series B</i>, 13(2), 1951.</div>
+    <div style="margin-top:8px;"><a href="#" id="resetLink" style="color:var(--grey);font-weight:400;">Reset my answers and progress for Session 5 on this device</a></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 5 (module w6) — a self-run mandate, like Sessions 2 to 4
+   (built 25 Nov 2026 for Thu 26 Nov): descriptive statistics, the rides
+   distribution, churn by city, by cohort / tenure, by plan and by rides
+   in the first 14 days, the data profile as profile.html on the team's
+   Netlify site, the team quiz (jeopardy.html?set=s5).
+
+   ⚠ THE PROGRESS DENOMINATOR IS THE SEVEN STEPS (courseprogress.js total:7).
+
+   THE DATA (D below) comes from a cohort model run in Python on
+   25 Nov 2026 (scratch gen_final.py; seed 20261126 for the rides):
+     paying on 1 Oct 44,600 (Session 4's bridge); October churn 1,168 =
+     2.62 % (finance's figure); May 1,111 / 42,871 = 2.59 %.
+     Barcelona 2.49 % (May) → 3.65 % (Oct, 519 / 14,200); Madrid 3.17 % →
+     1.71 % (178 / 10,400); lowest in Oct Zürich 1.68 %; spread 1.98 pts.
+     Barcelona promo (city-flex, 1 EUR first month, Jul–Sep): 1,841
+     accounts in Oct, 236 churned (12.8 %); Barcelona without them
+     283 / 12,359 = 2.29 %. Bands Oct / May: Barcelona 11.37/2.88/2.08 vs
+     4.83/2.92/2.13; Madrid 3.30/2.04/1.45 vs 6.14/3.73/2.71.
+     Rides: 555,552 counted rides; mean 12.46, median 7, P25 2, P75 17,
+     P90 33, max 157; 7,884 accounts with 0 (4,532 paused); 65.7 % below
+     the mean; the top 10 % make 39.4 % of the rides. Active only: mean
+     13.87, median 8. Without the top 1 % (446): mean 11.73, median 7.
+     New accounts (tenure 1–3, 4,540) by rides in the first 14 days:
+     promo 0–2 957/172 = 18.0 %, 3–5 552/49, 6+ 332/15; other 648/51,
+     972/39, 1,079/21. Promo 0–2 = 14.7 % of October's churn.
+   Every displayed sub-table sums to its city's October cell.
+   Team keys (teams.js): w6_why, w6_dist, w6_city, w6_cohort, w6_who,
+   w6_do, w6_refuse, w6_site, w6_handin. Wall nodes: w6s.
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6','s7'];
+var K='bi';
+var NEXTS5=[{k:'1',t:'Under 1 point'},{k:'3',t:'1 to 3 points'},{k:'6',t:'3 to 6 points'},{k:'9',t:'More than 6 points'}];
+var NEXTS=[{k:'real',t:'The fall is real, and the price caused it'},{k:'other',t:'The fall is real, but something else may have caused it'},{k:'noise',t:'The fall is no larger than chance produces in a month'},{k:'cant',t:'I cannot tell before I see the data'}];
+
+var D={"city":{"Barcelona":[[12824,319],[12855,307],[12897,317],[13410,389],[13851,481],[14200,519]],"Madrid":[[10332,328],[10301,320],[10278,296],[10279,256],[10320,217],[10400,178]],"Lisbon":[[5528,139],[5539,131],[5559,138],[5572,134],[5588,139],[5600,134]],"Milan":[[6224,160],[6245,169],[6257,166],[6272,171],[6282,163],[6300,168]],"Zürich":[[3038,54],[3049,50],[3064,54],[3075,52],[3088,53],[3100,52]],"London":[[4925,111],[4942,117],[4954,113],[4969,116],[4983,111],[5000,117]]},"band":{"Barcelona":{"n":[2198,250],"e":[2430,70],"l":[9572,199]},"Madrid":{"n":[848,28],"e":[1965,40],"l":[7587,110]},"Lisbon":{"n":[428,20],"e":[1047,30],"l":[4125,84]},"Milan":{"n":[512,26],"e":[1233,39],"l":[4555,103]},"Zürich":{"n":[187,6],"e":[485,10],"l":[2428,36]},"London":{"n":[367,17],"e":[908,25],"l":[3725,75]}},"bandMay":{"Barcelona":{"n":[993,48],"e":[2431,71],"l":[9400,200]},"Madrid":{"n":[830,51],"e":[1930,72],"l":[7572,205]},"Lisbon":{"n":[428,21],"e":[1048,31],"l":[4052,87]},"Milan":{"n":[512,25],"e":[1234,37],"l":[4478,98]},"Zürich":{"n":[187,7],"e":[485,10],"l":[2366,37]},"London":{"n":[367,16],"e":[907,24],"l":[3651,71]}},"coh":{"Barcelona":[{"mo":3,"n":350,"surv":[94.2,89.9,86.6,84.1,81.7,79.3,77.0]},{"mo":4,"n":350,"surv":[94.1,89.9,86.6,84.1,81.6,79.3]},{"mo":5,"n":350,"surv":[94.3,90.0,86.7,84.2,81.7]},{"mo":6,"n":350,"surv":[94.2,89.9,86.5,84.0]},{"mo":7,"n":830,"surv":[88.2,76.6,69.9]},{"mo":8,"n":830,"surv":[88.2,76.6]},{"mo":9,"n":830,"surv":[88.2]}],"Madrid":[{"mo":3,"n":297,"surv":[92.5,87.0,82.9,80.1,77.8,75.8,74.3]},{"mo":4,"n":297,"surv":[92.5,87.2,83.4,80.9,78.9,77.3]},{"mo":5,"n":297,"surv":[92.6,87.7,84.4,82.3,80.6]},{"mo":6,"n":297,"surv":[93.2,88.9,86.0,84.3]},{"mo":7,"n":297,"surv":[94.1,90.4,88.1]},{"mo":8,"n":297,"surv":[95.0,92.0]},{"mo":9,"n":297,"surv":[95.9]}]},"plan":{"Barcelona":{"city-flex":[8530,405],"ebike-pro":[5670,114]},"Madrid":{"city-flex":[5802,113],"ebike-pro":[4598,65]},"Lisbon":{"city-flex":[3146,85],"ebike-pro":[2454,49]},"Milan":{"city-flex":[3522,107],"ebike-pro":[2778,61]},"Zürich":{"city-flex":[1778,34],"ebike-pro":[1322,18]},"London":{"city-flex":[2819,75],"ebike-pro":[2181,42]}},"promoB":{"promo":[1841,236],"other":[357,14]},"r14":{"promo":[[957,172],[552,49],[332,15]],"other":[[648,51],[972,39],[1079,21]]}};
+/* accounts by number of counted rides in October (index = rides); index 0 includes the 4,532 paused accounts */
+var RIDES=[7884,3026,2685,2306,2063,1996,1692,1517,1426,1292,1194,1150,1064,915,899,833,760,753,702,614,594,539,550,451,460,351,382,372,337,323,298,302,249,284,280,238,203,205,222,171,188,166,172,145,124,121,118,117,106,99,104,105,93,82,76,73,69,77,60,68,53,48,49,41,42,32,41,32,32,29,26,25,25,31,24,19,21,19,17,17,20,16,12,16,12,11,9,17,8,9,4,5,3,3,6,8,5,5,6,3,8,3,0,4,0,3,3,2,0,2,2,3,4,0,2,1,2,0,0,0,1,2,1,1,0,2,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1];
+var PAUSED=4532;
+var CITIES=['Barcelona','Madrid','Lisbon','Milan','Zürich','London'];
+var MONTHS=['May','Jun','Jul','Aug','Sep','Oct'];
+var MONTHL=['January','February','March','April','May','June','July','August','September','October'];
+var BANDS=[['n','Months 1–3'],['e','Months 4–12'],['l','Month 13 or later']];
+
+/* ---- helpers ---- */
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(K+'_'+k);if(v===null)localStorage.removeItem(K+'_'+k);else localStorage.setItem(K+'_'+k,v);}catch(e){return null;}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function setWork(id,v){var el=document.getElementById(id);if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}
+function val(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
+function labelOf(list,k){for(var i=0;i<list.length;i++)if(list[i].k===k)return list[i].t;return '';}
+function lsGet(k,d){try{var v=JSON.parse(localStorage.getItem(K+'_'+k));return v==null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(K+'_'+k,JSON.stringify(v));}catch(e){}}
+function fmt(n){return Math.round(n).toLocaleString('en-GB');}
+function pc(n,d,dp){return d?(n/d*100).toFixed(dp==null?2:dp)+' %':'—';}
+function rate(x){return x[1]/x[0]*100;}
+function chips(hostId,list,key,onPick){
+  var host=document.getElementById(hostId),cur=ls(key);host.innerHTML='';
+  list.forEach(function(o){var b=document.createElement('button');b.type='button';b.className='opt'+(cur===o.k?' on':'');b.textContent=o.t;b.dataset.k=o.k;
+    b.addEventListener('click',function(){if(b.disabled)return;ls(key,o.k);Array.prototype.forEach.call(host.children,function(x){x.classList.toggle('on',x===b);});if(onPick)onPick(o);});host.appendChild(b);});
+}
+function lockChips(hostId){Array.prototype.forEach.call(document.getElementById(hostId).children,function(b){b.disabled=true;});}
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_w6')||'{}')[id];}catch(e){return false;}}
+function markDone(id){
+  var el=document.getElementById(id);if(el)el.classList.add('done');
+  if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  else{try{var o=JSON.parse(localStorage.getItem(K+'_done_w6')||'{}');o[id]=true;localStorage.setItem(K+'_done_w6',JSON.stringify(o));}catch(e){}}
+  paintProgress();
+}
+function paintProgress(){
+  var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=document.getElementById(s);if(el)el.classList.add('done');}});
+  var p=Math.round(n/SECTIONS.length*100);
+  document.getElementById('spLbl').textContent=n+' / '+SECTIONS.length;document.getElementById('spPct').textContent=p+'%';document.getElementById('spFill').style.width=p+'%';
+}
+function wallFail(res){if(res.reason==='instructor')return 'Instructor device: a demo answer, not posted to the wall.';return 'The wall could not be read'+(res.reason==='rules'?' (its database rules are not published yet)':'')+'. Your own answers are saved.';}
+var CLS={};
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,onAll){
+  var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0,st=lsGet(rowsId,{});
+  function capText(n,full){cap.textContent=n+' of '+VARS.length+' placed'+(full?' — '+doneMsg:'');}
+  VARS.forEach(function(v,i){
+    var row=document.createElement('div');row.className='cl-row';
+    row.innerHTML='<div class="st">'+v.s+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button type="button" data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
+    function attempt(valx,btn,quiet){
+      if(row.dataset.done)return;
+      if(valx===v.a){row.dataset.done='1';row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Yes.</b> '+v.w;w.classList.add('show');done++;capText(done,done===VARS.length);if(!quiet){st[i]=(st[i]||[]).concat([valx]);lsSet(rowsId,st);}if(done===VARS.length){CLS[rowsId]=true;if(onAll)onAll();}}
+      else{btn.classList.add('no');btn.disabled=true;if(!quiet){st[i]=(st[i]||[]).concat([valx]);lsSet(rowsId,st);}}
+    }
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){attempt(b.dataset.v,b,false);});});
+    box.appendChild(row);
+    (st[i]||[]).forEach(function(valx){var btn=null;row.querySelectorAll('button').forEach(function(x){if(x.getAttribute('data-v')===valx)btn=x;});if(btn)attempt(valx,btn,true);});
+  });
+  capText(done,done===VARS.length);
+}
+/* questions with options (or a number), each answered by each member: a wrong option is crossed out, the right one locks the question */
+var QOK={};
+function buildQuiz(hostId,QS){
+  var host=document.getElementById(hostId),st=lsGet('w6_'+hostId,{});host.innerHTML='';
+  QS.forEach(function(q,i){
+    var box=document.createElement('div');box.className='qz';box.id=hostId+'_'+i;
+    var h='<div class="qq">'+(i+1)+'. '+q.q+'</div>';
+    if(q.num!=null)h+='<div class="num"><input type="text" inputmode="decimal" placeholder="'+esc(q.ph||'')+'"><button type="button" class="btn small">Check</button><span class="m"></span></div>';
+    else h+='<div class="qo">'+q.o.map(function(o,j){return '<button type="button" data-j="'+j+'">'+esc(o[0])+'</button>';}).join('')+'</div>';
+    h+='<div class="qw"></div>';box.innerHTML=h;host.appendChild(box);
+    var w=box.querySelector('.qw');
+    function win(text){box.classList.add('done');QOK[box.id]=true;w.innerHTML='<b>Yes.</b> '+text;w.classList.add('show');}
+    if(q.num!=null){
+      var inp=box.querySelector('input'),row=box.querySelector('.num'),m=box.querySelector('.m');
+      function check(quiet){var x=parseFloat(String(inp.value).replace(',','.').replace(/[ %]/g,''));if(!isFinite(x)){m.textContent='Type a number.';return;}
+        var ok=Math.abs(x-q.num)<=q.tol;row.className='num '+(ok?'ok':'no');
+        if(!quiet){st[i]=inp.value;lsSet('w6_'+hostId,st);}
+        if(ok){inp.disabled=true;box.querySelector('button').disabled=true;m.textContent='';win(q.w);}else m.textContent=q.hint||'Not yet. Check the numbers you used.';}
+      box.querySelector('button').addEventListener('click',function(){check(false);});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter')check(false);});
+      if(st[i]){inp.value=st[i];check(true);}
+    }else{
+      var tried=st[i]||[];
+      function pick(j,quiet){var b=box.querySelector('[data-j="'+j+'"]');if(!b||box.classList.contains('done'))return;
+        if(!quiet){tried.push(j);st[i]=tried;lsSet('w6_'+hostId,st);}
+        if(j===q.a){b.classList.add('ok');box.querySelectorAll('button').forEach(function(x){x.disabled=true;});win(q.o[j][1]);}
+        else{b.classList.add('no');b.disabled=true;w.innerHTML='<b>Not this one.</b> '+q.o[j][1];w.classList.add('show');}}
+      box.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){pick(+b.dataset.j,false);});});
+      tried.slice().forEach(function(j){pick(j,true);});
+    }
+  });
+}
+function quizDone(hostId,n){for(var i=0;i<n;i++)if(!QOK[hostId+'_'+i])return false;return true;}
+function quizCount(hostId,n){var c=0;for(var i=0;i<n;i++)if(QOK[hostId+'_'+i])c++;return c;}
+function myTeamId(){return (window.BiTeams&&BiTeams.myTeam())||'';}
+function teamLabel(){var me=myTeamId();return me?(window.BiTeams?BiTeams.label(me):'Team '+me):'';}
+
+/* ---- step 1 sort ---- */
+var VIEWS=[['D','Distribution'],['S','Segment'],['C','Cohort']];
+var DESCR=[
+ {s:'How many times does a typical subscriber ride in a month?',a:'D',w:'The answer is the shape of the rides over all subscribers: the median and the percentiles, not one total.'},
+ {s:'Is churn higher in Milan than in Lisbon?',a:'S',w:'A city is a property the accounts share: split the rate by city.'},
+ {s:'Do the subscribers who joined in July leave faster than those who joined in May?',a:'C',w:'Accounts grouped by the month they joined are cohorts.'},
+ {s:'How many subscribers ride more than 30 times a month?',a:'D',w:'Counting how many cases lie above a value reads the distribution.'},
+ {s:'Does the city-flex plan lose more subscribers than the ebike-pro plan?',a:'S',w:'The plan is a property the accounts share: split the rate by plan.'},
+ {s:'What share of March\'s new subscribers is still paying after six months?',a:'C',w:'Following one group of accounts from the month they joined is a cohort curve.'}
+];
+
+/* ---- step 2: the rides distribution ---- */
+function distVals(){
+  var f=RIDES.slice();if(!document.getElementById('tPaused').checked)f[0]-=PAUSED;
+  var N=f.reduce(function(a,b){return a+b;},0);
+  if(document.getElementById('tTop').checked){var cut=Math.round(N/100),i=f.length-1;while(cut>0&&i>=0){var t=Math.min(cut,f[i]);f[i]-=t;cut-=t;i--;}N=f.reduce(function(a,b){return a+b;},0);}
+  return f;
+}
+function stats(f){
+  var N=0,S=0;f.forEach(function(c,i){N+=c;S+=c*i;});
+  function q(p){var need=p*N,c=0;for(var i=0;i<f.length;i++){c+=f[i];if(c>=need)return i;}return f.length-1;}
+  function at(k){var c=0;for(var i=0;i<f.length;i++){c+=f[i];if(c>=k)return i;}return f.length-1;}
+  var med=N%2?at((N+1)/2):(at(N/2)+at(N/2+1))/2,mean=S/N,below=0;f.forEach(function(c,i){if(i<mean)below+=c;});
+  var sorted=[];for(var i=f.length-1;i>=0;i--)if(f[i])sorted.push(i);
+  var top=Math.round(N/10),rem=top,ts=0;for(var j=f.length-1;j>=0&&rem>0;j--){var t=Math.min(rem,f[j]);ts+=t*j;rem-=t;}
+  return {N:N,S:S,mean:mean,med:med,p25:q(.25),p75:q(.75),p90:q(.9),below:below/N*100,zero:f[0],top10:ts/S*100};
+}
+function binsOf(f){var b=[];for(var i=0;i<13;i++)b.push({lo:i*5,hi:i===12?null:i*5+4,n:0,z:0});f.forEach(function(c,i){var k=Math.min(12,Math.floor(i/5));b[k].n+=c;});b[0].z=document.getElementById('tPaused').checked?PAUSED:0;return b;}
+function histSVG(f,st){
+  var B=binsOf(f),W=720,H=300,L=58,R=14,T=16,Bm=46,pw=(W-L-R)/B.length,mx=0;B.forEach(function(b){if(b.n>mx)mx=b.n;});
+  var top=Math.ceil(mx/2000)*2000,y=function(v){return T+(H-T-Bm)*(1-v/top);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Accounts by number of rides in October">';
+  for(var g=0;g<=top;g+=2000){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(g)+'" y2="'+y(g)+'" stroke="#E5E9EF"/><text x="'+(L-6)+'" y="'+(y(g)+4)+'" text-anchor="end" font-size="11" fill="#5B6680">'+fmt(g)+'</text>';}
+  B.forEach(function(b,i){var x=L+i*pw+3,w=pw-6;s+='<rect x="'+x+'" y="'+y(b.n)+'" width="'+w+'" height="'+(y(0)-y(b.n))+'" fill="#9FB0D0"><title>'+(b.hi==null?b.lo+' rides or more':b.lo+'–'+b.hi+' rides')+': '+fmt(b.n)+' accounts</title></rect>';
+    if(b.z)s+='<rect x="'+x+'" y="'+y(b.z)+'" width="'+w+'" height="'+(y(0)-y(b.z))+'" fill="#101F44"><title>Paused accounts: '+fmt(b.z)+'</title></rect>';
+    s+='<text x="'+(x+w/2)+'" y="'+(H-Bm+15)+'" text-anchor="middle" font-size="10.5" fill="#5B6680">'+(b.hi==null?'60+':b.lo+'–'+b.hi)+'</text>';});
+  s+='<text x="'+((L+W-R)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11.5" fill="#1B2333">Counted rides in October 2026</text>';
+  s+='<text x="14" y="'+(T+(H-T-Bm)/2)+'" font-size="11.5" fill="#1B2333" transform="rotate(-90 14 '+(T+(H-T-Bm)/2)+')" text-anchor="middle">Accounts</text>';
+  function mark(v,col,lab,dy){var x=L+(v+0.5)/5*pw;return '<line x1="'+x+'" x2="'+x+'" y1="'+T+'" y2="'+y(0)+'" stroke="'+col+'" stroke-width="2.5"/><text x="'+(x+5)+'" y="'+(T+12+dy)+'" font-size="12" font-weight="700" fill="'+col+'">'+lab+'</text>';}
+  s+=mark(st.med,'#101F44','median '+st.med,0)+mark(st.mean,'#A8620A','mean '+st.mean.toFixed(1),18);
+  if(B[0].z)s+='<text x="'+(L+pw+2)+'" y="'+(y(B[0].z)+14)+'" font-size="11" fill="#101F44">← dark: '+fmt(B[0].z)+' paused</text>';
+  return s+'</svg>';
+}
+function paintDist(){
+  var f=distVals(),st=stats(f);
+  document.getElementById('distDash').innerHTML='<div><small>Accounts</small><b>'+fmt(st.N)+'</b></div><div><small>Counted rides</small><b>'+fmt(st.S)+'</b></div><div class="hl"><small>Mean</small><b>'+st.mean.toFixed(1)+'</b></div><div class="hl"><small>Median</small><b>'+st.med+'</b></div><div><small>P25 · P75</small><b>'+st.p25+' · '+st.p75+'</b></div><div><small>P90</small><b>'+st.p90+'</b></div><div><small>Below the mean</small><b>'+st.below.toFixed(1)+' %</b></div><div><small>No ride at all</small><b>'+fmt(st.zero)+'</b></div>';
+  document.getElementById('histSvg').innerHTML=histSVG(f,st);
+  var B=binsOf(f),c=0;
+  document.getElementById('distTab').innerHTML='<table class="rt"><tr><th>Rides in October</th><th class="r">Accounts</th><th class="r">Share</th><th class="r">Share with this many rides or fewer</th></tr>'+B.map(function(b){c+=b.n;return '<tr><td>'+(b.hi==null?'60 or more':b.lo+' to '+b.hi)+'</td><td class="r">'+fmt(b.n)+'</td><td class="r">'+pc(b.n,st.N,1)+'</td><td class="r">'+pc(c,st.N,1)+'</td></tr>';}).join('')+'<tr class="tot"><td>All</td><td class="r">'+fmt(st.N)+'</td><td class="r">100 %</td><td class="r"></td></tr></table>';
+}
+var Q2=[
+ {q:'The board pack says "12.5 rides per subscriber". Which number describes what a typical paying account did in October?',a:1,o:[
+   ['The mean: 12.5 rides','The mean is pulled up by a few accounts that ride more than 60 times a month. About two thirds of the accounts rode fewer times than the mean.'],
+   ['The median: 7 rides','Half of the accounts rode 7 times or fewer and half rode more. A few heavy riders do not move it.'],
+   ['555,552 rides ÷ 40,100 subscribers = 13.9 rides','This divides the rides of the KPI card\'s accounts by finance\'s subscriber count, so the two numbers do not describe the same accounts. And it is a mean too.']]},
+ {q:'About how many paying accounts rode fewer times than the mean of 12.5?',a:2,o:[
+   ['About one in four','Open the numbers behind the chart: 58.0 % of the accounts rode 9 times or fewer, before even counting those with 10 to 12 rides.'],
+   ['About half','Half of the accounts are below the median (7), not below the mean.'],
+   ['About two in three','65.7 % of the accounts rode 12 times or fewer. When most cases lie below the mean, the distribution is skewed to the right.'],
+   ['Almost all','The 39 % of rides made by the top 10 % pull the mean up, but more than a third of the accounts still rode more than 12 times.']]},
+ {q:'7,884 paying accounts did not ride at all in October. How many of them are paused?',a:1,o:[
+   ['None of them','Paused accounts are paying on the 1st as the KPI card counts them, and a paused bike cannot be ridden.'],
+   ['4,532','These are Session 4\'s paused accounts (95 of every 1,000). The other 3,352 are active accounts that paid in October and did not ride once: the group most likely to cancel next.'],
+   ['All 7,884','Session 4\'s bridge counted 4,532 paused accounts, so 3,352 of the accounts without a ride are active.']]}
+];
+
+/* ---- step 3: churn by city ---- */
+function cityRows(){var tot=MONTHS.map(function(m,i){var b=0,d=0;CITIES.forEach(function(c){b+=D.city[c][i][0];d+=D.city[c][i][1];});return [b,d];});return tot;}
+function paintCityTab(){
+  var tot=cityRows();
+  var h='<table class="rt"><tr><th>City</th>'+MONTHS.map(function(m){return '<th class="r">'+m+'</th>';}).join('')+'<th class="r">May→Oct, points</th><th class="r">Paying 1 Oct</th><th class="r">Churned Oct</th></tr>';
+  CITIES.forEach(function(c){var r=D.city[c],ch=rate(r[5])-rate(r[0]);h+='<tr'+((c==='Barcelona'||c==='Madrid')&&isDone('s3')?' class="hi"':'')+'><td>'+c+'</td>'+r.map(function(x){return '<td class="r">'+rate(x).toFixed(2)+' %</td>';}).join('')+'<td class="r '+(ch>0.5?'up':ch<-0.5?'dn':'')+'">'+(ch>0?'+':'')+ch.toFixed(2)+'</td><td class="r">'+fmt(r[5][0])+'</td><td class="r">'+r[5][1]+'</td></tr>';});
+  var ch=rate(tot[5])-rate(tot[0]);
+  h+='<tr class="tot"><td>Company</td>'+tot.map(function(x){return '<td class="r">'+rate(x).toFixed(2)+' %</td>';}).join('')+'<td class="r">'+(ch>0?'+':'')+ch.toFixed(2)+'</td><td class="r">'+fmt(tot[5][0])+'</td><td class="r">'+fmt(tot[5][1])+'</td></tr></table>';
+  document.getElementById('cityTab').innerHTML=h+'<div class="quiet" style="margin-top:6px">Churn in each month of 2026 = accounts that cancelled in the month (cancellations undone within 30 days are not counted) ÷ accounts paying on the 1st (active and paused). Each account has the city where it made the most counted rides, the rule of Session 4.</div>';
+}
+var SHOWN=lsGet('w6_shown',['Barcelona','Madrid']);
+var CCOL={Barcelona:'#D58517',Madrid:'#101F44',Lisbon:'#2F855A',Milan:'#9B2335',Zürich:'#6B4FA0',London:'#1F7A8C'};
+function citySVG(shown,lit){
+  var W=720,H=320,L=50,R=110,T=14,Bm=36,tot=cityRows(),lo=1,hi=4;
+  var x=function(i){return L+i*(W-L-R)/5;},y=function(v){return T+(H-T-Bm)*(1-(v-lo)/(hi-lo));};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Monthly churn by city, May to October 2026" font-family="Helvetica,Arial,sans-serif">';
+  for(var g=1;g<=4;g+=0.5){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(g)+'" y2="'+y(g)+'" stroke="#E5E9EF"/><text x="'+(L-6)+'" y="'+(y(g)+4)+'" text-anchor="end" font-size="11" fill="#5B6680">'+g.toFixed(1)+' %</text>';}
+  MONTHS.forEach(function(m,i){s+='<text x="'+x(i)+'" y="'+(H-Bm+18)+'" text-anchor="middle" font-size="11" fill="#5B6680">'+m+'</text>';});
+  var labs=[];
+  function line(vals,col,wd,dash,name){var p=vals.map(function(v,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);}).join(' ');s+='<path d="'+p+'" fill="none" stroke="'+col+'" stroke-width="'+wd+'"'+(dash?' stroke-dasharray="6 4"':'')+'/>';vals.forEach(function(v,i){s+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(wd>2?3.2:2)+'" fill="'+col+'"><title>'+name+' · '+MONTHS[i]+' 2026 · '+v.toFixed(2)+' %</title></circle>';});labs.push({y:y(vals[5]),t:name+' '+vals[5].toFixed(2)+' %',c:col,b:wd>2});}
+  CITIES.forEach(function(c){if(shown.indexOf(c)<0)line(D.city[c].map(rate),'#C9CFDA',1.5,false,c);});
+  CITIES.forEach(function(c){if(shown.indexOf(c)>=0)line(D.city[c].map(rate),lit?CCOL[c]:'#C9CFDA',3,false,c);});
+  line(tot.map(rate),'#1B2333',2.5,true,'Company');
+  labs.sort(function(a,b){return a.y-b.y;});for(var i=1;i<labs.length;i++)if(labs[i].y-labs[i-1].y<13)labs[i].y=labs[i-1].y+13;
+  labs.forEach(function(l){s+='<text x="'+(W-R+8)+'" y="'+(l.y+4)+'" font-size="11" fill="'+(l.b||l.c==='#1B2333'?l.c:'#8B93A3')+'" font-weight="'+(l.b?'700':'400')+'">'+esc(l.t)+'</text>';});
+  return s+'</svg>';
+}
+function paintCityChart(){
+  document.getElementById('citySvg').innerHTML=citySVG(SHOWN,true);
+  document.getElementById('cityPick').innerHTML='Monthly churn by city, May to October 2026; the dashed line is the company. Draw in colour: '+CITIES.map(function(c){return '<label style="margin-right:10px;white-space:nowrap;cursor:pointer"><input type="checkbox" data-c="'+c+'"'+(SHOWN.indexOf(c)>=0?' checked':'')+'> '+c+'</label>';}).join('');
+}
+var Q3=[
+ {q:'Which two cities moved in opposite directions from May to October?',a:0,o:[
+   ['Barcelona and Madrid','Barcelona rose from 2.49 % to 3.65 % (+1.17 points) and Madrid fell from 3.17 % to 1.71 % (−1.46 points). They are ÒRBITA\'s two largest cities: 24,600 of the 44,600 paying accounts.'],
+   ['Milan and Lisbon','Both stay within about 0.2 points of where they were in May: the small ups and downs are what a city of 6,000 accounts shows from month to month.'],
+   ['Zürich and London','Zürich stays the lowest city, around 1.7 %, and London stays around 2.3 %. Neither moves in one direction.']]},
+ {q:'By how much did the company\'s churn change from May to October?',a:1,o:[
+   ['It fell by more than one point','The company went from 2.59 % in May to 2.62 % in October.'],
+   ['It changed by less than 0.1 point','2.59 % in May and 2.62 % in October: +0.03 points. This is the "nothing has changed" the CFO wants to tell the board.'],
+   ['It rose by more than one point','Only Barcelona rose by more than one point; the company rose by 0.03.']]},
+ {q:'In October, how far apart are the city with the highest churn and the city with the lowest, in percentage points? Type the number.',num:1.98,tol:0.06,ph:'points',hint:'Take the highest October rate in the table, subtract the lowest, and type the difference in points.',w:'Barcelona 3.65 % minus Zürich 1.68 % = 1.98 points, so the band "1 to 3 points" was right. The company rate sits in the middle and describes neither.'}
+];
+
+/* ---- step 4: cohorts and the mix ---- */
+var COHCITY=ls('w6_cohcity')||'Barcelona';
+function cohSVG(city){
+  var W=720,H=300,L=50,R=120,T=14,Bm=40,lo=60,hi=100,x=function(i){return L+i*(W-L-R)/7;},y=function(v){return T+(H-T-Bm)*(1-(v-lo)/(hi-lo));};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Share of each 2026 cohort still subscribed, '+city+'" font-family="Helvetica,Arial,sans-serif">';
+  for(var g=60;g<=100;g+=10){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(g)+'" y2="'+y(g)+'" stroke="#E5E9EF"/><text x="'+(L-6)+'" y="'+(y(g)+4)+'" text-anchor="end" font-size="11" fill="#5B6680">'+g+' %</text>';}
+  for(var i=0;i<=7;i++)s+='<text x="'+x(i)+'" y="'+(H-Bm+16)+'" text-anchor="middle" font-size="11" fill="#5B6680">'+i+'</text>';
+  s+='<text x="'+((L+W-R)/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11.5" fill="#1B2333">Months after joining</text>';
+  var labs=[];
+  D.coh[city].forEach(function(c){var promo=city==='Barcelona'&&c.mo>=7,col=promo?'#D58517':(city==='Madrid'?['#9FB0D0','#7F93BC','#6077A8','#465E93','#30487D','#1E3466','#101F44'][c.mo-3]:'#101F44');
+    var v=[100].concat(c.surv),p=v.map(function(q,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(q).toFixed(1);}).join(' ');
+    s+='<path d="'+p+'" fill="none" stroke="'+col+'" stroke-width="'+(promo?3:2)+'"/>';
+    v.forEach(function(q,i){if(i)s+='<circle cx="'+x(i)+'" cy="'+y(q)+'" r="2.6" fill="'+col+'"><title>Joined in '+MONTHL[c.mo-1]+' · after '+i+' month'+(i>1?'s':'')+' · '+q.toFixed(1)+' % still subscribed</title></circle>';});
+    labs.push({x:x(v.length-1),y:y(v[v.length-1]),t:MONTHL[c.mo-1].slice(0,3)+' '+v[v.length-1].toFixed(1)+' %',c:col});});
+  labs.forEach(function(l){s+='<text x="'+(l.x+6)+'" y="'+(l.y+4)+'" font-size="10.5" fill="'+l.c+'">'+l.t+'</text>';});
+  return s+'</svg>';
+}
+function paintCoh(){
+  document.getElementById('cohPick').innerHTML=['Barcelona','Madrid'].map(function(c){return '<label><input type="radio" name="cohc" value="'+c+'"'+(c===COHCITY?' checked':'')+'> '+c+'</label>';}).join('');
+  document.getElementById('cohSvg').innerHTML=cohSVG(COHCITY);
+  document.getElementById('cohCap').textContent=COHCITY==='Barcelona'?'Barcelona: the subscribers who joined in each month from March to September 2026, and the share still subscribed at the end of each month after they joined. Gold: the three months of the 1-euro promotion (830 new subscribers a month instead of 350).':'Madrid: the same curves for Madrid (about 297 new subscribers every month). Darker lines are later months: each cohort keeps more of its subscribers than the one before.';
+  var rows=D.coh[COHCITY];
+  document.getElementById('cohTab').innerHTML='<table class="rt"><tr><th>'+COHCITY+' · joined in 2026</th><th class="r">New subscribers</th><th class="r">After 1 month</th><th class="r">After 2 months</th><th class="r">After 3 months</th></tr>'+rows.map(function(c){return '<tr'+(COHCITY==='Barcelona'&&c.mo>=7?' class="hi"':'')+'><td>'+MONTHL[c.mo-1]+(COHCITY==='Barcelona'&&c.mo>=7?' (promotion)':'')+'</td><td class="r">'+c.n+'</td>'+[0,1,2].map(function(i){return '<td class="r">'+(c.surv[i]!=null?c.surv[i].toFixed(1)+' %':'—')+'</td>';}).join('')+'</tr>';}).join('')+'</table>';
+}
+function bandTable(cities){
+  return '<table class="rt"><tr><th>City</th><th>Tenure in the month</th><th class="r">May: paying</th><th class="r">May: churned</th><th class="r">May: churn</th><th class="r">Oct: paying</th><th class="r">Oct: churned</th><th class="r">Oct: churn</th><th class="r">Share of the city in Oct</th></tr>'+
+   cities.map(function(c){var tb=D.city[c][5][0];return BANDS.map(function(b,i){var m=D.bandMay[c][b[0]],o=D.band[c][b[0]];return '<tr><td>'+(i?'':'<b>'+c+'</b>')+'</td><td>'+b[1]+'</td><td class="r">'+fmt(m[0])+'</td><td class="r">'+m[1]+'</td><td class="r">'+pc(m[1],m[0])+'</td><td class="r">'+fmt(o[0])+'</td><td class="r">'+o[1]+'</td><td class="r">'+pc(o[1],o[0])+'</td><td class="r">'+pc(o[0],tb,1)+'</td></tr>';}).join('')+
+     '<tr class="tot"><td></td><td>All tenures</td><td class="r">'+fmt(D.city[c][0][0])+'</td><td class="r">'+D.city[c][0][1]+'</td><td class="r">'+pc(D.city[c][0][1],D.city[c][0][0])+'</td><td class="r">'+fmt(tb)+'</td><td class="r">'+D.city[c][5][1]+'</td><td class="r">'+pc(D.city[c][5][1],tb)+'</td><td class="r">100 %</td></tr>';}).join('')+'</table>';
+}
+function paintBands(){
+  var p=D.promoB;
+  document.getElementById('bandTab').innerHTML=bandTable(['Barcelona','Madrid'])+'<div class="quiet" style="margin-top:6px">Of Barcelona\'s '+fmt(D.band.Barcelona.n[0])+' accounts in their first three months in October, <b>'+fmt(p.promo[0])+'</b> joined with the 1-euro promotion on city-flex; <b>'+p.promo[1]+'</b> of them cancelled in October ('+pc(p.promo[1],p.promo[0],1)+'). The other '+p.other[0]+' new accounts (ebike-pro subscribers who joined in the same months) lost '+p.other[1]+' ('+pc(p.other[1],p.other[0],1)+').</div>';
+  document.getElementById('bandOther').innerHTML=bandTable(['Lisbon','Milan','Zürich','London']);
+}
+var Q4=[
+ {q:'Calculate Barcelona\'s October churn without the 1,841 accounts of the summer promotion. Type it in %, with two decimals.',num:283/12359*100,tol:0.03,ph:'%',hint:'Subtract the promotion\'s churned accounts from Barcelona\'s churned accounts, subtract the promotion\'s accounts from Barcelona\'s paying accounts, and divide.',w:'(519 − 236) ÷ (14,200 − 1,841) = 283 ÷ 12,359 = 2.29 %. Without the promotion, Barcelona is where it was in May (2.49 %), and slightly lower.'},
+ {q:'Barcelona\'s churn rose from 2.49 % in May to 3.65 % in October. Where does the rise come from?',a:1,o:[
+   ['Barcelona\'s subscribers leave more often in every group of tenure','Look at the Barcelona rows: months 4–12 went from 2.92 % to 2.88 % and month 13 or later from 2.13 % to 2.08 %. The old subscribers did not change.'],
+   ['From the mix: many more new subscribers, from the promotion, who leave very often','The share of accounts in their first three months went from 7.7 % in May to 15.5 % in October, and the promotion\'s subscribers left at 12.8 %. The older groups did not move.'],
+   ['From chance','A rise of more than one point in a city of 14,200 accounts, three months in a row, is too large and too steady to be chance, and the cohort chart shows where it comes from.']]},
+ {q:'Madrid\'s churn fell from 3.17 % in May to 1.71 % in October. Where does the fall come from?',a:1,o:[
+   ['From the mix: Madrid has fewer new subscribers than in May','Madrid\'s accounts in their first three months were 8.0 % of the city in May and 8.2 % in October: the mix hardly moved.'],
+   ['From lower churn in every group of tenure','Months 1–3: 6.14 % → 3.30 %; months 4–12: 3.73 % → 2.04 %; month 13 or later: 2.71 % → 1.45 %. Madrid\'s subscribers of every tenure leave less often. Session 6 asks what caused it.'],
+   ['From the promotion','The promotion ran in Barcelona only.']]}
+];
+
+/* ---- step 5: plan and the first 14 days ---- */
+function paintPlan(){
+  var h='<table class="rt"><tr><th>City</th><th class="r">city-flex (49 EUR): paying</th><th class="r">churned</th><th class="r">churn</th><th class="r">ebike-pro (79 EUR): paying</th><th class="r">churned</th><th class="r">churn</th></tr>';
+  var A={b:0,d:0},E={b:0,d:0};
+  CITIES.forEach(function(c){var a=D.plan[c]['city-flex'],e=D.plan[c]['ebike-pro'];A.b+=a[0];A.d+=a[1];E.b+=e[0];E.d+=e[1];h+='<tr><td>'+c+'</td><td class="r">'+fmt(a[0])+'</td><td class="r">'+a[1]+'</td><td class="r">'+pc(a[1],a[0])+'</td><td class="r">'+fmt(e[0])+'</td><td class="r">'+e[1]+'</td><td class="r">'+pc(e[1],e[0])+'</td></tr>';});
+  h+='<tr class="tot"><td>Company</td><td class="r">'+fmt(A.b)+'</td><td class="r">'+A.d+'</td><td class="r">'+pc(A.d,A.b)+'</td><td class="r">'+fmt(E.b)+'</td><td class="r">'+E.d+'</td><td class="r">'+pc(E.d,E.b)+'</td></tr></table>';
+  document.getElementById('planTab').innerHTML='<div class="sub" style="font-size:12px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin:6px 0">Table 1 · October churn by plan, in every city</div>'+h;
+  var G=[['promo','Joined with the 1-euro promotion (Barcelona, city-flex)'],['other','Joined without a promotion (all six cities)']],R=['0 to 2 rides','3 to 5 rides','6 rides or more'];
+  var t='<table class="rt"><tr><th>How the account joined</th><th>Rides in its first 14 days</th><th class="r">Paying on 1 Oct</th><th class="r">Churned in Oct</th><th class="r">Churn</th><th class="r">Share of the company\'s 1,168 cancellations</th></tr>';
+  G.forEach(function(g){D.r14[g[0]].forEach(function(x,i){t+='<tr'+(g[0]==='promo'&&i===0&&isDone('s5')?' class="hi"':'')+'><td>'+(i?'':'<b>'+g[1]+'</b>')+'</td><td>'+R[i]+'</td><td class="r">'+fmt(x[0])+'</td><td class="r">'+x[1]+'</td><td class="r">'+pc(x[1],x[0],1)+'</td><td class="r">'+pc(x[1],1168,1)+'</td></tr>';});});
+  t+='<tr class="tot"><td>All 4,540 accounts in their first three months</td><td></td><td class="r">4,540</td><td class="r">347</td><td class="r">'+pc(347,4540,1)+'</td><td class="r">'+pc(347,1168,1)+'</td></tr></table>';
+  document.getElementById('r14Tab').innerHTML='<div class="sub" style="font-size:12px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin:6px 0">Table 2 · Accounts in their first three months: October churn by how they joined and by rides in their first 14 days</div>'+t;
+}
+var Q5=[
+ {q:'Which plan loses a larger share of its subscribers in October?',a:0,o:[
+   ['city-flex, in every one of the six cities','city-flex loses between 1.95 % (Madrid) and 4.75 % (Barcelona) of its subscribers; ebike-pro between 1.36 % (Zürich) and 2.20 % (Milan). In every city city-flex is higher, and the gap is widest in Barcelona, where the promotion sold city-flex.'],
+   ['ebike-pro, which costs more','ebike-pro costs 79 euros instead of 49, but its subscribers leave less often in every city.'],
+   ['Neither: the two plans are the same once you split by city','Split by city, city-flex is still higher in all six cities.']]},
+ {q:'Which group should the CFO ask someone to act on first?',a:2,o:[
+   ['Barcelona: 14,200 accounts, 519 cancellations','True, but too large to act on: most of Barcelona\'s accounts (12,359) leave at 2.29 %, below the company. An action aimed at all of Barcelona spends most of its money on subscribers who were staying.'],
+   ['Every city-flex subscriber: 25,597 accounts','city-flex is higher in every city, but a plan is not something a person can act on this week, and 25,597 accounts is more than half of the company.'],
+   ['The promotion\'s subscribers who rode 0 to 2 times in their first 14 days: 957 accounts, 172 cancellations','2.1 % of the paying accounts make 14.7 % of October\'s cancellations (18.0 %). The warehouse can list them by name on day 14 of their subscription, before most of them cancel, and the head of growth owns the KPI.'],
+   ['Every account in its first three months: 4,540 accounts, 347 cancellations','This group is large and mixes the promotion with normal new subscribers, whose churn with 6 rides or more is 1.9 %, below the company\'s.']]}
+];
+
+/* ---- step 6: the profile ---- */
+function docData(){
+  var tot=cityRows(),f=RIDES.slice(),st=stats(f);
+  return {team:teamLabel(),st:st,tot:tot,dist:val('f_dist'),city:val('f_city'),cohort:val('f_cohort'),who:val('f_who'),todo:val('f_do'),refuse:val('f_refuse')};
+}
+function docMissing(d){var x=[];if(!myTeamId())x.push('a team (join one in Step 1)');if(!d.dist)x.push('the sentence on rides (Step 2)');if(!d.city)x.push('the sentence on the two cities (Step 3)');if(!d.cohort)x.push('the sentences on Barcelona and Madrid (Step 4)');if(!d.who||!d.todo)x.push('who acts and what they do (Step 5)');if(d.refuse.length<40)x.push('the average your team refuses to report, in a full sentence (Step 6a)');return x;}
+function docHTML(d,full){
+  var miss='<span class="miss">missing</span>',H=full?'h2':'h4',st=d.st;
+  function say(t){return t?esc(t):miss;}
+  var h=(full?'<h1>':'<h4>')+'Data profile for ÒRBITA\'s CFO · October 2026 · '+(d.team?esc(d.team):miss)+(full?'</h1><p>Geneva Business School · Business Intelligence · Session 5, 26 November 2026 · <a href="index.html">our KPI memo</a> · <a href="schema.html">our warehouse design</a> · <a href="etl.html">our load report</a></p>':'</h4>');
+  h+='<'+H+'>1. What a typical paying account did in October</'+H+'><div>'+fmt(st.N)+' accounts paying on 1 October made '+fmt(st.S)+' counted rides. Median '+st.med+' rides (P25 '+st.p25+', P75 '+st.p75+', P90 '+st.p90+'); mean '+st.mean.toFixed(1)+'. '+fmt(st.zero)+' accounts did not ride, '+fmt(PAUSED)+' of them paused. The 10 % of accounts that rode most made '+st.top10.toFixed(1)+' % of the rides.</div><div><b>Our reading:</b> '+say(d.dist)+'</div>';
+  h+='<'+H+'>2. Churn by city, May to October 2026</'+H+'><div class="memowrap"><table><tr><th>City</th>'+MONTHS.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>Paying 1 Oct</th></tr>'+CITIES.map(function(c){return '<tr><td>'+c+'</td>'+D.city[c].map(function(x){return '<td>'+rate(x).toFixed(2)+' %</td>';}).join('')+'<td>'+fmt(D.city[c][5][0])+'</td></tr>';}).join('')+'<tr><td><b>Company</b></td>'+d.tot.map(function(x){return '<td><b>'+rate(x).toFixed(2)+' %</b></td>';}).join('')+'<td><b>'+fmt(d.tot[5][0])+'</b></td></tr></table></div>'+(full?citySVG(['Barcelona','Madrid'],true):'')+'<div><b>Our reading:</b> '+say(d.city)+'</div>';
+  var b=D.band;
+  h+='<'+H+'>3. Why Barcelona rises and Madrid falls</'+H+'><div>Barcelona, October: accounts in their first three months '+pc(b.Barcelona.n[1],b.Barcelona.n[0])+', months 4–12 '+pc(b.Barcelona.e[1],b.Barcelona.e[0])+', month 13 or later '+pc(b.Barcelona.l[1],b.Barcelona.l[0])+' (May: '+pc(D.bandMay.Barcelona.n[1],D.bandMay.Barcelona.n[0])+', '+pc(D.bandMay.Barcelona.e[1],D.bandMay.Barcelona.e[0])+', '+pc(D.bandMay.Barcelona.l[1],D.bandMay.Barcelona.l[0])+'). The 1,841 subscribers of the 1-euro summer promotion left at 12.8 %; without them Barcelona\'s churn is 2.29 %. Madrid, October: '+pc(b.Madrid.n[1],b.Madrid.n[0])+', '+pc(b.Madrid.e[1],b.Madrid.e[0])+', '+pc(b.Madrid.l[1],b.Madrid.l[0])+' (May: '+pc(D.bandMay.Madrid.n[1],D.bandMay.Madrid.n[0])+', '+pc(D.bandMay.Madrid.e[1],D.bandMay.Madrid.e[0])+', '+pc(D.bandMay.Madrid.l[1],D.bandMay.Madrid.l[0])+').</div><div><b>Our reading:</b> '+say(d.cohort)+'</div>';
+  h+='<'+H+'>4. The group to act on</'+H+'><div>The promotion\'s subscribers who rode 0 to 2 times in their first 14 days: 957 accounts (2.1 % of the paying accounts), 172 cancellations in October (18.0 %, which is 14.7 % of the company\'s 1,168). This is an association, not a proven cause.</div><div><b>Who acts:</b> '+say(d.who)+'</div><div><b>What they do, and when:</b> '+say(d.todo)+'</div>';
+  h+='<'+H+'>5. The average we refuse to report on its own</'+H+'><div>'+(d.refuse.length>=40?esc(d.refuse):miss)+'</div>';
+  return h;
+}
+function docPlain(d){var st=d.st;return 'DATA PROFILE FOR ÒRBITA\'S CFO · OCTOBER 2026 · '+d.team+(val('f_site')?'\nOnline: '+val('f_site'):'')+
+ '\n\n1. Rides: median '+st.med+', mean '+st.mean.toFixed(1)+', P90 '+st.p90+'. '+d.dist+
+ '\n\n2. Churn by city: Barcelona 2.49 % → 3.65 %, Madrid 3.17 % → 1.71 %, company 2.59 % → 2.62 %. '+d.city+
+ '\n\n3. Why: '+d.cohort+
+ '\n\n4. The group to act on: promotion subscribers with 0–2 rides in their first 14 days (957 accounts, 172 cancellations). Who: '+d.who+' What: '+d.todo+
+ '\n\n5. The average we refuse to report: '+d.refuse;}
+function paintMemo(){var b=document.getElementById('memo');if(b)b.innerHTML=docHTML(docData(),false);}
+var SITE_RE=/^https:\/\/[a-z0-9-]+\.netlify\.app(\/[^\s]*)?$/i;
+function loadSites(){
+  var box=document.getElementById('siteWall');document.getElementById('siteStat').textContent='loading…';
+  BiWall.read('w6s').then(function(res){
+    if(!res.ok){box.innerHTML='<div class="wh">The class\'s data profiles <span class="st">unavailable</span></div><div class="empty">'+wallFail(res)+'</div>';return;}
+    var by={};res.rows.forEach(function(r){if(SITE_RE.test(r.src||''))by[r.n]=r.src;});
+    var k=Object.keys(by).sort();
+    box.innerHTML='<div class="wh">The class\'s data profiles <span class="st">'+k.length+'</span></div>'+(k.length?'<table><tbody>'+k.map(function(n){return '<tr><td class="dom">'+esc(n)+'</td><td><a href="'+esc(by[n])+'" target="_blank" rel="noopener">'+esc(by[n])+'</a></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">No data profile handed in yet.</div>');
+  });
+}
+
+/* ---- wiring ---- */
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:'w6',title:'Session 5 · Describing churn honestly',total:SECTIONS.length});
+  if(window.StatsTrack&&StatsTrack.complete)SECTIONS.forEach(function(s){if(isDone(s))StatsTrack.complete(s);});
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('cbar'),compact:true});
+  paintProgress();
+  /* step 1 */
+  buildClassify('descRows','descCap',VIEWS,DESCR,'two of each.',function(){if(ls('w6_s1ok')==='1'){document.getElementById('s1Note').textContent='Done ✓';markDone('s1');}});
+  document.getElementById('s1Btn').addEventListener('click',function(){
+    if(!val('f_why')){alert('Write one sentence: why can a company-wide average hide a problem?');return;}
+    ls('w6_s1ok','1');
+    if(!CLS.descRows){document.getElementById('s1Note').textContent='Saved. Sort all six questions correctly to finish the step.';return;}
+    document.getElementById('s1Note').textContent='Done ✓';markDone('s1');
+  });
+  /* step 2 */
+  paintDist();buildQuiz('q2',Q2);
+  ['tPaused','tTop'].forEach(function(id){document.getElementById(id).addEventListener('change',paintDist);});
+  document.getElementById('s2Btn').addEventListener('click',function(){
+    if(!quizDone('q2',Q2.length)){alert('Answer the three questions first: '+quizCount('q2',Q2.length)+' of '+Q2.length+' are right.');return;}
+    if(!val('f_dist')){alert('Write, as a team, the sentence that describes a typical subscriber\'s October.');return;}
+    document.getElementById('s2Note').textContent='Done ✓';markDone('s2');
+  });
+  /* step 3 */
+  var g=ls('w5_nx');document.getElementById('guess').innerHTML=g?'<div class="sealed"><div class="sh">Your guess from 12 November</div><div class="sv">You guessed that the city with the highest churn and the city with the lowest would be this far apart: '+esc(labelOf(NEXTS5,g))+'. The third question below gives the answer.</div></div>':'';
+  paintCityTab();paintCityChart();buildQuiz('q3',Q3);
+  document.getElementById('cityPick').addEventListener('change',function(e){var c=e.target.getAttribute('data-c');if(!c)return;SHOWN=CITIES.filter(function(x){var b=document.querySelector('#cityPick input[data-c="'+x+'"]');return b&&b.checked;});lsSet('w6_shown',SHOWN);document.getElementById('citySvg').innerHTML=citySVG(SHOWN,true);});
+  document.getElementById('s3Btn').addEventListener('click',function(){
+    if(!quizDone('q3',Q3.length)){alert('Answer the three questions first: '+quizCount('q3',Q3.length)+' of '+Q3.length+' are right.');return;}
+    if(!val('f_city')){alert('Write, as a team, the sentence about the two cities.');return;}
+    document.getElementById('s3Note').textContent='Done ✓';markDone('s3');paintCityTab();
+  });
+  /* step 4 */
+  paintCoh();paintBands();buildQuiz('q4',Q4);
+  document.getElementById('cohPick').addEventListener('change',function(e){if(e.target.name!=='cohc')return;COHCITY=e.target.value;ls('w6_cohcity',COHCITY);paintCoh();});
+  document.getElementById('s4Btn').addEventListener('click',function(){
+    if(!quizDone('q4',Q4.length)){alert('Answer the three questions first: '+quizCount('q4',Q4.length)+' of '+Q4.length+' are right.');return;}
+    if(!val('f_cohort')){alert('Write, as a team, why Barcelona rises and why Madrid falls.');return;}
+    document.getElementById('s4Note').textContent='Done ✓';markDone('s4');
+  });
+  /* step 5 */
+  paintPlan();buildQuiz('q5',Q5);
+  document.getElementById('s5Btn').addEventListener('click',function(){
+    if(!quizDone('q5',Q5.length)){alert('Answer the two questions first: '+quizCount('q5',Q5.length)+' of '+Q5.length+' are right.');return;}
+    if(!val('f_who')||!val('f_do')){alert('Write, as a team, who acts on the group and what they do.');return;}
+    document.getElementById('s5Note').textContent='Done ✓';markDone('s5');paintPlan();
+  });
+  /* step 6 */
+  chips('pNext',NEXTS,'w6_nx',function(o){setWork('f_next',o.t);});
+  if(ls('w6_nx_sealed')==='1'){lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Locked ✓';}
+  setTimeout(paintMemo,700);setInterval(paintMemo,9000);
+  document.addEventListener('input',function(e){if(e.target&&/^f_/.test(e.target.id||''))paintMemo();});
+
+  /* TEAM answers (teams.js) */
+  if(window.BiTeams){
+    BiTeams.mount(document.getElementById('teamsBox'),{});
+    BiTeams.onLoad(function(){paintMemo();var s=BiTeams.shared('w5_site')||BiTeams.shared('w4_site');if(s&&s.v&&!val('f_site'))document.getElementById('siteHint').innerHTML='Your team\'s last page is at <b>'+esc(s.v)+'</b>, so this profile is <b>'+esc(s.v.replace(/(etl|schema)(\.html)?$/,'profile.html'))+'</b>.';});
+    BiTeams.field('f_why','w6_why');BiTeams.field('f_dist','w6_dist');BiTeams.field('f_city','w6_city');BiTeams.field('f_cohort','w6_cohort');
+    BiTeams.field('f_who','w6_who');BiTeams.field('f_do','w6_do');BiTeams.field('f_refuse','w6_refuse');BiTeams.field('f_site','w6_site');
+    BiTeams.state('w6_handin',function(v){if(!v)return;document.getElementById('docNote').textContent='Handed in ✓ by your team · '+v;markDone('s6');});
+  }
+  document.getElementById('docDl').addEventListener('click',function(){
+    var d=docData(),h='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>ÒRBITA data profile · '+esc(d.team)+'</title><style>body{font:14px/1.55 Georgia,serif;max-width:960px;margin:30px auto;padding:0 18px;color:#111}h1{font-size:20px}h2{font-size:15px;margin-top:22px}table{border-collapse:collapse;width:100%;font:12px/1.4 system-ui,sans-serif;margin:6px 0}td,th{border:1px solid #ccc;padding:5px 7px;vertical-align:top;text-align:left}th{background:#f3f4f7}svg{max-width:100%;height:auto;margin:8px 0}.miss{color:#b00020;font-weight:700}a{color:#A8620A}footer{margin-top:30px;font-size:11.5px;color:#666;border-top:1px solid #ddd;padding-top:8px}</style></head><body>'+docHTML(d,true)+'<footer>ÒRBITA is a fictional company, invented for the course. A student data profile, not advice. Churn = cancellations in the month, without those undone within 30 days, ÷ accounts paying on the 1st (active and paused).</footer></body></html>';
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h],{type:'text/html'}));a.download='profile.html';document.body.appendChild(a);a.click();a.remove();
+    document.getElementById('docNote').textContent='profile.html is downloaded. Move it into the orbita-memo folder, as 6b says.';
+  });
+  document.getElementById('docCopy').addEventListener('click',function(){var t=docPlain(docData()),n=document.getElementById('docNote');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){n.textContent='✓ Copied.';},function(){n.textContent='Select the profile and copy it.';});});
+  document.getElementById('docBtn').addEventListener('click',function(){
+    var d=docData(),miss=docMissing(d);
+    if(miss.length){alert('The profile still needs '+miss.join(', ')+'.');return;}
+    if(!SITE_RE.test(val('f_site'))){alert('Paste the full address of your data profile first, as 6b says. It looks like https://orbita-kpi-team-a-rates.netlify.app/profile.html');return;}
+    var when=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    setWork('f_doc',docPlain(d)+'\n\nHanded in '+when);
+    document.getElementById('docNote').textContent='Handed in ✓ · '+when;markDone('s6');
+    if(window.BiTeams){BiTeams.share('w6_site',val('f_site'));BiTeams.share('w6_handin',when);}
+    if(window.BiWall)BiWall.post('w6s',{n:(d.team||'Team').slice(0,40),src:val('f_site').slice(0,200)}).then(function(){loadSites();});
+  });
+  document.getElementById('siteWallBtn').addEventListener('click',loadSites);
+  document.getElementById('nextBtn').addEventListener('click',function(){
+    if(!ls('w6_nx')){alert('Choose one answer. A wrong guess costs nothing.');return;}
+    ls('w6_nx_sealed','1');lockChips('pNext');var nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Locked ✓';
+    document.getElementById('nextNote').textContent='Locked ✓. Your guess is shown in Session 6.';
+  });
+  document.getElementById('quizBtn').addEventListener('click',function(){document.getElementById('quizNote').textContent='Done ✓. Session 6 is on the course page.';markDone('s7');});
+  document.getElementById('resetLink').addEventListener('click',function(e){
+    e.preventDefault();
+    if(!confirm('Reset your Session 5 answers and progress on this device?'))return;
+    try{Object.keys(localStorage).forEach(function(k){if(k.indexOf(K+'_')!==0||k===K+'_auth')return;if(/_w6(_|$)/.test(k)||k==='bi_descRows')localStorage.removeItem(k);});}catch(err){}
+    location.reload();
+  });
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}document.getElementById('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+  chip();window.addEventListener('statstrack:named',chip);
+});
+</script>
+<script src="courseprogress.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="tracker.js"></script>
+<script>
+/* the hand-in tracker: what the team has done on this page, read from the page's own fields */
+window.addEventListener('DOMContentLoaded',function(){setTimeout(function(){BiTracker.mount({key:'w6',title:'Your team\'s data profile',items:[
+ {label:'Join your team on the board',where:'Step 1',href:'#teamsBox',check:function(){var t=myTeamId();return {done:!!t,text:t?(window.BiTeams?BiTeams.label(t):'Team '+t):'Choose your team on the board in Step 1.'};}},
+ {label:'Step 1: learn the words and sort six questions (each person)',where:'Step 1',href:'#s1',check:function(){return {done:isDone('s1')};}},
+ {label:'Describe the rides of a typical subscriber',where:'Step 2',href:'#s2',check:function(){var n=quizCount('q2',Q2.length);return {done:isDone('s2'),have:n+(val('f_dist')?1:0),need:Q2.length+1,text:n+' of '+Q2.length+' questions right'+(val('f_dist')?'; sentence written':'; the team sentence is missing')};}},
+ {label:'Split churn by city',where:'Step 3',href:'#s3',check:function(){var n=quizCount('q3',Q3.length);return {done:isDone('s3'),have:n+(val('f_city')?1:0),need:Q3.length+1,text:n+' of '+Q3.length+' questions right'+(val('f_city')?'; sentence written':'; the team sentence is missing')};}},
+ {label:'Explain Barcelona and Madrid with the cohorts',where:'Step 4',href:'#s4',check:function(){var n=quizCount('q4',Q4.length);return {done:isDone('s4'),have:n+(val('f_cohort')?1:0),need:Q4.length+1,text:n+' of '+Q4.length+' questions right'+(val('f_cohort')?'; sentences written':'; the team sentences are missing')};}},
+ {label:'Name the group to act on, who acts and what they do',where:'Step 5',href:'#s5',check:function(){var n=quizCount('q5',Q5.length),w=(val('f_who')?1:0)+(val('f_do')?1:0);return {done:isDone('s5'),have:n+w,need:Q5.length+2,text:n+' of '+Q5.length+' questions right; '+w+' of 2 team boxes written'};}},
+ {label:'Write the average your team refuses to report',where:'Step 6a',href:'#f_refuse',check:function(){var v=val('f_refuse');return {done:v.length>=40,text:v?(v.length>=40?'Written.':'Write a full sentence: which average, and what it hides.'):'Not written yet.'};}},
+ {label:'Publish profile.html on your Netlify site',where:'Step 6b',href:'#f_site',check:function(){var ok=SITE_RE.test(val('f_site'));return {done:ok,text:ok?val('f_site'):'Paste the address that ends with .netlify.app/profile.html.'};}},
+ {label:'Hand in the data profile',where:'Step 6c',href:'#docBtn',check:function(){return {done:isDone('s6'),text:isDone('s6')?'Handed in.':'One member presses "Hand in the data profile".'};}},
+ {label:'Play the team quiz',where:'Step 7',href:'#s7',check:function(){return {done:isDone('s7')};}}
+]});},900);});
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>

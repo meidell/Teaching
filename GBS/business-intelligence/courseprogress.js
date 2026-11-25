@@ -41,7 +41,7 @@ window.CourseProgress=(function(){
     {mod:'w3',  short:'W3', name:'Week 03 · KPIs that survive contact',          total:7, live:true, href:'week3.html'},
     {mod:'w4',  short:'W4', name:'Week 04 · Designing the data warehouse',        total:7, live:true, href:'week4.html'},
     {mod:'w5',  short:'W5', name:'Week 05 · Loading the data into the warehouse (ETL)', total:7, live:true, href:'week5.html'},
-    {mod:'w6',  short:'W6', name:'Week 06 · Describe it honestly',               total:6, live:false},
+    {mod:'w6',  short:'W6', name:'Week 06 · Describing churn honestly: by city, start month and plan', total:7, live:true, href:'week6.html'},
     {mod:'w7',  short:'W7', name:'Week 07 · Is the difference real?',            total:6, live:false},
     {mod:'w8',  short:'W8', name:'Week 08 · The chart that misleads',            total:6, live:false},
     {mod:'w9',  short:'W9', name:'Week 09 · Build the thing',                    total:6, live:false},

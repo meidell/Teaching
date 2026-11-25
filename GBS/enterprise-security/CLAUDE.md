@@ -23,7 +23,7 @@ sessions**. On the creator-economy run-sheet pattern (`esc.css` = `creator.css`
 + additions at the END; `wall.js` = creator's with the namespace changed,
 global `EscWall`; `courseprogress.js` a port).
 
-- ⚠ **Session 7 is the MIDTERM (27 Nov), Session 14 the FINAL.** Neither has a
+- ⚠ **Session 7 is the MIDTERM (27 Nov), Session 14 the FINAL.** *(Superseded 12 Nov 2026: the midterm is Session 9 on 11 Dec and `w7` is the hybrid-threats page — see the bullet "Midterm moved" below.)* Neither has a
   page or a chapter; module ids are session numbers `w1`…`w6`, `w8`…`w13`, and
   `w7`/`w14` must never be reused. **Dates after the winter break are
   provisional** (15/22/29 Jan, final 5 Feb 2027); change `date` in the hub's
@@ -436,3 +436,40 @@ global `EscWall`; `courseprogress.js` a port).
   Apr 2023, Taiwan News) — the articles themselves were not opened. Same day: step 5's question on the
   ships' satellite provider was rewritten (situation + what each of the two sentences must say), and the
   four "What breaks it" lines of the Viasat chain became full sentences.
+
+- **Session 7 — "Hybrid threats, resilient firms" (`week7.html`, built 25 Nov 2026 for Fri 27 Nov,
+  `total:6`).** Syllabus topic 9; the reading drawn in s1 is Reflection 6 (EC 2016, `refl7_*`). s1 the
+  Session 5 trusted-vendor claim (`w7_counter`, may be empty), the instructor's reflection-draw link, and
+  Session 6's sealed `w6_nx` opened. s2 the EU definition quoted verbatim from JOIN(2016) 18 §1 (text
+  checked on EUR-Lex 25 Nov 2026, via a headless browser — EUR-Lex refuses curl), its four marks, the
+  Hybrid Fusion Cell (EU INTCEN, "a single focus for the analysis of hybrid threats", §3.1), Hybrid CoE
+  (Helsinki 2017), 22 actions; an eight-event classify by instrument (answers LG CY EC PH IN EC PH LG:
+  China's Feb 2022 phytosanitary bans, Estonia 2007, China's customs Dec 2021, Russian MoD 19 Jul 2023,
+  Doppelganger + DOJ's 32 domains 4 Sep 2024, pressure on multinationals, Houthis, Decree 302 /
+  Unipro 83.7 % + Danone/Carlsberg); the Lithuania case (EC's DS610 page: measures from Dec 2021, bans
+  Feb 2022, consultations 27 Jan 2022 — **the case's later status is NOT stated on the page**: press
+  reports suspension/resumption/abandonment, unverified); Anti-Coercion Instrument (EU) 2023/2675, in
+  force 27 Dec 2023; `w7_combo`. s3 a FICTIONAL eight-move six-week campaign against Arvane, classify by
+  the desk that sees it first (answers CO IT TR LE OP TR IT CO), then a desk × week grid ("nobody saw
+  more than two"), tied to the Fusion Cell and the incident director (roles.html); `w7_desk`. s4 the
+  Black Sea in July 2023 (BSGI 22 Jul 2022, expired 17 Jul 2023, Marsh's USD 50 m cargo facility paused,
+  the MoD quote, Ukraine's mirror warning from 21 Jul) and the Red Sea (IMF Blog 7 Mar 2024: Suez trade
+  −50 %, Cape +74 %, 10+ days); a Red-Sea-or-Cape calculator whose defaults are INVENTED except the 10
+  days (24 days, USD 45,000/day, toll USD 400,000, hull USD 30 m, premium 0.7 % → break-even 0.17 %,
+  `escwa_w7_route_v`); `w7_route`. s5 EU resilience definition (§4, quoted), ISO 22316:2017
+  (paraphrased: the final wording could not be read), Sheffi 2005 redundancy/flexibility, Philips fire
+  March 2000 (WSJ 29 Jan 2001: Ericsson ≥ USD 400 m potential revenue) and Aisin 1 Feb 1997 (Nishiguchi
+  & Beaudet 1998; first valves 5 Feb), JOIN(2016) 18 Action 8 on a single GNSS timing signal; the
+  single-points-of-failure gadget (9 fictional resources, 5 activities, Cut it / Buy the backup, CHF
+  800,000 budget against CHF 1,640,000 for all nine, `escwa_w7_spf`); `w7_spof`. s6 team board,
+  hardest pressure (Session 6's four `w6_nx` keys, so the wall compares with the sealed predictions) +
+  first backup → `_wall/w7` as `P:<cy|ec|lg|in>|R:<resource key>`; claim for Session 8 ("A company that
+  has a written crisis plan is ready for a crisis", due 4 Dec); prediction `w7_nx` for Session 8 (what
+  runs short first: info / ppl / cash / trust); **Reflection 7 = `refl8_*` on NIST SP 800-61 Rev. 3,
+  sections 1–2, pp. 2–9** (contents checked in the PDF); a note that the midterm (11 Dec) covers S1–6
+  only. The page styles its own `.cl-row` classify rows (week6's were unstyled, because esc.css has no
+  rules for them and lesson.css is not loaded). Registered: hub `TERM` w7 `href`, courseprogress `w7
+  live, href`; **courses.json (module w7 + `menu.sessions[n=7].href`) left to Jan Erik**. Tested
+  headless with an in-memory database at 1280 and 420 px: 6/6, wall row, DB work keys and done map,
+  state after reload, no page errors, no sideways scroll. Session 8 should open `w7_nx`, the crisis-plan
+  claim and Reflection 7.

@@ -303,3 +303,37 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   against the real engine: 8/8 model answers Correct, starter code and wrong answers (wrong order,
   inner join) give the intended message, 390 px fits (scrollWidth 390), no page errors.
 
+- **Session 5 (`week6.html`, `w6`, Thu 26 Nov 2026) built 25 Nov 2026 — a self-run mandate like Sessions 2–4:
+  describe the data (descriptive statistics, Module 3).** Title (hub `TERM`, page, courseprogress): "Describe
+  ÒRBITA's churn honestly: split it by city, by start month and by plan, and show the spread, not only the
+  average" (the old teaser "Describe it honestly" is gone; presence.js still carries the old name). The CFO
+  wants to tell the board churn is unchanged at 2.62 %. Seven counted steps (`total:7`). s1 reading (mean,
+  median, percentile, distribution, skew, segment, cohort, tenure, mix, Simpson's paradox) + sort of six
+  questions into distribution / segment / cohort (`bi_descRows`) + team `w6_why`; team board in Step 1. s2 the
+  **rides distribution** of the 44,600 paying accounts (embedded `RIDES[k]` = accounts with k rides; index 0
+  includes the 4,532 paused): 555,552 rides, mean 12.46, median 7, P25 2, P75 17, P90 33, 65.7 % below the
+  mean, 7,884 with no ride (3,352 active), top 10 % = 39.4 % of rides; toggles (paused off → mean 13.9 /
+  median 8; top 1 % off → 11.7 / 7); three checked questions; team `w6_dist`. s3 **churn by city May–Oct**
+  (`D.city`, table + SVG lines): company 2.59 % → 2.62 % (1,168 / 44,600 = finance's figure); Barcelona
+  2.49 → 3.65 %, Madrid 3.17 → 1.71 %, Zürich lowest 1.68 %, spread 1.98 points (opens `w5_nx`; right band
+  "1 to 3 points"); team `w6_city`. s4 **cohorts and mix**: new case fact — Barcelona sold city-flex with the
+  first month at 1 EUR, July–September 2026 (830 sign-ups a month instead of 350); cohort curves (`D.coh`,
+  Barcelona/Madrid), tenure bands May vs Oct (`D.band`, `D.bandMay`: 1–3, 4–12, 13+). Barcelona's rise is MIX
+  (old bands flat, 1,841 promo accounts churn 12.8 %, without them 283 / 12,359 = 2.29 %); Madrid's fall is in
+  EVERY band (6.14/3.73/2.71 → 3.30/2.04/1.45 %, mix unchanged) — its cause is deliberately left open for
+  Session 6; team `w6_cohort`. s5 plan × city (`D.plan`; city-flex higher in every city, company 3.20 % vs
+  1.84 %) and new accounts by how they joined × rides in the first 14 days (`D.r14`): the actionable group =
+  promo subscribers with 0–2 rides, 957 accounts, 172 cancellations (18.0 %, 14.7 % of October's churn);
+  "association, not cause" callout; team `w6_who`, `w6_do`. s6 part 5 `w6_refuse` (the average the team
+  refuses to report), profile built live, download `profile.html` into `orbita-memo`, hand-in requires a
+  `*.netlify.app` address, wall `w6s`, prediction `w6_nx` (what the Session 6 price-change test will say: real
+  and caused by the price · real, other cause · chance · cannot tell). s7 quiz = `jeopardy.html?set=s5` (new
+  set; last category "Your profile"). Questions are per member (`bi_w6_q2…q5`, wrong options crossed out),
+  sentences are team fields. The numbers come from a cohort model (scratch `gen_final.py`, Python, 25 Nov 2026):
+  every sub-table sums to its city's October cell; change one number and the page's `D`, the deck and the
+  quiz all move. Tracker: 10 items. `week6-slides.html`: 14 slides on the week5 deck engine, static SVGs of
+  the histogram and the city lines. Probed 25 Nov 2026: 7/7, no page errors, no sideways scroll at 1280 and
+  420 px, state survives reload, no slide overflow at 1280×720 or 1440×900.
+  ⚠ The hub's `TERM` still dates w6 to the week of 16 Nov (Thu 19 Nov) and courses.json `schedule.dates`
+  lists 19 Nov as session 5; the page itself says Thu 26 Nov. Session 6 should open `w6_nx` and may use
+  Madrid's unexplained fall as the "price change in one city".

@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/financial-modelling/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Session 5 · Free cash flow, the cost of capital from market data, and the terminal value two ways · GBS</title>
+<meta name="description" content="Session 5 of Finance Modelling at Geneva Business School. Boreal Logistics asks what Meridia Cold is worth on its own. Teams compute free cash flow from the Session 4 forecast and reconcile it to net income and to the cash flow statement, build the WACC from market data (Bund yield, Damodaran's equity risk premiums and industry betas), discount the cash flows, compute the terminal value with perpetuity growth and with an exit multiple, test it four ways, and reply to Boreal.">
+<meta name="theme-color" content="#101F44">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="finmod.css">
+<style>
+/* Session 5 as a self-run mandate (25 Nov 2026), on Session 4's pattern. finmod.css does the rest. */
+.sub{font-size:12px;letter-spacing:1.3px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);margin:18px 0 6px;}
+.tbl{overflow-x:auto;margin:8px 0 12px;}
+.tbl table{border-collapse:collapse;font-size:13px;min-width:100%;background:#fff;font-variant-numeric:tabular-nums;}
+.tbl th,.tbl td{border:1px solid var(--line);padding:5px 9px;text-align:right;vertical-align:top;white-space:nowrap;}
+.tbl th:first-child,.tbl td:first-child{text-align:left;white-space:normal;min-width:190px;}
+.tbl th{background:var(--surface);color:var(--navy);font-size:11.5px;}
+.tbl tr.tot td{font-weight:800;background:#FAFBFC;}
+.tbl tr.sec td{background:var(--surface);color:var(--navy);font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;}
+.tbl td.bad{background:#FBE5E7;color:#9B2335;font-weight:800;}
+.tbl td.good{background:#E6F4EC;color:#2F855A;font-weight:800;}
+.tbl td.hl{background:#FFF0D6;font-weight:800;color:var(--navy);}
+.tbl td.src{text-align:left;white-space:normal;font-size:12px;color:var(--grey);min-width:220px;}
+.fact{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:11px 14px;margin:8px 0;font-size:13.5px;line-height:1.55;}
+.fact b{color:var(--navy);}
+.chkrow{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:8px;align-items:center;padding:7px 0;border-top:1px dashed var(--line);font-size:13.5px;}
+.chkrow:first-child{border-top:none;}
+.chkrow input{font:inherit;font-size:13.5px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;width:100%;}
+.chkrow .r{font-size:12.5px;font-weight:700;min-width:60px;}
+.chkrow.ok input{border-color:#2F855A;} .chkrow.ok .r{color:#2F855A;} .chkrow.no .r{color:#9B2335;}
+@media(max-width:560px){.chkrow{grid-template-columns:1fr 90px;}.chkrow .r{grid-column:1/-1;}}
+.drv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 12px;margin:10px 0;}
+.drv label{display:block;font-size:11.5px;font-weight:800;color:var(--navy);margin-bottom:3px;line-height:1.3;}
+.drv input,.drv select{width:100%;font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;padding:7px 9px;background:#FFFBEA;color:#1F3FBF;}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.seg button{font:inherit;font-size:12.5px;font-weight:800;padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--navy);cursor:pointer;}
+.seg button.on{background:var(--navy-surface,#101F44);border-color:var(--navy-surface,#101F44);color:#fff;}
+.memo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13px;line-height:1.55;}
+.memo h4{font-size:13.5px;color:var(--navy);margin:12px 0 4px;} .memo h4:first-child{margin-top:0;}
+.memo .miss{color:#9B2335;font-weight:700;}
+.memo table{border-collapse:collapse;font-size:12px;} .memo td,.memo th{border:1px solid var(--line);padding:4px 8px;text-align:right;} .memo td:first-child,.memo th:first-child{text-align:left;}
+.memowrap{overflow-x:auto;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+details.xl{min-width:0;max-width:100%;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:12px;margin:10px 0;}
+details.xl>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+details.xl>div{padding:0 14px 12px;font-size:13px;line-height:1.55;}
+details.xl code{overflow-wrap:anywhere;word-break:break-word;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--navy);}
+.opts{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 4px;}
+.opt{font:700 12.5px inherit;color:var(--navy);background:#fff;border:1.5px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;}
+.opt.on{background:var(--navy-surface,#101F44);border-color:var(--navy-surface,#101F44);color:#fff;}
+.fx{font-family:Georgia,serif;font-size:14.5px;color:var(--navy);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 13px;margin:8px 0;overflow-wrap:anywhere;}
+</style>
+</head>
+<body data-course="finmod" data-module="w6">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Session 05 · Thu 26 Nov</span>
+  <div class="cbar" id="cbar"></div>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="week6-slides.html" target="_blank" rel="noopener" style="background:var(--accent-bright);border-color:var(--accent-bright);color:var(--navy);">▶ Slides</a>
+  <a class="home" href="index.html">← Course</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 05 · Thursday 26 November 2026 · 18:45–20:45</div>
+    <h1>Value Meridia from its free cash flow: the cash flow from last session's forecast, a cost of capital built from market data, and the terminal value worked out two ways</h1>
+    <div class="when">Group work: teams of 2–3 work through this page on their own; the instructor walks around and helps. One laptop per team, signed in to this site. Excel is optional: every step runs on this page, and a drawer under each step says how to build the same thing in Excel. The Session 5 slides (the gold button at the top) work through every calculation first on a second business, the Forno Lumen bakery chain.</div>
+    <p class="lead"><b>The mandate.</b> Banca del Litorale has the five-year forecast your team sent in Session 4. Boreal Logistics now wants to know what Meridia is worth <b>on its own</b>, before counting any cost Boreal could save by merging the two companies (those savings are called <b>synergies</b>; a later session values them). Boreal's head of corporate development writes: <i>"Value Meridia from its free cash flow. Build the cost of capital from market data that we can check, not from a number someone assumed. Give us the terminal value both ways, tell us how much of the value sits in the years after FY2030, and tell us which assumption the value depends on most."</i></p>
+    <div class="doit"><div class="dh">Your deliverable · homework · a one-page reply to Boreal, handed in before Session 6 on Thursday 3 December at 18:45</div><p><b>1.</b> Meridia's free cash flow FY2026–FY2030, and how it reconciles to net income · <b>2.</b> the cost of capital (WACC), with the source of every input · <b>3.</b> the value per share your team reports, the method behind it, and the range · <b>4.</b> the share of the value in the terminal value, and the one assumption the value depends on most. The page builds parts 1 and 2 from what your team does in Steps 2–4. Your team writes parts 3 and 4 in Step 5. You hand the reply in on this page in Step 6. <b>The team quiz in Step 7 is played at the start of Session 6.</b></p></div>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 7</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">0%</span>
+  </div>
+
+  <div class="plan">
+    <h2>How to work</h2>
+    <div class="ps">Do the steps in order, as a team, on one laptop. Each step says what to do in numbered actions and ends with a button. All figures are in € million with one decimal unless the step says otherwise. Stuck? Read the step again, then open the Session 5 slides (the gold button at the top): every check on this page is the same calculation as a Forno Lumen slide, with Meridia's numbers and five years instead of three. Hand the reply in before Thursday 3 December, 18:45.</div>
+    <ol>
+      <li><span class="t">1</span><span class="n"><b>Read Boreal's request</b>, join your team, and guess how much of Meridia's value sits in the terminal value.</span></li>
+      <li><span class="t">2</span><span class="n"><b>Compute the free cash flow</b> from the Session 4 forecast, and see why it is neither net income nor EBITDA.</span></li>
+      <li><span class="t">3</span><span class="n"><b>Build the cost of capital (WACC)</b> from a government bond yield, an equity risk premium and the beta of listed companies.</span></li>
+      <li><span class="t">—</span><span class="n">Take a break when your team is ready.</span></li>
+      <li><span class="t">4</span><span class="n"><b>Discount the cash flows</b> and compute the terminal value two ways: perpetuity growth and an exit multiple.</span></li>
+      <li><span class="t">5</span><span class="n"><b>Test the terminal value</b> four ways, then write reply parts 3 and 4.</span></li>
+      <li><span class="t">6</span><span class="n"><b>Write and hand in the reply</b> on this page.</span></li>
+      <li><span class="t">7</span><span class="n"><b>Team quiz.</b> Jeopardy, team against team, on the screen, at the start of Session 6.</span></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s1" data-board="Terminal value share · our guess|w6_pred">
+    <span class="tick">✅</span>
+    <span class="clock">Step 1 · the request</span>
+    <h2>Read Boreal's request, join your team, and guess the share of the value in the terminal value</h2>
+    <ol><li>Read the three facts below, as a team.</li><li>Join your team on the board, or move to it. The page writes your team's name and members in the box under the board. Check it.</li><li>Each member guesses what share of Meridia's enterprise value sits in the terminal value, before anything is computed. The team locks one answer. A wrong guess costs nothing; Step 4 shows the answer.</li></ol>
+    <div class="fact"><b>Where we start.</b> The base-case forecast of Session 4: revenue grows from €180.4 m in FY2025 to €249.6 m in FY2030 (pallet positions +3.5 % and price +3.1 % a year), EBITDA stays at 16.1 % of revenue and reaches €40.2 m in FY2030, capex is 8 % of revenue, and working capital is driven by days. At the end of FY2025 Meridia has term debt of €69.0 m and cash of €9.0 m, so its <b>net debt</b> (debt minus cash) is €60.0 m. It has 40.0 million shares. The <b>valuation date</b> is 31 December 2025, the date of the last balance sheet: every cash flow is valued as of that day.</div>
+    <div class="fact"><b>What a DCF is.</b> A <b>discounted cash flow valuation (DCF)</b> values a business as the cash it will produce, with each future euro converted into today's euros at a rate that pays investors for waiting and for the risk. The result is the <b>enterprise value</b>: the value of the whole business, before the debt is paid off. The shareholders own what is left after the net debt.</div>
+    <div class="fact"><b>What the terminal value is.</b> A forecast stops after five years, but Meridia does not. The <b>terminal value</b> is one number, at the end of FY2030, that stands for all the cash flows from FY2031 onwards. Step 4 computes it two ways.</div>
+    <div class="cap">
+      <label>The teams: join yours, or move to another one</label>
+      <div class="hint">Any member can rename the team, add a classmate with "+ Add a member", or take a name off with ×.</div>
+      <div id="teamsBox" class="teams"></div>
+    </div>
+    <div class="cap">
+      <label for="f_team">Your team's name and members</label>
+      <div class="hint">It goes on your reply. One laptop per team: the person signed in hands the reply in for the team.</div>
+      <input type="text" id="f_team" data-work="w6_team" data-worklabel="W6 · team and members" placeholder="e.g. Team Ebro — Ana Ruiz, Louis Martin, Mei Chen" autocomplete="off">
+    </div>
+    <div class="cap">
+      <label>Our guess: the share of Meridia's enterprise value that sits in the terminal value</label>
+      <div class="opts" id="pPred"></div>
+      <input type="hidden" id="f_pred" data-work="w6_pred" data-worklabel="W6 · guess: share of value in the terminal value">
+    </div>
+    <button class="btn" id="b1">Lock our guess — go to Step 2</button>
+    <div class="savenote" id="n1"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s2" data-board="Why free cash flow is not net income|w6_fcf">
+    <span class="tick">✅</span>
+    <span class="clock">Step 2 · free cash flow</span>
+    <h2>Compute Meridia's free cash flow from the Session 4 forecast</h2>
+    <div class="lect"><div class="lh">Read first · what free cash flow counts, and what it leaves out</div><ol>
+      <li><b>Free cash flow to the firm (FCFF)</b> is the cash the business produces in a year after tax, after paying for new fixed assets (capex) and after the money tied up in working capital, <b>before</b> any payment to lenders or owners. It is the cash that the lenders and the owners, together, could take out of the company. This page uses FCFF throughout.</li>
+      <li><b>The formula.</b> FCFF = EBIT × (1 − tax rate) + D&amp;A − capex − increase in working capital. <b>EBIT</b> (earnings before interest and tax) is EBITDA minus depreciation and amortisation (D&amp;A). EBIT × (1 − tax rate) is called <b>NOPAT</b>, net operating profit after tax: the profit the business would make if it had no debt. D&amp;A is added back because it is a cost in the income statement but no cash leaves the company.</li>
+      <li><b>Why not net income.</b> Net income has the interest already subtracted, and interest is a payment to the lenders, who are paid out of FCFF. Net income also ignores capex and working capital, which are real cash.</li>
+      <li><b>Why not EBITDA.</b> EBITDA ignores tax, capex and working capital. In Meridia's forecast capex alone takes about half of EBITDA, so FCFF is only about 30 % of EBITDA.</li>
+      <li><b>Tax on EBIT, not the tax Meridia actually pays.</b> Meridia pays less tax than 24 % of EBIT because interest is deductible. That saving exists because of the debt, so it is counted in the cost of debt in Step 3 (the cost of debt after tax). Counting it in the cash flow as well would count it twice.</li>
+      <li><b>FCFF does not change with the dividend or with the interest method of Session 4.</b> Neither of them changes EBIT, capex or working capital. Session 1's simpler model gave FY2026 free cash flow of €9.62 m, because it set D&amp;A at 5 % of revenue and working capital at 10 % of new revenue; tonight's forecast computes both from the balance sheet.</li></ol></div>
+    <ol><li>Read the free cash flow table below, line by line, from EBITDA down to FCFF.</li><li>Read the two reconciliations under it: FCFF computed from the cash flow statement, and where FCFF goes (to the lenders, to the owners, into the cash balance). Both must give the same FCFF.</li><li>Switch to the lender case and look at FY2026: why is FCFF so much lower? Switch back to the base case.</li><li>Answer the five checks on the base case, then write in one or two sentences why FCFF is neither net income nor EBITDA.</li></ol>
+    <div class="seg" id="caseSeg2"><button type="button" data-v="base" class="on">Base case</button><button type="button" data-v="lend">Lender case</button></div>
+    <div class="tbl" id="fcfTab"></div>
+    <div id="chk2"></div>
+    <details class="xl"><summary>In Excel: the free cash flow rows (FY2026 in column D)</summary><div>
+      Add a block <b>Free cash flow</b> under the cash flow statement of your Session 4 model, one formula per row, copied to the right: EBIT <code>=D8-D14</code> (EBITDA − D&amp;A) · Tax on EBIT <code>=-D50*TaxRate</code> · NOPAT <code>=D50+D51</code> · plus D&amp;A <code>=D14</code> · minus capex <code>=-D15</code> · minus increase in working capital <code>=-D13</code> · FCFF <code>=SUM(D52:D55)</code>. Then a check row: <code>=ROUND(D56-(D25-D15+D40*(1-TaxRate)),3)</code>, cash from operations − capex + interest after tax, which must be 0 in every year and feeds the master check. Use your own row numbers; what matters is that FCFF is computed once, from the operating lines, and checked against the cash flow statement.</div></details>
+    <details class="xl"><summary>The same structure in another business: a software company sold by annual subscription</summary><div>A software company has almost no capex (offices and laptops), and its customers pay the year in advance, so its working capital is negative and grows more negative as it grows. Its FCFF is therefore often <b>higher</b> than its net income, the opposite of Meridia. The formula is the same; capex and working capital say what kind of business it is.</div></details>
+    <div class="cap">
+      <label for="f_fcf">Why is Meridia's FCFF neither its net income nor its EBITDA? Write one or two sentences with the FY2026 numbers.</label>
+      <textarea id="f_fcf" data-work="w6_fcf" data-worklabel="W6 · why FCFF is not net income or EBITDA" placeholder="e.g. FY2026 FCFF is €9.2 m against net income of €13.0 m and EBITDA of €31.0 m: capex of €15.4 m takes about half of EBITDA, and …"></textarea>
+    </div>
+    <button class="btn" id="b2">The free cash flow is checked — go to Step 3</button>
+    <div class="savenote" id="n2"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s3" data-board="The least certain input of the WACC|w6_wacc">
+    <span class="tick">✅</span>
+    <span class="clock">Step 3 · the cost of capital</span>
+    <h2>Build the WACC from market data</h2>
+    <div class="lect"><div class="lh">Read first · where each part of the WACC comes from</div><ol>
+      <li><b>The WACC</b> (weighted average cost of capital) is the yearly return that lenders and owners, together, require for financing Meridia. Each one's required return is weighted by its share of the financing: WACC = E ÷ (D + E) × cost of equity + D ÷ (D + E) × cost of debt × (1 − tax rate). D is debt and E is equity, both at market value. FCFF goes to lenders and owners together, so it is discounted at their combined rate.</li>
+      <li><b>The cost of equity</b> comes from the <b>capital asset pricing model (CAPM)</b>: risk-free rate + beta × equity risk premium. The <b>risk-free rate</b> is the yield of a government bond that will certainly be repaid, in the currency of the cash flows: the 10-year German government bond (Bund) yielded 2.85 % on 31 December 2025. The <b>equity risk premium (ERP)</b> is the extra yearly return investors expect from shares above that bond. Aswath Damodaran (New York University) publishes it every January for each country; it is higher in countries with more risk.</li>
+      <li><b>Beta</b> measures how much a company's share price moves when the whole market moves: 1.0 moves with the market, 0.5 half as much. Meridia is not listed, so it has no share price and no beta. You borrow the beta of listed companies in the same business, the <b>comparables</b>. Their betas include the effect of their debt, so you first remove it (<b>unlevered beta</b>) and then put back Meridia's: levered beta = unlevered beta × (1 + (1 − tax rate) × D ÷ E).</li>
+      <li><b>A premium for size and for being unlisted.</b> The CAPM is estimated on large listed companies. Meridia is small, and its shares cannot be sold on a stock exchange, so buyers usually ask for a few points more. There is no market price for this premium: it is a judgement. Boreal's investment committee adds <b>3.0 points</b> to the cost of equity for unlisted companies of Meridia's size. Your reply must state it.</li>
+      <li><b>The cost of debt</b> is what Meridia pays to borrow today, 4.6 % a year (Session 4), which is 1.75 points above the Bund. Interest is deductible, so the cost after tax is 4.6 % × (1 − 24 %). <b>The weights</b> use the debt-to-equity ratio of the comparables, 0.77, because Meridia's own market value is what we are trying to find.</li></ol></div>
+    <ol><li>Read the data pack below: every input has its source and date.</li><li>Read the WACC calculator under it. The yellow boxes with blue figures are the inputs; every other figure is computed from them.</li><li>Change one input at a time (try the premium at 0, and the beta at 0.65, the trucking companies' beta), watch the WACC, then press <b>Reset to the data pack</b>.</li><li>Answer the five checks, then write which input of the WACC your team is least sure of, and why.</li></ol>
+    <div class="sub">The data pack · as of the valuation date</div>
+    <div class="tbl"><table>
+      <tr><th>Input</th><th>Value</th><th style="text-align:left">Source and date</th></tr>
+      <tr><td>Risk-free rate: yield of the 10-year German government bond (Bund)</td><td>2.85 %</td><td class="src">German Federal Ministry of Finance, <i>Monatsbericht</i> January 2026, yield on 31 December 2025</td></tr>
+      <tr><td>Equity risk premium, mature market (Germany, Switzerland)</td><td>4.23 %</td><td class="src">A. Damodaran, implied premium for the S&amp;P 500, 1 January 2026</td></tr>
+      <tr><td>Total equity risk premium: Spain · France · Italy</td><td>5.78 % · 5.01 % · 6.69 %</td><td class="src">A. Damodaran, <i>Country Risk Premiums</i> (rating-based), 1 January 2026: the mature premium plus each country's risk premium</td></tr>
+      <tr><td>Meridia's revenue by country: Spain · France · Italy</td><td>60 % · 25 % · 15 %</td><td class="src">Meridia's management accounts, FY2025 (case figure)</td></tr>
+      <tr><td>Unlevered beta of the comparables</td><td>0.54</td><td class="src">A. Damodaran, betas by industry, Western Europe, "Transportation", 56 companies, unlevered beta corrected for cash (0.535), 5 January 2026</td></tr>
+      <tr><td>Debt ÷ equity of the comparables, at market value</td><td>0.77</td><td class="src">Same table: 77.1 %, debt including leases</td></tr>
+      <tr><td>Cost of debt, before tax</td><td>4.6 %</td><td class="src">Session 4: Meridia's interest ÷ average debt, FY2023–FY2025</td></tr>
+      <tr><td>Tax rate</td><td>24 %</td><td class="src">The rate used in every session (case figure)</td></tr>
+      <tr><td>Premium for size and for being unlisted, on the cost of equity</td><td>3.0 points</td><td class="src">Boreal's investment committee (case figure): a judgement, not a market price</td></tr>
+    </table></div>
+    <div class="sub">The WACC calculator</div>
+    <div class="drv" id="wIn"></div>
+    <div class="btn-row"><button class="btn small ghost" id="wReset" type="button">Reset to the data pack</button></div>
+    <div class="tbl" id="waccTab"></div>
+    <div id="chk3"></div>
+    <details class="xl"><summary>In Excel: the WACC block on the Inputs sheet</summary><div>
+      One input per cell, each with its source typed in the next column: <code>Rf</code>, <code>ERP_ES</code>, <code>ERP_FR</code>, <code>ERP_IT</code>, <code>W_ES</code>, <code>W_FR</code>, <code>W_IT</code>, <code>BetaU</code>, <code>DE</code>, <code>Kd</code>, <code>TaxRate</code>, <code>Premium</code>. Then: weighted ERP <code>=SUMPRODUCT((W_ES,W_FR,W_IT),(ERP_ES,ERP_FR,ERP_IT))</code> or simply <code>=W_ES*ERP_ES+W_FR*ERP_FR+W_IT*ERP_IT</code> · levered beta <code>=BetaU*(1+(1-TaxRate)*DE)</code> · cost of equity <code>=Rf+BetaL*ERP+Premium</code> · debt weight <code>=DE/(1+DE)</code> · WACC <code>=(1-WD)*Ke+WD*Kd*(1-TaxRate)</code>. Name the result <code>WACC</code>; Step 4 uses it.</div></details>
+    <div class="cap">
+      <label for="f_wacc">Which input of the WACC is your team least sure of, and how much does it move the WACC? One or two sentences.</label>
+      <textarea id="f_wacc" data-work="w6_wacc" data-worklabel="W6 · the least certain input of the WACC" placeholder="e.g. The premium for size: it is a judgement with no market price, and taking it from 3.0 to 0 points lowers the WACC from 7.59 % to …"></textarea>
+    </div>
+    <button class="btn" id="b3">The WACC is built — go to Step 4</button>
+    <div class="savenote" id="n3"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s4" data-board="Perpetuity growth or exit multiple|w6_tv">
+    <span class="tick">✅</span>
+    <span class="clock">Step 4 · discounting and the terminal value</span>
+    <h2>Discount the cash flows and compute the terminal value two ways</h2>
+    <div class="lect"><div class="lh">Read first · from cash flows to a value</div><ol>
+      <li><b>The discount factor</b> converts a euro received later into today's euros: 1 ÷ (1 + WACC)<sup>t</sup>, where t is the number of years from the valuation date (31 December 2025) to the end of the year of the cash flow: 1 for FY2026, 5 for FY2030. The page assumes each year's cash arrives on its last day, as in Session 1.</li>
+      <li><b>The terminal value by perpetuity growth</b> (also called the Gordon growth formula): if FCFF grows by g every year for ever, its value at the end of FY2030 is FCFF of FY2031 ÷ (WACC − g), with FCFF of FY2031 = FCFF of FY2030 × (1 + g). The page uses g = 2.0 % a year, which is the European Central Bank's inflation target: Meridia then grows only as fast as prices.</li>
+      <li><b>The terminal value by exit multiple</b>: the price a buyer would pay for Meridia at the end of FY2030, if companies then sell for the same multiple of their EBITDA as listed companies do today. TV = multiple × FY2030 EBITDA. Damodaran's European data of 5 January 2026 give an enterprise value of 12.6 times EBITDA for transportation companies (56 companies) and 9.1 times for trucking companies (7 companies). The page uses <b>9.1</b>, the lower of the two.</li>
+      <li><b>Both terminal values are values at the end of FY2030</b>, so both are multiplied by the FY2030 discount factor. Enterprise value = the sum of the discounted FCFF + the discounted terminal value. Equity value = enterprise value − net debt of €60.0 m. Price per share = equity value ÷ 40.0 million shares.</li></ol></div>
+    <ol><li>Check that the three inputs below show the WACC from Step 3 (7.59 %), growth 2.0 % and the multiple 9.1. If not, press <b>Reset</b>.</li><li>Read the table from the top: each year's FCFF, its discount factor and its value today; then the two terminal values and the two prices per share.</li><li>Answer the five checks on the perpetuity-growth method, then write which of the two methods your team trusts more, and why.</li></ol>
+    <div class="drv" id="vIn"></div>
+    <div class="btn-row"><button class="btn small ghost" id="vReset" type="button">Reset to WACC 7.59 %, growth 2.0 %, multiple 9.1</button><button class="btn small ghost" id="vUse" type="button">Use the WACC now in the Step 3 calculator</button></div>
+    <div class="tbl" id="dcfTab"></div>
+    <div id="predOut"></div>
+    <div id="chk4"></div>
+    <details class="xl"><summary>In Excel: the valuation block (FY2026–FY2030 in columns D to H)</summary><div>
+      Year number <code>=D3-$C$3</code> (the year minus 2025) · discount factor <code>=1/(1+WACC)^D60</code> · present value <code>=D56*D61</code> · sum of present values <code>=SUM(D62:H62)</code> · perpetuity terminal value <code>=H56*(1+TermGrowth)/(WACC-TermGrowth)</code> · exit-multiple terminal value <code>=H8*ExitMultiple</code> · present value of each <code>=TV*H61</code> · enterprise value <code>=SumPV+PV_TV</code> · terminal value share <code>=PV_TV/EV</code>, formatted as % · price per share <code>=(EV-NetDebt)/Shares</code>. Add a check that refuses a growth rate at or above the WACC: <code>=IF(TermGrowth&gt;=WACC,1,0)</code>, in the check block, because the formula then gives a negative or infinite value.</div></details>
+    <div class="cap">
+      <label for="f_tv">Which terminal value does your team trust more, perpetuity growth or the exit multiple, and why? One or two sentences with the two prices per share.</label>
+      <textarea id="f_tv" data-work="w6_tv" data-worklabel="W6 · perpetuity growth or exit multiple" placeholder="e.g. Perpetuity growth gives €3.38 a share and the exit multiple €5.91. We trust … more, because …"></textarea>
+    </div>
+    <button class="btn" id="b4">The DCF is computed — go to Step 5</button>
+    <div class="savenote" id="n4"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s5" data-board="The value we report|w6_value;What the value depends on most|w6_rests">
+    <span class="tick">✅</span>
+    <span class="clock">Step 5 · testing the terminal value</span>
+    <h2>Test the terminal value four ways, then write reply parts 3 and 4</h2>
+    <p><b>Why this step exists.</b> About four fifths of Meridia's value sits in one number, the terminal value, which rests on two inputs nobody can observe: the growth rate for ever and the multiple a buyer will pay in five years. A valuer cannot prove these inputs, but can test whether they are consistent with each other and with the forecast. These four tests are what Boreal's committee will ask about first.</p>
+    <div class="lect"><div class="lh">Read first · four tests of a terminal value</div><ol>
+      <li><b>Test 1 · the share of the value in the terminal value.</b> The higher it is, the more the value depends on g and the WACC instead of on the forecast your team checked. Report it in the reply, always.</li>
+      <li><b>Test 2 · the multiple hidden in the perpetuity value.</b> Divide the perpetuity terminal value by FY2030 EBITDA: this is the EV ÷ EBITDA multiple that the perpetuity method assumes a buyer would pay. Compare it with the 9.1 and 12.6 of listed companies. A large gap means one of the two methods is wrong for Meridia, and the reply must say which.</li>
+      <li><b>Test 3 · the growth hidden in the exit multiple.</b> Turn the formula around: the growth rate for ever that the exit multiple assumes is g = (TV × WACC − FCFF of FY2030) ÷ (TV + FCFF of FY2030). Compare it with 2 %. A company cannot grow faster than the whole economy for ever, because it would end up larger than the economy.</li>
+      <li><b>Test 4 · the investment in the terminal year.</b> In FY2030 Meridia still invests for growth of 6.7 % a year (capex 8 % of revenue). After FY2030 it grows only 2 %, so it needs less: enough capex to replace what wears out (D&amp;A) plus 2 % more fixed assets, and 2 % more working capital. The <b>normalised</b> FCFF of FY2031 uses those amounts: EBITDA FY2030 × 1.02, D&amp;A = fixed assets at the end of FY2030 ÷ 12, capex = fixed assets × (1 ÷ 12 + 2 %), working capital increase = working capital at the end of FY2030 × 2 %.</li></ol></div>
+    <ol><li>Read the four tests in the table below. They use the inputs of Step 4.</li><li>Answer the five checks (at WACC 7.59 %, growth 2.0 %, multiple 9.1).</li><li>Write reply part 3: the value per share your team reports, the method, and the range.</li><li>Write reply part 4: the share of the value in the terminal value, and the one assumption the value depends on most.</li></ol>
+    <div class="tbl" id="sanTab"></div>
+    <div id="chk5"></div>
+    <div class="cap">
+      <label for="f_value">Reply part 3 · the value per share your team reports, the method behind it, and the range, with the numbers</label>
+      <textarea id="f_value" data-work="w6_value" data-worklabel="W6 · the value we report" placeholder="e.g. We report €… a share, from perpetuity growth at a WACC of 7.59 % and g of 2 %, with the terminal year normalised / not normalised because … The range is €… (lender case) to €… (…). The exit multiple gives €5.91, which we do not use because …"></textarea>
+    </div>
+    <div class="cap">
+      <label for="f_rests">Reply part 4 · the share of the value in the terminal value, and the one assumption the value depends on most</label>
+      <textarea id="f_rests" data-work="w6_rests" data-worklabel="W6 · what the value depends on most" placeholder="e.g. 78 % of the enterprise value sits in the terminal value. The value depends most on …: changing it from … to … moves the price from €… to €…"></textarea>
+    </div>
+    <button class="btn" id="b5">We have tested the terminal value — go to Step 6</button>
+    <div class="savenote" id="n5"></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s6">
+    <span class="tick">✅</span>
+    <span class="clock">Step 6 · write and hand in</span>
+    <h2>Write and hand in the reply</h2>
+    <ol><li>Read the reply preview below. Parts 1 and 2 are built from the model at the inputs your team used in Step 4; parts 3 and 4 are what your team wrote in Step 5. Anything marked <b>missing</b> is still to do: go back to that step.</li>
+      <li>The team member who is signed in on this laptop presses <b>Hand in the reply</b>. The page saves the reply and the time, and shows "Handed in ✓".</li>
+      <li>If you change the reply afterwards, press <b>Hand in the reply</b> again. The last version counts.</li></ol>
+    <div class="memo" id="memo"></div>
+    <input type="hidden" id="f_memo" data-work="w6_memo" data-worklabel="W6 · reply to Boreal (handed in)">
+    <div class="btn-row"><button class="btn" id="memoBtn">Hand in the reply</button><button class="btn ghost" id="memoShow" type="button">Show the reply full screen</button><button class="btn ghost" id="memoDl" type="button">Download a copy</button><button class="btn ghost" id="memoCopy" type="button">Copy the reply as text</button><span id="memoNote" class="savenote"></span></div>
+    <div class="sub">Terms from today</div>
+    <ul>
+      <li><b>Free cash flow to the firm (FCFF).</b> The cash the business produces after tax, capex and working capital, before paying lenders or owners: EBIT × (1 − tax rate) + D&amp;A − capex − increase in working capital.</li>
+      <li><b>EBIT · NOPAT.</b> Earnings before interest and tax (EBITDA − D&amp;A); net operating profit after tax, EBIT × (1 − tax rate).</li>
+      <li><b>WACC.</b> The weighted average cost of capital: the return lenders and owners together require, each weighted by its market-value share of the financing.</li>
+      <li><b>CAPM · risk-free rate · equity risk premium · beta.</b> Cost of equity = risk-free rate + beta × equity risk premium; the yield of a safe government bond; the extra return expected from shares; how much a share moves with the market.</li>
+      <li><b>Unlevered and levered beta.</b> The comparables' beta with the effect of their debt removed; the same beta with Meridia's debt put back.</li>
+      <li><b>Discount factor.</b> 1 ÷ (1 + WACC)<sup>t</sup>: what one euro at the end of year t is worth on the valuation date.</li>
+      <li><b>Terminal value · perpetuity growth · exit multiple.</b> One value at the end of the forecast for all later years; FCFF of the next year ÷ (WACC − g); a multiple of EBITDA that a buyer would pay.</li>
+      <li><b>Normalised terminal year.</b> The first year after the forecast, with capex and working capital set for the growth rate of the terminal value instead of the growth rate of the forecast.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="step" id="s7">
+    <span class="tick">✅</span>
+    <span class="clock">Step 7 · team quiz</span>
+    <h2>Team quiz: Jeopardy, at the start of Session 6</h2>
+    <p>Team against team, on the screen at the front. Six categories, 100 to 500 points. Five are on this session's work; the sixth, <b>Your reply</b>, asks the team whose turn it is about its own reply.</p>
+    <ol><li>Close the laptops, except <b>one per team</b>: press <b>Show the reply full screen</b> in Step 6 and keep the reply open on it.</li>
+      <li>Teams take turns choosing a category and a value. The team that chose answers first; one answer per team, agreed in 10 seconds.</li>
+      <li>A right answer wins the points; a wrong one loses them, and the next team may try.</li>
+      <li>When the quiz is over, press the button below.</li></ol>
+    <button class="btn" id="b7">We played the quiz — done for this session</button>
+    <div class="savenote" id="n7"></div>
+  </div>
+
+  <div class="foot">
+    <div id="whoami" style="margin-bottom:8px;"></div>
+    <a href="index.html">← Back to the course</a> · Week 06 module · Session 5 of 11 · Geneva Business School
+    <div style="margin-top:8px;font-size:11.5px;line-height:1.6">Meridia Cold, Boreal Logistics and Banca del Litorale are fictional; Meridia's figures are invented for the exercise and continue Sessions 1–4. The market data (Bund yield, Damodaran's equity risk premiums, betas and multiples) are real and dated.</div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SESSION 5 (module w6) — built 25 Nov 2026 for Thu 26 Nov as a self-run
+   group MANDATE on Session 4's pattern. Boreal asks for Meridia's stand-
+   alone value: FCFF from the Session 4 base forecast, a WACC built from
+   market data, the terminal value two ways, four tests.
+
+   THE FORECAST is week5.html's model() unchanged (base, interest on the
+   average balance, payout 50 %). FCFF = EBIT × (1 − 24 %) + D&A − capex
+   − ΔNWC; reconciles to CFO − capex + interest × (1 − t) and to
+   after-tax interest + repayment − draw + dividend + Δcash, every year.
+   MARKET DATA (real, dated): Bund 10y 2.85 % on 31 Dec 2025 (BMF
+   Monatsbericht Jan 2026); Damodaran 1 Jan 2026 ERPs: mature 4.23,
+   Spain 5.78, France 5.01, Italy 6.69 (rating-based totals); Damodaran
+   Western Europe betas 5 Jan 2026, Transportation (56): unlevered beta
+   corrected for cash 0.535, D/E 77.1 %; Europe EV/EBITDA 5 Jan 2026:
+   Transportation 12.6, Trucking 9.1. Case figures: revenue split 60/25/15,
+   Kd 4.6 % (Session 4), tax 24 %, Boreal's size premium 3.0 points.
+   Recomputed in Python (scratch final.py), 25 Nov 2026:
+     FCFF 9.19 · 10.09 · 10.69 · 11.34 · 12.04; FY2026 EBIT 20.21, NOPAT
+       15.36, FCFF − NI −3.78; lender FY2026 FCFF 3.38
+     ERP 5.724 → βL 0.8560, Ke 7.75 + 3.0 = 10.75, D/V 43.50 %, Kd after
+       tax 3.496, WACC 7.594 → 7.59 (without the premium 5.90)
+     at 7.59 / 2.0: Σ PV 42.66, TV 219.69, PV TV 152.39, EV 195.04,
+       TV share 78.13 %, €3.38; implied multiple 5.47
+     exit 9.1: TV 365.68, EV 296.31, €5.91, share 85.6 %, implied g 4.16 %
+     normalised FY2031: EBITDA 40.99, D&A 13.26, NOPAT 21.07, capex 16.44,
+       ΔNWC 0.50, FCFF 17.39 (naive 12.28) → TV 311.09, EV 258.45, €4.96
+     Session 1's WACC 8.5 % → €2.68; lender case at 7.59 % → €2.27
+   One laptop per team: fields are w6_*, team board = FmTeams (no shared
+   fields). THE PROGRESS DENOMINATOR IS THE SEVEN STEPS (total:7).
+   ===================================================================== */
+var SECTIONS=['s1','s2','s3','s4','s5','s6','s7'];
+var K='finmod', MOD='w6';
+var YRS=['FY2026','FY2027','FY2028','FY2029','FY2030'];
+var BASE={vg:3.5,pg:3.1,m:16.1,ard:60,invd:6,apd:34,life:12,capex:8.0,r:4.6,tax:24,pay:50,minc:8.0};
+var LEND={vg:1.0,pg:2.0,m:14.5,ard:70,invd:6,apd:34,life:12,capex:7.5,r:4.6,tax:24,pay:50,minc:8.0};
+var WPACK={rf:2.85,es:5.78,fr:5.01,it:6.69,wes:60,wfr:25,wit:15,bu:0.54,de:0.77,kd:4.6,tax:24,prem:3.0};
+var WIN=[['rf','Risk-free rate (%)'],['es','ERP Spain (%)'],['fr','ERP France (%)'],['it','ERP Italy (%)'],['wes','Revenue in Spain (%)'],['wfr','Revenue in France (%)'],['wit','Revenue in Italy (%)'],['bu','Unlevered beta'],['de','Debt ÷ equity'],['kd','Cost of debt before tax (%)'],['tax','Tax rate (%)'],['prem','Premium for size (points)']];
+var VDEF={w:7.59,g:2.0,mult:9.1};
+var VIN=[['w','WACC (%)'],['g','Growth for ever after FY2030 (%)'],['mult','Exit multiple (EV ÷ FY2030 EBITDA)']];
+var ND=60.0, SH=40.0;
+var PREDS=[{k:'50',t:'Under 50 %'},{k:'65',t:'50 to 65 %'},{k:'75',t:'65 to 75 %'},{k:'85',t:'75 to 85 %'},{k:'99',t:'Over 85 %'}];
+
+/* the Session 4 model (week5.html), unchanged, plus the FCFF lines */
+function model(d,method,plug){
+  var cash=9.0,ar=29.6,inv=2.4,fa=129.4,ap=14.3,term=69.0,rcf=0,sc=40.0,re=47.1,vol=220.0,price=820,out=[];
+  for(var t=0;t<5;t++){
+    vol*=1+d.vg/100;price*=1+d.pg/100;var rev=vol*price/1000,ebitda=rev*d.m/100,opx=rev-ebitda;
+    var da=fa/d.life,capex=rev*d.capex/100,ar1=rev*d.ard/365,inv1=opx*d.invd/365,ap1=opx*d.apd/365;
+    var dnwc=(ar1+inv1-ap1)-(ar+inv-ap),repay=Math.min(2.0,term),term1=term-repay,draw=0,interest=0,ebt,tax,ni,div,cfo,avail,k;
+    for(k=0;k<100;k++){
+      interest=method==='avg'?d.r/100*((term+term1)/2+(rcf+rcf+draw)/2):d.r/100*(term+rcf);
+      ebt=ebitda-da-interest;tax=ebt*d.tax/100;ni=ebt-tax;div=ni*d.pay/100;cfo=ni+da-dnwc;
+      avail=cash+cfo-capex-repay-div;
+      var nd=plug==='cash'?0:Math.max(d.minc-avail,-rcf);
+      if(Math.abs(nd-draw)<1e-12){draw=nd;break;}draw=nd;
+    }
+    var rcf1=rcf+draw,cash1=avail+draw,fa1=fa+capex-da,re1=re+ni-div,ebit=ebitda-da,taxop=ebit*d.tax/100,nopat=ebit-taxop;
+    out.push({rev:rev,ebitda:ebitda,da:da,capex:capex,dnwc:dnwc,nwc:ar1+inv1-ap1,int:interest,ni:ni,div:div,cfo:cfo,repay:repay,draw:draw,rcf:rcf1,cash:cash1,dcash:cash1-cash,fa:fa1,
+      ebit:ebit,taxop:taxop,nopat:nopat,fcff:nopat+da-capex-dnwc,fcff2:cfo-capex+interest*(1-d.tax/100),lenders:interest*(1-d.tax/100)+repay-draw});
+    cash=cash1;ar=ar1;inv=inv1;fa=fa1;ap=ap1;term=term1;rcf=rcf1;re=re1;
+  }
+  return out;
+}
+function wacc(p){
+  var erp=(p.wes*p.es+p.wfr*p.fr+p.wit*p.it)/100,t=p.tax/100,bl=p.bu*(1+(1-t)*p.de),ke0=p.rf+bl*erp,ke=ke0+p.prem,wd=p.de/(1+p.de),kda=p.kd*(1-t);
+  return {erp:erp,bl:bl,ke0:ke0,ke:ke,wd:wd,we:1-wd,kda:kda,w:(1-wd)*ke+wd*kda,w0:(1-wd)*ke0+wd*kda,wsum:p.wes+p.wfr+p.wit};
+}
+function dcf(o,v){
+  var w=v.w/100,g=v.g/100,f=o.map(function(y){return y.fcff;}),L=o[4];
+  var df=f.map(function(x,i){return Math.pow(1+w,-(i+1));}),pv=f.map(function(x,i){return x*df[i];}),spv=pv.reduce(function(a,b){return a+b;},0),d5=df[4];
+  var f6=f[4]*(1+g),tv=w>g?f6/(w-g):NaN,ev=spv+tv*d5;
+  var tvm=v.mult*L.ebitda,evm=spv+tvm*d5;
+  var e6=L.ebitda*(1+g),da6=L.fa/BASE.life,nop6=(e6-da6)*(1-BASE.tax/100),cx6=L.fa*(1/BASE.life+g),dn6=L.nwc*g,n6=nop6+da6-cx6-dn6,tvn=w>g?n6/(w-g):NaN,evn=spv+tvn*d5;
+  return {df:df,pv:pv,spv:spv,f6:f6,tv:tv,pvtv:tv*d5,ev:ev,share:tv*d5/ev,price:(ev-ND)/SH,implMult:tv/L.ebitda,
+    tvm:tvm,pvtvm:tvm*d5,evm:evm,sharem:tvm*d5/evm,pricem:(evm-ND)/SH,implG:(tvm*w-f[4])/(tvm+f[4]),
+    e6:e6,da6:da6,nop6:nop6,cx6:cx6,dn6:dn6,n6:n6,tvn:tvn,evn:evn,sharen:tvn*d5/evn,pricen:(evn-ND)/SH};
+}
+
+/* ---- helpers ---- */
+function r1(x){return Math.round(x*10)/10;}
+function f1(x){if(!isFinite(x))return '—';var v=r1(x);if(Math.abs(v)<0.05)v=0;return (v<0?'−':'')+Math.abs(v).toFixed(1);}
+function f2(x){if(!isFinite(x))return '—';var v=Math.round(x*100)/100;if(Math.abs(v)<0.005)v=0;return (v<0?'−':'')+Math.abs(v).toFixed(2);}
+function f4(x){return isFinite(x)?x.toFixed(4):'—';}
+function pc(x){return isFinite(x)?f1(x*100)+' %':'—';}
+function isDone(id){try{return !!JSON.parse(localStorage.getItem(K+'_done_'+MOD)||'{}')[id];}catch(e){return false;}}
+function markDone(id){var el=document.getElementById(id);if(el)el.classList.add('done');if(window.StatsTrack&&StatsTrack.complete)StatsTrack.complete(id);
+  try{var d=JSON.parse(localStorage.getItem(K+'_done_'+MOD)||'{}');d[id]=true;localStorage.setItem(K+'_done_'+MOD,JSON.stringify(d));}catch(e){}paintProgress();}
+function paintProgress(){var n=0;SECTIONS.forEach(function(s){if(isDone(s)){n++;var el=document.getElementById(s);if(el)el.classList.add('done');}});
+  var p=Math.round(n/SECTIONS.length*100);document.getElementById('spLbl').textContent=n+' / '+SECTIONS.length;document.getElementById('spPct').textContent=p+'%';document.getElementById('spFill').style.width=p+'%';}
+function go(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+function setWork(id,v){var h=document.getElementById(id);h.value=v;h.dispatchEvent(new Event('input',{bubbles:true}));try{localStorage.setItem(K+'_work_'+h.getAttribute('data-work'),v);}catch(e){}}
+function lsg(k){try{return localStorage.getItem(K+'_'+k);}catch(e){return null;}}
+function lss(k,v){try{localStorage.setItem(K+'_'+k,v);}catch(e){}}
+function num(s){s=String(s).replace(/[€%\s]/g,'').replace(/[−–]/g,'-').replace(',','.');return parseFloat(s);}
+
+/* ---- the case values, used by every check ---- */
+var B=model(BASE,'avg','rcf'),L=model(LEND,'avg','rcf'),WB=wacc(WPACK),VB=dcf(B,VDEF),V85=dcf(B,{w:8.5,g:2.0,mult:9.1}),VL=dcf(L,VDEF);
+/* ---- numeric checks: [id, question, answer, tolerance] ---- */
+var CHK={
+ chk2:[['c2a','FY2026 EBIT, € m (two decimals)',B[0].ebit,0.011],['c2b','FY2026 NOPAT, € m (two decimals)',B[0].nopat,0.011],['c2c','FY2026 FCFF, € m (two decimals)',B[0].fcff,0.011],['c2d','FY2030 FCFF, € m (two decimals)',B[4].fcff,0.011],['c2e','FY2026 FCFF minus FY2026 net income, € m (two decimals)',B[0].fcff-B[0].ni,0.011]],
+ chk3:[['c3a','Equity risk premium weighted by Meridia\'s revenue, % (two decimals)',WB.erp,0.011],['c3b','Meridia\'s levered beta (two decimals)',WB.bl,0.006],['c3c','Cost of equity with the premium, % (two decimals)',WB.ke,0.011],['c3d','Cost of debt after tax, % (two decimals)',WB.kda,0.011],['c3e','WACC, % (two decimals)',WB.w,0.011]],
+ chk4:[['c4a','Sum of the discounted FCFF, FY2026–FY2030, € m (two decimals)',VB.spv,0.011],['c4b','Terminal value by perpetuity growth, at the end of FY2030, € m (one decimal)',VB.tv,0.06],['c4c','Enterprise value, perpetuity growth, € m (one decimal)',VB.ev,0.06],['c4d','Share of the enterprise value in the terminal value, % (one decimal)',VB.share*100,0.06],['c4e','Price per share, perpetuity growth, € (two decimals)',VB.price,0.006]],
+ chk5:[['c5a','Test 2: the multiple hidden in the perpetuity value, EV ÷ FY2030 EBITDA (two decimals)',VB.implMult,0.011],['c5b','Price per share with the exit multiple of 9.1, € (two decimals)',VB.pricem,0.006],['c5c','Test 3: the growth for ever hidden in the exit multiple, % (two decimals)',VB.implG*100,0.011],['c5d','Test 4: the normalised FCFF of FY2031, € m (two decimals)',VB.n6,0.011],['c5e','Price per share with the normalised terminal year, € (two decimals)',VB.pricen,0.006]]
+};
+function buildChecks(box){
+  var host=document.getElementById(box);
+  host.innerHTML='<div class="sub">Check your reading · type the number, press Check</div>'+CHK[box].map(function(c){return '<div class="chkrow" id="row_'+c[0]+'"><span>'+esc(c[1])+'</span><input type="text" inputmode="decimal" id="'+c[0]+'" autocomplete="off"><span><button class="btn small ghost" type="button" data-c="'+c[0]+'">Check</button> <span class="r" id="r_'+c[0]+'"></span></span></div>';}).join('');
+  host.querySelectorAll('button[data-c]').forEach(function(b){b.addEventListener('click',function(){check(box,b.dataset.c,false);});});
+  CHK[box].forEach(function(c){var s=lsg('w6_'+c[0]);if(s!=null){document.getElementById(c[0]).value=s;check(box,c[0],true);}});
+}
+function check(box,id,quiet){
+  var c=CHK[box].filter(function(x){return x[0]===id;})[0],raw=val(id),x=num(raw),row=document.getElementById('row_'+id),r=document.getElementById('r_'+id);
+  if(!raw){if(!quiet){row.className='chkrow no';r.textContent='Type a number.';}return false;}
+  lss('w6_'+id,raw);
+  var ok=isFinite(x)&&Math.abs(x-c[2])<=c[3];
+  row.className='chkrow '+(ok?'ok':'no');r.textContent=ok?'✓ '+f2(c[2]):(quiet?'':'Not yet — read the table again.');
+  return ok;
+}
+function allOk(box){return CHK[box].every(function(c){return check(box,c[0],true);});}
+function rowsHTML(o,rows,first){
+  return rows.map(function(r){if(r[0]==='§')return '<tr class="sec"><td colspan="'+(o.length+1+(first?1:0))+'">'+r[1]+'</td></tr>';
+    return '<tr'+(r[3]?' class="tot"':'')+'><td>'+r[0]+'</td>'+(first?'<td>'+(r[2]!=null?r[2]:'')+'</td>':'')+o.map(function(y,i){var v=r[1](y,i);return '<td'+(r[4]?' class="'+r[4](y,i)+'"':'')+'>'+v+'</td>';}).join('')+'</tr>';}).join('');
+}
+
+/* ---- Step 2: free cash flow ---- */
+var CASE2='base';
+function paintFCF(){
+  var o=CASE2==='base'?B:L;
+  document.getElementById('fcfTab').innerHTML='<table><tr><th>€ million · '+(CASE2==='base'?'base case':'lender case')+'</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+rowsHTML(o,[
+    ['§','Free cash flow to the firm, from the operating lines'],
+    ['EBITDA (Session 4)',function(y){return f2(y.ebitda);}],['− D&A',function(y){return f2(-y.da);}],['= EBIT',function(y){return f2(y.ebit);},null,1],
+    ['− Tax on EBIT (24 %)',function(y){return f2(-y.taxop);}],['= NOPAT',function(y){return f2(y.nopat);},null,1],
+    ['+ D&A (a cost, but no cash leaves)',function(y){return f2(y.da);}],['− Capex',function(y){return f2(-y.capex);}],['− Increase in working capital',function(y){return f2(-y.dnwc);}],
+    ['= FCFF',function(y){return f2(y.fcff);},null,1,function(){return 'hl';}],
+    ['FCFF ÷ EBITDA',function(y){return f1(y.fcff/y.ebitda*100)+' %';}],
+    ['For comparison: net income (Session 4)',function(y){return f2(y.ni);}],
+    ['§','Reconciliation 1 · the same FCFF from the cash flow statement'],
+    ['Cash from operations (net income + D&A − increase in working capital)',function(y){return f2(y.cfo);}],['− Capex',function(y){return f2(-y.capex);}],['+ Interest × (1 − 24 %), paid to lenders, added back',function(y){return f2(y.int*(1-BASE.tax/100));}],
+    ['= FCFF, second route',function(y){return f2(y.fcff2);},null,1,function(y){return Math.abs(y.fcff2-y.fcff)<1e-9?'good':'bad';}],
+    ['§','Reconciliation 2 · where the FCFF goes'],
+    ['To lenders: interest after tax + repayment − facility drawn',function(y){return f2(y.lenders);}],['To owners: the dividend (50 % of net income)',function(y){return f2(y.div);}],['Into the cash balance: increase in cash',function(y){return f2(y.dcash);}],
+    ['= FCFF, third route',function(y){return f2(y.lenders+y.div+y.dcash);},null,1,function(y){return Math.abs(y.lenders+y.div+y.dcash-y.fcff)<1e-9?'good':'bad';}]
+  ],false)+'</table>'+(CASE2==='lend'?'<div class="fact">In the lender case customers pay after 70 days instead of 60, so FY2026 working capital rises by €'+f1(L[0].dnwc)+' m instead of €'+f1(B[0].dnwc)+' m, and the margin is 14.5 % instead of 16.1 %: FY2026 FCFF falls to <b>€'+f2(L[0].fcff)+' m</b>.</div>':'');
+}
+
+/* ---- Step 3: the WACC ---- */
+function wInputs(){var p=Object.assign({},WPACK);try{var s=JSON.parse(lsg('w6_win')||'{}');WIN.forEach(function(x){if(isFinite(s[x[0]]))p[x[0]]=+s[x[0]];});}catch(e){}return p;}
+function paintWIn(){
+  var p=wInputs();document.getElementById('wIn').innerHTML=WIN.map(function(x){return '<div><label for="wi_'+x[0]+'">'+esc(x[1])+'</label><input id="wi_'+x[0]+'" type="number" step="0.01" value="'+p[x[0]]+'"></div>';}).join('');
+  WIN.forEach(function(x){document.getElementById('wi_'+x[0]).addEventListener('input',function(){var s={};WIN.forEach(function(y){s[y[0]]=num(document.getElementById('wi_'+y[0]).value);});lss('w6_win',JSON.stringify(s));paintWACC();});});
+  paintWACC();
+}
+function paintWACC(){
+  var p=wInputs(),r=wacc(p),R=[
+    ['Equity risk premium weighted by revenue: 60 % × Spain + 25 % × France + 15 % × Italy',f2(r.erp)+' %'],
+    ['Levered beta = unlevered beta × (1 + (1 − tax rate) × debt ÷ equity)',r.bl.toFixed(4)],
+    ['Cost of equity before the premium = risk-free rate + levered beta × ERP',f2(r.ke0)+' %'],
+    ['Cost of equity = the above + the premium for size',f2(r.ke)+' %',1],
+    ['Weight of debt = D ÷ (D + E) = (D ÷ E) ÷ (1 + D ÷ E)',f2(r.wd*100)+' %'],
+    ['Weight of equity = 1 − weight of debt',f2(r.we*100)+' %'],
+    ['Cost of debt after tax = cost of debt × (1 − tax rate)',f2(r.kda)+' %',1],
+    ['WACC = weight of equity × cost of equity + weight of debt × cost of debt after tax',f2(r.w)+' %',1,'hl'],
+    ['For comparison: the WACC without the premium for size',f2(r.w0)+' %'],
+    ['For comparison: the WACC Session 1 assumed',' 8.50 %']];
+  document.getElementById('waccTab').innerHTML='<table><tr><th>The WACC, from the inputs above</th><th>Result</th></tr>'+R.map(function(x){return '<tr'+(x[2]?' class="tot"':'')+'><td>'+x[0]+'</td><td'+(x[3]?' class="'+x[3]+'"':'')+'>'+x[1]+'</td></tr>';}).join('')+'</table>'+(Math.abs(r.wsum-100)>0.001?'<div class="fact">The three revenue shares add up to '+f1(r.wsum)+' %, not 100 %: correct them, or press <b>Reset to the data pack</b>.</div>':'');
+}
+
+/* ---- Step 4: the DCF ---- */
+function vInputs(){var v=Object.assign({},VDEF);try{var s=JSON.parse(lsg('w6_vin')||'{}');VIN.forEach(function(x){if(isFinite(s[x[0]]))v[x[0]]=+s[x[0]];});}catch(e){}return v;}
+function paintVIn(){
+  var v=vInputs();document.getElementById('vIn').innerHTML=VIN.map(function(x){return '<div><label for="vi_'+x[0]+'">'+esc(x[1])+'</label><input id="vi_'+x[0]+'" type="number" step="0.01" value="'+v[x[0]]+'"></div>';}).join('');
+  VIN.forEach(function(x){document.getElementById('vi_'+x[0]).addEventListener('input',function(){var s={};VIN.forEach(function(y){s[y[0]]=num(document.getElementById('vi_'+y[0]).value);});lss('w6_vin',JSON.stringify(s));paintDCF();paintSan();paintMemo();});});
+  paintDCF();paintSan();
+}
+function paintDCF(){
+  var v=vInputs(),d=dcf(B,v),bad=!(v.w>v.g);
+  var h='<table><tr><th>€ million · base case · WACC '+f2(v.w)+' % · g '+f1(v.g)+' %</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+rowsHTML(B,[
+    ['FCFF (Step 2)',function(y){return f2(y.fcff);}],['Years from 31 December 2025 (t)',function(y,i){return i+1;}],['Discount factor = 1 ÷ (1 + WACC)^t',function(y,i){return f4(d.df[i]);}],['Value today = FCFF × discount factor',function(y,i){return f2(d.pv[i]);},null,1]],false)+'</table>';
+  var S=[['§','The forecast years'],['Sum of the discounted FCFF, FY2026–FY2030',f2(d.spv),f2(d.spv)],
+    ['§','The terminal value, at the end of FY2030'],
+    ['How it is computed','FCFF FY2030 × (1 + g) ÷ (WACC − g)','multiple × FY2030 EBITDA'],
+    ['The inputs','FCFF FY2031 = '+f2(d.f6),f1(v.mult)+' × '+f2(B[4].ebitda)],
+    ['Terminal value at the end of FY2030',f1(d.tv),f1(d.tvm)],['× discount factor of FY2030',f4(d.df[4]),f4(d.df[4])],['= Terminal value today',f2(d.pvtv),f2(d.pvtvm)],
+    ['§','The value'],['Enterprise value = sum of discounted FCFF + terminal value today',f1(d.ev),f1(d.evm),1],
+    ['Share of the enterprise value in the terminal value',pc(d.share),pc(d.sharem),1],
+    ['− Net debt at 31 December 2025 (69.0 − 9.0)','−60.0','−60.0'],['= Equity value',f1(d.ev-ND),f1(d.evm-ND)],
+    ['÷ 40.0 million shares = price per share, €',f2(d.price),f2(d.pricem),1]];
+  h+='<table style="margin-top:10px"><tr><th>Two ways to the terminal value</th><th>Perpetuity growth</th><th>Exit multiple</th></tr>'+S.map(function(x){if(x[0]==='§')return '<tr class="sec"><td colspan="3">'+x[1]+'</td></tr>';return '<tr'+(x[3]?' class="tot"':'')+'><td>'+x[0]+'</td><td>'+x[1]+'</td><td>'+x[2]+'</td></tr>';}).join('')+'</table>';
+  document.getElementById('dcfTab').innerHTML=bad?'<div class="fact">The growth rate must be below the WACC. With g at or above the WACC the formula gives a negative or infinite value, because the cash flows would grow faster than they are discounted. Lower g or press <b>Reset</b>.</div>'+h:h;
+  paintPred();
+}
+function paintPred(){var g=lsg('w6_pp');if(!g||lsg('w6_pp_locked')!=='1'){document.getElementById('predOut').innerHTML='';return;}
+  document.getElementById('predOut').innerHTML='<div class="fact"><b>Your guess and the answer.</b> Your team guessed '+esc(PREDS.filter(function(p){return p.k===g;})[0].t)+'. At a WACC of 7.59 % and growth of 2.0 %, <b>'+pc(VB.share)+'</b> of Meridia\'s enterprise value sits in the terminal value: the five forecast years together are worth €'+f1(VB.spv)+' m today, the years after FY2030 €'+f1(VB.pvtv)+' m. '+(g==='85'?'Your guess was right.':'The answer is in the band "75 to 85 %".')+'</div>';}
+
+/* ---- Step 5: the four tests ---- */
+function paintSan(){
+  var v=vInputs(),d=dcf(B,v);
+  var R=[['§','Test 1 · the share of the value in the terminal value'],
+    ['Perpetuity growth',pc(d.share)],['Exit multiple',pc(d.sharem)],
+    ['§','Test 2 · the multiple hidden in the perpetuity value'],
+    ['Perpetuity terminal value ÷ FY2030 EBITDA = '+f1(d.tv)+' ÷ '+f2(B[4].ebitda),f2(d.implMult)+' ×',1],['Listed comparables (Damodaran, Europe, 5 January 2026): trucking · transportation','9.1 × · 12.6 ×'],
+    ['§','Test 3 · the growth for ever hidden in the exit multiple'],
+    ['g = (TV × WACC − FCFF FY2030) ÷ (TV + FCFF FY2030), with TV = '+f1(d.tvm),f2(d.implG*100)+' %',1],['The growth rate the perpetuity method uses',f1(v.g)+' %'],
+    ['§','Test 4 · the normalised terminal year, FY2031'],
+    ['EBITDA = FY2030 EBITDA × (1 + g)',f2(d.e6)],['− D&A = fixed assets at the end of FY2030 ('+f1(B[4].fa)+') ÷ 12',f2(-d.da6)],['= EBIT, then × (1 − 24 %) = NOPAT',f2(d.nop6)],
+    ['+ D&A',f2(d.da6)],['− Capex = fixed assets × (1 ÷ 12 + g): replace what wears out, and grow the assets by g',f2(-d.cx6)],['− Increase in working capital = working capital at the end of FY2030 ('+f1(B[4].nwc)+') × g',f2(-d.dn6)],
+    ['= Normalised FCFF of FY2031',f2(d.n6),1,'hl'],['For comparison: FCFF FY2030 × (1 + g), as Step 4 uses it',f2(d.f6)],
+    ['Terminal value with the normalised year · enterprise value',f1(d.tvn)+' · '+f1(d.evn)],['Price per share with the normalised year, €',f2(d.pricen),1],
+    ['§','For the range in your reply (perpetuity growth, Step 4 method)'],
+    ['Lender case of Session 4, at WACC '+f2(v.w)+' %, €',f2(dcf(L,v).price)],['Base case at Session 1\'s WACC of 8.50 %, €',f2(dcf(B,{w:8.5,g:v.g,mult:v.mult}).price)],['Base case at the WACC without the premium for size ('+f2(WB.w0)+' %), €',f2(dcf(B,{w:Math.round(WB.w0*100)/100,g:v.g,mult:v.mult}).price)]];
+  document.getElementById('sanTab').innerHTML='<table><tr><th>The four tests, at WACC '+f2(v.w)+' %, g '+f1(v.g)+' %, multiple '+f1(v.mult)+'</th><th>Result</th></tr>'+R.map(function(x){if(x[0]==='§')return '<tr class="sec"><td colspan="2">'+x[1]+'</td></tr>';return '<tr'+(x[2]?' class="tot"':'')+'><td>'+x[0]+'</td><td'+(x[3]?' class="'+x[3]+'"':'')+'>'+x[1]+'</td></tr>';}).join('')+'</table>';
+}
+
+/* ---- the reply ---- */
+function memoData(){return {team:val('f_team'),value:val('f_value'),rests:val('f_rests'),tv:val('f_tv'),wtxt:val('f_wacc'),v:vInputs()};}
+function memoMissing(m){var x=[];if(!m.team)x.push('the team (Step 1)');if(!m.value)x.push('reply part 3 (Step 5)');if(!m.rests)x.push('reply part 4 (Step 5)');if(!isDone('s2')||!isDone('s3')||!isDone('s4'))x.push('Steps 2–4');return x;}
+function memoHTML(m,doc){
+  var miss='<span class="miss">missing</span>',H=doc?'h2':'h4',nl=function(s){return s?esc(s).replace(/\n/g,'<br>'):miss;},d=dcf(B,m.v);
+  var h=(doc?'<h1>':'<h4>')+'Meridia Cold · stand-alone value from free cash flow · reply to Boreal Logistics'+(doc?'</h1>':'</h4>')+'<div>'+(m.team?esc(m.team):miss)+(doc?' · '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'')+'</div>';
+  h+='<'+H+'>1 · Free cash flow to the firm, base case (€ m)</'+H+'><div class="memowrap"><table><tr><th>€ m</th>'+YRS.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>'+[['EBITDA','ebitda'],['EBIT','ebit'],['NOPAT (EBIT × 76 %)','nopat'],['+ D&A','da'],['− Capex','capex'],['− Increase in working capital','dnwc'],['= FCFF','fcff'],['Net income, for comparison','ni']].map(function(r){return '<tr><td>'+r[0]+'</td>'+B.map(function(y){return '<td>'+f1(y[r[1]])+'</td>';}).join('')+'</tr>';}).join('')+'</table></div><div>FCFF equals cash from operations − capex + interest after tax in every year, and it equals what goes to lenders, to owners and into the cash balance. It does not depend on the dividend or on the interest method.</div>';
+  h+='<'+H+'>2 · The cost of capital and the value</'+H+'><div>Risk-free rate 2.85 % (Bund, 31 December 2025) · equity risk premium '+f2(WB.erp)+' % (Damodaran, 1 January 2026, weighted 60 / 25 / 15 by revenue in Spain, France, Italy) · unlevered beta 0.54 and debt ÷ equity 0.77 (Damodaran, Western Europe transportation, 5 January 2026) → levered beta '+f2(WB.bl)+' · cost of equity '+f2(WB.ke)+' % including Boreal\'s 3.0-point premium for size · cost of debt 4.6 % before tax, '+f2(WB.kda)+' % after tax · <b>WACC '+f2(WB.w)+' %</b> ('+f2(WB.w0)+' % without the premium).'+(m.wtxt?' Least certain input: '+esc(m.wtxt):'')+'</div>';
+  h+='<div class="memowrap"><table><tr><th>At WACC '+f2(m.v.w)+' %, g '+f1(m.v.g)+' %</th><th>Perpetuity growth</th><th>Perpetuity, normalised FY2031</th><th>Exit multiple '+f1(m.v.mult)+' ×</th></tr>'+
+    '<tr><td>Sum of discounted FCFF FY2026–30</td><td>'+f1(d.spv)+'</td><td>'+f1(d.spv)+'</td><td>'+f1(d.spv)+'</td></tr>'+
+    '<tr><td>Terminal value today</td><td>'+f1(d.pvtv)+'</td><td>'+f1(d.tvn*d.df[4])+'</td><td>'+f1(d.pvtvm)+'</td></tr>'+
+    '<tr><td>Enterprise value</td><td>'+f1(d.ev)+'</td><td>'+f1(d.evn)+'</td><td>'+f1(d.evm)+'</td></tr>'+
+    '<tr><td>Share in the terminal value</td><td>'+pc(d.share)+'</td><td>'+pc(d.sharen)+'</td><td>'+pc(d.sharem)+'</td></tr>'+
+    '<tr><td>Price per share (net debt 60.0, 40.0 m shares)</td><td>€'+f2(d.price)+'</td><td>€'+f2(d.pricen)+'</td><td>€'+f2(d.pricem)+'</td></tr></table></div>'+
+    '<div>The perpetuity value implies '+f2(d.implMult)+' × FY2030 EBITDA; the exit multiple implies growth of '+f2(d.implG*100)+' % a year for ever.'+(m.tv?' Our view on the two methods: '+esc(m.tv):'')+'</div>';
+  h+='<'+H+'>3 · The value we report</'+H+'><div>'+nl(m.value)+'</div>';
+  h+='<'+H+'>4 · What the value depends on most</'+H+'><div>'+nl(m.rests)+'</div>';
+  if(doc)h+='<p style="margin-top:26px;font-size:12px;color:#666">A course exercise, Finance Modelling, Geneva Business School. Meridia Cold, Boreal Logistics and Banca del Litorale are fictional; Meridia\'s figures are invented for the exercise. The market data are real and dated as stated.</p>';
+  return h;
+}
+function memoPlain(m){var d=dcf(B,m.v);return 'MERIDIA COLD · STAND-ALONE VALUE FROM FREE CASH FLOW · REPLY TO BOREAL · '+m.team+
+  '\n\n1 · FCFF FY2026–30 (€ m): '+B.map(function(y){return f1(y.fcff);}).join(' / ')+' · net income '+B.map(function(y){return f1(y.ni);}).join(' / ')+
+  '\n2 · WACC '+f2(WB.w)+' % (rf 2.85, ERP '+f2(WB.erp)+', beta '+f2(WB.bl)+', Ke '+f2(WB.ke)+' incl. 3.0 premium, Kd after tax '+f2(WB.kda)+'). At WACC '+f2(m.v.w)+' %, g '+f1(m.v.g)+' %: EV '+f1(d.ev)+', €'+f2(d.price)+' a share, '+pc(d.share)+' in the terminal value · normalised FY2031: €'+f2(d.pricen)+' · exit multiple '+f1(m.v.mult)+'×: €'+f2(d.pricem)+(m.tv?'\nMethods: '+m.tv:'')+
+  '\n\n3 · The value we report\n'+m.value+'\n\n4 · What the value depends on most\n'+m.rests;}
+function paintMemo(){document.getElementById('memo').innerHTML=memoHTML(memoData(),false);}
+function memoPage(m){return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Meridia Cold · reply to Boreal · '+esc(m.team)+'</title><style>body{font:15px/1.6 Georgia,serif;max-width:860px;margin:30px auto;padding:0 18px;color:#111}h1{font-size:21px}h2{font-size:16px;margin-top:22px}table{border-collapse:collapse;font:12.5px/1.4 system-ui,sans-serif;margin:6px 0}td,th{border:1px solid #ccc;padding:4px 8px;text-align:right}td:first-child,th:first-child{text-align:left}th{background:#f3f4f7}.miss{color:#9B2335;font-weight:700}.memowrap{overflow-x:auto}</style></head><body>'+memoHTML(m,true)+'</body></html>';}
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack&&StatsTrack.init)StatsTrack.init({module:MOD,title:'Session 5 · Free cash flow, WACC, terminal value',total:SECTIONS.length});
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('cbar'),compact:true});
+  paintProgress();
+  /* step 1: the guess */
+  var pp=document.getElementById('pPred'),cur=lsg('w6_pp');
+  pp.innerHTML=PREDS.map(function(p){return '<button type="button" class="opt'+(cur===p.k?' on':'')+'" data-k="'+p.k+'">'+p.t+'</button>';}).join('');
+  function lockPred(){pp.querySelectorAll('button').forEach(function(b){b.disabled=true;});}
+  if(lsg('w6_pp_locked')==='1')lockPred();
+  pp.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;lss('w6_pp',b.dataset.k);pp.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});setWork('f_pred',b.textContent);});
+  /* steps 2–5 */
+  function seg(id,cb){var s=document.getElementById(id);s.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});cb(b.dataset.v);});}
+  seg('caseSeg2',function(v){CASE2=v;paintFCF();});
+  paintFCF();paintWIn();paintVIn();['chk2','chk3','chk4','chk5'].forEach(buildChecks);
+  document.getElementById('wReset').addEventListener('click',function(){lss('w6_win','{}');paintWIn();});
+  document.getElementById('vReset').addEventListener('click',function(){lss('w6_vin','{}');paintVIn();paintMemo();});
+  document.getElementById('vUse').addEventListener('click',function(){var v=vInputs();v.w=Math.round(wacc(wInputs()).w*100)/100;lss('w6_vin',JSON.stringify(v));paintVIn();paintMemo();});
+  setTimeout(paintMemo,500);
+  ['f_team','f_value','f_rests','f_tv','f_wacc'].forEach(function(id){document.getElementById(id).addEventListener('input',paintMemo);});
+
+  if(window.FmTeams){
+    var autoTeam='';
+    FmTeams.mount(document.getElementById('teamsBox'),{onChange:function(t){
+      if(!t)return;var line=FmTeams.label(t)+' — '+FmTeams.members(t).join(', '),e=document.getElementById('f_team');
+      if(e.value===''||e.value===autoTeam){e.value=line;autoTeam=line;e.dispatchEvent(new Event('input',{bubbles:true}));}}});
+    FmTeams.onLoad(function(){var t=FmTeams.myTeam();if(t){var line=FmTeams.label(t)+' — '+FmTeams.members(t).join(', '),e=document.getElementById('f_team');if(e.value===''||e.value===autoTeam){e.value=line;autoTeam=line;e.dispatchEvent(new Event('input',{bubbles:true}));}}});
+  }
+  document.getElementById('b1').addEventListener('click',function(){
+    if(!val('f_team')){alert('Type your team\'s name and members first.');return;}
+    if(!lsg('w6_pp')){alert('Choose your team\'s guess first. A wrong guess costs nothing.');return;}
+    lss('w6_pp_locked','1');lockPred();paintPred();document.getElementById('n1').textContent='Locked ✓';markDone('s1');go('s2');});
+  document.getElementById('b2').addEventListener('click',function(){
+    if(!allOk('chk2')){alert('Check every number first: each row must show a green ✓. The checks are on the base case.');return;}
+    if(!val('f_fcf')){alert('Write why FCFF is neither net income nor EBITDA.');return;}
+    document.getElementById('n2').textContent='Saved ✓';markDone('s2');go('s3');});
+  document.getElementById('b3').addEventListener('click',function(){
+    if(!allOk('chk3')){alert('Check every number first: each row must show a green ✓. The checks use the data pack: press "Reset to the data pack" if you changed an input.');return;}
+    if(!val('f_wacc')){alert('Write which input of the WACC your team is least sure of.');return;}
+    document.getElementById('n3').textContent='Saved ✓';markDone('s3');paintMemo();go('s4');});
+  document.getElementById('b4').addEventListener('click',function(){
+    if(!allOk('chk4')){alert('Check every number first: each row must show a green ✓. The checks are at WACC 7.59 %, growth 2.0 % and multiple 9.1: press "Reset" if you changed an input.');return;}
+    if(!val('f_tv')){alert('Write which terminal value your team trusts more, and why.');return;}
+    document.getElementById('n4').textContent='Saved ✓';markDone('s4');paintMemo();go('s5');});
+  document.getElementById('b5').addEventListener('click',function(){
+    if(!allOk('chk5')){alert('Check every number first: each row must show a green ✓.');return;}
+    if(!val('f_value')||!val('f_rests')){alert('Write reply parts 3 and 4.');return;}
+    document.getElementById('n5').textContent='Saved ✓';markDone('s5');paintMemo();go('s6');});
+  document.getElementById('memoShow').addEventListener('click',function(){var w=window.open(URL.createObjectURL(new Blob([memoPage(memoData())],{type:'text/html'})),'_blank');if(!w)document.getElementById('memoNote').textContent='Your browser blocked the new tab: allow pop-ups for this site, or scroll up to the reply preview.';});
+  document.getElementById('memoDl').addEventListener('click',function(){var m=memoData(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([memoPage(m)],{type:'text/html'}));a.download='Meridia-value-'+((m.team.split(/\s[—–-]\s/)[0]||'team').toLowerCase().replace(/[^a-z0-9]+/g,'-'))+'.html';document.body.appendChild(a);a.click();a.remove();document.getElementById('memoNote').textContent='Downloaded: the copy is in your Downloads folder.';});
+  document.getElementById('memoCopy').addEventListener('click',function(){var t=memoPlain(memoData()),n=document.getElementById('memoNote');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){n.textContent='✓ Copied.';},function(){n.textContent='Select the reply and copy it.';});});
+  document.getElementById('memoBtn').addEventListener('click',function(){
+    var m=memoData(),miss=memoMissing(m);
+    if(miss.length){alert('Still missing: '+miss.join(', ')+'. Go back to those steps first.');return;}
+    var when=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    setWork('f_memo',memoPlain(m)+'\n\nHanded in '+when);
+    document.getElementById('memoNote').textContent='Handed in ✓ · '+when;markDone('s6');go('s7');});
+  document.getElementById('b7').addEventListener('click',function(){document.getElementById('n7').textContent='Done ✓ — see you next Thursday.';markDone('s7');});
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem(K+'_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}document.getElementById('whoami').innerHTML='Signed in as <b>'+esc(a.name)+'</b>';}
+  chip();window.addEventListener('statstrack:named',function(){chip();setTimeout(paintMemo,300);});
+});
+</script>
+
+<script src="courseprogress.js"></script>
+<script src="wall.js"></script>
+<script src="teams.js"></script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
