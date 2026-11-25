@@ -210,6 +210,48 @@ listed; shared login, no class password.
   constant), `.lim` (stacked integral limits), `COLS()` puts a figure in
   the SECOND column whatever the argument order, walker/formula lines
   wrap on phones. Assembled from week8.html's engine blocks; no generator.
+  Week 11 (25 Nov 2026): taught from the ANNOTATED deck
+  (`QuantitativeMethods_I_W11_annotated.pdf`, 25 printed slides; the
+  instructor's boxes kept as `.ann`). No question-then-answer builds this
+  week: the builds of slides 3, 10, 12 and 13 ask nothing between their
+  steps and are ONE slide each, so `week11.html`'s deck is the 25 plus Part
+  2 (34 in all). ⚠ Slide 21 calls the random start "k" — the annotation
+  puts it right (k is the step), kept under `.corr`. Sections 11.1 data
+  types + timing, 11.2 levels (the tree walker), 11.3 population ⁄ sample
+  with THE SAMPLER (400 customers in four cafés 160 ⁄ 120 ⁄ 80 ⁄ 40, spends
+  drawn once from `mulberry32(2026)`, the first half of each café =
+  morning customers about CHF 2 lower, so μ ≈ 6.72 and a morning-only
+  sample sits about CHF 1 under μ whatever n is; step `sampler` after
+  n = 10, 50, 200 and one biased draw), 11.4 collecting data + the survey
+  walker + the bias table, 11.5 the four methods on the same 400 dots
+  (simple random seed 11, systematic k = 10 start 7, stratified 16 ⁄ 12 ⁄
+  8 ⁄ 4, cluster = tables 4 and 15; step `methods`) + the margin of
+  error, 11.6 six exercises, 11.7 quiz. Seven classify groups (positions
+  mixed). **No printed quiz**: the twelve are the site's (positions
+  2,0,3,1,4,0,2,1,3,0,1,4). Exercises: sampling fractions 10 % ⁄ 4 %,
+  margin 0.0635 (n = 200) and 0.0318 (800), systematic k = 25 → 7, 32,
+  57 … 1 232, stratified 48 ⁄ 24 ⁄ 8, cluster 20 % → 120, C(6, 2) = 15 and
+  2.5 %. Homework 11.1–11.7 from `quantitativemethods_I_I_W11_hw.pdf`: the
+  sheet asks to NAME things, so the homework engine got a page-local type
+  `parts` (each printed part a dropdown with one correct option; 11.1 and
+  11.2 are single four-option choices whose solution carries the written
+  answer); ⚠ 11.5 c (GPA) is marked RATIO as the textbook has it, the
+  solution says why interval is argued. No answer sheet; all solutions
+  ours (Groebner ch. 1). No plotter this week (mkPlot not carried).
+  ⚠ **THE SLIDES PDF (25 Nov 2026, Jan Erik: "add the automated slides so
+  that they can be downloaded")**: `python3 _build/slides_pdf.py 11`
+  serves the repo on a throw-away port and has headless Chrome print
+  `week11.html?print=1` to **`files/week11-slides.pdf`** (34 pages, A4
+  landscape, one slide a page, no notes) — re-run after every edit of a
+  week's SLIDES, or the download is stale. The week page's topbar carries
+  **⬇ Slides PDF** (`a.lect-btn.pdfbtn`, hidden under 640 px) and the
+  materials list links the same file. `?print=1` makes the page set
+  `COURSE_LOGIN_AUTO=false` (the sign-in box used to print on every
+  page); quant.css's `@media print` now also hides `#cl-modal`, `#cl-pill`
+  and the chat, and drops the page break after the last slide (35 pages
+  were printed for 34 slides). Any earlier week can get its PDF the same
+  way: add the `?print=1` line and the button, run the script with its
+  number.
   Week 9 (midterm + introduction to integration) is still a scaffold.
   It was cut back on 21 Sep 2026. **`week1.html` still predates this** — 76
   slides against a 42-slide PDF — so trim it the same way before it is taught,
