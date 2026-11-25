@@ -160,6 +160,7 @@ details.arch summary{cursor:pointer;font-size:12.5px;color:var(--a-grey);font-we
   </div>
   <span class="sp"></span>
   <div class="ahd-tools">
+    <select class="apick" id="schPick" title="Show one school, or all of them" aria-label="School"><option value="">All schools</option></select>
     <a class="ab" href="/shared/inbox.html" id="hInbox"><i data-ic="inbox"></i><span class="lbl">Inbox</span></a>
     <a class="ab" href="/shared/chat.html"><i data-ic="chat"></i><span class="lbl">Messages</span></a>
     <a class="ab" href="/admin/student.html"><i data-ic="users"></i><span class="lbl">Students</span></a>
@@ -224,6 +225,19 @@ details.arch summary{cursor:pointer;font-size:12.5px;color:var(--a-grey);font-we
 var DB=window.CourseConfig.DB;
 var $=function(id){return document.getElementById(id);};
 var ic=function(n){return window.AdminUI?AdminUI.icon(n):'';};
+/* the school picker in the header (25 Nov 2026, Jan Erik: "separate the schools as a
+   select option on the top"): '' = all; remembered per device in jem_admin_school.
+   It filters This week, the rules card and the school cards. The Inbox badge and the
+   tab title still count every school: a waiting message is never hidden by the picker. */
+var SCH=''; try{SCH=localStorage.getItem('jem_admin_school')||'';}catch(e){}
+function inSch(c){return !SCH||(c.school||'Other')===SCH;}
+function fillSchPick(){
+  var sel=$('schPick'),seen={},order=[];
+  COURSES.forEach(function(c){var k=c.school||'Other';if(!seen[k]){seen[k]=1;order.push(k);}});
+  if(SCH&&!seen[SCH])SCH='';
+  sel.innerHTML='<option value="">All schools</option>'+order.map(function(k){var n=COURSES.filter(function(c){return (c.school||'Other')===k&&c.status!=='archived';}).length;return '<option value="'+esc(k)+'">'+esc(k)+' · '+n+' course'+(n===1?'':'s')+'</option>';}).join('');
+  sel.value=SCH;
+}
 var COURSES=[], ST={}, PROG={}, SCHOOL_HOME={'GBS':'/GBS/','SUMAS':'/SUMAS/','SWISS UMEF':'/UMEF/','UMEF':'/UMEF/','HEG':'/HEG/','Kalaidos':'/Kalaidos/'};
 var WEEK=7*86400e3, PROG_TTL=15*60e3;
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -339,7 +353,7 @@ function drawWeek(){
   $('week').innerHTML=days.map(function(d,i){
     var k=iso(d), items=[];
     COURSES.forEach(function(c){
-      if(c.status!=='live')return;
+      if(c.status!=='live'||!inSch(c))return;
       var ds=datesOf(c),n=ds.indexOf(k);
       if(n>=0)items.push('<a href="/'+esc(c.home||c.dir+'/index.html')+'">'+esc(c.code||c.id)+
         '<small>session '+(n+1)+' / '+ds.length+' · '+esc((c.schedule||{}).time||'')+'</small></a>');
@@ -359,7 +373,7 @@ function drawNow(){
     stud+=s.students||0;
     if(s.waiting)wait.push({c:c,n:s.waiting});
     if(s.pres)open.push({c:c,p:s.pres});
-    if(s.rules==='missing')miss.push(c);
+    if(s.rules==='missing'&&inSch(c))miss.push(c);
   });
   var nWait=wait.reduce(function(a,x){return a+x.n;},0);
   wait.sort(function(a,b){return b.n-a.n;});
@@ -390,7 +404,7 @@ function restoreScroll(){
 function drawAll(){
   drawNow();
   var bySchool={}, order=[];
-  COURSES.forEach(function(c){var k=c.school||'Other';if(!bySchool[k]){bySchool[k]=[];order.push(k);}bySchool[k].push(c);});
+  COURSES.forEach(function(c){if(!inSch(c))return;var k=c.school||'Other';if(!bySchool[k]){bySchool[k]=[];order.push(k);}bySchool[k].push(c);});
   $('schools').innerHTML=order.map(function(k){
     var list=bySchool[k], live=list.filter(function(c){return c.status!=='archived';}), arch=list.filter(function(c){return c.status==='archived';});
     var home=SCHOOL_HOME[k], stud=0; live.forEach(function(c){stud+=(ST[c.id]||{}).students||0;});
@@ -490,6 +504,7 @@ $('bOut').addEventListener('click',function(){
 });
 $('bRefresh').addEventListener('click',function(){loadAll(true);});
 /* attendance on/off per course: _site/attendance/<id> = false, or removed (= on) */
+$('schPick').addEventListener('change',function(){SCH=this.value;try{localStorage.setItem('jem_admin_school',SCH);}catch(e){}drawWeek();drawAll();});
 $('schools').addEventListener('click',async function(e){
   var a=e.target.closest('a[data-att]'); if(!a)return; e.preventDefault();
   var id=a.getAttribute('data-att'), c=COURSES.filter(function(x){return x.id===id;})[0]||{id:id}, off=ATT[id]===false;
@@ -557,7 +572,7 @@ AdminGate.mount({brand:'JANERIKMEIDELL.COM · ADMIN',title:'Instructor sign-in',
   onUnlock:function(){
     window.CourseConfig.load().then(function(reg){
       COURSES=reg.courses.filter(function(c){return c.status!=='superseded';});
-      drawWeek(); drawAll();
+      fillSchPick(); drawWeek(); drawAll();
       FBAuth.restore(function(u){
         if(u){loadAll(false);vaultLoad();return;}
         $('warn').style.display='flex';
