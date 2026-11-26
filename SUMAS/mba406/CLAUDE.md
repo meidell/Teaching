@@ -287,3 +287,15 @@ presence needing an account) applies. What differs:
   regex insertion into `courses.json` first landed in another course's
   `w5-hw` block (several courses share that module id) — scope registry
   edits to the course's own object.
+- **`revision.html` + `revision-tv.html` + `revision.js` — the finance quiz,
+  Kahoot-style, Weeks 1–6 (26 Nov 2026).** Jan Erik: "make a kahoot (like
+  yesterdays) with 30 question from week 1 to 6", "questions from principles
+  learned in class". Generated from `SUMAS/capstone-ba/revision*.html` (the
+  same engine as HEG/statistics and Kalaidos/fl3): the screen writes
+  `mba406/_release/revision/state`, phones PUT `mba406/<sid>/kahoot/<g>/<q>`.
+  Thirty principle questions, ten per tier (easy · medium · difficult), five
+  per week roughly, 30 s each, every number the week pages' own; each
+  explanation says why, the difficult ones add "How to get there". Scores
+  are keyed by question INDEX: append new questions at the end. Hub: a third
+  `.primer` under the Jeopardy one, with the screen link shown only on a
+  device holding `jem_fb_session`.
