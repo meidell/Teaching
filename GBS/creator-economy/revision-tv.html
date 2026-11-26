@@ -98,7 +98,7 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','"':'&quot;','>':'&gt;'}[c];});}
 var TOKEN='';
 async function tok(){try{TOKEN=await FBAuth.token();}catch(e){TOKEN='';}return TOKEN?'?auth='+encodeURIComponent(TOKEN):'';}
-var S=null,SIDS=null,ANS={},TIMER=null,POLL=null,startedAt=0,prevRank={};
+var REVEALING=false,S=null,SIDS=null,ANS={},TIMER=null,POLL=null,startedAt=0,prevRank={};
 function points(){var tot={};Object.keys(ANS).forEach(function(sid){var o=ANS[sid]||{},t=0,n='';Object.keys(o).forEach(function(q){var m=o[q],it=BANK[+q];if(!m||!it)return;if(m.n)n=m.n;t+=REV_POINTS(it,m.a===it.a,m.t);});if(n)tot[sid]={n:n,p:t};});return tot;}
 function ranking(upTo){var tot={};Object.keys(ANS).forEach(function(sid){var o=ANS[sid]||{},t=0,n='';Object.keys(o).forEach(function(q){if(upTo!=null&&+q>upTo)return;var m=o[q],it=BANK[+q];if(!m||!it)return;if(m.n)n=m.n;t+=REV_POINTS(it,m.a===it.a,m.t);});if(n)tot[sid]={n:n,p:t};});
   return Object.keys(tot).map(function(s){return {sid:s,n:tot[s].n,p:tot[s].p};}).sort(function(a,b){return b.p-a.p||a.n.localeCompare(b.n);});}
@@ -118,6 +118,8 @@ async function readAnswers(){
   var a=await tok();
   var rows=await Promise.all(SIDS.map(function(sid){return fetch(DB+'/'+NS+'/'+encodeURIComponent(sid)+'/kahoot/'+encodeURIComponent(S.g)+'.json'+a).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;}).then(function(o){return [sid,o];});}));
   ANS={};rows.forEach(function(r){if(r[1])ANS[r[0]]=r[1];});
+  /* 26 Nov 2026 (Jan Erik: "show the answer when all answered"): reveal at once when everyone who has played in this game has answered this question */
+  if(S.phase==='q'&&!REVEALING){var seen=0,now=0;Object.keys(ANS).forEach(function(sid){var o=ANS[sid]||{},ks=Object.keys(o);if(ks.some(function(k){return +k<S.q;})||(S.q===0&&ks.length))seen++;if(o[S.q])now++;});if(seen>0&&now>=seen&&S.q>0){reveal();return;}}
   render();
 }
 function answered(q){var n=0,c=[0,0,0,0];Object.keys(ANS).forEach(function(sid){var m=ANS[sid]&&ANS[sid][q];if(m&&m.a>=0&&m.a<4){n++;c[m.a]++;}});return {n:n,c:c};}
@@ -169,10 +171,10 @@ async function go(){
   else if(S.phase==='rev'){if(await write({g:S.g,q:S.q,phase:'end'})){stopTimers();await readAnswers();render();}}
 }
 async function reveal(){
-  if(!S||S.phase!=='q')return;stopTimers();
+  if(!S||S.phase!=='q'||REVEALING)return;REVEALING=true;stopTimers();
   await new Promise(function(r){setTimeout(r,1200);});   /* the slow devices' last answers */
   await readAnswers();
-  if(await write({g:S.g,q:S.q,phase:'rev',started:S.started}))render();
+  var okW=await write({g:S.g,q:S.q,phase:'rev',started:S.started});REVEALING=false;if(okW)render();
 }
 $('bNew').addEventListener('click',async function(){
   if(S&&S.g&&S.phase!=='end'&&!confirm('Abandon the game in progress and open a new one?'))return;
