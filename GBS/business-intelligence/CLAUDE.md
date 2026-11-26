@@ -364,6 +364,6 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   S3 the warehouse · S4 ETL and the bridge), append-only. The deck (week6-slides engine, 8 slides): plan ·
   the four pages (index/schema/etl/profile.html in one `orbita-memo` folder on one Netlify site; S1 has none) ·
   the class state as COUNTS from the wall at 15:00 (S2 6/7, S3 4/7, S4 5/7, S5 1/7; no team named) · order of
-  work · hand-in in six actions · three blockers · close; proposed deadline in the notes only. Hub: the quiz
+  work · hand-in in six actions · three blockers · the deadline slide (before Session 6, Thu 3 Dec 16:30) · close. Hub: the quiz
   link, the screen and the deck links on a `jem_fb_session` device. Tested headless: card → question → reveal,
   phone card, 8 slides fit 1280×720 and 1440×900.
