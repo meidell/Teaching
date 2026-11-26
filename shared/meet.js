@@ -80,7 +80,8 @@
       lim: 'Si l’appel s’arrête après environ 5 minutes, ouvrez-le dans un nouvel onglet : c’est une limite du serveur gratuit Jitsi, et l’appel continue sans limite dans l’onglet.',
       mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.',
       opening: 'Ouverture de la salle…', signin: 'connectez-vous d’abord au cours', modOn: 'Vous êtes modérateur de cette salle : vous pouvez couper les micros, ouvrir des sous-salles et enregistrer.',
-      failed: 'La salle n’a pas pu s’ouvrir', fallback: 'Ouvrir la salle gratuite sur meet.jit.si à la place'
+      failed: 'La salle n’a pas pu s’ouvrir', fallback: 'Ouvrir la salle gratuite sur meet.jit.si à la place',
+      keep: 'Pendant l’appel, les liens de la page s’ouvrent dans un nouvel onglet : l’appel continue ici.', leave: 'Quitter cette page met fin à l’appel.'
     } : {
       live: 'The class is on now, ' + when + ' (Geneva time). You can follow it online.',
       today: 'The class is today, ' + when + ' (Geneva time). You can follow it online.',
@@ -92,7 +93,8 @@
       lim: 'If the call stops after about 5 minutes, open it in a new tab. This is a limit of the free Jitsi server, and the call continues without a limit in the new tab.',
       mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.',
       opening: 'Opening the room…', signin: 'sign in to the course first', modOn: 'You are the moderator of this room: you can mute everyone, open breakout rooms and record.',
-      failed: 'The room could not be opened', fallback: 'Open the free room on meet.jit.si instead'
+      failed: 'The room could not be opened', fallback: 'Open the free room on meet.jit.si instead',
+      keep: 'During the call, links on this page open in a new tab, so the call keeps running here.', leave: 'Leaving this page ends the call.'
     };
 
     /* ---- styles ---- */
@@ -150,7 +152,8 @@
       var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
       var f = document.createElement('iframe'); f.src = src; f.title = title;
       f.allow = 'camera; microphone; display-capture; fullscreen; autoplay; clipboard-write'; f.setAttribute('allowfullscreen', '');
-      panel.appendChild(f);
+      panel.appendChild(f); inCall = true;
+      var kp = document.createElement('div'); kp.className = 'ft'; kp.textContent = T.keep; panel.appendChild(kp);
       if (foot) { var ft = document.createElement('div'); ft.className = 'ft'; ft.textContent = foot; panel.appendChild(ft); }
     }
     function open(slug, title) {
@@ -170,7 +173,24 @@
         var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
       });
     }
-    function close() { if (panel) { panel.remove(); panel = null; } document.body.classList.remove('jem-mp-on'); }
+    function close() { inCall = false; if (panel) { panel.remove(); panel = null; } document.body.classList.remove('jem-mp-on'); }
+
+    /* 26 Nov 2026 (Jan Erik: "the camera cuts every time you click on a link in the page"): the call
+       lives in an iframe of THIS page, so leaving the page ends it. While a call is open, a click on a
+       link that would leave the page opens that link in a new tab instead; a link to a place on the
+       same page (#…) still scrolls. A reload or the browser's Back button asks before ending the call. */
+    var inCall = false;
+    document.addEventListener('click', function (e) {
+      if (!inCall || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest && e.target.closest('a[href]');
+      if (!a || (panel && panel.contains(a)) || a.hasAttribute('download')) return;
+      var t = (a.getAttribute('target') || '').toLowerCase(); if (t && t !== '_self') return;
+      var href = a.getAttribute('href') || ''; if (/^(javascript:|mailto:|tel:|#)/i.test(href)) return;
+      var u; try { u = new URL(a.href, location.href); } catch (x) { return; }
+      if (u.origin === location.origin && u.pathname === location.pathname && u.search === location.search && u.hash) return;
+      e.preventDefault(); window.open(u.href, '_blank', 'noopener');
+    }, true);
+    window.addEventListener('beforeunload', function (e) { if (inCall) { e.preventDefault(); e.returnValue = T.leave; return T.leave; } });
 
     /* ---- recordings of past classes (sender worker: POST /rec/list, roster password or instructor token;
        each item carries a 6-hour signed play URL served from the R2 bucket with Range for seeking) ---- */
