@@ -500,3 +500,14 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   8 slides: the task · the six steps as a table (who does what) · Step 1 · Steps 2–3 · Step 4 (the
   main task, five actions) · Step 5 · Step 6 · what to finish at home + Session 7 on 3 Dec. A gold
   "▶ Slides" button in week6.html's top bar. No overflow at 1280×720 / 1440×900.
+- **Revision games, Sessions 1–5 (26 Nov 2026, during the session).** Jan Erik: "two hours of
+  repetition … kahoot … logical sequence session 1,2,3,4,5 … add short texts … 45 mins. Then a
+  different game for repeating again in groups the 2nd hour." (1) `revision.html` +
+  `revision-tv.html` + `revision.js`: the capstone-ba quiz engine (`creator/_release/revision/state`,
+  answers under `creator/<sid>/kahoot/<g>/<q>`), 30 questions, 6 per session in course order, 30 s;
+  NEW phase **`card`**: a question carrying `intro {t, txt}` (the first of each session) is preceded
+  by a reading card on the screen and on the phones, with the ranking so far. (2) `jeopardy.html`:
+  the BI engine, set `rev`, six categories (S1–S5 + "Sonnaz Audio · apply it") × 5, spoken team
+  answers, scores in `creator_jeo_rev`; the BI team-board loader was removed (teams A–F, editable).
+  Both linked from the hub (`#revGames`; the quiz screen only on a `jem_fb_session` device). Tested
+  headless: lobby → card → question → reveal, phone card, Jeopardy cell, no errors, 390 px.

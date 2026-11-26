@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/creator-economy/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy · Creator Economy · GBS</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<style>
+/* =====================================================================
+   CREATOR ECONOMY · Jeopardy in teams, Sessions 1 to 5 (26 Nov 2026) — the
+   second hour after the revision quiz (revision.html). Engine copied from
+   GBS/business-intelligence/jeopardy.html (6 columns × 5, teams A–F,
+   names editable). Projector page: no sign-in, never counted; scores in
+   this browser only (creator_jeo_rev). Answers are spoken by the team and
+   explained; the card shows the model answer.
+   ===================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#0B1633;color:#fff;min-height:100vh;}
+.top{display:flex;align-items:center;gap:14px;padding:14px 20px;}
+.top h1{font-family:Georgia,serif;font-size:24px;}
+.top .sub{color:#F7B267;font-size:13px;}
+.top a{color:#B9C6E4;font-size:13px;text-decoration:none;margin-left:auto;}
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:0 20px;}
+.cat{background:#101F44;border-radius:10px;padding:12px 8px;text-align:center;font-weight:800;font-size:clamp(11px,1.4vw,16px);min-height:64px;display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.5px;}
+.cat.own{background:#7A3E0E;}
+.cell{background:#1D3470;border:none;border-radius:10px;color:#F7B267;font:800 clamp(20px,3.2vw,40px)/1 Georgia,serif;min-height:clamp(60px,11vh,110px);cursor:pointer;transition:.15s;}
+.cell:hover{background:#2B4A98;}
+.cell.used{background:rgba(255,255,255,.06);color:rgba(255,255,255,.18);cursor:default;}
+.teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px 20px 30px;}
+.team{background:rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;text-align:center;min-width:150px;}
+.team input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font:800 15px inherit;text-align:center;width:100%;}
+.team .sc{font:800 34px Georgia,serif;color:#F7B267;margin-top:4px;}
+#modal{position:fixed;inset:0;background:rgba(6,12,30,.95);display:none;align-items:center;justify-content:center;padding:30px;z-index:10;}
+#modal.on{display:flex;}
+#modal .box{max-width:1000px;width:100%;text-align:center;}
+#modal .mc{color:#F7B267;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:800;}
+#modal .mq{font:700 clamp(24px,3.6vw,42px)/1.25 Georgia,serif;margin:20px 0 26px;}
+#modal .ma{display:none;font-size:clamp(18px,2.3vw,27px);color:#F7B267;line-height:1.4;margin-bottom:26px;}
+#modal .ma.on{display:block;}
+.mb{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.mb button{background:#fff;color:#0B1633;border:none;border-radius:30px;padding:10px 16px;font:800 14px inherit;cursor:pointer;}
+.mb button.ok{background:#2F855A;color:#fff;} .mb button.no{background:#9B2335;color:#fff;} .mb button.gh{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+.foot{text-align:center;font-size:12px;color:#B9C6E4;padding-bottom:20px;}
+.foot button{background:none;border:none;color:#B9C6E4;text-decoration:underline;cursor:pointer;font:inherit;}
+</style>
+</head>
+<body data-course="creator">
+<div class="top"><h1>Jeopardy</h1><span class="sub" id="setName"></span><a href="index.html" id="backLink">← Course</a></div>
+<div class="board" id="board"></div>
+<div class="teams" id="teams"></div>
+<div class="foot">Click a square · "Answer" · then the team that answered right (+) or wrong (−). Team names can be edited. <button id="reset">New game</button></div>
+<div id="modal"><div class="box"><div class="mc" id="mC"></div><div class="mq" id="mQ"></div><div class="ma" id="mA"></div><div class="mb" id="mB"></div></div></div>
+<script>
+var SETS={
+  rev:{name:'Revision in teams · Sessions 1 to 5',back:'index.html',backT:'← Course',cats:[
+    ['S1 · How an AI answers',[
+      ['Name the three kinds of source an AI answer can quote, with one example of each.','Owned (the brand\'s own site, e.g. sony.ch), earned (independent reviews and press, e.g. rtings.com), social (user platforms, e.g. Reddit, YouTube).'],
+      ['Put these in order: rank, crawl, index.','Crawl (the robots download the page), index (every word and where it appears is stored), rank (the best pages for the query come first).'],
+      ['What did Chen and colleagues (2025) find about the sources AI search engines quote?','A "systematic and overwhelming bias towards earned media", while Google\'s ordinary results are more balanced.'],
+      ['Explain "query fan-out" in one sentence, with an example.','The engine splits the question into several searches run at once, e.g. "best headphones CHF 200" → "noise cancelling test", "battery life", "comfort on trains".'],
+      ['Why can a page that Google ranks first still not be quoted by an AI answer?','The answer engine retrieves only pieces (passages) and writes from them; a page whose paragraphs do not answer the question on their own, or that its robot cannot read, is dropped at the retrieval or generation stage.']]],
+    ['S2 · Why a page is quoted',[
+      ['What is robots.txt, and where do you find it?','A file at the root of a website (site.com/robots.txt) that tells each robot which pages it may visit.'],
+      ['Name four of the six checks from Session 2.','Any four of: robots.txt · the text before JavaScript · the stand-alone test (chunks) · labels (JSON-LD) · links from other sites · freshness.'],
+      ['What do you see if you switch JavaScript off on a page that builds its text with JavaScript? Why does it matter?','An empty or almost empty page. A simple robot sees exactly that, so it has nothing to quote.'],
+      ['GPTBot or OAI-SearchBot: which one must a site allow to be quoted in ChatGPT\'s search answers?','OAI-SearchBot. GPTBot collects training data; blocking it does not stop the quotation.'],
+      ['Your team found three reasons why rtings is quoted. How do you test whether a reason is real?','Find a control page with the same property that is NOT quoted. If one exists, that reason is not enough on its own (falsification).']]],
+    ['S3 · Your page and the experiment',[
+      ['Which free service did you use to put your page online?','Netlify (Netlify Drop).'],
+      ['What are the two tools you used to tell the search engines your page exists?','Google Search Console and Bing Webmaster Tools.'],
+      ['Why does Bing matter for ChatGPT?','ChatGPT\'s web search draws on Bing.'],
+      ['What is "Week 0", and why is it needed?','The 9 rows recorded before the page went online: the baseline that later weeks are compared with.'],
+      ['When may your team switch to version B, and what exactly changes?','After three weekly checks with version A, and only if Search Console says "URL is on Google". Only the first paragraph changes.']]],
+    ['S4 · Paying content creators',[
+      ['Define CPA and give the formula.','Cost per acquisition: the fee ÷ the number of sales it brought.'],
+      ['Give the four factors of the funnel from views to sales.','Views × share who act (tap, click) × share who can buy (e.g. live in Switzerland) × shop conversion rate.'],
+      ['20,000 views, 1 % act, 80 % in Switzerland, 3 % buy. How many sales, and the CPA for a CHF 400 fee?','20,000 × 0.01 × 0.8 × 0.03 = 4.8 sales; 400 ÷ 4.8 ≈ CHF 83 per sale.'],
+      ['Why use the median views of the last 10 posts rather than the mean?','One viral post pulls the mean up; the median shows what a typical post gets, which is what the brand pays for.'],
+      ['Name two ways to count a content creator\'s sales, and one weakness of each.','A discount code: it leaks to coupon sites. A tagged link (UTM): people who see the post and buy later without clicking are missed.']]],
+    ['S5 · The contract',[
+      ['What does BATNA stand for?','Best Alternative To a Negotiated Agreement: what you do if this deal fails.'],
+      ['Name five terms a content creator contract settles besides the fee.','Deliverables, usage rights, exclusivity, disclosure, how the contract ends (and payment timing, approval, a bonus).'],
+      ['Who must make sure a paid post is labelled as advertising in Switzerland?','The brand (Fairness Commission principle A.4) and the person running the account (rule B.15): both.'],
+      ['CHF 900 fixed, or CHF 600 + CHF 15 a sale: at how many sales are they equal? Which does the brand prefer below that?','300 ÷ 15 = 20 sales. Below 20 sales the bonus deal (600 + 15 a sale) is cheaper for the brand.'],
+      ['Why can trading terms make both sides better off than meeting in the middle on the fee?','The sides value terms differently: a term cheap for one side (e.g. a results letter) can be worth a lot to the other; the fee is a pure transfer.']]],
+    ['Sonnaz Audio · apply it',[
+      ['What does Sonnaz sell, at what price, and what does it earn per pair?','The Sonnaz Q1 headphones, CHF 199, a margin of CHF 90 a pair.'],
+      ['Sonnaz pays CHF 450 and gets 12 sales. Did the post pay for itself?','CPA = 450 ÷ 12 = CHF 37.50. The margin is CHF 90 a pair, so yes: 12 × 90 = 1,080 of margin for 450.'],
+      ['A content creator has 120,000 followers but 70 % of the audience is abroad. Why is that a problem for Sonnaz?','Sonnaz ships only in Switzerland: most viewers cannot buy, so the share who can buy shrinks the funnel.'],
+      ['Write a correct first line for @leman.sound\'s paid Reel caption.','E.g. "Ad · paid partnership with @sonnaz.audio" at the start, plus the platform\'s "Paid partnership" label switched on.'],
+      ['The brand wants 12 months of exclusivity on all audio. What should @leman.sound ask in return, and why?','A much higher fee (or a shorter scope): she gives up every audio deal for a year; in Session 5\'s example, all audio for 12 months was worth CHF 4,000 against CHF 400 for headphones only for 3 months.']]]
+  ]}
+};
+var setId=(new URLSearchParams(location.search).get('set'))||'rev';
+var S=SETS[setId]||SETS.rev, SK='creator_jeo_'+setId;
+var IDS=['A','B','C','D','E','F','G'];
+var st={used:{},teams:IDS.slice(0,6).map(function(x){return ['Team '+x,0,x];})};
+try{var o=JSON.parse(localStorage.getItem(SK));if(o&&o.teams){st=o;if(st.teams.length<6)st.teams.push(['Team F',0]);st.teams.forEach(function(t,i){if(!t[2])t[2]=IDS[i];});}}catch(e){}
+if(S.back){var bl=document.getElementById('backLink');bl.href=S.back;bl.textContent=S.backT||'← Course';}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(st));}catch(e){}}
+document.getElementById('setName').textContent=S.name;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function draw(){
+  var b=document.getElementById('board'),h='',n=S.cats.length;
+  S.cats.forEach(function(c,ci){h+='<div class="cat'+(ci===n-1&&!S.back?' own':'')+'">'+esc(c[0])+'</div>';});
+  for(var r=0;r<5;r++)S.cats.forEach(function(c,ci){var k=ci+'-'+r;h+='<button class="cell'+(st.used[k]?' used':'')+'" data-k="'+k+'">'+(st.used[k]?'':(r+1)*100)+'</button>';});
+  b.innerHTML=h;
+  document.getElementById('teams').innerHTML=st.teams.map(function(t,i){return '<div class="team"><input value="'+esc(t[0])+'" data-i="'+i+'"><div class="sc">'+t[1]+'</div></div>';}).join('');
+  document.querySelectorAll('.team input').forEach(function(inp){inp.addEventListener('change',function(){st.teams[+inp.dataset.i][0]=inp.value;persist();});});
+}
+var modal=document.getElementById('modal');
+document.getElementById('board').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c||c.classList.contains('used'))return;
+  var p=c.dataset.k.split('-'),ci=+p[0],r=+p[1],cat=S.cats[ci],qa=cat[1][r],pts=(r+1)*100;
+  document.getElementById('mC').textContent=cat[0]+' · '+pts;
+  document.getElementById('mQ').textContent=qa[0];
+  var A=document.getElementById('mA');A.textContent=qa[1];A.classList.remove('on');
+  var mb=document.getElementById('mB');
+  mb.innerHTML='<button class="gh" data-a="show">Answer</button>'+st.teams.map(function(t,i){return '<button class="ok" data-a="p" data-i="'+i+'">+ '+esc(t[0])+'</button><button class="no" data-a="m" data-i="'+i+'">− '+esc(t[0])+'</button>';}).join('')+'<button class="gh" data-a="close">Close</button>';
+  mb.onclick=function(ev){
+    var x=ev.target.closest('button');if(!x)return;var a=x.dataset.a;
+    if(a==='show'){A.classList.add('on');return;}
+    if(a==='p'||a==='m'){st.teams[+x.dataset.i][1]+=(a==='p'?pts:-pts);x.disabled=true;persist();}
+    if(a==='close'||a==='p'){st.used[c.dataset.k]=1;persist();modal.classList.remove('on');draw();}
+  };
+  modal.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')modal.classList.remove('on');});
+document.getElementById('reset').addEventListener('click',function(){if(confirm('Clear the scores and start again?')){st={used:{},teams:st.teams.map(function(t){return [t[0],0,t[2]];})};persist();draw();}});
+draw();
+</script>
+<script src="/track.js" defer></script>
+</body>
+</html>
