@@ -337,3 +337,33 @@ namespace changed, global `BiWall`; `courseprogress.js` a port).
   ⚠ The hub's `TERM` still dates w6 to the week of 16 Nov (Thu 19 Nov) and courses.json `schedule.dates`
   lists 19 Nov as session 5; the page itself says Thu 26 Nov. Session 6 should open `w6_nx` and may use
   Madrid's unexplained fall as the "price change in one city".
+- **`warehouse.html` — Session 5's warehouse, live (26 Nov 2026, before the session).** Jan Erik: "can we
+  actually build this db and the system so that the students can understand by interacting with the
+  system?" The CodeLab SQL engine (DuckDB-WASM, the approved CDN exception) over four CSVs made by
+  `_private/gen-w6-warehouse.py` (fixed seed) FROM week6.html's own `D` and `RIDES`:
+  `data/w6_accounts_oct.csv` (44,600 rows, 2.4 MB: account_id, city, plan, status_on_1_oct, joined_month,
+  tenure_months, tenure_band, promo_1eur, rides_oct, rides_first_14_days, cancelled_oct) reproduces every
+  October split of the page exactly (city, tenure band, plan, Barcelona promotion 1,841/236 and without it
+  12,359/283 = 2.29 %, the first-14-days groups 957/172 …, mean 12.46 / median 7 / 555,552 rides);
+  plan × tenure inside a city is NOT on the page and was drawn at random within the marginals; cancelled
+  accounts get fewer October rides. Three marts: `w6_churn_month` (D.city), `w6_tenure_may` (D.bandMay),
+  `w6_cohort_survival` (D.coh). Part 1 = an explorer: chips (split by city · plan · tenure band · promotion ·
+  status · rides in first 14 days; one city; first 3 months · without the promotion · active only; four
+  ready views) write the SQL into codelab block `x0` and run it (`CodeLab.run`), with one sentence saying
+  what WHERE and GROUP BY did. Part 2 = six checked exercises m1–m6 (mean/median, churn by city ordered,
+  May vs Oct with CASE, Barcelona by band, Barcelona without the promotion, promotion × early rides).
+  Not a counted module. Linked from week6.html's top bar ("🗄️ The warehouse, live"). Tested headless
+  against the real engine 26 Nov 2026: the explorer runs, 6/6 model answers Correct, a wrong answer gives
+  the column message, 390 px fits, no page errors. ⚠ Change week6.html's `D` → regenerate and recompute
+  every data-check.
+- **Catch-up evening, 26 Nov 2026: `revision.html` + `revision-tv.html` + `revision.js` and `catchup-slides.html`.**
+  Jan Erik: "catch up day … a revision as for the other class of session 1,2,3,4 by giving hints and texts and
+  asking questions (à la kahoot) … then slides to show what the deliverables are so far and how they deliver
+  them (online)". The quiz = creator-economy's engine (reading card per session, `bi/_release/revision/state`,
+  answers `bi/<sid>/kahoot/<g>/<q>`), 28 questions, 7 per session (S1 five systems · S2 two churn numbers/KPIs ·
+  S3 the warehouse · S4 ETL and the bridge), append-only. The deck (week6-slides engine, 8 slides): plan ·
+  the four pages (index/schema/etl/profile.html in one `orbita-memo` folder on one Netlify site; S1 has none) ·
+  the class state as COUNTS from the wall at 15:00 (S2 6/7, S3 4/7, S4 5/7, S5 1/7; no team named) · order of
+  work · hand-in in six actions · three blockers · close; proposed deadline in the notes only. Hub: the quiz
+  link, the screen and the deck links on a `jem_fb_session` device. Tested headless: card → question → reveal,
+  phone card, 8 slides fit 1280×720 and 1440×900.

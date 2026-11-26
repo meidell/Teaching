@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/GBS/business-intelligence/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The warehouse, live · ÒRBITA's 44,600 October accounts · GBS</title>
+<meta name="description" content="Business Intelligence (MIM), Session 5 companion. ÒRBITA's October accounts loaded into a real SQL engine in your browser: click to split churn by city, plan, tenure and the 1-euro promotion and see the SQL each click runs, then rebuild the session's findings in six SQL exercises that check their own answer.">
+<meta name="theme-color" content="#101F44">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗄️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/gbs.css">
+<link rel="stylesheet" href="bi.css">
+<style>
+/* =====================================================================
+   warehouse.html — Session 5's warehouse, live (26 Nov 2026). Jan Erik:
+   "can we actually build this db and the system so that the students can
+   understand by interacting with the system?" The CodeLab SQL engine
+   (DuckDB-WASM, the approved CDN exception, as sql-lab.html) over four
+   tables made by scratch gen.py (fixed seed) FROM week6.html's own D and
+   RIDES: data/w6_accounts_oct.csv (44,600 rows, every October split of
+   the session page reproduces exactly: city, tenure band, plan, the
+   Barcelona promotion, rides in the first 14 days, the rides
+   distribution), w6_churn_month.csv (D.city), w6_tenure_may.csv
+   (D.bandMay), w6_cohort_survival.csv (D.coh). The joint of plan × tenure
+   inside a city is NOT given by the page and was drawn at random within
+   the marginals. Change week6.html's D and this data must be regenerated
+   and every data-check recomputed.
+   The explorer (x0) is a codelab block whose SQL the chips write and run.
+   ===================================================================== */
+.ex{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);scroll-margin-top:70px;}
+.ex.solved{border-color:var(--accent);}
+.ex>.clock{display:inline-block;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--accent-deep);background:var(--accent-pale);border-radius:20px;padding:3px 11px;margin-bottom:9px;}
+.ex h2{font-size:19px;line-height:1.2;margin-bottom:9px;}
+.ex p,.ex li{font-size:14px;line-height:1.6;}
+.ex ol{padding-left:20px;margin:6px 0 8px;}
+.ex .wy{background:var(--accent-pale);border-radius:10px;padding:10px 13px;margin:8px 0 10px;font-size:13.5px;line-height:1.55;}
+.ex .tk{font-weight:800;color:var(--navy);margin-top:10px;font-size:14px;}
+.ex code,.sch code,.intro code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#EEF1F5;border-radius:4px;padding:1px 4px;}
+details.kbd{border:1px solid var(--line);border-radius:12px;background:#fff;margin:10px 0;}
+details.kbd>summary{cursor:pointer;padding:10px 14px;font-weight:800;color:var(--navy);font-size:13.5px;}
+details.kbd>div{padding:0 14px 12px;font-size:13.5px;line-height:1.55;}
+.sch{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:20px;}
+.sch h2{font-size:17px;margin-bottom:6px;}
+.sch .tw{overflow-x:auto;margin:6px 0 12px;}
+.sch table{border-collapse:collapse;width:100%;font-size:13px;}
+.sch th,.sch td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+.sch th{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);}
+.sch td.c{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--navy);white-space:nowrap;}
+.sch h3{font-size:14.5px;margin:14px 0 2px;color:var(--navy);}
+.sch .rw{font-size:12.5px;color:var(--grey);margin:0 0 4px;}
+.starfig{overflow-x:auto;margin:8px 0 6px;}
+.starfig svg{min-width:560px;width:100%;height:auto;display:block;}
+.cnt{font-size:13px;color:var(--ink-soft);}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;}
+.chips .lb{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:800;color:var(--grey);align-self:center;margin-right:4px;min-width:74px;}
+.chips button{font:700 12.5px inherit;border:1.5px solid var(--line);background:#fff;color:var(--navy);border-radius:20px;padding:5px 12px;cursor:pointer;}
+.chips button.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.say{background:#F3F6FB;border-left:3px solid var(--navy);border-radius:8px;padding:9px 12px;font-size:13.5px;line-height:1.55;margin:8px 0;}
+</style>
+</head>
+<body data-course="bi">
+
+<div class="topbar">
+  <img class="logo" src="geneva-logo.svg" alt="Geneva Business School">
+  <span class="tb-sess">Session 5 · the warehouse, live</span>
+  <div class="tb-spacer"></div>
+  <span class="who" id="tbWho"></span>
+  <a class="home" href="week6.html">← Session 5</a>
+</div>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="kick">Session 5 · companion page</div>
+    <h1>The warehouse, live: ask ÒRBITA's 44,600 October accounts your own questions</h1>
+    <p class="lead"><b>Why this page exists.</b> On the Session 5 page, every table and chart was already computed for you. A real BI team gets those numbers by asking the warehouse. Here the warehouse is loaded: one row for every paying account on 1 October, 44,600 rows. Every number of tonight's data profile comes out of it when you ask the right question, and you can ask questions the page never asked.</p>
+    <p class="lead"><b>How to use it, in this order.</b></p>
+    <ol class="doli" style="color:#fff">
+      <li>Read the four tables below once.</li>
+      <li>In <b>Part 1</b>, click the buttons. Each click writes a SQL query into the grey box and runs it. Read the query: that is what a BI dashboard does when you click a filter.</li>
+      <li>In <b>Part 2</b>, write six queries yourself. Each one rebuilds a finding of Session 5 and checks its own answer.</li>
+    </ol>
+    <p class="lead" style="font-size:13px">The first Run loads the SQL engine into your browser (about 6 MB) and the data (about 2.4 MB), once per visit. Everything runs on your laptop. ÒRBITA and every value on this page are fictional and made for the course. Nothing on this page is graded.</p>
+  </div>
+
+  <div class="sprog">
+    <span class="lbl" id="spLbl">0 / 6</span>
+    <div class="track"><div class="fill" id="spFill"></div></div>
+    <span class="lbl" id="spPct">exercises solved</span>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="sch" id="tables">
+    <h2>The four tables in this warehouse</h2>
+    <p class="cnt">The main table has <b>one row per account</b>, the grain Session 3 called the "account-month": who the account is, what it did in October, and whether it cancelled. The three small tables are <b>marts</b>: tables the warehouse keeps already counted, for questions asked every month.</p>
+    <h3>w6_accounts_oct</h3><p class="rw">One row per paying account on 1 October 2026 · 44,600 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">account_id</td><td>The account's number.</td></tr>
+      <tr><td class="c">city</td><td>Barcelona, Madrid, Lisbon, Milan, Zürich or London.</td></tr>
+      <tr><td class="c">plan</td><td><code>'city-flex'</code> or <code>'ebike-pro'</code>.</td></tr>
+      <tr><td class="c">status_on_1_oct</td><td><code>'active'</code> or <code>'paused'</code> (4,532 paused accounts, which pay nothing and cannot ride).</td></tr>
+      <tr><td class="c">joined_month</td><td>The month the account was opened, for example <code>'2026-07'</code>.</td></tr>
+      <tr><td class="c">tenure_months</td><td>Completed months since joining, on 1 October: 1 for September, 3 for July.</td></tr>
+      <tr><td class="c">tenure_band</td><td><code>'1-3'</code>, <code>'4-12'</code> or <code>'13+'</code> months: Session 5's three groups of tenure.</td></tr>
+      <tr><td class="c">promo_1eur</td><td>1 if the account joined with Barcelona's first month at 1 euro (July to September 2026), else 0.</td></tr>
+      <tr><td class="c">rides_oct</td><td>The rides the account took in October.</td></tr>
+      <tr><td class="c">rides_first_14_days</td><td>The rides in the account's first 14 days. Filled only for accounts in their first 3 months (tenure band <code>'1-3'</code>); empty (NULL) for the others.</td></tr>
+      <tr><td class="c">cancelled_oct</td><td>1 if the account cancelled during October, else 0. The churn rate of a group is the average of this column.</td></tr></table></div>
+    <h3>w6_churn_month</h3><p class="rw">One row per city and month, May to October 2026 · 36 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">city, month</td><td>The city, and the month as <code>'2026-05'</code> … <code>'2026-10'</code>.</td></tr>
+      <tr><td class="c">accounts, cancellations</td><td>Paying accounts on the 1st of the month, and the cancellations during the month.</td></tr></table></div>
+    <h3>w6_tenure_may</h3><p class="rw">May 2026, by city and tenure band · 18 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">city, tenure_band, accounts, cancellations</td><td>The same counts as the main table's, for May, so October can be compared with May.</td></tr></table></div>
+    <h3>w6_cohort_survival</h3><p class="rw">Barcelona and Madrid, cohorts of March to September 2026 · 50 rows</p>
+    <div class="tw"><table><tr><th>Column</th><th>What it holds</th></tr>
+      <tr><td class="c">city, joined_month, new_subscribers</td><td>One cohort: the accounts that joined in that city in that month, and how many joined.</td></tr>
+      <tr><td class="c">months_after, still_subscribed_pct</td><td>How many months after joining, and the share of the cohort still subscribed then, in %.</td></tr></table></div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="part1">
+    <span class="clock">Part 1 · click, and read the query</span>
+    <h2>Split October's churn any way you like, and see the SQL the warehouse runs</h2>
+    <div class="wy"><b>Why.</b> A dashboard filter is a query. When the CFO clicks "Barcelona", the BI tool writes <code>WHERE city = 'Barcelona'</code> and sends it to the warehouse. Seeing the query is how you check that a number on a dashboard means what its title says.</div>
+    <p>Choose how to split the accounts, and which accounts to keep. The box shows, for each group: the accounts, the cancellations, the churn in %, and the mean and median rides in October. Then change the query by hand and press <b>▶ Run</b>.</p>
+    <div class="chips" id="cSplit"><span class="lb">Split by</span></div>
+    <div class="chips" id="cCity"><span class="lb">Only city</span></div>
+    <div class="chips" id="cOnly"><span class="lb">Only</span></div>
+    <div class="chips" id="cMore"><span class="lb">Other views</span></div>
+    <div class="say" id="xSay">Press any button. The first click loads the engine and the data, which takes a few seconds once.</div>
+<div class="codelab" id="x0" data-lang="sql" data-setup="wh">SELECT COUNT(*) AS accounts,
+       SUM(cancelled_oct) AS cancellations,
+       ROUND(100.0 * SUM(cancelled_oct) / COUNT(*), 2) AS churn_pct
+FROM w6_accounts_oct;</div>
+  </div>
+
+  <!-- ============================================================== -->
+  <div class="ex" id="e1">
+    <span class="clock">Part 2 · Exercise 1 · the typical account</span>
+    <h2>Compute the mean and the median of October's rides</h2>
+    <div class="wy"><b>Why.</b> The board pack says "12.5 rides per subscriber". Session 5 showed that half of the accounts rode 7 times or fewer. Prove both numbers from the rows.</div>
+    <p><code>AVG(x)</code> is the mean; <code>MEDIAN(x)</code> is the middle value once the values are sorted. <code>ROUND(x, 2)</code> keeps two decimals.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Return one row with two columns: the mean of <code>rides_oct</code>, rounded to 2 decimals, then its median.</li><li>Use every account: no WHERE.</li></ol>
+<div class="codelab" id="m1" data-lang="sql" data-setup="wh"
+ data-check='{"rows":[[12.46,7]],"tol":0.01}'
+ data-hint="Two columns in this order: ROUND(AVG(rides_oct), 2) and MEDIAN(rides_oct). No WHERE."
+ data-ok="mean 12.46, median 7. A few accounts ride very often and pull the mean up, so the median describes a typical account.">SELECT -- the mean, rounded to 2 decimals, then the median
+FROM w6_accounts_oct;</div>
+  </div>
+
+  <div class="ex" id="e2">
+    <span class="clock">Exercise 2 · GROUP BY</span>
+    <h2>Compute October's churn for each city, the highest first</h2>
+    <div class="wy"><b>Why.</b> The company's 2.62 % is an average of six cities. The CFO needs to see the six.</div>
+    <p>Churn in % = 100 × cancellations ÷ accounts. Because <code>cancelled_oct</code> is 1 or 0, <code>SUM(cancelled_oct)</code> counts the cancellations and <code>COUNT(*)</code> counts the accounts. Write <code>100.0</code>, with the decimal point, so the division keeps its decimals.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Four columns: <code>city</code>, the accounts, the cancellations, the churn in % rounded to 2 decimals.</li><li>One row per city, the highest churn first.</li></ol>
+<div class="codelab" id="m2" data-lang="sql" data-setup="wh"
+ data-check='{"rows":[["Barcelona",14200,519,3.65],["Milan",6300,168,2.67],["Lisbon",5600,134,2.39],["London",5000,117,2.34],["Madrid",10400,178,1.71],["Zürich",3100,52,1.68]],"ordered":true,"tol":0.01}'
+ data-hint="GROUP BY city, then ORDER BY the churn column DESC. The churn is ROUND(100.0 * SUM(cancelled_oct) / COUNT(*), 2)."
+ data-ok="Barcelona 3.65 % to Zürich 1.68 %: 1.98 points apart, while the company average is 2.62 %.">SELECT city,
+       COUNT(*) AS accounts
+       -- add the cancellations and the churn in %
+FROM w6_accounts_oct
+GROUP BY city
+-- sort, the highest churn first
+;</div>
+  </div>
+
+  <div class="ex" id="e3">
+    <span class="clock">Exercise 3 · the monthly mart</span>
+    <h2>Compare each city's churn in May and in October</h2>
+    <div class="wy"><b>Why.</b> The CFO says churn has not changed since May. That is true for the company. Check it city by city.</div>
+    <p>The mart <code>w6_churn_month</code> has one row per city and month. <code>CASE WHEN month = '2026-05' THEN cancellations END</code> keeps May's value and leaves the other months empty, so <code>SUM(...)</code> of it is May's count.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Three columns: <code>city</code>, May's churn in %, October's churn in %, both rounded to 2 decimals.</li><li>One row per city. The order does not matter.</li></ol>
+<div class="codelab" id="m3" data-lang="sql" data-setup="wh"
+ data-check='{"rows":[["Barcelona",2.49,3.65],["Lisbon",2.51,2.39],["London",2.25,2.34],["Madrid",3.17,1.71],["Milan",2.57,2.67],["Zürich",1.78,1.68]],"tol":0.01}'
+ data-hint="May: ROUND(100.0 * SUM(CASE WHEN month = '2026-05' THEN cancellations END) / SUM(CASE WHEN month = '2026-05' THEN accounts END), 2). October: the same with '2026-10'. GROUP BY city."
+ data-ok="Barcelona rose by more than a point, Madrid fell by more than a point, and the other four barely moved. The company average hid both.">SELECT city,
+       ROUND(100.0 * SUM(CASE WHEN month = '2026-05' THEN cancellations END)
+                   / SUM(CASE WHEN month = '2026-05' THEN accounts END), 2) AS may_pct
+       -- add October's churn the same way
+FROM w6_churn_month
+GROUP BY city;</div>
+  </div>
+
+  <div class="ex" id="e4">
+    <span class="clock">Exercise 4 · WHERE + GROUP BY</span>
+    <h2>Split Barcelona's October churn by tenure band</h2>
+    <div class="wy"><b>Why.</b> Barcelona's churn rose. Either all its subscribers leave more often, or the mix changed: more new subscribers, who always leave more often.</div>
+    <p class="tk">Your task</p>
+    <ol><li>Keep only Barcelona's accounts.</li><li>Four columns: <code>tenure_band</code>, the accounts, the cancellations, the churn in % rounded to 2 decimals. The order does not matter.</li></ol>
+<div class="codelab" id="m4" data-lang="sql" data-setup="wh"
+ data-check='{"rows":[["1-3",2198,250,11.37],["13+",9572,199,2.08],["4-12",2430,70,2.88]],"tol":0.01}'
+ data-hint="WHERE city = 'Barcelona', GROUP BY tenure_band, and the same three measures as in Exercise 2."
+ data-ok="Accounts in their first 3 months leave at 11.37 %; the older ones at 2.08–2.88 %, as in May. Compare with w6_tenure_may if you want to prove it.">SELECT tenure_band
+       -- the accounts, the cancellations, the churn in %
+FROM w6_accounts_oct
+-- keep only Barcelona
+GROUP BY tenure_band;</div>
+  </div>
+
+  <div class="ex" id="e5">
+    <span class="clock">Exercise 5 · a counterfactual</span>
+    <h2>Compute Barcelona's churn without the 1-euro promotion's accounts</h2>
+    <div class="wy"><b>Why.</b> If Barcelona's rise comes from the summer promotion, Barcelona without those accounts should look like May (2.49 %).</div>
+    <p class="tk">Your task</p>
+    <ol><li>Keep Barcelona's accounts that did NOT join with the promotion (<code>promo_1eur = 0</code>).</li><li>One row, three columns: the accounts, the cancellations, the churn in % rounded to 2 decimals.</li></ol>
+<div class="codelab" id="m5" data-lang="sql" data-setup="wh"
+ data-check='{"rows":[[12359,283,2.29]],"tol":0.01}'
+ data-hint="Two conditions joined by AND: city = 'Barcelona' AND promo_1eur = 0. No GROUP BY."
+ data-ok="2.29 %: Barcelona without the promotion is no worse than in May. The rise is the promotion's subscribers, not the city's.">SELECT COUNT(*) AS accounts
+       -- the cancellations and the churn in %
+FROM w6_accounts_oct
+WHERE city = 'Barcelona'
+-- and keep only the accounts without the promotion
+;</div>
+  </div>
+
+  <div class="ex" id="e6">
+    <span class="clock">Exercise 6 · CASE: a group you can act on</span>
+    <h2>Find the new subscribers who will probably leave: promotion × rides in the first 14 days</h2>
+    <div class="wy"><b>Why.</b> A finding is useful when someone can find the accounts and act before they leave. The first 14 days are when a new subscriber builds the habit, or not.</div>
+    <p><code>CASE WHEN x &lt;= 2 THEN '0-2' WHEN x &lt;= 5 THEN '3-5' ELSE '6+' END</code> turns a number into a group. You can <code>GROUP BY</code> two columns at once.</p>
+    <p class="tk">Your task</p>
+    <ol><li>Keep the accounts in their first 3 months (<code>tenure_band = '1-3'</code>), in every city.</li><li>Five columns: <code>promo_1eur</code>, the rides group (<code>'0-2'</code>, <code>'3-5'</code>, <code>'6+'</code> of <code>rides_first_14_days</code>), the accounts, the cancellations, the churn in % rounded to 2 decimals.</li><li>Six rows. The order does not matter.</li></ol>
+<div class="codelab" id="m6" data-lang="sql" data-setup="wh"
+ data-check='{"rows":[[0,"0-2",648,51,7.87],[0,"3-5",972,39,4.01],[0,"6+",1079,21,1.95],[1,"0-2",957,172,17.97],[1,"3-5",552,49,8.88],[1,"6+",332,15,4.52]],"tol":0.01}'
+ data-hint="SELECT promo_1eur, CASE WHEN rides_first_14_days &lt;= 2 THEN '0-2' WHEN rides_first_14_days &lt;= 5 THEN '3-5' ELSE '6+' END AS rides_group, … WHERE tenure_band = '1-3' GROUP BY promo_1eur, rides_group."
+ data-ok="957 promotion subscribers rode 0–2 times in their first 14 days, and 18 % of them left in October: 172 of the 1,168 cancellations in the whole company. A team can list these accounts tomorrow morning and call them.">SELECT promo_1eur,
+       CASE WHEN rides_first_14_days <= 2 THEN '0-2'
+            -- finish the groups
+       END AS rides_group
+       -- the accounts, the cancellations, the churn in %
+FROM w6_accounts_oct
+WHERE tenure_band = '1-3'
+GROUP BY promo_1eur, rides_group;</div>
+  </div>
+
+  <div class="foot"><a href="week6.html">← Session 5</a> · <a href="sql-lab.html">SQL lab</a> · <a href="index.html">Course</a> · ÒRBITA and every value on this page are fictional and made for the course. The SQL engine is DuckDB, running in your browser.</div>
+</div>
+
+<script type="text/sql" id="wh">
+CREATE OR REPLACE TABLE w6_accounts_oct    AS SELECT * FROM read_csv_auto('data/w6_accounts_oct.csv');
+CREATE OR REPLACE TABLE w6_churn_month     AS SELECT * FROM read_csv_auto('data/w6_churn_month.csv');
+CREATE OR REPLACE TABLE w6_tenure_may      AS SELECT * FROM read_csv_auto('data/w6_tenure_may.csv');
+CREATE OR REPLACE TABLE w6_cohort_survival AS SELECT * FROM read_csv_auto('data/w6_cohort_survival.csv');
+</script>
+<script src="/shared/codelab.js"></script>
+<script>
+(function(){
+  /* ---- Part 1: the chips write the query into x0 and run it ---- */
+  var SPLITS=[['','Nothing (the whole company)'],['city','City'],['plan','Plan'],['tenure_band','Tenure band'],['promo_1eur','1-euro promotion'],['status_on_1_oct','Status on 1 Oct'],['r14','Rides in first 14 days']];
+  var CITIES=['All','Barcelona','Madrid','Lisbon','Milan','Zürich','London'];
+  var ONLY=[['','All accounts'],['new',"Accounts in their first 3 months"],['nopromo','Without the promotion'],['active','Active accounts only']];
+  var S={split:'city',city:'All',only:''};
+  var R14="CASE WHEN rides_first_14_days <= 2 THEN '0-2' WHEN rides_first_14_days <= 5 THEN '3-5' ELSE '6+' END";
+  function q(){
+    var col=S.split==='r14'?R14+' AS rides_first_14':S.split, grp=S.split==='r14'?'rides_first_14':S.split;
+    var w=[];if(S.city!=='All')w.push("city = '"+S.city+"'");
+    if(S.only==='new'||S.split==='r14')w.push("tenure_band = '1-3'");if(S.only==='nopromo')w.push('promo_1eur = 0');if(S.only==='active')w.push("status_on_1_oct = 'active'");
+    return 'SELECT '+(S.split?col+',\n       ':'')+'COUNT(*) AS accounts,\n       SUM(cancelled_oct) AS cancellations,\n       ROUND(100.0 * SUM(cancelled_oct) / COUNT(*), 2) AS churn_pct,\n       ROUND(AVG(rides_oct), 1) AS mean_rides,\n       MEDIAN(rides_oct) AS median_rides\nFROM w6_accounts_oct'+
+      (w.length?'\nWHERE '+w.join('\n  AND '):'')+(S.split?'\nGROUP BY '+grp+'\nORDER BY churn_pct DESC':'')+';';
+  }
+  function say(){
+    var t='Each row is one group of accounts. ';
+    if(S.split==='r14')t+='Rides in the first 14 days exist only for accounts in their first 3 months, so the query keeps only those. ';
+    if(S.city!=='All')t+='WHERE keeps only '+S.city+'. ';
+    if(S.split)t+='GROUP BY makes one row per '+({city:'city',plan:'plan',tenure_band:'tenure band',promo_1eur:'value of promo_1eur (1 = joined with the promotion)',status_on_1_oct:'status',r14:'group of early rides'})[S.split]+'. ';
+    t+='churn_pct = 100 × cancellations ÷ accounts.';
+    document.getElementById('xSay').textContent=t;
+  }
+  function run(sql,txt){if(!window.CodeLab||!CodeLab.run)return;if(txt)document.getElementById('xSay').textContent=txt;else say();CodeLab.run('x0',sql);}
+  function chips(id,list,key){
+    var box=document.getElementById(id);
+    list.forEach(function(o){var v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:o;var b=document.createElement('button');b.type='button';b.textContent=l;b.dataset.v=v;
+      b.onclick=function(){S[key]=v;paint();run(q());};box.appendChild(b);});
+  }
+  function paint(){[['cSplit','split'],['cCity','city'],['cOnly','only']].forEach(function(p){document.querySelectorAll('#'+p[0]+' button').forEach(function(b){b.classList.toggle('on',b.dataset.v===S[p[1]]);});});}
+  chips('cSplit',SPLITS,'split');chips('cCity',CITIES,'city');chips('cOnly',ONLY,'only');paint();
+  var MORE=[
+    ['Churn by month, May–Oct',"SELECT month,\n       SUM(accounts) AS accounts,\n       SUM(cancellations) AS cancellations,\n       ROUND(100.0 * SUM(cancellations) / SUM(accounts), 2) AS churn_pct\nFROM w6_churn_month\nGROUP BY month\nORDER BY month;",'The monthly mart, all cities added up: the company\'s churn barely moves from May to October. Add WHERE city = \'Barcelona\' before GROUP BY and run it again.'],
+    ['Barcelona cohorts',"SELECT joined_month, new_subscribers, months_after, still_subscribed_pct\nFROM w6_cohort_survival\nWHERE city = 'Barcelona'\nORDER BY joined_month, months_after;",'One row per cohort and month after joining. The July–September cohorts (830 sign-ups each, the promotion) keep fewer subscribers after each month.'],
+    ['Rides distribution',"SELECT LEAST(rides_oct, 40) AS rides,\n       COUNT(*) AS accounts\nFROM w6_accounts_oct\nGROUP BY 1\nORDER BY 1;",'How many accounts took 0, 1, 2 … rides in October (40 or more counted as 40). The first row includes the 4,532 paused accounts.'],
+    ['20 accounts to call',"SELECT account_id, city, joined_month, rides_first_14_days, rides_oct\nFROM w6_accounts_oct\nWHERE promo_1eur = 1\n  AND rides_first_14_days <= 2\n  AND cancelled_oct = 0\nORDER BY rides_oct, joined_month\nLIMIT 20;",'The actionable list: promotion subscribers who rode 0–2 times in their first 14 days and have not left. A retention team would call these first.']
+  ];
+  var box=document.getElementById('cMore');
+  MORE.forEach(function(m){var b=document.createElement('button');b.type='button';b.textContent=m[0];b.onclick=function(){run(m[1],m[2]);};box.appendChild(b);});
+
+  /* ---- the solved counter ---- */
+  var IDS=['m1','m2','m3','m4','m5','m6'];
+  function count(){
+    var s=window.CodeLab?CodeLab.solved():[],n=0;
+    IDS.forEach(function(id){var ok=s.indexOf(id)>=0;if(ok)n++;var ex=document.getElementById(id);ex=ex&&ex.closest('.ex');if(ex)ex.classList.toggle('solved',ok);});
+    document.getElementById('spLbl').textContent=n+' / '+IDS.length;
+    document.getElementById('spFill').style.width=Math.round(n/IDS.length*100)+'%';
+  }
+  document.addEventListener('codelab:solved',count);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',count);else count();
+  function chip(){var a=null;try{a=JSON.parse(localStorage.getItem('bi_auth')||'null');}catch(e){}if(!a||!a.sid)return;var w=document.getElementById('tbWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}}
+  window.addEventListener('DOMContentLoaded',chip);window.addEventListener('statstrack:named',chip);
+})();
+</script>
+<script src="/shared/config.js"></script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
