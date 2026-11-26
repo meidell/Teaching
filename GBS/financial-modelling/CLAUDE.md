@@ -287,7 +287,26 @@ archetype: `finmod.css` = `bi.css` + additions at the END; `courseprogress.js`
   **`jeopardy.html?set=s5`** (added). No workbook (as Session 4); "In Excel" drawers. Python (scratch
   final.py) = the page's JS under node, 25 Nov 2026; NOT recalculated in Excel. Probed headlessly: 7/7, no
   page errors, 1280 and 420 px no sideways scroll, state survives reload.
-- **`week6-slides.html` — the lecture deck for Session 5 (25 Nov 2026), 26 slides, week5-slides' engine.**
+- ⚠ **Session 5 became a LECTURE with INDIVIDUAL homework (26 Nov 2026, the day of the session).** Jan Erik: "your
+  session 4 is a mess and impossible to follow", "no group work for session 5, just me explaining", "make good
+  slides", "just remove the team from that session", "remove the excel how-to explanations". `week6.html`: the team
+  board, the `w6_team` field, the three "In Excel" drawers and Step 7 (the Jeopardy quiz) are gone; `total:6`; the
+  reply carries the signed-in name (`whoName()`); wall.js/teams.js are no longer loaded. `jeopardy.html?set=s5`
+  still exists but nothing links to it. Hub card w6: `bring` says nothing to bring. **`week6-slides.html` was
+  REBUILT as 34 slides on MERIDIA's own numbers** (the first deck taught everything on the bakery and withheld
+  Meridia for the page, so the room never saw the actual session): six-step road map strip (repeated at each part
+  with the current step in gold) · Part 1 FCFF FY2026 line by line, a to-scale waterfall (EBITDA 30.99 → tax 4.85 →
+  capex 15.40 → NWC 1.55 → 9.19), the net-income bridge (12.97 + 2.39 + 10.78 − 15.40 − 1.55), the tax line (4.85 vs
+  paid 4.10, 0.75 → WACC), the five years, the bakery once as "profitable but burning cash" · Part 2 the WACC one
+  input per slide with sources (Kd 3.50; Bund 2.85; ERP 60/25/15 → 5.72; β 0.54 → 0.856; premium 3.0 → Ke 10.75;
+  weights 56.5/43.5 → 7.59, vs 8.5 and 5.90) · break · Part 3 discount factors and PVs (Σ 42.66), TV two ways
+  (219.7 → 152.4; 365.7 → 253.7), EV 195.0/296.3, €3.38/€5.91, 78/86 % in TV, and WHY the value moved from
+  Session 1's €2.48 (forecast +0.20, WACC +0.70) · Part 4 the four tests (5.47×, 4.16 %, normalised 17.39 → €4.96),
+  a to-scale range bar (2.27 · 2.68 · 3.38 · 4.96 · 5.53 · 5.91), the one assumption (WACC ±1 pt → 4.46/2.62, g
+  1/3 % → 2.77/4.25, premium 0 → 5.53), a model reply, five sentences to remember. Every figure = week6.html's
+  model() under node, 26 Nov 2026; no overflow at 1280×720 and 1440×900; the page walks 6/6 headlessly with the
+  reply carrying the name. The old deck's description below is kept for the bakery figures it documents.
+- **`week6-slides.html` — the FIRST lecture deck for Session 5 (25 Nov 2026, REPLACED the next day, see above), 26 slides, week5-slides' engine.**
   Parts 1–4 teach Steps 2–5 on **Forno Lumen** continued (€ thousand): FY2026 FCFF −254.0 vs NI 129.6, three
   routes (222.0 − 500.0 + 24.0; lenders −242.9 + dividend 38.9 − cash 50.0); tax on EBIT 38.4 vs paid 32.4;
   WACC 7.69 % (restaurants βu 0.59, D/E 0.39 → βL 0.774; Bund 2.85; Switzerland ERP 4.23; premium 3.0; Kd 5 %

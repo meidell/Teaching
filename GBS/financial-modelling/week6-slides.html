@@ -5,20 +5,21 @@
 <base href="/GBS/financial-modelling/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex">
-<title>Session 5 · Free cash flow, WACC, terminal value · slides · Finance Modelling · GBS</title>
+<title>Session 5 · Valuing Meridia from its free cash flow · slides · Finance Modelling · GBS</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
 <style>
 /* ---- The GBS deck engine (session2-slides.html), navy and gold.
    ← → / space / click to move · N speaker notes · P print view (⌘P → PDF, one slide per page).
-   Session 5 of Finance Modelling (module w6), Thu 26 Nov 2026, 18:45–20:45: a LECTURE evening on
-   week5-slides.html's pattern; week6.html is the homework. Parts 1–4 teach Steps 2–5 on the
-   SECOND business, Forno Lumen (fictional bakery chain, € thousand), continued from Session 4:
-   FY2026 FCFF −254.0 (NI 129.6), three routes; WACC 7.69 % (restaurants βu 0.59, D/E 0.39,
-   Bund 2.85, CH ERP 4.23, premium 3.0, Kd 5 %); FY2027–28 FCFF 133.8 / 138.7; Σ PV −9.4; Gordon
-   TV 2,486.0 → EV 1,981.2 (100.5 % in TV); exit 11.5× → 2,979.6, implied g 3.83 %; implied
-   multiple 7.66×; normalised FY2029 105.9 → EV 1,480.9. Meridia only with FY2025 figures and the
-   method, so the page's checks stay the homework. Market data real (BMF Jan 2026; Damodaran
-   Jan 2026). Every figure recomputed in Python (scratch bakery.py, final.py), 25 Nov 2026. ---- */
+   Session 5 of Finance Modelling (module w6), Thu 26 Nov 2026, 18:45–20:45.
+   REBUILT 26 Nov 2026 (Jan Erik: "no group work for session 5, just me explaining", "make good
+   slides"): a LECTURE on MERIDIA's own numbers, start to finish — the first deck (25 Nov) taught
+   everything on the Forno Lumen bakery and withheld Meridia for the page; the room never saw the
+   actual session. Every figure = week6.html's model() under node, 26 Nov 2026: FCFF 9.19 · 10.09
+   · 10.69 · 11.34 · 12.04; WACC 7.59 % (rf 2.85, ERP 5.72, βL 0.856, Ke 10.75, Kd 3.50, D/V
+   43.5 %); Σ PV 42.66; Gordon TV 219.69 → EV 195.04, 78 % in TV, €3.38; exit 9.1× → 296.31,
+   €5.91; implied multiple 5.47×, implied g 4.16 %; normalised FY2031 17.39 → €4.96; range 2.27 /
+   2.68 / 3.38 / 4.96 / 5.53 / 5.91; WACC ±1 pt → 4.46 / 2.62, g 1 / 3 % → 2.77 / 4.25.
+   The bakery appears once (slide 11), as the contrast "profitable but burning cash". ---- */
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{--navy:#101F44;--gold:#D58517;--gold-d:#A8620A;--ink:#1B2333;--soft:#4A5468;--line:#DCE1EA;--paper:#F6F7FA;--ok:#2F855A;--bad:#9B2335;}
 html,body{height:100%;background:var(--navy);font-family:'Avenir Next',Avenir,'Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);}
@@ -28,7 +29,7 @@ html,body{height:100%;background:var(--navy);font-family:'Avenir Next',Avenir,'H
 .slide.dark{background:var(--navy);color:#fff;}
 .kick{font-size:1.6vh;letter-spacing:.3em;text-transform:uppercase;font-weight:800;color:var(--gold-d);margin-bottom:1.6vh;}
 .dark .kick{color:var(--gold);}
-.slide h2{font-family:Georgia,'Times New Roman',serif;font-size:4.8vh;line-height:1.12;color:var(--navy);margin-bottom:2.6vh;letter-spacing:-.01em;}
+.slide h2{font-family:Georgia,'Times New Roman',serif;font-size:4.6vh;line-height:1.12;color:var(--navy);margin-bottom:2.6vh;letter-spacing:-.01em;}
 .dark h2{color:#fff;} .slide h2 em{font-style:italic;color:var(--gold-d);} .dark h2 em{color:var(--gold);}
 .slide h3{font-family:Georgia,serif;font-size:2.9vh;color:var(--navy);margin-bottom:1vh;}
 .body{flex:1;font-size:2.75vh;line-height:1.45;color:var(--soft);display:flex;flex-direction:column;min-height:0;}
@@ -50,11 +51,13 @@ th,td{text-align:right;padding:.9vh 1.2vw;border-bottom:1px solid var(--line);ve
 th:first-child,td:first-child{text-align:left;} td.l{text-align:left;}
 th{background:var(--navy);color:#fff;font-size:1.8vh;letter-spacing:.08em;text-transform:uppercase;}
 tr.hl td{background:#FFF4E3;font-weight:800;color:var(--ink);}
+tr.tot td{font-weight:800;color:var(--ink);border-top:2px solid var(--navy);}
 td.bad{color:var(--bad);font-weight:800;} td.ok{color:var(--ok);font-weight:800;}
 .flow{display:flex;gap:.8vw;align-items:stretch;margin:1.6vh 0;}
-.flow>div{flex:1;background:#fff;border:1px solid var(--line);border-radius:1.4vh;padding:1.5vh 1vw;font-size:2.1vh;line-height:1.35;}
-.flow>div b{display:block;font-family:Georgia,serif;font-size:2.5vh;color:var(--navy);margin-bottom:.5vh;}
+.flow>div{flex:1;background:#fff;border:1px solid var(--line);border-radius:1.4vh;padding:1.5vh 1vw;font-size:2vh;line-height:1.35;}
+.flow>div b{display:block;font-family:Georgia,serif;font-size:2.4vh;color:var(--navy);margin-bottom:.5vh;}
 .flow>div.now{background:#FFF4E3;border:2px solid var(--gold);}
+.flow>div.done{opacity:.55;}
 .formula{font-family:Georgia,serif;font-size:3.3vh;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:1.6vh;padding:2vh 2vw;margin:1vh 0 1.8vh;text-align:center;}
 .dark .formula{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2);}
 .reveal{visibility:hidden;} .reveal.show{visibility:visible;}
@@ -62,6 +65,13 @@ td.bad{color:var(--bad);font-weight:800;} td.ok{color:var(--ok);font-weight:800;
 .dark .q{background:rgba(255,255,255,.08);color:#fff;}
 .do{background:#FFF4E3;border:1px solid #F0C98A;border-radius:1.4vh;padding:1.6vh 1.6vw;font-size:2.5vh;color:var(--ink);margin:1vh 0 1.6vh;}
 .do b{color:var(--gold-d);}
+.bars{display:flex;flex-direction:column;gap:1.1vh;margin:1vh 0 1.6vh;}
+.bar{display:grid;grid-template-columns:34% 1fr 12%;align-items:center;gap:1vw;font-size:2.3vh;color:var(--ink);}
+.bar .tr{position:relative;height:3.4vh;background:#fff;border:1px solid var(--line);border-radius:.7vh;}
+.bar i{position:absolute;top:0;bottom:0;background:var(--gold);border-radius:.6vh;}
+.bar i.neg{background:var(--bad);} .bar i.nv{background:var(--navy);} .bar i.ok{background:var(--ok);}
+.bar b{text-align:right;font-weight:800;}
+.bar.hl span:first-child{font-weight:800;}
 .hud{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;gap:2vw;padding:1vh 2vw;font-size:1.9vh;color:rgba(255,255,255,.75);background:rgba(16,31,68,.94);z-index:5;}
 .hud b{color:#fff;} .hud .sp{flex:1;} .hud .late{color:#F4B183;} .hud .early{color:#A8D5A2;}
 .notes{display:none;position:fixed;left:0;right:0;bottom:4.2vh;max-height:34vh;overflow:auto;background:#0B1633;color:#EEF1F7;padding:2.2vh 4vw;font-size:2.2vh;line-height:1.5;border-top:.4vh solid var(--gold);z-index:4;}
@@ -74,7 +84,7 @@ body.notes .slide.on .body{padding-bottom:34vh;}
   .slide{position:static;display:flex !important;min-height:180mm;page-break-after:always;padding:30px 40px;background:#fff !important;color:var(--ink) !important;border:1px solid #ccc;margin-bottom:10px;}
   .dark h2,.dark .big,.dark .body,.dark .body b,.dark .formula,.dark .q,.dark .card h3,.dark .card p{color:var(--ink) !important;}
   .slide h2{font-size:30px;} .kick{font-size:11px;} .body{font-size:17px;} .big{font-size:22px;} .dim{font-size:12px;}
-  .card p,.flow>div{font-size:14px;} table{font-size:14px;} th{font-size:10px;} th,td{padding:5px 9px;} .formula{font-size:20px;} .q{font-size:19px;} .do{font-size:15px;}
+  .card p,.flow>div{font-size:14px;} table{font-size:14px;} th{font-size:10px;} th,td{padding:5px 9px;} .formula{font-size:20px;} .q{font-size:19px;} .do{font-size:15px;} .bar{font-size:14px;} .bar .tr{height:18px;}
   .reveal{visibility:visible;}
   .notes{display:block !important;position:static;max-height:none;background:#F4F6FA;color:var(--ink);font-size:12.5px;padding:10px 14px;margin-top:12px;border-top:2px solid var(--gold);}
   .notes:before{content:"Notes · ";font-weight:800;color:var(--gold-d);}
@@ -89,419 +99,574 @@ body.notes .slide.on .body{padding-bottom:34vh;}
 <!-- 1 -->
 <section class="slide dark" data-clock="18:45">
   <div class="kick">Geneva Business School · Finance Modelling · Session 5 · Thursday 26 November 2026</div>
-  <h2>Valuing a business from its free cash flow: what the cash flow counts, where the cost of capital comes from, and how to compute and test the terminal value</h2>
+  <h2>Valuing Meridia Cold from its free cash flow: the cash the business produces, the rate that converts it to today's euros, and the value of the years after the forecast</h2>
   <div class="body">
-    <p class="big">Tonight is explanation and worked examples. The exercises on the Session 5 page are your team's homework, due before Session 6.</p>
-    <div class="dim">The examples tonight continue the Forno Lumen bakery chain of Session 4, so that the Meridia answers on the page are still yours to find. All bakery figures are in € thousand; all Meridia figures in € million.</div>
+    <p class="big">Tonight the instructor explains, step by step, with Meridia's own numbers. No group work. The Session 5 page repeats the same steps with a check on every number, for you to work through afterwards.</p>
+    <div class="dim">All Meridia figures are in € million. The market data (bond yield, risk premiums, betas, multiples) are real and dated; Meridia, Boreal and the bank are fictional.</div>
   </div>
-  <div class="notes">No laptops needed for the first part. Say at once that the page is homework, so nobody tries to keep up with it during the slides. The market data on the slides and on the page are real and dated; the companies are fictional.</div>
+  <div class="notes">No laptops needed. Say it once: tonight is explanation; the page is theirs afterwards and it holds the same numbers as these slides, so the checks confirm what they heard. Pace: about three minutes a slide.</div>
 </section>
 
 <!-- 2 -->
 <section class="slide" data-clock="18:47">
-  <div class="kick">The plan · 120 minutes</div>
-  <h2>Four parts of theory on one worked example, a break inside Part 4, then a short review of the Session 4 homework</h2>
+  <div class="kick">The mandate</div>
+  <h2>Boreal Logistics asks what Meridia is worth on its own, valued from the cash it will produce, with every input sourced</h2>
   <div class="body">
-    <table>
-      <tr><th>Part</th><th class="l" style="text-align:left">What you learn</th><th>Page step it prepares</th></tr>
-      <tr><td>1</td><td class="l">What free cash flow counts, and why it is neither net income nor EBITDA</td><td>Step 2</td></tr>
-      <tr><td>2</td><td class="l">How to build the cost of capital (WACC) from a bond yield, a risk premium and the beta of listed companies</td><td>Step 3</td></tr>
-      <tr><td>3</td><td class="l">How to discount the cash flows, and the terminal value by perpetuity growth and by exit multiple</td><td>Step 4</td></tr>
-      <tr><td>—</td><td class="l">Break</td><td></td></tr>
-      <tr><td>4</td><td class="l">Four tests that catch a wrong terminal value</td><td>Step 5</td></tr>
-      <tr><td>5</td><td class="l">Review: the answers to the Session 4 homework</td><td>Session 4</td></tr>
-    </table>
-    <div class="dim">The second-last slide says exactly what the homework is and when it is due.</div>
+    <div class="cols">
+      <div class="card hl"><h3>What we already have, from Session 4</h3><p>A five-year forecast, FY2026–FY2030: revenue grows 6.7 % a year from 180.4, the EBITDA margin is 16.1 %, capex is 8 % of revenue, working capital is computed in days.</p><p>At 31 December 2025: term debt 69.0 − cash 9.0 = <b>net debt 60.0</b>. Shares: <b>40.0 million</b>.</p></div>
+      <div class="card hl"><h3>What Boreal asks for</h3><p>1. The free cash flow, FY2026–FY2030.</p><p>2. A cost of capital built from market data, not assumed.</p><p>3. The terminal value by two methods.</p><p>4. How much of the value sits after FY2030, and the one assumption the value depends on most.</p></div>
+    </div>
+    <p>"On its own" means before any saving Boreal could make by merging the two companies. Those savings are called <b>synergies</b>; a later session values them.</p>
   </div>
-  <div class="notes">Clock: Part 1 18:52–19:14 · Part 2 19:14–19:38 · Part 3 19:38–19:52 · break 19:52–19:57 · Part 4 19:57–20:14 · Part 5 20:14–20:20 · homework 20:20 · teams start the page 20:23–20:45 with the instructor walking around.</div>
+  <div class="notes">Session 1 valued Meridia at €2.48 a share on a three-year forecast with a WACC of 8.5 % that was simply given. Tonight every piece is rebuilt: the cash flow from the full forecast, the discount rate from data. The number will move, and slide 27 explains why.</div>
 </section>
 
 <!-- 3 -->
-<section class="slide" data-clock="18:49">
-  <div class="kick">Where Meridia stands · the mandate</div>
-  <h2>Boreal asks what Meridia is worth on its own, valued from the cash it will produce, with every input sourced</h2>
+<section class="slide" data-clock="18:50">
+  <div class="kick">The road from the forecast to a price per share</div>
+  <h2>A discounted cash flow valuation has six steps, and tonight walks them in order</h2>
   <div class="body">
-    <div class="cols">
-      <div class="card hl"><h3>What your team already has</h3><p>The five-year forecast of Session 4: revenue 180.4 in FY2025 growing 6.7 % a year, EBITDA margin 16.1 %, capex 8 % of revenue, working capital in days.</p><p>Net debt at 31 December 2025: term debt 69.0 − cash 9.0 = <b>60.0</b>. Shares: <b>40.0 million</b>.</p></div>
-      <div class="card hl"><h3>What Boreal Logistics asks</h3><p>1. The free cash flow, FY2026–FY2030.</p><p>2. A cost of capital built from market data.</p><p>3. The terminal value by two methods.</p><p>4. The share of the value in the terminal value, and the assumption the value depends on most.</p></div>
+    <div class="flow">
+      <div><b>1 · Free cash flow</b>the cash the business produces each year, before paying lenders or owners</div>
+      <div><b>2 · WACC</b>the yearly return lenders and owners require; the rate that converts future euros to today's</div>
+      <div><b>3 · Discount</b>each year's cash flow × its discount factor; add the five years</div>
+      <div><b>4 · Terminal value</b>one number for all the years after FY2030, two ways</div>
+      <div><b>5 · Enterprise value</b>the five years + the terminal value, both in today's euros</div>
+      <div><b>6 · Per share</b>minus net debt 60.0, divided by 40.0 million shares</div>
     </div>
-    <p>"On its own" means without the savings Boreal could make by merging the two companies (synergies). A later session values those.</p>
+    <p>A <b>discounted cash flow valuation (DCF)</b> values a business as the cash it will produce, with each future euro converted into today's euros at a rate that pays investors for waiting and for the risk.</p>
+    <p>The result is the <b>enterprise value</b>: the value of the whole business, before the debt is paid off. The shareholders own what is left after the net debt.</p>
   </div>
-  <div class="notes">Session 1 already did a DCF, on a three-year forecast with rough ratios and a WACC of 8.5 % that was simply given. Tonight every piece is taken apart and rebuilt: the cash flow from the full forecast, the WACC from data.</div>
+  <div class="notes">This strip comes back at the start of each part with the current step in gold. Four parts tonight: free cash flow (steps 1), the WACC (2), discounting and the terminal value (3–6), then four tests of the terminal value.</div>
 </section>
 
 <!-- 4 -->
-<section class="slide" data-clock="18:52">
+<section class="slide" data-clock="18:53">
   <div class="kick">Part 1 · free cash flow</div>
-  <h2>Free cash flow to the firm is the cash the business produces before it pays its lenders or its owners</h2>
+  <h2>Free cash flow to the firm is the cash Meridia produces in a year after tax, capex and working capital, before it pays its lenders or its owners</h2>
   <div class="body">
+    <div class="flow">
+      <div class="now"><b>1 · Free cash flow</b>this part</div><div><b>2 · WACC</b></div><div><b>3 · Discount</b></div><div><b>4 · Terminal value</b></div><div><b>5 · Enterprise value</b></div><div><b>6 · Per share</b></div>
+    </div>
     <div class="formula">FCFF = EBIT × (1 − tax rate) + D&amp;A − capex − increase in working capital</div>
     <ul>
       <li><b>EBIT</b>, earnings before interest and tax = EBITDA − depreciation and amortisation (D&amp;A).</li>
-      <li><b>NOPAT</b>, net operating profit after tax = EBIT × (1 − tax rate): the profit the business would make if it had no debt.</li>
-      <li><b>+ D&amp;A</b>: a cost in the income statement, but no cash leaves the company.</li>
-      <li><b>− capex</b> and <b>− increase in working capital</b>: real cash spent on growing the business.</li>
+      <li><b>EBIT × (1 − tax rate)</b> is called <b>NOPAT</b>, net operating profit after tax: the profit the business would make if it had no debt.</li>
+      <li><b>+ D&amp;A</b>: D&amp;A is a cost in the income statement, but no cash leaves the company, so it is added back.</li>
+      <li><b>− capex − increase in working capital</b>: real cash spent on fixed assets and on the money tied up in receivables and inventory.</li>
     </ul>
-    <p>Lenders and owners are paid <b>out of</b> FCFF. That is why it is the cash flow that measures what the whole business is worth.</p>
   </div>
-  <div class="notes">Write the four lines on the board. Students who know "free cash flow to equity" will ask: that is FCFF minus what goes to lenders. The course uses FCFF throughout, discounted at the WACC.</div>
+  <div class="notes">Write the formula on the board; it stays there all evening. Lenders and owners are paid OUT OF this cash flow, which is why it measures what the whole business is worth. Students who know free cash flow to equity: that is FCFF minus what goes to the lenders; the course uses FCFF throughout.</div>
 </section>
 
 <!-- 5 -->
-<section class="slide" data-clock="18:55">
-  <div class="kick">Part 1 · two common shortcuts</div>
-  <h2>Net income and EBITDA are both easier to find than free cash flow, and both give the wrong value</h2>
+<section class="slide" data-clock="18:57">
+  <div class="kick">Part 1 · Meridia FY2026, line by line</div>
+  <h2>Meridia produces 9.2 of free cash flow in FY2026 from 31.0 of EBITDA</h2>
   <div class="body">
-    <div class="cols">
-      <div class="card"><h3>Net income is not free cash flow</h3><p>Interest has already been subtracted, and interest is a payment to the lenders, who are paid out of FCFF.</p><p>Net income ignores capex and working capital, which are cash.</p><p>It subtracts D&amp;A, which is not cash.</p></div>
-      <div class="card"><h3>EBITDA is not free cash flow</h3><p>EBITDA ignores tax.</p><p>EBITDA ignores capex: a business that must replace its trucks or freezers every few years spends a large part of its EBITDA on them.</p><p>EBITDA ignores working capital.</p></div>
-    </div>
-    <p>A business that grows fast can show rising net income and rising EBITDA while its free cash flow is negative. The next slide shows one.</p>
+    <table>
+      <tr><th>Meridia FY2026, € million · base case of Session 4</th><th>Amount</th><th class="l" style="text-align:left">Where it comes from</th></tr>
+      <tr><td class="l">EBITDA</td><td>30.99</td><td class="l">revenue 192.50 × 16.1 %</td></tr>
+      <tr><td class="l">− D&amp;A</td><td>−10.78</td><td class="l">fixed assets 129.4 ÷ 12 years</td></tr>
+      <tr class="tot"><td class="l">= EBIT</td><td>20.21</td><td class="l"></td></tr>
+      <tr><td class="l">− tax on EBIT, 24 %</td><td>−4.85</td><td class="l">not the tax Meridia pays (slide 8)</td></tr>
+      <tr class="tot"><td class="l">= NOPAT</td><td>15.36</td><td class="l"></td></tr>
+      <tr><td class="l">+ D&amp;A</td><td>+10.78</td><td class="l">no cash left the company</td></tr>
+      <tr><td class="l">− capex</td><td>−15.40</td><td class="l">8 % of revenue</td></tr>
+      <tr><td class="l">− increase in working capital</td><td>−1.55</td><td class="l">receivables, inventory and payables in days</td></tr>
+      <tr class="hl"><td class="l">= FCFF</td><td>9.19</td><td class="l">30 % of EBITDA</td></tr>
+    </table>
   </div>
-  <div class="notes">Ask the room: which number does a company's press release lead with? Usually EBITDA. Which number pays the dividend? Free cash flow.</div>
+  <div class="notes">Read it top to bottom, slowly. The two D&amp;A lines cancel: the only reason to go through EBIT is to tax the right amount. So in cash terms FCFF = EBITDA − tax on EBIT − capex − working capital, which is the next slide's picture.</div>
 </section>
 
 <!-- 6 -->
-<section class="slide" data-clock="18:58">
-  <div class="kick">Part 1 · worked example · Forno Lumen FY2026</div>
-  <h2>Forno Lumen opens its fifth shop in FY2026: net income is positive and free cash flow is negative</h2>
+<section class="slide" data-clock="19:01">
+  <div class="kick">Part 1 · the same number as a picture</div>
+  <h2>Capex takes half of Meridia's EBITDA, tax takes a sixth, and working capital a little: 9.2 is left</h2>
   <div class="body">
-    <div class="q">From Session 4: EBITDA 312.0, D&amp;A 120.0, capex 500.0, working capital up 27.6, tax 20 %. What is FCFF?</div>
-    <div class="reveal"><table>
-      <tr><th>Forno Lumen FY2026, € thousand</th><th></th></tr>
-      <tr><td class="l">EBITDA</td><td>312.0</td></tr>
-      <tr><td class="l">− D&amp;A = EBIT</td><td>192.0</td></tr>
-      <tr><td class="l">− tax on EBIT, 20 % = NOPAT</td><td>153.6</td></tr>
-      <tr><td class="l">+ D&amp;A − capex − increase in working capital = 153.6 + 120.0 − 500.0 − 27.6</td><td></td></tr>
-      <tr class="hl"><td class="l">FCFF</td><td class="bad">−254.0</td></tr>
-      <tr><td class="l">For comparison: net income (Session 4)</td><td>129.6</td></tr>
-    </table></div>
+    <div class="bars">
+      <div class="bar"><span>EBITDA</span><div class="tr"><i class="nv" style="left:0;width:100%"></i></div><b>30.99</b></div>
+      <div class="bar"><span>− tax on EBIT (24 % of 20.21)</span><div class="tr"><i class="neg" style="left:84.4%;width:15.6%"></i></div><b>−4.85</b></div>
+      <div class="bar"><span>− capex (8 % of revenue)</span><div class="tr"><i class="neg" style="left:34.7%;width:49.7%"></i></div><b>−15.40</b></div>
+      <div class="bar"><span>− increase in working capital</span><div class="tr"><i class="neg" style="left:29.7%;width:5%"></i></div><b>−1.55</b></div>
+      <div class="bar hl"><span>= FCFF</span><div class="tr"><i style="left:0;width:29.7%"></i></div><b>9.19</b></div>
+    </div>
+    <p>A cold-chain operator must replace its freezers, trucks and warehouses as they wear out and build new ones to grow: that is the 15.4. EBITDA says nothing about it.</p>
   </div>
-  <div class="notes">Press → to show the answer. The 500 of capex is the new shop (400) and replacement equipment (100). The bakery is profitable and burns cash, and Session 4 showed who paid: the bank, through a facility draw of 366.9.</div>
+  <div class="notes">The bars are to scale (EBITDA = full width). Ask: which number does a company's press release lead with? EBITDA. Which number pays the lenders and the dividend? The 9.2.</div>
 </section>
 
 <!-- 7 -->
-<section class="slide" data-clock="19:02">
-  <div class="kick">Part 1 · two checks on the same number</div>
-  <h2>FCFF can be reached from the cash flow statement, and it must equal what goes to lenders, to owners and into the cash balance</h2>
+<section class="slide" data-clock="19:04">
+  <div class="kick">Part 1 · why not net income</div>
+  <h2>Meridia's net income is 13.0 and its free cash flow 9.2: the four differences are interest, D&amp;A, capex and working capital</h2>
   <div class="body">
-    <div class="cols">
-      <div class="card hl"><h3>Route 2 · from the cash flow statement</h3><p>Cash from operations 222.0 − capex 500.0 + interest 30.0 × (1 − 20 %) = 222.0 − 500.0 + 24.0 = <b>−254.0</b>.</p><p>The interest is added back because FCFF is measured before any payment to lenders.</p></div>
-      <div class="card hl"><h3>Route 3 · where the cash goes</h3><p>Lenders: interest after tax 24.0 + repayment 100.0 − facility drawn 366.9 = −242.9.</p><p>Owners: dividend 38.9. Cash balance: 150.0 → 100.0 = −50.0.</p><p>Total: −242.9 + 38.9 − 50.0 = <b>−254.0</b>.</p></div>
-    </div>
-    <p>If the three routes do not agree, the model has an error. On the page, both reconciliation rows turn green for every year.</p>
+    <table>
+      <tr><th>From net income to FCFF, Meridia FY2026</th><th>Amount</th><th class="l" style="text-align:left">Why</th></tr>
+      <tr><td class="l">Net income (Session 4)</td><td>12.97</td><td class="l">after interest 3.14 and the tax actually paid 4.10</td></tr>
+      <tr><td class="l">+ interest after tax: 3.14 × (1 − 24 %)</td><td>+2.39</td><td class="l">interest is a payment to the lenders; FCFF is measured before it</td></tr>
+      <tr><td class="l">+ D&amp;A</td><td>+10.78</td><td class="l">a cost, not cash</td></tr>
+      <tr><td class="l">− capex</td><td>−15.40</td><td class="l">cash, but not a cost in the income statement</td></tr>
+      <tr><td class="l">− increase in working capital</td><td>−1.55</td><td class="l">cash tied up in customers who have not yet paid</td></tr>
+      <tr class="hl"><td class="l">= FCFF</td><td>9.19</td><td class="l"></td></tr>
+    </table>
+    <p>Net income tells the owners what the year earned after the lenders were paid. FCFF tells lenders and owners together what cash the business produced for both of them.</p>
   </div>
-  <div class="notes">These are the Session 4 bakery figures with interest on the opening balance (30.0 = 5 % of 600). A negative amount to lenders means the lenders put money in: the bank financed the shop.</div>
+  <div class="notes">12.97 + 2.39 + 10.78 − 15.40 − 1.55 = 9.19. This bridge is the reconciliation the page draws in green for every year.</div>
 </section>
 
 <!-- 8 -->
-<section class="slide" data-clock="19:06">
+<section class="slide" data-clock="19:08">
   <div class="kick">Part 1 · the tax line</div>
-  <h2>FCFF uses the tax on EBIT, not the tax the company pays, because the tax saved on interest is counted in the cost of debt</h2>
+  <h2>FCFF uses the tax on EBIT, 4.85, and not the 4.10 Meridia pays, because the tax saved on interest is counted later, in the cost of debt</h2>
   <div class="body">
     <table>
-      <tr><th>Forno Lumen FY2026, € thousand</th><th>Tax</th></tr>
-      <tr><td class="l">Tax the bakery actually pays: 20 % × (EBIT 192.0 − interest 30.0)</td><td>32.4</td></tr>
-      <tr><td class="l">Tax on EBIT, used in FCFF: 20 % × 192.0</td><td>38.4</td></tr>
-      <tr class="hl"><td class="l">Difference: the tax saved because interest is deductible = 20 % × 30.0</td><td>6.0</td></tr>
+      <tr><th>Meridia FY2026</th><th>Tax</th></tr>
+      <tr><td class="l">Tax Meridia actually pays: 24 % × (EBIT 20.21 − interest 3.14)</td><td>4.10</td></tr>
+      <tr><td class="l">Tax on EBIT, used in FCFF: 24 % × 20.21</td><td>4.85</td></tr>
+      <tr class="hl"><td class="l">Difference: the tax saved because interest is deductible = 24 % × 3.14</td><td>0.75</td></tr>
     </table>
-    <p>The 6.0 exists only because the bakery borrows. Part 2 puts it into the WACC as the <b>cost of debt after tax</b>. If it were also in the cash flow, it would be counted twice and the value would be too high.</p>
-    <div class="do"><b>A consequence:</b> FCFF does not change when the dividend or the interest method of Session 4 changes. Neither changes EBIT, capex or working capital.</div>
+    <p>The 0.75 exists only because Meridia borrows. Part 2 puts it into the WACC, as the <b>cost of debt after tax</b>. If it were also in the cash flow, it would be counted twice and the value would be too high.</p>
+    <div class="do"><b>A consequence:</b> FCFF does not change when the dividend changes, or when the interest method of Session 4 changes. Neither changes EBIT, capex or working capital. The cash flow is computed as if Meridia had no debt; the debt and its tax saving live in the discount rate.</div>
   </div>
-  <div class="notes">This is the slide that most often needs a second explanation. The rule to remember: the cash flow is computed as if the company had no debt; the debt and its tax advantage are in the discount rate.</div>
+  <div class="notes">This is the slide that most often needs a second explanation. The rule: the operating cash flow is debt-free; the financing is in the rate.</div>
 </section>
 
 <!-- 9 -->
-<section class="slide" data-clock="19:10">
-  <div class="kick">Part 1 · Meridia · the method only</div>
-  <h2>On the page, Meridia's FCFF comes straight from the five years your team forecast in Session 4</h2>
+<section class="slide" data-clock="19:12">
+  <div class="kick">Part 1 · the five years</div>
+  <h2>Meridia's free cash flow grows from 9.2 to 12.0 over the five years and stays at about 30 % of EBITDA</h2>
   <div class="body">
-    <div class="flow">
-      <div><b>EBITDA</b>from pallet positions × price × 16.1 %</div>
-      <div><b>− D&amp;A</b>opening fixed assets ÷ 12</div>
-      <div><b>× (1 − 24 %)</b>tax on EBIT</div>
-      <div><b>+ D&amp;A − capex</b>capex 8 % of revenue</div>
-      <div class="now"><b>− working capital</b>receivables, inventory, payables in days</div>
-    </div>
-    <p>Meridia FY2025, as a reference point: EBITDA 29.0, D&amp;A 10.6, capex 14.2, increase in working capital 1.1. With tax at 24 % on EBIT: (29.0 − 10.6) × 0.76 + 10.6 − 14.2 − 1.1 = <b>9.3</b>. Capex alone takes almost half of EBITDA.</p>
-    <p>Session 1's FY2026 free cash flow of 9.62 used D&amp;A at 5 % of revenue and working capital at 10 % of new revenue. Tonight's forecast computes both from the balance sheet, so the numbers differ.</p>
+    <table>
+      <tr><th>€ million · base case</th><th>FY2026</th><th>FY2027</th><th>FY2028</th><th>FY2029</th><th>FY2030</th></tr>
+      <tr><td class="l">EBITDA</td><td>30.99</td><td>33.07</td><td>35.29</td><td>37.66</td><td>40.18</td></tr>
+      <tr><td class="l">NOPAT = (EBITDA − D&amp;A) × 76 %</td><td>15.36</td><td>16.65</td><td>18.00</td><td>19.42</td><td>20.92</td></tr>
+      <tr><td class="l">+ D&amp;A</td><td>10.78</td><td>11.17</td><td>11.61</td><td>12.10</td><td>12.65</td></tr>
+      <tr><td class="l">− capex</td><td>−15.40</td><td>−16.43</td><td>−17.54</td><td>−18.71</td><td>−19.97</td></tr>
+      <tr><td class="l">− increase in working capital</td><td>−1.55</td><td>−1.29</td><td>−1.38</td><td>−1.47</td><td>−1.57</td></tr>
+      <tr class="hl"><td class="l">= FCFF</td><td>9.19</td><td>10.09</td><td>10.69</td><td>11.34</td><td>12.04</td></tr>
+      <tr><td class="l">Net income, for comparison</td><td>12.97</td><td>14.29</td><td>15.66</td><td>17.10</td><td>18.62</td></tr>
+    </table>
+    <p>These five numbers are what Part 3 discounts. Net income is higher in every year, for the reasons on slide 7.</p>
   </div>
-  <div class="notes">FY2025: 18.4 × 0.76 = 13.98; + 10.6 − 14.2 − 1.1 = 9.28, the 9.28 of Session 1's historical column. The page's FY2026–FY2030 figures are the homework.</div>
+  <div class="notes">The lender case of Session 4 (customers paying after 70 days, margin 14.5 %) gives FCFF of only 3.38 in FY2026: the extra working capital eats it. It comes back on slide 32 as the bottom of the range.</div>
 </section>
 
 <!-- 10 -->
-<section class="slide" data-clock="19:14">
-  <div class="kick">Part 2 · the cost of capital</div>
-  <h2>The WACC is the yearly return that lenders and owners together require, each weighted by its share of the financing</h2>
+<section class="slide" data-clock="19:15">
+  <div class="kick">Part 1 · the same formula in a different business</div>
+  <h2>A profitable business can have negative free cash flow: Forno Lumen earns 129.6 in FY2026 and burns 254.0</h2>
   <div class="body">
-    <div class="formula">WACC = E ÷ (D + E) × cost of equity + D ÷ (D + E) × cost of debt × (1 − tax rate)</div>
-    <ul>
-      <li><b>D and E</b>: debt and equity at market value, not at the values in the balance sheet.</li>
-      <li><b>Cost of debt</b>: what the company pays to borrow today. After tax, because interest is deductible (the 6.0 of the previous part).</li>
-      <li><b>Cost of equity</b>: what shareholders require. Nobody publishes it, so it is estimated with a model, on the next slide.</li>
-    </ul>
-    <p>FCFF goes to lenders and owners together, so it is discounted at their combined rate.</p>
+    <table>
+      <tr><th>Forno Lumen FY2026 (Session 4), € thousand</th><th>Amount</th></tr>
+      <tr><td class="l">NOPAT: EBITDA 312.0 − D&amp;A 120.0 = EBIT 192.0, × (1 − 20 %)</td><td>153.6</td></tr>
+      <tr><td class="l">+ D&amp;A − capex: the fifth shop, 500.0</td><td>−380.0</td></tr>
+      <tr><td class="l">− increase in working capital</td><td>−27.6</td></tr>
+      <tr class="hl"><td class="l">= FCFF</td><td class="bad">−254.0</td></tr>
+      <tr><td class="l">Net income, for comparison</td><td>129.6</td></tr>
+    </table>
+    <p>Same formula, opposite sign. Meridia replaces freezers at 8 % of revenue; the bakery opens a shop that costs a fifth of its revenue. Session 4 showed who paid for it: the bank, through a draw on the facility.</p>
+    <p>Capex and working capital are what say which kind of business you are looking at. EBITDA hides it.</p>
   </div>
-  <div class="notes">Session 1 gave Meridia 8.5 % without saying where it came from. Tonight each of the five numbers in the formula gets a source and a date.</div>
+  <div class="notes">Figures from the Session 4 deck with interest on the opening balance. The point to land: "profitable" and "produces cash" are two different statements. A buyer pays for the second.</div>
 </section>
 
 <!-- 11 -->
-<section class="slide" data-clock="19:17">
-  <div class="kick">Part 2 · the cost of equity</div>
-  <h2>The capital asset pricing model says shareholders require a safe bond's yield plus a premium for the risk they cannot diversify away</h2>
+<section class="slide" data-clock="19:18">
+  <div class="kick">Part 2 · the cost of capital</div>
+  <h2>The WACC is the yearly return that Meridia's lenders and owners together require, each weighted by its share of the financing</h2>
   <div class="body">
-    <div class="formula">Cost of equity = risk-free rate + beta × equity risk premium</div>
-    <table>
-      <tr><th>Input</th><th>Value</th><th style="text-align:left">Source and date</th></tr>
-      <tr><td class="l">Risk-free rate: 10-year German government bond (Bund), in euros</td><td>2.85 %</td><td class="l">German Federal Ministry of Finance, <i>Monatsbericht</i> January 2026, yield on 31 December 2025</td></tr>
-      <tr><td class="l">Equity risk premium, mature market (Germany, Switzerland)</td><td>4.23 %</td><td class="l">A. Damodaran, NYU, implied premium, 1 January 2026</td></tr>
-      <tr><td class="l">Equity risk premium: Spain · France · Italy</td><td>5.78 · 5.01 · 6.69 %</td><td class="l">A. Damodaran, country risk premiums (rating-based), 1 January 2026</td></tr>
-    </table>
-    <p>The <b>equity risk premium</b> is the extra yearly return investors expect from shares over the safe bond. It is higher in a country whose government bonds carry more risk.</p>
+    <div class="flow">
+      <div class="done"><b>1 · Free cash flow</b></div><div class="now"><b>2 · WACC</b>this part</div><div><b>3 · Discount</b></div><div><b>4 · Terminal value</b></div><div><b>5 · Enterprise value</b></div><div><b>6 · Per share</b></div>
+    </div>
+    <div class="formula">WACC = E ÷ (D + E) × cost of equity + D ÷ (D + E) × cost of debt × (1 − tax rate)</div>
+    <ul>
+      <li><b>D and E</b> are the debt and the equity at market value: the shares of the financing that lenders and owners provide.</li>
+      <li>The <b>cost of debt</b> is what Meridia pays to borrow. After tax, because interest is deductible: this is where the 0.75 of slide 8 goes.</li>
+      <li>The <b>cost of equity</b> is what shareholders require. Nobody publishes it; it is estimated with a model, on slides 14–17.</li>
+    </ul>
+    <p>FCFF goes to lenders and owners together, so it is discounted at their combined rate.</p>
   </div>
-  <div class="notes">Why the Bund and not a Spanish bond for Meridia: the cash flows are in euros, and the Bund is the euro bond closest to risk-free; Spain's extra risk goes into its equity risk premium instead of into the risk-free rate, so it is not counted twice. The bakery is valued in euros too, so it uses the same Bund.</div>
+  <div class="notes">Session 1 gave Meridia 8.5 % without a source. Tonight each of the five numbers in the formula gets a source and a date. The order: cost of debt (easy), then the cost of equity in three pieces, then the weights.</div>
 </section>
 
 <!-- 12 -->
 <section class="slide" data-clock="19:21">
-  <div class="kick">Part 2 · beta</div>
-  <h2>A company that is not listed borrows the beta of listed companies in the same business, after taking their debt out</h2>
+  <div class="kick">Part 2 · the five inputs</div>
+  <h2>Every input of Meridia's WACC has a source and a date, except one that is a stated judgement</h2>
   <div class="body">
-    <div class="formula">Levered beta = unlevered beta × (1 + (1 − tax rate) × D ÷ E)</div>
-    <ul>
-      <li><b>Beta</b> measures how much a share price moves when the whole market moves: 1.0 moves with it, 0.5 half as much.</li>
-      <li>Listed companies' betas include the effect of their debt: more debt makes the shares riskier. Damodaran publishes them by industry with the debt removed, the <b>unlevered beta</b>.</li>
-      <li>You then put back the debt of the company you value, the <b>levered beta</b>.</li>
-    </ul>
-    <div class="q">Forno Lumen: European restaurants have an unlevered beta of 0.59 and a debt ÷ equity of 0.39 (Damodaran, Western Europe, 38 companies, 5 January 2026). Tax 20 %. What is the levered beta?</div>
-    <div class="reveal do"><b>Answer:</b> 0.59 × (1 + 0.80 × 0.39) = 0.59 × 1.312 = <b>0.774</b>.</div>
+    <table>
+      <tr><th>Input</th><th>Value</th><th class="l" style="text-align:left">Source and date</th></tr>
+      <tr><td class="l">Cost of debt before tax</td><td>4.6 %</td><td class="l">Session 4: Meridia's interest ÷ average debt, FY2023–FY2025</td></tr>
+      <tr><td class="l">Risk-free rate: 10-year German government bond (Bund)</td><td>2.85 %</td><td class="l">German Federal Ministry of Finance, <i>Monatsbericht</i> January 2026, yield on 31 December 2025</td></tr>
+      <tr><td class="l">Equity risk premium: Spain · France · Italy</td><td>5.78 · 5.01 · 6.69 %</td><td class="l">A. Damodaran (New York University), country risk premiums, 1 January 2026</td></tr>
+      <tr><td class="l">Unlevered beta and debt ÷ equity of European transportation companies</td><td>0.54 · 0.77</td><td class="l">A. Damodaran, betas by industry, Western Europe, 56 companies, 5 January 2026</td></tr>
+      <tr><td class="l">Premium for size and for being unlisted</td><td>3.0 points</td><td class="l">Boreal's investment committee: a judgement, not a market price</td></tr>
+      <tr><td class="l">Tax rate</td><td>24 %</td><td class="l">the rate used in every session</td></tr>
+    </table>
   </div>
-  <div class="notes">Damodaran's "unlevered beta corrected for cash" also removes the cash the companies hold (cash has a beta of zero). Use that column. The page does the same for Meridia with the "Transportation" row.</div>
+  <div class="notes">Damodaran's pages are public and updated every January; the page links the data pack. The next five slides take these inputs one at a time.</div>
 </section>
 
 <!-- 13 -->
-<section class="slide" data-clock="19:26">
-  <div class="kick">Part 2 · worked example · Forno Lumen's WACC</div>
-  <h2>Forno Lumen's WACC, built line by line from the data, with one judgement stated openly</h2>
+<section class="slide" data-clock="19:24">
+  <div class="kick">Part 2 · the cost of debt</div>
+  <h2>Meridia borrows at 4.6 %, and because interest is deductible the cost to the business is 3.50 % after tax</h2>
   <div class="body">
-    <table>
-      <tr><th>Forno Lumen</th><th>Value</th></tr>
-      <tr><td class="l">Cost of equity before the premium = 2.85 % + 0.774 × 4.23 % (Switzerland: the mature premium)</td><td>6.12 %</td></tr>
-      <tr><td class="l">+ premium for size and for being unlisted (a judgement)</td><td>3.00 points</td></tr>
-      <tr class="hl"><td class="l">Cost of equity</td><td>9.12 %</td></tr>
-      <tr><td class="l">Cost of debt after tax = 5.0 % × (1 − 20 %)</td><td>4.00 %</td></tr>
-      <tr><td class="l">Weights: D ÷ (D + E) = 0.39 ÷ 1.39 · E ÷ (D + E)</td><td>28.1 % · 71.9 %</td></tr>
-      <tr class="hl"><td class="l">WACC = 71.9 % × 9.12 % + 28.1 % × 4.00 %</td><td>7.69 %</td></tr>
-    </table>
-    <p>The premium for size has no market price: the CAPM is estimated on large listed companies, and a small company whose shares cannot be sold on an exchange is riskier to own. Buyers add a few points and must <b>say so</b>. Without it, the WACC is 5.53 %.</p>
+    <div class="formula">Cost of debt after tax = 4.6 % × (1 − 24 %) = <b>3.50 %</b></div>
+    <ul>
+      <li>4.6 % is what Meridia actually paid its lenders over FY2023–FY2025 (interest ÷ average debt, Session 4). It is 1.75 points above the Bund: the extra the bank charges for Meridia's risk.</li>
+      <li>Of every euro of interest, 24 cents come back as lower tax. That is the 0.75 of slide 8: it belongs to the debt, so it is counted here and nowhere else.</li>
+    </ul>
+    <p>This is the easy half of the WACC: a bank states its rate. The owners do not, so the cost of equity has to be built.</p>
   </div>
-  <div class="notes">The weights come from the comparables (0.39), not from the bakery's balance sheet: the bakery's market value is what we are trying to find. 5.53 % = 71.9 % × 6.12 % + 28.1 % × 4.00 %. Boreal's committee uses 3.0 points for Meridia too: the page states it as a case figure.</div>
+  <div class="notes">If a student asks about the facility rate of Session 4: the same 4.6 %. A new loan today might be priced differently; the course keeps 4.6 % as the case figure.</div>
 </section>
 
 <!-- 14 -->
-<section class="slide" data-clock="19:32">
-  <div class="kick">Part 2 · Meridia · the method only</div>
-  <h2>On the page, Meridia's WACC uses the same five steps with the data for its three countries and its industry</h2>
+<section class="slide" data-clock="19:27">
+  <div class="kick">Part 2 · the cost of equity</div>
+  <h2>The capital asset pricing model says shareholders require the yield of a safe bond plus a premium for the risk they carry</h2>
   <div class="body">
-    <ol>
-      <li>Weight the equity risk premiums of Spain, France and Italy by Meridia's revenue in each: 60 %, 25 %, 15 %.</li>
-      <li>Take the unlevered beta of European transportation companies (0.54) and their debt ÷ equity (0.77), and relever.</li>
-      <li>Cost of equity = 2.85 % + levered beta × weighted premium + Boreal's 3.0 points.</li>
-      <li>Cost of debt 4.6 % before tax (Session 4), × (1 − 24 %).</li>
-      <li>Weight the two with debt ÷ equity of 0.77.</li>
-    </ol>
-    <div class="do"><b>On the page:</b> the WACC calculator lets your team change one input at a time. Try the premium at 0 and the beta of trucking companies (0.65), then compare with the 8.5 % Session 1 assumed.</div>
+    <div class="formula">Cost of equity = risk-free rate + beta × equity risk premium</div>
+    <ul>
+      <li>The <b>risk-free rate</b> is the yield of a government bond that will certainly be repaid, in the currency of the cash flows. Meridia's cash flows are in euros, and the safest euro bond is the German 10-year Bund: <b>2.85 %</b> on 31 December 2025.</li>
+      <li>The <b>equity risk premium</b> is the extra yearly return investors expect from shares above that bond, for taking the risk of owning a business. Slide 15.</li>
+      <li><b>Beta</b> measures how much more or less than the average share Meridia's risk is. Slide 16.</li>
+    </ul>
+    <p>The model is called the <b>CAPM</b>. It is the one every bank and every valuation report uses, so the reply can cite it by name.</p>
   </div>
-  <div class="notes">Do not give the Meridia WACC: it is check 3e. If asked, say only that it is below 8.5 %. Transportation (56 companies) is used rather than trucking (7 companies) because the larger group gives a more stable average.</div>
+  <div class="notes">Why the Bund and not a Spanish bond for a Spanish company: the cash flows are in euros, and Spain's extra risk goes into its equity risk premium instead, so it is not counted twice.</div>
 </section>
 
 <!-- 15 -->
-<section class="slide" data-clock="19:38">
-  <div class="kick">Part 3 · discounting</div>
-  <h2>A euro received in five years is worth less than a euro today, and the discount factor says how much less</h2>
+<section class="slide" data-clock="19:30">
+  <div class="kick">Part 2 · the equity risk premium</div>
+  <h2>Meridia earns 60 % of its revenue in Spain, 25 % in France and 15 % in Italy, so its equity risk premium is a weighted 5.72 %</h2>
   <div class="body">
-    <div class="formula">Discount factor = 1 ÷ (1 + WACC)<sup>t</sup> &nbsp;·&nbsp; value today = cash flow × discount factor</div>
     <table>
-      <tr><th>Forno Lumen, € thousand, WACC 7.69 %</th><th>FY2026</th><th>FY2027</th><th>FY2028</th></tr>
-      <tr><td class="l">FCFF (5 shops; revenue per shop +2 % a year after FY2026; capex 150 a year)</td><td>−254.0</td><td>133.8</td><td>138.7</td></tr>
-      <tr><td class="l">t = years from 31 December 2025</td><td>1</td><td>2</td><td>3</td></tr>
-      <tr><td class="l">Discount factor</td><td>0.9286</td><td>0.8623</td><td>0.8007</td></tr>
-      <tr class="hl"><td class="l">Value today</td><td>−235.8</td><td>115.4</td><td>111.0</td></tr>
+      <tr><th>Country</th><th>Equity risk premium (Damodaran, 1 January 2026)</th><th>Share of Meridia's revenue</th><th>Contribution</th></tr>
+      <tr><td class="l">Spain</td><td>5.78 %</td><td>60 %</td><td>3.47 %</td></tr>
+      <tr><td class="l">France</td><td>5.01 %</td><td>25 %</td><td>1.25 %</td></tr>
+      <tr><td class="l">Italy</td><td>6.69 %</td><td>15 %</td><td>1.00 %</td></tr>
+      <tr class="hl"><td class="l">Meridia's equity risk premium</td><td></td><td>100 %</td><td>5.72 %</td></tr>
     </table>
-    <p>The sum of the three years is <b>−9.4</b>: the forecast years together are worth less than nothing, because of the new shop. All of the bakery's value is in the years after FY2028.</p>
+    <p>A mature market such as Germany or Switzerland carries 4.23 %. Each country's figure is that 4.23 % plus an extra for the risk of its government's bonds: Italy's bonds are rated lower than France's, so Italy's premium is higher.</p>
   </div>
-  <div class="notes">FY2027: revenue 5 × 530.4 = 2,652.0, EBITDA 318.2, D&amp;A 158.0 (1,580 ÷ 10), NOPAT 128.2, working capital +2.4. FY2028: revenue 2,705.0, EBITDA 324.6, D&amp;A 157.2, NOPAT 133.9, working capital +2.4. The cash is assumed to arrive on the last day of each year, as in Session 1.</div>
+  <div class="notes">Damodaran publishes two versions (rating-based and CDS-based); the deck uses the rating-based totals. The revenue split 60 / 25 / 15 is a case figure, introduced tonight.</div>
 </section>
 
 <!-- 16 -->
-<section class="slide" data-clock="19:42">
-  <div class="kick">Part 3 · terminal value, method 1</div>
-  <h2>Perpetuity growth: if the cash flow grows by g every year for ever, its value is next year's cash flow divided by WACC minus g</h2>
+<section class="slide" data-clock="19:33">
+  <div class="kick">Part 2 · beta</div>
+  <h2>Meridia is not listed, so it borrows the beta of 56 listed European transportation companies, with their debt taken out and Meridia's put back in</h2>
   <div class="body">
-    <div class="formula">Terminal value at the end of the forecast = FCFF of the next year ÷ (WACC − g)</div>
-    <div class="q">Forno Lumen: FCFF FY2028 138.7, g 2.0 % (the European Central Bank's inflation target), WACC 7.69 %. What is the terminal value, and what share of the value does it carry?</div>
-    <div class="reveal"><table>
-      <tr><td class="l">FCFF FY2029 = 138.7 × 1.02</td><td>141.5</td></tr>
-      <tr><td class="l">Terminal value at the end of FY2028 = 141.5 ÷ (7.69 % − 2.0 %)</td><td>2,486.0</td></tr>
-      <tr><td class="l">× discount factor of FY2028, 0.8007 = terminal value today</td><td>1,990.6</td></tr>
-      <tr class="hl"><td class="l">Enterprise value = −9.4 + 1,990.6</td><td>1,981.2</td></tr>
-      <tr class="hl"><td class="l">Share in the terminal value = 1,990.6 ÷ 1,981.2</td><td class="bad">100.5 %</td></tr>
-    </table></div>
+    <ul>
+      <li><b>Beta</b> measures how much a company's share price moves when the whole market moves: 1.0 moves with the market, 0.5 half as much. It is measured from share prices, and Meridia has none.</li>
+      <li>Listed companies' betas include the effect of their debt: more debt makes the shares riskier. Damodaran publishes the industry beta with the debt removed, the <b>unlevered beta</b>: transportation, Western Europe, <b>0.54</b>.</li>
+      <li>You then put back the debt of the company you value, the <b>levered beta</b>, using the comparables' debt ÷ equity of <b>0.77</b> (Meridia's own market value is what we are looking for, so it cannot be used yet).</li>
+    </ul>
+    <div class="formula">Levered beta = 0.54 × (1 + (1 − 24 %) × 0.77) = 0.54 × 1.585 = <b>0.856</b></div>
+    <p>Meridia's shares move a little less than the market: a cold-chain operator keeps its warehouses full in good years and bad.</p>
   </div>
-  <div class="notes">A share above 100 % is not an error in the arithmetic: the forecast years are negative. It is the clearest possible signal that the value depends entirely on g and the WACC. The terminal value is discounted with the LAST forecast year's factor, because it is a value at the end of FY2028.</div>
+  <div class="notes">Damodaran's "unlevered beta corrected for cash" also removes the cash the companies hold (cash has a beta of zero); that is the column used. Trucking alone (7 companies) gives 0.65; transportation (56) is used because the larger group gives a more stable average. The page lets them try 0.65.</div>
 </section>
 
 <!-- 17 -->
-<section class="slide" data-clock="19:47">
-  <div class="kick">Part 3 · terminal value, method 2</div>
-  <h2>Exit multiple: the terminal value is the price a buyer would pay at the end of the forecast, at today's multiple of EBITDA</h2>
+<section class="slide" data-clock="19:37">
+  <div class="kick">Part 2 · the cost of equity, assembled</div>
+  <h2>Meridia's owners require 10.75 % a year: the bond, plus beta times the premium, plus 3 points because Meridia is small and unlisted</h2>
   <div class="body">
-    <div class="formula">Terminal value = EV ÷ EBITDA multiple × EBITDA of the last forecast year</div>
     <table>
-      <tr><th>Forno Lumen, € thousand</th><th>Value</th></tr>
-      <tr><td class="l">Multiple: European restaurants, enterprise value ÷ EBITDA (Damodaran, 5 January 2026)</td><td>11.5 ×</td></tr>
-      <tr><td class="l">Terminal value = 11.5 × EBITDA FY2028 324.6</td><td>3,733.0</td></tr>
-      <tr><td class="l">× 0.8007 = terminal value today</td><td>2,989.0</td></tr>
-      <tr class="hl"><td class="l">Enterprise value = −9.4 + 2,989.0</td><td>2,979.6</td></tr>
+      <tr><th>Cost of equity, Meridia</th><th>Value</th></tr>
+      <tr><td class="l">Risk-free rate (Bund, 31 December 2025)</td><td>2.85 %</td></tr>
+      <tr><td class="l">+ beta × equity risk premium = 0.856 × 5.72 %</td><td>+4.90 %</td></tr>
+      <tr><td class="l">= cost of equity by the CAPM</td><td>7.75 %</td></tr>
+      <tr><td class="l">+ premium for size and for being unlisted (Boreal's committee)</td><td>+3.00 points</td></tr>
+      <tr class="hl"><td class="l">= cost of equity</td><td>10.75 %</td></tr>
     </table>
-    <p>The two methods differ by 998 on a value of about 2,000. They cannot both be right. Part 4 shows how to find out which one is wrong.</p>
+    <p>The CAPM is estimated on large listed companies. Meridia is small, and its shares cannot be sold on a stock exchange, so a buyer usually asks for a few points more. There is no market price for that: it is a judgement, and a reply must <b>say so</b>. Without it, the cost of equity is 7.75 %.</p>
   </div>
-  <div class="notes">For Meridia the page uses 9.1 ×, European trucking (7 companies), the lower of the two logistics figures; transportation as a whole is 12.6 ×. Ask the room: is a small bakery chain in five years worth what listed restaurant groups are worth today?</div>
+  <div class="notes">The 3.0 points is the least defensible number in the whole valuation, and slide 33 shows that it is also the one that moves the price most. That is why the reply must state it openly.</div>
 </section>
 
 <!-- 18 -->
-<section class="slide" data-clock="19:50">
-  <div class="kick">Part 3 · from enterprise value to equity</div>
-  <h2>The shareholders own the enterprise value minus the net debt</h2>
+<section class="slide" data-clock="19:41">
+  <div class="kick">Part 2 · the WACC, assembled</div>
+  <h2>Weighted 56.5 % owners and 43.5 % lenders, Meridia's WACC is 7.59 %, below the 8.5 % Session 1 assumed</h2>
   <div class="body">
-    <div class="flow">
-      <div><b>Enterprise value</b>1,981.2 (perpetuity)</div>
-      <div><b>− Net debt</b>loan 600.0 − cash 150.0 = 450.0, at 31 December 2025</div>
-      <div class="now"><b>= Equity value</b>1,531.2</div>
-    </div>
-    <p>Use the net debt on the <b>valuation date</b>, the same date the cash flows are discounted to. The facility the bakery draws in FY2026 is not subtracted: that borrowing is already inside the FY2026 free cash flow, which is negative.</p>
-    <p>On the page: Meridia's net debt at 31 December 2025 is 60.0 and it has 40.0 million shares, so price per share = (enterprise value − 60.0) ÷ 40.0.</p>
+    <table>
+      <tr><th>WACC, Meridia</th><th>Value</th></tr>
+      <tr><td class="l">Weight of debt = D ÷ (D + E) = 0.77 ÷ 1.77 · weight of equity</td><td>43.5 % · 56.5 %</td></tr>
+      <tr><td class="l">Owners: 56.5 % × 10.75 %</td><td>6.07 %</td></tr>
+      <tr><td class="l">Lenders: 43.5 % × 3.50 %</td><td>1.52 %</td></tr>
+      <tr class="hl"><td class="l">= WACC</td><td>7.59 %</td></tr>
+      <tr><td class="l">For comparison: without the 3-point premium</td><td>5.90 %</td></tr>
+      <tr><td class="l">For comparison: what Session 1 assumed</td><td>8.50 %</td></tr>
+    </table>
+    <p>7.59 % is the rate at which every future euro of Meridia's FCFF is converted into today's euros. Lower than 8.5 % means every future euro is worth more today, so the value will be higher than Session 1's.</p>
   </div>
-  <div class="notes">A common error: subtracting forecast net debt (for example FY2030) from today's enterprise value. Both numbers must be on the same date.</div>
+  <div class="notes">Break after this slide. On return: Part 3 uses 7.59 % on the five FCFF figures of slide 9.</div>
 </section>
 
 <!-- 19 -->
-<section class="slide dark" data-clock="19:52">
-  <div class="kick">Break · 5 minutes</div>
-  <h2>Break: back at 19:57</h2>
+<section class="slide dark" data-clock="19:44">
+  <div class="kick">Break · 7 minutes</div>
+  <h2>Break. Part 3 converts the five years of cash flow into a value, at 7.59 %.</h2>
   <div class="body">
-    <p class="big">Back at 19:57. Part 4 tests the two terminal values of the bakery.</p>
+    <p class="big">Two numbers to keep in mind: FCFF of 9.19 rising to 12.04, and a WACC of 7.59 %.</p>
   </div>
-  <div class="notes">If time is short, cut the review of the Session 4 homework (Part 5) to the one table, not Part 4.</div>
+  <div class="notes">Back at 19:51. If time is short, cut slide 27 (the comparison with Session 1) and slide 34, not the tests.</div>
 </section>
 
 <!-- 20 -->
-<section class="slide" data-clock="19:57">
-  <div class="kick">Part 4 · tests 1 and 2</div>
-  <h2>Each method of terminal value hides an assumption of the other method, and turning the formula around shows it</h2>
+<section class="slide" data-clock="19:51">
+  <div class="kick">Part 3 · discounting</div>
+  <h2>A euro received in five years is worth less than a euro today, and the discount factor says how much less</h2>
   <div class="body">
-    <div class="cols">
-      <div class="card hl"><h3>Test 1 · the share in the terminal value</h3><p>Bakery: 100.5 %. Report it every time. The higher it is, the more the value depends on g and the WACC instead of on the forecast.</p></div>
-      <div class="card hl"><h3>Test 2 · the multiple hidden in the perpetuity value</h3><p>Perpetuity terminal value ÷ EBITDA FY2028 = 2,486.0 ÷ 324.6 = <b>7.66 ×</b>.</p><p>The perpetuity method says a buyer pays 7.7 times EBITDA; listed restaurants trade at 11.5 times.</p></div>
+    <div class="flow">
+      <div class="done"><b>1 · Free cash flow</b></div><div class="done"><b>2 · WACC</b></div><div class="now"><b>3 · Discount</b>this part</div><div class="now"><b>4 · Terminal value</b>this part</div><div class="now"><b>5 · Enterprise value</b>this part</div><div class="now"><b>6 · Per share</b>this part</div>
     </div>
-    <p>A large gap means the two methods disagree about the business. Either the bakery deserves less than listed restaurant groups (it is small, local and unlisted), or the perpetuity inputs are too cautious. The reply must say which.</p>
+    <div class="formula">Discount factor = 1 ÷ (1 + WACC)<sup>t</sup> &nbsp;·&nbsp; value today = FCFF × discount factor</div>
+    <table>
+      <tr><th>Meridia, € million, WACC 7.59 %</th><th>FY2026</th><th>FY2027</th><th>FY2028</th><th>FY2029</th><th>FY2030</th></tr>
+      <tr><td class="l">FCFF (slide 9)</td><td>9.19</td><td>10.09</td><td>10.69</td><td>11.34</td><td>12.04</td></tr>
+      <tr><td class="l">t = years from 31 December 2025</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+      <tr><td class="l">Discount factor</td><td>0.9295</td><td>0.8639</td><td>0.8029</td><td>0.7463</td><td>0.6937</td></tr>
+      <tr class="hl"><td class="l">Value today</td><td>8.54</td><td>8.72</td><td>8.59</td><td>8.46</td><td>8.35</td></tr>
+    </table>
+    <p>The five years together are worth <b>42.66</b> today. The valuation date is 31 December 2025, the date of the last balance sheet; each year's cash is assumed to arrive on its last day.</p>
+  </div>
+  <div class="notes">1 ÷ 1.0759 = 0.9295; 1 ÷ 1.0759⁵ = 0.6937. Notice that the value today is almost flat at 8.4–8.7: growth of 6.7 % and discounting at 7.59 % nearly cancel.</div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-clock="19:54">
+  <div class="kick">Part 3 · the terminal value</div>
+  <h2>The forecast stops after FY2030, but Meridia does not: the terminal value is one number for all the years after it</h2>
+  <div class="body">
+    <p>42.66 is only the value of five years. A warehouse business that still exists in FY2031, FY2040 and FY2060 is worth much more than that. The <b>terminal value</b> stands for every cash flow from FY2031 onwards, as one amount at the end of FY2030.</p>
+    <div class="cols">
+      <div class="card hl"><h3>Method 1 · perpetuity growth</h3><p>Assume FCFF grows by a small rate g every year for ever, and value that stream with a formula. Slide 22.</p></div>
+      <div class="card hl"><h3>Method 2 · exit multiple</h3><p>Assume Meridia is sold at the end of FY2030 for what listed companies in its industry are worth today, as a multiple of EBITDA. Slide 23.</p></div>
+    </div>
+    <p>Both give a value <b>at the end of FY2030</b>, so both must then be multiplied by the FY2030 discount factor, 0.6937, to be worth something today.</p>
+  </div>
+  <div class="notes">Keep the two methods clearly apart on the board: left column perpetuity, right column exit multiple. Slide 24 puts them side by side.</div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-clock="19:57">
+  <div class="kick">Part 3 · method 1 · perpetuity growth</div>
+  <h2>If Meridia's cash flow grows 2 % a year for ever, the years after FY2030 are worth 219.7 at the end of FY2030 and 152.4 today</h2>
+  <div class="body">
+    <div class="formula">Terminal value at the end of FY2030 = FCFF of FY2031 ÷ (WACC − g)</div>
+    <table>
+      <tr><td class="l">FCFF of FY2031 = FCFF of FY2030 × (1 + g) = 12.04 × 1.02</td><td>12.28</td></tr>
+      <tr><td class="l">Terminal value at the end of FY2030 = 12.28 ÷ (7.59 % − 2.0 %)</td><td>219.7</td></tr>
+      <tr class="hl"><td class="l">× discount factor of FY2030, 0.6937 = terminal value today</td><td>152.4</td></tr>
+    </table>
+    <ul>
+      <li><b>g = 2.0 %</b> is the European Central Bank's inflation target: after FY2030 Meridia is assumed to grow only as fast as prices. Nothing grows faster than the whole economy for ever.</li>
+      <li><b>g must be below the WACC</b>: at or above it the formula divides by zero or a negative number, because the cash flows would grow faster than they are discounted.</li>
+    </ul>
+  </div>
+  <div class="notes">The formula is also called the Gordon growth formula. The terminal value takes the LAST forecast year's discount factor, because it is a value at the end of FY2030, not a cash flow in FY2031.</div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-clock="20:01">
+  <div class="kick">Part 3 · method 2 · exit multiple</div>
+  <h2>If Meridia is sold at the end of FY2030 for 9.1 times its EBITDA, as listed trucking companies trade today, the years after FY2030 are worth 365.7 then and 253.7 today</h2>
+  <div class="body">
+    <div class="formula">Terminal value at the end of FY2030 = multiple × EBITDA of FY2030</div>
+    <table>
+      <tr><td class="l">Multiple: enterprise value ÷ EBITDA, European trucking companies, 7 companies (Damodaran, 5 January 2026)</td><td>9.1 ×</td></tr>
+      <tr><td class="l">Terminal value = 9.1 × 40.18</td><td>365.7</td></tr>
+      <tr class="hl"><td class="l">× 0.6937 = terminal value today</td><td>253.7</td></tr>
+    </table>
+    <p>Transportation as a whole (56 companies, airlines and shipping included) trades at 12.6 ×. The deck uses the lower figure: trucking is closer to a cold-chain operator, and the lower of two defensible multiples is the cautious choice.</p>
+    <p>The two methods give 152.4 and 253.7 for the same years. They cannot both be right. Part 4 shows how to find out which one is wrong.</p>
+  </div>
+  <div class="notes">A multiple taken from today's market and applied in five years carries today's mood into the terminal year: multiples are high when the market expects growth or when interest rates are low.</div>
+</section>
+
+<!-- 24 -->
+<section class="slide" data-clock="20:05">
+  <div class="kick">Part 3 · enterprise value and price per share</div>
+  <h2>By perpetuity growth Meridia is worth 195.0, or €3.38 a share; by exit multiple 296.3, or €5.91, and in both cases most of the value sits after FY2030</h2>
+  <div class="body">
+    <table>
+      <tr><th>€ million</th><th>Perpetuity growth</th><th>Exit multiple 9.1 ×</th></tr>
+      <tr><td class="l">Value today of FY2026–FY2030 (slide 20)</td><td>42.7</td><td>42.7</td></tr>
+      <tr><td class="l">+ terminal value today</td><td>152.4</td><td>253.7</td></tr>
+      <tr class="tot"><td class="l">= Enterprise value</td><td>195.0</td><td>296.3</td></tr>
+      <tr><td class="l">Share of the value in the terminal value</td><td class="bad">78 %</td><td class="bad">86 %</td></tr>
+      <tr><td class="l">− net debt at 31 December 2025 (69.0 − 9.0)</td><td>−60.0</td><td>−60.0</td></tr>
+      <tr><td class="l">= Equity value</td><td>135.0</td><td>236.3</td></tr>
+      <tr class="hl"><td class="l">÷ 40.0 million shares = price per share</td><td>€3.38</td><td>€5.91</td></tr>
+    </table>
+    <p>Subtract the net debt of the <b>valuation date</b>, 31 December 2025: the same date the cash flows are discounted to. The facility Meridia draws in FY2026–FY2030 is already inside those years' cash flows.</p>
+  </div>
+  <div class="notes">A common error: subtracting FY2030 net debt from today's enterprise value. Both numbers must be on the same date. 78 % = 152.4 ÷ 195.0.</div>
+</section>
+
+<!-- 25 -->
+<section class="slide" data-clock="20:09">
+  <div class="kick">Part 3 · compared with Session 1</div>
+  <h2>Session 1 gave €2.48 a share; tonight gives €3.38, and the discount rate explains more of the difference than the forecast does</h2>
+  <div class="body">
+    <table>
+      <tr><th>Meridia, base case</th><th>Forecast</th><th>WACC</th><th>Price per share</th></tr>
+      <tr><td class="l">Session 1</td><td class="l">3 years; D&amp;A 5 % of revenue, working capital 10 % of new revenue</td><td>8.5 % (assumed)</td><td>€2.48</td></tr>
+      <tr><td class="l">Tonight's forecast, Session 1's rate</td><td class="l">5 years; D&amp;A and working capital from the balance sheet</td><td>8.5 %</td><td>€2.68</td></tr>
+      <tr class="hl"><td class="l">Tonight</td><td class="l">the same</td><td>7.59 % (built from data)</td><td>€3.38</td></tr>
+    </table>
+    <p>The better forecast adds €0.20. Replacing an assumed 8.5 % with a sourced 7.59 % adds €0.70. The discount rate is where a valuation is won or lost, which is why Part 2 took the most time.</p>
+  </div>
+  <div class="notes">Tonight's forecast at 8.5 %: Σ PV 41.6, TV 188.9, EV 167.3, price 2.68. The lesson for the reply: say where the WACC comes from, because it moves the answer more than anything in the forecast.</div>
+</section>
+
+<!-- 26 -->
+<section class="slide" data-clock="20:12">
+  <div class="kick">Part 4 · testing the terminal value</div>
+  <h2>78 % of Meridia's value sits in one number that rests on two inputs nobody can observe, so a valuer tests it four ways before reporting it</h2>
+  <div class="body">
+    <p>The growth rate for ever and the multiple a buyer will pay in five years cannot be proved. They <b>can</b> be checked against each other and against the forecast. Boreal's committee will ask about these four tests first.</p>
+    <div class="cols">
+      <div class="card hl"><h3>Test 1 · the share in the terminal value</h3><p>How much of the value depends on g and the WACC instead of on the forecast you checked. Report it every time.</p></div>
+      <div class="card hl"><h3>Test 2 · the multiple hidden in method 1</h3><p>What EBITDA multiple does the perpetuity value assume a buyer pays? Compare with listed companies.</p></div>
+      <div class="card hl"><h3>Test 3 · the growth hidden in method 2</h3><p>What growth for ever does the exit multiple assume? Compare with 2 %.</p></div>
+      <div class="card hl"><h3>Test 4 · the investment in the terminal year</h3><p>Does FY2030 still invest for 6.7 % growth, when the years after grow 2 %?</p></div>
+    </div>
+  </div>
+  <div class="notes">Tests 2 and 3 are the same idea in both directions: each method hides an assumption of the other, and turning the formula around shows it.</div>
+</section>
+
+<!-- 27 -->
+<section class="slide" data-clock="20:15">
+  <div class="kick">Part 4 · tests 1 and 2</div>
+  <h2>The perpetuity value says a buyer would pay 5.5 times Meridia's EBITDA, well below the 9.1 and 12.6 that listed companies fetch</h2>
+  <div class="body">
+    <table>
+      <tr><th>Test</th><th>Meridia</th><th class="l" style="text-align:left">What it says</th></tr>
+      <tr><td class="l">1 · Share of the value in the terminal value</td><td>78 % · 86 %</td><td class="l">four fifths of the value depends on g and the WACC, by either method</td></tr>
+      <tr class="hl"><td class="l">2 · Multiple hidden in the perpetuity value = 219.7 ÷ EBITDA FY2030 40.18</td><td>5.47 ×</td><td class="l">listed trucking 9.1 ×, transportation 12.6 ×</td></tr>
+    </table>
+    <p>A gap this large means the two methods disagree about the business. Either Meridia deserves less than listed companies (it is small, unlisted, in three countries with higher risk premiums: this is what the 3-point premium and the country premiums say), or the perpetuity inputs are too cautious. The reply must say which.</p>
   </div>
   <div class="notes">Test 2 is free: it uses numbers already on the sheet. A valuer who reports a perpetuity value should always print the multiple it implies next to it.</div>
 </section>
 
-<!-- 21 -->
-<section class="slide" data-clock="20:01">
+<!-- 28 -->
+<section class="slide" data-clock="20:19">
   <div class="kick">Part 4 · test 3</div>
-  <h2>The exit multiple hides a growth rate for ever, and a growth rate above the economy's cannot last for ever</h2>
+  <h2>The 9.1 multiple hides growth of 4.16 % a year for ever, twice the inflation target, which no company can sustain</h2>
   <div class="body">
-    <div class="formula">g implied = (TV × WACC − FCFF of the last year) ÷ (TV + FCFF of the last year)</div>
-    <div class="q">Forno Lumen: exit terminal value 3,733.0, WACC 7.69 %, FCFF FY2028 138.7. What growth for ever does the exit multiple assume?</div>
-    <div class="reveal do"><b>Answer:</b> (3,733.0 × 0.0769 − 138.7) ÷ (3,733.0 + 138.7) = 148.4 ÷ 3,871.7 = <b>3.83 %</b> a year, for ever: almost twice the 2 % inflation target. A company that grows faster than the economy for ever ends up larger than the economy.</div>
-    <p>The formula is the perpetuity formula solved for g: TV = FCFF × (1 + g) ÷ (WACC − g).</p>
+    <div class="formula">g implied = (TV × WACC − FCFF of FY2030) ÷ (TV + FCFF of FY2030)</div>
+    <table>
+      <tr><td class="l">= (365.7 × 7.59 % − 12.04) ÷ (365.7 + 12.04) = (27.76 − 12.04) ÷ 377.7</td><td class="bad">4.16 %</td></tr>
+      <tr><td class="l">The growth rate method 1 uses</td><td>2.0 %</td></tr>
+    </table>
+    <p>The formula is the perpetuity formula solved for g. It asks: for the exit multiple to be right, how fast would Meridia have to grow for ever? A company growing 4 % a year when the economy grows 2 % ends up larger than the economy.</p>
+    <p>So for Meridia, the exit multiple is the method to distrust: €5.91 assumes growth that cannot last.</p>
   </div>
-  <div class="notes">Listed multiples are high when the market expects growth, or when interest rates were low when the multiple was measured. A multiple taken from today's market and applied in five years carries today's mood into the terminal year.</div>
+  <div class="notes">Listed multiples are high when the market expects growth or when rates were low when they were measured. The test turns a market mood into a growth rate that can be judged.</div>
 </section>
 
-<!-- 22 -->
-<section class="slide" data-clock="20:05">
+<!-- 29 -->
+<section class="slide" data-clock="20:23">
   <div class="kick">Part 4 · test 4</div>
-  <h2>The terminal year must invest for the growth of the terminal value, not for the growth of the forecast</h2>
-  <div class="body">
-    <p>A business growing 2 % a year for ever needs capex equal to what wears out (D&amp;A) plus 2 % more fixed assets, and 2 % more working capital. The <b>normalised</b> year uses exactly that.</p>
-    <table>
-      <tr><th>Forno Lumen FY2029, € thousand</th><th>Normalised</th><th>FY2028 × 1.02</th></tr>
-      <tr><td class="l">NOPAT: EBITDA 331.1 − D&amp;A 156.5 (fixed assets 1,564.8 ÷ 10), × 80 %</td><td>139.7</td><td rowspan="1"></td></tr>
-      <tr><td class="l">+ D&amp;A − capex: fixed assets 1,564.8 × (10 % + 2 %) = 187.8</td><td>−31.3</td><td></td></tr>
-      <tr><td class="l">− working capital: 124.5 × 2 %</td><td>−2.5</td><td></td></tr>
-      <tr class="hl"><td class="l">FCFF FY2029</td><td>105.9</td><td>141.5</td></tr>
-      <tr class="hl"><td class="l">Enterprise value</td><td>1,480.9</td><td>1,981.2</td></tr>
-    </table>
-    <p>The bakery's FY2028 capex of 150 is <b>below</b> its D&amp;A of 157.2, so its fixed assets shrink; it cannot grow 2 % for ever on that. Normalising lowers the value by a quarter. For Meridia the page shows that the test can go the other way.</p>
-  </div>
-  <div class="notes">For Meridia, FY2030 capex of 8 % of revenue is still sized for 6.7 % growth, so the normalised year needs LESS capex and the value rises. Do not give the Meridia figure: it is check 5d.</div>
-</section>
-
-<!-- 23 -->
-<section class="slide" data-clock="20:10">
-  <div class="kick">Part 4 · what goes in the reply</div>
-  <h2>A reported value names its method, its terminal value share, and the one assumption it depends on most</h2>
+  <h2>FY2030 still invests for 6.7 % growth; a terminal year that invests for 2 % growth produces 17.4 instead of 12.3, and the price rises to €4.96</h2>
   <div class="body">
     <table>
-      <tr><th>Forno Lumen, € thousand</th><th>Enterprise value</th><th>Share in the terminal value</th></tr>
-      <tr><td class="l">Perpetuity growth, FY2028 × 1.02</td><td>1,981.2</td><td>100.5 %</td></tr>
-      <tr><td class="l">Perpetuity growth, normalised FY2029</td><td>1,480.9</td><td>100.6 %</td></tr>
-      <tr><td class="l">Exit multiple 11.5 ×</td><td>2,979.6</td><td>100.3 %</td></tr>
+      <tr><th>FY2031, € million</th><th>Normalised for 2 % growth</th><th>FY2030 × 1.02 (slide 22)</th></tr>
+      <tr><td class="l">EBITDA = 40.18 × 1.02</td><td>40.99</td><td></td></tr>
+      <tr><td class="l">NOPAT: − D&amp;A 13.26 (fixed assets 159.1 ÷ 12), × 76 %</td><td>21.07</td><td></td></tr>
+      <tr><td class="l">+ D&amp;A 13.26 − capex 16.44: replace what wears out (159.1 ÷ 12) and grow the assets 2 % (159.1 × 2 %)</td><td>−3.18</td><td></td></tr>
+      <tr><td class="l">− working capital: 24.96 × 2 %</td><td>−0.50</td><td></td></tr>
+      <tr class="hl"><td class="l">= FCFF of FY2031</td><td>17.39</td><td>12.28</td></tr>
+      <tr><td class="l">Terminal value today · enterprise value · price per share</td><td>215.8 · 258.5 · <b>€4.96</b></td><td>152.4 · 195.0 · €3.38</td></tr>
     </table>
-    <div class="do"><b>A good sentence:</b> "We report an enterprise value of 1,481 by perpetuity growth with a normalised terminal year, because the exit multiple assumes growth of 3.8 % for ever. All of the value sits in the terminal value, so the value depends most on the WACC: at 6.69 % instead of 7.69 % it is 25 % higher."</div>
+    <p>FY2030 capex of 19.97 is sized for 6.7 % growth. After FY2030 Meridia grows 2 %, so it needs 16.44: enough to replace what wears out and add 2 %. Method 1 with FY2030 × 1.02 carries five years of growth capex into eternity and undervalues Meridia.</p>
   </div>
-  <div class="notes">The last figure, for the instructor: normalised enterprise value at WACC 6.69 % = 1,853.1, which is 25 % above 1,480.9. Next session (Session 6) turns this one-at-a-time test into a sensitivity grid and a football field.</div>
+  <div class="notes">The test can go either way: for the bakery of Session 4 it went DOWN (capex of 150 was below D&amp;A of 157, so its assets were shrinking). For Meridia it goes up. Fixed assets at the end of FY2030: 159.14; working capital: 24.96.</div>
 </section>
 
-<!-- 24 -->
-<section class="slide" data-clock="20:14">
-  <div class="kick">Part 5 · review · the Session 4 homework</div>
-  <h2>The answers to the Session 4 homework, and what they mean for the bank</h2>
+<!-- 30 -->
+<section class="slide" data-clock="20:27">
+  <div class="kick">Part 4 · the range</div>
+  <h2>Meridia is worth between €2.27 and €5.91 a share depending on six named choices, and each end of the range has a reason</h2>
+  <div class="body">
+    <div class="bars">
+      <div class="bar"><span>Lender case of Session 4, WACC 7.59 %</span><div class="tr"><i class="neg" style="left:0;width:35.5%"></i></div><b>€2.27</b></div>
+      <div class="bar"><span>Base case, Session 1's WACC of 8.5 %</span><div class="tr"><i class="nv" style="left:0;width:41.9%"></i></div><b>€2.68</b></div>
+      <div class="bar hl"><span>Base case, WACC 7.59 %, g 2 % (method 1)</span><div class="tr"><i style="left:0;width:52.8%"></i></div><b>€3.38</b></div>
+      <div class="bar"><span>The same, terminal year normalised (test 4)</span><div class="tr"><i style="left:0;width:77.5%"></i></div><b>€4.96</b></div>
+      <div class="bar"><span>Base case, no 3-point premium (WACC 5.90 %)</span><div class="tr"><i class="nv" style="left:0;width:86.4%"></i></div><b>€5.53</b></div>
+      <div class="bar"><span>Exit multiple 9.1 × (method 2)</span><div class="tr"><i class="nv" style="left:0;width:92.3%"></i></div><b>€5.91</b></div>
+    </div>
+    <p>One number is not an answer. A range whose ends are named is: the bottom is the bank's cautious forecast, the top assumes growth that cannot last.</p>
+  </div>
+  <div class="notes">Bars to scale, €6.40 = full width. Next session turns this into a sensitivity grid and a football field, and each student commits to one number they would defend.</div>
+</section>
+
+<!-- 31 -->
+<section class="slide" data-clock="20:31">
+  <div class="kick">Part 4 · the one assumption</div>
+  <h2>One point of WACC moves Meridia's price by about €0.80 a share, and the 3-point premium inside the WACC is the input with no market price</h2>
   <div class="body">
     <table>
-      <tr><th>Meridia, € m</th><th>Answer</th></tr>
-      <tr><td class="l">FY2030 EBITDA, base case</td><td>40.2</td></tr>
-      <tr><td class="l">Facility at the end of FY2030, base case, interest on the average balance</td><td>6.7</td></tr>
-      <tr><td class="l">Rounds until FY2026 interest stops moving at two decimals</td><td>3 (3.13 → 3.14 → 3.14)</td></tr>
-      <tr><td class="l">Lender case: FY2026 facility draw · highest net debt ÷ EBITDA · lowest cover</td><td>5.0 · 2.37 · 8.31</td></tr>
-      <tr><td class="l">Highest base-case payout with no facility draw</td><td>41.8 %</td></tr>
+      <tr><th>Change one input, keep the rest</th><th>Price per share</th><th>Compared with €3.38</th></tr>
+      <tr><td class="l">WACC 6.59 % (one point lower)</td><td>€4.46</td><td class="ok">+32 %</td></tr>
+      <tr><td class="l">WACC 8.59 % (one point higher)</td><td>€2.62</td><td class="bad">−22 %</td></tr>
+      <tr><td class="l">g 3 % (one point higher)</td><td>€4.25</td><td class="ok">+26 %</td></tr>
+      <tr><td class="l">g 1 % (one point lower)</td><td>€2.77</td><td class="bad">−18 %</td></tr>
+      <tr class="hl"><td class="l">Premium for size 0 instead of 3 points (WACC 5.90 %)</td><td>€5.53</td><td class="ok">+64 %</td></tr>
     </table>
-    <p>Both covenants hold in both cases. In the lender case every euro of the FY2026 dividend is borrowed: with no dividend, cash available is exactly the €8.0 m minimum.</p>
+    <p>The margin, the growth of the forecast and capex were tested in Session 2; none of them moves the price this much. The value depends most on the WACC, and inside the WACC on the one number that is a judgement.</p>
   </div>
-  <div class="notes">Tonight's FCFF does not depend on any of the facility or dividend answers: that is the point of slide 8. Teams that did not hand in the Session 4 reply can still do so; ask them to.</div>
+  <div class="notes">This answers Boreal's fourth question directly. The premium is defensible (every buyer of an unlisted company applies one), but its size is not observable, so the reply must show the price with and without it.</div>
 </section>
 
-<!-- 25 -->
-<section class="slide" data-clock="20:20">
-  <div class="kick">Homework · Session 5 page</div>
-  <h2>Your team's homework: Steps 1 to 6 of the Session 5 page, handed in before Session 6 on Thursday 3 December at 18:45</h2>
+<!-- 32 -->
+<section class="slide" data-clock="20:35">
+  <div class="kick">What a good reply says</div>
+  <h2>A reported value names its method, states its terminal value share, shows its range, and says which assumption moves it most</h2>
+  <div class="body">
+    <div class="do"><b>Part 3 of the reply, in three sentences:</b> "We value Meridia at €3.38 a share by discounted cash flow at a WACC of 7.59 % built from market data of January 2026, with a terminal value by perpetuity growth at 2 %. With the terminal year normalised the value is €4.96; the exit multiple of 9.1 × gives €5.91 but assumes growth of 4.2 % for ever. The bank's lender case gives €2.27."</div>
+    <div class="do"><b>Part 4:</b> "78 % of the enterprise value sits in the terminal value. The value depends most on the WACC: one point moves the price by about €0.80, and the 3-point premium for size, a judgement of the investment committee, is worth €2.15 a share on its own."</div>
+    <p>Every number in those sentences is sourced on the slides tonight. That is what "an input we can check" means in Boreal's letter.</p>
+  </div>
+  <div class="notes">€2.15 = 5.53 − 3.38. Read the two paragraphs aloud; this is the standard the reply on the page is marked against.</div>
+</section>
+
+<!-- 33 -->
+<section class="slide" data-clock="20:38">
+  <div class="kick">What to remember</div>
+  <h2>Five sentences from tonight</h2>
   <div class="body">
     <ol>
-      <li>Open the course page → Week 06 · Session 5. Join your team in Step 1 and lock your guess of the share of Meridia's value in the terminal value.</li>
-      <li><b>Step 2</b>: read the FCFF table and its two reconciliations, answer the five checks, write why FCFF is neither net income nor EBITDA.</li>
-      <li><b>Step 3</b>: read the data pack, answer the five WACC checks, write which input you are least sure of.</li>
-      <li><b>Step 4</b>: discount, compute both terminal values, answer the five checks, write which method you trust more.</li>
-      <li><b>Step 5</b>: run the four tests, answer the five checks, write reply parts 3 and 4.</li>
-      <li><b>Step 6</b>: the signed-in member presses <b>Hand in the reply</b>. The last version handed in counts.</li>
+      <li>Free cash flow is EBIT after tax plus D&amp;A minus capex minus the increase in working capital: the cash for lenders and owners together. For Meridia it is 30 % of EBITDA, because capex takes half.</li>
+      <li>The WACC is built, not assumed: the Bund, a country-weighted risk premium, a relevered industry beta, a stated premium for size, the after-tax cost of debt. Meridia: 7.59 %.</li>
+      <li>The five forecast years are worth 42.7; the terminal value by perpetuity growth 152.4 today; together 195.0, which is €3.38 a share after net debt of 60.0.</li>
+      <li>Four fifths of the value is the terminal value, so test it: its share, the multiple it implies (5.47 ×), the growth the exit multiple implies (4.16 %), and a normalised terminal year (€4.96).</li>
+      <li>Report a range with named ends, and say which input moves the value most. For Meridia: the WACC, and inside it the premium for size.</li>
     </ol>
-    <div class="do"><b>Use tonight's slides as the worked example:</b> every check on the page is the same calculation as a Forno Lumen slide, with Meridia's numbers and five years instead of three.</div>
   </div>
-  <div class="notes">Step 7 (the quiz, jeopardy.html?set=s5) is played at the start of Session 6. The slides can be printed with P and shared as a PDF if the class asks.</div>
+  <div class="notes">If one thing sticks: the discount rate matters more than the forecast, and the terminal value matters more than the five years.</div>
 </section>
 
-<!-- 26 -->
-<section class="slide dark" data-clock="20:23">
-  <div class="kick">Start now</div>
-  <h2>Start Steps 1 and 2 with your team now, while the instructor walks around</h2>
+<!-- 34 -->
+<section class="slide dark" data-clock="20:41">
+  <div class="kick">After tonight</div>
+  <h2>The Session 5 page repeats these steps with a check on every number; next Thursday we turn the range into a sensitivity grid and each of you commits to one value</h2>
   <div class="body">
-    <p class="big">Each check on the page shows a green ✓ when it is right. Ask now about anything that is not clear: at home there is nobody to ask.</p>
-    <div class="dim">Next session, Thursday 3 December: a sensitivity grid, the football field, and the one value your team would defend.</div>
+    <p class="big">Course page → Week 06 · Session 5: Steps 2 to 5 are the four parts of tonight, with the same Meridia tables and a green ✓ for each number you type. Work through it on your own before Thursday 3 December, and hand in the one-page reply in Step 6.</p>
+    <div class="dim">Session 6, Thursday 3 December, 18:45: data tables, a scenario switch, a two-way sensitivity on WACC and g, listed comparables, the football field, and the number you would defend to a board.</div>
   </div>
-  <div class="notes">Until 20:45. Walk to each team once. Typical questions: which tax goes into FCFF (24 % of EBIT, not the tax paid), which discount factor the terminal value takes (FY2030's), which net debt to subtract (31 December 2025).</div>
+  <div class="notes">The page is individual work now (no team board, no quiz step). Slides print with P.</div>
 </section>
 
 </div>
