@@ -198,7 +198,7 @@ window.StatsPresence = (function () {
     {mod:'w4', n:4, name:'Week 04 · Choosing content creators on a budget', pages:['w4']},
     {mod:'w5', n:5, name:'Week 05 · Negotiating a content creator contract', pages:['w5']},
     {mod:'w6', n:6, name:'Week 06 · Find the lie', pages:['w6']},
-    {mod:'w7', n:7, name:'Week 07 · Crisis, on the clock', pages:['w7']},
+    {mod:'w7', n:7, name:'Week 07 · A content creator crisis', pages:['w7']},
     {mod:'w8', n:8, name:'Week 08 · Live commerce — watch it, then do it', pages:['w8']},
     {mod:'w10', n:10, name:'Week 10 · First reading, and the spine', pages:['w10']},
     {mod:'w11', n:11, name:'Week 11 · The verdict, and the rehearsal', pages:['w11']}

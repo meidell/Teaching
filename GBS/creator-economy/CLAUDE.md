@@ -451,3 +451,45 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   `creator_work_w6_verdict` by the page itself (the gate reads it before
   progress.js may have). Tested headless with a stubbed wall: all six steps,
   reload keeps the answer open, no errors, no sideways scroll at 1280/420.
+
+- **Session 7 — *How to handle a content creator crisis* (`week7.html`, built
+  26 Nov 2026), six steps, `total:6`.** Jan Erik: "prepare session 7".
+  Step 1 = the weekly check + the **version B decision** (`w7_gsc`,
+  `w7_quoted`, `w7_version`). Step 2, four parts: **A** why the clip spreads
+  (ranking rewards reactions; Brady et al., PNAS 2017: each moral-emotional
+  word ≈ +20 % reposts; tagging; the partnership ad keeps running) with a
+  growth toy (off-case restaurant; 5,000 × 1.25^h); **B** the four checks of
+  the first hour + the holding statement; **C** Coombs' SCCT (Corporate
+  Reputation Review 2007: victim / accidental / preventable; deny /
+  diminish / rebuild / bolster), the non-apology, an eight-sentence sort
+  (`w7_sortdone`); **D** disclosure (Fairness Commission A.4 / B.15, as in
+  S5), defamation (StGB 173–174), personality rights (ZGB 28), the contract
+  (ads are the brand's to pause; only she deletes her post; ending without a
+  clause = breach), a clause toy (fee, keep / repay / none × end / suspend /
+  continue; half the fee paid at signing). `w7_never`. Step 3: the team's
+  own S5 contract read from `w5_outcome` (fee, usage months, `e` = clause;
+  default CHF 1,500 · 3 months · keep), then **four FICTIONAL facts**
+  (`FACTS`): the clip by @entendre.ensemble ("Hearing aids are for
+  grandpas…", 38,000 views, 212 tags), the full recording (not edited),
+  the journalist's three questions (the Reel had NO "Paid partnership"
+  label), her DM with a "sorry if" story + the association asking whether
+  the Q1 works with hearing aids. Each fact: four options (best = key `a`,
+  displayed in the order `ORD`), why, **Log this decision** (locked, with
+  the time) → `w7_logmap` + `w7_log` text. The instructor releases Facts 2–4
+  from the page (purple box, instructor device only): plain POST rows on
+  `_wall/w7ctl` `F:<n>`, newest wins, valid 6 h; students poll every 6 s;
+  with no release in the last 6 h a team may open the next fact itself
+  after logging the current one (`w7_self`). Step 4: the statement ≤ 480
+  chars (`w7_stmt`), four automatic checks (length, no "sorry if",
+  no "out of context / no comment / only a joke", an action verb) + four
+  ticked after reading aloud (`w7_man`), the contract choice `w7_end` →
+  `_wall/w7stmt` (src `T:<text>` ≤ 500, meta = `w7_end`). Step 5: the press
+  round, one question per device → `_wall/w7press` (n = first name, src
+  `Q:<team>`, meta = question ≤ 120), listed under each statement;
+  `w7_hard`, `w7_answer`. Step 6 (after Step 4): the log against the best
+  choice and why, the model statement (447 chars), the class's contract
+  choices; `w7_rule`. Hub TERM blurb: the minute timings were replaced by
+  "four facts arrive one after another" (WRITING.md rule 7). Tested
+  headless with a stubbed wall: two teams, facts released 2→4, statement,
+  a press question shown under the other team's statement, 6/6, no errors,
+  no sideways scroll at 1280/420. No slides yet.
