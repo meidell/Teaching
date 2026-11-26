@@ -493,3 +493,10 @@ block, progress = steps pressed. Two instructions from Jan Erik shape every page
   headless with a stubbed wall: two teams, facts released 2→4, statement,
   a press question shown under the other team's statement, 6/6, no errors,
   no sideways scroll at 1280/420. No slides yet.
+- **`week6-slides.html` — today's work plan for Session 6 (26 Nov 2026, 13:50).** Jan Erik: "give
+  me slides for what to do with todays work themselves plan". The class board showed Session 5
+  still being finished on 19 Nov and no Session 6 verdicts, so Session 6 is taught 26 Nov and
+  **Session 7 moves to 3 Dec** (the hub's TERM dates are NOT yet shifted). The week5-slides engine,
+  8 slides: the task · the six steps as a table (who does what) · Step 1 · Steps 2–3 · Step 4 (the
+  main task, five actions) · Step 5 · Step 6 · what to finish at home + Session 7 on 3 Dec. A gold
+  "▶ Slides" button in week6.html's top bar. No overflow at 1280×720 / 1440×900.
