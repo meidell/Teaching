@@ -84,3 +84,16 @@ in schools in India, Dubai, Bangkok and Switzerland; everything is online and re
   landing page picks it up from courses.json. ⚠ **The `green-ai` rules block (a copy of
   capstone-ba's without `_teams`, `_forum`, `_wall`) must be DEPLOYED** before the link
   goes to students, or sign-in, the journal sync and hand-ins are refused.
+- **Session 3 kit (26 Nov 2026)** — Jan Erik: "a transcript for day 3 for 45 mins — to inform students
+  of what to do. and slides … to sum up and get them started". Same pattern as Session 2
+  (`noindex`, not counted; `session3.html`'s top bar now has 🖥️ Slides and, on a `jem_instructor`
+  device only, 📄 Transcript): `session3-slides.html` (17 slides; Session 2's CSS and engine
+  unchanged) and `session3-script.html` (talking points per slide, two pause boxes). Content: the
+  project and its four steps, the three habits of Sessions 1–2, the two truths (Li et al. / Nearing,
+  Google), the footprint of 300 prompts (Google 0.26 ml + 0.24 Wh → 78 ml, 72 Wh; Li 10–50 ml →
+  3–15 L; factor ≈ 40–190), the calendar from `CAPSTONE_SCHEDULE` (Fri 4 Dec · Fri 8 Jan · Fri 29
+  Jan · Sun 28 Feb, 23:59 CET; the script converts to India/Dubai/Bangkok), essay 1 with Session 1's
+  word budget (200/400/300/350/250), six checks, how to hand in (`Surname_GreenAI_Phase1.pdf`, the
+  newest upload counts), essays 2–3, the final report and the 10 slides, help. Activities on slides
+  13 (essay plan, 5 min) and 16 (three actions, 3 min). Slide numbers 1–17 are shared by both files.
+  Checked headless: no slide overflows at 1280×720 or 1440×900, no page errors.
