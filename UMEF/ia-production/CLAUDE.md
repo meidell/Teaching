@@ -146,6 +146,22 @@ level in journées 2–6: a general statement first, a West African fact only as
 - Day 5 needs an LLM for the RAG atelier: decide (free Gemini API key from Google AI
   Studio, or a small open model on Colab's GPU).
 
+## The step-by-step solution, in French (27 Nov 2026)
+
+Jan Erik: "give me the solution as a python script. a pdf — and give me small texts (in the
+solution) so that I can explain — step by step — until the hugging face upload".
+`_private/j1_solution.py` was rewritten as that script: eleven `# ===== ÉTAPE n` blocks, `#>`
+lines = the text to say (what we do, why, the traps), `#=` lines = the expected output, `#$` =
+shell; steps 1–9 are the page's code windows (random forest, 100 trees, `SEUIL_FINAL = 0.4` →
+15 of 57 frauds, 77 honest; the logistic variant is named), steps 10–11 are the six files and
+the Hugging Face Space, with the local uvicorn check. The same file IS a valid `modele.py`: run
+end to end with pandas 3.0.2 / scikit-learn 1.8.0 (a venv; the system python3 has no sklearn),
+all asserts pass, and the real service (`files/service/app.py`) was started with it and answered
+`GET /` and `POST /predire` (0.544, bloquer) on 27 Nov 2026. `_build/solution_pdf.py` parses the
+script and writes `_private/j1-solution-pas-a-pas.html` + `.pdf` (10 pages, Chrome headless — ⚠ a code line wider
+than the page makes Chrome shrink the WHOLE document, so `pre` has `overflow-wrap:anywhere`);
+the script is the single source — edit it, re-run the generator. Both outputs stay in `_private/`.
+
 ## Tool: `regression-logistique.html` (20 Nov 2026)
 
 Jan Erik, during day 1: "a tool for understanding logistic regression using easy examples and
