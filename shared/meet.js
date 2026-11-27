@@ -81,7 +81,8 @@
       mod: 'La première personne dans une salle doit se connecter (Google ou GitHub) pour l’ouvrir. Les étudiants n’ont pas besoin de compte.',
       opening: 'Ouverture de la salle…', signin: 'connectez-vous d’abord au cours', modOn: 'Vous êtes modérateur de cette salle : vous pouvez couper les micros, ouvrir des sous-salles et enregistrer.',
       failed: 'La salle n’a pas pu s’ouvrir', fallback: 'Ouvrir la salle gratuite sur meet.jit.si à la place',
-      keep: 'Pendant l’appel, les liens de la page s’ouvrent dans un nouvel onglet : l’appel continue ici.', leave: 'Quitter cette page met fin à l’appel.'
+      keep: 'Pendant l’appel, les liens de la page s’ouvrent dans un nouvel onglet : l’appel continue ici.', leave: 'Quitter cette page met fin à l’appel.',
+      shOn: 'Vous partagez votre écran : les étudiants le voient, vous voyez la classe', shStop: 'Arrêter le partage'
     } : {
       live: 'The class is on now, ' + when + ' (Geneva time). You can follow it online.',
       today: 'The class is today, ' + when + ' (Geneva time). You can follow it online.',
@@ -94,7 +95,8 @@
       mod: 'The first person in a room has to sign in (Google or GitHub) to open it. Students do not need an account.',
       opening: 'Opening the room…', signin: 'sign in to the course first', modOn: 'You are the moderator of this room: you can mute everyone, open breakout rooms and record.',
       failed: 'The room could not be opened', fallback: 'Open the free room on meet.jit.si instead',
-      keep: 'During the call, links on this page open in a new tab, so the call keeps running here.', leave: 'Leaving this page ends the call.'
+      keep: 'During the call, links on this page open in a new tab, so the call keeps running here.', leave: 'Leaving this page ends the call.',
+      shOn: 'You are sharing your screen: the students see it, you see the class', shStop: 'Stop sharing'
     };
 
     /* ---- styles ---- */
@@ -123,6 +125,9 @@
       '.jem-mp .hd button:hover,.jem-mp .hd a:hover{border-color:#fff!important;background:rgba(255,255,255,.1)!important}' +
       '.jem-mp .hd .main{background:' + hot + '!important;color:' + hotInk + '!important;border-color:' + hot + '!important}' +
       '.jem-mp iframe{flex:1;border:0;width:100%;background:#000}' +
+      '.jem-mp .holder{flex:1;min-height:0;display:flex;background:#000}.jem-mp .holder iframe{flex:1;height:100%!important}' +
+      '.jem-mp .shl{display:none;align-items:center;gap:8px;flex-basis:100%;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.28);color:#fff;font:600 12.5px/1.3 system-ui,sans-serif}.jem-mp .shl.on{display:flex}' +
+      '.jem-mp .shl i{width:11px;height:11px;border-radius:50%;background:#2ecc40;box-shadow:0 0 0 3px rgba(46,204,64,.35);animation:jemMeetP 1.6s infinite;flex:none}' +
       '.jem-mp .ft{padding:7px 12px;font:12.5px/1.45 system-ui,sans-serif;color:#b9c3cf;background:#18212c}' +
       '.jem-mp .rl{flex:1;overflow:auto;padding:12px 14px;background:#f4f6f9;color:#14213d;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}' +
       '.jem-mp .rc{background:#fff;border:1px solid #dde2e8;border-radius:12px;padding:12px 14px;margin:0 0 12px}.jem-mp .rc h4{margin:0 0 6px;font-size:15px}.jem-mp .rc h5{margin:8px 0 2px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#556}' +
@@ -144,27 +149,84 @@
       var hd = document.createElement('div'); hd.className = 'hd';
       var h = document.createElement('b'); h.textContent = title; hd.appendChild(h); panel.appendChild(hd); return hd;
     }
-    function frame(hd, title, src, tabUrl, foot) {
+    /* 27 Nov 2026 (Jan Erik: "if I click share screen, do not show that shared screen in the video on my
+       view, but give me a small light indicating that I am sharing"): on the INSTRUCTOR's device the
+       call is opened through Jitsi's IFrame API (external_api.js from the same host as the call), so the
+       page hears `screenSharingStatusChanged`. While the share is on: a green light in the panel's header
+       with a Stop button, and the large video is kept on a student (the dominant speaker when one is
+       remote, else the first other participant) instead of the shared screen; when the share ends the
+       large video goes back to Jitsi's choice. Students keep the plain iframe. If the API script does
+       not load, the plain iframe is used and the light is simply absent. */
+    var api = null, myId = null, sharing = false, lastSpeaker = null;
+    function pickRemote() {
+      if (!api) return null;
+      var ps = []; try { ps = api.getParticipantsInfo() || []; } catch (e) {}
+      ps = ps.filter(function (p) { return p.participantId && p.participantId !== myId && p.participantId !== 'local' && !/\(me\)$/.test(p.formattedDisplayName || ''); });
+      if (!ps.length) return null;
+      var sp = ps.filter(function (p) { return p.participantId === lastSpeaker; })[0];
+      return (sp || ps[0]).participantId;
+    }
+    function keepClassOnStage() {
+      if (!api || !sharing) return;
+      var id = pickRemote(); if (!id) return;
+      try { api.executeCommand('setTileView', false); api.executeCommand('setLargeVideoParticipant', id); } catch (e) {}
+    }
+    function shareLight(on, light) {
+      sharing = !!on; light.classList.toggle('on', sharing);
+      if (sharing) { setTimeout(keepClassOnStage, 400); setTimeout(keepClassOnStage, 1500); setTimeout(keepClassOnStage, 4000); }
+      else { try { api.executeCommand('setLargeVideoParticipant'); } catch (e) {} }
+    }
+    function loadApi(host, appId) {
+      return new Promise(function (ok, no) {
+        if (window.JitsiMeetExternalAPI) return ok();
+        var s = document.createElement('script'); s.src = appId ? 'https://' + host + '/' + appId + '/external_api.js' : 'https://' + host + '/external_api.js';
+        s.onload = function () { window.JitsiMeetExternalAPI ? ok() : no(new Error('no api')); }; s.onerror = no; document.head.appendChild(s);
+      });
+    }
+    function frame(hd, title, src, tabUrl, foot, viaApi) {
       var a = document.createElement('a'); a.className = 'main'; a.href = tabUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.tab;
       a.onclick = function () { setTimeout(close, 300); }; hd.appendChild(a);
       var bg = document.createElement('button'); bg.type = 'button'; bg.className = 'ghost'; bg.textContent = T.big;
       bg.onclick = function () { var on = panel.classList.toggle('big'); bg.textContent = on ? T.small : T.big; }; hd.appendChild(bg);
       var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
-      var f = document.createElement('iframe'); f.src = src; f.title = title;
-      f.allow = 'camera; microphone; display-capture; fullscreen; autoplay; clipboard-write'; f.setAttribute('allowfullscreen', '');
-      panel.appendChild(f); inCall = true;
+      var light = document.createElement('div'); light.className = 'shl'; light.innerHTML = '<i></i><span></span>'; light.querySelector('span').textContent = T.shOn;
+      var stop = document.createElement('button'); stop.type = 'button'; stop.textContent = T.shStop; stop.style.cssText = 'margin-left:auto'; light.appendChild(stop); hd.appendChild(light);
+      stop.onclick = function () { try { api && api.executeCommand('toggleShareScreen'); } catch (e) {} };
+      function plain() {
+        var f = document.createElement('iframe'); f.src = src; f.title = title;
+        f.allow = 'camera; microphone; display-capture; fullscreen; autoplay; clipboard-write'; f.setAttribute('allowfullscreen', '');
+        panel.insertBefore(f, kp);
+      }
       var kp = document.createElement('div'); kp.className = 'ft'; kp.textContent = T.keep; panel.appendChild(kp);
       if (foot) { var ft = document.createElement('div'); ft.className = 'ft'; ft.textContent = foot; panel.appendChild(ft); }
+      inCall = true;
+      if (!viaApi) { plain(); return; }
+      var holder = document.createElement('div'); holder.className = 'holder'; panel.insertBefore(holder, kp);
+      loadApi(viaApi.host, viaApi.appId).then(function () {
+        if (!panel) return;
+        api = new JitsiMeetExternalAPI(viaApi.host, {
+          roomName: viaApi.roomName, jwt: viaApi.jwt, parentNode: holder, width: '100%', height: '100%',
+          userInfo: { displayName: me() },
+          configOverwrite: { prejoinConfig: { enabled: false }, startWithAudioMuted: true, startWithVideoMuted: true, subject: title },
+          interfaceConfigOverwrite: { SHOW_JITSI_WATERMARK: false }
+        });
+        var f = holder.querySelector('iframe'); if (f) f.title = title;   /* the API sets its own, fuller allow list */
+        api.addListener('videoConferenceJoined', function (ev) { myId = ev && ev.id; });
+        api.addListener('dominantSpeakerChanged', function (ev) { if (ev && ev.id && ev.id !== myId) { lastSpeaker = ev.id; if (sharing) keepClassOnStage(); } });
+        api.addListener('screenSharingStatusChanged', function (ev) { shareLight(ev && ev.on, light); });
+        api.addListener('participantJoined', function () { if (sharing) keepClassOnStage(); });
+        api.addListener('readyToClose', close);
+      }).catch(function () { if (!panel) return; holder.remove(); plain(); });
     }
     function open(slug, title) {
       if (!jitsi) { window.open(m.url, '_blank', 'noopener'); return; }
       var hd = shell(title);
-      if (!jaas) { frame(hd, title, embedUrl(slug, title), URL0(slug), T.lim + ' ' + T.mod); return; }
+      if (!jaas) { frame(hd, title, embedUrl(slug, title), URL0(slug), T.lim + ' ' + T.mod, instructor ? { host: 'meet.jit.si', roomName: ROOM(slug) } : null); return; }
       var wait = document.createElement('div'); wait.className = 'ft'; wait.style.flex = '1'; wait.textContent = T.opening; panel.appendChild(wait);
       pass(slug).then(function (p) {
         if (!panel) return; wait.remove();
         var base = 'https://8x8.vc/' + encodeURIComponent(p.appId) + '/' + encodeURIComponent(ROOM(slug)) + '?jwt=' + encodeURIComponent(p.token);
-        frame(hd, title, base + '#' + CFG(title), base, p.moderator ? T.modOn : '');
+        frame(hd, title, base + '#' + CFG(title), base, p.moderator ? T.modOn : '', instructor ? { host: '8x8.vc', appId: p.appId, roomName: p.appId + '/' + ROOM(slug), jwt: p.token } : null);
       }).catch(function (e) {
         if (!panel) return;
         wait.textContent = T.failed + ' (' + (e && e.message || e) + ')';
@@ -173,7 +235,7 @@
         var x = document.createElement('button'); x.type = 'button'; x.className = 'ghost'; x.textContent = T.close; x.onclick = close; hd.appendChild(x);
       });
     }
-    function close() { inCall = false; if (panel) { panel.remove(); panel = null; } document.body.classList.remove('jem-mp-on'); }
+    function close() { inCall = false; sharing = false; if (api) { try { api.dispose(); } catch (e) {} api = null; } if (panel) { panel.remove(); panel = null; } document.body.classList.remove('jem-mp-on'); }
 
     /* 26 Nov 2026 (Jan Erik: "the camera cuts every time you click on a link in the page"): the call
        lives in an iframe of THIS page, so leaving the page ends it. While a call is open, a click on a
