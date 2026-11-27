@@ -247,3 +247,42 @@ create journée 2". Both done the same morning.
 - Not done: an English instructor's guide like `journee1-guide.html` (the French step-by-step PDF and
   the teacher deck carry the same content); day 3 still to build (data contract of the PROJECT, tests
   against corrupted data, GitHub Actions deploying the Space).
+
+## ⚠ Hugging Face Docker Spaces became PAID → GitHub + Render (27 Nov 2026, during the class)
+
+Jan Erik, in class: "docker is paying…", "maybe render?", "do it so that we deposit our files via github,
+so we need a repository on github first and then install this on render. and then we need to set the
+settings on render and so on… to be able to continue day 1". Since November 2026 Hugging Face's docs say
+"Gradio and Docker Spaces run on compute and require a paid plan to create" (forum: new free accounts
+have a CPU-basic quota of 0; Spaces created before keep running). **The server path of BOTH days is now
+GitHub + Render**: a PUBLIC repo (`github.com/new`, then "uploading an existing file" with the zip's
+files, "Commit changes"), then `dashboard.render.com` → New + → Web Service → Public Git Repository
+(the repo URL) → Name · Language Python 3 · Branch main · Region Frankfurt · Build Command
+`pip install -r requirements.txt` · Start Command `uvicorn app:app --host 0.0.0.0 --port $PORT` ·
+Instance Type Free → Deploy. Free: no card, 512 MB, spins down after 15 min idle, ~1 min to wake,
+zero-downtime redeploys, redeploys on every commit (render.com/docs/free, checked 27 Nov 2026).
+- **journee1.html** section 1.4: the "before you start" tick is GitHub + Render accounts; step 11 is A (the
+  repo) + B (the service, settings listed); the URL placeholders are `…onrender.com`; `cleanUrl` still
+  accepts an hf.space address (a student with a surviving Space keeps using it; the page says so). The
+  zip is unchanged (Dockerfile/README stay, "Render ignores them"). Day-1 slides: the six Étape 11
+  slides replaced by seven (A 1–2, B 1–3, the failure table), the two Expérience slides patched;
+  `_private/journee1-slides.html` is still the hand-written source (102 slides), public decks
+  re-rendered from it by stripping `k-sol` and renumbering (86 / 102). `j1_solution.py` step 11 and
+  `j1_reponses_pdf.py` step 11 rewritten; both PDFs regenerated. `_private/journee1-guide.html` (English,
+  20 Nov) NOT updated — it still describes Spaces.
+- **journee2.html** 2.2: step 8 = the day-1 server's state if it still exists (`#srvUrlOld`, or the
+  button "Je n'ai plus de serveur de la journée 1" which fills `w2_avant`); step 9 = A the repo, B the
+  service, C **start the watch before clicking Deploy** (measures seconds to the first answer), D promote
+  the other version by editing `registre.json` on GitHub (Render redeploys; the watch shows whether the
+  relay had a gap — Render is blue-green, Hugging Face rebuilds in place), E the cold start after lunch.
+  The watch is generic: labels 'ko' / 'v1' / 'v2:<model version>', starts from whatever answers first,
+  stops after three consecutive answers of another label, 30-min cap. A Space-update box remains for
+  students whose Space survived. 2.3's downtime row and 2.4's note name Render; the project's second
+  server is a second repo + Render service. Slides (`j2_slides.py`, 51/45) and `j2_solution.py` steps
+  8–9 rewritten; PDF regenerated.
+- Day-2 headless test re-run after the rewrite: all steps pass; the only "error" was a 429 from a
+  CDN/Firebase resource after seven runs in a row (rate limit, not the page). ⚠ **Not tested: Render
+  itself** (account creation, the settings form's exact labels, the deploy time with the training
+  modele.py on a 0.1-CPU free instance — expect 30–90 s of training at every start on day 1's file).
+- Day 3 consequence: GitHub Actions on these repos (tests on every commit) → Render auto-deploys; the
+  "canary" idea needs a second service or a flag in registre.json.

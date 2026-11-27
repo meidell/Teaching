@@ -101,8 +101,8 @@ SLIDES = [
       '<tr><td>4</td><td>15h15–16h45</td><td>Vous faites la même chose pour votre projet ; trois systèmes qui ont échoué ; le quiz.</td></tr></table>'),
     S("do", "", "Pour commencer",
       '<ol><li>Ouvrez <b>janerikmeidell.com/UMEF/ia-production</b>, puis « Journée 2 ». Connectez-vous avec le même nom que vendredi.</li>'
-      '<li>Ouvrez l’adresse de votre Space de vendredi dans un onglet : il doit répondre un texte qui commence par <code>"service": "jappo-fraude"</code>. S’il dit « Sleeping », cliquez sur « Restart ».</li>'
-      '<li>Si vous n’avez pas de Space : dites-le maintenant, vous le créez pendant le bloc 1 avec le zip de vendredi.</li></ol>'),
+      '<li>Deux comptes gratuits pour cet après-midi, si vous ne les avez pas : <b>GitHub</b> (github.com/signup) et <b>Render</b> (dashboard.render.com/register, « Sign up with GitHub », sans carte bancaire).</li>'
+      '<li>Hugging Face demande depuis novembre un abonnement payant pour un Space Docker : le serveur d’aujourd’hui tourne sur Render. Si votre Space de vendredi existe encore, ouvrez son adresse dans un onglet : il doit répondre <code>"service": "jappo-fraude"</code>.</li></ol>'),
     S("info", "", "Ce qui ne va pas dans le serveur de vendredi",
       '<p>Il <b>réentraîne</b> votre modèle à chaque démarrage : il lit 24 000 opérations, entraîne, puis seulement répond.</p>'
       '<ul><li>Le démarrage est lent : c’était <code>duree_demarrage_s</code> dans <code>GET /</code>.</li>'
@@ -177,23 +177,39 @@ SLIDES = [
       '<tr><td><code>requirements.txt</code></td><td>Les mêmes versions que la page, <b>plus</b> numpy 2.4.6 et joblib 1.5.3 : les versions qui ont écrit l’artefact</td><td>Donné</td></tr>'
       '<tr><td><code>Dockerfile</code>, <code>README.md</code></td><td>Inchangés</td><td>Donné</td></tr></table>'
       '<p>Plus de CSV : le serveur n’entraîne plus. Les données restent chez le data scientist.</p>'),
-    S("do", "Étape 8", "Avant de toucher au serveur : notez l’état de la version 1",
-      '<ol><li>Collez l’adresse de votre Space de vendredi.</li><li><b>Lire l’état actuel (version 1)</b> : la page écrit dans le champ « avant » le modèle, le seuil, « entraîne au démarrage », et la durée du démarrage.</li>'
+    S("do", "Étape 8", "Avant : l’état du serveur de la journée 1, s’il existe encore",
+      '<ol><li>Collez l’adresse de votre Space de vendredi, <b>Lire l’état actuel (version 1)</b> : le champ « avant » note le modèle, « entraîne au démarrage », et la durée du démarrage.</li>'
+      '<li>Plus de serveur de vendredi ? Cliquez sur « Je n’ai plus de serveur de la journée 1 » : le champ le note ; vous comparerez avec les logs de vendredi.</li>'
       '<li>Cette durée est ce que vous allez faire disparaître. Une mesure sans « avant » ne prouve rien.</li></ol>'),
-    S("do", "Étape 9", "La mise à jour, chronométrée",
+    S("info", "Étape 9", "Le nouvel hébergeur : Render, depuis un dépôt GitHub",
+      '<ul><li>Hugging Face demande depuis novembre 2026 un abonnement payant pour créer un Space Docker.</li>'
+      '<li><b>Render</b> fait tourner gratuitement un petit service Python (512 Mo) à une adresse publique, sans carte bancaire.</li>'
+      '<li>Il lit le code dans un <b>dépôt GitHub</b>, l’installe d’après <code>requirements.txt</code>, et le relance à chaque changement du dépôt.</li>'
+      '<li>Un service gratuit s’endort après 15 minutes sans appel et met environ une minute à se réveiller.</li>'
+      '<li>Votre Space de vendredi existe encore ? L’encadré de l’étape 9 dit comment le mettre à jour à la place.</li></ul>'),
+    S("do", "Étape 9 · A", "Le dépôt GitHub",
       '<ol><li>Dézippez <code>service_v2.zip</code>.</li>'
-      '<li>Sur la page : <b>Commencer la mesure</b>. Un appel toutes les deux secondes : vert = la version 1 répond, rouge = pas de réponse, bleu = la version 2 répond.</li>'
-      '<li>Dans le Space, onglet Files : supprimez <code>jappo_transactions.csv</code> (⋮ → Delete). Puis Upload files : les huit fichiers. Commit.</li>'
-      '<li>Regardez les points pendant « Building », puis « Running ». La mesure s’arrête seule.</li>'
-      '<li><b>Lire le nouveau serveur</b> : le champ « après » se remplit.</li></ol>'),
+      '<li><b>github.com/new</b> : nom <code>jappo-fraude</code>, <b>Public</b>, « Create repository ».</li>'
+      '<li>Sur la page vide du dépôt : le lien « <b>uploading an existing file</b> », glissez les huit fichiers (pas le zip), « Commit changes ».</li>'
+      '<li>Notez l’adresse : <code>https://github.com/VOTRE-NOM/jappo-fraude</code>.</li></ol>'),
+    S("do", "Étape 9 · B et C", "Le service Render, et la mesure avant de cliquer sur Deploy",
+      '<ol><li><b>dashboard.render.com</b> → New + → Web Service → « Public Git Repository » : collez l’adresse du dépôt, Connect.</li>'
+      '<li>Name <code>jappo-fraude</code> · Language Python 3 · Branch main · Build Command <code>pip install -r requirements.txt</code> · Start Command <code>uvicorn app:app --host 0.0.0.0 --port $PORT</code> · Instance Type <b>Free</b>.</li>'
+      '<li>Copiez l’adresse affichée (<code>https://jappo-fraude-xxxx.onrender.com</code>) dans la page, <b>Commencer la mesure</b>, <b>puis</b> « Deploy Web Service ».</li>'
+      '<li>Suivez les Logs : pip installe (deux à quatre minutes), uvicorn démarre, <code>modele.py</code> charge l’artefact. La mesure s’arrête seule après trois réponses.</li></ol>'),
     S("res", "Étape 9", "Ce que vous devez voir",
-      out('{"service":"jappo-fraude","version_service":"2","version_modele":"1.1.0",\n "empreinte":"…","duree_demarrage_s":0.31,"entrainement_au_demarrage":false,\n "versions":{"python":"3.12.12","scikit-learn":"1.8.0","pandas":"3.0.2","numpy":"2.4.6","joblib":"1.5.3"}}')
-      + '<p>Pendant la reconstruction : deux à quatre minutes de points rouges. Puis un démarrage de 0,2 à 0,5 s au lieu de plusieurs secondes.</p>'
-      '<p>« Runtime error » ? Les Logs nomment la cause : un fichier oublié, une bibliothèque absente de <code>requirements.txt</code>, ou une version qui n’est pas celle du navigateur.</p>'),
+      out('{"service":"jappo-fraude","version_service":"2","version_modele":"1.1.0",\n "empreinte":"…","duree_demarrage_s":0.7,"entrainement_au_demarrage":false,\n "versions":{"python":"3.13.…","scikit-learn":"1.8.0","pandas":"3.0.2","numpy":"2.4.6","joblib":"1.5.3"}}')
+      + '<p>Deux à quatre minutes de points rouges entre Deploy et la première réponse. Puis un démarrage de moins d’une seconde au lieu de plusieurs.</p>'
+      '<p>Le déploiement échoue ? Les Logs nomment la cause : un fichier oublié, une bibliothèque absente de <code>requirements.txt</code>, une commande de démarrage mal tapée.</p>'),
+    S("do", "Étape 9 · D et E", "Changez de version sans toucher au code, puis mesurez le réveil",
+      '<ol><li>Sur GitHub, ouvrez <code>registre.json</code>, le crayon : échangez <code>"production"</code> et <code>"archive"</code> entre les deux versions, « Commit changes ».</li>'
+      '<li>Au moment du commit : <b>Commencer la mesure</b>. Render relance le service seul : le service a-t-il cessé de répondre ? Quand l’autre version a-t-elle pris le relais ?</li>'
+      '<li>C’est une <b>promotion</b> dans le registre : le code n’a pas changé, le modèle servi, si.</li>'
+      '<li>Après la pause de midi : « Lire le nouveau serveur ». Le temps de la première réponse est le <b>démarrage à froid</b> d’un service endormi.</li></ol>'),
     S("do", "Étape 9", "Écrivez ce que vous avez mesuré",
       '<p>Dans le champ « l’interruption », quatre points :</p>'
-      '<ol><li>la durée du démarrage avant et après, en secondes ;</li><li>combien de secondes le serveur n’a pas répondu, et à quoi la page l’a vu ;</li>'
-      '<li>ce qu’un client de Jàppo Pay aurait vécu pendant ces secondes ;</li><li>comment vous feriez pour mettre à jour sans que personne s’en aperçoive : votre idée, avant qu’on la nomme.</li></ol>'),
+      '<ol><li>la durée du démarrage vendredi et aujourd’hui, en secondes ;</li><li>les secondes entre Deploy et la première réponse ; au changement de version, une interruption ou non, et combien de secondes ;</li>'
+      '<li>ce qu’un client de Jàppo Pay aurait vécu pendant ces secondes, et pendant le réveil ;</li><li>comment vous feriez pour qu’un client ne s’aperçoive jamais d’une mise à jour ni d’un réveil : votre idée, avant qu’on la nomme.</li></ol>'),
     PART("Mise en commun · 15 min", "Ce que vous avez fait ce matin porte un nom", "Section 2.3"),
     S("keep", "2.3", "Six noms",
       '<table class="sm"><tr><th>Vous avez…</th><th>Le nom</th></tr>'
@@ -202,7 +218,7 @@ SLIDES = [
       '<tr><td>calculé le SHA-256</td><td>l’<b>empreinte</b></td></tr>'
       '<tr><td>tenu registre.json et promouvoir()</td><td>le <b>registre de modèles</b> et la <b>promotion</b> (MLflow Model Registry)</td></tr>'
       '<tr><td>épinglé joblib et numpy</td><td>la <b>reproductibilité</b> de l’environnement</td></tr>'
-      '<tr><td>mesuré les secondes sans réponse</td><td>l’<b>interruption de service</b> ; les remèdes : déploiement <b>bleu-vert</b>, <b>progressif</b> ; journée 3 : <i>canary</i></td></tr></table>'),
+      '<tr><td>mesuré les secondes sans réponse, le relais d’une version à l’autre, le réveil</td><td>l’<b>interruption de service</b> et le <b>démarrage à froid</b> ; les remèdes : déploiement <b>bleu-vert</b> (ce que fait Render), <b>progressif</b> ; journée 3 : <i>canary</i></td></tr></table>'),
     S("keep", "2.3", "Le versionnage sémantique, en trois lignes",
       '<ul><li><b>Majeure</b> (2.0.0) : les entrées changent ; le système qui appelle doit s’adapter.</li>'
       '<li><b>Mineure</b> (1.1.0) : un nouveau modèle, les mêmes entrées.</li>'
@@ -260,7 +276,7 @@ SLIDES = [
       '<ul><li><code>CHAMPS</code> : les champs bruts qu’une entrée de votre système contient.</li>'
       '<li>Votre <code>preparer()</code>, copiée.</li><li><code>charger_production()</code>, <code>predire_v2()</code> avec la version.</li>'
       '<li><code>MON_OPERATION</code> : une entrée d’exemple ; la page l’utilise pour tester.</li>'
-      '<li>Vert → <b>service_projet.zip</b> → un <b>second</b> Space, nommé d’après votre projet → collez son adresse.</li></ul>'),
+      '<li>Vert → <b>service_projet.zip</b> → un <b>second</b> dépôt GitHub, un second service Render (mêmes commandes, Free) → collez son adresse.</li></ul>'),
     S("do", "2.5", "Le canevas de déploiement · 10 min",
       '<p>Une ligne chacun :</p><ol><li>la décision servie et qui la reçoit ;</li><li>le mode d’inférence et pourquoi ;</li><li>le volume par jour et la latence acceptable ;</li>'
       '<li>la version en production et sa mesure sur vos données de test ;</li><li>l’option d’hébergement (A, B, C) et son coût mensuel estimé ;</li><li>ce qui manque encore.</li></ol>'
@@ -276,11 +292,10 @@ SLIDES = [
       '<li><b>Zillow</b> : une surveillance de la dérive (prix réels contre prix prévus, chaque semaine) ET une limite humaine sur le montant engagé. Journée 4.</li>'
       '<li><b>Amazon</b> : un test par groupe avant la mise en service ET des données qui ressemblent aux recrutements voulus, pas aux recrutements passés. Journée 6.</li></ul>'),
     S("info", "2.6", "Avant la journée 3 · vendredi 4 décembre",
-      '<ul><li>Laissez vos deux Spaces en ligne : Jàppo Pay version 2, et votre projet.</li>'
+      '<ul><li>Laissez vos deux dépôts GitHub et vos deux services Render en place : Jàppo Pay version 2, et votre projet.</li>'
       '<li>Données de projet pas prêtes ? Refaites les étapes 10 à 12 chez vous.</li>'
-      '<li>Un compte GitHub, et votre nom d’utilisateur noté.</li>'
       '<li>Relisez votre note de chiffrage : elle entre dans le rapport.</li></ul>'
-      '<p>Journée 3 : le contrat de données de votre projet, des tests qui rejettent des données corrompues, la mise à jour du serveur automatisée avec GitHub Actions.</p>'),
+      '<p>Journée 3 : le contrat de données de votre projet, des tests qui rejettent des données corrompues, lancés à chaque commit par GitHub Actions avant que Render ne redéploie.</p>'),
     S("do", "2.7", "Le quiz · 10 min",
       '<p>Huit questions sur ce que vous avez fait aujourd’hui. Auto-évaluation : il ne compte pas dans la note.</p>'
       '<p>L’enseignant le lance ; votre page se déverrouille seule. Répondez seul·e, sans assistant d’IA.</p>'),
