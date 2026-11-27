@@ -175,3 +175,75 @@ bars; the unit changes the weight, hence StandardScaler); (5) the threshold on 4
 (8 frauds): blocked, missed, honest blocked, recall, precision. Five control questions (answers
 50 · 2 · 59.9 · 7 · 0.80, absolute tolerances). Linked from journée 1's top bar and its
 "train a model" step, and from the hub's top bar. Tested headless at 1280 and 390 px.
+
+## Journée 2 built (27 Nov 2026, the morning of the class) — artefact, registre, service v2, prices
+
+Jan Erik, 27 Nov 2026 09h: "give me an answer pdf to all the typical answers for this journée 1. then
+create journée 2". Both done the same morning.
+
+- **`_private/j1-reponses-types.pdf`** (+ `.html`, generator `_build/j1_reponses_pdf.py`, French): every
+  question of day 1 — code steps 1–9 in brief, each ✍ field with a model answer, the four malformed
+  inputs (RF and LR answers), experiment 3, the six calculations, the quiz. ⚠ The random forest's
+  probabilities differ in the third decimal between machines (0.533 here, 0.544 in an earlier run; the
+  0.70 row of the step-8 table gives 4 or 5); `j1_solution.py`'s `#=` lines now say 0.533.
+- **`journee2.html`** (sections s1…s7, module `w2`, `courseprogress.js` total 7, live): built on day 1's
+  model, Pyodide in the page. Blocks `e1…e6` share ns `j2`; **`e2`/`e3` are PREFILLED with the student's
+  own day-1 code read from this device's localStorage** (`codelab:/UMEF/ia-production/journee1.html:e5`
+  = preparer with the X_train lines stripped, `:e6` = the model, `SEUIL_FINAL` from `:e8`), else the
+  reference solution — the page says which. e4 = the artefact (a dict: modele, seuil, variables in order,
+  version, date, library versions → `modele-1.0.0.joblib`), size, SHA-256, reload, max |Δp| must be 0;
+  e5 = a second version (reference: the logistic Pipeline at 0.9) + `registre.json` + `promouvoir()`, the
+  check RECOMPUTES every count and every hash from the files (exactly one `production`); e6 =
+  `predire_v2()` loading the production entry, columns compared to `ART["variables"]`, version in the
+  reply — the check swaps `preparer` for one that renames a column and demands `{"erreur"}`; **e7 runs the
+  ASSEMBLED modele.py (e2 + e6) in the EMPTY namespace `j2srv`** (`CodeLab.run('e7', text)`), as the
+  server will — a predire_v2 that leans on `modele`/`X_test`/`SEUIL_FINAL` passes e6 and fails here with
+  a message naming the cause; only then the zip button opens. `service_v2.zip` = `files/service-v2/*`
+  (app.py v2: GET / returns `version_service:"2"`, `version_modele`, `empreinte`, `duree_demarrage_s`,
+  `entrainement_au_demarrage:false`; requirements pin numpy 2.4.6 + joblib 1.5.3 beside sklearn/pandas —
+  ⚠ Pyodide 314.0.7's versions, change together) + registre.json + every `.joblib` the registry names
+  (read from Pyodide's FS with the NEW `CodeLab.readFile`) + modele.py. No CSV: the page tells students
+  to delete it from the Space. Step 8 records the v1 server (`w2_avant`, readonly); step 9 = **the
+  downtime watch**: GET / every 2 s during the Space rebuild, dots green/red/blue, stops after three
+  v2 answers, prints the seconds without answer (`w2_apres`, `w2_interruption`). 2.3 names artefact,
+  semver, hash, registry/promotion (MLflow Model Registry named, not installed), reproducibility,
+  downtime (blue-green, rolling; canary → day 3). 2.4 = **seven numeric checks with the PUBLISHED prices,
+  consulted 27 Nov 2026**: HF Spaces CPU Upgrade $0.03/h (huggingface.co/docs/hub/spaces-gpus), Cloud
+  Run request-based $0.000024/vCPU-s, $0.0000025/GiB-s, $0.40/M requests (cloud.google.com/run/pricing),
+  1 $ = 0.91 € stated; A 21.60 $, B 25.92 + 21.60 + 1.35 = 48.87 $, B/A 2.26, break-even 23.9 M
+  calls/month, C 0.51 $; a live calculator; the **note de chiffrage** (`w2_chiffrage`, a syllabus
+  deliverable). 2.5 = the project: CSV upload into Pyodide's FS (`CodeLab.writeFile`, new), `p1`
+  (ns `proj`) artefact + registre, `p2` (ns `projsrv`, empty) = the server file, `service_projet.zip`,
+  a second Space (`w2_projet_url`), the deployment canvas (`w2_canevas`). 2.6 = the three failure cases
+  (Thaïlande/Beede 2020, Zillow 2021, Amazon 2018) as recorded picks (`buildPick`, k1–k3; two defensible
+  answers each). Quiz 8 questions, positions 2 0 3 1 2 0 3 1. Fields: w2_versions, w2_url, w2_avant,
+  w2_apres, w2_interruption, w2_outil, w2_chiffrage, w2_projet_url, w2_canevas (courses.json project §2).
+- **`/shared/codelab.js` gained `CodeLab.readFile(name)` / `writeFile(name, bytes)`** (Pyodide FS) — the
+  only shared change.
+- **Slides**: `_build/j2_slides.py` is the single source → `_private/journee2-slides.html` (48, with
+  solutions), `journee2-slides-enseignant.html` (same, public, unlinked; the page's button switches to
+  it on an instructor device), `journee2-slides.html` (42, no `k-sol`). Hub: a second "▶ Diapositives ·
+  journée 2" button.
+- **Solution**: `_private/j2_solution.py` (12 `ÉTAPE` blocks, `#>`/`#=`/`#$`; steps 1–6 run end to end
+  in a venv with the page's versions; steps 2 + 6 ARE the server's modele.py — step 6 redefines the two
+  test operations for that reason) → `_build/solution_pdf.py 2` → `_private/j2-solution-pas-a-pas.pdf`
+  (the generator now takes the day number). Reference: RF 4.4 MB (3.9 MB from Pyodide), loads in
+  ~10 ms vs 0.7–1.3 s of training; LR 2.3 KB; 1.1.0 (LR, 0.9) promoted in the reference: 14/77 vs 15/77–78.
+- **Tested 27 Nov 2026 headless** (Playwright, `scratchpad/test_j2.py`): prefill without day-1 code,
+  e1–e7 right and wrong (wrong hash, two productions, no columns check, a predire_v2 using a morning
+  global → refused by e7 only), the zip download, the files read back from Pyodide, c1–c7, the
+  calculator, p1/p2, the picks, the prefill WITH a student's day-1 code (X_train/print lines stripped,
+  SEUIL_FINAL carried over), 390 px (no section overflows; the 426 px scrollWidth on every mia506 page
+  comes from theme.js's button in the top bar and was 512 px on journée 1 already — not touched).
+  **The zip the BROWSER made** (Pyodide, Python 3.14 pickles) was unzipped and started with uvicorn
+  under Python 3.12 + the pinned versions: GET / (0.71 s start, no training, version 1.1.0) and
+  POST /predire (0.991, bloquer, version 1.1.0) answered; the 3.9 MB forest artefact loads too.
+  ⚠ A chk6 bug found by the test (the swapped `preparer` called itself → RecursionError on every
+  student) was fixed before commit. **NOT tested: the Space rebuild on Hugging Face and its downtime** —
+  the watch widget is written against the documented behaviour (503/no answer while Building).
+- ⚠ Hugging Face's docs page (27 Nov 2026) says "CPU Basic has no hourly cost, but creating a new Space
+  that runs on compute (Gradio or Docker) requires a paid plan" — if a student cannot create the second
+  Space for the project, that is why; day 1's Spaces already exist and are untouched by it.
+- Not done: an English instructor's guide like `journee1-guide.html` (the French step-by-step PDF and
+  the teacher deck carry the same content); day 3 still to build (data contract of the PROJECT, tests
+  against corrupted data, GitHub Actions deploying the Space).

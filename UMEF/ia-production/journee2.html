@@ -1,0 +1,1245 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<base href="/UMEF/ia-production/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Journée 2 · Enregistrer le modèle dans un fichier, le servir sans le réentraîner, chiffrer ce que cela coûte · MIA 506 · Swiss UMEF</title>
+<meta name="description" content="MIA 506, journée 2 : enregistrer le modèle de fraude dans un fichier qui porte un numéro de version, tenir un registre des versions, remplacer le serveur de la journée 1 par un service qui charge ce fichier, mesurer l’interruption pendant la mise à jour, et chiffrer trois façons de servir le modèle avec de vraies grilles tarifaires.">
+<meta name="theme-color" content="#176B87">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+<link rel="stylesheet" href="/shared/themes/umef-full.css">
+<script src="/shared/theme.js"></script>
+<script src="lang.js"></script>
+<link rel="stylesheet" href="mlops.css">
+<style>
+/* journée 2 only */
+table.fx td,table.fx th{text-align:left;vertical-align:top;}
+.srvout{background:#101820;color:#E6EDF3;border-radius:10px;padding:12px 14px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;margin:12px 0;min-height:44px;max-height:340px;overflow:auto;}
+.codelab{margin:12px 0;}
+.wb input[readonly]{background:var(--accent-pale);font-weight:700;}
+.dots{display:flex;flex-wrap:wrap;gap:3px;margin:10px 0;}
+.dots span{width:12px;height:12px;border-radius:3px;background:#C9D0D9;display:inline-block;}
+.dots span.ok{background:#1D6B3A;}.dots span.ko{background:#B42318;}.dots span.new{background:#176B87;}
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:10px 0;}
+.calc label{display:block;font-size:12px;color:var(--grey);margin-bottom:3px;}
+.calc input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:14px inherit;background:var(--paper);color:var(--ink);}
+.calcout{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px;}
+.calcout div{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+.calcout b{display:block;font-size:22px;color:var(--accent-deep);}
+.calcout small{color:var(--ink-soft);font-size:12.5px;}
+.upl{border:1.5px dashed var(--accent);border-radius:12px;padding:14px;background:var(--accent-pale);margin:10px 0;font-size:14px;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
+</head>
+<body data-course="mia506">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="swiss_umef_logo.jpg" alt="Swiss UMEF">
+    <span class="course">IA EN PRODUCTION · JOURNÉE 2</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" id="slidesLink" href="journee2-slides.html" target="_blank" rel="noopener" style="background:var(--accent);color:#fff;padding:5px 12px;border-radius:99px;">▶ Diapositives</a>
+    <a class="home" href="journee1.html">Journée 1</a>
+    <a class="home" href="index.html">← Cours</a>
+  </div>
+  <div class="topbar-bars">
+    <div class="tbar"><span class="tbl">Cette journée</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
+    <div class="tbar"><span class="tbl">Cours</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================ HOME ============================ -->
+<section class="screen active" id="home">
+  <div class="hero">
+    <div class="eyebrow">Journée 2 · vendredi 27 novembre 2026 · MIA 506</div>
+    <h1>Enregistrer le modèle dans un fichier, le servir sans le réentraîner, <em>et chiffrer ce que cela coûte</em></h1>
+    <p class="sub">Le serveur que vous avez mis en ligne vendredi dernier réentraîne votre modèle à chaque démarrage. Aujourd’hui vous enregistrez le modèle une fois pour toutes dans un fichier qui porte un numéro de version, vous tenez le registre de vos versions, et vous remplacez votre serveur par un service qui charge ce fichier. Vous mesurez ce que la mise à jour coûte en temps d’indisponibilité. L’après-midi, vous calculez avec de vraies grilles tarifaires ce que coûtent trois façons de servir le même modèle, et vous écrivez la note de chiffrage pour un directeur financier.</p>
+    <div class="liveinfo">
+      <span class="li">🕘 <b>09h00–12h15 · 13h30–16h45</b> · quatre blocs de 90 minutes</span>
+      <span class="li">💻 un ordinateur portable et un navigateur · rien à installer</span>
+      <span class="li">🛠 <b>vous écrivez le code dans cette page</b> · votre Space de la journée 1 reste le serveur</span>
+    </div>
+  </div>
+  <div id="presSlot"></div>
+
+  <div class="objectives">
+    <h4>À la fin de la journée 2, vous aurez fait</h4>
+    <ul>
+      <li>Enregistré votre modèle entraîné dans un fichier <code>.joblib</code> qui porte un numéro de version, avec son seuil, la liste de ses variables, la date et les versions des bibliothèques ; rechargé ce fichier et vérifié qu’il donne exactement les mêmes probabilités.</li>
+      <li>Produit une seconde version, tenu un registre des versions (<code>registre.json</code>) avec les résultats de chacune sur la semaine de test, et marqué celle qui est en production.</li>
+      <li>Remplacé le service de la journée 1 par un service qui charge le fichier au lieu d’entraîner, mesuré son temps de démarrage avant et après, et mesuré combien de secondes votre serveur a été indisponible pendant la mise à jour.</li>
+      <li>Calculé, avec les grilles tarifaires publiées de Hugging Face et de Google Cloud, le coût mensuel de trois façons de servir le même modèle, et trouvé le volume à partir duquel une machine louée en permanence revient moins cher qu’un paiement à l’appel.</li>
+      <li>Fait la même chose pour votre projet : un artefact versionné, un registre, un service en ligne, et le canevas de déploiement de votre système.</li>
+    </ul>
+  </div>
+
+  <div class="materials">
+    <h4>Avant de commencer, cochez</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Connecté·e sur ce site</b> avec le bouton en bas à droite, avec le même nom que vendredi dernier.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><b>Votre Space de la journée 1 est en ligne</b> : ouvrez son adresse dans un onglet ; il doit répondre un texte JSON qui commence par <code>"service": "jappo-fraude"</code>. S’il affiche « Sleeping », cliquez sur « Restart ». Si vous n’avez pas de Space, créez-en un ce matin avec le zip de la journée 1 ; l’enseignant vous aide pendant le bloc 1.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><b>Le code de la journée 1 sur cet ordinateur</b> : si vous avez écrit votre modèle sur ce même ordinateur, la page le retrouve et le remet dans les fenêtres de ce matin. Sinon, la page vous donne une solution complète : vous la remplacez par la vôtre si vous l’avez gardée.</span></div>
+    <div class="mi" data-read="r4"><span class="box">✓</span><span><b>Pour l’après-midi</b> : les données de votre projet (un fichier CSV de moins de 20 Mo), ou la décision d’utiliser Jàppo Pay comme cas d’attente.</span></div>
+  </div>
+
+  <p style="text-align:center;margin:22px 0 0;"><a class="btn ghost small" href="journee2-slides.html" target="_blank" rel="noopener">Ouvrir les diapositives de la journée, étape par étape ↗</a> <a class="btn ghost small" href="files/service-v2/app.py" target="_blank" rel="noopener">Lire app.py, le service version 2 ↗</a></p>
+
+  <div class="section-list" id="sectionList"></div>
+
+  <div class="foot">
+    <a class="backlink" href="index.html">← Page du cours</a>
+    <div style="margin-top:10px;"><a href="#" id="resetLink" style="color:var(--grey);">réinitialiser ma progression de la journée 2 sur cet appareil</a></div>
+  </div>
+</section>
+
+<!-- the data file goes into Python's own file system once, as on day 1 -->
+<script type="text/python" id="j2setup">
+import os
+if not os.path.exists("jappo_transactions.csv"):
+    from pyodide.http import open_url
+    with open("jappo_transactions.csv", "w") as _f:
+        _f.write(open_url("files/jappo_transactions.csv").read())
+</script>
+
+<!-- ============================ 2.1 ============================ -->
+<section class="screen" id="s1">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.1 · Bloc 1</div><span class="mode m-do">🛠 Atelier · 90 min</span><h2>Enregistrer votre modèle dans un fichier qui porte une version</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi un fichier</span>
+    <p>Vendredi dernier, votre serveur a réentraîné votre modèle à chaque démarrage : il a lu 24 000 opérations, entraîné une forêt ou une régression, puis seulement il a commencé à répondre. Cela a trois défauts. Le démarrage est lent : le temps que <code>GET /</code> appelait <code>duree_demarrage_s</code>. Le résultat peut changer d’un démarrage à l’autre si les données ou une bibliothèque changent : deux serveurs peuvent répondre différemment à la même opération sans que personne le sache. Et personne ne peut dire <b>quel</b> modèle répond : il n’a pas de nom.</p>
+    <p>La règle en production : on entraîne <b>une fois</b>, on enregistre le modèle entraîné dans un fichier, on donne à ce fichier un <b>numéro de version</b>, et le service charge ce fichier. Ce fichier s’appelle un <b>artefact</b> : le résultat d’un entraînement, figé, que l’on peut copier, comparer et remettre en service. Vous en fabriquez un maintenant, avec votre modèle de vendredi.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Comment marchent les fenêtres de code</span>
+    <ul>
+      <li>Comme vendredi : vous écrivez dans la fenêtre, vous cliquez sur <b>▶ Exécuter</b> (ou Ctrl + Entrée), la page vérifie et dit ce qui manque. Les fenêtres de cette section partagent leurs variables : ce qui est créé dans l’une existe dans la suivante.</li>
+      <li>Les fenêtres 2 et 3 contiennent <b>votre code de la journée 1</b> si vous l’avez écrit sur cet ordinateur, sinon la solution de référence. Dans les deux cas, lisez-le avant d’exécuter : c’est lui que vous allez enregistrer.</li>
+      <li>Le code écrit ici tourne dans votre navigateur. Il écrit des fichiers dans un disque qui n’existe que dans la page ; le bouton de l’étape 7 les télécharge sur votre ordinateur.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 1 · le code est donné</span>
+    <h3>Chargez les données et découpez-les comme vendredi</h3>
+    <p>Exécutez sans rien changer. Ce sont les étapes 1 et 4 de la journée 1 : les opérations du 1er au 24 octobre servent à entraîner, celles du 25 au 30 à tester. Les deux opérations d’essai de vendredi sont redéfinies ici.</p>
+    <div class="codelab" id="e1" data-lang="python" data-ns="j2" data-step="étape 1" data-setup="j2setup">import pandas as pd
+import numpy as np
+import time, json, hashlib, datetime, os
+import sklearn, joblib
+
+df = pd.read_csv("jappo_transactions.csv", parse_dates=["date_heure"])
+COUPURE = pd.Timestamp("2026-10-25")
+train = df[df["date_heure"] &lt; COUPURE]
+test = df[df["date_heure"] &gt;= COUPURE]
+print(len(train), "opérations pour entraîner,", len(test), "pour tester,", int(test["fraude"].sum()), "fraudes dans le test")
+
+# Les deux opérations d'essai de la journée 1
+suspecte = {"date_heure": "2026-11-20 03:12:00", "type_operation": "envoi", "montant_fcfa": 180000,
+            "solde_avant_fcfa": 185000, "anciennete_compte_jours": 900, "nb_operations_24h": 6,
+            "nouveau_beneficiaire": 1, "nouvel_appareil": 1}
+ordinaire = {"date_heure": "2026-11-20 11:40:00", "type_operation": "paiement_marchand", "montant_fcfa": 3500,
+             "solde_avant_fcfa": 42000, "anciennete_compte_jours": 650, "nb_operations_24h": 2,
+             "nouveau_beneficiaire": 0, "nouvel_appareil": 0}
+print("Versions :", "python", __import__("sys").version.split()[0], "· scikit-learn", sklearn.__version__, "· pandas", pd.__version__, "· joblib", joblib.__version__)</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 2 · votre code de vendredi</span>
+    <h3>Votre fonction <code>preparer()</code>, et rien d’autre</h3>
+    <p>Cette fenêtre doit contenir <b>seulement</b> la fonction <code>preparer()</code> (et les <code>import</code> dont elle a besoin). Pas de ligne qui calcule <code>X_train</code> : le serveur de cet après-midi importera cette fonction sans avoir les données. Si la page a retrouvé votre code de vendredi, elle a retiré ces lignes ; vérifiez. Si vous aviez une autre fonction, remplacez le texte par la vôtre.</p>
+    <div class="codelab" id="e2" data-lang="python" data-ns="j2" data-step="étape 2" data-check='{"py":"chk2"}'
+      data-hint="La fenêtre doit définir <code>preparer(d)</code> et rien de plus. Elle doit marcher sur le fichier et sur une seule opération, comme vendredi."
+      data-ok="Votre fonction prépare les variables, sur le fichier comme sur une opération seule. C’est elle qui part sur le serveur.">PREFILL_E2</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 3 · votre code de vendredi, chronométré</span>
+    <h3>Entraînez votre modèle et mesurez le temps que cela prend</h3>
+    <p>Le code de votre modèle de vendredi est entre les deux lignes de chronomètre. Exécutez. <code>DUREE_ENTRAINEMENT</code> est le temps, en secondes, que votre serveur de la journée 1 paie à chaque démarrage. Écrivez votre seuil de vendredi dans <code>SEUIL_FINAL</code> (la page l’a repris si elle l’a trouvé).</p>
+    <div class="codelab" id="e3" data-lang="python" data-ns="j2" data-step="étape 3" data-check='{"py":"chk3"}'
+      data-hint="<code>modele</code> doit être entraîné (<code>.fit</code>), <code>SEUIL_FINAL</code> doit être un nombre entre 0 et 1, et <code>DUREE_ENTRAINEMENT</code> doit être calculée avec <code>time.perf_counter()</code> autour de l’entraînement."
+      data-ok="Modèle entraîné et chronométré. Comparez cette durée au temps de chargement que vous mesurerez à l’étape 4.">PREFILL_E3</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 4 · à vous</span>
+    <h3>Enregistrez l’artefact, puis rechargez-le et vérifiez qu’il répond pareil</h3>
+    <p>Un artefact n’est pas seulement le modèle. Il emporte tout ce qu’il faut pour le servir et pour savoir d’où il vient : le modèle entraîné, le seuil de décision, la liste des variables <b>dans l’ordre</b>, un numéro de version, la date, les versions des bibliothèques. Mettez tout cela dans un dictionnaire et enregistrez-le avec <code>joblib.dump</code>. Le nom du fichier porte la version : <code>modele-1.0.0.joblib</code>.</p>
+    <p>Puis rechargez le fichier avec <code>joblib.load</code>, chronométrez ce chargement, et vérifiez que le modèle rechargé donne <b>exactement</b> les mêmes probabilités que celui qui est en mémoire sur toute la semaine de test. Enfin calculez l’<b>empreinte</b> du fichier : le SHA-256 de ses octets, un code de 64 caractères qui change dès qu’un octet change. C’est ainsi qu’un serveur prouvera plus tard qu’il sert bien ce fichier-là.</p>
+    <div class="codelab" id="e4" data-lang="python" data-ns="j2" data-step="étape 4" data-check='{"py":"chk4"}'
+      data-hint="<code>joblib.dump(objet, nom_de_fichier)</code> écrit, <code>joblib.load(nom_de_fichier)</code> relit. <code>hashlib.sha256(open(FICHIER, &quot;rb&quot;).read()).hexdigest()</code> donne l’empreinte. <code>np.abs(a - b).max()</code> donne le plus grand écart entre deux colonnes de probabilités."
+      data-ok="L’artefact est enregistré, rechargé, identique au modèle en mémoire, et il a une empreinte. Comparez DUREE_CHARGEMENT à DUREE_ENTRAINEMENT.">VERSION = "1.0.0"
+FICHIER = "modele-" + VERSION + ".joblib"
+
+artefact = {
+    "modele": modele,
+    "seuil": SEUIL_FINAL,
+    "variables": list(X_train.columns),
+    "version": VERSION,
+    "entraine_le": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+    "versions": {"scikit-learn": sklearn.__version__, "pandas": pd.__version__, "numpy": np.__version__, "joblib": joblib.__version__},
+}
+...                                # enregistrez le dictionnaire dans FICHIER avec joblib.dump
+TAILLE_KO = ...                    # la taille du fichier en kilo-octets : os.path.getsize(FICHIER) / 1000
+EMPREINTE = ...                    # le SHA-256 du fichier, en hexadécimal (64 caractères)
+
+t0 = time.perf_counter()
+charge = ...                       # relisez le fichier avec joblib.load
+DUREE_CHARGEMENT = time.perf_counter() - t0
+
+p_memoire = modele.predict_proba(X_test)[:, 1]
+p_fichier = ...                    # les probabilités du modèle rechargé : charge["modele"]...
+ECART_MAX = ...                    # le plus grand écart entre les deux, en valeur absolue
+
+print("Fichier", FICHIER, ":", round(TAILLE_KO), "ko · empreinte", EMPREINTE[:16], "…")
+print("Entraîner :", round(DUREE_ENTRAINEMENT, 3), "s · charger :", round(DUREE_CHARGEMENT, 3), "s · écart maximal :", ECART_MAX)</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 5 · à vous</span>
+    <h3>Produisez une seconde version, puis tenez le registre et marquez celle qui est en production</h3>
+    <p>En production, un modèle est remplacé plusieurs fois par an. Il faut donc savoir, à tout moment, quelles versions existent, ce que chacune vaut, et laquelle répond aux clients. Entraînez un second modèle qui diffère du premier par au moins une chose : un autre algorithme (forêt contre régression logistique), un autre nombre d’arbres, un autre seuil. (Une variable en plus demanderait aussi de refaire <code>X_train</code> et <code>X_test</code> : gardez cela pour chez vous.) Enregistrez-le dans <code>modele-1.1.0.joblib</code>.</p>
+    <p>Puis écrivez le <b>registre</b> : un fichier <code>registre.json</code>, une liste avec une entrée par version. Chaque entrée dit : la version, le fichier, son empreinte, la date, le seuil, le nombre de fraudes bloquées et de clients honnêtes bloqués sur la semaine de test à ce seuil, et le <b>stade</b> : <code>"production"</code> pour la version qui répond aux clients, <code>"archive"</code> pour les autres. Une seule version est en production. La fonction <code>promouvoir(version)</code> change de version en production et réécrit le fichier.</p>
+    <div class="codelab" id="e5" data-lang="python" data-ns="j2" data-step="étape 5" data-check='{"py":"chk5"}'
+      data-hint="Chaque entrée du registre est un dictionnaire ; la liste s’écrit avec <code>json.dump(REGISTRE, open(&quot;registre.json&quot;, &quot;w&quot;), indent=1)</code>. Les comptes se calculent comme à l’étape 7 de vendredi, avec le modèle et le seuil de chaque version. La page recalcule chaque compte et chaque empreinte : ils doivent correspondre au fichier."
+      data-ok="Deux versions enregistrées, un registre juste, une seule version en production. Le registre est ce que le serveur lira pour savoir quel fichier charger.">from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+# Le second modèle : changez au moins une chose par rapport au premier (ici : une régression logistique)
+modele_b = Pipeline([("echelle", StandardScaler()), ("lr", LogisticRegression(class_weight="balanced", max_iter=1000))])
+modele_b.fit(X_train, y_train)
+SEUIL_B = 0.9                      # son seuil : lisez sa table comme à l'étape 8 de vendredi, au plus 100 clients honnêtes bloqués
+
+def compter(m, seuil):
+    """Les fraudes bloquées et les clients honnêtes bloqués de ce modèle à ce seuil, sur la semaine de test."""
+    p = m.predict_proba(X_test)[:, 1]
+    b = p &gt;= seuil
+    return int((b &amp; (y_test == 1)).sum()), int((b &amp; (y_test == 0)).sum())
+
+def enregistrer(m, seuil, version):
+    """Écrit l'artefact modele-&lt;version&gt;.joblib et rend l'entrée du registre, stade "archive"."""
+    fichier = "modele-" + version + ".joblib"
+    art = {"modele": m, "seuil": seuil, "variables": list(X_train.columns), "version": version,
+           "entraine_le": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+           "versions": {"scikit-learn": sklearn.__version__, "pandas": pd.__version__, "numpy": np.__version__, "joblib": joblib.__version__}}
+    ...                            # enregistrez art dans fichier
+    fraudes, honnetes = compter(m, seuil)
+    return {"version": version, "fichier": fichier,
+            "empreinte": ...,      # le SHA-256 du fichier
+            "entraine_le": art["entraine_le"], "seuil": seuil,
+            "fraudes_bloquees": fraudes, "honnetes_bloques": honnetes,
+            "modele": type(m.steps[-1][1] if hasattr(m, "steps") else m).__name__,
+            "stade": "archive"}
+
+REGISTRE = [enregistrer(modele, SEUIL_FINAL, "1.0.0"), enregistrer(modele_b, SEUIL_B, "1.1.0")]
+
+def promouvoir(version):
+    """Met cette version en production et toutes les autres en archive, puis réécrit registre.json."""
+    for e in REGISTRE:
+        ...
+    with open("registre.json", "w") as f:
+        json.dump(REGISTRE, f, indent=1)
+
+promouvoir(...)                    # la version que vous mettez en production, et pourquoi : voir le champ sous cette fenêtre
+print(pd.DataFrame(REGISTRE)[["version", "modele", "seuil", "fraudes_bloquees", "honnetes_bloques", "stade"]].to_string(index=False))</div>
+    <div class="wb" data-board="Quelle version en production, et pourquoi|w2_versions">
+      <div class="wq"><span class="qn">✍</span>Écrivez ce qui change entre vos versions 1.0.0 et 1.1.0, les deux comptes de chacune sur la semaine de test (fraudes bloquées, clients honnêtes bloqués), la taille de chaque fichier en kilo-octets, et laquelle vous mettez en production. Donnez la raison avec les nombres.</div>
+      <textarea data-work="w2_versions" data-worklabel="Mes deux versions, leurs résultats, et celle que je mets en production" placeholder="p. ex. 1.0.0 : forêt aléatoire de 100 arbres, seuil 0,4 : 15 fraudes sur 57, 77 clients honnêtes bloqués, 4 400 ko. 1.1.0 : régression logistique, seuil 0,9 : 14 fraudes, 77 clients, 2 ko. Je mets … en production parce que…"></textarea>
+    </div>
+  </div>
+
+  <div class="sec-status" data-sec="s1" data-need="Les étapes 2 à 5 vérifiées et le champ des versions terminent cette section."></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>← Menu</button>
+    <button class="btn" data-next="s2">Suite : bloc 2 · le service qui charge le fichier →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.2 ============================ -->
+<section class="screen" id="s2">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.2 · Bloc 2</div><span class="mode m-do">🛠 Atelier · 75 min</span><h2>Remplacer votre serveur par un service qui charge le fichier</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi changer le serveur</span>
+    <p>Votre Space de la journée 1 contient <code>modele.py</code>, qui lit les données et entraîne à chaque démarrage, et <code>app.py</code>, qui l’importe. Vous allez remplacer les deux : un nouveau <code>modele.py</code> qui lit <code>registre.json</code>, charge le fichier marqué <code>production</code> et définit <code>predire_v2()</code> ; et un nouveau <code>app.py</code>, déjà écrit, qui dit dans <code>GET /</code> <b>quelle version</b> du modèle répond, son empreinte, et combien de temps a pris le démarrage. Les données n’ont plus besoin d’être sur le serveur.</p>
+    <p>La mise à jour d’un service qui tourne est le moment le plus risqué de sa vie : pendant qu’il se reconstruit, il ne répond pas. Vous allez mesurer cette interruption à la seconde près.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 6 · à vous</span>
+    <h3>Écrivez <code>predire_v2()</code>, qui charge l’artefact de production depuis le registre</h3>
+    <p>Cette fenêtre, avec votre <code>preparer()</code> de l’étape 2, <b>est</b> le fichier <code>modele.py</code> du nouveau serveur. Elle ne doit donc utiliser que ce que le serveur aura : les fichiers <code>registre.json</code> et <code>modele-*.joblib</code>, la fonction <code>preparer()</code>, les bibliothèques. Pas <code>modele</code>, pas <code>X_test</code>, pas <code>train</code> : ces variables n’existent pas sur le serveur. L’étape 7 vérifie ce point en exécutant votre fichier dans un espace vide.</p>
+    <p>Trois choses de plus que vendredi : la fonction lit le seuil et les variables <b>dans l’artefact</b>, pas dans une variable globale ; elle vérifie que les colonnes préparées sont exactement celles de l’artefact, dans le même ordre, et refuse sinon avec un message ; et sa réponse contient la <b>version</b> qui a répondu, pour que chaque décision soit traçable.</p>
+    <div class="codelab" id="e6" data-lang="python" data-ns="j2" data-step="étape 6" data-check='{"py":"chk6"}'
+      data-hint="L’entrée de production : la seule du registre dont <code>stade</code> vaut <code>&quot;production&quot;</code>. <code>ART = joblib.load(entree[&quot;fichier&quot;])</code>, puis <code>ART[&quot;modele&quot;]</code>, <code>ART[&quot;seuil&quot;]</code>, <code>ART[&quot;variables&quot;]</code>. Comparez <code>list(X.columns)</code> à <code>ART[&quot;variables&quot;]</code>."
+      data-ok="predire_v2() répond avec la version, refuse une opération incomplète et une préparation qui ne correspond pas à l’artefact. Passez à l’étape 7 : la page va exécuter votre fichier comme le serveur.">import json, joblib
+import pandas as pd
+
+VARIABLES_BRUTES = ["date_heure", "type_operation", "montant_fcfa", "solde_avant_fcfa",
+                    "anciennete_compte_jours", "nb_operations_24h", "nouveau_beneficiaire", "nouvel_appareil"]
+
+def charger_production(chemin_registre="registre.json"):
+    """Lit le registre, trouve l'entrée en production, charge et rend l'artefact (le dictionnaire enregistré)."""
+    with open(chemin_registre) as f:
+        registre = json.load(f)
+    entree = ...                   # l'entrée dont le stade est "production"
+    return joblib.load(entree["fichier"])
+
+ART = charger_production()
+
+def predire_v2(operation):
+    manquants = [c for c in VARIABLES_BRUTES if c not in operation]
+    if manquants:
+        return {"erreur": "champs manquants : " + ", ".join(manquants), "version": ART["version"]}
+    X = preparer(pd.DataFrame([operation]))
+    if list(X.columns) != ART["variables"]:
+        return ...                 # {"erreur": "variables inattendues : …", "version": …} : le modèle ne doit jamais recevoir d'autres colonnes
+    p = ...                        # la probabilité de fraude, en float, avec le modèle de l'artefact
+    return {"probabilite_fraude": round(p, 3),
+            "decision": ...,       # "bloquer" si p atteint le seuil DE L'ARTEFACT, sinon "accepter"
+            "version": ART["version"]}
+
+suspecte = {"date_heure": "2026-11-20 03:12:00", "type_operation": "envoi", "montant_fcfa": 180000,
+            "solde_avant_fcfa": 185000, "anciennete_compte_jours": 900, "nb_operations_24h": 6,
+            "nouveau_beneficiaire": 1, "nouvel_appareil": 1}
+ordinaire = {"date_heure": "2026-11-20 11:40:00", "type_operation": "paiement_marchand", "montant_fcfa": 3500,
+             "solde_avant_fcfa": 42000, "anciennete_compte_jours": 650, "nb_operations_24h": 2,
+             "nouveau_beneficiaire": 0, "nouvel_appareil": 0}
+print(predire_v2(suspecte))
+print(predire_v2(ordinaire))
+assert predire_v2(suspecte)["decision"] == "bloquer"
+assert predire_v2(ordinaire)["decision"] == "accepter"
+assert "erreur" in predire_v2({"type_operation": "envoi"})
+assert predire_v2(suspecte)["version"] == ART["version"]
+print("Tous les tests passent · version servie :", ART["version"])</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 7 · la page teste votre fichier, puis vous le téléchargez</span>
+    <h3>Exécutez <code>modele.py</code> dans un espace vide, comme le fera le serveur</h3>
+    <p>Le bouton assemble votre étape 2 et votre étape 6 en un fichier <code>modele.py</code>, l’affiche dans la fenêtre ci-dessous et l’exécute dans un espace <b>vide</b> : aucune variable de ce matin n’y existe, seulement les fichiers que vous avez écrits. C’est exactement la situation du serveur. Si cela échoue, ne corrigez pas ici : corrigez l’étape 2 ou 6 et recommencez.</p>
+    <div class="btn-row"><button class="btn" id="asmBtn">Assembler et tester modele.py</button><span id="asmMsg" style="font-size:13.5px;color:var(--ink-soft);"></span></div>
+    <div class="codelab" id="e7" data-lang="python" data-ns="j2srv" data-step="étape 7" data-check='{"py":"chk7"}'
+      data-ok="Votre modele.py tourne seul, charge l’artefact de production et répond. Téléchargez le service."># Cliquez sur « Assembler et tester modele.py » : votre fichier apparaît ici.</div>
+    <p>Quand la fenêtre est verte, téléchargez le service : le bouton met dans <code>service_v2.zip</code> votre <code>modele.py</code>, votre <code>registre.json</code>, vos deux fichiers <code>.joblib</code>, et quatre fichiers donnés : <code>app.py</code> version 2 (<a href="files/service-v2/app.py" target="_blank" rel="noopener">lire ↗</a>), <code>requirements.txt</code> (les mêmes versions que cette page, plus joblib et numpy épinglés : un artefact ne se recharge sûrement qu’avec les versions qui l’ont écrit), <code>Dockerfile</code> et <code>README.md</code>.</p>
+    <div class="btn-row"><button class="btn" id="zipBtn" disabled>Télécharger service_v2.zip</button><span id="zipMsg" style="font-size:13.5px;color:var(--ink-soft);"></span></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 8 · avant de toucher au serveur</span>
+    <h3>Notez l’état de votre serveur de la journée 1</h3>
+    <div class="wb">
+      <div class="wq"><span class="qn">🌐</span>L’adresse de mon serveur (celle de vendredi) :</div>
+      <input type="text" data-work="w2_url" data-worklabel="L’adresse de mon serveur" id="srvUrl" placeholder="https://votre-nom-jappo-fraude.hf.space" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="btn-row"><button class="btn small" id="srvBefore">Lire l’état actuel (version 1)</button><button class="btn small ghost" id="srvSus">Envoyer l’opération suspecte</button></div>
+    <pre class="srvout" id="srvOut">Les réponses du serveur s’affichent ici.</pre>
+    <div class="wb">
+      <div class="wq"><span class="qn">★</span>Le serveur avant la mise à jour (la page le remplit) :</div>
+      <input type="text" data-work="w2_avant" data-worklabel="Le serveur avant la mise à jour : modèle, démarrage, version" readonly placeholder="Cliquez sur « Lire l’état actuel ».">
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 9 · la mise à jour, chronométrée</span>
+    <h3>Mettez à jour votre Space et mesurez combien de temps il ne répond pas</h3>
+    <ol>
+      <li>Dézippez <code>service_v2.zip</code> sur votre ordinateur.</li>
+      <li>Ici, cliquez sur <b>Commencer la mesure</b> : la page appelle votre serveur toutes les deux secondes et note s’il répond, et avec quelle version.</li>
+      <li>Dans votre Space, onglet <b>Files</b> : supprimez <code>jappo_transactions.csv</code> (le menu ⋮ du fichier, « Delete ») : le service n’a plus besoin des données. Puis « Upload files » : déposez les huit fichiers du zip, qui remplacent <code>app.py</code>, <code>modele.py</code>, <code>requirements.txt</code>, <code>Dockerfile</code> et <code>README.md</code>. « Commit changes to main ».</li>
+      <li>Regardez les points ci-dessous se remplir pendant que le Space reconstruit (« Building », puis « Running »). La mesure s’arrête seule quand la version 2 a répondu trois fois de suite.</li>
+    </ol>
+    <div class="btn-row"><button class="btn small" id="watchGo">Commencer la mesure</button><button class="btn small ghost" id="watchStop">Arrêter</button><span id="watchMsg" style="font-size:13.5px;color:var(--ink-soft);"></span></div>
+    <div class="dots" id="dots"></div>
+    <pre class="srvout" id="watchOut">Un point toutes les deux secondes : vert = le serveur de vendredi répond, rouge = pas de réponse ou erreur, bleu = la version 2 répond.</pre>
+    <div class="btn-row"><button class="btn small" id="srvAfter">Lire le nouveau serveur (version 2)</button><button class="btn small ghost" id="srvSus2">Envoyer l’opération suspecte</button></div>
+    <pre class="srvout" id="srvOut2">Les réponses du nouveau serveur s’affichent ici.</pre>
+    <div class="wb">
+      <div class="wq"><span class="qn">★</span>Le serveur après la mise à jour (la page le remplit) :</div>
+      <input type="text" data-work="w2_apres" data-worklabel="Le serveur après la mise à jour : version du modèle, empreinte, démarrage" readonly placeholder="Cliquez sur « Lire le nouveau serveur » quand le Space affiche Running.">
+    </div>
+    <div class="wb" data-board="L’interruption de service|w2_interruption">
+      <div class="wq"><span class="qn">✍</span>Écrivez : (1) la durée du démarrage avant et après, en secondes ; (2) combien de secondes votre serveur n’a pas répondu pendant la mise à jour, et à quoi la page l’a vu ; (3) ce qu’un client de Jàppo Pay aurait vécu pendant ces secondes ; (4) comment vous feriez pour mettre à jour sans que personne s’en aperçoive (votre idée, avant qu’on la nomme en 2.3).</div>
+      <textarea data-work="w2_interruption" data-worklabel="La mise à jour : démarrage avant et après, durée de l’interruption, ce que le client a vécu, comment faire sans interruption" placeholder="p. ex. 1. Démarrage : 6,2 s avant (entraînement), 0,3 s après (chargement). 2. Le serveur n’a pas répondu pendant 170 s : 85 points rouges. 3. Chaque paiement de ces 170 s aurait été… 4. Je garderais l’ancien serveur allumé pendant que le nouveau se construit, puis…"></textarea>
+    </div>
+  </div>
+
+  <div class="sec-status" data-sec="s2" data-need="Les étapes 6 et 7 vérifiées, l’adresse, les deux états du serveur et le champ de l’interruption terminent cette section."></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Retour</button>
+    <button class="btn" data-next="s3">Suite : la mise en commun →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.3 ============================ -->
+<section class="screen" id="s3">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.3 · Bloc 2</div><span class="mode m-co">🔁 Mise en commun · 15 min</span><h2>Ce que vous avez fait ce matin porte un nom</h2></div>
+
+  <div class="card">
+    <span class="label case">À l’écran · les résultats de la classe</span>
+    <p>L’enseignant affiche les champs « quelle version en production » et « l’interruption de service », sans les noms. La classe compare : qui a mis la forêt en production, qui la régression, et pour quelle raison ; combien de secondes chaque serveur a été indisponible.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Six choses que vous venez de faire, et leur nom</span>
+    <div class="tblwrap"><table class="fx">
+      <tr><th>Ce que vous avez fait</th><th>Le nom</th><th>Pourquoi cela compte en production</th></tr>
+      <tr><td>Vous avez enregistré le modèle entraîné dans un fichier, avec son seuil, ses variables, sa date et les versions des bibliothèques</td><td>Un <b>artefact</b> de modèle</td><td>Le même fichier peut être copié sur dix serveurs, comparé, archivé et remis en service. Sans lui, « le modèle » n’est qu’un état de la mémoire d’un ordinateur.</td></tr>
+      <tr><td>Vous avez nommé les fichiers 1.0.0 et 1.1.0</td><td>Le <b>versionnage sémantique</b> : majeure.mineure.correctif</td><td>Une règle partagée pour dire ce qui change : une majeure quand les entrées changent (le système de paiement doit s’adapter), une mineure pour un nouveau modèle avec les mêmes entrées, un correctif pour une erreur réparée.</td></tr>
+      <tr><td>Vous avez calculé le SHA-256 du fichier</td><td>L’<b>empreinte</b> (<i>hash</i>)</td><td>Deux fichiers qui ont la même empreinte sont identiques octet par octet. Le serveur peut prouver qu’il sert bien la version 1.1.0 du registre, et pas une copie modifiée.</td></tr>
+      <tr><td>Vous avez tenu <code>registre.json</code> avec un stade par version et une fonction <code>promouvoir()</code></td><td>Le <b>registre de modèles</b> et la <b>promotion</b> entre stades</td><td>C’est ce que fait l’outil <b>MLflow</b> (Model Registry) : un registre central, une entrée par version avec ses mesures, un alias ou un stade qui dit laquelle est servie ; la promotion est un clic ou un appel, et elle est tracée (qui, quand). Vous l’avez fait à la main pour en voir chaque pièce ; en entreprise, on installe l’outil.</td></tr>
+      <tr><td>Vous avez épinglé joblib et numpy dans <code>requirements.txt</code>, en plus de scikit-learn et pandas</td><td>La <b>reproductibilité</b> de l’environnement</td><td>Un artefact est écrit par une version précise d’une bibliothèque. Rechargé avec une autre, il peut ne pas se lire, ou répondre autrement. Le conteneur fige ces versions ; le registre les note.</td></tr>
+      <tr><td>Vous avez mesuré les secondes pendant lesquelles le Space ne répondait pas</td><td>L’<b>interruption de service</b> lors d’un déploiement</td><td>Un hébergeur qui reconstruit le conteneur sur place coupe le service. Les méthodes qui l’évitent : le déploiement <b>bleu-vert</b> (deux serveurs, on bascule l’adresse quand le nouveau répond), le déploiement <b>progressif</b> (on remplace les machines une à une). La journée 3 y ajoute le déploiement <i>canary</i>, où le nouveau modèle ne reçoit d’abord qu’une petite part du trafic.</td></tr>
+    </table></div>
+    <div class="srcnote">⚠ <b>Une limite de ce matin.</b> Votre registre vit dans un fichier à côté du modèle, et c’est vous qui l’avez écrit. En entreprise, le registre est un service à part, avec des droits d’accès : un data scientist enregistre une version, une autre personne la promeut, et le serveur de production ne peut lire que les versions promues. Votre fichier montre les pièces ; il ne montre pas ces droits.</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">À vous · 5 min</span>
+    <div class="wb" data-board="Ce qu’un outil devrait faire à votre place|w2_outil">
+      <div class="wq"><span class="qn">✍</span>Écrivez trois choses que vous avez faites à la main ce matin et qu’un outil de registre devrait faire à votre place, avec pour chacune ce qui se passe si une personne oublie de la faire.</div>
+      <textarea data-work="w2_outil" data-worklabel="Trois choses faites à la main qu’un registre devrait faire, et ce qui arrive si on les oublie" placeholder="p. ex. 1. Calculer et vérifier l’empreinte : si on l’oublie, un fichier modifié peut être servi sans que personne le voie. 2. … 3. …"></textarea>
+    </div>
+  </div>
+
+  <div class="sec-status" data-sec="s3" data-need="Le champ termine cette section."></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Retour</button>
+    <button class="btn" data-next="s4">Suite : bloc 3 · ce que cela coûte →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.4 ============================ -->
+<section class="screen" id="s4">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.4 · Bloc 3</div><span class="mode m-do">🛠 Atelier · 90 min</span><h2>Chiffrer trois façons de servir le même modèle, avec de vraies grilles tarifaires</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi chiffrer</span>
+    <p>Vendredi, vous avez calculé le nombre de machines de Jàppo Pay avec un prix fictif de 0,05 € par heure. Aujourd’hui, vous refaites le calcul avec les prix que les hébergeurs publient, pour trois façons de servir le même modèle : une machine louée en permanence, un service payé à l’appel, et un calcul de nuit par lots. Le résultat est une <b>note de chiffrage</b> d’une page pour le directeur financier de Jàppo Pay : trois options, un coût mensuel chacune, une recommandation. C’est un des livrables du cours.</p>
+  </div>
+
+  <div class="card">
+    <span class="label idea">Les grilles tarifaires, consultées le 27 novembre 2026</span>
+    <div class="tblwrap"><table class="fx">
+      <tr><th>Façon de servir</th><th>Offre</th><th>Ce qu’on paie</th><th>Prix publié</th><th>Source</th></tr>
+      <tr><td><b>A · Une machine louée en permanence</b></td><td>Hugging Face Spaces, matériel « CPU Upgrade » : 8 processeurs virtuels, 32 Go de mémoire</td><td>Chaque heure où la machine est allumée, qu’elle serve ou non, facturée à la minute</td><td>0,03 $ par heure</td><td><a href="https://huggingface.co/docs/hub/spaces-gpus" target="_blank" rel="noopener">huggingface.co/docs/hub/spaces-gpus ↗</a></td></tr>
+      <tr><td rowspan="3"><b>B · Un service payé à l’appel</b> (<i>serverless</i> : l’hébergeur allume et éteint les machines selon le trafic, on ne paie que le temps de calcul des appels)</td><td rowspan="3">Google Cloud Run, facturation « à la requête », région de niveau 1 (par exemple la Belgique)</td><td>Le temps de processeur pendant les appels</td><td>0,000024 $ par processeur-seconde</td><td rowspan="3"><a href="https://cloud.google.com/run/pricing" target="_blank" rel="noopener">cloud.google.com/run/pricing ↗</a></td></tr>
+      <tr><td>La mémoire pendant les appels</td><td>0,0000025 $ par gibioctet-seconde</td></tr>
+      <tr><td>Le nombre d’appels</td><td>0,40 $ par million</td></tr>
+      <tr><td><b>C · Un calcul de nuit par lots</b></td><td>La même machine « CPU Upgrade », allumée pour le calcul puis éteinte</td><td>Les minutes où elle est allumée</td><td>0,03 $ par heure, à la minute</td><td>même source que A</td></tr>
+      <tr><td>Pour comparer</td><td>AWS Lambda (un autre service à l’appel)</td><td>0,20 $ par million d’appels + 0,0000166667 $ par Go-seconde</td><td colspan="2"><a href="https://aws.amazon.com/lambda/pricing/" target="_blank" rel="noopener">aws.amazon.com/lambda/pricing ↗</a> — non utilisé dans les calculs</td></tr>
+    </table></div>
+    <div class="srcnote">Les prix sont en dollars américains, hors taxes. Nous convertissons à <b>1 $ = 0,91 €</b> (le taux de la Banque centrale européenne à la mi-novembre 2026 était d’environ 1,10 $ pour 1 €). Nous ignorons les paliers gratuits (Cloud Run offre les premiers 180 000 processeur-secondes et 2 millions d’appels par mois) et les remises d’engagement. Le matériel « CPU basic » de Hugging Face, gratuit, ne convient pas à un service d’entreprise : il est mis en veille après 48 heures sans visite et rien n’en garantit la disponibilité. Vérifiez les prix sur les pages liées avant de les réutiliser : ils changent.</div>
+  </div>
+
+  <div class="card">
+    <span class="label case">Le cas · Jàppo Pay (fictif), les mêmes chiffres que vendredi</span>
+    <div class="tblwrap"><table class="fx">
+      <tr><th></th><th>Service 1 · le contrôle de fraude, en temps réel</th><th>Service 2 · la limite de crédit, par lots</th></tr>
+      <tr><td>Volume</td><td>1 800 000 opérations par jour, soit <b>54 000 000 par mois</b> de 30 jours ; l’heure la plus chargée en porte 10 %, soit 50 par seconde</td><td>400 000 clients, une fois par nuit</td></tr>
+      <tr><td>Temps de calcul d’une prédiction</td><td>20 millisecondes sur un processeur, tout compris</td><td>5 millisecondes par client sur un processeur</td></tr>
+      <tr><td>Mémoire du service</td><td>0,5 gibioctet pendant un appel</td><td>—</td></tr>
+      <tr><td>Règle d’exploitation</td><td>Aucune machine occupée à plus de 50 % à l’heure la plus chargée</td><td>Fini avant 6 h du matin</td></tr>
+    </table></div>
+    <p>Faites les sept calculs à la main (une calculatrice suffit), puis vérifiez chacun. Quand ils sont justes, utilisez le calculateur plus bas pour voir ce qui change avec le volume.</p>
+    <div id="costNum" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Le calculateur · changez le volume et regardez les trois coûts</span>
+    <p>Les mêmes formules que vos sept calculs, avec les prix de la grille. Cherchez : à partir de combien d’opérations par jour la machine louée devient moins chère que le paiement à l’appel ? Que se passe-t-il si une prédiction prend 200 ms au lieu de 20 (un modèle plus lourd) ? Et si Jàppo Pay traite dix fois moins d’opérations ?</p>
+    <div class="calc">
+      <div><label>Opérations par jour</label><input type="number" id="cOps" value="1800000" min="0" step="1000"></div>
+      <div><label>Millisecondes par prédiction (un processeur)</label><input type="number" id="cMs" value="20" min="1" step="1"></div>
+      <div><label>Mémoire pendant un appel, en gibioctets</label><input type="number" id="cGib" value="0.5" min="0.1" step="0.1"></div>
+      <div><label>Part de l’heure la plus chargée, en %</label><input type="number" id="cPeak" value="10" min="1" max="100" step="1"></div>
+    </div>
+    <div class="calcout" id="calcOut"></div>
+    <p style="font-size:13.5px;color:var(--ink-soft);margin-top:10px;">Hypothèses : mois de 30 jours ; la machine A a 8 processeurs et aucune ne doit dépasser 50 % d’occupation à la pointe (la ligne dit combien il en faut) ; l’option B paie processeur, mémoire et appels pendant le temps de calcul seulement, sans palier gratuit ; 1 $ = 0,91 €.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">À vous · 25 min · seul·e</span>
+    <h3>La note de chiffrage pour le directeur financier</h3>
+    <p>Une page, écrite pour une personne qui ne connaît ni Python ni les serveurs. Elle contient, dans cet ordre : (1) ce que le service fait et pour combien d’opérations par mois ; (2) les trois options, chacune en une phrase et avec son coût mensuel en euros ; (3) votre recommandation et sa raison ; (4) deux risques que le prix ne montre pas (par exemple : la panne d’une machine unique, la facture qui monte avec le trafic, la dépendance à un hébergeur, le lieu où sont les données). Chaque nombre a son unité et sa source.</p>
+    <div class="wb" data-board="Notes de chiffrage|w2_chiffrage">
+      <div class="wq"><span class="qn">✍</span>Votre note de chiffrage (quinze lignes au plus).</div>
+      <textarea data-work="w2_chiffrage" data-worklabel="La note de chiffrage pour le directeur financier : le besoin, trois options en euros par mois, la recommandation, deux risques" style="min-height:160px;" placeholder="p. ex. Le contrôle de fraude examine 54 millions de paiements par mois avant de les valider. Option A, une machine louée en permanence chez … : … € par mois. Option B, … Option C ne convient pas au contrôle de fraude parce que… Je recommande … parce que … Deux risques : …"></textarea>
+    </div>
+  </div>
+
+  <div class="sec-status" data-sec="s4" data-need="Les sept calculs et la note de chiffrage terminent cette section."></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Retour</button>
+    <button class="btn" data-next="s5">Suite : bloc 4 · votre projet →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.5 ============================ -->
+<section class="screen" id="s5">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.5 · Bloc 4</div><span class="mode m-do">🛠 Atelier · 55 min</span><h2>Votre projet : l’artefact, le registre, le service et le canevas de déploiement</h2></div>
+
+  <div class="card">
+    <span class="label why">Pourquoi maintenant</span>
+    <p>Vous avez choisi vendredi le cas de votre projet et vous deviez trouver ou simuler ses données et entraîner un premier modèle. Ce bloc met votre projet au même point que Jàppo Pay ce matin : un artefact versionné, un registre, un service en ligne qui dit quelle version il sert. Si vos données ne sont pas prêtes, faites le bloc avec les opérations de Jàppo Pay et refaites-le chez vous avec les vôtres avant la journée 3 : la journée 3 écrit le contrat de données <b>de votre projet</b>.</p>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 10 · vos données</span>
+    <h3>Déposez votre fichier CSV dans la page</h3>
+    <div class="upl">Choisissez un fichier CSV de moins de 20 Mo : <input type="file" id="csvFile" accept=".csv,text/csv"> <span id="csvMsg"></span><br><span style="font-size:12.5px;color:var(--ink-soft);">Le fichier est copié dans le disque de la page, sous son nom ; il ne quitte pas votre ordinateur. Lisez-le ensuite avec <code>pd.read_csv("votre_fichier.csv")</code>. Sans fichier, les fenêtres utilisent <code>jappo_transactions.csv</code>.</span></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 11 · à vous</span>
+    <h3>Préparez, entraînez, enregistrez l’artefact 1.0.0 et le registre</h3>
+    <p>Reprenez le modèle de ce que vous avez entraîné chez vous, ou écrivez-le maintenant. La fenêtre doit finir avec un fichier <code>modele-1.0.0.joblib</code> (un dictionnaire avec au moins <code>modele</code>, <code>seuil</code>, <code>variables</code>, <code>version</code>) et un <code>registre.json</code> à une entrée, en production. Si votre modèle ne donne pas une probabilité (une prévision de demande, par exemple), remplacez <code>seuil</code> par la règle de décision de votre cas et dites-le dans le canevas.</p>
+    <div class="codelab" id="p1" data-lang="python" data-ns="proj" data-step="étape 11" data-check='{"py":"chkp1"}'
+      data-hint="Même recette que ce matin : <code>joblib.dump(artefact, &quot;modele-1.0.0.joblib&quot;)</code>, puis <code>json.dump([entree], open(&quot;registre.json&quot;, &quot;w&quot;), indent=1)</code> avec <code>&quot;stade&quot;: &quot;production&quot;</code>."
+      data-ok="Votre artefact 1.0.0 et votre registre sont écrits. Passez à l’étape 12 : le fichier du serveur.">import pandas as pd, numpy as np, json, joblib, hashlib, datetime, sklearn
+
+FICHIER_DONNEES = "jappo_transactions.csv"      # remplacez par le nom de votre fichier déposé à l'étape 10
+df = pd.read_csv(FICHIER_DONNEES)
+print(df.shape, list(df.columns))
+
+CIBLE = "fraude"                                # la colonne que votre modèle doit prévoir
+
+def preparer(d):
+    """Vos variables, une colonne par variable, des nombres seulement. Doit marcher sur une seule ligne."""
+    d = d.copy()
+    X = pd.DataFrame(index=d.index)
+    ...
+    return X
+
+# votre découpage (dans le temps si vos données ont une date), votre modèle, son entraînement
+...
+
+VERSION = "1.0.0"
+artefact = {"modele": modele, "seuil": ..., "variables": list(X_train.columns), "version": VERSION,
+            "entraine_le": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "versions": {"scikit-learn": sklearn.__version__, "pandas": pd.__version__, "numpy": np.__version__, "joblib": joblib.__version__}}
+joblib.dump(artefact, "modele-" + VERSION + ".joblib")
+entree = {"version": VERSION, "fichier": "modele-" + VERSION + ".joblib",
+          "empreinte": hashlib.sha256(open("modele-" + VERSION + ".joblib", "rb").read()).hexdigest(),
+          "entraine_le": artefact["entraine_le"], "stade": "production",
+          "resultat_test": "…"}                 # votre mesure sur vos données de test, en une phrase
+json.dump([entree], open("registre.json", "w"), indent=1)
+print("Artefact et registre écrits ·", round(__import__("os").path.getsize(entree["fichier"]) / 1000), "ko")</div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Étape 12 · à vous</span>
+    <h3>Écrivez le fichier du serveur : <code>preparer()</code> et <code>predire_v2()</code>, dans un espace vide</h3>
+    <p>Cette fenêtre tourne dans un espace <b>vide</b>, comme le serveur : elle ne voit pas les variables de l’étape 11, seulement vos fichiers. Elle doit contenir votre <code>preparer()</code> (copiez-la), le chargement de la production depuis le registre, et <code>predire_v2(operation)</code> qui rend <code>{"erreur": …}</code> sur une entrée incomplète, sinon votre réponse avec la clé <code>version</code>. <code>MON_OPERATION</code> est un exemple d’entrée de votre système, avec vos champs : la page l’utilise pour tester.</p>
+    <div class="codelab" id="p2" data-lang="python" data-ns="projsrv" data-step="étape 12" data-check='{"py":"chkp2"}'
+      data-hint="Reprenez l’étape 6 de ce matin et remplacez les champs de Jàppo Pay par les vôtres. <code>CHAMPS</code> est la liste des champs bruts que votre système recevra."
+      data-ok="Le fichier de votre serveur tourne seul et répond avec sa version. Téléchargez le service de votre projet.">import json, joblib
+import pandas as pd
+
+CHAMPS = [...]                                  # les champs bruts qu'une entrée de votre système contient
+
+def preparer(d):
+    ...
+
+def charger_production(chemin_registre="registre.json"):
+    with open(chemin_registre) as f:
+        registre = json.load(f)
+    entree = [e for e in registre if e["stade"] == "production"][0]
+    return joblib.load(entree["fichier"])
+
+ART = charger_production()
+
+def predire_v2(operation):
+    manquants = [c for c in CHAMPS if c not in operation]
+    if manquants:
+        return {"erreur": "champs manquants : " + ", ".join(manquants), "version": ART["version"]}
+    X = preparer(pd.DataFrame([operation]))
+    ...
+    return {..., "version": ART["version"]}
+
+MON_OPERATION = {...}                           # une entrée d'exemple de votre système
+print(predire_v2(MON_OPERATION))
+assert "version" in predire_v2(MON_OPERATION)
+assert "erreur" in predire_v2({})</div>
+    <div class="btn-row"><button class="btn" id="zipProjBtn" disabled>Télécharger service_projet.zip</button><span id="zipProjMsg" style="font-size:13.5px;color:var(--ink-soft);"></span></div>
+    <p style="font-size:13.5px;">Créez un <b>second</b> Space (Docker, Blank, CPU basic, Public), nommé d’après votre projet, et déposez-y les fichiers du zip comme ce matin. Quand il affiche Running, collez son adresse :</p>
+    <div class="wb">
+      <div class="wq"><span class="qn">🌐</span>L’adresse du serveur de mon projet :</div>
+      <input type="text" data-work="w2_projet_url" data-worklabel="L’adresse du serveur de mon projet" id="projUrl" placeholder="https://votre-nom-votre-projet.hf.space" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="btn-row"><button class="btn small" id="projInfo">Demander au serveur de mon projet qui il est</button></div>
+    <pre class="srvout" id="projOut">La réponse du serveur s’affiche ici.</pre>
+  </div>
+
+  <div class="card">
+    <span class="label play">À vous · 10 min</span>
+    <h3>Le canevas de déploiement de votre système</h3>
+    <p>Le canevas est la page que vous montrerez à chaque journée et qui finira dans votre rapport : les décisions de déploiement de votre système, chacune en une ligne. Remplissez ce que vous savez aujourd’hui ; vous le complétez aux journées 3 et 4.</p>
+    <div class="wb" data-board="Canevas de déploiement|w2_canevas">
+      <div class="wq"><span class="qn">✍</span>Écrivez, une ligne chacun : (1) la décision que votre système sert et qui la reçoit ; (2) le mode d’inférence (temps réel, par lots, flux, embarqué) et pourquoi ; (3) le volume attendu par jour et la latence acceptable ; (4) la version en production aujourd’hui et sa mesure sur vos données de test ; (5) l’option d’hébergement retenue parmi A, B, C et son coût mensuel estimé avec la grille ; (6) ce qui manque encore (contrat de données, surveillance, droits d’accès…).</div>
+      <textarea data-work="w2_canevas" data-worklabel="Le canevas de déploiement de mon projet : décision, mode d’inférence, volume et latence, version, hébergement et coût, ce qui manque" style="min-height:150px;" placeholder="1. Décision : … reçue par … 2. Mode : … parce que … 3. Volume : … par jour ; latence acceptable : … 4. Version 1.0.0 : … 5. Option … : … € par mois. 6. Il manque : …"></textarea>
+    </div>
+  </div>
+
+  <div class="sec-status" data-sec="s5" data-need="Les étapes 11 et 12 vérifiées, l’adresse de votre serveur et le canevas terminent cette section."></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Retour</button>
+    <button class="btn" data-next="s6">Suite : la mise en commun →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.6 ============================ -->
+<section class="screen" id="s6">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.6 · Bloc 4</div><span class="mode m-co">🔁 Mise en commun · 25 min</span><h2>Trois systèmes qui ont échoué en production, et ce qui leur manquait</h2></div>
+
+  <div class="card">
+    <span class="label idea">Ce que les journées 1 et 2 vous ont appris à faire, dans trois histoires vraies</span>
+    <p>Trois systèmes d’IA ont été mis en production par de grandes organisations, puis retirés ou ont coûté très cher. Pour chacun, lisez ce qui s’est passé, puis choisissez la pièce du déploiement qui manquait le plus. Il n’y a pas une seule bonne réponse : votre choix est enregistré, et la classe compare.</p>
+    <div class="tblwrap"><table class="fx">
+      <tr><th>Le système</th><th>Ce qui s’est passé</th><th>Source</th></tr>
+      <tr><td><b>Dépistage d’une maladie des yeux par l’IA en Thaïlande</b></td><td>Un modèle qui lit des photos de rétine, très bon en laboratoire, a été installé dans onze cliniques (2018–2019). Sur place, les photos étaient prises dans des salles mal éclairées, avec des appareils différents, par un personnel pressé ; le système refusait un grand nombre d’images comme « inexploitables », les patients attendaient, et les infirmières ont contourné le système.</td><td>Beede, E. et al. (2020), « A Human-Centered Evaluation of a Deep Learning System Deployed in Clinics for the Detection of Diabetic Retinopathy », <i>CHI 2020</i></td></tr>
+      <tr><td><b>Zillow Offers, achat de maisons aux États-Unis</b></td><td>Zillow achetait des maisons au prix que son modèle prévoyait, pour les revendre. En 2021, le marché a changé plus vite que le modèle ; l’entreprise a acheté trop cher, a arrêté l’activité le 2 novembre 2021, a déprécié son stock de maisons de 304 millions de dollars au troisième trimestre 2021 et a supprimé environ un quart de ses postes.</td><td>Zillow Group, résultats du troisième trimestre 2021, 2 novembre 2021</td></tr>
+      <tr><td><b>L’outil de tri de CV d’Amazon</b></td><td>Un modèle entraîné sur dix ans de candidatures, surtout masculines, notait moins bien les CV qui contenaient le mot « women’s » ou le nom de certaines écoles de femmes. Découvert en interne, le projet a été abandonné avant d’être utilisé pour recruter.</td><td>Dastin, J., Reuters, 10 octobre 2018</td></tr>
+    </table></div>
+    <div id="casesCap" style="font-size:13px;color:var(--ink-soft);margin:6px 0 10px;"></div>
+    <div class="sab" id="casesBox"></div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Avant la journée 3 · vendredi 4 décembre</span>
+    <ul>
+      <li>Laissez vos deux Spaces en ligne (Jàppo Pay version 2, et votre projet). La journée 3 écrit le contrat de données de votre projet et des tests qui rejettent des données corrompues, puis automatise la mise à jour du serveur avec GitHub Actions.</li>
+      <li>Si vos données de projet n’étaient pas prêtes : refaites les étapes 10 à 12 avec elles, chez vous.</li>
+      <li>Créez un compte gratuit sur <a href="https://github.com" target="_blank" rel="noopener">GitHub ↗</a> si ce n’est pas fait, et notez votre nom d’utilisateur.</li>
+      <li>Relisez votre note de chiffrage : elle entre dans votre rapport, dans la partie « coûts d’exploitation ».</li>
+    </ul>
+  </div>
+
+  <div class="sec-status" data-sec="s6" data-need="Les trois choix terminent cette section."></div>
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Retour</button>
+    <button class="btn" data-next="s7">Suite : le quiz →</button>
+  </div>
+</section>
+
+<!-- ============================ 2.7 ============================ -->
+<section class="screen" id="s7">
+  <button class="crumb" data-home>← Menu de la journée</button>
+  <div class="sec-head"><div class="kicker">Section 2.7 · Bloc 4</div><span class="mode m-quiz">✅ Quiz · 10 min</span><h2>Quiz de fin de journée</h2></div>
+
+  <div class="card">
+    <span class="label play">Quiz d’auto-évaluation · ne compte pas dans la note</span>
+    <h3>Huit questions sur ce que vous avez fait aujourd’hui, une tentative chacune, toutes expliquées</h3>
+    <p>Le quiz est <strong>lancé en classe</strong>, pour que tout le monde commence en même temps ; cette page se déverrouille toute seule. Il ne compte pas dans la note : il vous montre ce qui est acquis et ce qu’il faut revoir avant l’examen final. Répondez seul·e, sans assistant d’IA, sinon il ne vous apprend rien.</p>
+    <div class="qlock" id="quizLock"></div>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult"><div class="big" id="quizScore">—</div><p id="quizMsg"></p></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Retour</button>
+    <button class="btn" data-home>Menu de la journée</button>
+  </div>
+</section>
+
+</div>
+
+<!-- ===================== the checks of the Python steps ===================== -->
+<script type="text/python" id="chk2">
+def _c():
+    import numpy as np
+    g = globals()
+    if "preparer" not in g or not callable(g["preparer"]):
+        return "La fonction <code>preparer</code> doit exister dans cette fenêtre."
+    try:
+        X = preparer(train)
+    except Exception as e:
+        return "<code>preparer(train)</code> plante : " + type(e).__name__ + " : " + str(e)[:120]
+    if not isinstance(X, pd.DataFrame):
+        return "<code>preparer()</code> doit rendre un tableau pandas (un DataFrame)."
+    if "fraude" in X.columns:
+        return "Votre tableau contient la colonne <code>fraude</code> : c’est la réponse, retirez-la."
+    pas_nombre = [c for c in X.columns if not (pd.api.types.is_numeric_dtype(X[c]) or pd.api.types.is_bool_dtype(X[c]))]
+    if pas_nombre:
+        return "Ces colonnes ne sont pas des nombres : <code>" + ", ".join(map(str, pas_nombre)) + "</code>."
+    if X.shape[1] < 5:
+        return "Votre tableau a " + str(X.shape[1]) + " variable(s) ; il en faut au moins cinq, comme vendredi."
+    if not np.isfinite(X.to_numpy(dtype=float)).all():
+        return "Votre tableau contient des valeurs manquantes ou infinies (un solde de 0 ? <code>.clip(lower=1)</code>)."
+    try:
+        X1 = preparer(pd.DataFrame([suspecte]))
+    except Exception as e:
+        return "Votre fonction plante sur une seule opération (" + type(e).__name__ + " : " + str(e)[:120] + "). Le serveur reçoit les opérations une par une, la date sous forme de texte."
+    if list(X1.columns) != list(X.columns):
+        return "Sur une seule opération, votre fonction rend d’autres colonnes que sur le fichier : le piège de <code>pd.get_dummies</code>. Écrivez une colonne par type vous-même."
+    return True
+_c()
+</script>
+<script type="text/python" id="chk3">
+def _c():
+    g = globals()
+    for n in ("modele", "SEUIL_FINAL", "DUREE_ENTRAINEMENT", "X_train", "X_test", "y_test"):
+        if n not in g or g[n] is ...:
+            return "La variable <code>" + n + "</code> n’a pas encore de valeur."
+    if not hasattr(modele, "predict_proba"):
+        return "<code>modele</code> doit savoir donner une probabilité (<code>predict_proba</code>)."
+    try:
+        p = modele.predict_proba(X_test)
+    except Exception as e:
+        return "Votre modèle n’est pas entraîné, ou ne correspond plus à vos variables (" + type(e).__name__ + "). Appelez <code>modele.fit(X_train, y_train)</code>."
+    if p.shape != (len(X_test), 2):
+        return "Le modèle doit distinguer deux classes : fraude ou non."
+    try:
+        s = float(SEUIL_FINAL); d = float(DUREE_ENTRAINEMENT)
+    except Exception:
+        return "<code>SEUIL_FINAL</code> et <code>DUREE_ENTRAINEMENT</code> doivent être des nombres."
+    if not (0 < s < 1):
+        return "<code>SEUIL_FINAL</code> doit être entre 0 et 1 : votre seuil de vendredi."
+    if not (d > 0):
+        return "<code>DUREE_ENTRAINEMENT</code> doit être le temps de l’entraînement en secondes, mesuré avec <code>time.perf_counter()</code>."
+    return True
+_c()
+</script>
+<script type="text/python" id="chk4">
+def _c():
+    import os, hashlib, numpy as np
+    g = globals()
+    for n in ("FICHIER", "TAILLE_KO", "EMPREINTE", "charge", "DUREE_CHARGEMENT", "p_fichier", "ECART_MAX"):
+        if n not in g or g[n] is ...:
+            return "Remplacez les <code>...</code> : <code>" + n + "</code> n’a pas encore de valeur."
+    if not os.path.exists(FICHIER):
+        return "Le fichier <code>" + str(FICHIER) + "</code> n’existe pas : <code>joblib.dump(artefact, FICHIER)</code>."
+    try:
+        obj = joblib.load(FICHIER)
+    except Exception as e:
+        return "Le fichier ne se recharge pas (" + type(e).__name__ + ")."
+    if not isinstance(obj, dict) or not all(k in obj for k in ("modele", "seuil", "variables", "version")):
+        return "L’artefact doit être le dictionnaire <code>artefact</code> (modele, seuil, variables, version…), pas le modèle seul."
+    if abs(float(TAILLE_KO) - os.path.getsize(FICHIER) / 1000) > max(1, os.path.getsize(FICHIER) / 100000):
+        return "<code>TAILLE_KO</code> doit être la taille du fichier en kilo-octets : <code>os.path.getsize(FICHIER) / 1000</code>."
+    vrai = hashlib.sha256(open(FICHIER, "rb").read()).hexdigest()
+    if str(EMPREINTE) != vrai:
+        return "<code>EMPREINTE</code> n’est pas le SHA-256 du fichier : <code>hashlib.sha256(open(FICHIER, &quot;rb&quot;).read()).hexdigest()</code>."
+    if not isinstance(charge, dict) or "modele" not in charge:
+        return "<code>charge</code> doit être le dictionnaire rechargé avec <code>joblib.load(FICHIER)</code>."
+    if not (float(DUREE_CHARGEMENT) > 0):
+        return "<code>DUREE_CHARGEMENT</code> doit être un temps positif."
+    pf = np.asarray(p_fichier, dtype=float)
+    if pf.shape != (len(X_test),):
+        return "<code>p_fichier</code> doit être la colonne des probabilités de fraude du modèle rechargé sur <code>X_test</code> : <code>charge[&quot;modele&quot;].predict_proba(X_test)[:, 1]</code>."
+    vrai_ecart = float(np.abs(modele.predict_proba(X_test)[:, 1] - pf).max())
+    if abs(float(ECART_MAX) - vrai_ecart) > 1e-9:
+        return "<code>ECART_MAX</code> doit être le plus grand écart absolu entre <code>p_memoire</code> et <code>p_fichier</code> : <code>float(np.abs(p_memoire - p_fichier).max())</code>."
+    if vrai_ecart > 1e-9:
+        return "Le modèle rechargé ne donne pas les mêmes probabilités (écart " + str(vrai_ecart) + ") : vous n’avez pas enregistré le même modèle que celui en mémoire."
+    return True
+_c()
+</script>
+<script type="text/python" id="chk5">
+def _c():
+    import os, json, hashlib
+    g = globals()
+    if "REGISTRE" not in g or "promouvoir" not in g:
+        return "<code>REGISTRE</code> et <code>promouvoir</code> doivent exister."
+    if not os.path.exists("registre.json"):
+        return "Le fichier <code>registre.json</code> n’existe pas : appelez <code>promouvoir(…)</code> avec une version."
+    try:
+        reg = json.load(open("registre.json"))
+    except Exception as e:
+        return "<code>registre.json</code> ne se lit pas comme du JSON (" + type(e).__name__ + ")."
+    if not isinstance(reg, list) or len(reg) < 2:
+        return "Le registre doit être une liste d’au moins deux versions."
+    for k in ("version", "fichier", "empreinte", "seuil", "fraudes_bloquees", "honnetes_bloques", "stade"):
+        if any(k not in e for e in reg):
+            return "Chaque entrée du registre doit avoir la clé <code>" + k + "</code>."
+    prod = [e for e in reg if e["stade"] == "production"]
+    if len(prod) != 1:
+        return str(len(prod)) + " version(s) en production ; il en faut exactement une. Dans <code>promouvoir()</code>, mettez <code>production</code> à celle demandée et <code>archive</code> aux autres."
+    vus = set()
+    for e in reg:
+        if e["version"] in vus:
+            return "La version " + str(e["version"]) + " apparaît deux fois."
+        vus.add(e["version"])
+        if not os.path.exists(e["fichier"]):
+            return "Le fichier <code>" + str(e["fichier"]) + "</code> de la version " + str(e["version"]) + " n’existe pas."
+        if hashlib.sha256(open(e["fichier"], "rb").read()).hexdigest() != e["empreinte"]:
+            return "L’empreinte de la version " + str(e["version"]) + " ne correspond pas à son fichier : calculez le SHA-256 <b>après</b> avoir écrit le fichier."
+        art = joblib.load(e["fichier"])
+        if not isinstance(art, dict) or "modele" not in art or art.get("version") != e["version"]:
+            return "Le fichier de la version " + str(e["version"]) + " doit contenir l’artefact (dictionnaire) avec la même version."
+        p = art["modele"].predict_proba(X_test)[:, 1]
+        b = p >= float(e["seuil"])
+        f, h = int((b & (y_test == 1)).sum()), int((b & (y_test == 0)).sum())
+        if f != int(e["fraudes_bloquees"]) or h != int(e["honnetes_bloques"]):
+            return "Pour la version " + str(e["version"]) + " au seuil " + str(e["seuil"]) + ", la semaine de test donne " + str(f) + " fraudes bloquées et " + str(h) + " clients honnêtes bloqués ; le registre dit " + str(e["fraudes_bloquees"]) + " et " + str(e["honnetes_bloques"]) + "."
+    g["_registre"] = reg
+    return True
+_c()
+</script>
+<script type="text/python" id="chk6">
+def _c():
+    import json
+    g = globals()
+    for n in ("charger_production", "predire_v2", "ART"):
+        if n not in g:
+            return "<code>" + n + "</code> doit exister."
+    if not isinstance(ART, dict) or "modele" not in ART or "version" not in ART:
+        return "<code>ART</code> doit être l’artefact chargé (un dictionnaire avec modele, seuil, variables, version)."
+    reg = json.load(open("registre.json"))
+    prod = [e for e in reg if e["stade"] == "production"][0]
+    if ART["version"] != prod["version"]:
+        return "<code>charger_production()</code> a chargé la version " + str(ART.get("version")) + " ; le registre met " + str(prod["version"]) + " en production."
+    try:
+        r = predire_v2(dict(suspecte))
+    except Exception as e:
+        return "<code>predire_v2()</code> plante sur l’opération suspecte : " + type(e).__name__ + " : " + str(e)[:120]
+    if not isinstance(r, dict) or not all(k in r for k in ("probabilite_fraude", "decision", "version")):
+        return "Pour une opération complète, la réponse doit avoir les clés <code>probabilite_fraude</code>, <code>decision</code> et <code>version</code>. Elle a : " + str(r)[:120]
+    if type(r["probabilite_fraude"]).__module__ == "numpy":
+        return "<code>probabilite_fraude</code> est un nombre numpy : convertissez avec <code>float(…)</code>."
+    p = float(ART["modele"].predict_proba(preparer(pd.DataFrame([suspecte])))[0, 1])
+    if abs(float(r["probabilite_fraude"]) - p) > 0.0006:
+        return "La probabilité rendue (" + str(r["probabilite_fraude"]) + ") n’est pas celle du modèle de l’artefact (" + str(round(p, 3)) + ")."
+    attendu = "bloquer" if p >= float(ART["seuil"]) else "accepter"
+    if r["decision"] != attendu:
+        return "Avec le seuil de l’artefact (" + str(ART["seuil"]) + "), la décision doit être <code>" + attendu + "</code>."
+    if r["version"] != ART["version"]:
+        return "La réponse doit porter la version de l’artefact : " + str(ART["version"]) + "."
+    try:
+        r2 = predire_v2({"type_operation": "envoi"})
+    except Exception as e:
+        return "<code>predire_v2()</code> plante quand il manque des champs (" + type(e).__name__ + ")."
+    if not isinstance(r2, dict) or "erreur" not in r2:
+        return "Quand il manque des champs, la réponse doit avoir la clé <code>erreur</code>."
+    _vraie = g["preparer"]
+    def _mauvaise(d):
+        X = _vraie(d)
+        return X.rename(columns={X.columns[0]: "colonne_inconnue"})
+    g["preparer"] = _mauvaise
+    try:
+        r3 = predire_v2(dict(suspecte))
+    except Exception as e:
+        g["preparer"] = _vraie
+        return "Quand les colonnes préparées ne sont pas celles de l’artefact, <code>predire_v2()</code> plante (" + type(e).__name__ + ") au lieu de rendre une erreur. Comparez <code>list(X.columns)</code> à <code>ART[&quot;variables&quot;]</code> avant d’appeler le modèle."
+    g["preparer"] = _vraie
+    if not isinstance(r3, dict) or "erreur" not in r3:
+        return "Quand les colonnes préparées ne sont pas celles de l’artefact, la réponse doit être <code>{&quot;erreur&quot;: …}</code>, jamais une probabilité."
+    return True
+_c()
+</script>
+<script type="text/python" id="chk7">
+def _c():
+    g = globals()
+    if "predire_v2" not in g or "ART" not in g or "preparer" not in g:
+        return "Le fichier assemblé doit définir <code>preparer</code>, <code>ART</code> et <code>predire_v2</code> sans rien d’autre que les fichiers du disque."
+    sus = {"date_heure": "2026-11-20 03:12:00", "type_operation": "envoi", "montant_fcfa": 180000,
+           "solde_avant_fcfa": 185000, "anciennete_compte_jours": 900, "nb_operations_24h": 6,
+           "nouveau_beneficiaire": 1, "nouvel_appareil": 1}
+    try:
+        r = predire_v2(sus)
+    except Exception as e:
+        return "Seul, votre fichier plante : " + type(e).__name__ + " : " + str(e)[:160] + ". Il utilise sans doute une variable de ce matin (<code>modele</code>, <code>X_test</code>, <code>SEUIL_FINAL</code>…) que le serveur n’aura pas."
+    if not isinstance(r, dict) or "version" not in r or "decision" not in r:
+        return "La réponse doit porter <code>decision</code> et <code>version</code> ; elle a : " + str(r)[:120]
+    r2 = predire_v2({})
+    if not isinstance(r2, dict) or "erreur" not in r2:
+        return "Une opération vide doit recevoir <code>{&quot;erreur&quot;: …}</code>."
+    g["_servi"] = {"version": r["version"], "decision": r["decision"], "p": r.get("probabilite_fraude")}
+    return True
+_c()
+</script>
+<script type="text/python" id="chkp1">
+def _c():
+    import os, json, hashlib
+    if not os.path.exists("modele-1.0.0.joblib"):
+        return "Le fichier <code>modele-1.0.0.joblib</code> n’existe pas encore."
+    try:
+        art = joblib.load("modele-1.0.0.joblib")
+    except Exception as e:
+        return "Le fichier ne se recharge pas (" + type(e).__name__ + ")."
+    if not isinstance(art, dict) or not all(k in art for k in ("modele", "variables", "version")):
+        return "L’artefact doit être un dictionnaire avec au moins <code>modele</code>, <code>variables</code> et <code>version</code>."
+    if not os.path.exists("registre.json"):
+        return "Le fichier <code>registre.json</code> n’existe pas encore."
+    reg = json.load(open("registre.json"))
+    if not isinstance(reg, list) or len([e for e in reg if e.get("stade") == "production"]) != 1:
+        return "Le registre doit être une liste avec exactement une entrée en production."
+    e = [e for e in reg if e.get("stade") == "production"][0]
+    if not os.path.exists(e.get("fichier", "")) or hashlib.sha256(open(e["fichier"], "rb").read()).hexdigest() != e.get("empreinte"):
+        return "L’empreinte de l’entrée en production ne correspond pas à son fichier."
+    return True
+_c()
+</script>
+<script type="text/python" id="chkp2">
+def _c():
+    g = globals()
+    for n in ("preparer", "predire_v2", "ART", "MON_OPERATION", "CHAMPS"):
+        if n not in g or g[n] is ...:
+            return "<code>" + n + "</code> doit exister dans cette fenêtre."
+    if not isinstance(CHAMPS, list) or not CHAMPS or any(c is ... for c in CHAMPS):
+        return "<code>CHAMPS</code> doit être la liste des champs bruts de votre système."
+    try:
+        r = predire_v2(dict(MON_OPERATION))
+    except Exception as e:
+        return "<code>predire_v2(MON_OPERATION)</code> plante : " + type(e).__name__ + " : " + str(e)[:160]
+    if not isinstance(r, dict) or "version" not in r or "erreur" in r:
+        return "Sur votre opération d’exemple, la réponse doit être un dictionnaire avec la clé <code>version</code> et sans <code>erreur</code> ; elle a : " + str(r)[:120]
+    r2 = predire_v2({})
+    if not isinstance(r2, dict) or "erreur" not in r2:
+        return "Une entrée vide doit recevoir <code>{&quot;erreur&quot;: …}</code>."
+    return True
+_c()
+</script>
+
+<script>
+/* =====================================================================
+   JOURNÉE 2 — built 27 Nov 2026 on day 1's model (a DOING day: the student
+   writes the code in the page, /shared/codelab.js, Pyodide, shared namespace
+   "j2" for blocks e1…e6; e7 runs the ASSEMBLED modele.py in the empty
+   namespace "j2srv", as the server will; the project blocks p1 (ns "proj")
+   and p2 (ns "projsrv") do the same for the student's own case).
+   Morning: artefact (joblib dict with model, threshold, variables, version,
+   date, library versions), reload + identical probabilities, SHA-256, a
+   second version, registre.json with one "production" entry, promouvoir();
+   then modele.py v2 + files/service-v2/* zipped for the SAME Space as day 1,
+   the page polls GET / every 2 s during the rebuild and counts the seconds
+   the server did not answer. Afternoon: seven cost calculations with the
+   published prices (HF Spaces CPU Upgrade $0.03/h, Cloud Run request-based
+   $0.000024 per vCPU-s, $0.0000025 per GiB-s, $0.40 per million; 1 $ = 0.91 €,
+   consulted 27 Nov 2026) + a calculator; the "note de chiffrage"; the
+   student's own project (CSV upload into Pyodide's FS via CodeLab.writeFile,
+   artefact, registre, modele.py, a second Space, the deployment canvas); the
+   three failure cases as recorded picks; quiz (8 questions, positions 2 0 3 1 2 0 3 1).
+   The blocks e2/e3 are PREFILLED with the student's own day-1 code read from
+   localStorage (codelab:/UMEF/ia-production/journee1.html:e5 / e6 / e8) when
+   this device has it, else the reference solution.
+   ===================================================================== */
+var GLOSSARY={};
+var DAY={
+  mod:'w2', key:'mia506_w2_progress_v1', title:'Journée 2 · Enregistrer le modèle, le servir sans le réentraîner, chiffrer',
+  blocks:[
+    {n:1,t:'09h00–10h30',name:'enregistrer votre modèle dans un fichier qui porte une version · le registre',parts:[['do',90]]},
+    {n:2,t:'10h45–12h15',name:'le service qui charge le fichier · la mise à jour chronométrée · les noms',parts:[['do',75],['co',15]]},
+    {n:3,t:'13h30–15h00',name:'chiffrer trois façons de servir le modèle avec de vraies grilles · la note de chiffrage',parts:[['do',90]]},
+    {n:4,t:'15h15–16h45',name:'votre projet : artefact, registre, service, canevas · trois systèmes qui ont échoué · le quiz',parts:[['do',55],['co',25],['quiz',10]]}
+  ],
+  sections:[
+    {id:'s1',num:'2.1',name:'Enregistrer votre modèle dans un fichier qui porte une version',tag:'Votre code de vendredi · l’artefact · recharger et vérifier · l’empreinte · une seconde version · le registre et la promotion',mode:'do',min:90,block:1},
+    {id:'s2',num:'2.2',name:'Remplacer votre serveur par un service qui charge le fichier',tag:'predire_v2() lit le registre · modele.py testé dans un espace vide · la mise à jour du Space, chronométrée',mode:'do',min:75,block:2},
+    {id:'s3',num:'2.3',name:'Ce que vous avez fait ce matin porte un nom',tag:'Artefact, version, empreinte, registre, reproductibilité, interruption de service · MLflow',mode:'co',min:15,block:2},
+    {id:'s4',num:'2.4',name:'Chiffrer trois façons de servir le même modèle',tag:'Les grilles publiées · sept calculs · le calculateur · la note de chiffrage pour le directeur financier',mode:'do',min:90,block:3},
+    {id:'s5',num:'2.5',name:'Votre projet : l’artefact, le registre, le service, le canevas',tag:'Vos données dans la page · artefact 1.0.0 · le fichier du serveur · un second Space · le canevas de déploiement',mode:'do',min:55,block:4},
+    {id:'s6',num:'2.6',name:'Trois systèmes qui ont échoué en production',tag:'Thaïlande, Zillow, Amazon · ce qui manquait · avant la journée 3',mode:'co',min:25,block:4},
+    {id:'s7',num:'2.7',name:'Quiz de fin de journée',tag:'Huit questions sur ce que vous avez fait · auto-évaluation',mode:'quiz',min:10,block:4}
+  ],
+  secCheck:function(a){
+    var ok=window.CodeLab?CodeLab.solved():[];
+    function lab(ids){return ids.every(function(k){return ok.indexOf(k)>=0;});}
+    if(lab(['e2','e3','e4','e5'])&&a.filled('w2_versions'))a.mark('s1');
+    if(lab(['e6','e7'])&&a.all(['w2_url','w2_avant','w2_apres','w2_interruption']))a.mark('s2');
+    if(a.filled('w2_outil'))a.mark('s3');
+    if(a.filled('w2_chiffrage')&&['c1','c2','c3','c4','c5','c6','c7'].every(function(k){return a.st[k];}))a.mark('s4');
+    if(lab(['p1','p2'])&&a.all(['w2_projet_url','w2_canevas']))a.mark('s5');
+    if(['k1','k2','k3'].every(function(k){return a.st[k];}))a.mark('s6');
+  }
+};
+</script>
+<script>
+/* ---- prefill e2 and e3 with the student's own day-1 code, read from this device ---- */
+(function(){
+  var P='codelab:'+location.pathname.replace(/journee2\.html$/,'journee1.html')+':';
+  function ls(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  var REF_PREP='import pandas as pd\n\ndef preparer(d):\n    d = d.copy()\n    d["date_heure"] = pd.to_datetime(d["date_heure"])      # sur le serveur, la date arrive comme un texte\n    X = pd.DataFrame(index=d.index)\n    X["montant_fcfa"] = d["montant_fcfa"]\n    X["nouvel_appareil"] = d["nouvel_appareil"]\n    X["nouveau_beneficiaire"] = d["nouveau_beneficiaire"]\n    X["nb_operations_24h"] = d["nb_operations_24h"]\n    X["anciennete_compte_jours"] = d["anciennete_compte_jours"]\n    X["nuit"] = (d["date_heure"].dt.hour < 6).astype(int)\n    X["part_du_solde"] = (d["montant_fcfa"] / d["solde_avant_fcfa"].clip(lower=1)).clip(upper=5)\n    X["est_envoi"] = (d["type_operation"] == "envoi").astype(int)\n    X["est_retrait"] = (d["type_operation"] == "retrait").astype(int)\n    return X';
+  var REF_MODEL='from sklearn.ensemble import RandomForestClassifier\n\nmodele = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, class_weight="balanced", random_state=0)\nmodele.fit(X_train, y_train)';
+  var e5=ls(P+'e5'),e6=ls(P+'e6'),e8=ls(P+'e8'),own=false,prep=REF_PREP,model=REF_MODEL,seuil='0.4';
+  if(e5&&/def\s+preparer\s*\(/.test(e5)){
+    /* keep the function (and imports); drop the lines that need the data */
+    prep=e5.split('\n').filter(function(l){return !/^\s*(X_train|X_test|y_train|y_test)\b/.test(l)&&!/^\s*print\(/.test(l);}).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+    own=true;
+  }
+  if(e6&&/\bmodele\s*=/.test(e6)&&/\.fit\(/.test(e6)){
+    model=e6.split('\n').filter(function(l){return !/^\s*print\(/.test(l);}).join('\n').trim();own=true;
+  }
+  if(e8){var m=e8.match(/SEUIL_FINAL\s*=\s*([0-9]*\.?[0-9]+)/);if(m)seuil=m[1];}
+  var head=own?'# Votre code de la journée 1, retrouvé sur cet ordinateur. Relisez-le.\n':'# La page n’a pas trouvé votre code de la journée 1 sur cet ordinateur : voici la solution de référence. Remplacez-la par la vôtre si vous l’avez.\n';
+  document.getElementById('e2').textContent=head+prep;
+  document.getElementById('e3').textContent='X_train, y_train = preparer(train), train["fraude"]\nX_test, y_test = preparer(test), test["fraude"]\n\nt0 = time.perf_counter()\n# ---- votre modèle de la journée 1 ----\n'+model+'\n# -------------------------------------\nDUREE_ENTRAINEMENT = time.perf_counter() - t0\n\nSEUIL_FINAL = '+seuil+'      # votre seuil de vendredi (étape 8)\nprint("Entraîné en", round(DUREE_ENTRAINEMENT, 2), "s ·", type(modele).__name__, "· seuil", SEUIL_FINAL)';
+})();
+</script>
+<script src="journee.js"></script>
+<script src="/shared/codelab.js"></script>
+<script>
+/* ---- the Python steps count in the day's progress: one step per checked block ---- */
+var LAB=['e2','e3','e4','e5','e6','e7','p1','p2'];
+LAB.forEach(function(k){need('lab_'+k);});
+function syncLab(){
+  var ok=window.CodeLab?CodeLab.solved():[];
+  LAB.forEach(function(k){if(ok.indexOf(k)>=0)markStep('lab_'+k);});
+  document.getElementById('zipBtn').disabled=ok.indexOf('e7')<0;
+  document.getElementById('zipProjBtn').disabled=ok.indexOf('p2')<0;
+  secCheck();
+}
+document.addEventListener('codelab:solved',function(e){
+  syncLab();
+  if(e.detail&&e.detail.id==='e7'){
+    var m=document.getElementById('asmMsg');
+    if(e.detail.ok){var s=CodeLab.get('j2srv','_servi');m.textContent='✓ Votre modele.py tourne seul'+(s?' et sert la version '+s.version:'')+'. Le téléchargement est ouvert.';}
+    else m.textContent='Le fichier assemblé échoue : lisez le message sous la fenêtre, corrigez l’étape 2 ou 6, puis assemblez de nouveau.';
+  }
+});
+setTimeout(syncLab,0);
+
+/* ---- 2.2 · assemble modele.py from e2 + e6 and run it in the empty namespace ---- */
+function modelePyV2(){
+  return '# modele.py · MIA 506, journée 2 · votre preparer() (étape 2) et votre predire_v2() (étape 6), rassemblés par la page du cours.\n'+
+    '# Le service app.py (version 2) importe ce fichier : il charge l’artefact marqué production dans registre.json et répond. Il n’entraîne rien.\n\n'+
+    '# ---------------- preparer() ----------------\n'+CodeLab.code('e2').replace(/\s+$/,'')+'\n\n# ---------------- le chargement et predire_v2() ----------------\n'+CodeLab.code('e6').replace(/\s+$/,'')+'\n';
+}
+document.getElementById('asmBtn').addEventListener('click',function(){
+  var msg=document.getElementById('asmMsg'),ok=CodeLab.solved();
+  var miss=['e2','e3','e4','e5','e6'].filter(function(k){return ok.indexOf(k)<0;});
+  if(miss.length){msg.textContent='Terminez d’abord les étapes '+miss.map(function(k){return k.slice(1);}).join(', ')+'.';return;}
+  msg.textContent='Exécution dans un espace vide…';
+  CodeLab.run('e7',modelePyV2());
+});
+
+/* ---- the zip (stored, no compression), as on day 1 ---- */
+var CRC=(function(){var t=[],c,n,k;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return function(u){var x=0xFFFFFFFF;for(var i=0;i<u.length;i++)x=t[(x^u[i])&255]^(x>>>8);return (x^0xFFFFFFFF)>>>0;};})();
+function makeZip(files){
+  var enc=new TextEncoder(),parts=[],central=[],off=0;
+  function u16(n){return [n&255,(n>>>8)&255];}
+  function u32(n){return [n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];}
+  files.forEach(function(f){
+    var name=enc.encode(f.name),data=f.data,crc=CRC(data);
+    var head=[0x50,0x4b,3,4].concat(u16(20),u16(0x0800),u16(0),u16(0),u16(0x21),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0));
+    parts.push(new Uint8Array(head),name,data);
+    central.push({name:name,crc:crc,len:data.length,off:off});
+    off+=head.length+name.length+data.length;
+  });
+  var cstart=off;
+  central.forEach(function(c){
+    var h=[0x50,0x4b,1,2].concat(u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0x21),u32(c.crc),u32(c.len),u32(c.len),u16(c.name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(c.off));
+    parts.push(new Uint8Array(h),c.name);off+=h.length+c.name.length;
+  });
+  parts.push(new Uint8Array([0x50,0x4b,5,6].concat(u16(0),u16(0),u16(central.length),u16(central.length),u32(off-cstart),u32(cstart),u16(0))));
+  return new Blob(parts,{type:'application/zip'});
+}
+/* the given files + registre.json + every .joblib the registry names + modele.py → a zip */
+function serviceZip(modeleText,zipName,msg,stepId){
+  msg.textContent='Préparation…';
+  var names=['app.py','requirements.txt','Dockerfile','README.md'];
+  Promise.all(names.map(function(n){return fetch('files/service-v2/'+n,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(n);return r.arrayBuffer();});}))
+  .then(function(bufs){
+    var files=names.map(function(n,i){return {name:n,data:new Uint8Array(bufs[i])};});
+    return CodeLab.readFile('registre.json').then(function(reg){
+      files.push({name:'registre.json',data:reg});
+      var list=JSON.parse(new TextDecoder().decode(reg));
+      return Promise.all(list.map(function(e){return CodeLab.readFile(e.fichier).then(function(b){files.push({name:e.fichier,data:b});});})).then(function(){return files;});
+    });
+  }).then(function(files){
+    files.push({name:'modele.py',data:new TextEncoder().encode(modeleText)});
+    var a=document.createElement('a');a.href=URL.createObjectURL(makeZip(files));a.download=zipName;document.body.appendChild(a);a.click();a.remove();
+    var tot=files.reduce(function(s,f){return s+f.data.length;},0);
+    msg.textContent='Téléchargé : '+files.length+' fichiers, '+fmt(tot/1000,0)+' ko, dans '+zipName+'.';markStep(stepId);
+  }).catch(function(e){msg.textContent='Le téléchargement a échoué ('+(e.message||e)+'). Les fichiers de l’étape 5 existent-ils encore ? Exécutez de nouveau les étapes 4 et 5, puis recommencez.';});
+}
+need('zip');need('zipp');
+document.getElementById('zipBtn').addEventListener('click',function(){serviceZip(modelePyV2(),'service_v2.zip',document.getElementById('zipMsg'),'zip');});
+document.getElementById('zipProjBtn').addEventListener('click',function(){
+  var txt='# modele.py · MIA 506, journée 2 · le fichier du serveur de mon projet (étape 12), écrit dans la page du cours.\n'+CodeLab.code('p2').replace(/\s+$/,'')+'\n';
+  serviceZip(txt,'service_projet.zip',document.getElementById('zipProjMsg'),'zipp');
+});
+
+/* ---- 2.5 · the student's CSV into Python's file system ---- */
+document.getElementById('csvFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0],m=document.getElementById('csvMsg');if(!f)return;
+  if(f.size>20*1024*1024){m.textContent='Le fichier dépasse 20 Mo : prenez un extrait.';return;}
+  var name=f.name.replace(/[^A-Za-z0-9._-]/g,'_');
+  m.textContent='Copie…';
+  f.arrayBuffer().then(function(b){return CodeLab.writeFile(name,new Uint8Array(b));}).then(function(){
+    m.innerHTML='✓ Copié sous le nom <code>'+esc(name)+'</code> ('+fmt(f.size/1000,0)+' ko). Écrivez <code>FICHIER_DONNEES = "'+esc(name)+'"</code> à l’étape 11.';
+  }).catch(function(e){m.textContent='La copie a échoué ('+(e.message||e)+').';});
+});
+
+/* ---- 2.2 / 2.5 · calling the servers ---- */
+var SUS={date_heure:'2026-11-20 03:12:00',type_operation:'envoi',montant_fcfa:180000,solde_avant_fcfa:185000,anciennete_compte_jours:900,nb_operations_24h:6,nouveau_beneficiaire:1,nouvel_appareil:1};
+function cleanUrl(v){
+  v=String(v||'').trim().replace(/\/+$/,'');if(!v)return '';
+  var m=v.match(/huggingface\.co\/spaces\/([^\/\s]+)\/([^\/\s?#]+)/i);
+  if(m)return 'https://'+(m[1]+'-'+m[2]).toLowerCase().replace(/[^a-z0-9-]/g,'-')+'.hf.space';
+  if(!/^https?:\/\//i.test(v))v='https://'+v;
+  return v.replace(/\/(predire|docs)$/,'');
+}
+function srv(){return cleanUrl(document.getElementById('srvUrl').value);}
+function call(base,path,body,timeoutMs){
+  var t=performance.now(),ctl=('AbortController' in window)?new AbortController():null,opt=body===undefined?{}:{method:'POST',body:JSON.stringify(body)};
+  if(ctl){opt.signal=ctl.signal;setTimeout(function(){ctl.abort();},timeoutMs||20000);}
+  return fetch(base+path,opt).then(function(r){return r.text().then(function(tx){var j=null;try{j=JSON.parse(tx);}catch(e){}return {ms:performance.now()-t,st:r.status,j:j,tx:tx};});})
+    .catch(function(e){return {ms:performance.now()-t,st:0,err:String(e&&e.message||e)};});
+}
+function showRes(el,title,r){
+  var s=title+'\n';
+  if(r.st===0)s+='→ pas de réponse ('+r.err+'). Vérifiez l’adresse, et que le Space affiche « Running ».';
+  else s+='→ code '+r.st+' · temps total mesuré par cette page : '+r.ms.toFixed(0)+' ms\n'+(r.j?JSON.stringify(r.j,null,1):r.tx.slice(0,400));
+  el.textContent=s;
+}
+function describe(j){
+  if(!j)return '';
+  if(j.version_service==='2')return 'Version 2 · modèle '+j.version_modele+' · empreinte '+String(j.empreinte||'').slice(0,12)+'… · démarrage '+j.duree_demarrage_s+' s, sans entraînement · scikit-learn '+(j.versions&&j.versions['scikit-learn']);
+  return 'Version 1 · '+(j.modele||'?')+' · seuil '+j.seuil+' · entraîne au démarrage · démarrage '+j.duree_demarrage_s+' s · scikit-learn '+(j.versions&&j.versions['scikit-learn']);
+}
+(function(){
+  var out=document.getElementById('srvOut'),out2=document.getElementById('srvOut2'),inp=document.getElementById('srvUrl');
+  inp.addEventListener('change',function(){var c=cleanUrl(inp.value);if(c&&c!==inp.value){inp.value=c;inp.dispatchEvent(new Event('input',{bubbles:true}));}});
+  function needUrl(el){var b=srv();if(!b){el.textContent='Collez d’abord l’adresse de votre serveur à l’étape 8.';return '';}return b;}
+  document.getElementById('srvBefore').addEventListener('click',function(){var b=needUrl(out);if(!b)return;out.textContent='Appel…';call(b,'/').then(function(r){showRes(out,'GET '+b+'/',r);if(r.j&&r.st===200)setWork('w2_avant',describe(r.j));});});
+  document.getElementById('srvSus').addEventListener('click',function(){var b=needUrl(out);if(!b)return;out.textContent='Appel…';call(b,'/predire',SUS).then(function(r){showRes(out,'POST '+b+'/predire · l’opération suspecte',r);});});
+  document.getElementById('srvAfter').addEventListener('click',function(){var b=needUrl(out2);if(!b)return;out2.textContent='Appel…';call(b,'/').then(function(r){showRes(out2,'GET '+b+'/',r);if(r.j&&r.st===200){if(r.j.version_service==='2')setWork('w2_apres',describe(r.j));else out2.textContent+='\n\n⚠ C’est encore la version 1 : le Space n’a pas fini de reconstruire, ou les fichiers n’ont pas été remplacés.';}});});
+  document.getElementById('srvSus2').addEventListener('click',function(){var b=needUrl(out2);if(!b)return;out2.textContent='Appel…';call(b,'/predire',SUS).then(function(r){showRes(out2,'POST '+b+'/predire · l’opération suspecte',r);});});
+  var pout=document.getElementById('projOut');
+  document.getElementById('projInfo').addEventListener('click',function(){var b=cleanUrl(document.getElementById('projUrl').value);if(!b){pout.textContent='Collez d’abord l’adresse du serveur de votre projet.';return;}pout.textContent='Appel…';call(b,'/').then(function(r){showRes(pout,'GET '+b+'/',r);});});
+
+  /* the downtime watch: one GET / every 2 s; stops after three answers of version 2 in a row */
+  var timer=null,dots=document.getElementById('dots'),wout=document.getElementById('watchOut'),wmsg=document.getElementById('watchMsg'),log=[],t0=0,lastOk=null,firstKo=null,firstNew=null,newRun=0;
+  function hms(ms){var d=new Date(ms);return d.toTimeString().slice(0,8);}
+  function paint(){
+    var ko=log.filter(function(x){return x.k==='ko';}).length,sec=Math.round((Date.now()-t0)/1000);
+    var s='Depuis '+hms(t0)+' · '+sec+' s · '+log.length+' appels · '+ko+' sans réponse ou en erreur';
+    if(firstKo)s+='\nPremier appel sans réponse : '+hms(firstKo)+(lastOk?' (dernière réponse de la version 1 : '+hms(lastOk)+')':'');
+    if(firstNew)s+='\nPremière réponse de la version 2 : '+hms(firstNew)+(firstKo?' → le serveur n’a pas répondu pendant environ '+Math.round((firstNew-(lastOk||firstKo))/1000)+' s':' → aucune interruption vue par cette page');
+    wout.textContent=s;
+  }
+  function tick(){
+    var b=srv();
+    call(b,'/',undefined,1800).then(function(r){
+      var k='ko',now=Date.now();
+      if(r.st===200&&r.j){k=r.j.version_service==='2'?'new':'ok';}
+      if(k==='ok'){lastOk=now;newRun=0;}
+      if(k==='ko'&&!firstKo)firstKo=now;
+      if(k==='new'){if(!firstNew)firstNew=now;newRun++;}
+      log.push({k:k,t:now});var sp=document.createElement('span');sp.className=k;sp.title=hms(now)+' · '+(k==='ko'?('pas de réponse / code '+r.st):('version '+(k==='new'?'2':'1')));dots.appendChild(sp);
+      paint();
+      if(newRun>=3){stop();wmsg.textContent='Terminé : la version 2 répond. Lisez la durée ci-dessous et remplissez le champ.';}
+    });
+  }
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  document.getElementById('watchGo').addEventListener('click',function(){
+    if(!srv()){wmsg.textContent='Collez d’abord l’adresse de votre serveur à l’étape 8.';return;}
+    stop();log=[];dots.innerHTML='';t0=Date.now();lastOk=null;firstKo=null;firstNew=null;newRun=0;
+    wmsg.textContent='Mesure en cours : déposez maintenant les fichiers dans le Space.';tick();timer=setInterval(tick,2000);
+  });
+  document.getElementById('watchStop').addEventListener('click',function(){stop();wmsg.textContent='Mesure arrêtée.';});
+})();
+
+/* ---- 2.4 · the seven cost calculations, with the published prices (consulted 27 Nov 2026) ---- */
+var PX={hfUpgrade:0.03,crCpu:0.000024,crMem:0.0000025,crReq:0.40,eur:0.91};
+buildNum('costNum',[
+  {id:'c1',q:'<b>1 · Option A, la machine louée en permanence.</b> Un « CPU Upgrade » à 0,03 $ par heure, allumé jour et nuit pendant un mois de 30 jours : combien de dollars par mois ? (Vérifiez au passage qu’une seule suffit : 8 processeurs × 50 prédictions par seconde chacun, à 50 % d’occupation, font 200 par seconde pour 50 à la pointe.)',a:21.6,unit:'$ par mois',w:'0,03 $ × 24 heures × 30 jours = 21,60 $ par mois, soit 19,66 €. Une seule machine de 8 processeurs tient la pointe quatre fois.',hint:'Prix horaire × 24 × 30.'},
+  {id:'c2',q:'<b>2 · Option B, le temps de processeur.</b> 54 000 000 appels par mois, 20 millisecondes de processeur chacun, à 0,000024 $ par processeur-seconde : combien de dollars par mois ? (deux décimales)',a:25.92,tol:0.002,unit:'$ par mois',w:'54 000 000 × 0,020 s = 1 080 000 processeur-secondes ; × 0,000024 $ = 25,92 $.',hint:'Nombre d’appels × secondes par appel = processeur-secondes, puis × le prix.'},
+  {id:'c3',q:'<b>3 · Option B, les appels.</b> 54 millions d’appels à 0,40 $ le million : combien de dollars par mois ?',a:21.6,unit:'$ par mois',w:'54 × 0,40 $ = 21,60 $. Les appels coûtent ici autant que la machine A entière.',hint:'Millions d’appels × 0,40 $.'},
+  {id:'c4',q:'<b>4 · Option B, le total.</b> Ajoutez la mémoire : 0,5 gibioctet pendant 20 ms par appel, à 0,0000025 $ par gibioctet-seconde, pour 54 millions d’appels. Quel est le total mensuel de l’option B, en dollars ? (deux décimales)',a:48.87,tol:0.002,unit:'$ par mois',w:'Mémoire : 54 000 000 × 0,020 s × 0,5 GiB = 540 000 GiB-s × 0,0000025 $ = 1,35 $. Total : 25,92 + 21,60 + 1,35 = 48,87 $, soit 44,47 €.',hint:'Processeur (calcul 2) + appels (calcul 3) + mémoire.'},
+  {id:'c5',q:'<b>5 · A contre B.</b> Pour Jàppo Pay, l’option B coûte combien de fois l’option A ? (deux décimales)',a:2.26,tol:0.01,unit:'fois',w:'48,87 ÷ 21,60 = 2,26. À ce volume, payer à l’appel coûte plus du double d’une machine louée, qui reste occupée à 12 % en moyenne.',hint:'Total B ÷ total A.'},
+  {id:'c6',q:'<b>6 · Le point d’équilibre.</b> Un appel coûte 0,000000905 $ en option B (processeur 0,00000048 + appel 0,0000004 + mémoire 0,000000025). À partir de combien de <b>millions d’appels par mois</b> l’option A (21,60 $) devient-elle moins chère ? (une décimale)',a:23.9,tol:0.01,unit:'millions par mois',w:'21,60 ÷ 0,000000905 = 23 900 000 appels par mois, soit environ 800 000 par jour. En dessous, payer à l’appel est moins cher ; au-dessus, la machine. Jàppo Pay en est à 54 millions.',hint:'Coût mensuel de A ÷ coût d’un appel en B.'},
+  {id:'c7',q:'<b>7 · Option C, le calcul de nuit.</b> 400 000 clients à 5 ms sur un processeur = 2 000 secondes. La machine est facturée à la minute, 0,03 $ par heure, allumée 34 minutes par nuit, 30 nuits : combien de dollars par mois ? (deux décimales)',a:0.51,tol:0.04,unit:'$ par mois',w:'34 minutes = 0,567 heure × 0,03 $ = 0,017 $ par nuit ; × 30 = 0,51 $ par mois, soit 0,46 €. Le même modèle, 42 fois moins cher que le contrôle de fraude en option A, parce que personne n’attend la réponse.',hint:'Minutes allumées ÷ 60 × 0,03 $, puis × 30 nuits.'}
+]);
+
+/* ---- 2.4 · the calculator ---- */
+(function(){
+  var ids=['cOps','cMs','cGib','cPeak'],out=document.getElementById('calcOut');
+  function eur(x){return fmt(x*PX.eur,2)+' €';}
+  function draw(){
+    var ops=+document.getElementById('cOps').value||0,ms=+document.getElementById('cMs').value||1,gib=+document.getElementById('cGib').value||0.5,peak=(+document.getElementById('cPeak').value||10)/100;
+    var month=ops*30,perS=ops*peak/3600,capMachine=8*(1000/ms)*0.5,machines=Math.max(1,Math.ceil(perS/capMachine));
+    var A=machines*PX.hfUpgrade*24*30;
+    var B=month*(ms/1000)*PX.crCpu+month*(ms/1000)*gib*PX.crMem+month/1e6*PX.crReq;
+    var perCall=(ms/1000)*PX.crCpu+(ms/1000)*gib*PX.crMem+PX.crReq/1e6,be=PX.hfUpgrade*24*30/perCall;
+    out.innerHTML='<div><small>A · machine(s) louée(s) en permanence</small><b>'+eur(A)+'</b><small>'+machines+' machine'+(machines>1?'s':'')+' de 8 processeurs · '+fmt(A,2)+' $ · '+fmt(perS,0)+' appels par seconde à la pointe</small></div>'+
+      '<div><small>B · payé à l’appel</small><b>'+eur(B)+'</b><small>'+fmt(B,2)+' $ · '+fmt(month/1e6,1)+' millions d’appels · '+fmt(perCall*1e6,2)+' $ par million d’appels tout compris</small></div>'+
+      '<div><small>Le moins cher</small><b>'+(A<B?'A':'B')+'</b><small>point d’équilibre : '+fmt(be/1e6,1)+' millions d’appels par mois ('+fmt(be/30,0)+' par jour) pour une machine</small></div>';
+  }
+  ids.forEach(function(i){document.getElementById(i).addEventListener('input',draw);});draw();
+})();
+
+/* ---- 2.6 · the three failure cases: recorded picks ---- */
+buildPick('casesBox','casesCap',[
+  {id:'k1',s:'<b>Le dépistage en Thaïlande.</b> La pièce qui manquait le plus :',opts:[
+    ['donnees','Des données de test prises sur le terrain, pas en laboratoire','Le modèle avait été jugé sur des photos de bonne qualité ; les photos réelles ne leur ressemblaient pas. Un test fait dans les conditions du service, et un contrat sur la qualité des images à l’entrée, auraient montré le problème avant les patients.'],
+    ['latence','Un serveur plus rapide','Le temps de calcul n’était pas le problème ; le temps d’attente des patients venait des images refusées et du nouveau parcours dans la clinique.'],
+    ['version','Un registre des versions du modèle','Utile, mais ce n’est pas ce qui a fait échouer le déploiement : le modèle servi était bien celui prévu.'],
+    ['humain','Une conception avec les infirmières avant le déploiement','Juste aussi : l’étude montre que le parcours de soin n’avait pas été repensé avec elles. Les auteurs mettent ce point en avant, avec la qualité des images.']]},
+  {id:'k2',s:'<b>Zillow Offers.</b> La pièce qui manquait le plus :',opts:[
+    ['derive','Une surveillance de la dérive : vérifier chaque semaine que les prix réels suivent encore les prix prévus','Le modèle avait appris un marché qui a changé ; personne n’a arrêté d’acheter à temps. La journée 4 construit cette surveillance.'],
+    ['artefact','Un artefact versionné','Zillow avait certainement des versions ; le problème n’était pas de savoir quel modèle tournait, mais que le monde avait changé.'],
+    ['cout','Un hébergement moins cher','Le coût des serveurs ne pèse rien devant 304 millions de dollars de maisons dépréciées.'],
+    ['humain','Une limite humaine sur le montant total engagé par le modèle','Juste aussi : une règle de gestion (au plus tant de millions achetés par semaine sans validation) aurait borné la perte. C’est un garde-fou, à ajouter à la surveillance.']]},
+  {id:'k3',s:'<b>L’outil de tri de CV d’Amazon.</b> La pièce qui manquait le plus :',opts:[
+    ['biais','Un test par groupe avant la mise en service : les scores des femmes et des hommes comparés','Le biais venait des données d’entraînement ; un test qui compare les scores par groupe l’aurait montré avant tout usage. La journée 6 fait ce test.'],
+    ['registre','Un registre de modèles','Le registre dit quelle version tourne, pas si elle est juste.'],
+    ['latence','Un service en temps réel','Le tri de CV se fait très bien par lots ; le mode d’inférence n’a rien à voir avec l’échec.'],
+    ['donnees','Des données d’entraînement qui ressemblent aux recrutements voulus, pas aux recrutements passés','Juste aussi : le modèle apprend le passé. Si le passé est ce qu’on veut changer, il faut d’autres données ou des contraintes, et le test par groupe pour le vérifier.']]}
+],'Trois choix enregistrés : la classe compare.');
+
+/* ---- 2.7 quiz · answer positions: 2 0 3 1 2 0 3 1 ---- */
+buildQuiz([
+  {q:'Votre serveur de la journée 1 réentraînait le modèle à chaque démarrage. Quel est le défaut le plus grave de ce choix ?',
+   opts:['Le serveur coûte plus cher à l’heure','Le code est plus long','Personne ne peut dire quel modèle répond, et deux démarrages peuvent donner deux modèles différents sans que personne le sache','Le modèle est moins précis'],a:2,
+   w:'Sans artefact, « le modèle » est un état de la mémoire d’une machine : pas de nom, pas de version, pas de preuve que deux serveurs répondent pareil.'},
+  {q:'Qu’est-ce qu’un artefact de modèle ?',
+   opts:['Le fichier d’un modèle entraîné, figé, avec ce qu’il faut pour le servir et savoir d’où il vient : seuil, variables, version, date, versions des bibliothèques','Le code Python qui entraîne le modèle','Les données d’entraînement','Le serveur qui héberge le modèle'],a:0,
+   w:'L’artefact est le résultat de l’entraînement, pas la recette ni les ingrédients.'},
+  {q:'Deux fichiers modele-1.1.0.joblib ont la même empreinte SHA-256. Que pouvez-vous en conclure ?',
+   opts:['Ils ont été entraînés le même jour','Ils donnent à peu près les mêmes probabilités','Ils ont la même taille, sans plus','Ils sont identiques octet par octet : c’est exactement le même modèle'],a:3,
+   w:'L’empreinte change dès qu’un octet change ; la même empreinte, c’est le même fichier.'},
+  {q:'Vous ajoutez une variable au modèle sans changer les champs que le système de paiement envoie. Quel numéro de version, selon le versionnage sémantique ?',
+   opts:['2.0.0, parce que le modèle change','1.1.0 : une mineure, les entrées du service ne changent pas','1.0.1 : un correctif','Aucun : on garde 1.0.0 et on remplace le fichier'],a:1,
+   w:'Une majeure quand l’appelant doit s’adapter (les entrées changent), une mineure pour un nouveau modèle aux mêmes entrées, un correctif pour une erreur réparée. Remplacer un fichier sans changer la version est la pire option : deux fichiers différents porteraient le même nom.'},
+  {q:'Dans votre registre, deux versions sont marquées « production ». Que se passe-t-il quand le service démarre ?',
+   opts:['Il sert la plus récente','Il sert les deux et compare','Il n’y a plus de réponse à la question « quel modèle répond ? » : le service en prend une au hasard, selon l’ordre du fichier','Il refuse de démarrer'],a:2,
+   w:'La règle « exactement une version en production » existe pour que la question ait une réponse. Le code de promouvoir() la garantit ; un registre écrit à la main ne la garantit pas.'},
+  {q:'Vous avez épinglé joblib==1.5.3 et numpy==2.4.6 dans requirements.txt, en plus de scikit-learn et pandas. Pourquoi ?',
+   opts:['Un artefact écrit par une version d’une bibliothèque peut ne pas se recharger, ou répondre autrement, avec une autre version','Pour que le conteneur se construise plus vite','Parce que Hugging Face l’exige','Pour réduire la taille du fichier'],a:0,
+   w:'La reproductibilité de l’environnement : l’artefact et les bibliothèques qui l’ont écrit vont ensemble.'},
+  {q:'Pendant la mise à jour de votre Space, la page a compté 170 secondes sans réponse. Quelle méthode évite cette interruption ?',
+   opts:['Un modèle plus petit','Réentraîner plus vite','Mettre à jour la nuit','Le déploiement bleu-vert : construire le nouveau serveur à côté de l’ancien, puis basculer l’adresse quand il répond'],a:3,
+   w:'L’hébergeur a reconstruit le conteneur sur place. Avec deux serveurs et une bascule, l’ancien répond jusqu’à ce que le nouveau soit prêt.'},
+  {q:'Un service reçoit 1 million d’appels par mois, 20 ms chacun. La machine louée coûte 21,60 $ par mois ; l’appel coûte 0,000000905 $ en paiement à l’appel. Quelle option est la moins chère ?',
+   opts:['La machine louée','Le paiement à l’appel : environ 0,91 $ par mois, contre 21,60 $','Les deux coûtent pareil','On ne peut pas savoir sans le prix de la mémoire'],a:1,
+   w:'1 000 000 × 0,000000905 $ = 0,91 $. Sous le point d’équilibre (environ 24 millions d’appels par mois pour cette machine), payer à l’appel gagne ; au-dessus, la machine.'}
+],'s7',['Excellent : la journée est acquise.','Bien. Relisez les explications des questions manquées.','Reprenez les sections 2.1, 2.3 et 2.4 : les réponses y sont.']);
+
+bootDay();
+</script>
+<script>/* the instructor's device opens the full deck (with the solution slides); everyone else the student deck */
+(function(){var i=false;try{i=!!(window.AdminGate&&AdminGate.isUnlocked());}catch(e){}
+  if(i)document.querySelectorAll('a[href="journee2-slides.html"]').forEach(function(a){a.href='journee2-slides-enseignant.html';});})();</script>
+<script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="courseprogress.js"></script>
+<script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/shared/boardlink.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>

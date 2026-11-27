@@ -26,7 +26,7 @@ window.CourseProgress=(function(){
   var T=window.T||function(fr,en){return fr;};
   var CHAPTERS=[
     {mod:'w1', short:'J1', name:'Journée 1 · Construire un modèle, le mettre sur un serveur, le casser', total:7, live:true,  href:'journee1.html'},
-    {mod:'w2', short:'J2', name:'Journée 2 · Empaqueter et servir un modèle', total:9, live:false, href:'journee2.html'},
+    {mod:'w2', short:'J2', name:'Journée 2 · Enregistrer le modèle, le servir sans le réentraîner, chiffrer', total:7, live:true,  href:'journee2.html'},
     {mod:'w3', short:'J3', name:'Journée 3 · Pipelines de données et automatisation (CI/CD)', total:9, live:false, href:'journee3.html'},
     {mod:'w4', short:'J4', name:'Journée 4 · Surveiller et piloter un modèle en production', total:9, live:false, href:'journee4.html'},
     {mod:'w5', short:'J5', name:'Journée 5 · Les grands modèles de langage en production', total:9, live:false, href:'journee5.html'},

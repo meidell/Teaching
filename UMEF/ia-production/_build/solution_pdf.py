@@ -1,17 +1,29 @@
 #!/usr/bin/env python3
-"""MIA 506 · journée 1 · génère _private/j1-solution-pas-a-pas.html et .pdf à partir de _private/j1_solution.py.
+"""MIA 506 · génère _private/jN-solution-pas-a-pas.html et .pdf à partir de _private/jN_solution.py.
 
 Le script est la seule source : « # ===== ÉTAPE n · titre ===== » ouvre une étape ; « #> » = texte à
 dire ; « #= » = résultat attendu ; « #$ » = commande shell ; le reste est du code Python.
-    python3 _build/solution_pdf.py          (Chrome headless pour le PDF)
+    python3 _build/solution_pdf.py [1|2]          (journée 1 par défaut ; Chrome headless pour le PDF)
 """
 import html, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SRC = os.path.join(ROOT, "_private", "j1_solution.py")
-OUT_HTML = os.path.join(ROOT, "_private", "j1-solution-pas-a-pas.html")
-OUT_PDF = os.path.join(ROOT, "_private", "j1-solution-pas-a-pas.pdf")
+DAY = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] in ("1", "2") else "1"
+SRC = os.path.join(ROOT, "_private", "j" + DAY + "_solution.py")
+OUT_HTML = os.path.join(ROOT, "_private", "j" + DAY + "-solution-pas-a-pas.html")
+OUT_PDF = os.path.join(ROOT, "_private", "j" + DAY + "-solution-pas-a-pas.pdf")
+HEAD = {
+    "1": ('Journée 1 · la solution pas à pas, du premier print jusqu’au serveur sur Hugging Face',
+          'le code est celui de <code>_private/j1_solution.py</code>, qui est aussi le <code>modele.py</code> du serveur ; chaque résultat a été calculé '
+          'le 27 novembre 2026 sur <code>jappo_transactions.csv</code> avec pandas 3.0.2 et scikit-learn 1.8.0, les versions de la page et du serveur ; '
+          'le service a été démarré sur un ordinateur avec ces six fichiers et a répondu comme indiqué à l’étape 11.',
+          'Les étapes 1 à 9 sont les fenêtres de code de la matinée ; les étapes 10 et 11 sont l’après-midi, jusqu’au serveur qui répond.'),
+    "2": ('Journée 2 · la solution pas à pas : l’artefact versionné, le registre, le service qui le charge, la mise à jour chronométrée, les coûts',
+          'le code est celui de <code>_private/j2_solution.py</code> ; les étapes 1 à 6 s’exécutent de bout en bout avec pandas 3.0.2, scikit-learn 1.8.0 et joblib 1.5.3 '
+          '(les versions de la page et du serveur), et les étapes 2 + 6 forment le <code>modele.py</code> du service version 2, démarré et appelé sur un ordinateur le 27 novembre 2026.',
+          'Les étapes 1 à 7 sont la matinée (les fenêtres de code, puis le fichier du serveur) ; 8 et 9 la mise à jour du Space ; 10 les sept calculs et la note de chiffrage ; 11 le projet ; 12 les trois cas et le quiz.'),
+}[DAY]
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 CSS = """
@@ -83,7 +95,7 @@ def say_html(lines):
             items[-1] += " " + t
         else:
             items = None
-            if paras and isinstance(paras[-1], str) and not re.match(r"^(Ce que nous faisons|Pourquoi|Attention|Les trois pièges|À montrer|Si le Space|Le même service|Trois leviers)", t):
+            if paras and isinstance(paras[-1], str) and not re.match(r"^(Ce que nous faisons|Pourquoi|Attention|Les trois pièges|À montrer|Si le Space|Le même service|Trois leviers|Ce qu’on observe|Ce qu'on observe|Laquelle promouvoir|Le zip contient|Les prix|Jàppo Pay|Le calculateur|La note de chiffrage|Le canevas|Quiz|Les trois cas|Étape 1[0-2]|Vérification)", t):
                 paras[-1] += " " + t
             else:
                 paras.append(t)
@@ -94,20 +106,16 @@ def say_html(lines):
             out.append("<" + tag + ">" + "".join("<li>" + esc(x) + "</li>" for x in p[1:]) + "</" + tag + ">")
         else:
             p = esc(p)
-            p = re.sub(r"^(Ce que nous faisons|Pourquoi[^:]*|Attention|Les trois pièges[^:]*|À montrer[^:]*|Si le Space[^:]*|Le même service[^:]*)\s*:", r"<b>\1 :</b>", p)
+            p = re.sub(r"^(Ce que nous faisons|Pourquoi[^:]*|Attention|Les trois pièges[^:]*|À montrer[^:]*|Si le Space[^:]*|Le même service[^:]*|Ce qu’on observe|Ce qu'on observe|Laquelle promouvoir|Le zip contient|Les prix[^:]*|Jàppo Pay|Le calculateur|La note de chiffrage[^:]*|Le canevas[^:]*|Quiz[^:]*|Étape 1[0-2][^:]*|Vérification[^:]*)\s*:", r"<b>\1 :</b>", p)
             out.append("<p>" + p + "</p>")
     return '<div class="say">' + "".join(out) + "</div>"
 
 def build():
     src = open(SRC, encoding="utf-8").read()
     steps = parse(src)
-    body = ['<h1>Journée 1 · la solution pas à pas, du premier print jusqu’au serveur sur Hugging Face</h1>',
-            '<p class="sub">MIA 506 · Déploiement et pilotage des systèmes d’IA en production · fichier de l’enseignant, ne pas distribuer · '
-            'le code est celui de <code>_private/j1_solution.py</code>, qui est aussi le <code>modele.py</code> du serveur ; chaque résultat a été calculé '
-            'le 27 novembre 2026 sur <code>jappo_transactions.csv</code> avec pandas 3.0.2 et scikit-learn 1.8.0, les versions de la page et du serveur ; '
-            'le service a été démarré sur un ordinateur avec ces six fichiers et a répondu comme indiqué à l’étape 11.</p>',
-            '<p>Pour chaque étape : le texte à dire (encadré bleu), le code tel qu’il s’écrit dans la fenêtre de la page, puis le résultat attendu (bordure verte). '
-            'Les étapes 1 à 9 sont les fenêtres de code de la matinée ; les étapes 10 et 11 sont l’après-midi, jusqu’au serveur qui répond.</p>',
+    body = ['<h1>' + HEAD[0] + '</h1>',
+            '<p class="sub">MIA 506 · Déploiement et pilotage des systèmes d’IA en production · fichier de l’enseignant, ne pas distribuer · ' + HEAD[1] + '</p>',
+            '<p>Pour chaque étape : le texte à dire (encadré bleu), le code tel qu’il s’écrit dans la fenêtre de la page, puis le résultat attendu (bordure verte). ' + HEAD[2] + '</p>',
             '<div class="toc">' + "".join('<div>' + esc(s["title"]) + '</div>' for s in steps) + '</div>']
     for s in steps:
         body.append('<div class="step"><h2>' + esc(s["title"]) + '</h2>')
@@ -127,7 +135,7 @@ def build():
             elif kind == "sh":
                 body.append('<h3>Dans un terminal</h3><pre class="sh">' + esc("\n".join(lines)) + '</pre>')
         body.append('</div>')
-    doc = ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>MIA 506 · Journée 1 · Solution pas à pas</title>'
+    doc = ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>MIA 506 · Journée ' + DAY + ' · Solution pas à pas</title>'
            '<style>' + CSS + '</style></head><body>' + "\n".join(body) + '</body></html>')
     open(OUT_HTML, "w", encoding="utf-8").write(doc)
     print("written", OUT_HTML, len(steps), "steps")

@@ -577,7 +577,12 @@
     /* for tests: put code in a block and run it; resolves when done */
     run: function (id, code) { var b = document.getElementById(id); if (code != null) { b.__ta.value = code; b.__ta.dispatchEvent(new Event('input')); } return b.__run(); },
     /* a direct query, for a page's own widgets */
-    sql: function (q) { return sqlEngine(function () { }).then(function (E) { return E.conn.query(q); }); }
+    sql: function (q) { return sqlEngine(function () { }).then(function (E) { return E.conn.query(q); }); },
+    /* Python's file system (27 Nov 2026, for mia506 journée 2): read a file the student's code wrote
+       (a saved model, a registry) as a Uint8Array, or write bytes the page received (an uploaded CSV)
+       so that open()/pd.read_csv() find it. Both resolve once the Python engine is loaded. */
+    readFile: function (name) { return pyEngine(function () { }).then(function (py) { return py.FS.readFile(name); }); },
+    writeFile: function (name, bytes) { return pyEngine(function () { }).then(function (py) { py.FS.writeFile(name, bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)); return name; }); }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { mountAll(); });
   else mountAll();
