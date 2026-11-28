@@ -20,7 +20,7 @@ the root `CLAUDE.md`; read that first.
   `co` (🔁 mise en commun — written out in full, "if it does not take place,
   read it"), `quiz`. ⚠ **No `min` on sections, no `#dayTl`, no section
   timings** (WRITING.md rule 7); the only `.timer`s are the rules of the two
-  games of journée 1 (a six-minute round, a two-minute round, a ten-minute
+  games of journée 1 (an eight-minute round, a three-minute round, a ten-minute
   sprint). The block hours (09h00–10h30 …) are the syllabus's timetable and
   stay on the section list.
 - **Dates**: Sat 28 Nov, 5 Dec, 12 Dec, 19 Dec 2026, 9 Jan, 16 Jan 2027,
@@ -56,12 +56,30 @@ the root `CLAUDE.md`; read that first.
   bring a real project); the syllabus's reading list with DOIs for Cooper &
   Sommer and Conforto & Amaral. QR `qr-mpm503.svg` (segno, #0f4c60, `?app=1`).
 - **`journee1.html` · *Pourquoi agile ? Scrum en pratique*** (w1, 8 sections,
-  denominator 63): 1.1 **the short-cycle game** — paper planes, three
-  requirements (flies 3 m, a star on both wings, folded nose), round A = 2 min
-  plan + 6 min production without feedback, rounds B–E = 2 min then immediate
-  acceptance; the table (`#rounds`, `mpm503_w1_rounds`) computes accepted per
-  minute and the refused share, a bar chart, hidden `w1_rounds`, step
-  `rounds` when five rounds are filled, carnet `w1_cycle` (`data-board`) · 1.2
+  denominator 64): 1.1 **the short-cycle game** — ⚠ since 28 Nov 2026 (the
+  morning of day 1; Jan Erik: "suggest rather a game where they make a webpage
+  (1 page using ai) and add it to netlify. that is 'a real' development") it is
+  **« Le site d'une page »**: the team builds a one-page site for the fictional
+  *Boulangerie du Lac* with an AI assistant, deploys it on Netlify (drag the
+  `site` folder, free account), and the client (the instructor) checks TWELVE
+  requirements on the live URL, each with its acceptance test printed in the
+  order table (exact title, the three client sentences, a 7-row hours table,
+  three CHF prices with two decimals, a drawn star, a mailto « Commander »
+  button, the footer address, a map link, phone width, a brown #8B4513 band,
+  a photo with its caption, an e-mail-typed form). Four roles (rédacteur,
+  intégrateur, testeur, scribe). Round A = 2 min roles + 8 min production
+  without feedback, one delivery, all twelve checked; rounds B–E = 3 min,
+  deploy, the client checks only what the scribe claims, 1 min to adapt. The
+  table (`#rounds`, `mpm503_w1_rounds`; columns « exigences livrées /
+  acceptées ») computes accepted per minute (A ÷ 8, B–E ÷ 3) and the refused
+  share, a bar chart, hidden `w1_rounds`, step `rounds` when five rounds are
+  filled, `w1_site` (the Netlify URL, new field), carnet `w1_cycle`
+  (`data-board`); s1 needs rounds + w1_site + w1_cycle. The mid-game changes
+  (euros at 1 CHF = 1,05 €, golden star, the e-mail with an s), the minuted
+  run sheet and what to say are in `_private/j1-jeu-site-enseignant.md`
+  (never committed). The plane version (three requirements, 6 + 2 min) is in
+  git history before 28 Nov 2026; the two classify sentences, journée 3's
+  opening line and one Jeopardy answer that named planes were reworded · 1.2
   the four values (classify `valRows`, 8), the three principles, four
   documented failures — Denver baggage (opened Feb 1995, 16 months late, ≈ $560 m,
   de Neufville 1994), FBI Virtual Case File ($170 m, DOJ OIG 2005), NHS NPfIT
