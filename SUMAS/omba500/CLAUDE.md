@@ -198,3 +198,40 @@ applies. What differs:
   "Chinese OEMs win auctions"). The "search YouTube" video was removed (no
   real runtime). Activity 2 says the pairs are posted in Forum 17 on
   Thursday morning — Jan Erik must post them. Tested headless 1280/390 px.
+
+- **The final exam runs on the site (28 Nov 2026)** — Jan Erik: "prepare the
+  exam on my site. do not give access before 7 dec 09:30 and until 14 dec
+  09:30. One try - they can not reopen it". `exam.html` (students, linked
+  from week10's exam card) + `exam-admin.html` (instructor, gate + FBAuth).
+  NO question and NO answer is in a committed file: `_private/build_exam.py`
+  (gitignored; every computed answer asserted) writes
+  `_private/exam-paper.json` — 60 MCQ in six parts of ten (energy and
+  capacity factor · LCOE/CRF/CfD · learning curves and forecasting · systems,
+  boundaries, AI · scenarios and signposts · strategy and recommendation),
+  all on one NEW case (Spanish utility-scale solar to 2040, two FICTITIOUS
+  companies Sol Ibérico / Iberia Energía, case figures stated in the case).
+  Jan Erik loads that file on exam-admin.html: questions →
+  `omba500/_exam/paper`, key (+ explanations) → `_exam/key`.
+  ⚠ **Enforced by the `_exam` rules block** in `firebase-database-rules.json`
+  (OPEN 1796632200000 = 7 Dec 2026 09:30 CET, CLOSE 1797237000000 = 14 Dec
+  09:30): `paper` readable only inside the window; `start/<sid>` create-once,
+  inside the window, with the student's `_roster` password, `t` = server
+  time; `ans/<sid>/qN` create-once, only before start + 2 h (+2 min grace)
+  and CLOSE (+2 min), and only while `done/<sid>` does not exist;
+  `prog/<sid>` (count answered, increasing only) lets another device resume
+  without reading answers; `done/<sid>` create-once. Questions one at a time
+  in order, a saved answer is final, a reload resumes the same attempt with
+  the time left, the hand-in is automatic at 2 h (or at CLOSE when started
+  later than 2 h before it). Identity = the course sign-in (`omba500_auth`);
+  as everywhere on the site it is a soft identity (`_roster/<sid>` is
+  world-readable, so the password is not secret). exam-admin.html: status,
+  load the paper, results per student (score /60, time used, CSV), share
+  right per question (< 40 % in red), preview with the key, "Allow a new
+  attempt" (deletes start/ans/prog/done of one sid). Tested 28 Nov 2026 in
+  Playwright against a stand-in database applying the same rules, with the
+  browser clock moved (19/19: locked before, cover, start, resume after
+  reload, second start / changed answer / answer after hand-in / wrong
+  password refused, hand-in now, auto hand-in at 2 h, late start gets the
+  time to CLOSE, closed after, 390 px, admin results and preview). The rules
+  themselves were NOT run (no Java for the emulator here). ⚠ **Before 7 Dec:
+  publish the rules, then load exam-paper.json on exam-admin.html.**

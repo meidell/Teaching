@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/SUMAS/omba500/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex">
+<title>Final exam · Capstone · SUMAS</title>
+<!--
+  OMBA500 · the final exam, run on the site (28 Nov 2026, Jan Erik: "prepare
+  the exam on my site. do not give access before 7 dec 09:30 and until 14 dec
+  09:30. One try - they can not reopen it").
+  The page holds NO question and NO answer. The questions live in
+  omba500/_exam/paper, which the database rules let anyone read only between
+  OPEN and CLOSE; the key lives in omba500/_exam/key (instructor only). The
+  instructor loads both from _private/exam-paper.json on exam-admin.html.
+  One attempt is enforced by the rules, not by this page:
+    _exam/start/<sid>  create-once, only inside the window, only with the
+                       student's course password (checked against _roster),
+                       t = server time
+    _exam/ans/<sid>/qN create-once (no answer can be changed), only before
+                       start.t + 2 h (+2 min) and before CLOSE (+2 min), and
+                       only while _exam/done/<sid> does not exist
+    _exam/prog/<sid>   how many questions are answered (so another device
+                       resumes at the right question without reading answers)
+    _exam/done/<sid>   create-once: the hand-in
+  Questions come one at a time, in order; a saved answer cannot be revisited.
+  Reloading the page (or opening it on another device) resumes the SAME
+  attempt with the time that is left; it never starts a new one.
+-->
+<meta name="theme-color" content="#2C5530">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌬️</text></svg>">
+<link rel="stylesheet" href="/shared/themes/sumas.css">
+<link rel="stylesheet" href="capstone.css">
+<style>
+.xcard{background:#fff;border:1px solid var(--surface-2,#E6E0D3);border-radius:16px;padding:22px 24px;margin:18px 0;}
+.xcard h2{margin-top:0;}
+.xcard ul,.xcard ol{padding-left:20px;}
+.xcard li{margin:5px 0;}
+.big{font-family:Georgia,serif;font-size:30px;font-weight:700;color:var(--accent-deep);}
+.btn{display:inline-block;background:var(--accent,#2C5530);color:#fff;border:0;border-radius:10px;padding:12px 20px;font:700 15px 'Helvetica Neue',Arial,sans-serif;cursor:pointer;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn.ghost{background:#fff;color:var(--accent-deep);border:1px solid var(--accent);}
+.clock{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid var(--surface-2,#E6E0D3);border-radius:12px;padding:10px 16px;margin:10px 0 16px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.06);}
+.clock b{font-family:Georgia,serif;font-size:24px;min-width:96px;}
+.clock b.warn{color:#B42318;}
+.clock .sp{flex:1;}
+.clock .bar{flex-basis:100%;height:5px;background:var(--surface,#F4EDE0);border-radius:3px;overflow:hidden;}
+.clock .bar i{display:block;height:100%;background:var(--accent);width:0;}
+details.case{background:var(--surface,#F4EDE0);border-radius:12px;padding:10px 16px;margin:0 0 14px;font-size:14px;}
+details.case summary{cursor:pointer;font-weight:700;color:var(--accent-deep);}
+.q{background:#fff;border:1px solid var(--surface-2,#E6E0D3);border-radius:16px;padding:20px 22px;}
+.q .part{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--grey,#6B7280);font-weight:700;}
+.q .stem{font-size:17px;line-height:1.5;margin:8px 0 14px;}
+.q .n{font-weight:800;color:var(--accent);margin-right:6px;}
+.q label{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border:1px solid var(--surface-2,#E6E0D3);border-radius:10px;cursor:pointer;font-size:15px;margin:7px 0;}
+.q label:hover{border-color:var(--accent);}
+.q label.on{background:var(--accent-pale,#EAF3EA);border-color:var(--accent);}
+.q input{margin-top:3px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px;}
+.msg{margin-top:10px;font-size:14px;}
+.msg.err{color:#B42318;font-weight:700;}
+.muted{color:var(--grey,#6B7280);font-size:13.5px;}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:14.5px;}
+</style>
+</head>
+<body data-course="omba500" data-module="exam" data-title="Final exam">
+
+<div class="topbar"><div class="topbar-inner">
+  <img class="brand" src="sumas-logo.png" alt="SUMAS">
+  <span class="course">Capstone · Final exam</span>
+  <span class="sp"></span>
+  <a href="week10.html">← Week 10</a>
+</div></div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Week 10 · Final exam · Instructor: Dr. Jan Erik Meidell</div>
+    <h1>The final <em>exam</em></h1>
+  </div>
+  <div id="app"><div class="xcard muted">Loading the exam…</div></div>
+</div>
+
+<script>
+(function(){
+var DB='https://teaching-70f1c-default-rtdb.europe-west1.firebasedatabase.app/omba500/_exam';
+var OPEN=Date.parse('2026-12-07T09:30:00+01:00'), CLOSE=Date.parse('2026-12-14T09:30:00+01:00');
+var DUR=120*60*1000, N=60;
+var app=document.getElementById('app');
+var LK='omba500_exam_local';
+var me=null, paper=null, st=null, idx=0, tick=null, offset=0, busy=false;
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function now(){return Date.now()+offset;}
+function fmtWhen(ms){
+  var d=new Date(ms);
+  return d.toLocaleString('en-GB',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'})+' (Geneva time)';
+}
+function fmtLeft(ms){
+  if(ms<0)ms=0; var s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
+  return (h?h+':':'')+(h&&m<10?'0':'')+m+':'+(x<10?'0':'')+x;
+}
+function loc(){try{return JSON.parse(localStorage.getItem(LK)||'{}')||{};}catch(e){return {};}}
+function setLoc(o){try{var a=loc();for(var k in o)a[k]=o[k];localStorage.setItem(LK,JSON.stringify(a));}catch(e){}}
+function get(path){return fetch(DB+path+'.json',{cache:'no-store'}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};});});}
+function put(path,body){return fetch(DB+path+'.json',{method:'PUT',body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j};},function(){return {ok:r.ok,status:r.status,j:null};});});}
+var TS={'.sv':'timestamp'};
+
+function rulesBlock(){
+  return '<ul>'+
+    '<li>The exam has <b>60 multiple-choice questions</b>, each with one correct answer. All 60 are about one case, which is shown above the questions and stays available.</li>'+
+    '<li>You have <b>2 hours</b> from the moment you press <b>Start the exam</b>. The clock keeps running if you close the page. If you start less than 2 hours before the exam closes, you have only the time until it closes.</li>'+
+    '<li><b>One attempt.</b> Once you start, you cannot start again. If you close the page or your connection drops, open this page again: you continue the same attempt, at the question you reached, with the time that is left.</li>'+
+    '<li>The questions come <b>one at a time, in order</b>. When you press <b>Save and go on</b>, your answer is final: you cannot go back to change it, and you cannot skip a question.</li>'+
+    '<li>When the 2 hours are over, the exam is handed in automatically with the answers you have saved. A question without a saved answer counts as wrong.</li>'+
+    '<li><b>Closed book.</b> You may use pen, paper and a simple calculator. You may not use other browser tabs, AI assistants, translation tools, notes, your reports or help from anyone.</li>'+
+    '<li>If something goes wrong, take a screenshot and send me a message in the message panel of any course page.</li>'+
+  '</ul>';
+}
+
+/* ---------- the states ---------- */
+function showBefore(){
+  app.innerHTML='<div class="xcard"><h2>The exam opens on '+esc(fmtWhen(OPEN))+'</h2>'+
+    '<p>It closes on '+esc(fmtWhen(CLOSE))+'. You can start at any time in that week; once you start, you have 2 hours.</p>'+
+    '<p class="big" id="cd"></p><h3>The rules</h3>'+rulesBlock()+'</div>';
+  function cd(){var l=OPEN-now(); if(l<=0){clearInterval(tick);boot();return;}
+    var d=Math.floor(l/86400000); $('cd').textContent='Opens in '+(d?d+' day'+(d>1?'s':'')+' and ':'')+fmtLeft(l%86400000);}
+  cd(); tick=setInterval(cd,1000);
+}
+function showClosed(){
+  app.innerHTML='<div class="xcard"><h2>The exam is closed</h2><p>It was open from '+esc(fmtWhen(OPEN))+' to '+esc(fmtWhen(CLOSE))+'.</p>'+
+    '<p>If you could not take it for a reason you can document, send me a message in the message panel of any course page.</p></div>';
+}
+function showSignIn(){
+  app.innerHTML='<div class="xcard"><h2>Sign in with your course name and password</h2>'+
+    '<p>The exam is tied to your course sign-in, the same one you use on every page of this course. That is how the site knows that the attempt is yours and that you take it only once.</p>'+
+    '<div class="row"><button class="btn" id="si">Sign in</button></div>'+
+    '<p class="muted">You forgot your password? Send me a message in the message panel; I can find it for you.</p></div>';
+  $('si').onclick=function(){ if(window.CourseLogin)CourseLogin.open(); };
+}
+function showCover(){
+  app.innerHTML='<div class="xcard"><h2>Before you start, '+esc(me.name)+'</h2>'+
+    '<p>The exam is open until '+esc(fmtWhen(CLOSE))+'.</p>'+rulesBlock()+
+    '<label class="chk"><input type="checkbox" id="ok"> <span>I have read the rules. I understand that I have one attempt and 2 hours, that the clock does not stop, and that I cannot go back to a question.</span></label>'+
+    '<div class="row"><button class="btn" id="go" disabled>Start the exam</button><span class="muted">Not '+esc(me.name)+'? <a href="#" id="sw">Sign in as yourself</a>.</span></div>'+
+    '<div class="msg" id="m"></div></div>';
+  $('ok').onchange=function(){$('go').disabled=!this.checked;};
+  $('sw').onclick=function(e){e.preventDefault(); if(window.CourseLogin){CourseLogin.logout&&CourseLogin.logout(); CourseLogin.open();}};
+  $('go').onclick=startExam;
+}
+function showDone(d){
+  clearInterval(tick);
+  var n=(d&&d.n!=null)?d.n:idx;
+  app.innerHTML='<div class="xcard"><h2>Your exam is handed in</h2>'+
+    '<p>'+esc(me?me.name:'')+', your exam was handed in'+(d&&d.ts?' on '+esc(fmtWhen(d.ts)):'')+', with <b>'+n+' of '+N+'</b> questions answered.</p>'+
+    '<p>You cannot open it again. I will publish the grades after the exam closes on '+esc(fmtWhen(CLOSE))+'.</p></div>';
+}
+function showErr(t){app.innerHTML='<div class="xcard"><h2>The exam cannot be loaded</h2><p class="msg err">'+esc(t)+'</p><div class="row"><button class="btn" onclick="location.reload()">Try again</button></div><p class="muted">If this does not go away, take a screenshot and send me a message in the message panel of any course page.</p></div>';}
+
+/* ---------- start / resume ---------- */
+function startExam(){
+  if(busy)return; busy=true; $('go').disabled=true; $('m').className='msg'; $('m').textContent='Starting…';
+  var t0=Date.now();
+  put('/start/'+me.sid,{t:TS,pass:String(me.pass),name:String(me.name).slice(0,80)}).then(function(r){
+    if(!r.ok){
+      /* refused: either it already exists (resume) or the password / window is wrong */
+      return get('/start/'+me.sid).then(function(s){
+        if(s.ok&&s.j&&s.j.t){ busy=false; resume(); return; }
+        busy=false; $('m').className='msg err';
+        $('m').textContent='The database refused to start your exam. Check that you are signed in with your own course password, then try again. If it is refused again, send me a message.';
+        $('go').disabled=false;
+      });
+    }
+    return get('/start/'+me.sid).then(function(s){
+      offset=s.j.t-Math.round((t0+Date.now())/2); setLoc({off:offset,sid:me.sid});
+      busy=false; resume();
+    });
+  }).catch(function(){busy=false;$('m').className='msg err';$('m').textContent='Network problem: nothing was started. Try again in a moment.';$('go').disabled=false;});
+}
+function resume(){
+  Promise.all([get('/start/'+me.sid),get('/done/'+me.sid),get('/prog/'+me.sid),get('/paper')]).then(function(rs){
+    st=rs[0].j; var dn=rs[1].j, pg=rs[2].j;
+    if(dn){ showDone(dn); return; }
+    if(!st||!st.t){ showCover(); return; }
+    var L=loc(); if(L.sid===me.sid&&typeof L.off==='number')offset=L.off;
+    if(!rs[3].ok||!rs[3].j||!rs[3].j.qs){ if(now()>=CLOSE){finish('time');return;} showErr('The questions could not be read ('+rs[3].status+'). The exam may not be loaded yet.'); return; }
+    paper=rs[3].j; N=paper.qs.length;
+    idx=Math.max(pg&&pg.n||0, (L.sid===me.sid&&L.n)||0);
+    if(deadline()-now()<=0||idx>=N){ finish(idx>=N?'submit':'time'); return; }
+    drawQuestion();
+  }).catch(function(){showErr('Network problem. Check your connection and try again; your time is still running.');});
+}
+function deadline(){return Math.min(st.t+DUR, CLOSE);}
+
+/* ---------- the questions ---------- */
+function drawQuestion(){
+  var q=paper.qs[idx];
+  app.innerHTML=
+    '<div class="clock"><span>Time left</span><b id="tl"></b><span class="sp"></span><span>Question <b style="font-size:16px;min-width:0">'+(idx+1)+'</b> of '+N+'</span>'+
+    '<button class="btn ghost" id="end" style="padding:7px 12px;font-size:13px">Hand in now</button><div class="bar"><i style="width:'+(idx/N*100)+'%"></i></div></div>'+
+    '<details class="case"'+(idx===0?' open':'')+'><summary>The case (click to open or close)</summary>'+paper.case+'</details>'+
+    '<div class="q"><div class="part">'+esc(q.part||'')+'</div><div class="stem"><span class="n">'+(idx+1)+'.</span>'+esc(q.q)+'</div>'+
+    q.opts.map(function(o,i){return '<label><input type="radio" name="o" value="'+i+'"> <span><b>'+'ABCD'[i]+'.</b> '+esc(o)+'</span></label>';}).join('')+
+    '<div class="row"><button class="btn" id="sv" disabled>'+(idx===N-1?'Save and hand in':'Save and go on')+'</button><span class="muted">Your answer is final once saved.</span></div><div class="msg" id="m"></div></div>';
+  app.querySelectorAll('input[name=o]').forEach(function(r){r.onchange=function(){
+    app.querySelectorAll('.q label').forEach(function(l){l.classList.toggle('on',l.querySelector('input').checked);});
+    $('sv').disabled=false;};});
+  $('sv').onclick=save;
+  $('end').onclick=function(){
+    var left=N-idx;
+    if(confirm('Hand in now? '+left+' question'+(left>1?'s':'')+' without a saved answer will count as wrong, and you cannot open the exam again.'))finish('submit');
+  };
+  clearInterval(tick); clock(); tick=setInterval(clock,1000);
+  window.scrollTo(0,0);
+}
+function clock(){
+  var l=deadline()-now(), el=$('tl'); if(!el)return;
+  el.textContent=fmtLeft(l); el.className=l<5*60000?'warn':'';
+  if(l<=0){ clearInterval(tick); finish('time'); }
+}
+function save(){
+  if(busy)return; var r=app.querySelector('input[name=o]:checked'); if(!r)return;
+  busy=true; $('sv').disabled=true; $('m').className='msg'; $('m').textContent='Saving…';
+  var p=+r.value;
+  put('/ans/'+me.sid+'/q'+idx,{p:p,ts:TS,pass:String(me.pass)}).then(function(res){
+    if(!res.ok){
+      if(deadline()-now()<=0){busy=false;finish('time');return;}
+      /* already saved earlier (another device, or a reload during a save): the first answer stands */
+      return get('/done/'+me.sid).then(function(d){
+        if(d.j){busy=false;showDone(d.j);return;}
+        $('m').className='msg err'; $('m').textContent='This question already had a saved answer (for example from another device). That first answer stands; going on.';
+        setTimeout(function(){busy=false;next();},1600);
+      });
+    }
+    busy=false; next();
+  }).catch(function(){busy=false;$('sv').disabled=false;$('m').className='msg err';$('m').textContent='Network problem: the answer was NOT saved. Press the button again.';});
+}
+function next(){
+  idx++; setLoc({sid:me.sid,n:idx});
+  put('/prog/'+me.sid,{n:idx,pass:String(me.pass)});
+  if(idx>=N){finish('submit');return;}
+  drawQuestion();
+}
+function finish(why){
+  clearInterval(tick);
+  app.innerHTML='<div class="xcard muted">Handing in…</div>';
+  put('/done/'+me.sid,{ts:TS,pass:String(me.pass),n:idx,why:why}).then(function(){
+    return get('/done/'+me.sid);
+  }).then(function(d){ showDone(d&&d.j||{n:idx}); })
+  .catch(function(){ app.innerHTML='<div class="xcard"><h2>Your answers are saved</h2><p>Every answer you saved is in the database. The final hand-in could not be confirmed because of a network problem. <button class="btn" onclick="location.reload()">Try again</button></p></div>'; });
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  clearInterval(tick);
+  me=window.CourseLogin&&CourseLogin.current&&CourseLogin.current();
+  var t=now();
+  if(me&&me.sid){
+    /* an attempt already started is resumed or shown as handed in, whatever the time */
+    get('/start/'+me.sid).then(function(s){
+      if(s.ok&&s.j&&s.j.t){ resume(); return; }
+      if(t<OPEN){showBefore();return;}
+      if(t>=CLOSE){showClosed();return;}
+      if(!me.pass){ showErr('Your sign-in on this device has no password saved. Sign out and sign in again with your course name and password.'); return; }
+      showCover();
+    }).catch(function(){ showErr('Network problem. Check your connection and reload the page.'); });
+    return;
+  }
+  if(t<OPEN){showBefore();return;}
+  if(t>=CLOSE){showClosed();return;}
+  showSignIn();
+}
+window.EXAM_BOOT=boot;
+document.addEventListener('DOMContentLoaded',function(){ setTimeout(boot,300); });
+/* login.js signs the student in on this page: start again when it has */
+window.addEventListener('storage',function(e){ if(e.key==='omba500_auth')boot(); });
+document.addEventListener('course-login',function(){boot();});
+var lastSid=null; setInterval(function(){
+  var a=window.CourseLogin&&CourseLogin.current&&CourseLogin.current(); var s=a&&a.sid||null;
+  if(s!==lastSid){ var was=lastSid; lastSid=s; if(was!==null||s){ if(!st)boot(); } }
+},1500);
+})();
+</script>
+
+<script src="/shared/config.js"></script>
+<script>if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/track.js" defer></script>
+</body>
+</html>
