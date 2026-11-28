@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<base href="/SUMAS/mba401/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Degrees of Freedom · Quantitative Methods · SUMAS</title>
+<meta name="description" content="Degrees of freedom explained with six interactive exercises: a fixed average, the n − 1 of the sample variance with a simulation, the n − 2 of regression, the (rows − 1)(columns − 1) of a chi-square table, the K − 1 and n − K of ANOVA, and how df changes the t curve.">
+<meta name="theme-color" content="#2C5530">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F513;</text></svg>">
+<link rel="stylesheet" href="/shared/themes/sumas-stats.css">
+<script src="/shared/theme.js"></script>
+<link rel="stylesheet" href="stats.css">
+<style>
+/* page-unique layout for the degrees-of-freedom tool */
+:root{--dof-warn:#B45309;--dof-warn-wash:#FEF3C7;}
+:root[data-theme="dark"]{--dof-warn:#F5B454;--dof-warn-wash:#3A2A10;}
+.toc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0 26px;}
+.toc a{font-size:12.5px;font-weight:700;color:var(--accent-deep);text-decoration:none;border:1.5px solid var(--accent);border-radius:30px;padding:6px 13px;background:var(--card);}
+.toc a:hover{background:var(--accent-pale);}
+.dof-sec{scroll-margin-top:70px;}
+.why-box{border-left:4px solid var(--accent);background:var(--accent-pale);padding:10px 14px;border-radius:0 10px 10px 0;margin:0 0 16px;font-size:14.5px;color:var(--ink-soft);}
+.why-box b{color:var(--ink);}
+svg.viz{width:100%;height:auto;display:block;}
+.lk{width:12px;height:14px;vertical-align:-2px;display:inline-block;}
+/* section 1 rows */
+.drow{display:grid;grid-template-columns:96px 1fr 92px;gap:10px;align-items:center;margin:6px 0;font-size:14px;}
+.drow .dl{font-weight:700;color:var(--ink);}
+.drow .dv{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;color:var(--navy);}
+.drow.locked .dl,.drow.locked .dv{color:var(--ex-ink,#15515B);}
+.drow .dnote{font-size:12.5px;color:var(--grey);font-style:italic;}
+.drow.bad .dv{color:var(--dof-warn);}
+.counts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;justify-content:center;}
+.counts span{background:var(--card);border:1px solid var(--line);border-radius:30px;padding:6px 13px;font-size:13px;color:var(--ink-soft);}
+.counts span b{color:var(--navy);font-variant-numeric:tabular-nums;}
+.counts span.key{border-color:var(--accent);background:var(--accent-pale);}
+.explain{font-size:14.5px;color:var(--ink-soft);margin-top:10px;line-height:1.55;}
+.explain b{color:var(--ink);}
+.warn{background:var(--dof-warn-wash);color:var(--dof-warn);border-radius:10px;padding:8px 12px;font-size:13.5px;margin-top:10px;font-weight:600;}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink-soft);margin:10px 0 4px;cursor:pointer;}
+.chk input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex:none;}
+.two-ctrl{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;}
+.bonus{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:10px 0;}
+.bonus label{display:flex;flex-direction:column;font-size:12.5px;font-weight:700;color:var(--ex-ink,#15515B);gap:4px;}
+.bonus .numin{width:104px;}
+.bonus .forced{border:1.5px dashed var(--ex-bar,#1E6B78);border-radius:8px;padding:9px 11px;min-width:104px;font-weight:800;color:var(--ex-ink,#15515B);background:var(--card);font-variant-numeric:tabular-nums;}
+/* tables */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0;}
+table.ct{border-collapse:collapse;margin:0 auto;font-size:14px;font-variant-numeric:tabular-nums;}
+table.ct th,table.ct td{border:1px solid var(--line);padding:5px 6px;text-align:center;}
+table.ct th{background:var(--card);color:var(--navy);font-size:12.5px;}
+table.ct th.l{text-align:left;}
+table.ct td.tot,table.ct th.tot{background:var(--accent-pale);font-weight:800;color:var(--ink);}
+table.ct input{width:58px;padding:6px 4px;border:1.5px solid var(--line);border-radius:7px;font:inherit;font-weight:700;text-align:center;background:var(--card);color:var(--ink);}
+table.ct input:focus{outline:none;border-color:var(--accent);}
+table.ct input.you{border-color:var(--accent);background:var(--accent-pale);}
+table.ct input.forced{border-style:dashed;border-color:var(--ex-bar,#1E6B78);color:var(--ex-ink,#15515B);background:var(--card);}
+table.ct input.neg{border-color:var(--dof-warn);color:var(--dof-warn);background:var(--dof-warn-wash);}
+table.ct td.cell{position:relative;}
+table.ct td.cell .lk{position:absolute;top:3px;right:3px;width:9px;height:11px;color:var(--ex-bar,#1E6B78);}
+table.sum{width:100%;border-collapse:collapse;font-size:14px;}
+table.sum th,table.sum td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top;color:var(--ink-soft);}
+table.sum th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);}
+table.sum td.f{font-weight:800;color:var(--navy);white-space:nowrap;}
+table.sim{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums;margin-top:10px;}
+table.sim th,table.sim td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:right;color:var(--ink-soft);}
+table.sim th{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);}
+table.sim td:first-child,table.sim th:first-child{text-align:left;}
+.sample-line{font-size:13.5px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px;min-height:20px;}
+/* residual chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.chip{font-size:12.5px;font-variant-numeric:tabular-nums;border:1px solid var(--line);background:var(--card);border-radius:20px;padding:4px 10px;color:var(--ink-soft);}
+.chip.lockd{border-style:dashed;border-color:var(--ex-bar,#1E6B78);color:var(--ex-ink,#15515B);}
+/* quiz */
+.stat .l{text-transform:none;letter-spacing:.3px;font-size:11.5px;}
+table.sim th{text-transform:none;letter-spacing:.3px;font-size:12px;}
+.qscore{text-align:center;font-weight:800;color:var(--navy);font-size:16px;margin-top:6px;}
+.legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;font-size:12.5px;color:var(--ink-soft);margin-top:6px;}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:0;}
+.legend i.dash{height:0;border-top:2px dashed;border-radius:0;vertical-align:3px;}
+.legend i.lineL{height:0;border-top:3px solid;border-radius:0;vertical-align:3px;}
+@media(max-width:640px){
+  .wrap{padding:18px 14px;}
+  .card{padding:18px 14px;}
+  .lab{padding:14px 12px;}
+  .tc-body,.xc-body{padding:14px 14px 16px;}
+  .drow{grid-template-columns:74px 1fr 78px;gap:6px;font-size:13px;}
+  .two-ctrl{grid-template-columns:1fr;gap:8px;}
+  table.ct{font-size:12.5px;}
+  table.ct th,table.ct td{padding:4px 3px;}
+  table.ct input{width:44px;padding:5px 2px;}
+  table.sum{font-size:13px;}
+  table.sum th,table.sum td{padding:7px 4px;}
+  table.sim{font-size:12px;}
+}
+</style>
+</head>
+<body data-course="mba401">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <img class="brand" src="sumas-logo.png" alt="SUMAS">
+    <span class="course">QUANTITATIVE METHODS · DEGREES OF FREEDOM</span>
+    <span class="who" id="topWho"></span>
+    <span class="tb-spacer"></span>
+    <a class="home" href="index.html">← Course</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="hero">
+  <div class="eyebrow">A tool for every week from 1B to 6</div>
+  <h1>Degrees of freedom: how many of your numbers are still free to vary</h1>
+  <p class="sub"><b>Degrees of freedom</b> (written <b>df</b>) is the number of values in a calculation that you can still choose freely once the conditions they must meet are fixed. Almost every formula from Week 1B onwards contains a df: the n − 1 of the sample standard deviation, the df row of the t table, the n − 2 of regression, the (rows − 1)(columns − 1) of chi-square. This page shows where each of those counts comes from. Work through the six sections in order. In each one you change the numbers yourself and the page counts the free values for you.</p>
+</div>
+
+<div class="tcard">
+  <div class="tc-bar"><span>Where you meet degrees of freedom in this course</span></div>
+  <div class="tc-body">
+    <ul>
+      <li><b>Week 1B.</b> The sample standard deviation divides by <b>n − 1</b>, not by n. Section 2 below shows why.</li>
+      <li><b>Weeks 3 and 4.</b> A confidence interval or a test with Student's t reads its critical value from the row <b>df = n − 1</b> of the t table. With two samples pooled (Week 4B) the row is <b>n₁ + n₂ − 2</b>. Section 5 shows what that row changes.</li>
+      <li><b>Week 5.</b> Regression measures the scatter around the line with <b>n − 2</b> degrees of freedom. Section 3 shows why two points tell you nothing about scatter.</li>
+      <li><b>Week 6.</b> A chi-square test on a table uses <b>(I − 1)(J − 1)</b>, where I is the number of rows and J the number of columns, and one-way ANOVA uses <b>K − 1</b> and <b>n − K</b>, where K is the number of groups. Section 4 lets you count both.</li>
+    </ul>
+  </div>
+</div>
+
+<nav class="toc" aria-label="Sections of this page">
+  <a href="#sec1">1 · Fix an average</a>
+  <a href="#sec2">2 · Why n − 1</a>
+  <a href="#sec3">3 · Regression: n − 2</a>
+  <a href="#sec4">4 · Tables and ANOVA</a>
+  <a href="#sec5">5 · The t curve</a>
+  <a href="#sec6">6 · Check yourself</a>
+  <a href="#sec7">Summary</a>
+</nav>
+
+<!-- ======================= 1 ======================= -->
+<section class="dof-sec" id="sec1">
+  <div class="sec-head"><div class="kicker">Section 1 · The definition</div><h2>Once the average is fixed, the last day's sales are no longer yours to choose</h2></div>
+  <div class="why-box"><b>Why this comes first.</b> Every df in this course is the same count: how many values were free, minus how many conditions the calculation has already fixed. This section uses nothing but an average, so you can see that count before any formula appears.</div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Two definitions</span></div>
+    <div class="tc-body">
+      <p>A <b>constraint</b> is a condition that the values must satisfy, for example "the average of the five days must be CHF 400".</p>
+      <p><b>Degrees of freedom</b> is the number of values you can still choose freely once the constraints are fixed. Each constraint removes one free choice. So the count is: <b>degrees of freedom = number of values − number of constraints</b>.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>The Rive branch must report an average daily sales figure. Choose the days; the page computes the last one.</h3>
+    <p>The manager of the Rive pizzeria already knows the average daily sales she must report. The figures for each day must agree with that average. Do these three things:</p>
+    <ol>
+      <li>Set the number of days n and the average the days must have, with the two sliders.</li>
+      <li>Move the slider of each day except the last one. You choose those figures freely.</li>
+      <li>Watch the last day. The page computes it, and it carries a lock, because once the average is fixed the last figure can take only one value.</li>
+    </ol>
+    <div class="lab">
+      <div class="lab-title">The fixed conditions</div>
+      <div class="two-ctrl">
+        <div class="ctrl"><label>Number of days, n <span class="val" id="g1nV">5</span></label><input type="range" id="g1n" min="3" max="7" step="1" value="5" aria-label="Number of days"></div>
+        <div class="ctrl"><label>Average the days must have <span class="val" id="g1mV">CHF 400</span></label><input type="range" id="g1m" min="200" max="700" step="10" value="400" aria-label="Fixed average"></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="g1fix"> <span>Add a second constraint: the accountant has already booked Monday's figure, so Monday is fixed at its current value.</span></label>
+      <div class="lab-title" style="margin-top:14px;">The daily sales, in CHF</div>
+      <div id="g1rows"></div>
+      <svg class="viz" id="g1svg" viewBox="0 0 640 230" role="img" aria-label="Bar chart of the daily sales, with the fixed average as a dashed line"></svg>
+      <div class="legend"><span><i id="g1lgFree"></i>chosen freely by you</span><span><i id="g1lgLock"></i>forced by a constraint</span><span><i class="dash" id="g1lgMean"></i>the fixed average</span></div>
+      <div class="counts" id="g1counts"></div>
+      <div class="explain" id="g1exp"></div>
+      <div id="g1warn"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>The same count in another business</span><span class="xc-src">a bonus pool</span></div>
+    <div class="xc-body">
+      <h3>A manager shares a bonus pool of CHF 12,000 among four employees</h3>
+      <p>The pool is the constraint: the four bonuses must add up to CHF 12,000. Type the first three bonuses in the boxes. The page computes the fourth, because it is whatever is left in the pool.</p>
+      <div class="bonus">
+        <label>Employee A <input class="numin" type="number" id="bA" value="3500" min="0" step="100"></label>
+        <label>Employee B <input class="numin" type="number" id="bB" value="2500" min="0" step="100"></label>
+        <label>Employee C <input class="numin" type="number" id="bC" value="4000" min="0" step="100"></label>
+        <label>Employee D (forced) <span class="forced" id="bD"></span></label>
+      </div>
+      <p id="bExp"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 2 ======================= -->
+<section class="dof-sec" id="sec2">
+  <div class="sec-head"><div class="kicker">Section 2 · Week 1B</div><h2>The sample variance divides by n − 1 because only n − 1 deviations are free</h2></div>
+  <div class="why-box"><b>Why you need this.</b> In Week 1B the sample standard deviation is s = √( Σ(x − x̄)² ÷ (n − 1) ). Students lose points on the exam when they divide by n instead. This section shows the two reasons for n − 1: the deviations are tied together, and dividing by n gives an answer that is too small on average.</div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Two terms used below</span></div>
+    <div class="tc-body">
+      <p>A <b>deviation</b> is the distance of one value from the sample mean x̄: the value minus x̄. A value above the mean has a positive deviation, a value below it a negative one.</p>
+      <p>The <b>sample variance</b> s² is the sum of the squared deviations divided by n − 1. The sample standard deviation s is its square root.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Part A. The deviations from the sample mean always add up to zero</h3>
+    <p>Below are the prices of a Margherita at five Geneva pizzerias. Move any price. The chart shows each price's deviation from the mean of the five. Look at the sum under the chart: it stays at zero whatever you do.</p>
+    <div class="lab">
+      <div class="lab-title">Five prices of a Margherita, in CHF</div>
+      <div id="g2rows"></div>
+      <svg class="viz" id="g2svg" viewBox="0 0 640 220" role="img" aria-label="Deviations of the five prices from their mean"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="g2mean">—</div><div class="l">sample mean x̄</div></div>
+        <div class="stat"><div class="v" id="g2sum">—</div><div class="l">sum of the deviations</div></div>
+        <div class="stat"><div class="v" id="g2ss">—</div><div class="l">sum of squared deviations</div></div>
+      </div>
+      <div class="explain" id="g2exp"></div>
+    </div>
+    <p style="margin-top:12px;">The sum is zero because x̄ was computed from these same five prices: the mean sits exactly at the balance point of the data. That is a constraint, and it costs one degree of freedom. Four deviations carry information; the fifth is a copy of the other four with the sign reversed. So the sample variance divides the sum of squared deviations by the number of free deviations, <b>n − 1</b>.</p>
+  </div>
+
+  <div class="card">
+    <h3>Part B. Dividing by n gives a variance that is too small on average, most of all in small samples</h3>
+    <p>The second reason is about accuracy. A <b>population</b> is the whole group you want to know about; here it is every delivery the Pâquis branch made in October. Its true variance σ² is known, because the page holds all 400 delivery times. You then draw <b>samples</b>, small groups taken at random from it, and estimate σ² from each sample in two ways: dividing by n, and dividing by n − 1. Do these three things:</p>
+    <ol>
+      <li>Choose a sample size n.</li>
+      <li>Press <b>Draw 1 sample</b> once and read the sample and its two estimates in the box below the buttons.</li>
+      <li>Press <b>Draw 1,000 samples</b> and compare the two averages with the true variance in the bar chart.</li>
+    </ol>
+    <div class="lab">
+      <div class="lab-title">The population: 400 delivery times at Pâquis, in minutes</div>
+      <svg class="viz" id="g2pop" viewBox="0 0 640 130" role="img" aria-label="Histogram of the 400 delivery times"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="popN">—</div><div class="l">deliveries in the population</div></div>
+        <div class="stat"><div class="v" id="popMu">—</div><div class="l">true mean µ, minutes</div></div>
+        <div class="stat"><div class="v" id="popVar">—</div><div class="l">true variance σ², minutes²</div></div>
+      </div>
+      <p class="mini" style="margin-top:8px;color:var(--grey);font-size:12.5px;">Each draw picks one of the 400 deliveries at random, and the same delivery can be picked twice. That is how the theory treats a sample taken from a large population, and it makes the comparison exact.</p>
+      <div class="lab-title" style="margin-top:14px;">Sample size n</div>
+      <div class="toggle-row" id="simN">
+        <button data-n="2">n = 2</button><button data-n="3">n = 3</button><button data-n="5" class="on">n = 5</button><button data-n="10">n = 10</button><button data-n="30">n = 30</button>
+      </div>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn" id="sim1">Draw 1 sample</button>
+        <button class="btn" id="sim1000">Draw 1,000 samples</button>
+        <button class="btn ghost" id="simReset">Clear the samples</button>
+      </div>
+      <div class="sample-line" id="simLast">No sample drawn yet.</div>
+      <svg class="viz" id="simSvg" viewBox="0 0 640 170" role="img" aria-label="The true variance compared with the average of each estimate"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="simK">0</div><div class="l">samples drawn at this n</div></div>
+        <div class="stat"><div class="v" id="simDn">—</div><div class="l">average of ÷ n, as % of σ²</div></div>
+        <div class="stat"><div class="v" id="simDn1">—</div><div class="l">average of ÷ (n − 1), as % of σ²</div></div>
+      </div>
+      <div class="caption" id="simCap"></div>
+      <div class="btn-row" style="justify-content:center;margin-top:12px;">
+        <button class="btn ghost" id="simAll">Draw 1,000 samples at each of the five sizes</button>
+      </div>
+      <div id="simTable"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 3 ======================= -->
+<section class="dof-sec" id="sec3">
+  <div class="sec-head"><div class="kicker">Section 3 · Week 5</div><h2>A regression line uses up two degrees of freedom, so the scatter is measured on n − 2</h2></div>
+  <div class="why-box"><b>Why you need this.</b> In Week 5 the regression printout gives the standard error of the line, s<sub>e</sub> = √( SSE ÷ (n − 2) ), and the slope test reads the t table on n − 2 degrees of freedom. This section shows where the 2 comes from: the line has two numbers to fix, the intercept and the slope, and each one uses up one data point's worth of freedom.</div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Three terms used below</span></div>
+    <div class="tc-body">
+      <p>A <b>regression line</b> ŷ = b₀ + b₁x is the straight line that passes as close as possible to the points. b₀ is the <b>intercept</b> (the height of the line at x = 0) and b₁ is the <b>slope</b> (how much ŷ changes when x rises by 1).</p>
+      <p>A <b>residual</b> is the vertical distance from a point to the line: the actual y minus the y the line predicts. <b>SSE</b> (sum of squared errors) is the sum of the squared residuals.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Click in the chart to add pizzerias, and count the residuals that are free</h3>
+    <p>Each dot is one pizzeria: the price of its Margherita (across) and the number of Margheritas it sells per day (up). The chart starts with two pizzerias. Do these three things:</p>
+    <ol>
+      <li>Look at the two starting points. The line passes through both of them, so both residuals are zero. Two points always fit a line exactly, so they say nothing about how far real pizzerias scatter around a line.</li>
+      <li>Click anywhere in the chart to add a pizzeria. The page refits the line and draws each residual as a vertical segment.</li>
+      <li>Read the count under the chart: n points, 2 numbers estimated, n − 2 residuals free.</li>
+    </ol>
+    <div class="lab">
+      <div class="lab-title">Price of a Margherita (CHF) and Margheritas sold per day</div>
+      <svg class="viz" id="g3svg" viewBox="0 0 640 358" role="img" aria-label="Scatter plot; click to add a point" style="cursor:crosshair;touch-action:manipulation;"></svg>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn small" id="g3rand">Add a random pizzeria</button>
+        <button class="btn ghost small" id="g3undo">Remove the last pizzeria</button>
+        <button class="btn ghost small" id="g3reset">Go back to two pizzerias</button>
+      </div>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="g3n">2</div><div class="l">points n</div></div>
+        <div class="stat"><div class="v" id="g3p">2</div><div class="l">numbers estimated (b₀, b₁)</div></div>
+        <div class="stat"><div class="v" id="g3df">0</div><div class="l">df = n − 2</div></div>
+        <div class="stat"><div class="v" id="g3sse">—</div><div class="l">SSE</div></div>
+        <div class="stat"><div class="v" id="g3se">—</div><div class="l">s<sub>e</sub> = √(SSE ÷ (n − 2))</div></div>
+      </div>
+      <div class="explain" id="g3line"></div>
+      <div class="explain" id="g3exp"></div>
+      <div class="chips" id="g3chips"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 4 ======================= -->
+<section class="dof-sec" id="sec4">
+  <div class="sec-head"><div class="kicker">Section 4 · Week 6</div><h2>In a table with fixed totals, only (rows − 1) × (columns − 1) cells are free</h2></div>
+  <div class="why-box"><b>Why you need this.</b> In Week 6 the chi-square test for independence compares a table of counts with the counts you would expect if the two ways of sorting were unrelated. Its critical value comes from the chi-square table on (I − 1)(J − 1) degrees of freedom. This section shows that the totals of the rows and columns fix every other cell once you have chosen that many.</div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Two terms used below</span></div>
+    <div class="tc-body">
+      <p>A <b>contingency table</b> counts the same orders sorted two ways at once: here by branch (the rows) and by topping (the columns). Each <b>cell</b> holds the number of orders with that branch and that topping.</p>
+      <p>The <b>row totals</b> and <b>column totals</b> are fixed by the data: the expected counts of the chi-square test are computed from them, so the test treats them as known. Every row total and every column total is a constraint.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Fill the cells one by one, and watch the page fill the cells that the totals force</h3>
+    <p>The totals come from Week 6's 180 orders of last month. Do these three things:</p>
+    <ol>
+      <li>Choose the table size: two branches or three.</li>
+      <li>Type a count in any empty cell and press Tab or click elsewhere. When a row or a column has only one empty cell left, the page fills it from the total and locks it.</li>
+      <li>Keep going until the table is full, then compare the number of cells you chose with (rows − 1) × (columns − 1).</li>
+    </ol>
+    <div class="lab">
+      <div class="lab-title">Branch × topping</div>
+      <div class="toggle-row" id="ctSize"><button data-r="2" class="on">2 branches × 3 toppings</button><button data-r="3">3 branches × 3 toppings</button></div>
+      <div class="tblwrap"><table class="ct" id="ctTable"></table></div>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn ghost small" id="ctClear">Empty the table</button>
+        <button class="btn ghost small" id="ctReal">Type last month's real counts into the top-left cells</button>
+      </div>
+      <div class="counts" id="ctCounts"></div>
+      <div class="explain" id="ctExp"></div>
+      <div id="ctWarn"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>The same counting in one-way ANOVA</span><span class="xc-src">Week 6 · comparing K means</span></div>
+    <div class="xc-body">
+      <h3>A bank compares the average waiting time, in minutes, at K branches</h3>
+      <p><b>One-way ANOVA</b> (analysis of variance) tests whether K groups have the same mean by comparing the spread between the group means with the spread inside the groups. Each spread has its own df. Set the number of branches K and the number of customers timed at each branch m with the sliders. The picture shows every customer as a circle; a locked circle is a value the constraints force.</p>
+      <div class="two-ctrl">
+        <div class="ctrl"><label>Branches, K <span class="val" id="avKV">4</span></label><input type="range" id="avK" min="2" max="6" step="1" value="4" aria-label="Number of groups"></div>
+        <div class="ctrl"><label>Customers per branch, m <span class="val" id="avMV">5</span></label><input type="range" id="avM" min="2" max="10" step="1" value="5" aria-label="Customers per group"></div>
+      </div>
+      <svg class="viz" id="avSvg" viewBox="0 0 640 260" role="img" aria-label="Customers per branch with the locked values marked"></svg>
+      <div class="counts" id="avCounts"></div>
+      <div class="explain" id="avExp"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 5 ======================= -->
+<section class="dof-sec" id="sec5">
+  <div class="sec-head"><div class="kicker">Section 5 · Weeks 3 and 4</div><h2>With fewer degrees of freedom the t curve has fatter tails and a larger critical value</h2></div>
+  <div class="why-box"><b>Why you need this.</b> In Weeks 3 and 4 you replace the unknown σ with the sample's s, and the critical value then comes from Student's t table instead of the normal table. You read that table in the row df = n − 1. This section shows what the row changes: the curve, and the number you put into the interval or the test.</div>
+
+  <div class="tcard">
+    <div class="tc-bar"><span>Two terms used below</span></div>
+    <div class="tc-body">
+      <p>The <b>t distribution</b> is a bell-shaped curve centred on 0, like the standard normal curve, but with more area in its tails. There is one t curve for each number of degrees of freedom.</p>
+      <p>The <b>95 % two-tailed critical value</b> t* is the number that leaves 2.5 % of the area in each tail, so 95 % of the area lies between −t* and +t*. A 95 % confidence interval is x̄ ± t* × s ÷ √n.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Move the df slider and read the critical value</h3>
+    <p>The dashed curve is the standard normal curve; it does not move. The solid curve is the t curve for the df you choose. The shaded tails each hold 2.5 % of the area under the t curve. Move the slider, or press one of the buttons, and compare t* with the normal curve's 1.960.</p>
+    <div class="lab">
+      <div class="ctrl"><label>Degrees of freedom, df <span class="val" id="tDfV">5</span></label><input type="range" id="tDf" min="1" max="60" step="1" value="5" aria-label="Degrees of freedom"></div>
+      <div class="toggle-row" id="tBtns"><button data-df="1">df 1</button><button data-df="2">df 2</button><button data-df="5" class="on">df 5</button><button data-df="10">df 10</button><button data-df="30">df 30</button><button data-df="inf">df ∞</button></div>
+      <svg class="viz" id="tSvg" viewBox="0 0 640 280" role="img" aria-label="The t curve over the standard normal curve with the 95 percent critical values"></svg>
+      <div class="legend"><span><i class="lineL" id="tlgT"></i>t curve at the chosen df</span><span><i class="dash" id="tlgZ"></i>standard normal curve</span><span><i id="tlgTail"></i>2.5 % in each tail</span></div>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="tStar">—</div><div class="l">t*, 95 % two-tailed</div></div>
+        <div class="stat"><div class="v" id="zStar">—</div><div class="l">z*, normal curve</div></div>
+        <div class="stat"><div class="v" id="tWide">—</div><div class="l">interval wider than with z* by</div></div>
+      </div>
+      <div class="explain" id="tExp"></div>
+      <div class="tblwrap" id="tTable"></div>
+    </div>
+    <p style="margin-top:12px;"><b>Why fewer free values give a wider curve.</b> With few degrees of freedom, s is computed from few free deviations, so it is a shaky estimate of σ. Sometimes s comes out too small, and then the t statistic comes out too large. The t curve allows for this by putting more area in its tails, which pushes t* outward and widens the interval. As df grows, s becomes a reliable estimate of σ, and the t curve becomes the normal curve.</p>
+  </div>
+</section>
+
+<!-- ======================= 6 ======================= -->
+<section class="dof-sec" id="sec6">
+  <div class="sec-head"><div class="kicker">Section 6 · Check yourself</div><h2>Six questions: count the degrees of freedom</h2></div>
+  <div class="why-box"><b>Why this check.</b> On the exam you must choose the right row of the t or chi-square table without being told the df. Each question below describes a situation; click the answer you think is right and read the explanation that opens.</div>
+  <div id="quiz"></div>
+  <div class="qscore" id="qScore"></div>
+</section>
+
+<!-- ======================= 7 ======================= -->
+<section class="dof-sec" id="sec7">
+  <div class="sec-head"><div class="kicker">Summary</div><h2>Every df in the course, with its formula and its reason</h2></div>
+  <div class="card">
+    <p>In every row the rule is the same: start with the number of values and subtract one for each number the calculation has already estimated or fixed from the same data.</p>
+    <div class="tblwrap">
+    <table class="sum">
+      <tr><th>Situation</th><th>df</th><th>Why</th></tr>
+      <tr><td>Sample variance and standard deviation (Week 1B)</td><td class="f">n − 1</td><td>The deviations from x̄ add up to zero, so the last one is forced.</td></tr>
+      <tr><td>One-sample t interval or test (Weeks 3 and 4A)</td><td class="f">n − 1</td><td>The t statistic uses s, which has n − 1 degrees of freedom.</td></tr>
+      <tr><td>Two-sample pooled t test (Week 4B)</td><td class="f">n₁ + n₂ − 2</td><td>Each sample's deviations sum to zero around its own mean: two means estimated, two df lost.</td></tr>
+      <tr><td>Regression standard error and slope test (Week 5)</td><td class="f">n − 2</td><td>The line fixes two numbers, the intercept and the slope, so the residuals obey two constraints.</td></tr>
+      <tr><td>Chi-square test for independence (Week 6)</td><td class="f">(I − 1)(J − 1)</td><td>The row and column totals are fixed, so once (I − 1)(J − 1) cells are chosen the others are forced.</td></tr>
+      <tr><td>Chi-square goodness of fit (Week 6)</td><td class="f">K − 1</td><td>The K category counts must add up to n, so the last count is forced.</td></tr>
+      <tr><td>One-way ANOVA, between groups (Week 6)</td><td class="f">K − 1</td><td>The K group means are tied to the overall mean, so the last one is forced.</td></tr>
+      <tr><td>One-way ANOVA, within groups (Week 6)</td><td class="f">n − K</td><td>Each of the K groups loses one df to its own mean.</td></tr>
+    </table>
+    </div>
+  </div>
+  <div class="foot"><a class="btn ghost" href="index.html" style="text-decoration:none;">← Back to the course page</a></div>
+</section>
+
+</div>
+
+<script>
+/* ===================================================================
+   Degrees of freedom · SUMAS MBA401 tool. Every number on the page is
+   computed here; nothing is typed in the HTML except the course facts.
+   =================================================================== */
+const SVGNS="http://www.w3.org/2000/svg";
+function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function kOf(svg){const w=svg.clientWidth||svg.getBoundingClientRect().width;return w&&w<560?Math.max(1,Math.min(2.2,620/w)):1;}
+function svgTxt(svg,x,y,s,fill,size,anchor,bold){const t=el("text",{x:x,y:y,"text-anchor":anchor||"middle","font-size":(size||11)*(svg._k||1),fill:fill});if(bold)t.setAttribute("font-weight","bold");t.textContent=s;svg.appendChild(t);return t;}
+const $=id=>document.getElementById(id);
+function fmt(x,d){d=d||0;let v=Math.round(x*Math.pow(10,d))/Math.pow(10,d);if(Object.is(v,-0)||Math.abs(v)<Math.pow(10,-d)/2)v=0;return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}).replace(/^-/,'−');}
+function sgn(x,d){const s=fmt(x,d);return (Math.round(x*Math.pow(10,d))>0?'+':'')+s;}
+const chf=(x,d)=>'CHF '+fmt(x,d||0);
+const LOCK='<svg class="lk" viewBox="0 0 12 14" aria-hidden="true"><path d="M3 6.5V4.2a3 3 0 0 1 6 0v2.3" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="1.2" y="6.2" width="9.6" height="7.3" rx="1.4" fill="currentColor"/></svg>';
+function svgLock(svg,cx,cy,s,col){
+  svg.appendChild(el('path',{d:`M${cx-s*0.27},${cy} v${-s*0.22} a${s*0.27},${s*0.27} 0 0 1 ${s*0.54},0 v${s*0.22}`,fill:'none',stroke:col,'stroke-width':s*0.14}));
+  svg.appendChild(el('rect',{x:cx-s*0.42,y:cy-s*0.02,width:s*0.84,height:s*0.62,rx:s*0.1,fill:col}));
+}
+
+/* ---- theme: an SVG attribute cannot read a CSS variable ---- */
+const C={};
+function tok(name,fallback){try{const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();return v||fallback;}catch(e){return fallback;}}
+function paintTheme(){
+  Object.assign(C,{
+    navy:tok('--viz-navy','#2C5530'), accent:tok('--accent','#4A8B3A'),
+    ok:tok('--ok','#2F855A'), blue:tok('--viz-blue','#1E8A7A'), grey:tok('--grey','#6B7A6C'),
+    ink:tok('--ink','#1A2B1C'), axis:tok('--viz-axis','rgba(26,43,28,0.30)'),
+    fill:tok('--viz-fill','rgba(44,85,48,0.12)'), redFill:tok('--viz-red-fill','rgba(74,139,58,0.14)'),
+    hi:tok('--viz-hi','rgba(74,139,58,0.26)'), card:tok('--card','#fff'), warn:tok('--dof-warn','#B45309'),
+    lock:tok('--ex-bar','#1E6B78')
+  });
+  const set=(id,css)=>{const e=$(id);if(e)Object.assign(e.style,css);};
+  set('g1lgFree',{background:C.navy}); set('g1lgLock',{background:C.lock}); set('g1lgMean',{borderColor:C.accent,background:'transparent'});
+  set('tlgT',{borderColor:C.navy}); set('tlgZ',{borderColor:C.grey,background:'transparent'}); set('tlgTail',{background:C.hi});
+}
+paintTheme();
+const REDRAW=[];
+document.addEventListener('course-theme',function(){paintTheme();REDRAW.forEach(f=>{try{f();}catch(e){}});});
+let RZ=null,LASTW=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth===LASTW)return;LASTW=window.innerWidth;clearTimeout(RZ);RZ=setTimeout(()=>REDRAW.forEach(f=>{try{f();}catch(e){}}),150);});
+
+/* progress: sections count once each, like the other tools */
+const DONE={};
+function done(id){if(DONE[id])return;DONE[id]=1;try{if(window.StatsTrack)StatsTrack.complete(id);}catch(e){}}
+
+/* ===================================================================
+   1 · fix an average
+   =================================================================== */
+const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const G1={n:5,mean:400,vals:[420,350,460,380,390,410,430],fix:false};
+function g1Build(){
+  const box=$('g1rows');box.innerHTML='';
+  for(let i=0;i<G1.n;i++){
+    const last=i===G1.n-1, booked=G1.fix&&i===0;
+    const row=document.createElement('div');row.className='drow'+((last||booked)?' locked':'');row.id='g1r'+i;
+    if(last){
+      row.innerHTML=`<span class="dl">${LOCK} ${DAYS[i]}</span><span class="dnote">forced by the average</span><span class="dv" id="g1v${i}"></span>`;
+    }else if(booked){
+      row.innerHTML=`<span class="dl">${LOCK} ${DAYS[i]}</span><span class="dnote">fixed by the accountant</span><span class="dv" id="g1v${i}"></span>`;
+    }else{
+      row.innerHTML=`<span class="dl">${DAYS[i]}</span><input type="range" min="0" max="1000" step="10" value="${G1.vals[i]}" id="g1s${i}" aria-label="${DAYS[i]} sales"><span class="dv" id="g1v${i}"></span>`;
+    }
+    box.appendChild(row);
+  }
+  for(let i=0;i<G1.n-1;i++){const s=$('g1s'+i);if(s)s.addEventListener('input',e=>{G1.vals[i]=+e.target.value;g1Update();done('s1');});}
+  g1Update();
+}
+function g1Update(){
+  const n=G1.n,total=n*G1.mean;
+  let sumOthers=0;for(let i=0;i<n-1;i++)sumOthers+=G1.vals[i];
+  const last=total-sumOthers;
+  for(let i=0;i<n-1;i++)$('g1v'+i).textContent=chf(G1.vals[i]);
+  $('g1v'+(n-1)).textContent=chf(last);
+  $('g1r'+(n-1)).classList.toggle('bad',last<0);
+  const cons=G1.fix?2:1, free=n-cons;
+  $('g1counts').innerHTML=`<span>values: <b>${n}</b></span><span>constraints: <b>${cons}</b></span><span class="key">degrees of freedom: <b>${n} − ${cons} = ${free}</b></span>`;
+  const freeDays=[];for(let i=0;i<n-1;i++)if(!(G1.fix&&i===0))freeDays.push(DAYS[i]);
+  let t=`The average must be ${chf(G1.mean)} over ${n} days, so the ${n} figures must add up to ${n} × ${chf(G1.mean)} = <b>${chf(total)}</b>. `;
+  t+=`The first ${n-1} days add up to ${chf(sumOthers)}, so ${DAYS[n-1]} must be ${chf(total)} − ${chf(sumOthers)} = <b>${chf(last)}</b>. No other value keeps the average at ${chf(G1.mean)}. `;
+  if(G1.fix)t+=`Monday is fixed as well, so you choose only ${free} figures freely (${freeDays.join(', ')}): two constraints have removed two choices.`;
+  else t+=`You choose ${free} figures freely (${freeDays.join(', ')}); the one constraint has removed one choice.`;
+  $('g1exp').innerHTML=t;
+  $('g1warn').innerHTML=last<0?`<div class="warn">${DAYS[n-1]} would need negative sales, which is impossible. Lower one of the other days. The count of free values does not change: the average still forces the last figure.</div>`:'';
+  g1Draw(last);
+}
+function g1Draw(last){
+  const svg=$('g1svg');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;
+  const n=G1.n,vals=G1.vals.slice(0,n-1).concat([last]);
+  const L=56,R=624,T=22,B=226-16*k;
+  const ymax=Math.max(1000,...vals),ymin=Math.min(0,...vals);
+  const Y=v=>B-(v-ymin)/(ymax-ymin)*(B-T);
+  for(let v=0;v<=ymax;v+=250){svg.appendChild(el('line',{x1:L,y1:Y(v),x2:R,y2:Y(v),stroke:C.axis,'stroke-width':v===0?1.2:0.6}));svgTxt(svg,L-6,Y(v)+4,fmt(v),C.grey,10,'end');}
+  const bw=(R-L)/n;
+  vals.forEach((v,i)=>{
+    const locked=i===n-1||(G1.fix&&i===0);
+    const col=v<0?C.warn:(locked?C.lock:C.navy);
+    const y0=Y(Math.max(v,0)),y1=Y(Math.min(v,0));
+    svg.appendChild(el('rect',{x:L+i*bw+bw*0.18,y:y0,width:bw*0.64,height:Math.max(1,y1-y0),fill:col,opacity:locked?0.85:0.9,rx:3}));
+    svgTxt(svg,L+i*bw+bw/2,B+5+11*k,DAYS[i].slice(0,3),C.ink,11,'middle',locked);
+    if(locked)svgLock(svg,L+i*bw+bw/2,Math.min(y0,Y(0))-14*k,13*k,C.lock);
+  });
+  const ym=Y(G1.mean);
+  svg.appendChild(el('line',{x1:L,y1:ym,x2:R,y2:ym,stroke:C.accent,'stroke-width':2,'stroke-dasharray':'6 4'}));
+  svgTxt(svg,L+4,ym-6,'average '+chf(G1.mean),C.accent,11,'start',true);
+}
+$('g1n').addEventListener('input',e=>{G1.n=+e.target.value;$('g1nV').textContent=G1.n;g1Build();done('s1');});
+$('g1m').addEventListener('input',e=>{G1.mean=+e.target.value;$('g1mV').textContent=chf(G1.mean);g1Update();});
+$('g1fix').addEventListener('change',e=>{G1.fix=e.target.checked;g1Build();done('s1');});
+g1Build();
+REDRAW.push(g1Update);
+
+/* bonus pool */
+function bonus(){
+  const pool=12000,a=+$('bA').value||0,b=+$('bB').value||0,c=+$('bC').value||0,d=pool-a-b-c;
+  $('bD').textContent=chf(d);
+  $('bD').style.color=d<0?C.warn:'';
+  $('bExp').innerHTML=`The first three bonuses add up to ${chf(a+b+c)}, so employee D receives ${chf(pool)} − ${chf(a+b+c)} = <b>${chf(d)}</b>. Four values and one constraint leave <b>4 − 1 = 3 degrees of freedom</b>.`+(d<0?' The three bonuses you typed are larger than the pool, so D would have to pay money back; lower one of them.':'');
+}
+['bA','bB','bC'].forEach(id=>$(id).addEventListener('input',bonus));bonus();
+
+/* ===================================================================
+   2A · deviations sum to zero
+   =================================================================== */
+const SHOPS=['Rive','Pâquis','Eaux-Vives','Carouge','Plainpalais'];
+const P=[18,21.5,16,19,23];
+(function(){
+  const box=$('g2rows');
+  SHOPS.forEach((s,i)=>{const row=document.createElement('div');row.className='drow';
+    row.innerHTML=`<span class="dl">${s}</span><input type="range" min="12" max="28" step="0.5" value="${P[i]}" id="g2s${i}" aria-label="${s} price"><span class="dv" id="g2v${i}"></span>`;
+    box.appendChild(row);
+    row.querySelector('input').addEventListener('input',e=>{P[i]=+e.target.value;g2Update();done('s2');});
+  });
+})();
+function g2Update(){
+  const n=P.length,m=P.reduce((a,b)=>a+b,0)/n,d=P.map(x=>x-m);
+  const sum=d.reduce((a,b)=>a+b,0),ss=d.reduce((a,b)=>a+b*b,0);
+  P.forEach((x,i)=>$('g2v'+i).textContent=chf(x,2));
+  $('g2mean').textContent=chf(m,2);$('g2sum').textContent=fmt(sum,2);$('g2ss').textContent=fmt(ss,2);
+  const first4=d.slice(0,n-1).reduce((a,b)=>a+b,0);
+  $('g2exp').innerHTML=`The deviations of the first four pizzerias add up to <b>${sgn(first4,2)}</b>. So the fifth deviation, Plainpalais's, must be <b>${sgn(-first4,2)}</b> to bring the sum back to zero, and it is: CHF ${fmt(P[n-1],2)} − CHF ${fmt(m,2)} = ${sgn(d[n-1],2)}. You did not need to look at the fifth price. `+
+    `Dividing the sum of squared deviations by the n − 1 = 4 free deviations gives s² = ${fmt(ss,2)} ÷ 4 = <b>${fmt(ss/4,2)}</b> CHF², so s = <b>${chf(Math.sqrt(ss/4),2)}</b>. Dividing by n = 5 would give ${fmt(ss/5,2)} CHF², which is smaller.`;
+  const svg=$('g2svg');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;
+  const L=40,R=624,mid=104,sc=13;
+  svg.appendChild(el('line',{x1:L,y1:mid,x2:R,y2:mid,stroke:C.axis,'stroke-width':1.4}));
+  svgTxt(svg,L-4,mid+4,'0',C.grey,10,'end');
+  svgTxt(svg,L-4,mid-sc*5+4,'+5',C.grey,10,'end');svgTxt(svg,L-4,mid+sc*5+4,'−5',C.grey,10,'end');
+  [-5,5].forEach(v=>svg.appendChild(el('line',{x1:L,y1:mid-v*sc,x2:R,y2:mid-v*sc,stroke:C.axis,'stroke-width':0.5,'stroke-dasharray':'2 4'})));
+  const bw=(R-L)/n;
+  d.forEach((v,i)=>{
+    const h=Math.max(-6,Math.min(6,v))*sc, last=i===n-1, col=last?C.lock:C.navy;
+    svg.appendChild(el('rect',{x:L+i*bw+bw*0.22,y:h>0?mid-h:mid,width:bw*0.56,height:Math.max(1,Math.abs(h)),fill:col,rx:3}));
+    svgTxt(svg,L+i*bw+bw/2,(h>0?mid-h-6:mid-h+15),sgn(v,2),C.ink,11,'middle',true);
+    svgTxt(svg,L+i*bw+bw/2,216,k>1?SHOPS[i].slice(0,6):SHOPS[i],C.grey,11);
+    if(last)svgLock(svg,L+i*bw+bw*0.85,20,12,C.lock);
+  });
+  svgTxt(svg,L,14,'deviation from the mean, CHF',C.grey,10,'start');
+}
+g2Update();REDRAW.push(g2Update);
+
+/* ===================================================================
+   2B · simulation: ÷n against ÷(n−1)
+   =================================================================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const POP=(function(){const r=mulberry32(4012026),out=[];for(let i=0;i<400;i++){
+  let u=r()||1e-9,v=r();const z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  let x=Math.round(19+3.5*z+6*(-Math.log(1-r())));if(x<10)x=10;if(x>55)x=55;out.push(x);}return out;})();
+const NPOP=POP.length,MU=POP.reduce((a,b)=>a+b,0)/NPOP,SIG2=POP.reduce((a,b)=>a+(b-MU)*(b-MU),0)/NPOP;
+$('popN').textContent=NPOP;$('popMu').textContent=fmt(MU,2);$('popVar').textContent=fmt(SIG2,2);
+function drawPop(){
+  const svg=$('g2pop');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;const lo=10,hi=55,L=36,R=624,B=126-12*k,T=10;
+  const cnt=new Array(hi-lo+1).fill(0);POP.forEach(x=>cnt[x-lo]++);const mx=Math.max(...cnt);
+  const bw=(R-L)/cnt.length;
+  cnt.forEach((c,i)=>{if(!c)return;const h=c/mx*(B-T);svg.appendChild(el('rect',{x:L+i*bw+0.5,y:B-h,width:bw-1,height:h,fill:C.navy,opacity:0.8}));});
+  svg.appendChild(el('line',{x1:L,y1:B,x2:R,y2:B,stroke:C.axis}));
+  for(let v=10;v<=55;v+=(k>1?10:5))svgTxt(svg,L+(v-lo+0.5)*bw,B+4+10*k,v,C.grey,10);
+}
+drawPop();REDRAW.push(drawPop);
+const SIM={n:5,acc:{}};
+function accOf(n){return SIM.acc[n]||(SIM.acc[n]={k:0,sn:0,sn1:0});}
+function oneSample(n){const s=[];for(let i=0;i<n;i++)s.push(POP[Math.floor(Math.random()*NPOP)]);
+  const m=s.reduce((a,b)=>a+b,0)/n,ss=s.reduce((a,b)=>a+(b-m)*(b-m),0);return {s,m,ss,vn:ss/n,vn1:ss/(n-1)};}
+function simDraw(k,n){const a=accOf(n);let last=null;for(let i=0;i<k;i++){last=oneSample(n);a.k++;a.sn+=last.vn;a.sn1+=last.vn1;}return last;}
+function simShow(last){
+  const n=SIM.n,a=accOf(n);
+  if(last){
+    const shown=last.s.length>12?last.s.slice(0,12).join(', ')+', …':last.s.join(', ');
+    $('simLast').innerHTML=`Last sample (${n} delivery times, minutes): ${shown}. Mean ${fmt(last.m,2)}. Sum of squared deviations ${fmt(last.ss,2)}. Divided by n = ${n}: <b>${fmt(last.vn,2)}</b>. Divided by n − 1 = ${n-1}: <b>${fmt(last.vn1,2)}</b>. True σ² = ${fmt(SIG2,2)}.`;
+  }
+  $('simK').textContent=fmt(a.k);
+  const avn=a.k?a.sn/a.k:null,avn1=a.k?a.sn1/a.k:null;
+  $('simDn').textContent=a.k?fmt(100*avn/SIG2,1)+' %':'—';
+  $('simDn1').textContent=a.k?fmt(100*avn1/SIG2,1)+' %':'—';
+  const th=100*(n-1)/n;
+  $('simCap').textContent=a.k<100?`Draw at least a few hundred samples; one sample alone can land far from σ² either way.`:
+    `Dividing by n gives on average ${fmt(100*avn/SIG2,1)} % of the true variance; the theory says (n − 1) ÷ n = ${n-1} ÷ ${n} = ${fmt(th,1)} %. Dividing by n − 1 gives ${fmt(100*avn1/SIG2,1)} %, close to 100 %; more samples bring it closer.`;
+  const svg=$('simSvg');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;
+  const L=16,R=540,rows=[['true variance σ²',SIG2,C.grey],['average of the estimates ÷ n',avn,C.accent],['average of the estimates ÷ (n − 1)',avn1,C.navy]];
+  const mx=Math.max(SIG2*1.3,avn||0,avn1||0);
+  const X=v=>L+v/mx*(R-L),gap=30+14*k,H=12+22*k/1.4;
+  rows.forEach((r,i)=>{const y=4+i*(gap+H)+gap-6;
+    svgTxt(svg,L,y-6,r[0],C.ink,12,'start',i===0);
+    if(r[1]!=null){svg.appendChild(el('rect',{x:L,y:y,width:Math.max(1,X(r[1])-L),height:H,fill:r[2],opacity:0.88,rx:3}));
+      svgTxt(svg,X(r[1])+6,y+H/2+4*k,fmt(r[1],2),C.ink,12,'start',true);}
+    else svgTxt(svg,L+6,y+H/2+4*k,'no samples yet',C.grey,11,'start');
+  });
+  const bottom=4+3*(gap+H)+4;
+  svg.appendChild(el('line',{x1:X(SIG2),y1:10,x2:X(SIG2),y2:bottom,stroke:C.grey,'stroke-width':1.5,'stroke-dasharray':'4 3'}));
+  svg.setAttribute('viewBox','0 0 640 '+Math.ceil(bottom+4));
+}
+document.querySelectorAll('#simN button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#simN button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  SIM.n=+b.dataset.n;$('simLast').textContent='No sample drawn yet at this size.';simShow(null);}));
+$('sim1').addEventListener('click',()=>simShow(simDraw(1,SIM.n)));
+$('sim1000').addEventListener('click',()=>{simShow(simDraw(1000,SIM.n));done('s2');});
+$('simReset').addEventListener('click',()=>{SIM.acc={};$('simLast').textContent='No sample drawn yet.';$('simTable').innerHTML='';simShow(null);});
+$('simAll').addEventListener('click',()=>{
+  [2,3,5,10,30].forEach(n=>simDraw(1000,n));
+  let h='<div class="tblwrap"><table class="sim"><tr><th>n</th><th>samples</th><th>÷ n</th><th>theory</th><th>÷ (n − 1)</th></tr>';
+  [2,3,5,10,30].forEach(n=>{const a=accOf(n);h+=`<tr><td>${n}</td><td>${fmt(a.k)}</td><td>${fmt(100*a.sn/a.k/SIG2,1)} %</td><td>${fmt(100*(n-1)/n,1)} %</td><td>${fmt(100*a.sn1/a.k/SIG2,1)} %</td></tr>`;});
+  h+='</table></div><p class="explain">Each percentage is the average estimate as a share of the true σ²; the theory column is (n − 1) ÷ n. Read the third column from top to bottom: dividing by n falls short by about half the true variance at n = 2 and by only a few per cent at n = 30. The last column stays near 100 % at every size. That is why the sample variance divides by n − 1.</p>';
+  $('simTable').innerHTML=h;simShow(null);done('s2');
+});
+simShow(null);REDRAW.push(()=>simShow(null));
+
+/* ===================================================================
+   3 · regression, n − 2
+   =================================================================== */
+const XR=[12,28],YR=[0,100];
+const START=[[15,70],[25,35]];
+let PTS=START.map(p=>p.slice());
+const G3={L:52,R:624,T:26,B:298};
+const gx=x=>G3.L+(x-XR[0])/(XR[1]-XR[0])*(G3.R-G3.L), gy=y=>G3.B-(y-YR[0])/(YR[1]-YR[0])*(G3.B-G3.T);
+function fit(pts){const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;
+  let sxx=0,sxy=0;pts.forEach(p=>{sxx+=(p[0]-mx)*(p[0]-mx);sxy+=(p[0]-mx)*(p[1]-my);});
+  if(sxx<1e-12)return null;const b1=sxy/sxx,b0=my-b1*mx;return {b0,b1,res:pts.map(p=>p[1]-(b0+b1*p[0]))};}
+function g3Draw(){
+  const svg=$('g3svg');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;
+  for(let x=12;x<=28;x+=2){svg.appendChild(el('line',{x1:gx(x),y1:G3.T,x2:gx(x),y2:G3.B,stroke:C.axis,'stroke-width':0.4}));if(k===1||x%4===0)svgTxt(svg,gx(x),G3.B+4+10*k,x,C.grey,10);}
+  for(let y=0;y<=100;y+=20){svg.appendChild(el('line',{x1:G3.L,y1:gy(y),x2:G3.R,y2:gy(y),stroke:C.axis,'stroke-width':0.4}));svgTxt(svg,G3.L-6,gy(y)+4,y,C.grey,10,'end');}
+  svgTxt(svg,(G3.L+G3.R)/2,G3.B+8+22*k,'price of a Margherita, CHF',C.grey,11);
+  svgTxt(svg,G3.L,G3.T-6,'Margheritas sold per day',C.grey,10,'start');
+  const f=fit(PTS);
+  if(f){
+    const clipY=v=>Math.max(YR[0]-20,Math.min(YR[1]+20,v));
+    svg.appendChild(el('line',{x1:gx(XR[0]),y1:gy(clipY(f.b0+f.b1*XR[0])),x2:gx(XR[1]),y2:gy(clipY(f.b0+f.b1*XR[1])),stroke:C.accent,'stroke-width':2.4}));
+    PTS.forEach((p,i)=>{const yh=f.b0+f.b1*p[0];if(Math.abs(f.res[i])>0.05)svg.appendChild(el('line',{x1:gx(p[0]),y1:gy(p[1]),x2:gx(p[0]),y2:gy(yh),stroke:i>=PTS.length-2&&PTS.length>2?C.lock:C.navy,'stroke-width':1.6,'stroke-dasharray':'3 2'}));});
+  }
+  PTS.forEach(p=>svg.appendChild(el('circle',{cx:gx(p[0]),cy:gy(p[1]),r:6,fill:C.navy,stroke:C.card,'stroke-width':1.5})));
+  /* numbers */
+  const n=PTS.length;$('g3n').textContent=n;$('g3df').textContent=n-2;
+  if(!f){$('g3sse').textContent='—';$('g3se').textContent='—';$('g3line').innerHTML='All the points have the same price, so no line can be placed through them. Add a point at another price.';$('g3exp').innerHTML='';$('g3chips').innerHTML='';return;}
+  const sse=f.res.reduce((a,e)=>a+e*e,0);
+  $('g3sse').textContent=fmt(sse,1);
+  $('g3se').textContent=n>2?fmt(Math.sqrt(sse/(n-2)),2):'0 ÷ 0';
+  $('g3line').innerHTML=`The fitted line is <b>ŷ = ${fmt(f.b0,2)} ${f.b1<0?'−':'+'} ${fmt(Math.abs(f.b1),2)}x</b>: each extra franc on the price goes with ${fmt(Math.abs(f.b1),2)} ${f.b1<0?'fewer':'more'} Margheritas sold per day. `+
+    `The residuals obey two rules that the fitting imposes: their sum is ${fmt(f.res.reduce((a,e)=>a+e,0),2)}, and the sum of price × residual is ${fmt(f.res.reduce((a,e,i)=>a+e*PTS[i][0],0),2)}. Both are always zero.`;
+  let ex;
+  if(n===2)ex=`With two points the line passes through both, so SSE = 0 and s<sub>e</sub> would be 0 ÷ 0, which cannot be computed. Both points were used up to place the line: <b>df = 2 − 2 = 0</b>. Click in the chart to add a third pizzeria.`;
+  else{
+    const a=PTS[n-2],b=PTS[n-1];let chk='';
+    if(Math.abs(a[0]-b[0])>1e-9){
+      let s0=0,s1=0;for(let i=0;i<n-2;i++){s0+=f.res[i];s1+=f.res[i]*PTS[i][0];}
+      /* solve e_a + e_b = −s0, x_a e_a + x_b e_b = −s1 */
+      const eb=(-s1+a[0]*s0)/(b[0]-a[0]),ea=-s0-eb;
+      const same=Math.abs(ea-f.res[n-2])<1e-6&&Math.abs(eb-f.res[n-1])<1e-6;
+      chk=` Given the first ${n-2} residual${n-2>1?'s':''}, the two rules force the last two: solving the two rules gives ${sgn(ea,2)} and ${sgn(eb,2)}, `+(same?'which are exactly the residuals the line gives.':'and the line gives the same two residuals up to rounding.');
+    }
+    ex=`You have ${n} points and the line fixed 2 numbers, so <b>df = ${n} − 2 = ${n-2}</b>: ${n-2} residual${n-2>1?'s are':' is'} free and the last two are forced by the two rules.${chk} That is why s<sub>e</sub> divides SSE by n − 2 = ${n-2}: s<sub>e</sub> = √(${fmt(sse,1)} ÷ ${n-2}) = ${fmt(Math.sqrt(sse/(n-2)),2)} Margheritas.`;
+  }
+  $('g3exp').innerHTML=ex;
+  $('g3chips').innerHTML=f.res.map((e,i)=>{const lk=n>2&&i>=n-2;return `<span class="chip${lk?' lockd':''}">${lk?LOCK+' ':''}point ${i+1}: residual ${sgn(e,2)}</span>`;}).join('');
+}
+$('g3svg').addEventListener('click',ev=>{
+  const svg=$('g3svg'),pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;
+  const m=svg.getScreenCTM();if(!m)return;const p=pt.matrixTransform(m.inverse());
+  if(p.x<G3.L||p.x>G3.R||p.y<G3.T||p.y>G3.B)return;
+  const x=XR[0]+(p.x-G3.L)/(G3.R-G3.L)*(XR[1]-XR[0]),y=YR[0]+(G3.B-p.y)/(G3.B-G3.T)*(YR[1]-YR[0]);
+  PTS.push([Math.round(x*10)/10,Math.round(y)]);g3Draw();if(PTS.length>=4)done('s3');
+});
+$('g3rand').addEventListener('click',()=>{const x=13+Math.random()*14;let y=Math.round(110-3.2*x+(Math.random()-0.5)*30);y=Math.max(2,Math.min(98,y));PTS.push([Math.round(x*10)/10,y]);g3Draw();if(PTS.length>=4)done('s3');});
+$('g3undo').addEventListener('click',()=>{if(PTS.length>2){PTS.pop();g3Draw();}});
+$('g3reset').addEventListener('click',()=>{PTS=START.map(p=>p.slice());g3Draw();});
+g3Draw();REDRAW.push(g3Draw);
+
+/* ===================================================================
+   4 · contingency table with fixed margins
+   =================================================================== */
+const ORDERS={rows:['Rive','Pâquis','Eaux-Vives'],cols:['Margherita','Quattro formaggi','Diavola'],
+  cells:[[28,14,18],[15,22,23],[20,26,14]]};   /* Week 6's 180 orders of last month */
+const CT={R:2,typed:null,val:null,by:null};
+function ctInit(R){CT.R=R;const J=3;CT.typed=[];CT.val=[];CT.by=[];
+  for(let i=0;i<R;i++){CT.typed.push(new Array(J).fill(null));CT.val.push(new Array(J).fill(null));CT.by.push(new Array(J).fill(null));}
+  ctBuild();}
+function ctTotals(){const R=CT.R,J=3,rt=[],cl=[0,0,0];for(let i=0;i<R;i++){const s=ORDERS.cells[i].reduce((a,b)=>a+b,0);rt.push(s);for(let j=0;j<J;j++)cl[j]+=ORDERS.cells[i][j];}return {rt,cl,n:rt.reduce((a,b)=>a+b,0)};}
+function ctSolve(){
+  const R=CT.R,J=3,T=ctTotals();
+  for(let i=0;i<R;i++)for(let j=0;j<J;j++){CT.val[i][j]=CT.typed[i][j];CT.by[i][j]=CT.typed[i][j]==null?null:'you';}
+  let changed=true;
+  while(changed){changed=false;
+    for(let i=0;i<R;i++){const em=[];let s=0;for(let j=0;j<J;j++){if(CT.val[i][j]==null)em.push(j);else s+=CT.val[i][j];}
+      if(em.length===1){CT.val[i][em[0]]=T.rt[i]-s;CT.by[i][em[0]]='page';changed=true;}}
+    for(let j=0;j<J;j++){const em=[];let s=0;for(let i=0;i<R;i++){if(CT.val[i][j]==null)em.push(i);else s+=CT.val[i][j];}
+      if(em.length===1){CT.val[em[0]][j]=T.cl[j]-s;CT.by[em[0]][j]='page';changed=true;}}
+  }
+}
+function ctBuild(){
+  const R=CT.R,J=3,T=ctTotals(),tb=$('ctTable');
+  const short=['Margherita','Quattro','Diavola'];
+  let h='<tr><th></th>'+short.map((c,j)=>`<th title="${ORDERS.cols[j]}">${c}</th>`).join('')+'<th class="tot">Row total</th></tr>';
+  for(let i=0;i<R;i++){h+=`<tr><th class="l">${ORDERS.rows[i]}</th>`;
+    for(let j=0;j<J;j++)h+=`<td class="cell" id="ctc${i}${j}"><input type="number" min="0" step="1" inputmode="numeric" id="cti${i}${j}" aria-label="${ORDERS.rows[i]}, ${ORDERS.cols[j]}"></td>`;
+    h+=`<td class="tot">${T.rt[i]}</td></tr>`;}
+  h+='<tr><th class="l tot">Column total</th>'+T.cl.map(c=>`<td class="tot">${c}</td>`).join('')+`<td class="tot">n = ${T.n}</td></tr>`;
+  tb.innerHTML=h;
+  for(let i=0;i<R;i++)for(let j=0;j<J;j++){
+    $('cti'+i+j).addEventListener('change',e=>{
+      const v=e.target.value.trim();
+      CT.typed[i][j]=v===''?null:Math.max(0,Math.round(+v));
+      ctRefresh();done('s4');
+    });
+  }
+  ctRefresh();
+}
+function ctRefresh(){
+  ctSolve();
+  const R=CT.R,J=3;let you=0,page=0,neg=false;
+  for(let i=0;i<R;i++)for(let j=0;j<J;j++){
+    const inp=$('cti'+i+j),td=$('ctc'+i+j),by=CT.by[i][j],v=CT.val[i][j];
+    inp.classList.remove('you','forced','neg');
+    const oldLock=td.querySelector('.lk');if(oldLock)oldLock.remove();
+    if(by==='you'){inp.value=v;inp.readOnly=false;inp.classList.add('you');you++;}
+    else if(by==='page'){inp.value=v;inp.readOnly=true;inp.classList.add('forced');td.insertAdjacentHTML('beforeend',LOCK);page++;if(v<0){inp.classList.add('neg');neg=true;}}
+    else{inp.value='';inp.readOnly=false;}
+  }
+  const free=(R-1)*(J-1),cells=R*J;
+  $('ctCounts').innerHTML=`<span>cells: <b>${cells}</b></span><span>chosen by you: <b>${you}</b></span><span>forced by the totals: <b>${page}</b></span><span class="key">df = (${R} − 1) × (${J} − 1) = <b>${free}</b></span>`;
+  let t;
+  if(you+page<cells)t=`${cells-you-page} cell${cells-you-page>1?'s are':' is'} still empty. Type a count in one of them.`;
+  else t=`The table is full. You chose <b>${you}</b> cell${you>1?'s':''} and the totals forced the other <b>${page}</b>. However you pick the cells, you always choose exactly (rows − 1) × (columns − 1) = (${R} − 1) × (${J} − 1) = <b>${free}</b>: that is the number of degrees of freedom of the chi-square test on this table.`;
+  $('ctExp').innerHTML=t;
+  $('ctWarn').innerHTML=neg?'<div class="warn">A forced cell is negative, and a count of orders cannot be negative. Lower one of the counts you typed in that row or column. The number of free cells does not change.</div>':'';
+}
+document.querySelectorAll('#ctSize button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#ctSize button').forEach(x=>x.classList.remove('on'));b.classList.add('on');ctInit(+b.dataset.r);}));
+$('ctClear').addEventListener('click',()=>ctInit(CT.R));
+$('ctReal').addEventListener('click',()=>{ctInit(CT.R);for(let i=0;i<CT.R-1;i++)for(let j=0;j<2;j++)CT.typed[i][j]=ORDERS.cells[i][j];ctRefresh();done('s4');});
+ctInit(2);
+
+/* ANOVA picture */
+function avDraw(){
+  const K=+$('avK').value,m=+$('avM').value,n=K*m;
+  $('avKV').textContent=K;$('avMV').textContent=m;
+  const svg=$('avSvg');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;
+  const L=40+80*k,R=630,top=18,rowH=Math.max(16*k,Math.min(30,150/K));
+  const dx=Math.min(44,(R-L)/m);
+  for(let g=0;g<K;g++){const y=top+g*rowH+rowH/2;
+    svgTxt(svg,L-12,y+4*k,(k>1?'':'Branch ')+String.fromCharCode(65+g),C.ink,11,'end');
+    for(let c=0;c<m;c++){const x=L+c*dx+dx/2,lk=c===m-1;
+      svg.appendChild(el('circle',{cx:x,cy:y,r:Math.min(9*k,rowH*0.34),fill:lk?C.card:C.navy,stroke:lk?C.lock:C.navy,'stroke-width':1.8,'stroke-dasharray':lk?'3 2':''}));
+      if(lk)svgLock(svg,x,y-3*k,10*k,C.lock);}
+  }
+  const y2=top+K*rowH+20+12*k;
+  svgTxt(svg,L-12,y2+4*k,'Means',C.ink,11,'end',true);
+  const dx2=Math.min(60,(R-L)/K);
+  for(let g=0;g<K;g++){const x=L+g*dx2+dx2/2,lk=g===K-1;
+    svg.appendChild(el('rect',{x:x-11*k,y:y2-11*k,width:22*k,height:22*k,rx:4,fill:lk?C.card:C.accent,stroke:lk?C.lock:C.accent,'stroke-width':1.8,'stroke-dasharray':lk?'3 2':''}));
+    if(lk)svgLock(svg,x,y2-3*k,10*k,C.lock);else svgTxt(svg,x,y2+4*k,String.fromCharCode(65+g),C.card,10,'middle',true);}
+  svg.setAttribute('viewBox','0 0 640 '+Math.ceil(y2+20));
+  $('avCounts').innerHTML=`<span>customers n = ${K} × ${m} = <b>${n}</b></span><span class="key">between groups: K − 1 = <b>${K-1}</b></span><span class="key">within groups: n − K = <b>${n-K}</b></span>`;
+  $('avExp').innerHTML=`<b>Within groups.</b> Inside each branch the deviations from that branch's own mean add up to zero, as in Section 2, so one customer per branch is forced: ${n} customers − ${K} branch means = <b>${n-K}</b> degrees of freedom. <b>Between groups.</b> The ${K} branch means are tied to the overall mean, so only ${K} − 1 = <b>${K-1}</b> of them are free. The F test of ANOVA reads its critical value on (${K-1}, ${n-K}) degrees of freedom.`;
+}
+['avK','avM'].forEach(id=>$(id).addEventListener('input',()=>{avDraw();done('s4');}));
+avDraw();REDRAW.push(avDraw);
+
+/* ===================================================================
+   5 · the t curve
+   =================================================================== */
+function lgamma(x){const c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x<0.5)return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x)))-lgamma(1-x);
+  x-=1;let a=c[0];const t=x+7.5;for(let i=1;i<9;i++)a+=c[i]/(x+i);return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);}
+function betacf(a,b,x){const MAXIT=300,EPS=3e-16,FPMIN=1e-300;let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<FPMIN)d=FPMIN;d=1/d;let h=d;
+  for(let m=1;m<=MAXIT;m++){const m2=2*m;let aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<FPMIN)d=FPMIN;c=1+aa/c;if(Math.abs(c)<FPMIN)c=FPMIN;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<FPMIN)d=FPMIN;c=1+aa/c;if(Math.abs(c)<FPMIN)c=FPMIN;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<EPS)break;}return h;}
+function ibeta(a,b,x){if(x<=0)return 0;if(x>=1)return 1;const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b;}
+function erfc(x){const z=Math.abs(x),t=1/(1+0.5*z);const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));return x>=0?r:2-r;}
+function ncdf(z){return 0.5*erfc(-z/Math.SQRT2);}
+function tcdf(t,df){if(!isFinite(df))return ncdf(t);const p=0.5*ibeta(df/2,0.5,df/(df+t*t));return t>0?1-p:p;}
+function tq(p,df){let lo=0,hi=1000;for(let i=0;i<200;i++){const mid=(lo+hi)/2;if(tcdf(mid,df)<p)lo=mid;else hi=mid;}return (lo+hi)/2;}
+function npdf(x){return Math.exp(-x*x/2)/Math.sqrt(2*Math.PI);}
+function tpdf(x,v){if(!isFinite(v))return npdf(x);return Math.exp(lgamma((v+1)/2)-lgamma(v/2)-0.5*Math.log(v*Math.PI)-(v+1)/2*Math.log(1+x*x/v));}
+window.DOF_MATH={tq,tcdf,tpdf,ncdf};
+const TS={df:5};
+const ZSTAR=tq(0.975,Infinity);
+function tDraw(){
+  const df=TS.df,ts=tq(0.975,df);
+  $('tDfV').textContent=isFinite(df)?df:'∞';
+  $('tStar').textContent=fmt(ts,3);$('zStar').textContent=fmt(ZSTAR,3);
+  $('tWide').textContent=fmt(100*(ts/ZSTAR-1),1)+' %';
+  const svg=$('tSvg');svg.innerHTML='';svg._k=kOf(svg);const k=svg._k;
+  const L=24,R=616,B=262-26*k,T=14,XL=-5,XH=5,YM=0.42;
+  const X=x=>L+(x-XL)/(XH-XL)*(R-L),Y=y=>B-y/YM*(B-T);
+  /* tails */
+  const tail=(a,b)=>{let d=`M${X(a)},${Y(0)}`;const N=60;for(let i=0;i<=N;i++){const x=a+(b-a)*i/N;d+=` L${X(x)},${Y(tpdf(x,df))}`;}d+=` L${X(b)},${Y(0)} Z`;svg.appendChild(el('path',{d,fill:C.hi,stroke:'none'}));};
+  if(ts<XH)tail(ts,XH);if(ts<XH)tail(XL,-ts);
+  svg.appendChild(el('line',{x1:L,y1:B,x2:R,y2:B,stroke:C.axis,'stroke-width':1.2}));
+  for(let x=-5;x<=5;x++){svg.appendChild(el('line',{x1:X(x),y1:B,x2:X(x),y2:B+4,stroke:C.axis}));svgTxt(svg,X(x),B+4+11*k,x<0?'−'+(-x):x,C.grey,10);}
+  const path=f=>{let d='';const N=240;for(let i=0;i<=N;i++){const x=XL+(XH-XL)*i/N;d+=(i?' L':'M')+X(x)+','+Y(f(x));}return d;};
+  svg.appendChild(el('path',{d:path(npdf),fill:'none',stroke:C.grey,'stroke-width':1.8,'stroke-dasharray':'6 4'}));
+  svg.appendChild(el('path',{d:path(x=>tpdf(x,df)),fill:'none',stroke:C.navy,'stroke-width':2.6}));
+  const mark=(x,lab,col,dy)=>{if(Math.abs(x)>XH)return;svg.appendChild(el('line',{x1:X(x),y1:B,x2:X(x),y2:B-60-dy*k,stroke:col,'stroke-width':1.4}));svgTxt(svg,X(x),B-64-dy*k,lab,col,11,'middle',true);};
+  if(ts<=XH){mark(ts,'+'+fmt(ts,3),C.navy,28);mark(-ts,'−'+fmt(ts,3),C.navy,28);}
+  else svgTxt(svg,R,T+12,'t* = '+fmt(ts,3)+' lies beyond the chart',C.navy,11,'end',true);
+  mark(ZSTAR,'+1.960',C.grey,0);mark(-ZSTAR,'−1.960',C.grey,0);
+  svgTxt(svg,R,B+8+22*k,'t, in standard errors from the centre',C.grey,10,'end');
+  const n=isFinite(df)?df+1:null;
+  $('tExp').innerHTML=isFinite(df)?
+    `At <b>df = ${df}</b> (for one sample, n = ${n}), 95 % of the area lies between −${fmt(ts,3)} and +${fmt(ts,3)}. A 95 % interval is therefore x̄ ± ${fmt(ts,3)} × s ÷ √${n}, which is ${fmt(100*(ts/ZSTAR-1),1)} % wider than the same interval with z* = ${fmt(ZSTAR,3)}.`:
+    `At <b>df = ∞</b> the t curve is the standard normal curve, and t* equals z* = ${fmt(ZSTAR,3)}.`;
+}
+$('tDf').addEventListener('input',e=>{TS.df=+e.target.value;document.querySelectorAll('#tBtns button').forEach(x=>x.classList.toggle('on',x.dataset.df===String(TS.df)));tDraw();done('s5');});
+document.querySelectorAll('#tBtns button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#tBtns button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  TS.df=b.dataset.df==='inf'?Infinity:+b.dataset.df;$('tDf').value=isFinite(TS.df)?TS.df:60;tDraw();done('s5');}));
+(function(){const list=[1,2,3,5,10,20,30,60,Infinity];
+  let h='<table class="sim" style="margin-top:14px;max-width:360px;margin-left:auto;margin-right:auto;"><tr><th>df</th><th>t*, 95 % two-tailed</th></tr>'+list.map(d=>`<tr><td>${isFinite(d)?d:'∞'}</td><td>${fmt(tq(0.975,d),3)}</td></tr>`).join('')+'</table>';
+  $('tTable').innerHTML=h+'<p class="explain" style="font-size:13px;">The page computes every value in this row itself, from the t distribution; it is the 0.025 column of the t table in the textbook.</p>';})();
+tDraw();REDRAW.push(tDraw);
+
+/* ===================================================================
+   6 · self-check
+   =================================================================== */
+const QUIZ=[
+  {q:'A hotel manager records the room rate on 12 nights and computes the sample standard deviation. How many degrees of freedom does s have?',
+   n:12, ans:n=>n-1, opts:n=>[n,n-1,n-2,1], why:n=>`The 12 deviations from the sample mean add up to zero, so ${n} − 1 = ${n-1} of them are free. The sample standard deviation divides by n − 1 = ${n-1}.`},
+  {q:'You build a 95 % confidence interval for the average ticket at the Carouge branch from 25 orders, with σ unknown. Which row of the t table do you read?',
+   n:25, ans:n=>n-1, opts:n=>[n,n-1,n-2,Infinity], why:n=>`The interval uses s, which has n − 1 = ${n-1} degrees of freedom, so you read the row df = ${n-1}. The critical value there is ${fmt(tq(0.975,n-1),3)}.`},
+  {q:'You regress Margheritas sold per day on the price, using 14 pizzerias. How many degrees of freedom does the slope test use?',
+   n:14, ans:n=>n-2, opts:n=>[n-1,n-2,n,2], why:n=>`The line fixes two numbers, the intercept and the slope, so ${n} − 2 = ${n-2} residuals are free. The slope test reads the t table on ${n-2} df.`},
+  {q:'A chi-square test for independence sorts orders by 3 branches and 4 toppings. How many degrees of freedom does it have?',
+   r:3,c:4, ans:(n,q)=>(q.r-1)*(q.c-1), opts:(n,q)=>[(q.r-1)*(q.c-1),q.r*q.c-1,q.r+q.c-2,q.r*q.c], why:(n,q)=>`With the row and column totals fixed, (I − 1)(J − 1) = (${q.r} − 1)(${q.c} − 1) = ${(q.r-1)*(q.c-1)} cells are free; the others are forced.`},
+  {q:'A bank times 10 customers at each of 4 branches and runs a one-way ANOVA. What are the two degrees of freedom of the F test (between groups, within groups)?',
+   k:4,m:10, ans:(n,q)=>`${q.k-1} and ${q.k*q.m-q.k}`, opts:(n,q)=>[`${q.k-1} and ${q.k*q.m-q.k}`,`${q.k} and ${q.k*q.m}`,`${q.k-1} and ${q.k*q.m-1}`,`${q.m-1} and ${q.k-1}`],
+   why:(n,q)=>`Between groups: K − 1 = ${q.k} − 1 = ${q.k-1}. Within groups: n − K = ${q.k*q.m} − ${q.k} = ${q.k*q.m-q.k}, because each branch loses one df to its own mean.`},
+  {q:'Why is the 95 % critical value of t at df = 3 larger than at df = 30?',
+   ans:()=>'With only 3 free deviations, s is an unreliable estimate of σ, so the curve needs fatter tails', opts:()=>['With only 3 free deviations, s is an unreliable estimate of σ, so the curve needs fatter tails','Small samples always have a larger mean','The t table is printed with a rounding error at small df','At df = 3 the sample standard deviation is always larger than σ'],
+   why:()=>`At df = 3 the critical value is ${fmt(tq(0.975,3),3)}; at df = 30 it is ${fmt(tq(0.975,30),3)}. s from 4 values can come out too small, which would make t too large; the fatter tails of the t curve allow for that. s is not always larger than σ: it is sometimes larger and sometimes smaller.`}
+];
+const QS={right:0,answered:0};
+(function(){
+  const box=$('quiz');
+  QUIZ.forEach((q,qi)=>{
+    const f=v=>typeof v==='number'?(isFinite(v)?String(v):'∞ (the normal table)'):v;
+    const correct=f(q.ans(q.n,q));
+    let opts=q.opts(q.n,q).map(f);
+    /* fixed shuffle so the right answer is not always first */
+    const rot=(qi*3+1)%opts.length;opts=opts.slice(rot).concat(opts.slice(0,rot));
+    const d=document.createElement('div');d.className='q';
+    d.innerHTML=`<div class="qt"><span class="qn">${qi+1}.</span>${q.q}</div>`+opts.map(o=>`<button class="opt" data-v="${o.replace(/"/g,'&quot;')}">${o}</button>`).join('')+`<div class="why">${q.why(q.n,q)}</div>`;
+    box.appendChild(d);
+    d.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
+      const ok=b.dataset.v===correct;
+      d.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(x.dataset.v===correct)x.classList.add('correct');});
+      if(!ok)b.classList.add('wrong');
+      d.querySelector('.why').classList.add('show');
+      QS.answered++;if(ok)QS.right++;
+      $('qScore').textContent=`You have answered ${QS.answered} of ${QUIZ.length} questions; ${QS.right} ${QS.right===1?'is':'are'} right.`;
+      if(QS.answered===QUIZ.length){done('s6');try{if(window.StatsTrack&&StatsTrack.setScore)StatsTrack.setScore(QS.right,QUIZ.length);}catch(e){}}
+    }));
+  });
+})();
+
+window.addEventListener('DOMContentLoaded',function(){if(window.StatsTrack)StatsTrack.init({module:'dof',title:'Degrees of freedom tool',total:6});});
+</script>
+<script src="/shared/config.js"></script>
+<script>if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
+<script src="/shared/announce.js" defer></script>
+<script src="/shared/chat.js" defer></script>
+<script src="/track.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

@@ -227,7 +227,7 @@ window.StatsPresence = (function () {
     {mod:'w4',n:4,name:'Week 4 · Testing hypotheses',           pages:['w4a','w4b']},
     {mod:'w5',n:5,name:'Week 5 · Correlation and regression',   pages:['w5p','w5']},
     {mod:'w6',n:6,name:'Week 6 · Chi-square tests and F-tests', pages:['w6']},
-    {mod:'w7',n:7,name:'Week 7 · PCA and non-parametric tests', pages:['w7']},
+    {mod:'w7',n:7,name:'Week 7 · Non-parametric tests and principal components', pages:['w7']},
     {mod:'w8',n:8,name:'Week 8 · Exercises and repetition',     pages:['w8']},
     {mod:'w9',n:9,name:'Week 9 · Repetition and the blank test',pages:['w9a','w9b']}
   ];

@@ -4,168 +4,888 @@
 <meta charset="UTF-8" />
 <base href="/SUMAS/mba401/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Week 7 · PCA and other non-parametric tests · Quantitative Methods · SUMAS</title>
-<meta name="description" content="Quantitative Methods, Week 7 — PCA and other non-parametric tests (DataTab · beyond Saylor). In preparation: objectives, planned sections and the lecture outline.">
-<meta name="robots" content="noindex">
+<title>Week 7 · Non-parametric tests and principal components · Quantitative Methods · SUMAS</title>
+<meta name="description" content="Quantitative Methods, Week 7 — tests on ranks when the assumptions of a t-test or ANOVA fail (Mann–Whitney U, Wilcoxon signed-rank, Kruskal–Wallis, Spearman) and principal component analysis on a customer survey, each computed by hand on the pizzeria and run in numiqo (formerly DataTab); where the course meets machine learning. Interactive lesson + live lecture mode.">
 <meta name="theme-color" content="#2C5530">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
 <link rel="stylesheet" href="/shared/themes/sumas-stats.css">
 <script src="/shared/theme.js"></script>
 <link rel="stylesheet" href="stats.css">
+<style>
+/* page-unique: the textbook box, walker and your-turn rows (copied from Week 5), then this week's tables */
+.book{border-left:4px solid var(--navy);background:rgba(44,85,48,0.05);padding:12px 16px;border-radius:0 12px 12px 0;margin:12px 0;font-size:14px;line-height:1.6;}
+.book .bt{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;color:var(--navy);margin-bottom:4px;}
+.book .bt a{color:var(--navy);}
+.book p{margin:6px 0;}
+.book .step{margin:5px 0;}
+.book .lo{margin:4px 0 0 1.2em;} .book .lo li{margin:2px 0;}
+.mini{font-size:12.5px;color:var(--grey);}
+.walk .ws{display:none;gap:10px;align-items:flex-start;margin:8px 0;padding:10px 12px;border-left:3px solid var(--accent,#4A8B3A);background:var(--surface,#F3F6F2);border-radius:0 8px 8px 0;font-size:14px;line-height:1.5;}
+.walk .ws.show{display:flex;}
+.walk .wn{flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent-deep,#2C5530);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.turn .trow{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap;}
+.turn .tin{display:inline-flex;align-items:center;gap:6px;}
+.turn .trow label{display:inline-block !important;flex:0 0 220px;margin:0 !important;font-weight:700;font-size:13.5px;color:var(--navy,#2C5530);}
+.turn .tin input[type=text]{width:130px;flex:0 0 130px;padding:7px 9px;border:1.5px solid var(--line,#CFD8D0);border-radius:8px;font-size:14px;background:var(--card,#fff);color:var(--ink,#1A2B1C);}
+.turn .tin input.ok{border-color:var(--ok,#2F855A);} .turn .tin input.no{border-color:var(--no,#B42318);}
+.turn .mk{font-weight:800;min-width:16px;} .turn .unit{color:var(--grey,#6B7A6C);font-size:13px;}
+.book .stem,.lect-body .book .stem{font-family:inherit;white-space:normal;background:transparent;border:0;padding:0;font-size:inherit;line-height:inherit;overflow:visible;font-weight:700;color:var(--ink);margin:4px 0;}
+.qbody{margin:0;}
+/* contingency tables and small data tables (the book's shape: row and column totals in the margins) */
+.dtab{border-collapse:collapse;font-size:13px;margin:8px 0;font-variant-numeric:tabular-nums;background:var(--card,#fff);}
+.dtab th,.dtab td{border:1px solid var(--line);padding:4px 9px;text-align:center;}
+.dtab th{background:rgba(30,107,120,0.10);color:var(--navy);font-weight:800;}
+.dtab td.l,.dtab th.l{text-align:left;}
+.dtab td.tot,.dtab th.tot{background:rgba(44,85,48,0.06);font-weight:800;color:var(--navy);}
+.dtab td .e{display:block;font-size:11.5px;color:var(--ex-ink,#15515B);}
+.dtab td input.numin{width:58px;padding:3px 5px;text-align:center;}
+.lect-body .dtab{font-size:.8em;margin:6px auto;}
+.lect-body .dtab td .e{font-size:.85em;}
+/* the book's rejection-region table for F */
+.bk2{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 10px;background:var(--card,#fff);border-radius:10px;overflow:hidden;}
+.bk2 th,.bk2 td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
+.bk2 th{background:rgba(44,85,48,0.08);color:var(--navy);font-weight:800;}
+.bk2 td.num{font-variant-numeric:tabular-nums;text-align:right;}
+.lect-body .bk2{font-size:.82em;}
+/* a quoted misprint, corrected: dotted underline, the printed value in the title */
+.corr,.walk .corr{border-bottom:2px dotted var(--accent);cursor:help;}
+.num-pair{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:8px 0;}
+.num-pair label{font-size:12px;color:var(--ink-soft);font-weight:700;display:block;margin-bottom:4px;}
+.num-pair input.numin{width:90px;}
+@media(max-width:560px){.num-pair>div{flex:1 1 42%;}}
+.stat .l.m{text-transform:none;letter-spacing:0;font-size:12px;}
+.ftab{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;margin:8px auto;background:var(--card,#fff);}
+.ftab th,.ftab td{border:1px solid var(--line);padding:4px 10px;text-align:center;}
+.ftab th{background:rgba(44,85,48,0.08);color:var(--navy);font-weight:800;}
+.ftab td.hi{background:var(--accent);color:#fff;font-weight:800;}
+/* Week 7: numbered steps for numiqo, the read-only data box */
+.steps-ol{margin:6px 0 10px 1.3em;font-size:14px;line-height:1.55;} .steps-ol li{margin:4px 0;}
+.copybox{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:8px;border:1.5px solid var(--line);border-radius:8px;background:var(--card,#fff);color:var(--ink);resize:vertical;}
+</style>
+<script src="/shared/admin-gate.js"></script>
+<script src="answers.js"></script>
+<script src="/shared/fb-auth.js"></script>
+<script src="exercises.js"></script>
+<script src="presence.js"></script>
 </head>
 <body data-course="mba401">
-<!-- GENERATED by _build/scaffold.py — edit the SPEC there, not this file.
-     Delete this week's SPEC entry once the page is written by hand. -->
 
 <div class="topbar">
   <div class="topbar-inner">
     <img class="brand" src="sumas-logo.png" alt="SUMAS">
     <span class="course">QUANTITATIVE METHODS · WEEK 7</span>
+    <span class="who" id="topWho"></span>
     <span class="tb-spacer"></span>
     <a class="home" href="index.html">← Course</a>
-    <button class="lect-btn" id="lectOpen" title="The slide outline for this week">▶ Lecture</button>
+    <button class="lect-btn" id="lectOpen" title="Full-screen lecture deck — what your instructor presents in class">▶ Lecture</button>
   </div>
   <div class="topbar-bars">
-    <div class="tbar"><span class="tbl">This week</span><div class="tk"><div class="tf" id="progFill" style="width:0"></div></div><span class="tp" id="progPct">—</span></div>
+    <div class="tbar"><span class="tbl">This week</span><div class="tk"><div class="tf" id="progFill"></div></div><span class="tp" id="progPct">0%</span></div>
     <div class="tbar"><span class="tbl">Course</span><div class="cbar" id="courseBar"></div><span class="tp" id="coursePct">0%</span></div>
   </div>
 </div>
-<div class="draft-banner">🔧 <b>Week 7 is in preparation.</b> What follows is the plan for the 3-hour session — objectives, the Part 1 sections, the Part 2 exercise outline and the slide outline. Nothing here is counted yet.</div>
 
 <div class="wrap">
 
+<!-- ============================ HOME ============================ -->
 <section class="screen active" id="home">
   <div class="hero">
     <div class="eyebrow">Week 7 · Quantitative Methods · SUMAS</div>
-    <h1>Nine survey questions, <em>one</em> satisfaction score?</h1>
-    <p class="sub">Beyond the textbook. Two things a working analyst meets in the first month: data that break the assumptions of the tests you have learned (small, skewed, ordinal), and too many variables to look at one at a time. This week is the non-parametric toolkit and a first meeting with principal component analysis — hands-on in DataTab, no formulas by hand.</p>
+    <h1>Is Rive faster than Pâquis when one delivery took <em>95 minutes</em>?</h1>
+    <p class="sub">Every test of this course so far assumed that the data come from a roughly normal population: a bell-shaped spread of values with no extreme cases. Real business data often break that assumption. A sample is small and one value is extreme; a customer answers on a scale from 1 to 5, which is an order, not a measurement. This week has two parts. First, four <b>non-parametric tests</b>: tests that work on the <b>ranks</b> of the values (1st, 2nd, 3rd …) instead of the values themselves, so that one extreme value cannot dominate the result. Second, <b>principal component analysis</b> (PCA): a method that turns many related survey questions into a few scores, and the place where the statistics of this course meets what companies call machine learning.</p>
+    <p class="sub" style="margin-top:12px;"><b>The session is three hours.</b> Part 1 is the lesson: each method computed by hand on the pizzeria's data, then run in <b>numiqo</b>, the free online statistics calculator that was called DataTab until it was renamed (datatab.net now opens numiqo.com). Part 2 is ten exercises worked together. The textbook does not cover this week, so every definition here is written for this page.</p>
     <div class="liveinfo">
-      <span class="li">🏫 In class: <b>3 h</b> · lesson ~1 h, then exercises ~2 h</span>
-      <span class="li">📖 <b>DataTab · beyond Saylor</b></span>
-      <span class="li">▶ The <b>Lecture</b> button shows the slide outline</span>
+      <span class="li">🏫 In class: <b>Week 7 session</b> · Monday 7 December · bring a laptop and a calculator</span>
+      <span class="li">💻 <b>numiqo.com</b> (formerly DataTab) · free, in the browser, no account needed for these tests</span>
+      <span class="li">▶ The <b>Lecture</b> button (top-right) shows the deck we use in class</span>
     </div>
   </div>
 
+  <div id="recallSlot"></div>
+
+  <div id="presSlot"></div>
+
   <div class="objectives">
     <h4>By the end of Week 7 you will be able to</h4>
-    <ul><li>Recognise when a parametric test's assumptions fail and name the non-parametric counterpart (Mann–Whitney, Wilcoxon, Kruskal–Wallis, Spearman).</li><li>Run and interpret one of them in DataTab.</li><li>Explain the idea of principal component analysis: variance, components, loadings.</li><li>Run a PCA on a customer survey in DataTab and read the first two components.</li><li>Understand what "machine learning" adds to — and borrows from — the statistics of this course.</li></ul>
+    <ul>
+      <li>Say when the assumptions of a t-test or an ANOVA fail (a small sample with an extreme value, or answers on a rating scale), and name the non-parametric test that replaces each one.</li>
+      <li>Rank a sample, including tied values, and run a <em>Mann–Whitney U test</em> (two independent samples) and a <em>Wilcoxon signed-rank test</em> (paired samples) by hand with the normal approximation.</li>
+      <li>Run a <em>Kruskal–Wallis test</em> (three or more groups) with the chi-square table of Week 6, and compute <em>Spearman's rank correlation</em>.</li>
+      <li>Explain what a principal component is, read the share of variance each component explains, decide how many components to keep, and name a component from its loadings.</li>
+      <li>Run each of these in numiqo, and say whether a business task is supervised learning, unsupervised learning, or neither.</li>
+    </ul>
   </div>
 
   <div class="materials">
-    <h4>Resources</h4>
-    <div class="mi" data-read="r1"><span class="box">✓</span><span><a href="https://datatab.net/" target="_blank" rel="noopener">DataTab — online statistics calculator (free, browser-based) ↗</a></span></div><div class="mi" data-read="r2"><span class="box">✓</span><span><a href="https://datatab.net/tutorial/mann-whitney-u-test" target="_blank" rel="noopener">DataTab tutorial — Mann-Whitney U test ↗</a></span></div><div class="mi" data-read="r3"><span class="box">✓</span><span><a href="https://datatab.net/tutorial/principal-component-analysis" target="_blank" rel="noopener">DataTab tutorial — Principal component analysis ↗</a></span></div>
-    <div class="note" style="font-size:12.5px;color:var(--grey);margin-top:8px;font-style:italic;">Homework for this week is written with the week itself, on the Week 1 pattern: a fresh dataset, hints and worked solutions.</div>
+    <h4>Resources: tick them off as you go</h4>
+    <div class="mi" data-read="r1"><span class="box">✓</span><span><b>Lecture deck</b>: the ▶ Lecture button above; presented in class in Week 7.</span></div>
+    <div class="mi" data-read="r2"><span class="box">✓</span><span><a href="https://numiqo.com/statistics-calculator/hypothesis-test" target="_blank" rel="noopener">numiqo · hypothesis-test calculator ↗</a>: you paste the data into its table, choose the columns and the test, and it prints the result. Used in sections 7.3 to 7.6.</span></div>
+    <div class="mi" data-read="r3"><span class="box">✓</span><span><a href="https://numiqo.com/tutorial/mann-whitney-u-test" target="_blank" rel="noopener">numiqo tutorial · the Mann–Whitney U test ↗</a> and <a href="https://numiqo.com/tutorial/pca" target="_blank" rel="noopener">the PCA tutorial ↗</a>: the same methods explained by the makers of the calculator.</span></div>
+    <div class="mi" data-read="r5"><span class="box">✓</span><span><b>Part 2 · the exercise set</b>: ten exercises, worked with your instructor in the second half of the session, in section 7.9 below. Calculator.</span></div>
+    <div class="mi" data-read="r4"><span class="box">✓</span><span><a href="week7-homework.html">Week 7 homework</a>: twelve more problems with hints and worked solutions.</span></div>
   </div>
 
   <div class="section-list" id="sectionList"></div>
 
-  
-
   <div class="foot">
     <a class="backlink" href="index.html">← Course page</a>
+    <div style="margin-top:10px;color:var(--grey);">A reset link lives at the bottom of section 7.11.</div>
   </div>
 </section>
 
-<!-- ============================ 11.1 ============================ -->
+<!-- ============================ 7.1 ============================ -->
 <section class="screen" id="s1" data-num="1">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.1 · The hook</div><h2>The customer survey</h2></div>
+  <div class="sec-head"><div class="kicker">Section 7.1 · The hook<span class="ref" data-ref="s1"></span></div><h2>Sixteen deliveries, two branches, one 95-minute order</h2></div>
+
   <div class="card">
-    <span class="label problem">Planned · Hook</span>
-    <h3>Nine questions on a 1–5 scale — what would you do with them?</h3>
-    <ul class="plan-list"><li>A survey of 60 customers, nine items. Estimate: how many underlying things is it really measuring?</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+    <span class="label problem">Your verdict</span>
+    <h3>Last Friday evening the pizzeria timed eight deliveries from Rive and eight from Pâquis, in minutes from the order to the door.</h3>
+    <p class="lead">One Pâquis driver was stuck behind a closed road and took 95 minutes. The manager wants to know whether Rive delivers faster in general, because the delivery promise on the website is the same for both branches. <strong>Look at the two rows and decide before any formula.</strong></p>
+    <table class="dtab" style="margin:10px auto" id="hookTab"></table>
+    <div class="lab">
+      <div class="lab-title">1 · your verdict: is Rive faster?</div>
+      <div class="toggle-row" id="gutV">
+        <button data-v="yes">Yes: Rive is faster</button>
+        <button data-v="no">No: there is no real difference</button>
+        <button data-v="cant">Impossible to say from sixteen deliveries</button>
+      </div>
+      <div class="lab-title" style="margin-top:16px;">2 · what will the two-sample t-test of Week 4B say at the 5% level?</div>
+      <div class="toggle-row" id="gutT">
+        <button data-t="rej">It rejects H₀: the mean times differ</button>
+        <button data-t="keep">It does not reject H₀</button>
+      </div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn" id="gutLock">🔒 Lock in my answers</button></div>
+      <div class="reveal" id="gutReveal"></div>
+    </div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-home>Menu</button><button class="btn" data-next="s2">Next: ordinal, skewed, small →</button></div>
+
+  <div class="prose">
+    <p><b>Why this matters for a manager.</b> A t-test compares two <b>means</b> (averages). One extreme value moves a mean a long way: the Pâquis mean is 37.6 minutes, although seven of its eight deliveries took between 24 and 34. The same value also makes the Pâquis standard deviation about six times the Rive one, and a large standard deviation makes any difference look like chance. So the test that you learned answers a question about averages that one closed road has distorted. Section 7.2 shows the problem in numbers, and section 7.3 gives the test that answers the manager's question.</p>
+    <p class="src">Our text</p>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-home>Menu</button>
+    <button class="btn" data-next="s2">Next: when the assumptions fail →</button>
+  </div>
 </section>
-<!-- ============================ 11.2 ============================ -->
+
+<!-- ============================ 7.2 ============================ -->
 <section class="screen" id="s2" data-num="2">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.2 · When assumptions fail</div><h2>Ordinal, skewed, small</h2></div>
-  <div class="card">
-    <span class="label idea">Planned · Non-parametric</span>
-    <h3>Non-parametric counterparts</h3>
-    <ul class="plan-list"><li>Classify (6 rows): the parametric test → its non-parametric twin — t test ↔ Mann–Whitney, paired t ↔ Wilcoxon, ANOVA ↔ Kruskal–Wallis, Pearson ↔ Spearman.</li><li>Widget: ranks instead of values — watch an outlier lose its power.</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+  <div class="sec-head"><div class="kicker">Section 7.2 · Ranks instead of values<span class="ref" data-ref="s2"></span></div><h2>When the assumptions of a test fail, rank the data</h2></div>
+
+  <div class="tcard" id="t-lo1">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.2</span></div>
+    <div class="tc-body"><ol class="lo"><li>To recognise the three situations in which a t-test or an ANOVA should not be trusted.</li><li>To rank a sample, giving tied values the average of their positions.</li><li>To name the non-parametric test that replaces each test of the semester.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-prev="s1">← Back</button><button class="btn" data-next="s3">Next: run a mann–whitney →</button></div>
+
+  <div class="tcard" id="t-def1">
+    <div class="tc-bar"><span>Definitions · parametric and non-parametric tests</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p>A <b>parametric test</b> is a test that assumes the population has a known shape, usually the normal distribution, and tests a number that describes it, such as the mean μ. The t-tests of Weeks 4A and 4B and the ANOVA of Week 6 are parametric.</p>
+      <p>A <b>non-parametric test</b> is a test that makes no assumption about the shape of the population. Most non-parametric tests replace every value by its <b>rank</b>: its position when all the values are sorted from smallest to largest. The smallest value gets rank 1, the next rank 2, and so on.</p>
+      <p>A <b>tie</b> is two or more equal values. Tied values all get the <b>average of the positions they occupy</b>. If two values share positions 4 and 5, both get rank 4.5.</p>
+      <p>Three situations call for a non-parametric test: <b>(1)</b> a small sample (under about 30) from a population that is clearly not normal, for example skewed to one side; <b>(2)</b> a small sample with an <b>outlier</b>, a value far from all the others; <b>(3)</b> <b>ordinal data</b>, answers that have an order but no fixed distance between them, such as a rating from 1 to 5. The distance from "poor" to "fair" need not equal the distance from "good" to "excellent", so an average of ratings is hard to interpret, while their order is clear.</p>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-rank">
+    <div class="xc-bar"><span>By hand · the pizzeria</span><span class="xc-src">The sixteen deliveries of section 7.1</span></div>
+    <div class="xc-body">
+      <h3>Rank all sixteen delivery times together</h3>
+      <div class="qbody"><p class="stem">Put the eight Rive times and the eight Pâquis times in one list, sort it, and write each time's position. Then look at what happened to the 95-minute delivery.</p></div>
+      <div class="sol">Walked, one step per press</div>
+      <div id="rankWalk"></div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.1</b> Move the extreme delivery and watch the two tests <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">first write your prediction: if the slow Pâquis delivery took 150 minutes instead of 95, which number changes more?</div>
+      <div class="toggle-row" id="olPred"><button data-p="t">The t statistic changes more</button><button data-p="u">The rank sum changes more</button><button data-p="same">Both change by the same amount</button></div>
+      <div class="ctrl" style="margin-top:12px;"><label>minutes for the slow Pâquis delivery <span class="val" id="olV">95</span></label><input type="range" id="olS" min="35" max="200" step="1" value="95" disabled></div>
+      <svg class="viz" id="olViz" viewBox="0 0 640 150" role="img" aria-label="The sixteen delivery times as dots on a minutes axis, Rive above and Pâquis below"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="olMean">—</div><div class="l">Pâquis mean, min</div></div>
+        <div class="stat"><div class="v" id="olT">—</div><div class="l">t statistic (df 14)</div></div>
+        <div class="stat"><div class="v" id="olTp">—</div><div class="l">p of the t-test</div></div>
+        <div class="stat"><div class="v" id="olR">—</div><div class="l">Rive rank sum</div></div>
+      </div>
+      <div class="caption" id="olCap">Choose a prediction to unlock the slider.</div>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-ties">
+    <div class="xc-bar"><span>Second example · a hotel</span><span class="xc-src">Tied values</span></div>
+    <div class="xc-body">
+      <h3>Seven guests rate their room from 1 (poor) to 5 (excellent)</h3>
+      <div class="qbody"><p class="stem">A hotel in Lausanne asks seven guests to rate their room. The answers are 4, 2, 5, 4, 3, 4, 1. Rank them. Three guests gave a 4, so the 4s are tied.</p></div>
+      <div class="sol">Solution</div>
+      <div id="tiesWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 1</span><span class="xc-src">Ranks with ties</span></div>
+    <div class="xc-body">
+      <p class="stem">A car-rental office records how many days eight customers kept their car: 7, 3, 7, 9, 1, 7, 4, 3. Rank the eight values. Give the rank of each 3, the rank of each 7, and the sum of all eight ranks.</p>
+      <div id="yt1"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Before the next sections · which test replaces which?</span>
+    <h3>Match each parametric test to its non-parametric replacement</h3>
+    <p>Each test of the semester has a rank-based version that asks the same kind of question. Read the description of the data and choose the replacement.</p>
+    <div class="lab">
+      <div class="lab-title">Mann–Whitney · Wilcoxon signed-rank · Kruskal–Wallis · Spearman</div>
+      <div id="twinRows"></div>
+      <div class="caption" id="twinCap"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt1">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.2</span></div>
+    <div class="tc-body"><ul class="lo"><li>A rank keeps the order of the values and forgets their distance, so an extreme value can only be ranked last: it cannot pull the result further.</li><li>Tied values get the average of the positions they share; the ranks of n values always add up to n(n + 1) ⁄ 2.</li><li>Two independent samples → Mann–Whitney; paired samples → Wilcoxon signed-rank; three or more groups → Kruskal–Wallis; a correlation → Spearman.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s1">← Back</button>
+    <button class="btn" data-next="s3">Next: the Mann–Whitney U test →</button>
+  </div>
 </section>
-<!-- ============================ 11.3 ============================ -->
+
+<!-- ============================ 7.3 ============================ -->
 <section class="screen" id="s3" data-num="3">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.3 · In DataTab</div><h2>Run a Mann–Whitney</h2></div>
-  <div class="card">
-    <span class="label play">Planned · Hands-on</span>
-    <h3>The pizzeria survey, lake vs station</h3>
-    <ul class="plan-list"><li>Step-by-step: paste the data, choose the test, read the output. Screenshots of what DataTab shows and what each number means.</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+  <div class="sec-head"><div class="kicker">Section 7.3 · Two independent samples<span class="ref" data-ref="s3"></span></div><h2>The Mann–Whitney U test</h2></div>
+
+  <div class="tcard" id="t-lo2">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.3</span></div>
+    <div class="tc-body"><ol class="lo"><li>To compute the Mann–Whitney statistic U from the ranks of two independent samples.</li><li>To test H<sub>0</sub> with the normal approximation, and to read the same test in numiqo.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-prev="s2">← Back</button><button class="btn" data-next="s4">Next: directions of variance →</button></div>
+
+  <div class="prose">
+    <p><b>The question.</b> Two samples are <b>independent</b> when the values in one sample have nothing to do with the values in the other: different deliveries, different customers. The Mann–Whitney test asks whether values from one population tend to be larger than values from the other. If Rive and Pâquis were equally fast, the Rive deliveries would be spread evenly through the sorted list of sixteen, and their ranks would add up to about half of all the ranks. If Rive is faster, its deliveries crowd the top of the list (the small ranks), and its rank sum is small.</p>
+    <p class="src">Our text</p>
+  </div>
+
+  <div class="xcard" id="x-mwhook">
+    <div class="xc-bar"><span>By hand · the pizzeria</span><span class="xc-src">The sixteen deliveries</span></div>
+    <div class="xc-body">
+      <h3>Is Rive faster? The Mann–Whitney test at the 5% level</h3>
+      <div class="qbody"><p class="stem">Rive: 18, 19, 21, 22, 23, 25, 26, 29 minutes. Pâquis: 24, 27, 28, 30, 31, 32, 34, 95 minutes. The ranks are those of section 7.2. Test, at the 5% level, whether delivery times differ between the two branches.</p></div>
+      <div class="sol">Walked, one step per press</div>
+      <div id="mwhookWalk"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-mw">
+    <div class="tc-bar"><span>The Mann–Whitney U test · the formulas</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p><b>Hypotheses.</b> H<sub>0</sub>: the two populations have the same distribution. H<sub>a</sub>: values in one population tend to be larger than in the other.</p>
+      <p><b>Step 1.</b> Rank all n<sub>1</sub> + n<sub>2</sub> values together. <b>Step 2.</b> Add the ranks of sample 1; call the sum R<sub>1</sub>.</p>
+      <div class="formula">U<sub>1</sub> = R<sub>1</sub> − n<sub>1</sub>(n<sub>1</sub> + 1) ⁄ 2 &nbsp;&nbsp;&nbsp; U<sub>2</sub> = n<sub>1</sub>n<sub>2</sub> − U<sub>1</sub> &nbsp;&nbsp;&nbsp; U = the smaller of U<sub>1</sub> and U<sub>2</sub></div>
+      <p>U<sub>1</sub> counts the pairs (one value from each sample) in which the sample-1 value is the larger one. If H<sub>0</sub> is true, U is close to half of all n<sub>1</sub>n<sub>2</sub> pairs.</p>
+      <div class="formula">mean of U = n<sub>1</sub>n<sub>2</sub> ⁄ 2 &nbsp;&nbsp;&nbsp; SD of U = √( n<sub>1</sub>n<sub>2</sub>(n<sub>1</sub> + n<sub>2</sub> + 1) ⁄ 12 ) &nbsp;&nbsp;&nbsp; z = (U − mean) ⁄ SD</div>
+      <p><b>Decision, two-tailed at level α.</b> Reject H<sub>0</sub> if |z| ≥ z<sub>α⁄2</sub>, which is 1.960 at α = 0.05. The normal approximation is good when both samples have at least 8 values; for smaller samples numiqo also prints an exact p-value, which is the one to report.</p>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.2</b> Run the same test in numiqo <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">why: in the case study you will run tests in software; check that the software gives the number you computed</div>
+      <ol class="steps-ol">
+        <li>Press <b>Copy the data</b> below. The data are two columns: <i>Branch</i> (Rive or Pâquis) and <i>Minutes</i>, one delivery per row, with the column names in the first row.</li>
+        <li>Open <a href="https://numiqo.com/statistics-calculator/hypothesis-test" target="_blank" rel="noopener">numiqo.com/statistics-calculator/hypothesis-test ↗</a>. Click <b>Clear the table</b>, click the first cell, and paste.</li>
+        <li>Select the two variables <i>Branch</i> and <i>Minutes</i>. numiqo first proposes a t-test. Choose <b>Non-Parametric Test</b>: the output is now titled Mann–Whitney U test.</li>
+        <li>Find U, the mean ranks, the rank sums and the p-value in the output. Write the two-tailed p-value in the box below.</li>
+      </ol>
+      <div class="btn-row"><button class="btn small" data-copy="mwData">📋 Copy the data</button><span class="mini" data-copied="mwData"></span></div>
+      <textarea readonly class="copybox" id="mwData" rows="4"></textarea>
+      <div class="caption">numiqo should show U = 5, rank sums 41 (Rive) and 95 (Pâquis), mean ranks 5.13 and 11.88, an <b>asymptotic</b> p of about 0.005 (the normal approximation you computed) and an <b>exact</b> p of about 0.003. If numiqo's layout differs from these steps, the numbers are what to check.</div>
+      <div id="mwSoft"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">The hook closes</span>
+    <h3>Is Rive faster than Pâquis?</h3>
+    <p>Press the button to compare the two tests on the sixteen deliveries with the answers you locked in section 7.1.</p>
+    <div class="btn-row"><button class="btn" id="hookGo">Compare the two tests</button></div>
+    <div class="reveal" id="hookOut"></div>
+  </div>
+
+  <div class="xcard" id="x-mwloan">
+    <div class="xc-bar"><span>Second example · a bank</span><span class="xc-src">Two independent samples</span></div>
+    <div class="xc-body">
+      <h3>Does the Geneva office approve loans faster than the Lausanne office?</h3>
+      <div class="qbody"><p class="stem">A bank records the working days from application to decision for six loans at its Geneva office and seven at its Lausanne office. Geneva: 12, 15, 9, 20, 14, 11. Lausanne: 18, 22, 16, 25, 13, 21, 19. Two loans took much longer than the rest, so the head of lending prefers a rank test. Test at the 5% level whether the processing times differ.</p></div>
+      <div class="sol">Solution</div>
+      <div id="mwloanWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 2</span><span class="xc-src">Mann–Whitney</span></div>
+    <div class="xc-body">
+      <p class="stem">A hotel measures check-in time, in minutes, for five guests at the old desk and six guests at the new self-service kiosk. Desk: 4, 7, 5, 9, 6. Kiosk: 8, 12, 10, 11, 13, 9.5. Take the desk as sample 1. Find R<sub>1</sub>, U, and z.</p>
+      <div id="yt2"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt2">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.3</span></div>
+    <div class="tc-body"><ul class="lo"><li>The Mann–Whitney test compares two independent samples through the sum of the ranks of one of them.</li><li>U = R<sub>1</sub> − n<sub>1</sub>(n<sub>1</sub> + 1) ⁄ 2, take the smaller of U<sub>1</sub> and n<sub>1</sub>n<sub>2</sub> − U<sub>1</sub>; z = (U − n<sub>1</sub>n<sub>2</sub>⁄2) ⁄ √(n<sub>1</sub>n<sub>2</sub>(n<sub>1</sub>+n<sub>2</sub>+1)⁄12).</li><li>You can now say whether one branch is faster even when one delivery was extreme: the sixteen deliveries give U = 5, z = −2.84, reject at 5%.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s2">← Back</button>
+    <button class="btn" data-next="s4">Next: paired samples →</button>
+  </div>
 </section>
-<!-- ============================ 11.4 ============================ -->
+
+<!-- ============================ 7.4 ============================ -->
 <section class="screen" id="s4" data-num="4">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.4 · PCA — the idea</div><h2>Directions of variance</h2></div>
-  <div class="card">
-    <span class="label idea">Planned · PCA</span>
-    <h3>Components, loadings, the scree plot</h3>
-    <ul class="plan-list"><li>Widget: a 2-D cloud of two survey items; rotate the axis and watch the variance along it; the first component is the direction that captures most of it.</li><li>Then nine dimensions: what "the first two components explain 71%" means, and how to name a component from its loadings.</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+  <div class="sec-head"><div class="kicker">Section 7.4 · Paired samples<span class="ref" data-ref="s4"></span></div><h2>The Wilcoxon signed-rank test</h2></div>
+
+  <div class="tcard" id="t-lo3">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.4</span></div>
+    <div class="tc-body"><ol class="lo"><li>To recognise paired data and compute the differences.</li><li>To compute the Wilcoxon statistic T from the ranks of the differences and test it with the normal approximation.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-prev="s3">← Back</button><button class="btn" data-next="s5">Next: nine items → two scores →</button></div>
+
+  <div class="prose">
+    <p><b>The question.</b> Two samples are <b>paired</b> when each value in one sample belongs with one value in the other: the same driver before and after a change, the same shop in two months. Week 4B tested paired data with a t-test on the differences. The Wilcoxon signed-rank test ranks the <b>sizes</b> of the differences and then asks whether the large differences point mostly one way.</p>
+    <p class="src">Our text</p>
+  </div>
+
+  <div class="xcard" id="x-wildriv">
+    <div class="xc-bar"><span>By hand · the pizzeria</span><span class="xc-src">Ten drivers, before and after a routing app</span></div>
+    <div class="xc-body">
+      <h3>Did the routing app shorten the drivers' average delivery time?</h3>
+      <div class="qbody"><p class="stem">The pizzeria gave its ten drivers a routing app. For each driver it has the average delivery time, in minutes, for the month before and the month after.</p>
+      <table class="dtab"><tr><th>Driver</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr><tr><th class="l">Before</th><td>34</td><td>29</td><td>41</td><td>38</td><td>31</td><td>36</td><td>45</td><td>33</td><td>30</td><td>39</td></tr><tr><th class="l">After</th><td>31</td><td>30</td><td>35</td><td>40</td><td>26</td><td>32</td><td>28</td><td>25</td><td>23</td><td>30</td></tr></table>
+      <p class="stem">Driver 7 changed his route completely and gained 17 minutes. Test at the 5% level whether the app changed delivery times.</p></div>
+      <div class="sol">Walked, one step per press</div>
+      <div id="wildrivWalk"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-wil">
+    <div class="tc-bar"><span>The Wilcoxon signed-rank test · the formulas</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p><b>Hypotheses.</b> H<sub>0</sub>: the differences are spread evenly around zero. H<sub>a</sub>: the differences tend to be positive, or tend to be negative.</p>
+      <p><b>Step 1.</b> Compute each difference d = after − before. Drop any pair with d = 0 and reduce n by one for each. <b>Step 2.</b> Rank the <b>absolute</b> differences |d| (ties get the average rank). <b>Step 3.</b> Add the ranks of the positive differences, T<sub>+</sub>, and of the negative differences, T<sub>−</sub>. Check: T<sub>+</sub> + T<sub>−</sub> = n(n + 1) ⁄ 2.</p>
+      <div class="formula">T = the smaller of T<sub>+</sub> and T<sub>−</sub> &nbsp;&nbsp;&nbsp; mean of T = n(n + 1) ⁄ 4 &nbsp;&nbsp;&nbsp; SD of T = √( n(n + 1)(2n + 1) ⁄ 24 ) &nbsp;&nbsp;&nbsp; z = (T − mean) ⁄ SD</div>
+      <p><b>Decision, two-tailed at 5%.</b> Reject H<sub>0</sub> if |z| ≥ 1.960. Use the approximation when n is at least 10; numiqo also prints an exact p-value for small samples and applies a small continuity correction to the approximate one, so its p can differ slightly in the third decimal.</p>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.3</b> The ten drivers, editable <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">first predict: if driver 7's "after" time were 5 minutes instead of 28, would T change?</div>
+      <div class="toggle-row" id="wfPred"><button data-p="yes">Yes, T would fall</button><button data-p="no">No, T would stay 3</button></div>
+      <div style="overflow-x:auto"><table class="dtab" id="wfTab" style="margin:8px auto"></table></div>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="wfTp">—</div><div class="l m">T₊</div></div>
+        <div class="stat"><div class="v" id="wfTm">—</div><div class="l m">T₋</div></div>
+        <div class="stat"><div class="v" id="wfZ">—</div><div class="l">z</div></div>
+        <div class="stat"><div class="v" id="wfP">—</div><div class="l">p, two-tailed</div></div>
+      </div>
+      <div class="caption" id="wfCap">Choose a prediction to unlock the table.</div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn ghost small" id="wfReset">Back to the ten drivers</button></div>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-wilcall">
+    <div class="xc-bar"><span>Second example · a call centre</span><span class="xc-src">Paired samples</span></div>
+    <div class="xc-body">
+      <h3>Did a training day change how many calls an agent closes per hour?</h3>
+      <div class="qbody"><p class="stem">An insurance call centre measured eight agents' closed calls per hour in the week before and the week after a training day. Before: 11, 9, 14, 10, 12, 8, 13, 10.5. After: 13, 12, 13.5, 15, 13, 11.5, 17, 16. Test at the 5% level whether the training changed the rate.</p></div>
+      <div class="sol">Solution</div>
+      <div id="wilcallWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 3</span><span class="xc-src">Wilcoxon signed-rank</span></div>
+    <div class="xc-body">
+      <p class="stem">Seven clothing shops counted returned items in October (before a stricter returns policy) and in November (after). October: 52, 47, 60, 55, 49, 58, 51. November: 46, 45, 51, 58, 45, 47, 50. Find T<sub>+</sub>, T<sub>−</sub> and z. (With n = 7 the approximation is rough; it is practice for the method.)</p>
+      <div id="yt3"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt3">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.4</span></div>
+    <div class="tc-body"><ul class="lo"><li>For paired data, rank the sizes of the differences, then add the ranks of the positive and of the negative ones separately.</li><li>T = the smaller sum; z = (T − n(n+1)⁄4) ⁄ √(n(n+1)(2n+1)⁄24).</li><li>You can now test a before-and-after change in which one case moved far more than the others: the routing app gives T = 3, z = −2.50, reject at 5%.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s3">← Back</button>
+    <button class="btn" data-next="s5">Next: three or more groups →</button>
+  </div>
 </section>
-<!-- ============================ 11.5 ============================ -->
+
+<!-- ============================ 7.5 ============================ -->
 <section class="screen" id="s5" data-num="5">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.5 · PCA in DataTab</div><h2>Nine items → two scores</h2></div>
-  <div class="card">
-    <span class="label play">Planned · Hands-on</span>
-    <h3>Run it, read it, name the components</h3>
-    <ul class="plan-list"><li>Step-by-step on the survey; the loadings table; naming "food quality" and "service" from what loads where.</li><li>A closing card: how this connects to machine learning — models that predict, evaluation on held-out data, the same estimation logic underneath.</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+  <div class="sec-head"><div class="kicker">Section 7.5 · Three or more groups<span class="ref" data-ref="s5"></span></div><h2>The Kruskal–Wallis test</h2></div>
+
+  <div class="tcard" id="t-lo4">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.5</span></div>
+    <div class="tc-body"><ol class="lo"><li>To compute the Kruskal–Wallis statistic H from the rank sums of k groups.</li><li>To test H against the chi-square table of Week 6 with k − 1 degrees of freedom.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-prev="s4">← Back</button><button class="btn" data-next="s6">Next: prove it to yourself →</button></div>
+
+  <div class="prose">
+    <p><b>The question.</b> Week 6's one-way ANOVA compared three or more means and assumed normal populations with equal variances. The Kruskal–Wallis test asks the same question with ranks: do values in some groups tend to be larger than in others? Rank all the values together; if the groups were alike, every group's <b>mean rank</b> (its rank sum divided by its size) would be close to the overall mean rank, (N + 1) ⁄ 2.</p>
+    <p class="src">Our text</p>
+  </div>
+
+  <div class="xcard" id="x-kwtips">
+    <div class="xc-bar"><span>By hand · the pizzeria</span><span class="xc-src">Tips at three branches</span></div>
+    <div class="xc-body">
+      <h3>Are the evening tips the same at Rive, Pâquis and Carouge?</h3>
+      <div class="qbody"><p class="stem">The staff share the evening's tips. Over five evenings the totals, in CHF, were: Rive 42, 38, 51, 47, 45 · Pâquis 31, 36, 29, 40, 33 · Carouge 39, 44, 35, 48, 41. The owner wants to know whether staff at one branch earn more in tips before she changes the rota. Five evenings per branch is too few to check normality, so she uses ranks. Test at the 5% level.</p></div>
+      <div class="sol">Walked, one step per press</div>
+      <div id="kwtipsWalk"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kw">
+    <div class="tc-bar"><span>The Kruskal–Wallis test · the formulas</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p><b>Hypotheses.</b> H<sub>0</sub>: the k populations have the same distribution. H<sub>a</sub>: values in at least one population tend to be larger or smaller than in the others.</p>
+      <p>Rank all N values together. For each group i, add its ranks, R<sub>i</sub>; n<sub>i</sub> is the group's size.</p>
+      <div class="formula">H = 12 ⁄ (N(N + 1)) × Σ R<sub>i</sub>² ⁄ n<sub>i</sub> − 3(N + 1)</div>
+      <p>If H<sub>0</sub> is true and every group has at least 5 values, H approximately follows a <b>chi-square distribution with df = k − 1</b>, the distribution of Week 6. The test is right-tailed: reject H<sub>0</sub> if H ≥ χ²<sub>α</sub>. With 3 groups, χ²<sub>0.05</sub> = 5.991; with 4 groups, 7.815.</p>
+      <p>As with ANOVA, rejecting says that the groups are not all alike; it does not say which group differs. numiqo adds a follow-up comparison of every pair of groups (the Dunn–Bonferroni test) for that.</p>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.4</b> Three branches, five evenings each, editable <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">change any evening's tips; the ranks, the rank sums and H follow. Try making one Pâquis evening CHF 500.</div>
+      <div style="overflow-x:auto"><table class="dtab" id="kfTab" style="margin:8px auto"></table></div>
+      <svg class="viz" id="kfViz" viewBox="0 0 640 150" role="img" aria-label="The fifteen evenings as dots on a ranks axis, one row per branch"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="kfH">—</div><div class="l">H</div></div>
+        <div class="stat"><div class="v" id="kfCv">5.991</div><div class="l m">χ²₀.₀₅ (df 2)</div></div>
+        <div class="stat"><div class="v" id="kfP">—</div><div class="l">p</div></div>
+      </div>
+      <div class="caption" id="kfCap"></div>
+      <div class="btn-row" style="justify-content:center;"><button class="btn ghost small" id="kfReset">Back to the five evenings</button></div>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-kwsup">
+    <div class="xc-bar"><span>Second example · a retailer</span><span class="xc-src">Three groups of different sizes</span></div>
+    <div class="xc-body">
+      <h3>Are three suppliers equally late?</h3>
+      <div class="qbody"><p class="stem">A sports retailer records how many days late each delivery from three suppliers arrived. Supplier A: 3, 5, 2, 4 · Supplier B: 6, 8, 7, 5.5, 9 · Supplier C: 1, 4.5, 2.5, 3.5, 6.5. Test at the 5% level whether the suppliers differ. (Supplier A has only 4 deliveries, so the chi-square approximation is rough; numiqo's p-value is the one to report.)</p></div>
+      <div class="sol">Solution</div>
+      <div id="kwsupWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 4</span><span class="xc-src">Kruskal–Wallis</span></div>
+    <div class="xc-body">
+      <p class="stem">Three online ads were each shown for four days; the clicks per day were: Ad 1: 12, 15, 11, 14 · Ad 2: 18, 16, 20, 17 · Ad 3: 13, 19, 10, 21. Find R<sub>2</sub> (the rank sum of Ad 2), H, and the decision at 5% (type 1 for reject, 0 for do not reject).</p>
+      <div id="yt4"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt4">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.5</span></div>
+    <div class="tc-body"><ul class="lo"><li>The Kruskal–Wallis test is the rank version of one-way ANOVA.</li><li>H = 12 ⁄ (N(N+1)) × Σ R<sub>i</sub>²⁄n<sub>i</sub> − 3(N+1), compared with χ² on k − 1 df, right-tailed.</li><li>You can now compare three branches without assuming normal data: the tips give H = 7.22 ≥ 5.991, reject at 5%; Rive's mean rank is 11.2, Pâquis's 3.8.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s4">← Back</button>
+    <button class="btn" data-next="s6">Next: rank correlation →</button>
+  </div>
 </section>
-<!-- ============================ 11.6 ============================ -->
+
+<!-- ============================ 7.6 ============================ -->
 <section class="screen" id="s6" data-num="6">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.6 · Checkpoint</div><h2>Prove it to yourself</h2></div>
-  <div class="card">
-    <span class="label play">Planned · Quiz</span>
-    <h3>Self-check quiz & where this goes next</h3>
-    <ul class="plan-list"><li>Eight questions: which non-parametric test, why ranks, what a component is, reading a loadings table, the scree plot, and one machine-learning vocabulary item.</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+  <div class="sec-head"><div class="kicker">Section 7.6 · Rank correlation<span class="ref" data-ref="s6"></span></div><h2>Spearman's rank correlation</h2></div>
+
+  <div class="tcard" id="t-lo5">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.6</span></div>
+    <div class="tc-body"><ol class="lo"><li>To compute Spearman's rank correlation r<sub>s</sub> from the differences of ranks.</li><li>To test it with the t statistic on n − 2 degrees of freedom, as Week 5 tested a slope.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-prev="s5">← Back</button><button class="btn" data-next="s7">Next: the pizzeria file · instalment eleven →</button></div>
+
+  <div class="prose">
+    <p><b>The question.</b> Week 5's correlation coefficient r (Pearson's r) measures how close the points lie to a <b>straight line</b>. Spearman's r<sub>s</sub> measures how close the two variables are to moving in the <b>same order</b>: the branch that spends most on marketing also gets most new customers, the second-most gets the second-most, and so on, whether or not the relation is a straight line. It is Pearson's r computed on the ranks.</p>
+    <p class="src">Our text</p>
+  </div>
+
+  <div class="xcard" id="x-spbr">
+    <div class="xc-bar"><span>By hand · the pizzeria</span><span class="xc-src">Eight branches of a franchise</span></div>
+    <div class="xc-body">
+      <h3>Do branches that spend more on local marketing get more new customers?</h3>
+      <div class="qbody"><p class="stem">The pizzeria's franchise has eight branches. For last month: marketing spend in thousands of CHF, and new customers (first-time orders).</p>
+      <table class="dtab"><tr><th>Branch</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th></tr><tr><th class="l">Spend, kCHF</th><td>2</td><td>5</td><td>1</td><td>8</td><td>4</td><td>12</td><td>6</td><td>3</td></tr><tr><th class="l">New customers</th><td>40</td><td>61</td><td>22</td><td>70</td><td>55</td><td>88</td><td>52</td><td>48</td></tr></table>
+      <p class="stem">Compute r<sub>s</sub> and test at the 5% level whether spend and new customers are related.</p></div>
+      <div class="sol">Walked, one step per press</div>
+      <div id="spbrWalk"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-sp">
+    <div class="tc-bar"><span>Spearman's rank correlation · the formulas</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p>Rank the x values among themselves and the y values among themselves. For each case, d = (rank of x) − (rank of y). When there are no ties,</p>
+      <div class="formula">r<sub>s</sub> = 1 − 6 Σd² ⁄ ( n(n² − 1) )</div>
+      <p>r<sub>s</sub> lies between −1 and +1. It is +1 when the two rankings are identical, −1 when one is the reverse of the other, and near 0 when the orders are unrelated. With ties, compute Pearson's r on the ranks instead (numiqo does this).</p>
+      <p><b>Test.</b> H<sub>0</sub>: the two variables are not related (ρ<sub>s</sub> = 0). Compute</p>
+      <div class="formula">t = r<sub>s</sub> √( (n − 2) ⁄ (1 − r<sub>s</sub>²) ) &nbsp;&nbsp; on n − 2 degrees of freedom</div>
+      <p>and reject at level α (two-tailed) if |t| ≥ t<sub>α⁄2</sub>, read from the t table of Week 3.</p>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.5</b> Pearson's r against Spearman's r<sub>s</sub> <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">first predict: if branch F had 300 new customers instead of 88, which coefficient moves?</div>
+      <div class="toggle-row" id="sfPred"><button data-p="r">Pearson's r moves, r<sub>s</sub> stays</button><button data-p="rs">r<sub>s</sub> moves, Pearson's r stays</button><button data-p="both">Both move</button></div>
+      <div class="ctrl" style="margin-top:12px;"><label>new customers at branch F <span class="val" id="sfV">88</span></label><input type="range" id="sfS" min="71" max="300" step="1" value="88" disabled></div>
+      <svg class="viz" id="sfViz" viewBox="0 0 640 220" role="img" aria-label="Scatter of marketing spend against new customers for eight branches"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="sfR">—</div><div class="l">Pearson's r</div></div>
+        <div class="stat"><div class="v" id="sfRs">—</div><div class="l m">Spearman's r<sub>s</sub></div></div>
+      </div>
+      <div class="caption" id="sfCap">Choose a prediction to unlock the slider.</div>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-sphire">
+    <div class="xc-bar"><span>Second example · recruiting</span><span class="xc-src">A rank correlation that is not significant</span></div>
+    <div class="xc-body">
+      <h3>Does the interview score predict the first-year performance rating?</h3>
+      <div class="qbody"><p class="stem">A consulting firm hired seven graduates. Interview score (out of 100): 72, 85, 64, 90, 78, 69, 81. Performance rating after one year (out of 5): 3.1, 4.0, 2.8, 3.6, 3.9, 2.5, 4.4. Compute r<sub>s</sub> and test at the 5% level.</p></div>
+      <div class="sol">Solution</div>
+      <div id="sphireWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 5</span><span class="xc-src">Spearman</span></div>
+    <div class="xc-body">
+      <p class="stem">Six cafés: years open 3, 8, 5, 10, 1, 6; average rating on a review site, times 10 (so 2.2 becomes 22): 22, 30, 25, 29, 18, 26. Find Σd², r<sub>s</sub> and t.</p>
+      <div id="yt5"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt5">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.6</span></div>
+    <div class="tc-body"><ul class="lo"><li>Spearman's r<sub>s</sub> measures whether two variables move in the same order; it is Pearson's r on the ranks.</li><li>r<sub>s</sub> = 1 − 6Σd² ⁄ (n(n² − 1)) without ties; t = r<sub>s</sub>√((n − 2)⁄(1 − r<sub>s</sub>²)) on n − 2 df.</li><li>You can now measure a relationship that is not a straight line, or that has one extreme case: the eight branches give r<sub>s</sub> = 0.929, t = 6.13 ≥ 2.447, reject at 5%.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s5">← Back</button>
+    <button class="btn" data-next="s7">Next: principal components, the idea →</button>
+  </div>
 </section>
-<!-- ============================ 11.7 ============================ -->
+
+<!-- ============================ 7.7 ============================ -->
 <section class="screen" id="s7" data-num="7">
   <button class="crumb" data-home>← Week menu</button>
-  <div class="sec-head"><div class="kicker">Section 7.7 · Workshop</div><h2>The pizzeria file · instalment eleven</h2></div>
-  <div class="card">
-    <span class="label play">Planned · Exercise</span>
-    <h3>Workbook fields</h3>
-    <ul class="plan-list"><li>w7_survey — the survey you would run on your customers: five items, and the analysis you would do.</li></ul>
-    <div class="case-note"><b>Status →</b> this section is an outline. When the week is written it becomes an interactive screen on the Week 1 pattern: an earned completion, a classify exercise or lab where one is listed, and its own share of the progress bar.</div>
+  <div class="sec-head"><div class="kicker">Section 7.7 · Principal components · the idea<span class="ref" data-ref="s7"></span></div><h2>Two related questions can be summarised by one score</h2></div>
+
+  <div class="tcard" id="t-lo6">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.7</span></div>
+    <div class="tc-body"><ol class="lo"><li>To explain a principal component as the direction along which the data vary most.</li><li>To compute, for two standardised variables, the variance and the share of the variance that the first component explains.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-prev="s6">← Back</button><a class="btn" href="index.html" style="text-decoration:none;display:inline-block;">Course page →</a></div>
+
+  <div class="prose">
+    <p><b>Why.</b> The pizzeria asked 60 customers nine questions, each answered from 1 (poor) to 5 (excellent): the taste, the freshness of the ingredients, the crust, how generous the toppings were, the speed of delivery, the friendliness of the staff, whether the order was correct, whether the pizza arrived hot, and value for money. Nine columns are too many to read one at a time, and many of them say almost the same thing: a customer who liked the taste usually liked the crust too. <b>Principal component analysis</b> (PCA) finds a few new scores, each a weighted combination of the questions, that keep most of the information. Section 7.8 runs it on all nine questions; this section shows the idea on two.</p>
+    <p class="src">Our text</p>
+  </div>
+
+  <div class="tcard" id="t-pca">
+    <div class="tc-bar"><span>Definitions · principal component analysis</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p>To <b>standardise</b> a variable is to subtract its mean and divide by its standard deviation, so that every variable has mean 0 and variance 1. PCA on standardised variables gives each question the same weight, whatever its scale.</p>
+      <p>A <b>principal component</b> is a new variable made by adding up the standardised questions with weights. The <b>first principal component</b> is the combination that has the largest possible variance: the direction in which the customers differ most. The second has the largest variance among the directions at a right angle to the first (so it carries information the first does not), and so on.</p>
+      <p>The variance of a component is called its <b>eigenvalue</b>. With p standardised questions the total variance is p (each question contributes 1), so a component's <b>share of the variance explained</b> is its eigenvalue ⁄ p.</p>
+      <p>For <b>two</b> standardised variables with correlation r, the variance of the data along a direction at angle θ from the first axis is</p>
+      <div class="formula">variance(θ) = 1 + r × sin(2θ)</div>
+      <p>so with r &gt; 0 the largest variance is at θ = 45°, and equals 1 + r: the first component is the average of the two standardised questions, and it explains (1 + r) ⁄ 2 of the total.</p>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-pcahand">
+    <div class="xc-bar"><span>By hand · the pizzeria</span><span class="xc-src">Two of the nine questions</span></div>
+    <div class="xc-body">
+      <h3>Taste and crust: how much of the two can one score keep?</h3>
+      <div class="qbody"><p class="stem">In the survey, the ratings of taste and of crust have correlation r = 0.46 across the 60 customers. Standardise both. Compute the variance along the taste axis (θ = 0°), along the diagonal (θ = 45°) and along the other diagonal (θ = 135°), and the share of the total that the first component keeps.</p></div>
+      <div class="sol">Walked, one step per press</div>
+      <div id="pcahandWalk"></div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.6</b> Turn the line and find the direction of largest spread <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">first predict: at which angle will the spread along the line be largest?</div>
+      <div class="toggle-row" id="pfPred"><button data-p="0">0° (along taste)</button><button data-p="45">45° (the diagonal)</button><button data-p="90">90° (along crust)</button><button data-p="135">135° (the other diagonal)</button></div>
+      <div class="ctrl" style="margin-top:12px;"><label>angle of the line <span class="val" id="pfV">0°</span></label><input type="range" id="pfS" min="0" max="179" step="1" value="0" disabled></div>
+      <svg class="viz" id="pfViz" viewBox="0 0 640 300" role="img" aria-label="The 60 customers' standardised taste and crust ratings, a line through the centre, and each point's projection on it"></svg>
+      <div class="statrow">
+        <div class="stat"><div class="v" id="pfVar">—</div><div class="l">variance along the line</div></div>
+        <div class="stat"><div class="v" id="pfShare">—</div><div class="l">share of the total 2</div></div>
+      </div>
+      <div class="caption" id="pfCap">Choose a prediction to unlock the slider. The points are slightly jittered so that customers with the same two ratings do not hide one another.</div>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-pcacar">
+    <div class="xc-bar"><span>Second example · a car magazine</span><span class="xc-src">Two strongly related measures</span></div>
+    <div class="xc-body">
+      <h3>Length and weight of 40 cars</h3>
+      <div class="qbody"><p class="stem">A car magazine measured the length and the weight of 40 cars. The correlation is r = 0.90. How much of the variance does the first principal component of the two standardised measures explain, and what does it measure?</p></div>
+      <div class="sol">Solution</div>
+      <div id="pcacarWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 6</span><span class="xc-src">Two standardised variables</span></div>
+    <div class="xc-body">
+      <p class="stem">Two survey questions, standardised, have correlation r = 0.60. Find the eigenvalue of the first component, its share of the total variance in %, and the eigenvalue of the second component.</p>
+      <div id="yt6"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt6">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.7</span></div>
+    <div class="tc-body"><ul class="lo"><li>A principal component is a weighted sum of the standardised variables; the first is the one with the largest variance.</li><li>Its variance is its eigenvalue; its share of the total is eigenvalue ⁄ number of variables.</li><li>You can now say how much of two related ratings one score keeps: taste and crust with r = 0.46 give a first component with variance 1.46, 73% of the total.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s6">← Back</button>
+    <button class="btn" data-next="s8">Next: nine questions, two scores →</button>
+  </div>
 </section>
 
-<!-- ==================== PART 2 · EXERCISES (outline) ==================== -->
-<section class="screen" id="ex" data-num="99">
-  <button class="crumb" data-home>&larr; Week menu</button>
-  <div class="sec-head"><div class="kicker">Part 2 &middot; Exercises</div><h2>8 exercises, worked together</h2></div>
-  <div class="card">
-    <span class="label play">Planned &middot; ~119 min</span>
-    <h3>The second half of the session</h3>
-    <p class="lead">When this week is written, each exercise below becomes a <em>form on this page</em> and a <em>slide in the deck</em>, generated from one array so the two can never disagree &mdash; and its solution opens when the instructor reveals it in class. Same engine as Weeks 1&ndash;2 (<code>exercises.js</code>).</p>
-    <ul class="plan-list"><li><b>Exercise 1 · Which non-parametric twin?</b> &nbsp;<span class="exm">12 min</span><br><span style="color:var(--grey)">six parametric tests → their counterparts</span></li><li><b>Exercise 2 · Ranks by hand</b> &nbsp;<span class="exm">12 min</span><br><span style="color:var(--grey)">rank the data, and watch the outlier lose its power</span></li><li><b>Exercise 3 · Mann–Whitney in DataTab</b> &nbsp;<span class="exm">20 min</span><br><span style="color:var(--grey)">lake vs station: run it, read it</span></li><li><b>Exercise 4 · Wilcoxon on the paired data</b> &nbsp;<span class="exm">15 min</span><br><span style="color:var(--grey)">Week 4B&#x27;s before-and-after, without the normality assumption</span></li><li><b>Exercise 5 · Spearman vs Pearson</b> &nbsp;<span class="exm">15 min</span><br><span style="color:var(--grey)">the price–rating data both ways — and when they disagree</span></li><li><b>Exercise 6 · Read a loadings table</b> &nbsp;<span class="exm">15 min</span><br><span style="color:var(--grey)">nine survey items, two components</span></li><li><b>Exercise 7 · PCA in DataTab</b> &nbsp;<span class="exm">20 min</span><br><span style="color:var(--grey)">run it on the survey, then name the components</span></li><li><b>Exercise 8 · What would you report?</b> &nbsp;<span class="exm">10 min</span><br><span style="color:var(--grey)">one paragraph for a non-technical partner</span></li></ul>
-    <div class="case-note"><b>Status &rarr;</b> outline only. Nothing here is interactive or counted yet.</div>
+<!-- ============================ 7.8 ============================ -->
+<section class="screen" id="s8" data-num="8">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 7.8 · Principal components on the whole survey<span class="ref" data-ref="s8"></span></div><h2>Nine questions become two scores, and where machine learning starts</h2></div>
+
+  <div class="tcard" id="t-lo7">
+    <div class="tc-bar"><span>Learning Objectives</span><span class="tc-src">Week 7 · section 7.8</span></div>
+    <div class="tc-body"><ol class="lo"><li>To read a table of eigenvalues and a scree plot and decide how many components to keep.</li><li>To read a table of loadings and give each component a name.</li><li>To say whether a business task is supervised learning, unsupervised learning, or neither.</li></ol></div>
   </div>
-  <div class="nav-foot"><button class="btn ghost" data-home>Menu</button><a class="btn" href="index.html" style="text-decoration:none;display:inline-block;">Course page &rarr;</a></div>
+
+  <div class="tcard" id="t-load">
+    <div class="tc-bar"><span>Definitions · reading a PCA output</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p>A <b>scree plot</b> is a chart of the eigenvalues in decreasing order. Two rules decide how many components to keep: keep the components whose eigenvalue is <b>greater than 1</b> (each of them carries more than one question's worth of variance; this is called the Kaiser rule), and stop where the scree plot <b>bends</b> and the remaining eigenvalues are small and similar.</p>
+      <p>A <b>loading</b> is the correlation between one question and one component. A loading near +1 or −1 means the question moves almost exactly with the component; a loading near 0 means the two are unrelated. To <b>name</b> a component, list the questions with large loadings on it (above about 0.6) and find what they have in common.</p>
+      <p>A <b>rotation</b> (numiqo shows the result as the <i>rotated component matrix</i>; the usual method is called varimax) turns the kept components so that each question loads strongly on one component and weakly on the others. The components still explain the same total variance together; they become easier to name.</p>
+      <p>A question's <b>communality</b> is the sum of its squared loadings on the kept components: the share of that question's variance the kept components explain.</p>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.7</b> The nine eigenvalues of the survey, and the scree plot <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">the page computes the PCA from the 60 customers' answers; click a bar to read it</div>
+      <svg class="viz" id="scViz" viewBox="0 0 640 220" role="img" aria-label="Scree plot: the nine eigenvalues in decreasing order with a line at 1"></svg>
+      <div style="overflow-x:auto"><table class="dtab" id="scTab" style="margin:8px auto"></table></div>
+      <div class="caption" id="scCap">Click a bar.</div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.8</b> The loadings of the nine questions on the first two components <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">first read the table as it comes out of PCA, then switch to the rotated table and name the two components</div>
+      <div class="toggle-row" id="ldRot"><button data-r="0" class="on">As computed</button><button data-r="1">Rotated (varimax)</button></div>
+      <div style="overflow-x:auto"><table class="dtab" id="ldTab" style="margin:8px auto"></table></div>
+      <div class="caption" id="ldCap"></div>
+      <div class="lab-title" style="margin-top:12px;">name the two rotated components</div>
+      <div class="toggle-row" id="ldName"><button data-n="a">Component A = the food, B = the service</button><button data-n="b">Component A = the service, B = the food</button><button data-n="c">Both measure price</button></div>
+      <div class="reveal" id="ldOut"></div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-t"><b>Figure 7.9</b> Run the PCA in numiqo <span class="live">live</span></div>
+    <div class="lab">
+      <div class="lab-title">why: your case study may use a survey; this is how you would reduce it</div>
+      <ol class="steps-ol">
+        <li>Press <b>Copy the survey</b>. The data are nine columns, one per question, one row per customer, with the question names in the first row.</li>
+        <li>Open <a href="https://numiqo.com/statistics-calculator/factor-analysis" target="_blank" rel="noopener">numiqo.com/statistics-calculator/factor-analysis ↗</a> (numiqo runs PCA on this page). Clear the table, click the first cell, and paste.</li>
+        <li>Select all nine questions as the variables.</li>
+        <li>Find the tables called <i>total variance explained</i>, <i>component matrix</i> and <i>rotated component matrix</i>, and the scree plot. Compare them with Figures 7.7 and 7.8.</li>
+      </ol>
+      <div class="btn-row"><button class="btn small" data-copy="pcaData">📋 Copy the survey</button><span class="mini" data-copied="pcaData"></span></div>
+      <textarea readonly class="copybox" id="pcaData" rows="4"></textarea>
+      <div class="caption">numiqo should show the eigenvalues 4.73 and 1.48 for the first two components, 69% of the variance together. Two differences are normal: a software package may print a component with all its signs reversed (a loading of −0.72 instead of 0.72 means the same thing), and it may list the two rotated components in the other order.</div>
+      <div id="pcaSoftBox"></div>
+    </div>
+  </div>
+
+  <div class="xcard" id="x-hotel">
+    <div class="xc-bar"><span>Second example · a hotel survey</span><span class="xc-src">Naming components from a loadings table</span></div>
+    <div class="xc-body">
+      <h3>Six questions, two rotated components</h3>
+      <div class="qbody"><p class="stem">A hotel chain ran a PCA on six questions answered by 200 guests and kept two components. The rotated loadings are:</p>
+      <table class="dtab"><tr><th>Question</th><th>Component 1</th><th>Component 2</th></tr><tr><td class="l">Cleanliness of the room</td><td>0.12</td><td>0.86</td></tr><tr><td class="l">Comfort of the bed</td><td>0.20</td><td>0.81</td></tr><tr><td class="l">Quietness of the room</td><td>0.15</td><td>0.74</td></tr><tr><td class="l">Friendliness at reception</td><td>0.84</td><td>0.18</td></tr><tr><td class="l">Speed of check-in</td><td>0.80</td><td>0.10</td></tr><tr><td class="l">Help from the concierge</td><td>0.77</td><td>0.22</td></tr></table>
+      <p class="stem">Name the two components and say what the manager should do with them.</p></div>
+      <div class="sol">Solution</div>
+      <div id="hotelWalk"></div>
+    </div>
+  </div>
+
+  <div class="xcard">
+    <div class="xc-bar"><span>Your turn · 7</span><span class="xc-src">Reading eigenvalues</span></div>
+    <div class="xc-body">
+      <p class="stem">A PCA of six standardised questions gives the eigenvalues 3.0, 1.5, 0.6, 0.4, 0.3, 0.2. Find the share of the variance explained by the first component (in %), the cumulative share of the first two (in %), and how many components the eigenvalue-greater-than-1 rule keeps.</p>
+      <div id="yt7"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-ml">
+    <div class="tc-bar"><span>Definitions · where this course meets machine learning</span><span class="tc-src">Week 7</span></div>
+    <div class="tc-body">
+      <p><b>Machine learning</b> is the name industry gives to methods that learn a rule from data, either to predict a value or to find structure, and that are judged by how well the rule works on new data.</p>
+      <p><b>Supervised learning</b> learns to predict a known outcome y from inputs x, using past cases where y was recorded. The regression line of Week 5, price = a + b × distance, is the simplest supervised model. Larger models (decision trees, neural networks) use many more inputs and more flexible shapes, but the task is the same.</p>
+      <p><b>Unsupervised learning</b> has no outcome to predict. It finds structure in the inputs alone: PCA finds the directions in which customers differ; <b>clustering</b> sorts customers into groups that answer alike.</p>
+      <p><b>Training data</b> are the cases the model learns from; <b>test data</b> (also called held-out data) are cases kept aside to measure how well it predicts. <b>Overfitting</b> is a model that fits its training data very closely but predicts new cases badly, because it has learned the noise. The statistics of this course guard against the same error with degrees of freedom and p-values; machine learning guards against it by testing on data the model has not seen.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Supervised, unsupervised, or neither?</span>
+    <h3>Sort six business tasks</h3>
+    <p>Ask one question for each task: is there an outcome y, recorded in past data, that the method learns to predict?</p>
+    <div class="lab">
+      <div class="lab-title">supervised · unsupervised · neither</div>
+      <div id="mlRows"></div>
+      <div class="caption" id="mlCap"></div>
+    </div>
+  </div>
+
+  <div class="tcard" id="t-kt7">
+    <div class="tc-bar"><span>Key Takeaways</span><span class="tc-src">Section 7.8</span></div>
+    <div class="tc-body"><ul class="lo"><li>Keep the components with an eigenvalue above 1, and check that the scree plot bends there: the survey keeps two, which explain 69% of the variance of nine questions.</li><li>Name a component from the questions that load above about 0.6 on it; a rotation makes the names clearer. The survey's two rotated components are the service and the food.</li><li>PCA is unsupervised learning; the regression of Week 5 is supervised learning.</li></ul></div>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s7">← Back</button>
+    <button class="btn" data-next="ex">Next: Part 2 · the exercises →</button>
+  </div>
 </section>
+
+<!-- ==================== 7.9 · PART 2 — EXERCISES ==================== -->
+<section class="screen" id="ex" data-num="9">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 7.9 · Part 2 · Exercises<span class="ref" data-ref="ex"></span></div><h2>Ten exercises, worked together</h2></div>
+
+  <div class="card">
+    <span class="label problem">The second half of the session</span>
+    <h3>Same exercises on the screen and on this page</h3>
+    <p class="lead">Your instructor puts each exercise on the slide; you work it here, <strong>by hand, with a calculator</strong>. <strong>Check</strong> marks your number immediately, <strong>Hint</strong> nudges without giving it away, and the <strong>Solution</strong> button opens when the room does that exercise together.</p>
+    <p style="font-size:13px;color:var(--grey);">The textbook has no chapter on these methods, so the exercises are ours; every answer was computed twice, by hand and in Python. Give z and t to two decimals, r<sub>s</sub> and H to three. Your answers are saved and reach your instructor's dashboard. Nothing here is graded.</p>
+  </div>
+
+  <div id="exList"></div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="s8">← Back to the lesson</button>
+    <button class="btn" data-next="ck">Next: the checkpoint →</button>
+  </div>
+</section>
+
+<!-- ============================ 7.10 ============================ -->
+<section class="screen" id="ck" data-num="10">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 7.10 · Checkpoint<span class="ref" data-ref="ck"></span></div><h2>Prove it to yourself</h2></div>
+
+  <div class="card">
+    <span class="label play">Self-check · not graded</span>
+    <h3>Ten questions on this week</h3>
+    <p>One attempt per question; after you answer, the page explains the correct answer. Your score reaches your instructor's dashboard as a self-check and does <strong>not</strong> count toward your grade; the graded weekly quiz is on Moodle. Three of the ten questions need a calculator.</p>
+    <div class="scorechip" id="scoreChip"></div>
+    <div id="quizBox"></div>
+    <div class="result" id="quizResult">
+      <div class="big" id="quizScore">—</div>
+      <p id="quizMsg"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="label why">Where this goes next</span>
+    <div class="guess-recall" id="guessRecall"></div>
+    <p>This was the last new topic of the course. <strong>Weeks 8 and 9</strong> are review and exam practice on everything since Week 1. Before that, the <a href="week7-homework.html" style="color:var(--accent-deep);font-weight:700;">Week 7 homework</a>: twelve problems on this week's methods.</p>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="ex">← Back</button>
+    <button class="btn" data-next="wk">Next: the workshop →</button>
+  </div>
+</section>
+
+<!-- ============================ 7.11 ============================ -->
+<section class="screen" id="wk" data-num="11">
+  <button class="crumb" data-home>← Week menu</button>
+  <div class="sec-head"><div class="kicker">Section 7.11 · Workshop</div><h2>The pizzeria file · instalment ten</h2></div>
+
+  <div class="card">
+    <span class="label idea">From the numbers to the decision</span>
+    <h3>Three entries on your own case study, written as you would present them</h3>
+    <p>The case study asks you to analyse a business question with the methods of this course. The three entries below prepare the parts of it where this week's methods apply: a question for a rank test, a survey, and a prediction task.</p>
+    <div class="guess-recall" id="guessRecall2"></div>
+  </div>
+
+  <div class="card">
+    <span class="label play">Week 7 · the pizzeria file</span>
+    <h3>Three entries, in your own words</h3>
+    <p style="font-size:13px;color:var(--grey);">📎 Everything saves automatically and reaches your instructor's dashboard. This is the tenth instalment of your running case file.</p>
+    <div class="wb">
+      <div class="wq"><span class="qn">1.</span><em>A rank test</em>: write a question from your case study where a non-parametric test is the right choice. Say what the data are, which assumption of the t-test or ANOVA they break, and which of the four tests you would use.</div>
+      <textarea data-work="w7_nonpar" data-worklabel="A question for a rank test: the data, the broken assumption, the test" placeholder="e.g. Do weekend customers rate the service higher than weekday customers? The ratings are 1–5, which is ordinal, and I will have about 20 of each, so I would use the Mann–Whitney test instead of the two-sample t-test …"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">2.</span><em>A survey</em>: write five questions you would ask your customers on a 1–5 scale, and the two components you expect a PCA to find, with the questions you expect to load on each.</div>
+      <textarea data-work="w7_survey" data-worklabel="Five survey questions and the two components you expect" placeholder="e.g. 1 taste, 2 portion size, 3 waiting time, 4 friendliness, 5 cleanliness. I expect one component for the food (1, 2) and one for the visit (3, 4, 5) …"></textarea>
+    </div>
+    <div class="wb">
+      <div class="wq"><span class="qn">3.</span><em>A prediction task</em>: write one decision in your case study that a supervised model could support. Say what the outcome y is, which inputs x you would use, and how you would check the model on data it has not seen.</div>
+      <textarea data-work="w7_ml" data-worklabel="A supervised prediction task: y, the inputs, the test on held-out data" placeholder="e.g. Predict tomorrow evening's number of orders (y) from the weekday, the weather forecast and whether there is a football match (x). Train on January–September, test on October …"></textarea>
+    </div>
+    <div class="wb-save" id="wbSave"></div>
+  </div>
+
+  <div class="complete-bar">
+    <div id="wbStatus" style="font-size:13.5px;font-weight:800;color:var(--accent-deep);">Fill in all three fields to complete this section.</div>
+  </div>
+  <div class="foot">
+    <a href="#" id="resetLink" style="color:var(--grey);">reset my Week 7 progress and answers on this device</a>
+  </div>
+
+  <div class="nav-foot">
+    <button class="btn ghost" data-prev="ck">← Back</button>
+    <a class="btn" href="week7-homework.html" style="text-decoration:none;display:inline-block;">Week 7 homework →</a>
+  </div>
+</section>
+
 </div>
 
+
+<!-- ============================ LECTURE MODE ============================ -->
 <div id="lect" role="dialog" aria-label="Lecture deck">
   <div class="lect-stage" id="lectStage">
     <div class="lect-zone prev" title="Previous (←)"></div>
@@ -174,7 +894,7 @@
   <div id="lectNotes"></div>
   <div class="lect-foot">
     <img src="sumas-logo.png" alt="SUMAS">
-    <span class="lf-t">Quantitative Methods · Week 7 · PCA and other non-parametric tests · outline · Jan Erik Meidell · SUMAS</span>
+    <span class="lf-t">Quantitative Methods · Week 7 · Non-parametric tests and principal components · Jan Erik Meidell · SUMAS</span>
     <button id="lectNotesBtn" title="Toggle speaker notes (N)">Notes</button>
     <button onclick="window.print()" title="Print / save the deck as PDF">PDF</button>
     <button id="lectClose" title="Exit (Esc)">✕ Exit</button>
@@ -184,8 +904,260 @@
 <div id="printDeck"></div>
 
 <script>
-/* Scaffold engine: navigation + lecture outline only. Records nothing. */
-var SECTIONS=[{"id": "s1", "num": "7.1", "name": "The customer survey", "tag": "Nine questions on a 1–5 scale — what would you do with them?", "badge": "Hook", "part": 1}, {"id": "s2", "num": "7.2", "name": "Ordinal, skewed, small", "tag": "Non-parametric counterparts", "badge": "Non-parametric", "part": 1}, {"id": "s3", "num": "7.3", "name": "Run a Mann–Whitney", "tag": "The pizzeria survey, lake vs station", "badge": "Hands-on", "part": 1}, {"id": "s4", "num": "7.4", "name": "Directions of variance", "tag": "Components, loadings, the scree plot", "badge": "PCA", "part": 1}, {"id": "s5", "num": "7.5", "name": "Nine items → two scores", "tag": "Run it, read it, name the components", "badge": "Hands-on", "part": 1}, {"id": "ex", "num": "7.6", "name": "Exercises — worked together", "tag": "8 exercises · ~119 min · solutions released in class", "badge": "Part 2", "part": 2}, {"id": "s6", "num": "7.7", "name": "Prove it to yourself", "tag": "Self-check quiz & where this goes next", "badge": "Quiz", "part": 1}, {"id": "s7", "num": "7.8", "name": "The pizzeria file · instalment eleven", "tag": "Workbook fields", "badge": "Exercise", "part": 1}];
+/* =====================================================================
+   WEEK 7 — non-parametric tests and principal component analysis.
+   Beyond the textbook (Saylor has no chapter on either), so every
+   definition is written for this page. Week 6's engine with this week's
+   content: each section has a by-hand walk on the pizzeria, a formula
+   card, a widget with a prediction first, a second example from another
+   industry, and a numeric "your turn".
+
+   Every number on this page was recomputed in Python with scipy
+   (28 Nov 2026, _private/check_w7.py, gitignored): rank sums, U, T, H,
+   r_s, z, p (normal approximation, no continuity correction, no tie
+   correction — the hand examples are chosen without ties where it
+   matters), the exact p-values quoted for comparison, the PCA of the
+   60 × 9 survey (correlation matrix; eigenvalues 4.726, 1.480, …;
+   varimax with Kaiser normalisation) and every exercise.
+
+   numiqo (DataTab renamed; datatab.net redirects to numiqo.com): the
+   steps on the page follow numiqo's own tutorials as read on 28 Nov
+   2026 — "Clear the table", paste, select the variables, "Non-Parametric
+   Test"; PCA on /statistics-calculator/factor-analysis. Its Wilcoxon p
+   applies a continuity correction, so it can differ in the third decimal.
+
+   The pizzeria data are invented for the course's running case; the
+   survey is generated (seed 7) with two underlying factors, food and
+   service, correlated 0.35.
+   ===================================================================== */
+
+/* ---- data ---- */
+var HOOK_R=[18,19,21,22,23,25,26,29], HOOK_P=[24,27,28,30,31,32,34,95];
+var DRV_B=[34,29,41,38,31,36,45,33,30,39], DRV_A=[31,30,35,40,26,32,28,25,23,30];
+var TIPS={Rive:[42,38,51,47,45],'Pâquis':[31,36,29,40,33],Carouge:[39,44,35,48,41]}, TIPS_ORDER=['Rive','Pâquis','Carouge'];
+var SP_X=[2,5,1,8,4,12,6,3], SP_Y=[40,61,22,70,55,88,52,48], SP_L=['A','B','C','D','E','F','G','H'];
+var SURVEY_Q=['Taste','Freshness','Crust','Toppings','Speed','Friendliness','Order correct','Arrived hot','Value for money'];
+var SURVEY=[[3,3,3,4,4,4,4,3,2],[3,3,4,4,4,2,3,3,4],[3,3,3,3,4,3,3,3,3],[1,2,3,2,2,3,2,2,2],[2,3,3,3,2,2,4,3,2],[3,2,3,3,3,3,2,2,2],[2,4,3,4,3,4,3,4,3],[5,5,3,4,4,4,4,4,4],[2,3,3,3,3,2,1,2,1],[3,2,2,2,3,2,3,2,2],[3,3,2,4,4,4,4,4,4],[4,4,3,4,1,2,1,2,3],[3,4,4,3,3,3,2,3,3],[2,2,3,3,2,3,3,3,3],[4,4,3,3,5,4,5,4,4],[5,4,3,4,5,3,2,3,3],[2,3,3,1,3,3,3,3,2],[3,3,3,3,2,3,2,3,3],[2,1,2,1,2,2,3,2,2],[2,3,2,3,4,4,3,4,4],[2,1,2,2,2,2,2,2,2],[3,4,4,3,2,2,2,3,3],[2,3,3,3,3,4,3,3,3],[3,4,4,3,3,3,4,4,4],[3,4,3,3,4,4,4,3,3],[2,4,3,3,3,2,2,2,3],[2,1,1,1,3,3,2,2,2],[3,2,3,2,2,3,2,3,4],[4,4,3,4,4,4,4,5,4],[3,3,3,5,4,4,4,4,4],[2,2,2,2,2,3,3,2,2],[3,3,2,3,3,4,4,4,4],[2,2,3,2,2,3,2,3,2],[3,2,3,3,3,3,4,2,4],[4,4,4,3,4,4,4,4,4],[2,3,3,2,3,3,4,3,3],[2,3,3,4,2,3,3,2,3],[4,4,3,3,4,3,4,4,5],[4,2,3,3,1,2,1,3,3],[3,2,3,4,1,1,2,2,1],[3,3,3,4,3,3,3,3,3],[3,3,3,4,3,2,2,4,3],[3,1,2,4,3,2,3,4,2],[3,4,3,3,5,5,4,5,4],[4,4,5,4,3,4,3,3,4],[2,2,2,1,2,1,2,2,2],[3,3,4,4,3,3,4,3,4],[4,3,4,4,4,3,4,4,3],[3,2,2,3,3,2,3,3,3],[5,4,5,4,3,4,3,4,5],[4,4,3,3,5,4,4,5,5],[3,2,3,2,4,3,3,3,2],[3,3,4,3,3,3,3,3,2],[4,4,4,4,3,3,3,4,4],[3,4,4,3,3,4,3,4,3],[3,3,4,4,2,2,3,4,4],[4,4,3,3,5,3,3,4,4],[4,4,4,4,3,2,3,3,3],[5,5,4,4,5,5,4,5,5],[3,2,3,3,3,3,2,3,3]];
+
+/* ---- ranks, the four rank tests, the normal tail ---- */
+function rankAvg(a){
+  var idx=a.map(function(v,i){return [v,i];}).sort(function(p,q){return p[0]-q[0];}),r=new Array(a.length),i=0;
+  while(i<idx.length){var j=i;while(j+1<idx.length&&idx[j+1][0]===idx[i][0])j++;var avg=(i+j+2)/2;for(var k=i;k<=j;k++)r[idx[k][1]]=avg;i=j+1;}
+  return r;
+}
+function erf(x){var s=x<0?-1:1;x=Math.abs(x);var t=1/(1+0.3275911*x),y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+function Phi(z){return 0.5*(1+erf(z/Math.SQRT2));}
+function p2(z){return 2*(1-Phi(Math.abs(z)));}
+function sum(a){return a.reduce(function(s,x){return s+x;},0);}
+function mwTest(x,y){
+  var n1=x.length,n2=y.length,r=rankAvg(x.concat(y)),R1=sum(r.slice(0,n1)),R2=sum(r.slice(n1));
+  var U1=R1-n1*(n1+1)/2,U2=n1*n2-U1,U=Math.min(U1,U2),mu=n1*n2/2,sd=Math.sqrt(n1*n2*(n1+n2+1)/12),z=(U-mu)/sd;
+  return {r:r,R1:R1,R2:R2,U1:U1,U2:U2,U:U,mu:mu,sd:sd,z:z,p:p2(z)};
+}
+function wilTest(b,a){
+  var d=[];for(var i=0;i<b.length;i++){var x=a[i]-b[i];if(x!==0)d.push(x);}
+  var r=rankAvg(d.map(Math.abs)),Tp=0,Tm=0;d.forEach(function(x,i){if(x>0)Tp+=r[i];else Tm+=r[i];});
+  var n=d.length,T=Math.min(Tp,Tm),mu=n*(n+1)/4,sd=Math.sqrt(n*(n+1)*(2*n+1)/24),z=(T-mu)/sd;
+  return {d:d,r:r,Tp:Tp,Tm:Tm,T:T,n:n,mu:mu,sd:sd,z:z,p:p2(z)};
+}
+function kwTest(groups){
+  var all=[];groups.forEach(function(g){all=all.concat(g);});
+  var r=rankAvg(all),N=all.length,i=0,S=0,R=[];
+  groups.forEach(function(g){var Ri=sum(r.slice(i,i+g.length));R.push(Ri);S+=Ri*Ri/g.length;i+=g.length;});
+  var H=12/(N*(N+1))*S-3*(N+1),df=groups.length-1;
+  return {r:r,R:R,N:N,H:H,df:df,p:chi2sf(H,df)};
+}
+function pearson(x,y){var mx=mean(x),my=mean(y),sxy=0,sxx=0,syy=0;for(var i=0;i<x.length;i++){sxy+=(x[i]-mx)*(y[i]-my);sxx+=(x[i]-mx)*(x[i]-mx);syy+=(y[i]-my)*(y[i]-my);}return sxy/Math.sqrt(sxx*syy);}
+function spear(x,y){var rx=rankAvg(x),ry=rankAvg(y),d2=0;for(var i=0;i<x.length;i++)d2+=(rx[i]-ry[i])*(rx[i]-ry[i]);var n=x.length,rs=pearson(rx,ry);return {rx:rx,ry:ry,d2:d2,rs:rs,t:rs*Math.sqrt((n-2)/(1-rs*rs))};}
+/* the two-sample pooled t of Week 4B, for Figure 7.1 */
+function tPooled(x,y){var n1=x.length,n2=y.length,sp2=((n1-1)*varSample(x)+(n2-1)*varSample(y))/(n1+n2-2),t=(mean(x)-mean(y))/Math.sqrt(sp2*(1/n1+1/n2)),df=n1+n2-2;return {t:t,df:df,p:2*tsf(Math.abs(t),df)};}
+function tsf(t,df){return 0.5*ibeta(df/2,0.5,df/(df+t*t));}
+
+/* ---- PCA: correlation matrix, Jacobi eigen-decomposition, varimax ---- */
+function corrMatrix(X){
+  var n=X.length,p=X[0].length,m=[],s=[],Z=[],R=[];
+  for(var j=0;j<p;j++){var col=X.map(function(r){return r[j];});m.push(mean(col));s.push(Math.sqrt(varSample(col)));}
+  Z=X.map(function(r){return r.map(function(v,j){return (v-m[j])/s[j];});});
+  for(var a=0;a<p;a++){R.push([]);for(var b=0;b<p;b++){var c=0;for(var i=0;i<n;i++)c+=Z[i][a]*Z[i][b];R[a].push(c/(n-1));}}
+  return {R:R,Z:Z};
+}
+function jacobi(A){
+  var n=A.length,a=A.map(function(r){return r.slice();}),V=[];for(var i=0;i<n;i++){V.push([]);for(var j=0;j<n;j++)V[i].push(i===j?1:0);}
+  for(var sweep=0;sweep<100;sweep++){
+    var off=0;for(var p=0;p<n;p++)for(var q=p+1;q<n;q++)off+=a[p][q]*a[p][q];if(off<1e-20)break;
+    for(var p2_=0;p2_<n;p2_++)for(var q2=p2_+1;q2<n;q2++){
+      if(Math.abs(a[p2_][q2])<1e-15)continue;
+      var th=(a[q2][q2]-a[p2_][p2_])/(2*a[p2_][q2]),t=(th>=0?1:-1)/(Math.abs(th)+Math.sqrt(th*th+1)),c=1/Math.sqrt(t*t+1),s=t*c;
+      for(var k=0;k<n;k++){var akp=a[k][p2_],akq=a[k][q2];a[k][p2_]=c*akp-s*akq;a[k][q2]=s*akp+c*akq;}
+      for(var k2=0;k2<n;k2++){var apk=a[p2_][k2],aqk=a[q2][k2];a[p2_][k2]=c*apk-s*aqk;a[q2][k2]=s*apk+c*aqk;}
+      for(var k3=0;k3<n;k3++){var vkp=V[k3][p2_],vkq=V[k3][q2];V[k3][p2_]=c*vkp-s*vkq;V[k3][q2]=s*vkp+c*vkq;}
+    }
+  }
+  var ev=[];for(var i2=0;i2<n;i2++)ev.push({v:a[i2][i2],vec:V.map(function(r){return r[i2];})});
+  ev.sort(function(x,y){return y.v-x.v;});
+  ev.forEach(function(e){if(sum(e.vec)<0)e.vec=e.vec.map(function(x){return -x;});});
+  return ev;
+}
+function varimax2(L){ /* two columns, Kaiser-normalised */
+  var p=L.length,h=L.map(function(r){return Math.sqrt(r[0]*r[0]+r[1]*r[1]);}),X=L.map(function(r,i){return [r[0]/h[i],r[1]/h[i]];});
+  for(var it=0;it<200;it++){
+    var A=0,B=0,Cc=0,D=0;X.forEach(function(r){var u=r[0]*r[0]-r[1]*r[1],v=2*r[0]*r[1];A+=u;B+=v;Cc+=u*u-v*v;D+=2*u*v;});
+    var phi=Math.atan2(D-2*A*B/p,Cc-(A*A-B*B)/p)/4;if(Math.abs(phi)<1e-10)break;
+    var c=Math.cos(phi),s=Math.sin(phi);X=X.map(function(r){return [r[0]*c+r[1]*s,-r[0]*s+r[1]*c];});
+  }
+  var out=X.map(function(r,i){return [r[0]*h[i],r[1]*h[i]];});
+  [0,1].forEach(function(j){var t=0;out.forEach(function(r){t+=r[j];});if(t<0)out.forEach(function(r){r[j]=-r[j];});});
+  if(Math.abs(out[4][0])<Math.abs(out[4][1]))out=out.map(function(r){return [r[1],r[0]];}); /* A = the component where "Speed" loads more */
+  return out;
+}
+var PCA=(function(){
+  var cm=corrMatrix(SURVEY),ev=jacobi(cm.R),p=SURVEY_Q.length;
+  var L=SURVEY_Q.map(function(q,i){return [ev[0].vec[i]*Math.sqrt(ev[0].v),ev[1].vec[i]*Math.sqrt(ev[1].v)];});
+  return {R:cm.R,Z:cm.Z,ev:ev.map(function(e){return e.v;}),L:L,Lr:varimax2(L),p:p};
+})();
+
+/* ---- small arithmetic helpers ---- */
+function mean(a){return a.reduce(function(s,x){return s+x;},0)/a.length;}
+function varSample(a){var m=mean(a);return a.reduce(function(s,x){return s+(x-m)*(x-m);},0)/(a.length-1);}
+function f1(x){return x.toFixed(1);} function f2(x){return x.toFixed(2);} function f3(x){return x.toFixed(3);} function f4(x){return x.toFixed(4);}
+function sgn(x,d){return (x<0?'−':'')+Math.abs(x).toFixed(d);}
+function rk(v){return (v%1===0)?String(v):v.toFixed(1);}
+function numDec(str){return parseFloat(String(str||'').replace(/[\s']/g,'').replace('−','-').replace(',','.'));}
+
+/* ---- the two distributions of chapter 11, computed, not tabulated ----
+   lgamma (Lanczos), the regularized incomplete gamma (series + continued
+   fraction, Numerical Recipes) for the chi-square tail, the regularized
+   incomplete beta (Lentz continued fraction) for the F tail, and a
+   bisection on each tail for the critical values. Rounded as Saylor's
+   tables print them: three decimals for χ² (Figure 12.4), two for F
+   (Figures 12.5–12.6). Every value used on this page was checked against
+   the book's own numbers (see _private/check_w6.py). */
+function lgamma(x){var g=7,c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];if(x<0.5)return Math.log(Math.PI/Math.sin(Math.PI*x))-lgamma(1-x);x-=1;var a=c[0],t=x+g+0.5;for(var i=1;i<g+2;i++)a+=c[i]/(x+i);return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);}
+function gammaP(a,x){ /* regularized lower incomplete gamma P(a,x) */
+  if(x<=0)return 0;
+  if(x<a+1){var ap=a,sum=1/a,del=sum;for(var n=0;n<500;n++){ap+=1;del*=x/ap;sum+=del;if(Math.abs(del)<Math.abs(sum)*1e-15)break;}return sum*Math.exp(-x+a*Math.log(x)-lgamma(a));}
+  var b=x+1-a,c=1/1e-300,d=1/b,h=d;
+  for(var i=1;i<500;i++){var an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;var dl=d*c;h*=dl;if(Math.abs(dl-1)<1e-15)break;}
+  return 1-Math.exp(-x+a*Math.log(x)-lgamma(a))*h;
+}
+function chi2sf(x,k){return x<=0?1:1-gammaP(k/2,x/2);}
+function chi2pdf(x,k){if(x<=0)return 0;return Math.exp((k/2-1)*Math.log(x)-x/2-(k/2)*Math.log(2)-lgamma(k/2));}
+function betacf(a,b,x){var qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-300)d=1e-300;d=1/d;var h=d;
+  for(var m=1;m<400;m++){var m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<1e-300)d=1e-300;c=1+aa/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<1e-300)d=1e-300;c=1+aa/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;var del=d*c;h*=del;if(Math.abs(del-1)<1e-15)break;}
+  return h;}
+function ibeta(a,b,x){ /* regularized incomplete beta I_x(a,b) */
+  if(x<=0)return 0;if(x>=1)return 1;
+  var bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b;}
+function fcdf(x,d1,d2){if(x<=0)return 0;return ibeta(d1/2,d2/2,d1*x/(d1*x+d2));}
+function fsf(x,d1,d2){return 1-fcdf(x,d1,d2);}
+function fpdf(x,d1,d2){if(x<=0)return 0;return Math.exp(0.5*(d1*Math.log(d1*x)+d2*Math.log(d2)-(d1+d2)*Math.log(d1*x+d2))-Math.log(x)-(lgamma(d1/2)+lgamma(d2/2)-lgamma((d1+d2)/2)));}
+function bisect(f,target,lo,hi){ /* f decreasing in x; find f(x)=target */
+  for(var i=0;i<200;i++){var mid=(lo+hi)/2,v=f(mid);if(v>target)lo=mid;else hi=mid;if(hi-lo<1e-12)break;}return (lo+hi)/2;}
+function chi2critX(c,df){return bisect(function(x){return chi2sf(x,df);},c,0,1000);}
+function chi2crit(c,df){return Math.round(chi2critX(c,df)*1000)/1000;}      /* as Figure 12.4 prints it */
+function fcritX(c,d1,d2){return bisect(function(x){return fsf(x,d1,d2);},c,0,10000);}
+function fcrit(c,d1,d2){return Math.round(fcritX(c,d1,d2)*100)/100;}         /* as Figures 12.5–12.6 print it */
+function chi2p(x,df){return chi2sf(x,df);}
+
+/* ---- small arithmetic helpers ---- */
+function mean(a){return a.reduce(function(s,x){return s+x;},0)/a.length;}
+function varSample(a){var m=mean(a);return a.reduce(function(s,x){return s+(x-m)*(x-m);},0)/(a.length-1);}
+const r2=x=>Math.round(x*100)/100, r3=x=>Math.round(x*1000)/1000, r4=x=>Math.round(x*1e4)/1e4;
+function f2(x){return x.toFixed(2);} function f3(x){return x.toFixed(3);} function f4(x){return x.toFixed(4);}
+function sgn(x,d){return (x<0?'−':'')+Math.abs(x).toFixed(d);}
+/* "1,694" is ambiguous: a thousands comma (numIn's reading) or a decimal
+   comma (the Swiss way). The your-turn check accepts either reading. */
+function numDec(str){return parseFloat(String(str||'').replace(/[\s']/g,'').replace('−','-').replace(',','.'));}
+function numv(inp,def){var v=numIn(inp.value);return isNaN(v)?def:v;}
+/* a contingency table: expected counts, χ², df */
+function chiIndep(O){
+  var I=O.length,J=O[0].length,R=O.map(function(r){return r.reduce(function(s,x){return s+x;},0);}),Cc=[],n=0;
+  for(var j=0;j<J;j++){var c=0;for(var i=0;i<I;i++)c+=O[i][j];Cc.push(c);n+=c;}
+  var E=[],chi=0,low=0;
+  for(var i2=0;i2<I;i2++){E.push([]);for(var j2=0;j2<J;j2++){var e=R[i2]*Cc[j2]/n;E[i2].push(e);chi+=(O[i2][j2]-e)*(O[i2][j2]-e)/e;if(O[i2][j2]<5)low++;}}
+  return {R:R,C:Cc,n:n,E:E,chi:chi,df:(I-1)*(J-1),low:low};
+}
+/* a goodness-of-fit table: expected counts, χ², df */
+function chiFit(O,P){
+  var n=O.reduce(function(s,x){return s+x;},0),E=P.map(function(p){return n*p;}),chi=0,low=0;
+  for(var i=0;i<O.length;i++){chi+=(O[i]-E[i])*(O[i]-E[i])/E[i];if(O[i]<5)low++;}
+  return {n:n,E:E,chi:chi,df:O.length-1,low:low};
+}
+/* one-way ANOVA from a list of samples */
+function anova(groups){
+  var K=groups.length,n=0,sum=0;groups.forEach(function(g){n+=g.length;g.forEach(function(x){sum+=x;});});
+  var xbar=sum/n,means=groups.map(mean),vars=groups.map(varSample),sst=0,sse=0;
+  groups.forEach(function(g,i){sst+=g.length*(means[i]-xbar)*(means[i]-xbar);sse+=(g.length-1)*vars[i];});
+  var mst=sst/(K-1),mse=sse/(n-K);
+  return {K:K,n:n,xbar:xbar,means:means,vars:vars,mst:mst,mse:mse,F:mst/mse,df1:K-1,df2:n-K};
+}
+
+/* ---- one density curve, any scale (Week 5's, unchanged) ---- */
+function drawDist(svg,o){
+  svg.innerHTML='';
+  var L=40,R=600,B=o.B||150,T0=o.T||18,lo=o.lo,hi=o.hi,X=function(x){return L+(x-lo)/(hi-lo)*(R-L);};
+  var mx=o.max||o.f(o.peak!=null?o.peak:(lo+hi)/2);if(o.ghost)mx=Math.max(mx,o.ghost(o.peak!=null?o.peak:(lo+hi)/2));
+  var Y=function(f,x){return B-Math.min(f(x),mx)/mx*(B-T0);};
+  function path(f,a,b,close){var d='',st=(hi-lo)/400;for(var x=a;x<=b+1e-9;x+=st)d+=(d?' L':'M')+X(x).toFixed(1)+' '+Y(f,x).toFixed(1);d+=' L'+X(b).toFixed(1)+' '+Y(f,b).toFixed(1);if(close)d='M'+X(a).toFixed(1)+' '+B+' '+d.replace(/^M/,'L')+' L'+X(b).toFixed(1)+' '+B+' Z';return d;}
+  (o.shade||[]).forEach(function(s){var a=Math.max(lo,s[0]),b=Math.min(hi,s[1]);if(b>a)svg.appendChild(el('path',{d:path(o.f,a,b,true),fill:s[2]||C.hi,stroke:'none'}));});
+  if(o.ghost)svg.appendChild(el('path',{d:path(o.ghost,lo,hi),fill:'none',stroke:C.grey,'stroke-width':1.6,'stroke-dasharray':'6 4'}));
+  svg.appendChild(el('path',{d:path(o.f,lo,hi),fill:'none',stroke:C.navy,'stroke-width':2.4}));
+  svg.appendChild(el('line',{x1:L,y1:B,x2:R,y2:B,stroke:C.axis}));
+  (o.ticks||[]).forEach(function(v){svgTxt(svg,X(v),B+15,o.fmt?o.fmt(v):String(v),C.grey,10);});
+  (o.marks||[]).forEach(function(m){if(m.x<lo||m.x>hi)return;var top=m.top!=null?m.top:T0-6;
+    svg.appendChild(el('line',{x1:X(m.x),y1:top,x2:X(m.x),y2:B+4,stroke:m.c||C.red,'stroke-width':m.w||2,'stroke-dasharray':m.dash?'5 3':''}));
+    if(m.lab)svgTxt(svg,X(m.x)+(m.dx||0),m.ly!=null?m.ly:B+30,m.lab,m.c||C.red,11,m.anchor||'middle',true);});
+  return X;
+}
+/* a step is "touched" the first time a widget is used — the counter */
+function toucher(key){var on=!!(progress.steps&&progress.steps[key]);return function(){if(!on){on=true;markStep(key);}};}
+
+/* ---- SVG helpers + SUMAS chart palette (as Week 5) ---- */
+const SVGNS="http://www.w3.org/2000/svg";
+function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function svgTxt(svg,x,y,s,fill,size,anchor,bold){const t=el("text",{x:x,y:y,"text-anchor":anchor||"middle","font-size":size||11,fill:fill});if(bold)t.setAttribute("font-weight","bold");t.textContent=s;svg.appendChild(t);return t;}
+const C={};
+function tok(name,fallback){try{const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();return v||fallback;}catch(e){return fallback;}}
+function paintTheme(){
+  Object.assign(C,{
+    navy:tok('--viz-navy','#2C5530'), red:tok('--accent','#4A8B3A'),
+    green:tok('--ok','#2F855A'), blue:tok('--viz-blue','#1E8A7A'), grey:tok('--grey','#6B7A6C'),
+    axis:tok('--viz-axis','rgba(26,43,28,0.30)'),
+    fill:tok('--viz-fill','rgba(44,85,48,0.12)'), redFill:tok('--viz-red-fill','rgba(74,139,58,0.14)'),
+    hi:tok('--viz-hi','rgba(74,139,58,0.26)'), white:tok('--card','#fff')
+  });
+}
+paintTheme();
+var REDRAW=[];
+document.addEventListener('course-theme',function(){paintTheme();REDRAW.forEach(function(f){try{f();}catch(e){}});});
+/* =====================================================================
+   NAVIGATION + PROGRESS
+   ===================================================================== */
+var SECTIONS=[
+  {id:'s1', num:'7.1', name:'Sixteen deliveries, one 95-minute order', tag:'Is Rive faster? Your verdict, and your guess at what the t-test says',                      badge:'Hook',            part:1},
+  {id:'s2', num:'7.2', name:'Ranks instead of values',                 tag:'parametric and non-parametric · ranks and ties · Figure 7.1 live · which test replaces which', badge:'Ranks',      part:1},
+  {id:'s3', num:'7.3', name:'The Mann–Whitney U test',                 tag:'two independent samples · the deliveries by hand and in numiqo · the hook closes · a bank',  badge:'U',               part:1},
+  {id:'s4', num:'7.4', name:'The Wilcoxon signed-rank test',           tag:'paired samples · ten drivers and a routing app · Figure 7.3 live · a call centre',          badge:'T',               part:1},
+  {id:'s5', num:'7.5', name:'The Kruskal–Wallis test',                 tag:'three or more groups · tips at three branches · χ² on k − 1 df · three suppliers',          badge:'H',               part:1},
+  {id:'s6', num:'7.6', name:'Spearman\'s rank correlation',            tag:'marketing spend and new customers · Pearson against Spearman live · recruiting',            badge:'rₛ',              part:1},
+  {id:'s7', num:'7.7', name:'Principal components · the idea',         tag:'taste and crust · turn the line to find the largest spread · a car magazine',               badge:'PCA',             part:1},
+  {id:'s8', num:'7.8', name:'Nine questions, two scores',              tag:'eigenvalues, scree plot, loadings, rotation · numiqo · a hotel survey · machine learning',   badge:'PCA · ML',        part:1},
+  {id:'ex', num:'7.9', name:'Exercises — worked together',             tag:'Ten exercises · solutions released in class',                                              badge:'Part 2',          part:2},
+  {id:'ck', num:'7.10',name:'Checkpoint',                              tag:'Self-check quiz & where this goes next',                                                   badge:'Quiz',            part:2},
+  {id:'wk', num:'7.11',name:'Workshop',                                tag:'A rank test, a survey and a prediction task for your case study — the pizzeria file, instalment ten', badge:'Exercise', part:2}
+];
+var MOD='w7';
+var KEY='mba401_w7_progress_v1';
+/* widget interactions that count beyond classify rows, quiz and workbook:
+   the hook, every walked example, every figure and every your-turn */
+var EXTRA_STEPS=['gut','rank','outlier','ties','yt1','mwhook','mwfig','hook','mwloan','yt2',
+  'wildriv','wilfig','wilcall','yt3','kwtips','kwfig','kwsup','yt4','spbr','spfig','sphire','yt5',
+  'pcahand','pcafig','pcacar','yt6','scree','loadfig','pcanq','hotel','yt7'];
+var progress=load();
+function load(){try{var p=JSON.parse(localStorage.getItem(KEY))||{};if(!p.done)p.done={};if(!p.steps)p.steps={};return p;}catch(e){return{done:{},steps:{}};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch(e){}}
 function renderList(){
   var list=document.getElementById('sectionList');if(!list)return;list.innerHTML='';
   var part=0;
@@ -193,20 +1165,65 @@ function renderList(){
     if(s.part!==part){
       part=s.part;
       var h=document.createElement('div');h.className='part-head';
-      h.innerHTML=part===1?'<span class="pt">Part 1 · the lesson</span><span class="pd">~1 hour · presented from the deck, followed here</span>'
-                          :'<span class="pt">Part 2 · exercises</span><span class="pd">~2 hours · worked together</span>';
+      h.innerHTML=part===1
+        ? '<span class="pt">Part 1 · the lesson</span><span class="pd">presented from the deck, followed here</span>'
+        : '<span class="pt">Part 2 · exercises</span><span class="pd">worked together, then your own project</span>';
       list.appendChild(h);
     }
-    var c=document.createElement('div');c.className='section-card'+(s.part===2?' part2':'');
-    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+'</div><div class="tag">'+s.tag+'</div><span class="badge">'+s.badge+' · planned</span></div><div class="status">▸</div>';
+    var done=!!progress.done[s.id];
+    var c=document.createElement('div');c.className='section-card'+(done?' done':'')+(s.part===2?' part2':'');
+    c.innerHTML='<div class="num">'+s.num+'</div><div class="info"><div class="name">'+s.name+
+      (s.slides?'<span class="ref">'+s.slides+'</span>':'')+
+      '</div><div class="tag">'+s.tag+'</div><span class="badge">'+s.badge+'</span></div><div class="status">'+(done?'✓':'▸')+'</div>';
     c.onclick=function(){show(s.id);};list.appendChild(c);
   });
+}
+function totalSteps(){return EXTRA_STEPS.length+EXERCISES.length+document.querySelectorAll('.cl-row').length+document.querySelectorAll('.q').length+document.querySelectorAll('[data-work]').length;}
+function doneSteps(){var n=0,s=progress.steps||{};for(var k in s){if(s[k])n++;}return n;}
+function markStep(id,on){
+  if(!id)return;if(!progress.steps)progress.steps={};
+  if(on===false){if(!progress.steps[id])return;delete progress.steps[id];}
+  else{if(progress.steps[id])return;progress.steps[id]=true;}
+  save();updateBar();secCheck();
+}
+function updateBar(){
+  var t=totalSteps()||1,d=Math.min(doneSteps(),t),p=Math.round(d/t*100);
+  var pf=document.getElementById('progFill'),pp=document.getElementById('progPct');
+  if(pf)pf.style.width=p+'%';if(pp)pp.textContent=p+'%';
 }
 function show(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var t=document.getElementById(id);if(t)t.classList.add('active');
-  if(id==='home')renderList();
+  if(id==='home'){renderList();}
+  if(id==='ck'||id==='wk'){renderGuessRecall();}
+  REDRAW.forEach(function(f){try{f();}catch(e){}});
   window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
+}
+/* ⚠ Never assume StatsTrack exists here: progress.js is deferred; syncDoneSections() at boot pushes what was missed. */
+function markSection(id){
+  if(!id||progress.done[id])return;
+  progress.done[id]=true;save();updateBar();renderList();
+  if(window.StatsTrack)StatsTrack.complete(id);
+  if(window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
+}
+/* Sections complete by COMBINATION — the walked examples, the figures, the
+   your-turns and the section's classify group (the Week 2B rule). */
+var clsDone={};
+function secCheck(){
+  var s=progress.steps||{};
+  if(s.rank&&s.outlier&&s.ties&&s.yt1&&clsDone.twinRows)markSection('s2');
+  if(s.mwhook&&s.mwfig&&s.hook&&s.mwloan&&s.yt2)markSection('s3');
+  if(s.wildriv&&s.wilfig&&s.wilcall&&s.yt3)markSection('s4');
+  if(s.kwtips&&s.kwfig&&s.kwsup&&s.yt4)markSection('s5');
+  if(s.spbr&&s.spfig&&s.sphire&&s.yt5)markSection('s6');
+  if(s.pcahand&&s.pcafig&&s.pcacar&&s.yt6)markSection('s7');
+  if(s.scree&&s.loadfig&&s.pcanq&&s.hotel&&s.yt7&&clsDone.mlRows)markSection('s8');
+}
+function syncDoneSections(){
+  if(!window.StatsTrack)return;
+  var d=progress.done||{},sent=0;
+  Object.keys(d).forEach(function(id){if(d[id]){StatsTrack.complete(id);sent++;}});
+  if(sent&&window.CourseProgress)CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});
 }
 document.addEventListener('click',function(e){
   var b=e.target.closest('[data-next],[data-prev],[data-home]');if(!b)return;
@@ -214,12 +1231,795 @@ document.addEventListener('click',function(e){
   if(b.hasAttribute('data-prev'))return show(b.getAttribute('data-prev'));
   var n=b.getAttribute('data-next');if(n)show(n);
 });
-var SLIDES=[{"cls": "dk", "k": "SUMAS · Quantitative Methods", "t": "Quantitative Methods · Week 7 — Beyond the textbook", "b": "<p style=\"font-size:1.15em\"><b>Week 7 · PCA and other non-parametric tests</b></p><p>Jan Erik Meidell · SUMAS</p><div class=\"onproj\"><b>Outline deck →</b> this week's slides are an outline. Each title becomes a full slide, with an \"On the pizzeria →\" callout and speaker notes, when the week is written.</div>", "logo": true, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 2", "t": "Recap → today: when the assumptions fail", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 3", "t": "Poll: nine questions, how many things?", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 4", "t": "Ranks instead of values", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 5", "t": "The non-parametric twins", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 6", "t": "Mann–Whitney in DataTab — live", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 7", "t": "PCA: directions of variance", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 8", "t": "Loadings, components, the scree plot", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 9", "t": "PCA in DataTab — live", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 10", "t": "From statistics to machine learning", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 11", "t": "Your turn — checkpoint", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}, {"cls": null, "k": "Week 7 · slide 12", "t": "Takeaways · Week ⟦12⟧", "b": "<ul><li>Outline slide — content to write.</li><li>Kicker, body and an <b>On the pizzeria →</b> callout follow the Week 1 pattern.</li></ul>", "logo": null, "n": "Outline — speaker notes to write."}];
+document.getElementById('resetLink').addEventListener('click',function(e){
+  e.preventDefault();
+  if(!confirm('Reset your Week 7 progress and answers on this device?'))return;
+  try{['mba401_w7_guess','mba401_w7_reads','mba401_w7_recall','mba401_done_w7','mba401_ex_w7','mba401_w7_preds'].forEach(function(k){localStorage.removeItem(k);});
+    localStorage.removeItem(KEY);
+    Object.keys(localStorage).forEach(function(k){if(k.indexOf('mba401_work_w7_')===0)localStorage.removeItem(k);});
+  }catch(err){}
+  document.querySelectorAll('[data-work]').forEach(function(el){el.value='';});
+  progress={done:{},steps:{}};save();updateBar();renderList();show('home');
+});
+
+/* ---- glossary (the tooltip engine below reads it; no .gloss span on this
+   page yet — the engine stays so a later edit can add one) ---- */
+var GLOSSARY={
+  rank:['rank','The position of a value when all the values are sorted from smallest to largest.']
+};
+(function gloss(){
+  var tip=document.createElement('div');tip.id='glossTip';document.body.appendChild(tip);
+  document.addEventListener('click',function(e){
+    if(e.target.classList&&e.target.classList.contains('x')){tip.style.display='none';return;}
+    var g=e.target.closest&&e.target.closest('.gloss');
+    if(g){var d=GLOSSARY[g.dataset.k];if(!d)return;
+      tip.innerHTML='<span class="x">×</span><b>'+d[0]+'</b>'+d[1];
+      var tw=Math.min(280,window.innerWidth-24);tip.style.width=tw+'px';tip.style.display='block';
+      var r=g.getBoundingClientRect();var left=r.left;if(left+tw>window.innerWidth-12)left=window.innerWidth-tw-12;if(left<12)left=12;
+      tip.style.left=left+'px';tip.style.top=(r.bottom+8)+'px';e.stopPropagation();
+    } else if(!(e.target.closest&&e.target.closest('#glossTip'))){tip.style.display='none';}
+  });
+})();
+(function reads(){
+  var RK='mba401_w7_reads',st={};try{st=JSON.parse(localStorage.getItem(RK))||{};}catch(e){}
+  document.querySelectorAll('.mi[data-read]').forEach(function(mi){
+    var k=mi.dataset.read;if(st[k])mi.classList.add('on');
+    mi.addEventListener('click',function(e){
+      if(e.target.closest('a')){st[k]=true;mi.classList.add('on');try{localStorage.setItem(RK,JSON.stringify(st));}catch(err){}return;}
+      st[k]=!st[k];mi.classList.toggle('on',!!st[k]);try{localStorage.setItem(RK,JSON.stringify(st));}catch(e){}
+    });
+  });
+})();
+(function who(){
+  var a=window.StatsAns?StatsAns.auth():null;
+  if(a&&a.name){var w=document.getElementById('topWho');if(w){w.textContent='👤 '+a.name;w.classList.add('on');}}
+})();
+/* ---- a classify group: one row per situation, one button per level (Week 2B) ---- */
+function buildClassify(rowsId,capId,LEVELS,VARS,doneMsg,secId){
+  var box=document.getElementById(rowsId),cap=document.getElementById(capId),done=0;
+  function capText(n,full){cap.textContent=n+' of '+VARS.length+' classified'+(full?' — '+doneMsg:'');}
+  capText(0,false);
+  var replaying=false;
+  VARS.forEach(function(v,i){
+    var row=document.createElement('div');row.className='cl-row';
+    var label=(v.n?'<b>'+v.n+'</b> — ':'')+v.s;
+    row.innerHTML='<div class="st">'+label+'</div><div class="cl-btns">'+LEVELS.map(function(l){return '<button data-v="'+l[0]+'">'+l[1]+'</button>';}).join('')+'</div><div class="cl-why" id="'+rowsId+'w'+i+'"></div>';
+    var pid=rowsId+'-'+i;
+    function attempt(val,btn){
+      if(row.dataset.done)return;
+      if(val===v.a){
+        row.dataset.done='1';
+        row.querySelectorAll('button').forEach(function(x){x.disabled=true;if(x===btn)x.classList.add('ok');});
+        var w=document.getElementById(rowsId+'w'+i);w.innerHTML='<b>Correct.</b> '+v.w;w.classList.add('show');
+        done++;capText(done,done===VARS.length);
+        if(!replaying){markStep(pid);if(window.StatsAns)StatsAns.push(progress,save,pid,val);}
+        if(done===VARS.length){if(!replaying)report();clsDone[rowsId]=true;if(secId)markSection(secId);secCheck();}
+      }else{
+        btn.classList.add('no');btn.disabled=true;
+        if(!replaying&&window.StatsAns)StatsAns.push(progress,save,pid,val);
+      }
+    }
+    row.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){attempt(b.dataset.v,b);});});
+    box.appendChild(row);
+    var hist=window.StatsAns?StatsAns.get(progress,pid):null;
+    if(hist&&hist.length){replaying=true;hist.forEach(function(val){var btn=null;row.querySelectorAll('button').forEach(function(x){if(x.getAttribute('data-v')===val)btn=x;});if(btn)attempt(val,btn);});replaying=false;}
+  });
+  function report(){
+    if(!window.StatsAns)return;
+    var byItem={},wrong=0;
+    VARS.forEach(function(v,i){var h=StatsAns.get(progress,rowsId+'-'+i)||[];var n=0;h.forEach(function(x){if(x!==v.a)n++;});if(n){wrong+=n;byItem[i]={n:n,s:String(v.s||'').replace(/<[^>]*>/g,'').slice(0,120)};}});
+    StatsAns.cls(MOD,rowsId,{n:VARS.length,wrong:wrong,byItem:byItem,cap:capId});
+  }
+}
+/* a toggle-row helper: returns the current value, calls fn(value) on change */
+function toggle(id,attr,init,fn){
+  var box=document.getElementById(id),cur=init;
+  box.querySelectorAll('button').forEach(function(b){
+    if(b.dataset[attr]===String(init))b.classList.add('on');
+    b.addEventListener('click',function(){box.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');cur=b.dataset[attr];fn(cur);});
+  });
+  return function(){return cur;};
+}
+/* ---- the book's example walker: one step per press; a replay opens it all (Week 2B) ---- */
+function buildSteps(boxId,steps,stepId,after){
+  var box=document.getElementById(boxId);if(!box)return;
+  var i=0,done=!!(progress.steps&&progress.steps[stepId]);
+  var list=document.createElement('div');list.className='walk';box.appendChild(list);
+  steps.forEach(function(st,k){var d=document.createElement('div');d.className='ws';d.innerHTML='<span class="wn">'+(k+1)+'</span><div>'+st+'</div>';list.appendChild(d);});
+  var row=document.createElement('div');row.className='btn-row';row.style.justifyContent='center';
+  var btn=document.createElement('button');btn.className='btn small';btn.textContent='Next step → (0 of '+steps.length+')';row.appendChild(btn);box.appendChild(row);
+  function reveal(){
+    if(i>=steps.length)return;
+    list.children[i].classList.add('show');i++;
+    if(i===steps.length){btn.textContent='✓ Every step shown';btn.disabled=true;if(!done){done=true;markStep(stepId);}if(after)after();}
+    else btn.textContent='Next step → ('+i+' of '+steps.length+')';
+  }
+  btn.addEventListener('click',reveal);
+  if(done){while(i<steps.length)reveal();}
+}
+/* ---- "your turn": numeric answers checked in place, remembered via StatsAns ---- */
+function numIn(str){
+  str=String(str||'').replace(/[\s']/g,'').replace('−','-');
+  if(/,\d{3}(?!\d)/.test(str)&&!/\./.test(str))str=str.replace(/,/g,'');else str=str.replace(',','.');
+  return parseFloat(str);
+}
+function buildTurn(boxId,fields,stepId,doneMsg){
+  var box=document.getElementById(boxId);if(!box)return;
+  var wrap=document.createElement('div');wrap.className='turn';
+  wrap.innerHTML=fields.map(function(f,i){return '<div class="trow"><label>'+f.label+'</label><div class="tin"><input type="text" inputmode="decimal" data-i="'+i+'" placeholder="'+(f.ph||'')+'"> '+(f.unit?'<span class="unit">'+f.unit+'</span> ':'')+'<span class="mk" data-m="'+i+'"></span></div></div>';}).join('')+
+    '<div class="btn-row"><button class="btn small" data-chk>Check</button></div><div class="reveal" data-fb></div>';
+  box.appendChild(wrap);
+  var fb=wrap.querySelector('[data-fb]'),solved=!!(progress.steps&&progress.steps[stepId]);
+  function check(replay){
+    var all=true;
+    fields.forEach(function(f,i){
+      var inp=wrap.querySelector('input[data-i="'+i+'"]'),mk=wrap.querySelector('[data-m="'+i+'"]'),v=numIn(inp.value);
+      var v2=numDec(inp.value);if(!isNaN(v2)&&Math.abs(v2-f.ans)<=f.tol)v=v2;
+      var ok=!isNaN(v)&&Math.abs(v-f.ans)<=f.tol;
+      inp.classList.toggle('ok',ok);inp.classList.toggle('no',!ok);mk.textContent=ok?'✓':'✗';mk.style.color=ok?'var(--ok)':'var(--no)';
+      if(!ok)all=false;
+      if(!replay&&!isNaN(v)&&window.StatsAns)StatsAns.set(progress,save,stepId+'-'+i,v);
+    });
+    fb.className='reveal show';
+    fb.innerHTML=all?'<b>Correct.</b> '+doneMsg:'<b>Not yet.</b> Check which table, which row and which column — and whether the expected counts were left unrounded.';
+    if(all&&!solved){solved=true;markStep(stepId);}
+  }
+  wrap.querySelector('[data-chk]').addEventListener('click',function(){check(false);});
+  var any=false;
+  fields.forEach(function(f,i){var sv=window.StatsAns?StatsAns.get(progress,stepId+'-'+i):null;if(sv!=null){wrap.querySelector('input[data-i="'+i+'"]').value=sv;any=true;}});
+  if(any)check(true);
+}
+/* =====================================================================
+   PART 2 · TEN EXERCISES — ours (no textbook chapter), each recomputed in
+   Python (28 Nov 2026, _private/check_w7.py):
+     e1  ranks 3 · 5 · 5 · 1 · 7 · 5 · 2 (sum 28)
+     e2  MW R1 17 · U 2 · z −2.37 · p 0.018 (exact 0.017)
+     e3  MW n 9, 11, R1 63 → U 18 · mean 49.5 · SD 13.16 · z −2.39
+     e4  Wilcoxon T+ 33 · T− 3 · z −2.10 · p 0.036
+     e5  Wilcoxon n 15, T 19 → mean 60 · SD 17.61 · z −2.33
+     e6  KW R 9, 34, 12 · H 6.709 ≥ 5.991
+     e7  KW four groups · H 11.404 · df 3 · χ² 7.815
+     e8  Spearman Σd² 6 · rₛ 0.829 · t 2.96 ≥ 2.776
+     e9  PCA 56 % · 80 % · keep 2
+     e10 communality 0.82² + 0.31² = 0.7685
+   ===================================================================== */
+function src(s){return '<p style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);font-weight:800;">'+s+'</p>';}
+function ftab(heads,rows){return '<table class="dtab"><tr>'+heads.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>'+rows.map(function(r){return '<tr>'+r.map(function(v){return '<td>'+v+'</td>';}).join('')+'</tr>';}).join('')+'</table>';}
+var EXERCISES=[
+ {id:'e1', mins:5, pts:2, title:'Seven values with a tie',
+  brief:src('Ranks · section 7.2')+'<p>A shop counts the customers who enter in each of seven hours: 12, 15, 15, 9, 20, 15, 11. Rank the seven values, giving tied values the average of their positions.</p>',
+  asks:[{label:'rank of each 15',ans:5,tol:0.01},{label:'rank of 12',ans:3,tol:0},{label:'sum of all seven ranks',ans:28,tol:0}],
+  hint:'Sort first: 9, 11, 12, 15, 15, 15, 20. The three 15s occupy positions 4, 5 and 6.',
+  sol:'<p class="step">Sorted: 9 (1), 11 (2), 12 (3), 15 15 15 (positions 4, 5, 6 → each gets (4 + 5 + 6) ⁄ 3 = <b>5</b>), 20 (7).</p><p class="step">The rank of 12 is <b>3</b>. The sum is 3 + 5 + 5 + 1 + 7 + 5 + 2 = <b>28</b> = 7 × 8 ⁄ 2: averaging the tied ranks never changes the total.</p>'},
+ {id:'e2', mins:10, pts:3, title:'Two support teams, Mann–Whitney by hand',
+  brief:src('Mann–Whitney · section 7.3')+'<p>A software company measures the hours it takes two support teams to answer a customer e-mail. Team 1 (five e-mails): 31, 28, 35, 26, 30. Team 2 (six e-mails): 38, 33, 41, 36, 34, 40. Test at the 5% level whether the answer times differ. Take team 1 as sample 1.</p>',
+  asks:[{label:'R<sub>1</sub>',ans:17,tol:0},{label:'U',ans:2,tol:0},{label:'z',ans:-2.37,tol:0.01}],
+  hint:'Rank all eleven together: 26, 28, 30, 31 are the four smallest and all in team 1. U₁ = R₁ − 5 × 6 ⁄ 2.',
+  sol:'<p class="step"><b>Ranks.</b> 26 (1), 28 (2), 30 (3), 31 (4), 33 (5), 34 (6), 35 (7), 36 (8), 38 (9), 40 (10), 41 (11). Team 1 holds 1, 2, 3, 4 and 7: <b>R<sub>1</sub> = 17</b>.</p><p class="step"><b>U.</b> U<sub>1</sub> = 17 − 15 = 2; U<sub>2</sub> = 30 − 2 = 28; <b>U = 2</b>.</p><p class="step"><b>z.</b> Mean = 30 ⁄ 2 = 15; SD = √(5 × 6 × 12 ⁄ 12) = √30 = 5.477; z = (2 − 15) ⁄ 5.477 = <b>−2.37</b>.</p><p class="step"><b>Decision.</b> |z| = 2.37 ≥ 1.960: <b>reject H<sub>0</sub></b>; p = 0.018 (exact p 0.017). Team 1 answers faster.</p>'},
+ {id:'e3', mins:6, pts:2, title:'Mann–Whitney from the rank sum',
+  brief:src('Mann–Whitney · section 7.3')+'<p>Two independent samples, n<sub>1</sub> = 9 and n<sub>2</sub> = 11, are ranked together. The ranks of sample 1 add up to R<sub>1</sub> = 63. Find U, the mean and the SD of U under H<sub>0</sub>, and z. Decide at the 5% level.</p>',
+  asks:[{label:'U',ans:18,tol:0},{label:'mean of U',ans:49.5,tol:0.01},{label:'SD of U',ans:13.16,tol:0.01},{label:'z',ans:-2.39,tol:0.01}],
+  hint:'U₁ = 63 − 9 × 10 ⁄ 2. Compare with n₁n₂ − U₁ = 99 − U₁ and keep the smaller.',
+  sol:'<p class="step">U<sub>1</sub> = 63 − 45 = 18; U<sub>2</sub> = 99 − 18 = 81; <b>U = 18</b>.</p><p class="step">Mean = 9 × 11 ⁄ 2 = <b>49.5</b>; SD = √(99 × 21 ⁄ 12) = √173.25 = <b>13.16</b>.</p><p class="step">z = (18 − 49.5) ⁄ 13.16 = <b>−2.39</b>; |z| ≥ 1.960: <b>reject H<sub>0</sub></b> (p = 0.017).</p>'},
+ {id:'e4', mins:10, pts:3, title:'Eight stores and a loyalty card',
+  brief:src('Wilcoxon signed-rank · section 7.4')+'<p>A chain introduced a loyalty card. Weekly sales, in thousands of CHF, at eight stores in the week before and the week after:</p>'+ftab(['Store','1','2','3','4','5','6','7','8'],[['Before',62,58,71,65,60,68,55,64],['After',66,57,77,68,67,73,53,72]])+'<p>Test at the 5% level whether weekly sales changed.</p>',
+  asks:[{label:'T<sub>+</sub>',ans:33,tol:0},{label:'T<sub>−</sub>',ans:3,tol:0},{label:'z',ans:-2.10,tol:0.01}],
+  hint:'d = after − before: 4, −1, 6, 3, 7, 5, −2, 8. The two negative differences are the two smallest.',
+  sol:'<p class="step"><b>Differences.</b> 4, −1, 6, 3, 7, 5, −2, 8. <b>Ranks of |d|.</b> 1 → 1, 2 → 2, 3 → 3, 4 → 4, 5 → 5, 6 → 6, 7 → 7, 8 → 8.</p><p class="step">T<sub>−</sub> = 1 + 2 = <b>3</b>; T<sub>+</sub> = 36 − 3 = <b>33</b>; T = 3.</p><p class="step">Mean = 8 × 9 ⁄ 4 = 18; SD = √(8 × 9 × 17 ⁄ 24) = 7.141; z = (3 − 18) ⁄ 7.141 = <b>−2.10</b>.</p><p class="step"><b>Decision.</b> |z| ≥ 1.960: <b>reject H<sub>0</sub></b>, p = 0.036. Sales rose in six of eight stores, and the two falls were the smallest changes.</p>'},
+ {id:'e5', mins:5, pts:2, title:'Wilcoxon from T',
+  brief:src('Wilcoxon signed-rank · section 7.4')+'<p>Fifteen pairs, none with a zero difference, give T = 19. Find the mean and the SD of T under H<sub>0</sub>, and z. Decide at the 5% level.</p>',
+  asks:[{label:'mean of T',ans:60,tol:0.01},{label:'SD of T',ans:17.61,tol:0.01},{label:'z',ans:-2.33,tol:0.01}],
+  hint:'n(n + 1) ⁄ 4 and √(n(n + 1)(2n + 1) ⁄ 24) with n = 15.',
+  sol:'<p class="step">Mean = 15 × 16 ⁄ 4 = <b>60</b>. SD = √(15 × 16 × 31 ⁄ 24) = √310 = <b>17.61</b>.</p><p class="step">z = (19 − 60) ⁄ 17.61 = <b>−2.33</b>; |z| ≥ 1.960: <b>reject H<sub>0</sub></b> (p = 0.020).</p>'},
+ {id:'e6', mins:8, pts:3, title:'Three teams, ten scores',
+  brief:src('Kruskal–Wallis · section 7.5')+'<p>Customer-satisfaction scores (out of 20) for ten calls handled by three teams. Team A: 8, 12, 10 · Team B: 15, 14, 18, 16 · Team C: 9, 11, 13. Test at the 5% level whether the teams differ.</p>',
+  asks:[{label:'R<sub>B</sub>',ans:34,tol:0},{label:'H',ans:6.709,tol:0.005}],
+  hint:'N = 10, so the ranks are 1 to 10. Team B holds the four largest values.',
+  sol:'<p class="step"><b>Ranks.</b> 8 (1), 9 (2), 10 (3), 11 (4), 12 (5), 13 (6), 14 (7), 15 (8), 16 (9), 18 (10). R<sub>A</sub> = 1 + 5 + 3 = 9; <b>R<sub>B</sub> = 8 + 7 + 10 + 9 = 34</b>; R<sub>C</sub> = 2 + 4 + 6 = 12.</p><p class="step"><b>H</b> = 12 ⁄ (10 × 11) × (9²⁄3 + 34²⁄4 + 12²⁄3) − 3 × 11 = 0.10909 × (27 + 289 + 48) − 33 = 39.709 − 33 = <b>6.709</b>.</p><p class="step"><b>Decision.</b> χ²<sub>0.05</sub> on 2 df = 5.991; 6.709 ≥ 5.991: <b>reject H<sub>0</sub></b> (p = 0.035). The groups are small (3, 4, 3), so in a report you would give numiqo\'s exact p.</p>'},
+ {id:'e7', mins:10, pts:3, title:'Four delivery zones',
+  brief:src('Kruskal–Wallis · section 7.5')+'<p>Delivery times in minutes for four orders in each of four zones of a city. Zone 1: 23, 27, 25, 30 · Zone 2: 31, 35, 29, 33 · Zone 3: 26, 24, 28, 22 · Zone 4: 36, 32, 34, 37. Test at the 5% level whether the zones differ.</p>',
+  asks:[{label:'df',ans:3,tol:0},{label:'H',ans:11.404,tol:0.005},{label:'χ²<sub>0.05</sub>',ans:7.815,tol:0.006}],
+  hint:'N = 16. The rank sums are 21, 44, 16 and 55; check that they add up to 16 × 17 ⁄ 2 = 136.',
+  sol:'<p class="step"><b>Rank sums.</b> Zone 1: 21 · Zone 2: 44 · Zone 3: 16 · Zone 4: 55 (total 136).</p><p class="step">H = 12 ⁄ (16 × 17) × (21² + 44² + 16² + 55²) ⁄ 4 − 3 × 17 = 0.044118 × 1308.5 − 51 = <b>11.404</b>.</p><p class="step">df = 4 − 1 = <b>3</b>; χ²<sub>0.05</sub> = <b>7.815</b>. 11.40 ≥ 7.815: <b>reject H<sub>0</sub></b> (p = 0.010). Zone 4 is slowest (mean rank 13.75), zone 3 fastest (4.0).</p>'},
+ {id:'e8', mins:8, pts:3, title:'Two judges, six products',
+  brief:src('Spearman · section 7.6')+'<p>Two judges rank six new pizza recipes from 1 (best) to 6. Judge 1: 1, 2, 3, 4, 5, 6. Judge 2: 2, 1, 4, 3, 6, 5. Compute r<sub>s</sub> and test at the 5% level whether the two judges agree.</p>',
+  asks:[{label:'Σd²',ans:6,tol:0},{label:'r<sub>s</sub>',ans:0.829,tol:0.002},{label:'t',ans:2.96,tol:0.01}],
+  hint:'Every d is +1 or −1. Then 1 − 6Σd² ⁄ (6 × 35); t on 4 df.',
+  sol:'<p class="step">d = −1, 1, −1, 1, −1, 1; <b>Σd² = 6</b>.</p><p class="step">r<sub>s</sub> = 1 − 36 ⁄ 210 = <b>0.829</b>.</p><p class="step">t = 0.829 × √(4 ⁄ (1 − 0.686)) = <b>2.96</b>; t<sub>0.025</sub> on 4 df = 2.776. 2.96 ≥ 2.776: <b>reject H<sub>0</sub></b>. The judges\' rankings agree more than chance would give.</p>'},
+ {id:'e9', mins:5, pts:2, title:'Five questions, five eigenvalues',
+  brief:src('PCA · section 7.8')+'<p>A PCA of five standardised survey questions gives the eigenvalues 2.8, 1.2, 0.5, 0.3, 0.2. Find the share of the variance explained by the first component, the cumulative share of the first two, and the number of components the eigenvalue-greater-than-1 rule keeps.</p>',
+  asks:[{label:'first component',ans:56,tol:0.1,unit:'%'},{label:'first two',ans:80,tol:0.1,unit:'%'},{label:'components kept',ans:2,tol:0}],
+  hint:'The total variance is 5, the number of standardised questions.',
+  sol:'<p class="step">2.8 ⁄ 5 = <b>56%</b>; (2.8 + 1.2) ⁄ 5 = <b>80%</b>.</p><p class="step">Eigenvalues above 1: 2.8 and 1.2, so <b>2</b> components. The other three together carry 1.0, one question\'s worth of variance.</p>'},
+ {id:'e10', mins:4, pts:2, title:'How much of one question do two components keep?',
+  brief:src('PCA · section 7.8')+'<p>In a two-component PCA, the question "the pizza arrived hot" has loadings 0.82 on component 1 and 0.31 on component 2. Find its communality, in %.</p>',
+  asks:[{label:'communality',ans:76.85,tol:0.1,unit:'%'}],
+  hint:'Square each loading and add.',
+  sol:'<p class="step">0.82² + 0.31² = 0.6724 + 0.0961 = 0.7685, so <b>76.85%</b> of this question\'s variance is explained by the two components; the remaining 23% is what the question measures on its own (or noise).</p>'}
+];
+
+/* ---- classify: which test replaces which (7.2) ---- */
+buildClassify('twinRows','twinCap',[['mw','Mann–Whitney'],['wil','Wilcoxon'],['kw','Kruskal–Wallis'],['sp','Spearman']],[
+  {n:'Two-sample t-test',s:'ratings 1–5 from 15 weekday and 15 weekend customers (different customers)',a:'mw',w:'Two independent samples and ordinal data: Mann–Whitney replaces the two-sample t-test of Week 4B.'},
+  {n:'Paired t-test',s:'the same 12 shops, sales before and after a refit, one shop with a huge jump',a:'wil',w:'Paired values with an extreme difference: Wilcoxon signed-rank replaces the paired t-test.'},
+  {n:'One-way ANOVA',s:'waiting times at four counters, 6 customers each, strongly skewed',a:'kw',w:'More than two groups with non-normal data: Kruskal–Wallis replaces the ANOVA of Week 6.'},
+  {n:'Pearson\'s r',s:'rank in a league table and a rating 1–5, for 10 restaurants',a:'sp',w:'A relationship where at least one variable is a rank: Spearman\'s r<sub>s</sub>.'},
+  {n:'Two-sample t-test',s:'delivery minutes at two branches, 8 each, one delivery of 95 minutes',a:'mw',w:'The hook of this week: two independent samples, one outlier.'},
+  {n:'Paired t-test',s:'the same 20 customers rate the old and the new recipe from 1 to 5',a:'wil',w:'Each customer gives two answers, so the data are paired; and the answers are ordinal.'},
+  {n:'Pearson\'s r',s:'marketing spend and new customers at 8 branches, a curved but rising pattern',a:'sp',w:'The order matches although the points do not lie on a straight line: Spearman measures exactly that.'},
+  {n:'One-way ANOVA',s:'satisfaction 1–5 for three delivery apps, 20 customers each',a:'kw',w:'Three independent groups and ordinal answers: Kruskal–Wallis.'}
+],'you can name the rank test for every test of the semester.',null);
+
+/* ---- classify: supervised, unsupervised or neither (7.8) ---- */
+buildClassify('mlRows','mlCap',[['sup','supervised'],['uns','unsupervised'],['no','neither']],[
+  {s:'Predict tomorrow evening\'s number of orders from the weekday and the weather, using two years of past evenings.',a:'sup',w:'There is an outcome y (orders) recorded in past data: supervised learning, a regression like Week 5\'s with more inputs.'},
+  {s:'Sort 5,000 customers into groups that order alike, without saying in advance what the groups are.',a:'uns',w:'No outcome is given: the method finds the groups. This is clustering, unsupervised learning.'},
+  {s:'Turn nine survey questions into two scores that keep most of the information.',a:'uns',w:'PCA: no outcome, structure in the inputs only.'},
+  {s:'Predict whether a new customer will order again within a month, from past customers who did or did not.',a:'sup',w:'The outcome (ordered again: yes or no) is known for past customers: supervised learning, a classification.'},
+  {s:'Compute last month\'s average ticket per branch for the board report.',a:'no',w:'A description of past data; nothing is learned or predicted. It is descriptive statistics (Week 1B).'},
+  {s:'Test whether Rive and Pâquis deliver equally fast with a Mann–Whitney test.',a:'no',w:'A hypothesis test answers a yes-or-no question about populations; it does not learn a rule for new cases.'}
+],'you can say which kind of task each one is.',null);
+
+/* =====================================================================
+   THE WALKED EXAMPLES — one step per press. EXW also feeds the deck's
+   solution slides. Every number recomputed in _private/check_w7.py.
+   ===================================================================== */
+var G_=function(t){return ' <span style="color:var(--grey)">'+t+'</span>';};
+var EXW={
+ rank:[
+  '<b>Put the sixteen times in one sorted list</b> and mark where each comes from (R = Rive, P = Pâquis): 18 R, 19 R, 21 R, 22 R, 23 R, 24 P, 25 R, 26 R, 27 P, 28 P, 29 R, 30 P, 31 P, 32 P, 34 P, 95 P.',
+  '<b>Number the positions 1 to 16.</b> Rive\'s times sit at positions 1, 2, 3, 4, 5, 7, 8 and 11. Pâquis\'s sit at 6, 9, 10, 12, 13, 14, 15 and 16.',
+  '<b>Check the total.</b> The ranks 1 to 16 add up to 16 × 17 ⁄ 2 = 136. Rive: 1 + 2 + 3 + 4 + 5 + 7 + 8 + 11 = <b>41</b>. Pâquis: 6 + 9 + 10 + 12 + 13 + 14 + 15 + 16 = <b>95</b>. 41 + 95 = 136.',
+  '<b>Look at the 95-minute delivery.</b> Its rank is 16, the last position. If it had taken 35 minutes or 500 minutes, it would still be rank 16. In the mean it counts as 95 minutes; in the ranks it counts as "the slowest of sixteen", and nothing more.'+G_('This is the whole reason rank tests resist outliers.')
+ ],
+ ties:[
+  '<b>Sort the seven answers:</b> 1, 2, 3, 4, 4, 4, 5.',
+  '<b>Give each position a number:</b> 1 → position 1, 2 → position 2, 3 → position 3, the three 4s → positions 4, 5 and 6, 5 → position 7.',
+  '<b>Average the tied positions.</b> The three 4s share positions 4, 5 and 6, so each gets (4 + 5 + 6) ⁄ 3 = <b>5</b>. The 5 (excellent) gets rank 7.',
+  '<b>The ranks, in the guests\' original order</b> (4, 2, 5, 4, 3, 4, 1): <b>5, 2, 7, 5, 3, 5, 1</b>. Their sum is 28 = 7 × 8 ⁄ 2, as for any seven ranks.'
+ ],
+ mwhook:[
+  '<b>Hypotheses.</b> H<sub>0</sub>: delivery times at Rive and Pâquis have the same distribution. H<sub>a</sub>: one branch tends to be faster. Two-tailed, α = 0.05.',
+  '<b>Rank sums</b> (section 7.2): Rive R<sub>1</sub> = 41, Pâquis R<sub>2</sub> = 95; n<sub>1</sub> = n<sub>2</sub> = 8.',
+  '<b>U.</b> U<sub>1</sub> = R<sub>1</sub> − n<sub>1</sub>(n<sub>1</sub> + 1) ⁄ 2 = 41 − 8 × 9 ⁄ 2 = 41 − 36 = <b>5</b>. U<sub>2</sub> = 8 × 8 − 5 = 59. U = the smaller = <b>5</b>.'+G_('Of the 64 pairs (one Rive, one Pâquis delivery), the Rive delivery was the slower one in only 5.'),
+  '<b>Mean and SD of U if H<sub>0</sub> is true.</b> Mean = 8 × 8 ⁄ 2 = 32. SD = √(8 × 8 × 17 ⁄ 12) = √90.67 = <b>9.522</b>.',
+  '<b>z</b> = (5 − 32) ⁄ 9.522 = <b>−2.84</b>.',
+  '<b>Decision.</b> |z| = 2.84 ≥ z<sub>0.025</sub> = 1.960: <b>reject H<sub>0</sub></b>. Two-tailed p = 2 × P(Z ≤ −2.84) = <b>0.005</b> (the exact p is 0.003). The data show that Rive delivers faster.'
+ ],
+ mwloan:[
+  '<b>Ranks of all thirteen loans:</b> 9 (1), 11 (2), 12 (3), 13 (4), 14 (5), 15 (6), 16 (7), 18 (8), 19 (9), 20 (10), 21 (11), 22 (12), 25 (13).',
+  '<b>Rank sum of Geneva</b> (12, 15, 9, 20, 14, 11): 3 + 6 + 1 + 10 + 5 + 2 = <b>R<sub>1</sub> = 27</b>. Lausanne: 91 − 27 = 64.',
+  '<b>U.</b> U<sub>1</sub> = 27 − 6 × 7 ⁄ 2 = 27 − 21 = 6; U<sub>2</sub> = 6 × 7 − 6 = 36; <b>U = 6</b>.',
+  '<b>z.</b> Mean = 42 ⁄ 2 = 21; SD = √(42 × 14 ⁄ 12) = √49 = 7; z = (6 − 21) ⁄ 7 = <b>−2.14</b>.',
+  '<b>Decision.</b> |z| ≥ 1.960: <b>reject H<sub>0</sub></b>; p = 0.032 (exact 0.035). Geneva decides faster. With samples of 6 and 7, report numiqo\'s exact p.'
+ ],
+ wildriv:[
+  '<b>Differences, after − before:</b> −3, +1, −6, +2, −5, −4, −17, −8, −7, −9. None is zero, so n = 10.',
+  '<b>Rank the sizes |d|:</b> 1 (rank 1), 2 (2), 3 (3), 4 (4), 5 (5), 6 (6), 7 (7), 8 (8), 9 (9), 17 (10). Driver 7\'s 17 minutes gets rank 10, the largest rank, and no more.',
+  '<b>Signed rank sums.</b> Positive differences (drivers 2 and 4, slower after): ranks 1 and 2, <b>T<sub>+</sub> = 3</b>. Negative: <b>T<sub>−</sub> = 52</b>. Check: 3 + 52 = 55 = 10 × 11 ⁄ 2.',
+  '<b>T</b> = the smaller = 3. Mean = 10 × 11 ⁄ 4 = 27.5. SD = √(10 × 11 × 21 ⁄ 24) = √96.25 = <b>9.811</b>.',
+  '<b>z</b> = (3 − 27.5) ⁄ 9.811 = <b>−2.50</b>; p = 0.012 (exact 0.010).',
+  '<b>Decision.</b> |z| ≥ 1.960: <b>reject H<sub>0</sub></b>. Eight of ten drivers became faster, and the two who became slower lost only 1 and 2 minutes. The paired t-test of Week 4B agrees here (t = 3.29, p = 0.009); Figure 7.3 shows where the two part ways.'
+ ],
+ wilcall:[
+  '<b>Differences, after − before:</b> 2, 3, −0.5, 5, 1, 3.5, 4, 5.5. None is zero, n = 8.',
+  '<b>Ranks of |d|:</b> 0.5 (1), 1 (2), 2 (3), 3 (4), 3.5 (5), 4 (6), 5 (7), 5.5 (8).',
+  '<b>Sums.</b> The only negative difference is −0.5, rank 1: <b>T<sub>−</sub> = 1</b>, T<sub>+</sub> = 35. T = 1.',
+  '<b>z.</b> Mean = 8 × 9 ⁄ 4 = 18; SD = √(8 × 9 × 17 ⁄ 24) = 7.141; z = (1 − 18) ⁄ 7.141 = <b>−2.38</b>.',
+  '<b>Decision.</b> |z| ≥ 1.960: <b>reject H<sub>0</sub></b>; p = 0.017 (exact 0.016). The agents close more calls after the training; only one agent dropped, by half a call per hour.'
+ ],
+ kwtips:[
+  '<b>Hypotheses.</b> H<sub>0</sub>: tips have the same distribution at the three branches. H<sub>a</sub>: at least one branch tends to get more or less. k = 3, N = 15.',
+  '<b>Rank all fifteen evenings:</b> 29 P (1), 31 P (2), 33 P (3), 35 C (4), 36 P (5), 38 R (6), 39 C (7), 40 P (8), 41 C (9), 42 R (10), 44 C (11), 45 R (12), 47 R (13), 48 C (14), 51 R (15).',
+  '<b>Rank sums.</b> Rive: 6 + 10 + 12 + 13 + 15 = <b>56</b> (mean rank 11.2). Pâquis: 1 + 2 + 3 + 5 + 8 = <b>19</b> (3.8). Carouge: 4 + 7 + 9 + 11 + 14 = <b>45</b> (9.0). Total 120 = 15 × 16 ⁄ 2.',
+  '<b>H</b> = 12 ⁄ (15 × 16) × (56²⁄5 + 19²⁄5 + 45²⁄5) − 3 × 16 = 0.05 × (627.2 + 72.2 + 405) − 48 = 55.22 − 48 = <b>7.22</b>.',
+  '<b>Critical value.</b> Chi-square with df = k − 1 = 2: χ²<sub>0.05</sub> = 5.991 (the table of Week 6).',
+  '<b>Decision.</b> 7.22 ≥ 5.991: <b>reject H<sub>0</sub></b>; p = 0.027. The tips are not the same at the three branches; Pâquis\'s mean rank (3.8) is far below the overall mean rank of 8.'
+ ],
+ kwsup:[
+  '<b>Ranks of all fourteen deliveries:</b> 1 (1), 2 (2), 2.5 (3), 3 (4), 3.5 (5), 4 (6), 4.5 (7), 5 (8), 5.5 (9), 6 (10), 6.5 (11), 7 (12), 8 (13), 9 (14).',
+  '<b>Rank sums.</b> A (3, 5, 2, 4): 4 + 8 + 2 + 6 = <b>20</b>. B (6, 8, 7, 5.5, 9): 10 + 13 + 12 + 9 + 14 = <b>58</b>. C (1, 4.5, 2.5, 3.5, 6.5): 1 + 7 + 3 + 5 + 11 = <b>27</b>. Total 105 = 14 × 15 ⁄ 2.',
+  '<b>H</b> = 12 ⁄ (14 × 15) × (20²⁄4 + 58²⁄5 + 27²⁄5) − 3 × 15 = 0.05714 × (100 + 672.8 + 145.8) − 45 = <b>7.49</b>.',
+  '<b>Decision.</b> 7.49 ≥ χ²<sub>0.05</sub>(2) = 5.991: <b>reject H<sub>0</sub></b>; p = 0.024. Supplier B is the late one (mean rank 11.6, against 5.0 and 5.4).'
+ ],
+ spbr:[
+  '<b>Rank the spend</b> (2, 5, 1, 8, 4, 12, 6, 3): A 2, B 5, C 1, D 7, E 4, F 8, G 6, H 3.',
+  '<b>Rank the new customers</b> (40, 61, 22, 70, 55, 88, 52, 48): A 2, B 6, C 1, D 7, E 5, F 8, G 4, H 3.',
+  '<b>Differences of ranks, d:</b> 0, −1, 0, 0, −1, 0, +2, 0. <b>Σd²</b> = 1 + 1 + 4 = <b>6</b>.',
+  '<b>r<sub>s</sub></b> = 1 − 6 × 6 ⁄ (8 × 63) = 1 − 36 ⁄ 504 = <b>0.929</b>.'+G_('Pearson\'s r on the raw numbers is 0.945.'),
+  '<b>Test.</b> t = 0.929 × √(6 ⁄ (1 − 0.862)) = <b>6.13</b> on n − 2 = 6 df; t<sub>0.025</sub>(6) = 2.447.',
+  '<b>Decision.</b> 6.13 ≥ 2.447: <b>reject H<sub>0</sub></b>. Branches that spend more on local marketing get more new customers, almost in the same order. This does not prove that the spend causes the customers: Week 5\'s warning about lurking variables still holds.'
+ ],
+ sphire:[
+  '<b>Ranks.</b> Interview (72, 85, 64, 90, 78, 69, 81): 3, 6, 1, 7, 4, 2, 5. Performance (3.1, 4.0, 2.8, 3.6, 3.9, 2.5, 4.4): 3, 6, 2, 4, 5, 1, 7.',
+  '<b>d:</b> 0, 0, −1, 3, −1, 1, −2. <b>Σd²</b> = 0 + 0 + 1 + 9 + 1 + 1 + 4 = <b>16</b>.',
+  '<b>r<sub>s</sub></b> = 1 − 6 × 16 ⁄ (7 × 48) = 1 − 96 ⁄ 336 = <b>0.714</b>.',
+  '<b>Test.</b> t = 0.714 × √(5 ⁄ (1 − 0.510)) = <b>2.28</b> on 5 df; t<sub>0.025</sub>(5) = 2.571.',
+  '<b>Decision.</b> 2.28 &lt; 2.571: <b>do not reject H<sub>0</sub></b>. A coefficient of 0.71 looks strong, but seven hires are too few to show that the interview score predicts performance at the 5% level.'
+ ],
+ pcahand:[
+  '<b>Standardise</b> both ratings: each now has mean 0 and variance 1, so the total variance of the pair is 1 + 1 = 2.',
+  '<b>Along the taste axis</b> (θ = 0°): variance = 1 + 0.46 × sin 0° = <b>1.00</b>, half of the total. One question alone keeps 50%.',
+  '<b>Along the diagonal</b> (θ = 45°): variance = 1 + 0.46 × sin 90° = <b>1.46</b>. This is the largest possible value, so the diagonal is the first principal component: the score (standardised taste + standardised crust) ⁄ √2.',
+  '<b>Along the other diagonal</b> (θ = 135°): variance = 1 + 0.46 × sin 270° = 1 − 0.46 = <b>0.54</b>. This is the second component; it measures whether a customer liked the taste more than the crust, or the other way round.',
+  '<b>Share kept by the first component:</b> 1.46 ⁄ 2 = <b>73%</b>. One score instead of two questions loses 27% of the variance.'
+ ],
+ pcacar:[
+  '<b>Eigenvalue of the first component:</b> 1 + r = 1 + 0.90 = <b>1.90</b>.',
+  '<b>Share:</b> 1.90 ⁄ 2 = <b>95%</b>. The second component has eigenvalue 1 − 0.90 = 0.10, 5% of the total.',
+  '<b>Meaning.</b> The first component gives length and weight equal weights, so it measures the <b>size</b> of the car. A magazine can report one size score and lose almost nothing; the second component, "heavy for its length", is small.'
+ ],
+ hotel:[
+  '<b>Component 1.</b> The three questions with loadings above 0.6 are friendliness at reception (0.84), speed of check-in (0.80) and help from the concierge (0.77). All three are about the <b>staff</b>.',
+  '<b>Component 2.</b> Cleanliness (0.86), the bed (0.81) and quietness (0.74): all three are about the <b>room</b>.',
+  '<b>Each question loads on one component only</b> (the other loading is at most 0.22), which is what a rotation aims for.',
+  '<b>Use.</b> The manager can report two scores per hotel, "staff" and "room", instead of six questions, and send a low room score to housekeeping and a low staff score to the front-office manager.'
+ ]
+};
+buildSteps('rankWalk',EXW.rank,'rank');
+buildSteps('tiesWalk',EXW.ties,'ties');
+buildSteps('mwhookWalk',EXW.mwhook,'mwhook');
+buildSteps('mwloanWalk',EXW.mwloan,'mwloan');
+buildSteps('wildrivWalk',EXW.wildriv,'wildriv');
+buildSteps('wilcallWalk',EXW.wilcall,'wilcall');
+buildSteps('kwtipsWalk',EXW.kwtips,'kwtips');
+buildSteps('kwsupWalk',EXW.kwsup,'kwsup');
+buildSteps('spbrWalk',EXW.spbr,'spbr');
+buildSteps('sphireWalk',EXW.sphire,'sphire');
+buildSteps('pcahandWalk',EXW.pcahand,'pcahand');
+buildSteps('pcacarWalk',EXW.pcacar,'pcacar');
+buildSteps('hotelWalk',EXW.hotel,'hotel');
+
+/* ---- the your-turns ---- */
+buildTurn('yt1',[{label:'rank of each 3',ans:2.5,tol:0.01},{label:'rank of each 7',ans:6,tol:0.01},{label:'sum of the eight ranks',ans:36,tol:0}],'yt1','Sorted: 1 (1), 3 3 (positions 2 and 3 → 2.5 each), 4 (4), 7 7 7 (positions 5, 6, 7 → 6 each), 9 (8). Sum 8 × 9 ⁄ 2 = 36.');
+buildTurn('yt2',[{label:'R<sub>1</sub>',ans:16,tol:0},{label:'U',ans:1,tol:0},{label:'z',ans:-2.56,tol:0.01}],'yt2','Ranks: 4 (1), 5 (2), 6 (3), 7 (4), 8 (5), 9 (6), 9.5 (7), 10 (8), 11 (9), 12 (10), 13 (11). Desk: 1 + 4 + 2 + 6 + 3 = 16. U₁ = 16 − 15 = 1, U₂ = 29, U = 1. Mean 15, SD √(30 × 12 ⁄ 12) = 5.477, z = −2.56: reject at 5% (p = 0.011). The kiosk is slower.');
+buildTurn('yt3',[{label:'T<sub>+</sub>',ans:3,tol:0},{label:'T<sub>−</sub>',ans:25,tol:0},{label:'z',ans:-1.86,tol:0.01}],'yt3','d = −6, −2, −9, +3, −4, −11, −1; ranks of |d|: 5, 2, 6, 3, 4, 7, 1. T₊ = 3 (shop 4), T₋ = 25. Mean 7 × 8 ⁄ 4 = 14, SD √(7 × 8 × 15 ⁄ 24) = 5.916, z = −1.86. |z| &lt; 1.960: do not reject at 5% (p = 0.063).');
+buildTurn('yt4',[{label:'R<sub>2</sub>',ans:35,tol:0},{label:'H',ans:3.5,tol:0.005},{label:'decision: 1 reject, 0 do not reject',ans:0,tol:0}],'yt4','Ranks 1–12: Ad 1 gets 3, 6, 2, 5 (R₁ = 16); Ad 2 gets 9, 7, 11, 8 (R₂ = 35); Ad 3 gets 4, 10, 1, 12 (R₃ = 27). H = 12 ⁄ 156 × (256 + 1225 + 729) ⁄ 4 − 39 = 3.50 &lt; 5.991: do not reject (p = 0.174). Ad 3 is the most spread out, which hides any difference.');
+buildTurn('yt5',[{label:'Σd²',ans:2,tol:0},{label:'r<sub>s</sub>',ans:0.943,tol:0.002},{label:'t',ans:5.66,tol:0.01}],'yt5','Ranks of years: 2, 5, 3, 6, 1, 4; of ratings: 2, 6, 3, 5, 1, 4. d = 0, −1, 0, 1, 0, 0; Σd² = 2. rₛ = 1 − 12 ⁄ 210 = 0.943; t = 0.943 × √(4 ⁄ 0.111) = 5.66 ≥ 2.776 (4 df): reject.');
+buildTurn('yt6',[{label:'eigenvalue of component 1',ans:1.6,tol:0.005},{label:'share of the total',ans:80,tol:0.1,unit:'%'},{label:'eigenvalue of component 2',ans:0.4,tol:0.005}],'yt6','1 + 0.60 = 1.60; 1.60 ⁄ 2 = 80%; 1 − 0.60 = 0.40.');
+buildTurn('yt7',[{label:'first component',ans:50,tol:0.1,unit:'%'},{label:'first two',ans:75,tol:0.1,unit:'%'},{label:'components kept',ans:2,tol:0}],'yt7','The total is 6: 3.0 ⁄ 6 = 50%; (3.0 + 1.5) ⁄ 6 = 75%; two eigenvalues are above 1.');
+
+/* =====================================================================
+   WIDGETS — Week 7
+   ===================================================================== */
+/* predictions are remembered per device, so a reload does not lock the widget again */
+var PRED=(function(){try{return JSON.parse(localStorage.getItem('mba401_w7_preds'))||{};}catch(e){return {};}})();
+function predGate(boxId,key,onPick){
+  var box=document.getElementById(boxId);
+  function pick(v,quiet){box.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.p===v);});PRED[key]=v;if(!quiet){try{localStorage.setItem('mba401_w7_preds',JSON.stringify(PRED));}catch(e){}}onPick(v);}
+  box.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){pick(b.dataset.p,false);});});
+  if(PRED[key])pick(PRED[key],true);
+}
+
+/* ---- 7.1 the hook table and the verdict ---- */
+(function hook(){
+  var t=document.getElementById('hookTab');
+  t.innerHTML='<tr><th></th>'+[1,2,3,4,5,6,7,8].map(function(i){return '<th>'+i+'</th>';}).join('')+'<th class="tot">Mean</th><th class="tot">Median</th></tr>'+
+    '<tr><th class="l">Rive</th>'+HOOK_R.map(function(v){return '<td>'+v+'</td>';}).join('')+'<td class="tot">'+f1(mean(HOOK_R))+'</td><td class="tot">22.5</td></tr>'+
+    '<tr><th class="l">Pâquis</th>'+HOOK_P.map(function(v){return '<td'+(v===95?' style="font-weight:800;color:var(--accent-deep)"':'')+'>'+v+'</td>';}).join('')+'<td class="tot">'+f1(mean(HOOK_P))+'</td><td class="tot">30.5</td></tr>';
+  var btn=document.getElementById('gutLock'),rev=document.getElementById('gutReveal');
+  var saved=gutSaved();
+  var v=toggle('gutV','v',saved&&saved.v?saved.v:'',function(){}),tt=toggle('gutT','t',saved&&saved.t?saved.t:'',function(){});
+  var tp=tPooled(HOOK_R,HOOK_P);
+  function lock(replay){
+    var a=v(),b=tt();if((!a||!b)&&!replay){alert('Choose an answer to both questions first.');return;}
+    try{localStorage.setItem('mba401_w7_guess',JSON.stringify({v:a,t:b}));}catch(e){}
+    rev.innerHTML='<b>Locked.</b> Here is the t-test of Week 4B, so you can compare: the means are 22.9 and 37.6 minutes, the standard deviations 3.7 and 23.4. Pooled t = <b>'+sgn(tp.t,2)+'</b> on 14 df, against t<sub>0.025</sub> = 2.145: <b>do not reject H<sub>0</sub></b> (p = '+f2(tp.p)+'). '+(b==='keep'?'You expected this.':'You expected a rejection; the extreme delivery prevents it.')+' Section 7.3 tests the same sixteen deliveries with ranks.';
+    rev.classList.add('show');btn.innerHTML='🔒 Locked';
+    if(!replay)markStep('gut');markSection('s1');
+  }
+  btn.addEventListener('click',function(){lock(false);});
+  if(progress.steps&&progress.steps.gut)lock(true);
+})();
+function gutSaved(){try{return JSON.parse(localStorage.getItem('mba401_w7_guess')||'null');}catch(e){return null;}}
+
+/* ---- 7.2 Figure 7.1 · the outlier against the t-test and the ranks ---- */
+(function outlier(){
+  var sl=document.getElementById('olS'),svg=document.getElementById('olViz'),cap=document.getElementById('olCap'),touch=toucher('outlier'),pred='';
+  predGate('olPred','ol',function(v){pred=v;sl.disabled=false;draw();});
+  function draw(){
+    var x=parseInt(sl.value,10),P=HOOK_P.slice(0,7).concat([x]),tp=tPooled(HOOK_R,P),m=mwTest(HOOK_R,P);
+    document.getElementById('olV').textContent=x;
+    document.getElementById('olMean').textContent=f1(mean(P));document.getElementById('olT').textContent=sgn(tp.t,2);
+    document.getElementById('olTp').textContent=f3(tp.p);document.getElementById('olR').textContent=rk(m.R1);
+    svg.innerHTML='';var lo=15,hi=Math.max(100,x+10),L=40,R=600,X=function(v){return L+(v-lo)/(hi-lo)*(R-L);};
+    svg.appendChild(el('line',{x1:L,y1:120,x2:R,y2:120,stroke:C.axis}));
+    for(var t=20;t<=hi;t+=(hi>120?20:10))svgTxt(svg,X(t),136,String(t),C.grey,10);
+    svgTxt(svg,L,40,'Rive',C.navy,11,'start',true);svgTxt(svg,L,92,'Pâquis',C.blue,11,'start',true);
+    HOOK_R.forEach(function(v){svg.appendChild(el('circle',{cx:X(v),cy:52,r:6,fill:C.navy}));});
+    P.forEach(function(v,i){svg.appendChild(el('circle',{cx:X(v),cy:102,r:6,fill:i===7?C.red:C.blue}));});
+    svg.appendChild(el('line',{x1:X(mean(HOOK_R)),y1:30,x2:X(mean(HOOK_R)),y2:64,stroke:C.navy,'stroke-dasharray':'4 3'}));
+    svg.appendChild(el('line',{x1:X(mean(P)),y1:80,x2:X(mean(P)),y2:114,stroke:C.blue,'stroke-dasharray':'4 3'}));
+    svgTxt(svg,X(mean(P))+4,80,'mean '+f1(mean(P)),C.blue,10,'start');
+    var rej=tp.p<0.05;
+    cap.innerHTML='Slow delivery at '+x+' minutes. The t-test: t = '+sgn(tp.t,2)+', p = '+f3(tp.p)+', '+(rej?'<b>rejects</b>':'<b>does not reject</b>')+' at 5%. The ranks: Rive\'s rank sum stays <b>'+rk(m.R1)+'</b> for every value above 34 minutes, so the Mann–Whitney p stays '+f3(m.p)+'. '+(pred==='t'?'Your prediction was right: the t statistic is the number that moves.':'The t statistic is the number that moves; the rank sum does not, because the slow delivery stays last in the list.');
+    if(x!==95)touch();
+  }
+  sl.addEventListener('input',draw);REDRAW.push(function(){if(pred)draw();});
+})();
+
+/* ---- 7.3 the copy buttons and the numiqo check ---- */
+(function copyData(){
+  var mw='Branch\tMinutes\n'+HOOK_R.map(function(v){return 'Rive\t'+v;}).join('\n')+'\n'+HOOK_P.map(function(v){return 'Pâquis\t'+v;}).join('\n');
+  var pca=SURVEY_Q.join('\t')+'\n'+SURVEY.map(function(r){return r.join('\t');}).join('\n');
+  document.getElementById('mwData').value=mw;document.getElementById('pcaData').value=pca;
+  document.querySelectorAll('[data-copy]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var ta=document.getElementById(b.dataset.copy),msg=document.querySelector('[data-copied="'+b.dataset.copy+'"]');
+      function ok(){if(msg)msg.textContent='Copied. Paste it into numiqo\'s table.';}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(ok,function(){ta.select();document.execCommand('copy');ok();});}
+      else{ta.select();document.execCommand('copy');ok();}
+    });
+  });
+})();
+buildTurn('mwSoft',[{label:'numiqo\'s two-tailed asymptotic p',ans:0.0046,tol:0.002,ph:'e.g. 0.005'}],'mwfig','numiqo and the hand calculation agree: U = 5, p ≈ 0.005 by the normal approximation (0.003 exact). Either way, p &lt; 0.05.');
+document.getElementById('hookGo').addEventListener('click',function(){
+  var g=gutSaved(),tp=tPooled(HOOK_R,HOOK_P),m=mwTest(HOOK_R,HOOK_P),V={yes:'"Rive is faster"',no:'"no real difference"',cant:'"impossible to say"'};
+  var o=document.getElementById('hookOut');
+  o.innerHTML='<p><b>The t-test</b> (means): t = '+sgn(tp.t,2)+', p = '+f2(tp.p)+'. <b>Do not reject.</b> The 95-minute delivery makes the Pâquis standard deviation 23.4 minutes, and the difference of means drowns in it.</p><p><b>The Mann–Whitney test</b> (ranks): U = 5, z = '+sgn(m.z,2)+', p = '+f3(m.p)+'. <b>Reject.</b> In 59 of the 64 Rive–Pâquis pairs the Rive delivery was faster.</p><p>'+(g&&g.v?'In section 7.1 you said '+V[g.v]+'. ':'')+'The rank test answers the manager\'s question, "does Rive tend to deliver faster?", and the answer is yes. The website can promise a shorter time for Rive than for Pâquis.</p>';
+  o.classList.add('show');markStep('hook');
+});
+
+/* ---- 7.4 Figure 7.3 · the ten drivers, editable ---- */
+(function wilFig(){
+  var tab=document.getElementById('wfTab'),cap=document.getElementById('wfCap'),touch=toucher('wilfig'),A=DRV_A.slice(),pred='';
+  function build(){
+    var h='<tr><th>Driver</th>'+DRV_B.map(function(v,i){return '<th>'+(i+1)+'</th>';}).join('')+'</tr><tr><th class="l">Before</th>'+DRV_B.map(function(v){return '<td>'+v+'</td>';}).join('')+'</tr>'+
+      '<tr><th class="l">After</th>'+A.map(function(v,i){return '<td><input class="numin" data-i="'+i+'" value="'+v+'"'+(pred?'':' disabled')+'></td>';}).join('')+'</tr>'+
+      '<tr><th class="l">d</th>'+DRV_B.map(function(v,i){return '<td id="wfD'+i+'"></td>';}).join('')+'</tr><tr><th class="l">rank of |d|</th>'+DRV_B.map(function(v,i){return '<td id="wfK'+i+'"></td>';}).join('')+'</tr>';
+    tab.innerHTML=h;
+    tab.querySelectorAll('input').forEach(function(inp){inp.addEventListener('input',function(){var v=numDec(inp.value);if(!isNaN(v)){A[inp.dataset.i]=v;touch();calc();}});});
+  }
+  function calc(){
+    var w=wilTest(DRV_B,A),j=0;
+    DRV_B.forEach(function(b,i){var d=A[i]-b,cell=document.getElementById('wfD'+i),kc=document.getElementById('wfK'+i);
+      cell.textContent=d>0?'+'+d:(d<0?'−'+Math.abs(d):'0');cell.style.color=d>0?'var(--accent-deep)':'';
+      if(d===0){kc.textContent='dropped';}else{kc.textContent=rk(w.r[j])+(d>0?' (+)':'');j++;}});
+    document.getElementById('wfTp').textContent=rk(w.Tp);document.getElementById('wfTm').textContent=rk(w.Tm);
+    document.getElementById('wfZ').textContent=sgn(w.z,2);document.getElementById('wfP').textContent=f3(w.p);
+    var tt=(function(){var d=DRV_B.map(function(b,i){return A[i]-b;}),m=mean(d),s=Math.sqrt(varSample(d)),t=m/(s/Math.sqrt(d.length));return {t:t,p:2*tsf(Math.abs(t),d.length-1)};})();
+    cap.innerHTML='n = '+w.n+' non-zero differences. T = '+rk(w.T)+', z = '+sgn(w.z,2)+', p = '+f3(w.p)+': '+(w.p<0.05?'<b>reject</b>':'<b>do not reject</b>')+' at 5%. For comparison, the paired t-test of Week 4B gives t = '+sgn(tt.t,2)+', p = '+f3(tt.p)+'. '+(pred?(A[6]!==28?'':'Set driver 7\'s "after" time to 5 and see: T stays 3, because his difference is already the largest and keeps rank 10; the paired t changes.'):'');
+  }
+  document.getElementById('wfReset').addEventListener('click',function(){A=DRV_A.slice();build();calc();});
+  build();calc();
+  predGate('wfPred','wf',function(v){pred=v;tab.querySelectorAll('input').forEach(function(i){i.disabled=false;});calc();});
+})();
+
+/* ---- 7.5 Figure 7.4 · the tips, editable ---- */
+(function kwFig(){
+  var tab=document.getElementById('kfTab'),svg=document.getElementById('kfViz'),cap=document.getElementById('kfCap'),touch=toucher('kwfig');
+  var G=TIPS_ORDER.map(function(k){return TIPS[k].slice();});
+  function build(){
+    tab.innerHTML='<tr><th>Branch</th><th colspan="5">Tips per evening, CHF (rank below)</th><th class="tot">Rank sum</th><th class="tot">Mean rank</th></tr>'+
+      G.map(function(g,i){return '<tr><th class="l">'+TIPS_ORDER[i]+'</th>'+g.map(function(v,j){return '<td><input class="numin" data-i="'+i+'" data-j="'+j+'" value="'+v+'"><div class="e" id="kfR'+i+j+'"></div></td>';}).join('')+'<td class="tot" id="kfS'+i+'"></td><td class="tot" id="kfM'+i+'"></td></tr>';}).join('');
+    tab.querySelectorAll('input').forEach(function(inp){inp.addEventListener('input',function(){var v=numDec(inp.value);if(!isNaN(v)){G[inp.dataset.i][inp.dataset.j]=v;touch();calc();}});});
+  }
+  function calc(){
+    var k=kwTest(G),c=0,cv=chi2crit(0.05,2);
+    G.forEach(function(g,i){g.forEach(function(v,j){document.getElementById('kfR'+i+j).textContent='rank '+rk(k.r[c]);c++;});document.getElementById('kfS'+i).textContent=rk(k.R[i]);document.getElementById('kfM'+i).textContent=f1(k.R[i]/g.length);});
+    document.getElementById('kfH').textContent=f3(k.H);document.getElementById('kfP').textContent=f3(k.p);
+    svg.innerHTML='';var L=110,Rr=600,X=function(r){return L+(r-1)/(k.N-1)*(Rr-L);},cols=[C.navy,C.blue,C.red];
+    svg.appendChild(el('line',{x1:L,y1:128,x2:Rr,y2:128,stroke:C.axis}));for(var r=1;r<=k.N;r++)svgTxt(svg,X(r),143,String(r),C.grey,10);
+    c=0;G.forEach(function(g,i){var y=28+i*34;svgTxt(svg,L-10,y+4,TIPS_ORDER[i],cols[i],11,'end',true);
+      g.forEach(function(){svg.appendChild(el('circle',{cx:X(k.r[c]),cy:y,r:6,fill:cols[i]}));c++;});
+      var mr=k.R[i]/g.length;svg.appendChild(el('line',{x1:X(mr),y1:y-11,x2:X(mr),y2:y+11,stroke:cols[i],'stroke-width':3}));});
+    svg.appendChild(el('line',{x1:X((k.N+1)/2),y1:12,x2:X((k.N+1)/2),y2:124,stroke:C.grey,'stroke-dasharray':'4 3'}));
+    svgTxt(svg,X((k.N+1)/2)+4,12,'overall mean rank '+f1((k.N+1)/2),C.grey,10,'start');
+    cap.innerHTML='H = '+f3(k.H)+' on 2 df against χ²<sub>0.05</sub> = '+f3(cv)+': '+(k.H>=cv?'<b>reject H<sub>0</sub></b>':'<b>do not reject H<sub>0</sub></b>')+', p = '+f3(k.p)+'. The thick marks are the mean ranks; the dashed line is where all three would sit if the branches were alike. A CHF 500 evening at Pâquis only moves that evening to rank 15.';
+  }
+  document.getElementById('kfReset').addEventListener('click',function(){G=TIPS_ORDER.map(function(k){return TIPS[k].slice();});build();calc();});
+  REDRAW.push(calc);build();calc();
+})();
+
+/* ---- 7.6 Figure 7.5 · Pearson against Spearman ---- */
+(function spFig(){
+  var sl=document.getElementById('sfS'),svg=document.getElementById('sfViz'),cap=document.getElementById('sfCap'),touch=toucher('spfig'),pred='';
+  predGate('sfPred','sf',function(v){pred=v;sl.disabled=false;draw();});
+  function draw(){
+    var yF=parseInt(sl.value,10),Y=SP_Y.slice();Y[5]=yF;var r=pearson(SP_X,Y),s=spear(SP_X,Y);
+    document.getElementById('sfV').textContent=yF;document.getElementById('sfR').textContent=f3(r);document.getElementById('sfRs').textContent=f3(s.rs);
+    svg.innerHTML='';var L=60,R=600,T=14,B=186,ymax=Math.max(100,yF+10),X=function(v){return L+v/13*(R-L);},Yp=function(v){return B-v/ymax*(B-T);};
+    svg.appendChild(el('line',{x1:L,y1:B,x2:R,y2:B,stroke:C.axis}));svg.appendChild(el('line',{x1:L,y1:T,x2:L,y2:B,stroke:C.axis}));
+    for(var t=0;t<=12;t+=2)svgTxt(svg,X(t),B+15,String(t),C.grey,10);svgTxt(svg,R,B+30,'marketing spend, kCHF',C.grey,10,'end');
+    for(var u=0;u<=ymax;u+=(ymax>150?50:20))svgTxt(svg,L-6,Yp(u)+3,String(u),C.grey,10,'end');svgTxt(svg,L+4,T+4,'new customers',C.grey,10,'start');
+    SP_X.forEach(function(x,i){svg.appendChild(el('circle',{cx:X(x),cy:Yp(Y[i]),r:6,fill:i===5?C.red:C.navy}));svgTxt(svg,X(x)+9,Yp(Y[i])+4,SP_L[i],C.grey,10,'start');});
+    cap.innerHTML='Branch F at '+yF+' new customers. Pearson\'s r = '+f3(r)+'; Spearman\'s r<sub>s</sub> = '+f3(s.rs)+'. Branch F already had the most customers, so its rank is 8 whatever the number: r<sub>s</sub> cannot move. Pearson\'s r measures closeness to a straight line, and one far point changes that. '+(pred==='r'?'Your prediction was right.':'');
+    if(yF!==88)touch();
+  }
+  sl.addEventListener('input',draw);REDRAW.push(function(){if(pred)draw();});
+})();
+
+/* ---- 7.7 Figure 7.6 · turn the line ---- */
+(function pcaFig(){
+  var sl=document.getElementById('pfS'),svg=document.getElementById('pfViz'),cap=document.getElementById('pfCap'),touch=toucher('pcafig'),pred='';
+  var Z=PCA.Z.map(function(r){return [r[0],r[2]];}),rr=PCA.R[0][2];
+  var seed=11;function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}
+  var J=Z.map(function(){return [(rnd()-0.5)*0.22,(rnd()-0.5)*0.22];});
+  predGate('pfPred','pf',function(v){pred=v;sl.disabled=false;draw();});
+  function draw(){
+    var deg=parseInt(sl.value,10),th=deg*Math.PI/180,c=Math.cos(th),s=Math.sin(th);
+    var proj=Z.map(function(z){return z[0]*c+z[1]*s;}),v=varSample(proj);
+    document.getElementById('pfV').textContent=deg+'°';document.getElementById('pfVar').textContent=f2(v);document.getElementById('pfShare').textContent=Math.round(v/2*100)+'%';
+    svg.innerHTML='';var cx=320,cy=150,k=48,P=function(x,y){return [cx+x*k,cy-y*k];};
+    svg.appendChild(el('line',{x1:cx-150,y1:cy,x2:cx+150,y2:cy,stroke:C.axis}));svg.appendChild(el('line',{x1:cx,y1:cy-145,x2:cx,y2:cy+145,stroke:C.axis}));
+    svgTxt(svg,cx+150,cy+14,'taste (standardised)',C.grey,10,'end');svgTxt(svg,cx+6,cy-136,'crust (standardised)',C.grey,10,'start');
+    var a=P(-3.2*c,-3.2*s),b=P(3.2*c,3.2*s);svg.appendChild(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:C.red,'stroke-width':2.5}));
+    Z.forEach(function(z,i){var p=P(z[0]+J[i][0],z[1]+J[i][1]),q=P(proj[i]*c,proj[i]*s);
+      svg.appendChild(el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:C.grey,'stroke-width':0.6,opacity:0.5}));
+      svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:3.6,fill:C.navy,opacity:0.75}));
+      svg.appendChild(el('circle',{cx:q[0],cy:q[1],r:2.4,fill:C.red}));});
+    var best=Math.abs(deg-45)<=2;
+    cap.innerHTML='The small dots on the line are the 60 customers projected onto it; their variance is <b>'+f2(v)+'</b> = 1 + '+f2(rr)+' × sin('+(2*deg)+'°). '+(best?'<b>This is the first principal component</b>: the direction of largest spread, variance '+f2(1+rr)+', '+Math.round((1+rr)/2*100)+'% of the total.':(Math.abs(deg-135)<=2?'This is the <b>second</b> component: the direction of smallest spread.':'Keep turning: the largest spread is at one angle only.'))+(best&&pred==='45'?' Your prediction was right.':'');
+    if(deg!==0)touch();
+  }
+  sl.addEventListener('input',draw);REDRAW.push(function(){if(pred)draw();});
+})();
+
+/* ---- 7.8 Figure 7.7 · eigenvalues and the scree plot ---- */
+(function scree(){
+  var svg=document.getElementById('scViz'),tab=document.getElementById('scTab'),cap=document.getElementById('scCap'),touch=toucher('scree'),sel=-1;
+  var ev=PCA.ev,p=PCA.p,cum=0;
+  tab.innerHTML='<tr><th>Component</th>'+ev.map(function(v,i){return '<th>'+(i+1)+'</th>';}).join('')+'</tr><tr><th class="l">Eigenvalue</th>'+ev.map(function(v){return '<td>'+f3(v)+'</td>';}).join('')+'</tr><tr><th class="l">% of variance</th>'+ev.map(function(v){return '<td>'+f1(v/p*100)+'</td>';}).join('')+'</tr><tr><th class="l">Cumulative %</th>'+ev.map(function(v){cum+=v;return '<td>'+f1(cum/p*100)+'</td>';}).join('')+'</tr>';
+  function draw(){
+    svg.innerHTML='';var L=50,R=600,T=14,B=186,mx=5,X=function(i){return L+30+i*((R-L-40)/(p-1));},Y=function(v){return B-v/mx*(B-T);};
+    svg.appendChild(el('line',{x1:L,y1:B,x2:R,y2:B,stroke:C.axis}));svg.appendChild(el('line',{x1:L,y1:T,x2:L,y2:B,stroke:C.axis}));
+    for(var u=0;u<=5;u++)svgTxt(svg,L-6,Y(u)+3,String(u),C.grey,10,'end');
+    svg.appendChild(el('line',{x1:L,y1:Y(1),x2:R,y2:Y(1),stroke:C.red,'stroke-dasharray':'5 3'}));svgTxt(svg,R,Y(1)-5,'eigenvalue = 1',C.red,10,'end');
+    var d='';ev.forEach(function(v,i){d+=(i?' L':'M')+X(i)+' '+Y(v);});svg.appendChild(el('path',{d:d,fill:'none',stroke:C.navy,'stroke-width':2}));
+    ev.forEach(function(v,i){var c=el('circle',{cx:X(i),cy:Y(v),r:i===sel?9:7,fill:v>1?C.navy:C.grey,style:'cursor:pointer'});c.addEventListener('click',function(){sel=i;touch();draw();text();});svg.appendChild(c);svgTxt(svg,X(i),B+15,String(i+1),C.grey,10);});
+    svgTxt(svg,(L+R)/2,B+30,'component (click a point)',C.grey,10);
+  }
+  function text(){if(sel<0)return;var v=ev[sel],c=0;for(var i=0;i<=sel;i++)c+=ev[i];
+    cap.innerHTML='Component '+(sel+1)+': eigenvalue <b>'+f3(v)+'</b>, '+f1(v/p*100)+'% of the variance of the nine questions; with the components before it, '+f1(c/p*100)+'%. '+(v>1?'Its eigenvalue is above 1, so the Kaiser rule keeps it.':'Its eigenvalue is below 1: it carries less than one question\'s worth of variance, and the scree plot is already flat here. Drop it.');}
+  REDRAW.push(draw);draw();
+})();
+
+/* ---- 7.8 Figure 7.8 · loadings, as computed and rotated ---- */
+(function loadings(){
+  var tab=document.getElementById('ldTab'),cap=document.getElementById('ldCap'),out=document.getElementById('ldOut'),touch=toucher('loadfig'),rot='0';
+  function cls(v){return Math.abs(v)>=0.6?' style="font-weight:800;color:var(--accent-deep)"':'';}
+  function draw(){
+    var Lm=rot==='1'?PCA.Lr:PCA.L,h1=rot==='1'?'Component A':'Component 1',h2=rot==='1'?'Component B':'Component 2';
+    tab.innerHTML='<tr><th>Question</th><th>'+h1+'</th><th>'+h2+'</th><th>Communality</th></tr>'+SURVEY_Q.map(function(q,i){var a=Lm[i][0],b=Lm[i][1];return '<tr><td class="l">'+q+'</td><td'+cls(a)+'>'+sgn(a,2)+'</td><td'+cls(b)+'>'+sgn(b,2)+'</td><td>'+f2(a*a+b*b)+'</td></tr>';}).join('');
+    cap.innerHTML=rot==='1'
+      ?'After the rotation each question loads strongly (bold, above 0.6) on one component. Speed, friendliness, a correct order and a hot pizza load on A; taste, freshness, crust and toppings load on B. Value for money loads on both. The communalities have not changed: the two components together still explain the same share of each question.'
+      :'As computed, every question loads above 0.5 on component 1: it is a general "satisfied overall" score. Component 2 has positive loadings for the four food questions and negative loadings for the four service questions: it contrasts the food with the service. This is correct but hard to name; switch to the rotated table.';
+  }
+  var t=toggle('ldRot','r','0',function(v){rot=v;touch();draw();});
+  toggle('ldName','n','',function(v){out.className='reveal show';out.innerHTML=v==='b'?'<b>Correct.</b> Component A = the <b>service</b> (speed, friendliness, a correct order, a hot pizza); component B = the <b>food</b> (taste, freshness, crust, toppings). Value for money depends on both, so it loads on both. The pizzeria can now track two scores per month instead of nine.':'<b>Not that one.</b> Read which questions are in bold in each column of the rotated table: component A holds speed, friendliness, order correct and arrived hot.';if(v==='b')touch();});
+  REDRAW.push(draw);draw();
+})();
+buildTurn('pcaSoftBox',[{label:'numiqo · eigenvalue of component 1',ans:4.726,tol:0.02},{label:'numiqo · cumulative % of two components',ans:68.95,tol:0.3,unit:'%'}],'pcanq','numiqo agrees with the page: 4.73 and 1.48, 69.0% together.');
+
+function bk(src,html){return '<div class="book"><div class="bt">'+src+'</div>'+html+'</div>';}
+
+/* ---- 7.10 checkpoint quiz ----
+   Answer slots are deliberately mixed: 1 3 0 2 1 0 3 2 0 1 — never three in a row. */
+(function quizWidget(){
+  var QUIZ=[
+    {q:'A t-test is least trustworthy when',
+     opts:['the sample has 200 values','the sample has 9 values, one of them far larger than the rest','the population standard deviation is unknown','the data are measured in CHF'],a:1,
+     w:'A small sample with an outlier breaks the normality the t-test relies on. With 200 values the Central Limit Theorem of Week 2B protects the mean; an unknown σ is exactly what the t-test is for.'},
+    {q:'Five values 3, 8, 8, 2, 10 are ranked. The rank of each 8 is',
+     opts:['3','4','3 and 4','3.5'],a:3,
+     w:'Sorted: 2 (1), 3 (2), 8 8 (positions 3 and 4), 10 (5). Tied values get the average of their positions: (3 + 4) ⁄ 2 = 3.5.'},
+    {q:'Twenty customers each rate the old and the new menu from 1 to 5. The test to use is',
+     opts:['the Wilcoxon signed-rank test','the Mann–Whitney test','the Kruskal–Wallis test','Spearman\'s rank correlation'],a:0,
+     w:'Each customer gives two answers, so the data are paired, and the answers are ordinal: Wilcoxon signed-rank. Mann–Whitney is for two independent groups.'},
+    {q:'Two independent samples of 8 give R<sub>1</sub> = 41. U is',
+     opts:['41','36','5','59'],a:2,
+     w:'U₁ = 41 − 8 × 9 ⁄ 2 = 5; U₂ = 64 − 5 = 59; U is the smaller, 5. This is the sixteen deliveries.'},
+    {q:'A Kruskal–Wallis test on four groups is compared with',
+     opts:['the t table on n − 4 df','the chi-square table on 3 df','the F table on (3, n − 4) df','the z table'],a:1,
+     w:'H follows approximately a chi-square distribution with k − 1 = 3 degrees of freedom; the test is right-tailed, χ²₀.₀₅ = 7.815.'},
+    {q:'One branch\'s new customers rise from 88 (already the most) to 300. Spearman\'s r<sub>s</sub>',
+     opts:['does not change, because that branch keeps rank 8','rises towards 1','falls towards 0','becomes negative'],a:0,
+     w:'r<sub>s</sub> depends only on the ranks, and the largest value stays the largest. Pearson\'s r does change.'},
+    {q:'Paired data, n = 10 non-zero differences, T = 3. z is about',
+     opts:['−0.31','−1.96','−3.00','−2.50'],a:3,
+     w:'Mean = 10 × 11 ⁄ 4 = 27.5; SD = √(10 × 11 × 21 ⁄ 24) = 9.81; z = (3 − 27.5) ⁄ 9.81 = −2.50. The routing app.'},
+    {q:'A PCA of eight standardised questions gives a first eigenvalue of 4.0. The first component explains',
+     opts:['4% of the variance','40% of the variance','50% of the variance','it depends on the sample size'],a:2,
+     w:'With eight standardised questions the total variance is 8; 4.0 ⁄ 8 = 50%.'},
+    {q:'In a rotated loadings table, "taste" loads 0.81 on component B and 0.12 on component A. This means',
+     opts:['taste moves closely with component B and hardly at all with A','81% of customers liked the taste','taste explains 81% of the survey','component B is the average of all questions'],a:0,
+     w:'A loading is a correlation between a question and a component. 0.81 is strong, 0.12 is nearly none. The share of taste\'s variance explained is 0.81² + 0.12² = 0.67.'},
+    {q:'Which of these is supervised learning?',
+     opts:['Turning nine survey questions into two scores','Predicting next week\'s orders from past weeks where the orders were recorded','Sorting customers into groups that order alike','Computing the median delivery time'],a:1,
+     w:'Supervised learning learns to predict an outcome y that is recorded in past data. PCA and clustering have no y (unsupervised); a median describes data.'}
+  ];
+  window.COURSE_QUIZ=QUIZ;
+  var box=document.getElementById('quizBox'),chip=document.getElementById('scoreChip'),
+      res=document.getElementById('quizResult'),scoreEl=document.getElementById('quizScore'),msgEl=document.getElementById('quizMsg');
+  var answered=0,correct=0;chip.textContent='0 / '+QUIZ.length+' answered';
+  var replaying=false, replayQ=[];
+  QUIZ.forEach(function(item,i){
+    var q=document.createElement('div');q.className='q';
+    q.innerHTML='<div class="qt"><span class="qn">'+(i+1)+'.</span>'+item.q+'</div>'+item.opts.map(function(o,j){return '<button class="opt" data-j="'+j+'">'+o+'</button>';}).join('')+'<div class="why" id="qw'+i+'"></div>';
+    function apply(j){
+      if(q.dataset.done)return;q.dataset.done='1';
+      var ok=j===item.a;
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;var xj=parseInt(x.dataset.j,10);if(xj===item.a)x.classList.add('correct');else if(xj===j)x.classList.add('wrong');});
+      document.getElementById('qw'+i).innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+item.w;document.getElementById('qw'+i).classList.add('show');
+      answered++;if(ok)correct++;
+      if(!replaying){if(window.StatsAns)StatsAns.set(progress,save,'q'+i,j);if(window.StatsTrack&&StatsTrack.quizAnswer)StatsTrack.quizAnswer(i,j,ok);markStep('q'+i);}
+      chip.textContent=answered+' / '+QUIZ.length+' answered';
+      if(answered===QUIZ.length)finish();
+    }
+    q.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){apply(parseInt(b.dataset.j,10));});});
+    box.appendChild(q);
+    var saved=window.StatsAns?StatsAns.get(progress,'q'+i):null;if(saved!=null)replayQ.push(function(){apply(saved);});
+  });
+  replaying=true;replayQ.forEach(function(fn){fn();});replaying=false;
+  function finish(){
+    scoreEl.textContent=correct+' / '+QUIZ.length;
+    msgEl.textContent = correct>=9 ? 'Excellent: ranks, the four tests and the components. Now write the three entries of the workshop.'
+      : correct>=6 ? 'Good. Reread the explanations you missed, then do the homework by hand.'
+      : 'Worth a second pass: sections 7.2 to 7.8, then the exercises in Part 2 again.';
+    res.classList.add('show');markSection('ck');
+    if(!replaying&&window.StatsTrack)StatsTrack.setScore(correct,QUIZ.length);
+  }
+})();
+function renderGuessRecall(){
+  var g=gutSaved(),V={yes:'"Rive is faster"',no:'"no real difference"',cant:'"impossible to say"'};
+  var html=(g&&g.v?'In section 7.1 you said '+V[g.v]+'. ':'')+'The sixteen deliveries: the t-test does not reject (t = −1.76, p = 0.10), the Mann–Whitney test does (U = 5, z = −2.84, p = 0.005): Rive delivers faster. The other results of the week: the routing app shortened delivery times (T = 3, z = −2.50); tips differ between the branches (H = 7.22 ≥ 5.991); marketing spend and new customers move in the same order (r<sub>s</sub> = 0.929); and nine survey questions reduce to two scores, the service and the food, which explain 69% of the variance.';
+  ['guessRecall','guessRecall2'].forEach(function(id){var box=document.getElementById(id);if(box)box.innerHTML=html;});
+}
+
+/* ---- retrieval opener: two questions about Week 6 ---- */
+(function recall(){
+  var slot=document.getElementById('recallSlot');if(!slot)return;
+  var RK='mba401_w7_recall',st={};try{st=JSON.parse(localStorage.getItem(RK))||{};}catch(e){}
+  var ITEMS=[
+    {q:'Week 6: a one-way ANOVA on four branches assumed two things about the populations. Which two?',opts:['that they are normal and have the same variance','that they have the same mean and the same size','that the samples are paired'],a:0,why:'Normal populations with equal variances. This week replaces the ANOVA by the Kruskal–Wallis test, which assumes neither, and compares its H with the chi-square table you used in Week 6.'},
+    {q:'Week 6: rejecting H₀ in an ANOVA says',opts:['that every mean differs from every other','that not all the means are equal, without saying which','that the variances differ'],a:1,why:'The same holds for the Kruskal–Wallis test: rejecting says the groups are not all alike; a follow-up comparison says which.'}
+  ];
+  var card=document.createElement('div');card.className='card';card.style.cssText='margin-top:22px;border-left:4px solid var(--navy);';
+  card.innerHTML='<span class="label why">Retrieval · Week 6</span><h3>Before anything new, answer two questions from last session</h3><p style="font-size:13.5px;color:var(--grey);">Recalling last week before the new material is what makes it stick. Not counted anywhere.</p><div id="rcBox"></div>';
+  slot.appendChild(card);
+  var box=card.querySelector('#rcBox');
+  ITEMS.forEach(function(it,i){
+    var d=document.createElement('div');d.className='rc';d.style.cssText='margin:10px 0 4px;';
+    d.innerHTML='<div style="font-weight:700;color:var(--ink);margin-bottom:6px;">'+(i+1)+'. '+it.q+'</div>'+it.opts.map(function(o,j){return '<button class="btn ghost small" style="margin:0 6px 6px 0" data-j="'+j+'">'+o+'</button>';}).join('')+'<div class="cl-why" id="rcw'+i+'"></div>';
+    box.appendChild(d);
+    function apply(j,quiet){
+      d.querySelectorAll('button').forEach(function(b){b.disabled=true;var bj=parseInt(b.dataset.j,10);if(bj===it.a)b.classList.add('ok');else if(bj===j)b.classList.add('no');});
+      var w=document.getElementById('rcw'+i);w.innerHTML=(j===it.a?'<b>Yes.</b> ':'<b>Not that one.</b> ')+it.why;w.classList.add('show');
+      if(!quiet){st[i]=j;try{localStorage.setItem(RK,JSON.stringify(st));}catch(e){}}
+    }
+    d.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){apply(parseInt(b.dataset.j,10),false);});});
+    if(st[i]!=null)apply(st[i],true);
+  });
+})();
+
+/* =====================================================================
+   LECTURE DECK — built from the page: theory slides clone a .tcard or a
+   .prose block by id (T(), P()); each walked example becomes a question
+   slide from its .qbody and a solution slide from EXW.
+   ===================================================================== */
+function T(id){var e=document.getElementById(id);if(!e)return '';var bar=e.querySelector('.tc-bar span');return bk('Week 7 · '+(bar?bar.textContent:''),e.querySelector('.tc-body').innerHTML);}
+function P(id){var e=document.getElementById(id);if(!e)return '';var c=e.cloneNode(true),s=c.querySelector('.src');if(s)s.remove();return bk('Week 7',c.innerHTML);}
+function QX(id){var e=document.getElementById('x-'+id);return e?e.querySelector('.qbody').innerHTML:'';}
+function SX(id,a,b){return (EXW[id]||[]).slice(a||0,b).map(function(s){return '<p class="step">'+s+'</p>';}).join('');}
+function exPair(id,k,tq,ts,nq,ns,site){
+  return [{k:k,t:tq,badge:'act',cls:'text',site:site,b:bk(k,QX(id))+'<p class="fine">Try it before the solution.</p>',n:nq},
+          {k:k+' · solution',t:ts,cls:'text',b:bk(k+' — solution',SX(id)),n:ns}];
+}
+var SLIDES=[].concat([
+  {cls:'dk',k:'SUMAS · MBA401 Quantitative Methods',t:'Quantitative Methods',logo:true,
+   b:'<p style="font-size:1.15em"><b>Week 7 · Non-parametric tests and principal component analysis</b></p><p>Jan Erik Meidell · SUMAS</p><div class="onproj"><b>Our running case →</b> sixteen deliveries from two branches, one of them 95 minutes. Is Rive faster? Then: drivers and a routing app, tips at three branches, marketing spend and new customers, and a nine-question customer survey.</div>',
+   n:'Recap from Week 6: χ² and F. Today: tests that use ranks, then PCA. Laptops out for numiqo (DataTab renamed).'},
+  {k:'Poll',t:'Is Rive faster? What does the t-test say?',site:'s1',badge:'act',
+   b:'<p>Rive: 18 19 21 22 23 25 26 29 · Pâquis: 24 27 28 30 31 32 34 <b>95</b>. Site → <b>Week 7 → section 7.1</b>: your verdict, and your guess at the t-test.</p>',
+   n:'Most say Rive is faster and expect the t-test to agree. It does not: t = −1.76, p = 0.10. That is the puzzle the week solves.'},
+  {k:'Section 7.2',t:'Parametric and non-parametric tests',site:'s2',cls:'text',b:T('t-def1'),n:'Three situations: small and skewed, small with an outlier, ordinal.'}
+],
+exPair('rank','Section 7.2 · by hand','Rank the sixteen deliveries','The ranks and their sums','Ask the room for the rank of the 95-minute delivery.','41 + 95 = 136. The 95 is rank 16 whatever its value.','s2'),
+exPair('ties','Section 7.2 · a hotel','Seven ratings with a tie','Tied values get the average position','Three 4s on positions 4, 5, 6.','Each 4 gets 5.'),
+[
+  {k:'Section 7.2',t:'Which rank test replaces which test?',badge:'act',
+   b:'<ul><li>Two-sample t (independent) → <b>Mann–Whitney U</b></li><li>Paired t → <b>Wilcoxon signed-rank</b></li><li>One-way ANOVA → <b>Kruskal–Wallis</b></li><li>Pearson\'s r → <b>Spearman\'s r<sub>s</sub></b></li></ul><p>Site: Figure 7.1 (move the outlier), your turn 1, then the matching exercise.</p>'+T('t-kt1'),
+   n:'Figure 7.1: drag the slow delivery to 200. t moves, the rank sum stays 41.'},
+  {k:'Section 7.3',t:'The Mann–Whitney U test',site:'s3',cls:'text',b:T('t-mw'),n:'U counts the pairs in which sample 1 is larger.'}
+],
+exPair('mwhook','Section 7.3 · the pizzeria','Is Rive faster? Mann–Whitney at 5%','U = 5, z = −2.84 → reject','R₁ = 41 from 7.2.','p = 0.005, exact 0.003. Then run it in numiqo, Figure 7.2.'),
+[
+  {k:'Section 7.3 · numiqo',t:'Run the same test in numiqo',badge:'act',
+   b:'<ol><li>Site → section 7.3 → <b>Copy the data</b>.</li><li>numiqo.com/statistics-calculator/hypothesis-test → <b>Clear the table</b> → paste.</li><li>Select <i>Branch</i> and <i>Minutes</i> → <b>Non-Parametric Test</b>.</li><li>Check U = 5 and the p-value; type the p into the page.</li></ol>',
+   n:'If numiqo shows a t-test first, that is its default; the non-parametric option switches it to Mann–Whitney.'},
+  {k:'The hook closes',t:'Two tests, two answers',badge:'act',
+   b:'<div class="onproj"><b>On the pizzeria →</b> t-test on the means: t = −1.76, p = 0.10, do not reject. Mann–Whitney on the ranks: U = 5, z = −2.84, p = 0.005, reject. In 59 of the 64 Rive–Pâquis pairs Rive was faster.</div>'+T('t-kt2'),
+   n:'The rank test answers the manager\'s question, "does Rive tend to be faster?".'}
+],
+exPair('mwloan','Section 7.3 · a bank','Geneva against Lausanne loan times','U = 6, z = −2.14 → reject','Thirteen ranks.','p = 0.032; exact 0.035.'),
+[
+  {k:'Section 7.4',t:'The Wilcoxon signed-rank test',site:'s4',cls:'text',b:T('t-wil'),n:'Rank the sizes of the differences, then split by sign.'}
+],
+exPair('wildriv','Section 7.4 · the pizzeria','Ten drivers and a routing app','T = 3, z = −2.50 → reject','Ask: which driver\'s difference gets rank 10?','Driver 7: rank 10 whether he gained 17 or 40 minutes. Figure 7.3.'),
+exPair('wilcall','Section 7.4 · a call centre','Calls per hour before and after a training day','T = 1, z = −2.38 → reject','',''),
+[
+  {k:'Section 7.5',t:'The Kruskal–Wallis test',site:'s5',cls:'text',b:T('t-kw'),n:'The chi-square table of Week 6, df = k − 1.'}
+],
+exPair('kwtips','Section 7.5 · the pizzeria','Tips at three branches','H = 7.22 ≥ 5.991 → reject','Fifteen ranks; check that the sums add to 120.','Pâquis mean rank 3.8.'),
+exPair('kwsup','Section 7.5 · a retailer','Three suppliers, days late','H = 7.49 → reject','',''),
+[
+  {k:'Section 7.6',t:'Spearman\'s rank correlation',site:'s6',cls:'text',b:T('t-sp'),n:'Pearson\'s r on the ranks. Tested with t on n − 2, as the Week 5 slope.'}
+],
+exPair('spbr','Section 7.6 · the pizzeria','Marketing spend and new customers','rₛ = 0.929, t = 6.13 → reject','Rank each variable separately.','Figure 7.5: push branch F to 300; rₛ does not move.'),
+exPair('sphire','Section 7.6 · recruiting','Interview score and performance','rₛ = 0.714, t = 2.28 &lt; 2.571 → do not reject','',''),
+[
+  {k:'Section 7.7',t:'Principal components: the idea',site:'s7',cls:'text',b:T('t-pca'),n:'Nine questions; many say the same thing. Two first.'}
+],
+exPair('pcahand','Section 7.7 · the pizzeria','Taste and crust, r = 0.46','The diagonal keeps 73%','Ask for a prediction: at which angle is the spread largest?','Figure 7.6: turn the line to 45°.'),
+exPair('pcacar','Section 7.7 · a car magazine','Length and weight, r = 0.90','One size score keeps 95%','',''),
+[
+  {k:'Section 7.8',t:'Reading a PCA output',site:'s8',cls:'text',b:T('t-load'),n:'Kaiser rule, scree plot, loadings, rotation, communality.'},
+  {k:'Section 7.8 · the pizzeria',t:'Nine questions, two components',badge:'act',
+   b:'<div class="onproj"><b>On the pizzeria →</b> eigenvalues 4.73 and 1.48, then 0.62 and below: keep two, 69% of the variance. Rotated: component A = the service (speed, friendliness, order correct, arrived hot), component B = the food (taste, freshness, crust, toppings). Value for money loads on both.</div><p>Site: Figures 7.7–7.8, then run it in numiqo (Figure 7.9).</p>',
+   n:'Unrotated: component 1 is "overall satisfied", component 2 contrasts food with service. The rotation makes the names clear.'}
+],
+exPair('hotel','Section 7.8 · a hotel survey','Name the two components','Staff and room','',''),
+[
+  {k:'Section 7.8',t:'Where this course meets machine learning',cls:'text',b:T('t-ml'),n:'Week 5 regression is supervised; PCA is unsupervised. The ml classify on the site.'}
+]);
+
+(function(){
+  var part2={cls:'dk',k:'Part 2',t:'Now we work',site:'ex',
+    b:'<p>Ten exercises on this week\'s methods, by hand with a calculator.</p><ul><li>The exercise goes up here; you work it on the site, <b>section 7.9</b>.</li><li>Keep rank sums exact; give z and t to two decimals.</li><li>I release each solution when the room is ready; it opens on your device.</li></ul>',
+    n:'Critical values used: z 1.960; χ² 5.991 (2 df), 7.815 (3 df); t 2.776 (4 df), 2.571 (5 df), 2.447 (6 df).'};
+  var exSlides=(window.StatsEx?StatsEx.slides(EXERCISES,{mod:MOD}):[]);
+  var tail=[
+    {k:'Your turn',t:'Checkpoint, live, now',site:'ck',
+     b:'<p>Open the site → <b>Week 7 → section 7.10</b>.</p><ul><li>10 questions</li><li>Not graded, but this is the exam\'s style</li></ul>',badge:'act',
+     n:'Expect misses on Q2 (tied ranks) and Q9 (what a loading is).'},
+    {k:'Takeaways',t:'Five things from Week 7',
+     b:'<ul><li>Rank the data when the sample is small and skewed, has an outlier, or is ordinal; ties get the average position.</li><li><b>Mann–Whitney</b>: U = R₁ − n₁(n₁+1)⁄2, the smaller of U₁ and n₁n₂ − U₁, z against 1.960.</li><li><b>Wilcoxon</b>: rank |d|, T = the smaller signed sum; <b>Kruskal–Wallis</b>: H against χ² on k − 1; <b>Spearman</b>: 1 − 6Σd²⁄(n(n²−1)).</li><li><b>PCA</b>: keep eigenvalues above 1, name components from loadings above 0.6, rotate to make the names clear.</li><li>Supervised learning predicts a recorded y; unsupervised learning finds structure without one.</li></ul>',
+     n:'Homework: twelve problems. Weeks 8 and 9 are review.'}
+  ];
+  SLIDES=SLIDES.concat([part2]).concat(exSlides).concat(tail);
+})();
+
+
+/* Slide ↔ section mapping is COMPUTED from where each site:'sX' anchor
+   landed, never typed as a slide number. */
+(function wireSlides(){
+  var first={},last={};
+  var starts=[];SLIDES.forEach(function(s,i){if(s.site)starts.push({id:s.site,i:i});});
+  starts.forEach(function(a,j){var end=(j+1<starts.length?starts[j+1].i:SLIDES.length)-1;first[a.id]=a.i+1;last[a.id]=end+1;});
+  if(first.ck)last.ck=first.ck;
+  SECTIONS.forEach(function(s){
+    if(!first[s.id])return;
+    s.slide=first[s.id];
+    s.slides=(last[s.id]>first[s.id])?'slides '+first[s.id]+'–'+last[s.id]:'slide '+first[s.id];
+  });
+  document.querySelectorAll('.ref[data-ref]').forEach(function(r){
+    var s=null;SECTIONS.forEach(function(x){if(x.id===r.dataset.ref)s=x;});
+    if(s&&s.slides)r.textContent=s.slides;else r.remove();
+  });
+})();
+
 (function lecture(){
-  var idx=0,open=false,cur=null;
+  var idx=0,open=false;
   var lect=document.getElementById('lect'),stage=document.getElementById('lectStage'),count=document.getElementById('lectCount'),notes=document.getElementById('lectNotes');
-  function slideHTML(s){return (s.logo?'<img class="lect-logo-big" src="sumas-logo.png" alt="SUMAS">':'')+'<div class="lect-kicker">'+s.k+'</div><h2>'+s.t+'</h2><div class="lect-body">'+s.b+'</div>';}
-  function render(){var s=SLIDES[idx];if(cur)cur.remove();cur=document.createElement('div');cur.className='lect-slide'+(s.cls?' '+s.cls:'');cur.innerHTML=slideHTML(s);stage.appendChild(cur);lect.classList.toggle('dkbg',s.cls==='dk');count.textContent=(idx+1)+' / '+SLIDES.length;notes.innerHTML='<span class="nt">Speaker notes · slide '+(idx+1)+'</span>'+(s.n||'—');}
+  var cur=null;
+  function slideHTML(s){
+    var badge=s.badge?'<span class="lect-badge '+s.badge+'">'+(s.badge==='disc'?'💬 Discussion':s.badge==='act'?'✋ Your turn':'Case')+'</span>':'';
+    var logo=s.logo?'<img class="lect-logo-big" src="sumas-logo.png" alt="SUMAS">':'';
+    var site='';
+    if(s.site){var sec=null;SECTIONS.forEach(function(x){if(x.id===s.site)sec=x;});
+      if(sec)site='<span class="lect-site">On the site → §'+sec.num+' · '+sec.name+'</span>';}
+    return logo+badge+'<div class="lect-kicker">'+s.k+site+'</div><h2>'+s.t+'</h2><div class="lect-body">'+s.b+'</div>';
+  }
+  function render(){
+    var s=SLIDES[idx];if(cur)cur.remove();
+    cur=document.createElement('div');cur.className='lect-slide'+(s.cls?' '+s.cls:'');cur.innerHTML=slideHTML(s);stage.appendChild(cur);
+    /* shrink a slide that is taller than the stage — the stage clips, so a long book quotation would lose its title and its last lines */
+    cur.style.zoom='';var cs=getComputedStyle(stage),room=stage.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),z=1;
+    while(z>0.6&&cur.getBoundingClientRect().height>room){z=Math.round((z-0.04)*100)/100;cur.style.zoom=z;}
+    if(window.StatsEx)StatsEx.wireSlide(cur);
+    lect.classList.toggle('dkbg',s.cls==='dk');count.textContent=(idx+1)+' / '+SLIDES.length;
+    notes.innerHTML='<span class="nt">Speaker notes · slide '+(idx+1)+'</span>'+(s.n||'—');
+  }
   function go(d){idx=Math.max(0,Math.min(SLIDES.length-1,idx+d));render();}
   function openLect(){open=true;lect.classList.add('on');render();if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(function(){});}}
   function closeLect(){open=false;lect.classList.remove('on');if(document.fullscreenElement&&document.exitFullscreen){document.exitFullscreen().catch(function(){});}}
@@ -228,21 +2028,53 @@ var SLIDES=[{"cls": "dk", "k": "SUMAS · Quantitative Methods", "t": "Quantitati
   document.getElementById('lectNotesBtn').addEventListener('click',function(){notes.classList.toggle('on');});
   stage.querySelector('.lect-zone.next').addEventListener('click',function(){go(1);});
   stage.querySelector('.lect-zone.prev').addEventListener('click',function(){go(-1);});
-  document.addEventListener('keydown',function(e){if(!open)return;
+  document.addEventListener('keydown',function(e){
+    if(!open)return;
     if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(1);}
     else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(-1);}
-    else if(e.key==='Escape'){closeLect();}else if(e.key==='n'||e.key==='N'){notes.classList.toggle('on');}
-    else if(e.key==='Home'){idx=0;render();}else if(e.key==='End'){idx=SLIDES.length-1;render();}});
+    else if(e.key==='Escape'){closeLect();}
+    else if(e.key==='n'||e.key==='N'){notes.classList.toggle('on');}
+    else if(e.key==='Home'){idx=0;render();}
+    else if(e.key==='End'){idx=SLIDES.length-1;render();}
+  });
   if(location.hash==='#lecture')setTimeout(openLect,150);
-  document.getElementById('printDeck').innerHTML=SLIDES.map(function(s,i){return '<div class="p-slide'+(s.cls?' '+s.cls:'')+'">'+slideHTML(s)+'<span class="pnum">Quantitative Methods · Week 7 · outline · '+(i+1)+'/'+SLIDES.length+'</span></div>';}).join('');
+  document.getElementById('printDeck').innerHTML=SLIDES.map(function(s,i){return '<div class="p-slide'+(s.cls?' '+s.cls:'')+'">'+slideHTML(s)+'<span class="pnum">Quantitative Methods · Week 7 · '+(i+1)+'/'+SLIDES.length+'</span></div>';}).join('');
 })();
-renderList();
+
+/* ---- boot ---- */
+renderList();updateBar();secCheck();
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.StatsTrack){StatsTrack.init({module:MOD,title:'Week 7 · Non-parametric tests and principal components',total:SECTIONS.length});syncDoneSections();}
+  /* presence · one-part week: the register's id is the week, w7 */
+  if(window.StatsPresence)StatsPresence.mount({el:document.getElementById('presSlot'),mod:'w7',label:'Week 7 · Non-parametric tests and principal components'});
+  /* Part 2 · the exercise forms. Same array as the deck's exercise slides. */
+  if(window.StatsEx)StatsEx.mount({el:document.getElementById('exList'),mod:MOD,exercises:EXERCISES,
+    progress:progress,save:save,markStep:markStep,markSection:markSection,secId:'ex',week:7});
+  var ws=document.getElementById('wk');
+  if(ws){
+    var fields=ws.querySelectorAll('[data-work]'),st=document.getElementById('wbStatus');
+    var check=function(){
+      var n=0;fields.forEach(function(f){var filled=!!(f.value||'').trim();markStep('wb-'+f.getAttribute('data-work'),filled);if(filled)n++;});
+      if(st)st.textContent=(n>=fields.length&&fields.length>0)?'✓ Section complete — your three entries are on file.':(n+' of '+fields.length+' fields filled · complete all to finish this section.');
+      if(n>=fields.length&&fields.length>0)markSection('wk');
+    };
+    fields.forEach(function(f){f.addEventListener('input',check);});
+    setTimeout(check,900);
+  }
+});
+
 </script>
 <script src="/shared/config.js"></script>
+<script>/* The instructor's device never gets the student sign-in prompt — it would
+   hide the page behind a modal on every visit. login.js reads this flag. */
+if(window.AdminGate&&AdminGate.isUnlocked())window.COURSE_LOGIN_AUTO=false;</script>
+<script src="/shared/login.js" defer></script>
+<script src="/shared/progress.js" defer></script>
 <script src="courseprogress.js"></script>
 <script>CourseProgress.render({bar:document.getElementById('courseBar'),pct:document.getElementById('coursePct'),compact:true});</script>
 <script src="/shared/announce.js" defer></script>
 <script src="/shared/chat.js" defer></script>
 <script src="/track.js" defer></script>
+<script src="nav.js" defer></script>
 </body>
 </html>

@@ -70,7 +70,12 @@
         secs: [['s1', '6.1', 'Three neighbourhoods, three toppings'], ['s2', '6.2', 'Are two ways of sorting related?'], ['s3', '6.3', 'Do the counts fit the claim?'],
                ['s4', '6.4', 'Is one spread larger than the other?'], ['s5', '6.5', 'Three or more means at once'], ['ex', '6.6', 'Exercises — worked together'],
                ['s6', '6.7', 'Checkpoint'], ['s7', '6.8', 'Workshop']] } ] },
-    { n: 7, title: 'PCA and non-parametric tests', parts: [{ mod: 'w7', k: '', t: 'Beyond the textbook', locked: true }] },
+    { n: 7, title: 'Non-parametric tests and principal components', parts: [
+      { mod: 'w7', k: '', t: 'Non-parametric tests and principal components', href: 'week7.html', hw: 'week7-homework.html',
+        secs: [['s1', '7.1', 'Sixteen deliveries, one 95-minute order'], ['s2', '7.2', 'Ranks instead of values'], ['s3', '7.3', 'The Mann–Whitney U test'],
+               ['s4', '7.4', 'The Wilcoxon signed-rank test'], ['s5', '7.5', 'The Kruskal–Wallis test'], ['s6', '7.6', 'Spearman\'s rank correlation'],
+               ['s7', '7.7', 'Principal components · the idea'], ['s8', '7.8', 'Nine questions, two scores'], ['ex', '7.9', 'Exercises — worked together'],
+               ['ck', '7.10', 'Checkpoint'], ['wk', '7.11', 'Workshop']] } ] },
     { n: 8, title: 'Exercises and repetition', parts: [{ mod: 'w8', k: '', t: 'Exercises and repetition', locked: true }] },
     { n: 9, title: 'Repetition II and the blank test', parts: [
       { mod: 'w9a', k: '9A', t: 'Exercises and repetition II', locked: true },
@@ -81,6 +86,7 @@
     ['practice.html', 'Practice arena', 'endless randomised problems'],
     ['exam-cards.html', 'Exam cards', 'every question from five real exams'],
     ['sampling-sim.html', 'Sampling simulator', 'watch the Central Limit Theorem happen'],
+    ['degrees-of-freedom.html', 'Degrees of freedom', 'why n − 1, n − 2 and (I − 1)(J − 1)'],
     ['teaching-plan.html', 'Teaching plan', 'the nine weeks, the grading, the dates']
   ];
 
