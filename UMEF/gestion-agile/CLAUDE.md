@@ -21,7 +21,7 @@ the root `CLAUDE.md`; read that first.
   read it"), `quiz`. ⚠ **No `min` on sections, no `#dayTl`, no section
   timings** (WRITING.md rule 7); the only `.timer`s are the rules of the two
   games of journée 1 (an eight-minute round, a three-minute round, a ten-minute
-  sprint). The block hours (09h00–10h30 …) are the syllabus's timetable and
+  sprint). Day 1 needs no paper any more: laptops, an AI assistant, Netlify. The block hours (09h00–10h30 …) are the syllabus's timetable and
   stay on the section list.
 - **Dates**: Sat 28 Nov, 5 Dec, 12 Dec, 19 Dec 2026, 9 Jan, 16 Jan 2027,
   09h00–12h15 + 13h30–16h45; final exam **Sat 6 Feb 2027 13h30**, 2 h,
@@ -86,8 +86,17 @@ the root `CLAUDE.md`; read that first.
   (≈ £9.8 bn, PAC 2013), Universal Credit (£34 m written off, NAO Sept 2013,
   "agile without governance") — classify `failRows` (6) · 1.3 the positioning
   quiz (Scrum Guide + Manifesto, positions `1 2 0 3 1 0 2 3`, `markSection('s3')`)
-  · 1.4 **the Scrum simulation**: a paper city, 12 items with points (total 55)
-  ordered by the client, three sprints: "Ce sprint" selects, the client ✓/✗ at
+  · 1.4 **the Scrum simulation** — ⚠ since 28 Nov 2026 (Jan Erik: "i do not have paper and scissors… is
+  there a web page again we can develop using ai and netlify") the paper city is gone: the team grows
+  the morning's Boulangerie du Lac site, SAME Netlify address, through twelve backlog items with points
+  (1, 3, 2, 5, 8, 5, 3, 5, 2, 5, 8, 8 = 55; banner, nav menu, « Nos pains », open/closed by Geneva time,
+  pre-order form, holiday calculator → CHF 75.00, a second page « Mentions légales », gallery, back-to-top,
+  three reviews with a computed mean, English version, persistent dark mode), each with its acceptance
+  criterion as the item's grey line; a three-line definition of done (on Netlify · meets its criterion ·
+  nothing accepted before is broken, checked first at each review — a regression refuses the whole
+  sprint); one Scrum Master + three Developers; one item per AI prompt with the whole current file. How to
+  check each criterion in ten seconds and what usually happens: `_private/j1-jeu-site-enseignant.md`.
+  Same engine (ids changed, state key unchanged `mpm503_w1_sim`), three sprints: "Ce sprint" selects, the client ✓/✗ at
   the review, *Clore la revue* needs every engaged item decided (refused items
   go back), velocity per sprint, KPIs, a burndown (SVG, dashed = all 55 in
   three sprints), steps `sp1–sp3`, hidden `w1_sim`, `w1_retro1–3`; state
