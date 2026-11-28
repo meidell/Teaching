@@ -180,3 +180,21 @@ applies. What differs:
   `_private/check_w7.py` (gitignored). Not changed: the Wright fitter
   (`CAP.wright`), the nine-boundary tap widget's structure, the recall
   questions, the Week 8 preview.
+
+- **Week 9 rewritten (28 Nov 2026, omba500 only — not ported to `wind` or
+  `capstone-ba`)**: the WRITING.md pass, same structure (steps s1–s7, widgets
+  `rs`/`sig`, fields `w9_rec`/`w9_signals`/`w9_counter` unchanged, so no
+  totals moved). Defined where used: first/second-generation scenarios,
+  Wack's "microcosm" (no longer quoted as "rattle the manager's microcosm" —
+  the exact wording was not verified), predetermined elements, robust vs
+  high-variance bet (Week 4's 3-of-4 rule, links Week 4 exercise 3), PPA,
+  impairment, ROACE. The "two playbooks from last year's cohort" became two
+  neutral arguments with checked facts only (the unverified "7.5 GW German
+  hub with RWE", "eight jurisdictions", "largest component buyer" are gone).
+  Early-warning signals now start from the student's Week 6 signposts and
+  Phase 2 measurements, and use Week 7's ≈ $5/MWh per point of cost of
+  capital; the examples were fixed (IRENA Europe above $80 in the 2027 and
+  2028 reports, not "$90 through 2026"; turbine SUPPLY contracts, not
+  "Chinese OEMs win auctions"). The "search YouTube" video was removed (no
+  real runtime). Activity 2 says the pairs are posted in Forum 17 on
+  Thursday morning — Jan Erik must post them. Tested headless 1280/390 px.
