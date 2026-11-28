@@ -75,6 +75,8 @@ h1{font-size:clamp(30px,3.6vw,54px);line-height:1.1;font-weight:800;letter-spaci
 .cardx{break-inside:avoid;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:0 0 18px;font-size:clamp(18px,1.55vw,26px);line-height:1.4;color:#fff;white-space:pre-wrap;word-wrap:break-word;animation:in .35s ease;}
 .cardx .sub{display:block;margin-top:8px;font-size:.62em;color:var(--dim);font-weight:700;letter-spacing:.3px;}
 @keyframes in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+a.url{color:inherit;text-decoration:underline;text-underline-offset:4px;word-break:break-all;}
+a.url:hover{opacity:.8;}
 /* tally */
 .tally{display:grid;gap:12px;max-width:1300px;}
 .tr{display:grid;grid-template-columns:minmax(160px,32%) 1fr 70px;gap:16px;align-items:center;font-size:clamp(20px,1.8vw,30px);font-weight:800;}
@@ -120,6 +122,14 @@ var LMS=!!(C&&C.lms), API=CourseConfig.lmsApi(), API_GROUPS=null, API_FIELDS=nul
 var main=document.getElementById('main');
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+/* an answer that is only a web address (a team's Netlify site) is drawn as a link
+   that opens in a new tab, so the instructor can click it on the TV; "x.netlify.app"
+   without https:// gets it. Anything else stays plain text. */
+function lnk(s){var t=String(s==null?'':s).trim();
+  if(/^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(t)){
+    var u=/^https?:\/\//i.test(t)?t:'https://'+t;
+    return '<a class="url" href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(t.replace(/^https?:\/\//i,''))+' ↗</a>';}
+  return esc(t);}
 function hash(s){var h=2166136261;s=String(s);for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 
 /* ---- panels from ?p= ------------------------------------------------ */
@@ -257,11 +267,11 @@ function render(){
     var items=Object.keys(c).map(function(k){return {t:show[k],n:c[k]};}).sort(function(a,b){return b.n-a.n||a.t.localeCompare(b.t);});
     var max=items.length?items[0].n:1;
     body='<div class="tally">'+items.slice(0,24).map(function(it){
-      return '<div class="tr"><span class="t">'+esc(it.t)+'</span><span class="b"><i style="width:'+(it.n/max*100)+'%"></i></span><span class="c">'+it.n+'</span></div>';
+      return '<div class="tr"><span class="t">'+lnk(it.t)+'</span><span class="b"><i style="width:'+(it.n/max*100)+'%"></i></span><span class="c">'+it.n+'</span></div>';
     }).join('')+'</div>'+(items.length>24?'<div class="meta">…and '+(items.length-24)+' more, each named once.</div>':'');
   }else{
     body='<div class="cards">'+list.map(function(a){
-      return '<div class="cardx">'+esc(a.vals[0])+(a.vals.length>1?'<span class="sub">'+a.vals.slice(1).map(esc).join(' · ')+'</span>':'')+'</div>';
+      return '<div class="cardx">'+lnk(a.vals[0])+(a.vals.length>1?'<span class="sub">'+a.vals.slice(1).map(esc).join(' · ')+'</span>':'')+'</div>';
     }).join('')+'</div>';
   }
   main.innerHTML=head+'<div class="meta"><b>'+list.length+'</b> '+(list.length===1?'answer':'answers')+' · anonymous</div>'+body;

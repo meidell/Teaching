@@ -74,8 +74,17 @@ the root `CLAUDE.md`; read that first.
   acceptées ») computes accepted per minute (A ÷ 8, B–E ÷ 3) and the refused
   share, a bar chart, hidden `w1_rounds`, step `rounds` when five rounds are
   filled, `w1_site` (the Netlify URL, new field), carnet `w1_cycle`
-  (`data-board`); s1 needs rounds + w1_site + w1_cycle. The mid-game changes
-  (euros at 1 CHF = 1,05 €, golden star, the e-mail with an s), the minuted
+  (`data-board`); s1 needs rounds + w1_site + w1_site2 + w1_cycle.
+  ⚠ 28 Nov 2026 (Jan Erik): round A = the bakery (Boulangerie du Lac);
+  rounds B–E = a SECOND client, Fleurs du Rhône (florist, twelve requirements
+  of the same kind, own card, new folder `site2`, address `w1_site2`), so the
+  short rounds do not just fix A's leftovers. Section 1.4 still grows the
+  BAKERY site (`w1_site`). A change may be announced mid-round and counts
+  from the next delivery (the A change, at minute 5: the first sentence gets
+  « le dimanche à sept heures »). Both address fields carry `data-board`:
+  the board draws a URL answer as a clickable link. The mid-game changes
+  (A: the sentence; florist: euros at 1 CHF = 1,05 €, pink flower, Monday
+  13h00–19h00), the minuted
   run sheet and what to say are in `_private/j1-jeu-site-enseignant.md`
   (never committed). The plane version (three requirements, 6 + 2 min) is in
   git history before 28 Nov 2026; the two classify sentences, journée 3's
